@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab3KRPcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:32:31 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:51765 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3KRPcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:32:22 -0500
+	id S1752013Ab3KRPcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:32:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766Ab3KRPca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:32:30 -0500
+Date: Mon, 18 Nov 2013 10:32:11 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+Message-ID: <20131118153211.GB32168@redhat.com>
+References: <20131114180455.GA32212@anatevka.fc.hp.com>
+ <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+ <20131115005049.GJ5116@anatevka.fc.hp.com>
+ <20131115062417.GB9237@gmail.com>
+ <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+ <5285C639.5040203@zytor.com>
+ <20131115140738.GB6637@redhat.com>
+ <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+ <20131115180324.GD6637@redhat.com>
+ <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <528A1823.8080705@intel.com>
-References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
-	<5974906.WAPp3f3eVY@vostro.rjw.lan>
-	<CAKohpo=PoAaYgLNEVkkTC6tzAH=5hKw4VWTsrjt2jQnr7+6Q_w@mail.gmail.com>
-	<5229929.5JRiWnF6CT@vostro.rjw.lan>
-	<5289A80B.7080808@linaro.org>
-	<5289F29B.8050806@intel.com>
-	<CAKohpo=UjSqzE+Jg0s3taykHu4VinNUvLLhRm6pUXiyUc5F-3w@mail.gmail.com>
-	<528A1823.8080705@intel.com>
-Date: Mon, 18 Nov 2013 21:02:22 +0530
-Message-ID: <CAKohpomS_dW64tf52MzcM0BLEgg+iZJveU9mXHgCyUp5qNKqTg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, jinchoi@broadcom.com,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQU_OstEq3VWwBB879O4EY0DE+zVWVens+w0MLFUQmr3sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2013 19:07, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> The resume/suspend() must be stored in the struct driver->pm? :)
+On Fri, Nov 15, 2013 at 02:24:25PM -0800, Yinghai Lu wrote:
+> On Fri, Nov 15, 2013 at 10:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Nov 15, 2013 at 09:33:41AM -0800, Yinghai Lu wrote:
+> 
+> >> I have one system with 6TiB memory, kdump does not work even
+> >> crashkernel=512M in legacy mode. ( it only work on system with
+> >> 4.5TiB).
+> >
+> > Recently I tested one system with 6TB of memory and dumped successfully
+> > with 512MB reserved under 896MB. Also I have heard reports of successful
+> > dump of 12TB system with 512MB reserved below 896MB (due to cyclic
+> > mode of makedumpfile).
+> >
+> > So with newer releases only reason one might want to reserve more
+> > memory is that it might provide speed benefits. We need more testing
+> > to quantify this.
+> 
+> You may need bunch of PCIe cards installed.
+> 
+> The system with 6TiB + 16 PCIe cards, second kernel OOM.
+> The system with 4.5TiB + 16 PCIe cards, second kernel works with vmcore dumped.
 
-We certainly can't move back to increase redundancy by implementing
-driver's specific stuff here :)
+What's the distro you are testing with? Do you have latest bits of
+makeudmpfile where we use cyclic mode by default and one does not need
+more reserved memory because of more physical memory present in the
+box. I suspect that might be the problem in your testing environment
+and old makedumpfile wil try to allocate larger memory on large
+RAM machines and OOM.
 
->> Apart from that even cpufreq would be a bit hacky as we don't really need
->> per-cpu callbacks..
->>
->
-> This maybe depends on where we want the issue to be fixed, right?
-> The cpufreq driver also can fix the issue if we run their cpu_driver
-> resume/suspend callback earlier.
+[..]
+> > So issue remains that crashkernel=X,high is not a good default choice
+> > because it consumes extra 72M which we don't have to.
+> 
+> then if it falls into 896~4G, user may still need to update kexec-tools ?
 
-same as above..
+Yep. But distributions control the version of kexec-tools and version
+of kernel and can ship updated kexec-tools by default.
 
-> Another point, I just see cpuidle_resume() and cpuidle_pause() are called in
-> the dpm_resume_noirq and dpm_suspend_noirq(). Not sure whether this can be
-> applied to cpufreq.
-
-I will still prefer syscore_ops instead of calling framework specific routines
-directly from dpm_**() routines.. Don't know why this was done this way
-for cpuidle..
+Thanks
+Vivek
