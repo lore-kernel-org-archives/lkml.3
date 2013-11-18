@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3KRTBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:01:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57456 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab3KRSkp (ORCPT
+	id S1753494Ab3KRTBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:01:51 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:48455 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3KRTBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:45 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Valentijn Sessink <valentyn@blub.net>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 08/25] ipv6: ip6_dst_check needs to check for expired dst_entries
-Date: Mon, 18 Nov 2013 10:40:37 -0800
-Message-Id: <20131118184034.700655474@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
-References: <20131118184032.248465920@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Nov 2013 14:01:41 -0500
+Date: Mon, 18 Nov 2013 19:01:36 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "dbasehore ." <dbasehore@chromium.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, devicetree@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mfd: cros ec: spi: Increase EC transaction delay
+Message-ID: <20131118190136.GS13640@lee--X1>
+References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
+ <1384770649-8593-2-git-send-email-treding@nvidia.com>
+ <20131118104343.GG13640@lee--X1>
+ <CAGAzgsrUedg7pGXpS6VaWkHeYjvcyio7byeEZ=88t3U1XzbsPQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGAzgsrUedg7pGXpS6VaWkHeYjvcyio7byeEZ=88t3U1XzbsPQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 18 Nov 2013, dbasehore . wrote:
 
-------------------
+> We haven't had any issues with this patch and we've had it in our tree
+> for a while.
+> 
+> I also stress tested the patch by repeatedly reading over the spi a lot.
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Okay, thanks for letting me know.
 
-[ Upstream commit e3bc10bd95d7fcc3f2ac690c6ff22833ea6781d6 ]
-
-On receiving a packet too big icmp error we check if our current cached
-dst_entry in the socket is still valid. This validation check did not
-care about the expiration of the (cached) route.
-
-The error path I traced down:
-The socket receives a packet too big mtu notification. It still has a
-valid dst_entry and thus issues the ip6_rt_pmtu_update on this dst_entry,
-setting RTF_EXPIRE and updates the dst.expiration value (which could
-fail because of not up-to-date expiration values, see previous patch).
-
-In some seldom cases we race with a) the ip6_fib gc or b) another routing
-lookup which would result in a recreation of the cached rt6_info from its
-parent non-cached rt6_info. While copying the rt6_info we reinitialize the
-metrics store by copying it over from the parent thus invalidating the
-just installed pmtu update (both dsts use the same key to the inetpeer
-storage). The dst_entry with the just invalidated metrics data would
-just get its RTF_EXPIRES flag cleared and would continue to stay valid
-for the socket.
-
-We should have not issued the pmtu update on the already expired dst_entry
-in the first placed. By checking the expiration on the dst entry and
-doing a relookup in case it is out of date we close the race because
-we would install a new rt6_info into the fib before we issue the pmtu
-update, thus closing this race.
-
-Not reliably updating the dst.expire value was fixed by the patch "ipv6:
-reset dst.expires value when clearing expire flag".
-
-Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Reported-by: Valentijn Sessink <valentyn@blub.net>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Valentijn Sessink <valentyn@blub.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1088,10 +1088,13 @@ static struct dst_entry *ip6_dst_check(s
- 	if (rt->rt6i_genid != rt_genid(dev_net(rt->dst.dev)))
- 		return NULL;
- 
--	if (rt->rt6i_node && (rt->rt6i_node->fn_sernum == cookie))
--		return dst;
-+	if (!rt->rt6i_node || (rt->rt6i_node->fn_sernum != cookie))
-+		return NULL;
-+
-+	if (rt6_check_expired(rt))
-+		return NULL;
- 
--	return NULL;
-+	return dst;
- }
- 
- static struct dst_entry *ip6_negative_advice(struct dst_entry *dst)
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
