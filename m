@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab3KRPmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:42:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512Ab3KRPmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:42:31 -0500
-Date: Mon, 18 Nov 2013 10:42:09 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: jerry.hoemann@hp.com
-Cc: Ingo Molnar <mingo@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION <linux-doc@vger.kernel.org>,
-	list@ebiederm.org:MEMORY MANAGEMENT <linux-mm@kvack.org>," 
-	<linux-doc@vger.kernel.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131118154209.GC32168@redhat.com>
-References: <d73ccce9-6a0d-4470-bda3-f0c6eb96b5e4@email.android.com>
- <20131113224503.GB25344@anatevka.fc.hp.com>
- <52840206.5020006@zytor.com>
- <20131113235708.GC25344@anatevka.fc.hp.com>
- <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
- <20131114180455.GA32212@anatevka.fc.hp.com>
- <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
- <20131115005049.GJ5116@anatevka.fc.hp.com>
- <20131115062417.GB9237@gmail.com>
- <20131115191308.GB2748@anatevka.fc.hp.com>
+	id S1751906Ab3KRPnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:43:23 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:48692 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab3KRPnP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:43:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131115191308.GB2748@anatevka.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528A3373.7040205@ti.com>
+References: <1384561243-30391-1-git-send-email-nm@ti.com>
+	<1423628.uM8DtnYzDe@vostro.rjw.lan>
+	<5287010F.9000508@linaro.org>
+	<528A2D59.3080001@ti.com>
+	<CAKohpokzk2Zr7G+GV9d9Bc73WJHNMg01dfAJcxbwCGKFt9BpOw@mail.gmail.com>
+	<528A3373.7040205@ti.com>
+Date: Mon, 18 Nov 2013 21:13:14 +0530
+Message-ID: <CAKohponyFja18pqn5UL9bbtf_M4twWEyL3YqDGX5dgpdeRnJ_A@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: stats: Do not populate stats when policy->cur
+ has no exact match
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>,
+        Tobias Diedrich <ranma+xen@tdiedrich.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 12:13:08PM -0700, jerry.hoemann@hp.com wrote:
+On 18 November 2013 21:04, Nishanth Menon <nm@ti.com> wrote:
+> depends on how we look at it.. if we consider freq_table as a list of
+> valid frequencies, anything that is not in there is an invalid entry.
 
-[..]
-> > Is it possible to fix it the way hpa suggested?
-> 
->   I think the changes to enable ,high is a step in the
->   right direction. its an improvement  But it is still green.
-> 
->   We are having lots more problems w/ upstream kdump than we are having
->   w/ the kdump in distros.
-> 
->   So, to answer your question with a slight twist:
-> 
->   Is it possible to back ports lots of green code across multiple
->   versions and distros and get a bug free user experiences?  I guess so.
-> 
->   is it the right way to go?  i personally don't think so.
-> 
->   but hey, others may have a different view.
+Partly correct. Yes freq table has a list of valid frequencies, but normally
+we just build a table of definite length which will cover frequencies of
+all ranges.. Our plls allow us to configure other frequencies too and
+they are valid too.. So, we really can't call that invalid.. Though they
+must be called out of range? or something better?
 
-I agree that backporting a fix/hack to not reserve EFI boot memory on
-certain platform is much easier as compared to backporting capability to
-boot from higher memory addresses.
+> why should stat support it when freq_table is enforced by cpufreq layer?
 
-I also agree that crashkernel=X,high support is very new and it has yet to
-go though a wide spread testing to confirm that it works well with wide
-variety of machines. And this also makes a case to stick to crashkernel=X
-for older releases and just backport a fix to not reserve EFI boot time
-memory.
+We are not supporting them, and so had a single entry for them. It is
+just to show to user that we are actually running on some freq outside
+of table. You better check if that's fine for your system or not.
 
-Thanks
-Vivek
+> :) -> https://patchwork.kernel.org/patch/3192211/ shows how confused
+> my git am  feels ;)
+
+I am surprised to see what patchwork has done to my diff :) .. whereas
+lkml shows it correctly..
+
+https://lkml.org/lkml/2013/11/16/3
+
+Because I haven't created a commit, it was only diff and git am couldn't
+get this fixed.. So either patch -p1 < mail would have done it or maybe
+its better if I paste commits..
