@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab3KRSza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:55:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57516 "EHLO
+	id S1753913Ab3KRSzc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:55:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab3KRSk4 (ORCPT
+	with ESMTP id S1752714Ab3KRSk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:40:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kaplansky <victork@il.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, michael@ellerman.id.au,
-        anton@samba.org, benh@kernel.crashing.org
-Subject: [PATCH 3.11 18/25] perf: Fix perf ring buffer memory ordering
-Date: Mon, 18 Nov 2013 10:40:47 -0800
-Message-Id: <20131118184037.718430418@linuxfoundation.org>
+        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.11 21/25] backlight: atmel-pwm-bl: fix deferred probe from __init
+Date: Mon, 18 Nov 2013 10:40:50 -0800
+Message-Id: <20131118184038.625121719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -33,110 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit bf378d341e4873ed928dc3c636252e6895a21f50 upstream.
+commit 9d3fde86b15303decea632c929fbf1f3ae4501f2 upstream.
 
-The PPC64 people noticed a missing memory barrier and crufty old
-comments in the perf ring buffer code. So update all the comments and
-add the missing barrier.
+Move probe out of __init section and don't use platform_driver_probe
+which cannot be used with deferred probing.
 
-When the architecture implements local_t using atomic_long_t there
-will be double barriers issued; but short of introducing more
-conditional barrier primitives this is the best we can do.
+Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
+this driver might return -EPROBE_DEFER if a gpio_request fails.
 
-Reported-by: Victor Kaplansky <victork@il.ibm.com>
-Tested-by: Victor Kaplansky <victork@il.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: michael@ellerman.id.au
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: anton@samba.org
-Cc: benh@kernel.crashing.org
-Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Michael Neuling <mikey@neuling.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/linux/perf_event.h |   12 +++++++-----
- kernel/events/ring_buffer.c     |   31 +++++++++++++++++++++++++++----
- 2 files changed, 34 insertions(+), 9 deletions(-)
+ drivers/video/backlight/atmel-pwm-bl.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -428,13 +428,15 @@ struct perf_event_mmap_page {
- 	/*
- 	 * Control data for the mmap() data buffer.
- 	 *
--	 * User-space reading the @data_head value should issue an rmb(), on
--	 * SMP capable platforms, after reading this value -- see
--	 * perf_event_wakeup().
-+	 * User-space reading the @data_head value should issue an smp_rmb(),
-+	 * after reading this value.
- 	 *
- 	 * When the mapping is PROT_WRITE the @data_tail value should be
--	 * written by userspace to reflect the last read data. In this case
--	 * the kernel will not over-write unread data.
-+	 * written by userspace to reflect the last read data, after issueing
-+	 * an smp_mb() to separate the data read from the ->data_tail store.
-+	 * In this case the kernel will not over-write unread data.
-+	 *
-+	 * See perf_output_put_handle() for the data ordering.
- 	 */
- 	__u64   data_head;		/* head in the data section */
- 	__u64	data_tail;		/* user-space written tail */
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -87,10 +87,31 @@ again:
- 		goto out;
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -118,7 +118,7 @@ static const struct backlight_ops atmel_
+ 	.update_status  = atmel_pwm_bl_set_intensity,
+ };
  
- 	/*
--	 * Publish the known good head. Rely on the full barrier implied
--	 * by atomic_dec_and_test() order the rb->head read and this
--	 * write.
-+	 * Since the mmap() consumer (userspace) can run on a different CPU:
-+	 *
-+	 *   kernel				user
-+	 *
-+	 *   READ ->data_tail			READ ->data_head
-+	 *   smp_mb()	(A)			smp_rmb()	(C)
-+	 *   WRITE $data			READ $data
-+	 *   smp_wmb()	(B)			smp_mb()	(D)
-+	 *   STORE ->data_head			WRITE ->data_tail
-+	 *
-+	 * Where A pairs with D, and B pairs with C.
-+	 *
-+	 * I don't think A needs to be a full barrier because we won't in fact
-+	 * write data until we see the store from userspace. So we simply don't
-+	 * issue the data WRITE until we observe it. Be conservative for now.
-+	 *
-+	 * OTOH, D needs to be a full barrier since it separates the data READ
-+	 * from the tail WRITE.
-+	 *
-+	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-+	 * an RMB is sufficient since it separates two READs.
-+	 *
-+	 * See perf_output_begin().
- 	 */
-+	smp_wmb();
- 	rb->user_page->data_head = head;
+-static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
++static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ {
+ 	struct backlight_properties props;
+ 	const struct atmel_pwm_bl_platform_data *pdata;
+@@ -202,7 +202,7 @@ err_free_mem:
+ 	return retval;
+ }
  
- 	/*
-@@ -154,9 +175,11 @@ int perf_output_begin(struct perf_output
- 		 * Userspace could choose to issue a mb() before updating the
- 		 * tail pointer. So that all reads will be completed before the
- 		 * write is issued.
-+		 *
-+		 * See perf_output_put_handle().
- 		 */
- 		tail = ACCESS_ONCE(rb->user_page->data_tail);
--		smp_rmb();
-+		smp_mb();
- 		offset = head = local_read(&rb->head);
- 		head += size;
- 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
+-static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
++static int atmel_pwm_bl_remove(struct platform_device *pdev)
+ {
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+ 
+@@ -220,10 +220,11 @@ static struct platform_driver atmel_pwm_
+ 		.name = "atmel-pwm-bl",
+ 	},
+ 	/* REVISIT add suspend() and resume() */
+-	.remove = __exit_p(atmel_pwm_bl_remove),
++	.probe = atmel_pwm_bl_probe,
++	.remove = atmel_pwm_bl_remove,
+ };
+ 
+-module_platform_driver_probe(atmel_pwm_bl_driver, atmel_pwm_bl_probe);
++module_platform_driver(atmel_pwm_bl_driver);
+ 
+ MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
+ MODULE_DESCRIPTION("Atmel PWM backlight driver");
 
 
