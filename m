@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3KRMNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 07:13:55 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:45277 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3KRMN2 (ORCPT
+	id S1751788Ab3KRMQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 07:16:39 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:47663 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3KRMQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 07:13:28 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu, wsa@the-dreams.de,
-        joe@perches.com
-Cc: Jean Delvare <khali@linux-fr.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        Kedareswara rao Appana <appanad@xilinx.com>, linux-i2c@vger.kernel.org
-Subject: [PATCH v4 2/3] i2c: xilinx: Do not enable irq before irq handler
-Date: Mon, 18 Nov 2013 13:13:08 +0100
-Message-Id: <bd1e63067664dc83400fa9749da21a2bbd09639c.1384776761.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <04a1a7e01e2f3ff132658b7246ef32e74c73aa29.1384776761.git.michal.simek@xilinx.com>
-References: <04a1a7e01e2f3ff132658b7246ef32e74c73aa29.1384776761.git.michal.simek@xilinx.com>
-In-Reply-To: <04a1a7e01e2f3ff132658b7246ef32e74c73aa29.1384776761.git.michal.simek@xilinx.com>
-References: <04a1a7e01e2f3ff132658b7246ef32e74c73aa29.1384776761.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-25641-1384776801-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 18 Nov 2013 07:16:29 -0500
+Message-ID: <528A051A.7000703@koalo.de>
+Date: Mon, 18 Nov 2013 13:16:26 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        dmaengine <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv7] dmaengine: Add support for BCM2835
+References: <5288E327.8050809@koalo.de> <1384768816.14845.186.camel@smile>
+In-Reply-To: <1384768816.14845.186.camel@smile>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Thank you! Few comments below.
 
---=_mimegpg-monstr-desktop-25641-1384776801-0001
+> []
+>> +static enum dma_status bcm2835_dma_tx_status(struct dma_chan *chan,
+>> +	dma_cookie_t cookie, struct dma_tx_state *txstate)
+>> +{
+> 
+> []
+> 
+>> +	} else {
+>> +		txstate->residue = 0;
+> 
+> Useless assignment since dmaengine will do this for you in
+> dma_cookie_status.
 
-IRQ handler has to be register first before IRQ
-is enabled in xiic_reinit().
+I agree that it is useless, but I think otherwise it might be concealed
+that there is a third case left that uses a residue of 0. Do you think a
+comment is better? E.g.:
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
++	} else {
++		/* residue = 0 per default */
 
----
-Changes in v4: None
-Changes in v3:
-- New patch in this patchset based on my discussion with Wolfram
-  https://lkml.org/lkml/2013/10/4/148
+>> +	/* Bus width translates to the element size (ES) */
+>> +	switch (dev_width) {
+>> +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
+>> +		es = BCM2835_DMA_DATA_TYPE_S32;
+>> +		break;
+>> +	default:
+>> +		return NULL;
+>> +	}
+> 
+> So, you use switch-case on hope to extend it later, correct?
 
-Changes in v2: None
+Yes, there is a S128 case left, but that is not implemented yet.
 
- drivers/i2c/busses/i2c-xiic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+>> +static int bcm2835_dma_probe(struct platform_device *pdev)
+>> +{
+>> +	struct bcm2835_dmadev *od;
+>> +	struct resource *res;
+>> +	void __iomem *base;
+>> +	int rc;
+>> +	int i;
+>> +	int irq;
+>> +	uint32_t chans_available;
+> 
+> Why uint32_t?
 
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index 4d5c79e..1ded456b 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -730,8 +730,6 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 	i2c->adap.dev.parent = &pdev->dev;
- 	i2c->adap.dev.of_node = pdev->dev.of_node;
+Because it is a bit mask of fixed length that directly comes from the
+firmware.
 
--	xiic_reinit(i2c);
--
- 	spin_lock_init(&i2c->lock);
- 	init_waitqueue_head(&i2c->wait);
- 	ret = request_irq(irq, xiic_isr, 0, pdev->name, i2c);
-@@ -740,6 +738,8 @@ static int xiic_i2c_probe(struct platform_device *pdev)
- 		goto request_irq_failed;
- 	}
+>> +		/* Request DMA channel mask from device tree */
+>> +		if (of_property_read_u32(pdev->dev.of_node,
+>> +				"brcm,dma-channel-mask",
+>> +				&chans_available)) {
+>> +			dev_err(&pdev->dev, "Failed to get channel mask\n");
+>> +			bcm2835_dma_free(od);
+>> +			return -EINVAL;
+>> +		}
+>> +	} else {
+>> +		dev_err(&pdev->dev, "Failed to get channel mask. No device tree.\n");
+>> +		bcm2835_dma_free(od);
+>> +		return -EINVAL;
+>> +	}
+> 
+>> +	dev_dbg(&pdev->dev, "Initialized %i DMA channels\n", i);
+>> +
+>> +	if (pdev->dev.of_node) {
+> 
+> Does it make sense?
 
-+	xiic_reinit(i2c);
-+
- 	/* add i2c adapter to i2c tree */
- 	ret = i2c_add_adapter(&i2c->adap);
- 	if (ret) {
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-25641-1384776801-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlKKBGEACgkQykllyylKDCG7mACfXy+h8z1oa2+L8E2qRpCW7Xmd
-O44AoJLRiQ2J8ke1wapIM0yOmEh+KErE
-=gyW0
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-25641-1384776801-0001--
+There was already a discussion about that in PATCHv4. It should be
+possible to add board file initialization later with few patching.
+Although, maybe this will not be relevant anymore, because device tree
+support of this platform is getting better more and more.
