@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3KRSht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:37:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57350 "EHLO
+	id S1752152Ab3KRSh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:37:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab3KRSha (ORCPT
+	with ESMTP id S1751986Ab3KRSh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:30 -0500
+	Mon, 18 Nov 2013 13:37:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
+        Jan Beulich <jbeulich@suse.com>, Wei Liu <wei.liu2@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jason Luan <jianhai.luan@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 07/19] tcp: gso: fix truesize tracking
-Date: Mon, 18 Nov 2013 10:37:20 -0800
-Message-Id: <20131118183646.248381899@linuxfoundation.org>
+Subject: [PATCH 3.12 05/19] xen-netback: use jiffies_64 value to calculate credit timeout
+Date: Mon, 18 Nov 2013 10:37:18 -0800
+Message-Id: <20131118183645.605840953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -28,70 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-[ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
+[ Upstream commit 059dfa6a93b779516321e5112db9d7621b1367ba ]
 
-commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
-had an heuristic that can trigger a warning in skb_try_coalesce(),
-because skb->truesize of the gso segments were exactly set to mss.
+time_after_eq() only works if the delta is < MAX_ULONG/2.
 
-This breaks the requirement that
+For a 32bit Dom0, if netfront sends packets at a very low rate, the time
+between subsequent calls to tx_credit_exceeded() may exceed MAX_ULONG/2
+and the test for timer_after_eq() will be incorrect. Credit will not be
+replenished and the guest may become unable to send packets (e.g., if
+prior to the long gap, all credit was exhausted).
 
-skb->truesize >= skb->len + truesizeof(struct sk_buff);
+Use jiffies_64 variant to mitigate this problem for 32bit Dom0.
 
-It can trivially be reproduced by :
-
-ifconfig lo mtu 1500
-ethtool -K lo tso off
-netperf
-
-As the skbs are looped into the TCP networking stack, skb_try_coalesce()
-warns us of these skb under-estimating their truesize.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Alexei Starovoitov <ast@plumgrid.com>
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jason Luan <jianhai.luan@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_offload.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/net/xen-netback/common.h    |    1 +
+ drivers/net/xen-netback/interface.c |    3 +--
+ drivers/net/xen-netback/netback.c   |   10 +++++-----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/tcp_offload.c
-+++ b/net/ipv4/tcp_offload.c
-@@ -18,6 +18,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 				netdev_features_t features)
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -163,6 +163,7 @@ struct xenvif {
+ 	unsigned long   credit_usec;
+ 	unsigned long   remaining_credit;
+ 	struct timer_list credit_timeout;
++	u64 credit_window_start;
+ 
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -312,8 +312,7 @@ struct xenvif *xenvif_alloc(struct devic
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
+-	/* Initialize 'expires' now: it's used to track the credit window. */
+-	vif->credit_timeout.expires = jiffies;
++	vif->credit_window_start = get_jiffies_64();
+ 
+ 	dev->netdev_ops	= &xenvif_netdev_ops;
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1185,9 +1185,8 @@ out:
+ 
+ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
  {
- 	struct sk_buff *segs = ERR_PTR(-EINVAL);
-+	unsigned int sum_truesize = 0;
- 	struct tcphdr *th;
- 	unsigned int thlen;
- 	unsigned int seq;
-@@ -102,13 +103,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 		if (copy_destructor) {
- 			skb->destructor = gso_skb->destructor;
- 			skb->sk = gso_skb->sk;
--			/* {tcp|sock}_wfree() use exact truesize accounting :
--			 * sum(skb->truesize) MUST be exactly be gso_skb->truesize
--			 * So we account mss bytes of 'true size' for each segment.
--			 * The last segment will contain the remaining.
--			 */
--			skb->truesize = mss;
--			gso_skb->truesize -= mss;
-+			sum_truesize += skb->truesize;
- 		}
- 		skb = skb->next;
- 		th = tcp_hdr(skb);
-@@ -125,7 +120,9 @@ struct sk_buff *tcp_tso_segment(struct s
- 	if (copy_destructor) {
- 		swap(gso_skb->sk, skb->sk);
- 		swap(gso_skb->destructor, skb->destructor);
--		swap(gso_skb->truesize, skb->truesize);
-+		sum_truesize += skb->truesize;
-+		atomic_add(sum_truesize - gso_skb->truesize,
-+			   &skb->sk->sk_wmem_alloc);
+-	unsigned long now = jiffies;
+-	unsigned long next_credit =
+-		vif->credit_timeout.expires +
++	u64 now = get_jiffies_64();
++	u64 next_credit = vif->credit_window_start +
+ 		msecs_to_jiffies(vif->credit_usec / 1000);
+ 
+ 	/* Timer could already be pending in rare cases. */
+@@ -1195,8 +1194,8 @@ static bool tx_credit_exceeded(struct xe
+ 		return true;
+ 
+ 	/* Passed the point where we can replenish credit? */
+-	if (time_after_eq(now, next_credit)) {
+-		vif->credit_timeout.expires = now;
++	if (time_after_eq64(now, next_credit)) {
++		vif->credit_window_start = now;
+ 		tx_add_credit(vif);
  	}
  
- 	delta = htonl(oldlen + (skb_tail_pointer(skb) -
+@@ -1208,6 +1207,7 @@ static bool tx_credit_exceeded(struct xe
+ 			tx_credit_callback;
+ 		mod_timer(&vif->credit_timeout,
+ 			  next_credit);
++		vif->credit_window_start = next_credit;
+ 
+ 		return true;
+ 	}
 
 
