@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab3KRU3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:29:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50605 "EHLO
+	id S1752715Ab3KRU3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:29:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50608 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab3KRU2S (ORCPT
+	with ESMTP id S1752453Ab3KRU2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 15:28:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/16] perf completion: factor out compgen stuff
-Date: Mon, 18 Nov 2013 17:27:53 -0300
-Message-Id: <1384806484-29869-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/16] perf completion: factor out call to __ltrim_colon_completions
+Date: Mon, 18 Nov 2013 17:27:54 -0300
+Message-Id: <1384806484-29869-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -25,63 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-compgen is a bash-builtin; factor out the invocations into a separate
-function to give us a chance to override it with a zsh equivalent in
-future patches.
+In our sole callsite, __ltrim_colon_completions is called after
+__perfcomp, to modify the COMPREPLY set by the invocation.
+
+This is problematic, because in the zsh equivalent (using compset/
+compadd), we'll have to generate completions in one-shot.
+
+So factor out this entire callsite into a special override'able
+__perfcomp_colon function; we will override it when introducing zsh
+support.
 
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-3-git-send-email-artagnon@gmail.com
+Link: http://lkml.kernel.org/r/1384704807-15779-4-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/bash_completion | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 3efdc84f112c..824312681601 100644
+index 824312681601..573599b42be2 100644
 --- a/tools/perf/bash_completion
 +++ b/tools/perf/bash_completion
-@@ -89,6 +89,11 @@ __ltrim_colon_completions()
- 	fi
+@@ -94,6 +94,12 @@ __perfcomp ()
+ 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
  }
  
-+__perfcomp ()
++__perfcomp_colon ()
 +{
-+	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
++	__perfcomp "$1" "$2"
++	__ltrim_colon_completions $cur
 +}
 +
  __perf_main ()
  {
  	local cmd
-@@ -99,23 +104,23 @@ __perf_main ()
- 	# List perf subcommands or long options
- 	if [ $cword -eq 1 ]; then
- 		if [[ $cur == --* ]]; then
--			COMPREPLY=( $( compgen -W '--help --version \
-+			__perfcomp '--help --version \
- 			--exec-path --html-path --paginate --no-pager \
--			--perf-dir --work-tree --debugfs-dir' -- "$cur" ) )
-+			--perf-dir --work-tree --debugfs-dir' -- "$cur"
- 		else
- 			cmds=$($cmd --list-cmds)
--			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+			__perfcomp "$cmds" "$cur"
- 		fi
+@@ -114,8 +120,7 @@ __perf_main ()
  	# List possible events for -e option
  	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
  		evts=$($cmd list --raw-dump)
--		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
-+		__perfcomp "$evts" "$cur"
- 		__ltrim_colon_completions $cur
+-		__perfcomp "$evts" "$cur"
+-		__ltrim_colon_completions $cur
++		__perfcomp_colon "$evts" "$cur"
  	# List long option names
  	elif [[ $cur == --* ]];  then
  		subcmd=${words[1]}
- 		opts=$($cmd $subcmd --list-opts)
--		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
-+		__perfcomp "$opts" "$cur"
- 	fi
- }
- 
 -- 
 1.8.1.4
 
