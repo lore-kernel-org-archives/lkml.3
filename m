@@ -1,93 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab3KRJLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:11:33 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2345 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab3KRJLT (ORCPT
+	id S1751341Ab3KRJMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:12:09 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:42044 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3KRJMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:11:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 18 Nov 2013 01:05:26 -0800
-Date: Mon, 18 Nov 2013 10:10:42 +0100
-From: Thierry Reding <treding@nvidia.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-CC: Terje Bergstrom <tbergstrom@nvidia.com>, Dave Airlie <airlied@redhat.com>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: DRM_TEGRA not buildable as a module
-Message-ID: <20131118091042.GB13322@ulmo.nvidia.com>
-References: <CA+5PVA7hq9e2twtQ2e24VvF+KHJ_XS4uVskWRQo+g7z3VpmKXw@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA7hq9e2twtQ2e24VvF+KHJ_XS4uVskWRQo+g7z3VpmKXw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
-Content-Disposition: inline
+	Mon, 18 Nov 2013 04:12:01 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7f866d000001b8c-7c-5289d9dfd98d
+Content-transfer-encoding: 8BIT
+Message-id: <1384765870.26319.16.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
+ merging contiguous read
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?Q?=27=E8=B0=AD=E5=A7=9D=27?= <shu.tan@samsung.com>
+Date: Mon, 18 Nov 2013 18:11:10 +0900
+In-reply-to: <000901cee3fe$edfa8660$c9ef9320$@samsung.com>
+References: <000001cee293$3b6e3030$b24a9090$@samsung.com>
+ <1384734560.26319.10.camel@kjgkr> <000901cee3fe$edfa8660$c9ef9320$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zfd37NzuDDHZsMbD43/SRzeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxpcrr1kL
+	VglV9P38w9rAuJGvi5GDQ0LARGLhc8EuRk4gU0ziwr31bF2MXBxCAssYJc7vXMoEkTCRmHdw
+	KpgtJLCIUaJ7RymIzSsgKPFj8j0WkDnMAvISRy5lg4SZBdQlJs1bxAwx5xWjRMunPjaIel2J
+	GzdbmEFsYYEMicapk1hBetkEtCU27zeAGK8o8Xb/XVYQW0RASeLX/EWsIHOYBZYzSjyffI4F
+	JMEioCox48UOsCJOASuJGSeOsUMs62aUOD73N1iCX0BU4vDC7cwQDyhJ7G7vBCuSELjELjHl
+	xjI2iEkCEt8mH2KBhISsxKYDUPWSEgdX3GCZwCgxC8mfsxD+nIXkzwWMzKsYRVMLkguKk9KL
+	TPWKE3OLS/PS9ZLzczcxQiJv4g7G+wesDzEmA22cyCwlmpwPjNy8knhDYzMjC1MTU2Mjc0sz
+	0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBkXMvHk6NVrSQrv/1hfMTOcw72
+	63fnMyhelFGaa+navaDqb84yoYcS8q8k90lt+6rIUz65tcjy+eqezXuYL3vPn7tW0WNFdcYz
+	JevwF9Jzb/3Y0LlK/nJVjZJIi2NN+iSdX/+KvmrOCPDxczMJ/7fx1JV5S24eaOoPyhW/eFjG
+	+8LvsBYRSW4lluKMREMt5qLiRACHWYyT0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd37NzuDDL5/1bb43/SRzeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8aXK69ZC1YJVfT9/MPawLiRr4uRk0NCwERi3sGpTBC2mMSFe+vZ
+	QGwhgUWMEt07SkFsXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxFzFyMXUPkrRomWT31s
+	EPW6EjdutjCD2MICGRKNUyexgvSyCWhLbN5vADFeUeLt/rusILaIgJLEr/mLWEHmMAssZ5R4
+	PvkcC0iCRUBVYsaLHWBFnAJWEjNOHGOHWNbNKHF87m+wBL+AqMThhduZIR5Qktjd3sk+gVFo
+	FpK7ZyHcPQvJ3QsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf2M6kdjCsbLA4xCnAw
+	KvHwaoR1BgmxJpYVV+YeYpTgYFYS4V1xAyjEm5JYWZValB9fVJqTWnyIMRno8onMUqLJ+cCk
+	k1cSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjCdfNZRq2095
+	9KrocnOjZT1X+6XGk6nn5+0Tfbqw85mj/fxn26rZ/z14YO07qSHfS34r7/GnO1NF/uV0nPU+
+	rzb70PFp3ee3JEy7n+9hd/PQicMbHk56oPhmh6vEijP3T61QOpbst5356I6LNgVzC55vaM36
+	fcuwKYKj9XNgpiy38o2v8hPnZccosRRnJBpqMRcVJwIAYWeO2jADAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Sat, Nov 16, 2013 at 03:25:09PM +0100, Josh Boyer wrote:
-> Hi All,
->=20
-> The commit below seems to have made the Tegra DRM driver a bool option
-> instead of tristate:
->=20
-> commit dee8268f8fb218c9e9b604a40f7dbdd395e910f9
-> Author: Thierry Reding <treding@nvidia.com>
-> Date:   Wed Oct 9 10:32:49 2013 +0200
->=20
->     drm/tegra: Move driver to DRM tree
->=20
->     In order to make subsystem-wide changes easier, move the Tegra DRM
->     driver back into the DRM tree.
->=20
->     Signed-off-by: Thierry Reding <treding@nvidia.com>
->=20
-> That means you can't build the driver as a module.  Was this intended?
->  The changelog doesn't mention anything about that and the existing
-> help text on the option seems to imply it should be buildable as a
-> module.
+2013-11-18 (월), 09:37 +0800, Chao Yu:
+> Hi Kim,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > Sent: Monday, November 18, 2013 8:29 AM
+> > To: Chao Yu
+> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> > Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for merging contiguous read
+> > 
+> > Hi Chao,
+> > 
+> > 2013-11-16 (토), 14:14 +0800, Chao Yu:
+> > > For better read performance, we add a new function to support for merging contiguous read as the one for write.
+> > 
+> > Please consider 80 columns for the description.
+> > I cannot fix this at every time though. :(
+> 
+> Got it, sorry about my carelessness in previous patch.
+> 
+> > 
+> > >
+> > > v1-->v2:
+> > >  o add declarations here as Gu Zheng suggested.
+> > >
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> > > ---
+> > >  fs/f2fs/data.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+> > >  fs/f2fs/f2fs.h |    4 ++++
+> > >  2 files changed, 49 insertions(+)
+> > >
+> > > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> > > index aa3438c..18107cb 100644
+> > > --- a/fs/f2fs/data.c
+> > > +++ b/fs/f2fs/data.c
+> > > @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
+> > >  	return 0;
+> > >  }
+> > >
+> > > +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
+> > > +{
+> > > +	down_read(&sbi->bio_sem);
+> > 
+> > Is there any reason to use down_read()?
+> 
+> Isn't that we use bio_sem to let w/r or w/w submitting be mutex?
 
-This was intended yes. And it wasn't really a change at all, since prior
-to the commit you mention above the DRM driver was always built into the
-host1x driver. That's why I didn't think it necessary to mention it in
-the commit message.
+As I examined the bio_sem, I think we don't need to use a semaphore for
+read and write IOs.
+Just it is enough to use a mutex for writes only.
 
-I have some patches queued for 3.14 to enable the driver to be built as
-a module. There are some dependencies such as symbols that need to be
-exported so that the modules can be linked, so it'll require some amount
-of coordination to make that work out within one release cycle, but I'm
-hopeful that we can do it.
+> 
+> > It seems that we need to declare sbi->bio_read and sbi->bio_write
+> > instead of sbi->bio_sem.
+> > In addition to that, we need to use down_write(&sbi->bio_read) here.
+> 
+> If so, it looks similar between (struct rw_semaphore) sbi->bio_read 
+> and (struct bio *) sbi->read_bio.
+> How about using read_bio_sem/rbio_sem to differentiate 
+> from sbi->read_bio?
 
-Thierry
+I think sbi->write_mutex and sbi->read_mutex are much better.
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: application/pgp-signature
+Could you refer the following patches?
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-- 
+Jaegeuk Kim
+Samsung
 
-iQIcBAEBAgAGBQJSidmSAAoJEN0jrNd/PrOhDzgQAJqdL6UpeZanE9oe1F6vlFuR
-AP6QtLE0MPRxPZxfftC3ZpnNJXuEx5YaxMmT6X59OKOSw7Z+SzsS4fEXymk92AQa
-WKsW4RKR8/NN34OTRleG+E9bQE0oxHEPU3/Du6wtOhLjgePx3U/J5L7KU8zhlmMq
-Ez/na4jDGo0d1TrCNtEu4xSsQORgdAQAUFPLCRVL6+xzjWXMYcparJ3OIqK9NYbN
-L3K6bdb73QCvuaFXn8tS0ELOwZSMohPOnwcWSP6hmF4q8Mm75Hoi3+3zmP+wA1yo
-9ru4ddvuGppmtukYXQ4hsPJQc79E1nC9oIfNNzNRae+fDLh74/2Pugde2ShlkSCF
-7LBEuc8/af6IG61AfPPtqFtDg7RbEah+u0oyaNG7qabr1+HZYI5sQ8A5ulivG1QV
-g83VeqqShSbC5Od6GIM/xiuWDj96ydfze1LH9eUckaBgHL+Wwi+SdtaXtoNbceQt
-863ek/L1TAEBotZpn5NRUKtv9Op3KI82HaGDDIpXPRiq9PGp73BRiEMwM/aJXAdt
-Y5korjbB41aATS2BywCjARO5gA8nT8iWzNu0UciQ4EBEE7AFDitwU3Gnutng71QK
-o3uCvzbOMjHJlzlNzwzsmQhI2FraKmBm03fcozfa8daj5h18vlkqcByo9LL0INPZ
-cFaG1R4TvfDMQvBiXKLb
-=EvEn
------END PGP SIGNATURE-----
-
---Fba/0zbH8Xs+Fj9o--
