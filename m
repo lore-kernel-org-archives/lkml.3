@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3KRSyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:54:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57527 "EHLO
+	id S1753857Ab3KRSyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:54:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab3KRSk5 (ORCPT
+	with ESMTP id S1752722Ab3KRSk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:57 -0500
+	Mon, 18 Nov 2013 13:40:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.11 23/25] usb: fail on usb_hub_create_port_device() errors
-Date: Mon, 18 Nov 2013 10:40:52 -0800
-Message-Id: <20131118184039.408334088@linuxfoundation.org>
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.11 15/25] ALSA: hda - hdmi: Fix reported channel map on common default layouts
+Date: Mon, 18 Nov 2013 10:40:44 -0800
+Message-Id: <20131118184036.883743300@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -27,49 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Mazur <krzysiek@podlesie.net>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit e58547eb9561a8a72d46e2d411090a614d33ac0e upstream.
+commit 56cac413dd6d43af8355f5d1f90a199b540f73fc upstream.
 
-Ignoring usb_hub_create_port_device() errors cause later NULL pointer
-deference when uninitialized hub->ports[i] entries are dereferenced
-after port memory allocation error.
+hdmi_setup_fake_chmap() is supposed to set the reported channel map when
+the channel map is not specified by the user.
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+However, the function indexes channel_allocations[] with a wrong value
+and extracts the wrong nibble from hdmi_channel_mapping[], causing wrong
+channel maps to be shown.
+
+Fix those issues.
+
+Tested on Intel HDMI to correctly generate various channel maps, for
+example 3,4,14,15,7,8,5,6 (instead of incorrect 3,4,8,7,5,6,14,0) for
+standard 7.1 channel audio. (Note that the side and rear channels are
+reported as RL/RR and RLC/RRC, respectively, as per the CEA-861
+standard, instead of the more traditional SL/SR and RL/RR.)
+
+Note that this only fixes the layouts that only contain traditional 7.1
+speakers (2.0, 2.1, 4.0, 5.1, 7.1, etc.). E.g. the rear center of 6.1
+is still being shown wrongly due to an issue with from_cea_slot()
+which will be fixed in a later patch.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1557,10 +1557,15 @@ static int hub_configure(struct usb_hub
- 	if (hub->has_indicators && blinkenlights)
- 		hub->indicator [0] = INDICATOR_CYCLE;
- 
--	for (i = 0; i < hdev->maxchild; i++)
--		if (usb_hub_create_port_device(hub, i + 1) < 0)
-+	for (i = 0; i < hdev->maxchild; i++) {
-+		ret = usb_hub_create_port_device(hub, i + 1);
-+		if (ret < 0) {
- 			dev_err(hub->intfdev,
- 				"couldn't create port%d device.\n", i + 1);
-+			hdev->maxchild = i;
-+			goto fail_keep_maxchild;
-+		}
-+	}
- 
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
- 
-@@ -1569,6 +1574,7 @@ static int hub_configure(struct usb_hub
- 
- fail:
- 	hdev->maxchild = 0;
-+fail_keep_maxchild:
- 	dev_err (hub_dev, "config failed, %s (err %d)\n",
- 			message, ret);
- 	/* hub_disconnect() frees urb and descriptor */
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -738,9 +738,10 @@ static int hdmi_manual_setup_channel_map
+ static void hdmi_setup_fake_chmap(unsigned char *map, int ca)
+ {
+ 	int i;
++	int ordered_ca = get_channel_allocation_order(ca);
+ 	for (i = 0; i < 8; i++) {
+-		if (i < channel_allocations[ca].channels)
+-			map[i] = from_cea_slot((hdmi_channel_mapping[ca][i] >> 4) & 0x0f);
++		if (i < channel_allocations[ordered_ca].channels)
++			map[i] = from_cea_slot(hdmi_channel_mapping[ca][i] & 0x0f);
+ 		else
+ 			map[i] = 0;
+ 	}
 
 
