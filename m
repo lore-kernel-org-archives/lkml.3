@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab3KRJrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:47:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43594 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3KRJrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 04:47:37 -0500
-Date: Mon, 18 Nov 2013 11:50:43 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: netdev@vger.kernel.org, qemu-devel@nongnu.org, rusty@rustcorp.com.au,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] net, virtio_net: replace the magic value
-Message-ID: <20131118095043.GA3470@redhat.com>
-References: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
+	id S1751701Ab3KRJsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:48:46 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49228 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3KRJsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 04:48:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <1384605892-10072-1-git-send-email-acourbot@nvidia.com>
+References: <1384605892-10072-1-git-send-email-acourbot@nvidia.com>
+Date: Mon, 18 Nov 2013 10:48:41 +0100
+Message-ID: <CACRpkdYqdXgVhX80_SEoHRGrpzs2REexykBdxGBXC3CQidAThg@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: use dedicated flags for GPIO properties
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 04:46:20PM +0800, Zhi Yong Wu wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> It is more appropriate to use # of queue pairs currently used by
-> the driver instead of a magic value.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Sat, Nov 16, 2013 at 1:44 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-I don't mind, but driver should be submitted separately
-from qemu patches. As it is only patch 4/4 made it to netdev.
+> GPIO mapping properties were defined using the GPIOF_* flags, which are
+> declared in linux/gpio.h. This file is not included when using the
+> GPIO descriptor interface.
+>
+> This patch declares the flags that can be used as GPIO mappings
+> properties in linux/gpio/driver.h, and uses them in gpiolib, so that no
+> deprecated declarations are used by the GPIO descriptor interface.
+>
+> This patch also allows GPIO_OPEN_DRAIN and GPIO_OPEN_SOURCE to be
+> specified as GPIO mapping properties.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 
-> ---
->  drivers/net/virtio_net.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index cdc7c90..e0cb2d1 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1619,8 +1619,8 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (err)
->  		goto free_stats;
->  
-> -	netif_set_real_num_tx_queues(dev, 1);
-> -	netif_set_real_num_rx_queues(dev, 1);
-> +	netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
-> +	netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
->  
->  	err = register_netdev(dev);
->  	if (err) {
-> -- 
-> 1.7.6.5
-> 
+Applied for fixes.
+
+Yours,
+Linus Walleij
