@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab3KRVvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 16:51:43 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:42628 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3KRVvj convert rfc822-to-8bit (ORCPT
+	id S1751722Ab3KRVzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 16:55:13 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:45236 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3KRVzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 16:51:39 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH v2 2/3] hwrng: OMAP3 ROM Random Number Generator support
-Date: Mon, 18 Nov 2013 22:51:30 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Matt Mackall <mpm@selenic.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com> <20131008190408.GM8313@atomide.com> <20131016125734.GA10906@gondor.apana.org.au>
-In-Reply-To: <20131016125734.GA10906@gondor.apana.org.au>
+	Mon, 18 Nov 2013 16:55:10 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201311182251.35704@pali>
+In-Reply-To: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+References: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Mon, 18 Nov 2013 21:54:54 +0000
+Message-ID: <CANK3SE36i0+NQdEtuO+FFebDKtrBBM=RjzB4WqSun2o1FK3xpA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] staging: et131x: clean up code
+To: ZHAO Gang <gamerh2o@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 October 2013 14:57:34 Herbert Xu wrote:
-> On Tue, Oct 08, 2013 at 12:04:09PM -0700, Tony Lindgren wrote:
-> > * Pali Rohár <pali.rohar@gmail.com> [130920 06:33]:
-> > > This driver provides kernel-side support for the Random
-> > > Number Generator hardware found on OMAP34xx processors.
-> > > 
-> > > This driver comes from Maemo 2.6.28 kernel and was tested
-> > > on Nokia RX-51. It is platform device because it needs
-> > > board specific function for smc calls.
-> > 
-> > This one is should be merged via the hw_random patches
-> > seprately:
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> 
-> Patch applied.  Thanks!
+On Fri, Nov 15, 2013 at 08:27:58PM +0800, ZHAO Gang wrote:
+> 1. change function name: et1310_phy_power_down -> et1310_phy_power_switch
+> change function name to better describe its functionality.
+>
+> 2. as TODO file suggested, do this sort of things to reduce split lines
+> struct fbr_lookup *fbr;
+> fbr = rx_local->fbr[id];
+> Then replace all the instances of "rx_local->fbr[id]" with fbr.
+>
+> 3. delete unnecessary variable in function et131x_init
+> variable u32 numrfd is not necessary in this function.
+>
+> 4. some code style change
+>
+> Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+> ---
+>  drivers/staging/et131x/et131x.c | 209 ++++++++++++++++++++--------------------
+>  1 file changed, 103 insertions(+), 106 deletions(-)
 
-Hello, I still do not see this patch (2/3) in linus tree. But 
-patch 1/3 and 3/3 are already merged. So is there any problem?
+Hi Zhao,
 
--- 
-Pali Rohár
-pali.rohar@gmail.com
+I'm a bit confused - these patches apply to the current head of
+staging-next, but not on top of your previous two patches. I assume that
+you're aiming to have these changes on top of your last two, so can you
+please re-spin them to apply cleanly to the head of (staging-next + your
+previous patches)?
+
+Cheers,
+
+Mark
