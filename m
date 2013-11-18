@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3KRUdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:33:00 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60054 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab3KRUc6 (ORCPT
+	id S1753038Ab3KRUdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:33:08 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37182 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753011Ab3KRUdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:32:58 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH 0/8] perf: sched timehist command
-Date: Mon, 18 Nov 2013 13:32:43 -0700
-Message-Id: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Mon, 18 Nov 2013 15:33:03 -0500
+Message-ID: <528A797B.6020807@hurleysoftware.com>
+Date: Mon, 18 Nov 2013 15:32:59 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Heorhi Valakhanovich <valahanovich@tut.by>
+CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] tty: Only hangup once
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>	<20131117203850.46df2124@tormoz-pc> <20131118134211.17861db3@alan.etchedpixels.co.uk> <528A5043.6030901@hurleysoftware.com>
+In-Reply-To: <528A5043.6030901@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the latest incarnation of the timehist command; this time integrated
-into perf-sched. Patches can also be found here:
+On 11/18/2013 12:37 PM, Peter Hurley wrote:
+> On 11/18/2013 08:42 AM, One Thousand Gnomes wrote:
+>>> After upgrading to kernel 3.12 I noticed one issue with tmux software.
+>>> The easiest way to reproduce will be:
+>>> 1. Start tmux session as root.
+>>> 2. Connect via ssh and use "tmux attach" to attach to the running
+>>> session.
+>>> 3. Kill ssh client.
+>
+> Heorhi,
+>
+> Thanks for the report.
+>
+>>> You can notice that shell (zsh in my case) and "tmux attach" are still
+>>> remains in process' list. That didn't happen in previous kernels.
 
-    https://github.com/dsahern/linux perf-timehist
+Heorhi,
 
-I have other options ready to go, but this seems like a good point to push
-out for review.
+I could not reproduce this behavior with zsh or bash.
 
-David Ahern (8):
-  perf tool: Skip ignored symbols while printing callchain
-  perf symbols: Move idle syms check from top to generic function
-  perf symbol: Save vmlinux or kallsyms path loaded
-  perf thread: Move comm_list check into function
-  perf tool: export setup_list
-  perf sched: Introduce timehist command
-  perf sched timehist: Add support for context-switch event
-  perf sched : Add documentation for timehist options
+In case I misunderstood, the steps I took to reproduce were,
 
- tools/perf/Documentation/perf-sched.txt |   60 +-
- tools/perf/builtin-sched.c              | 1002 ++++++++++++++++++++++++++++++-
- tools/perf/builtin-top.c                |   25 +-
- tools/perf/util/event.c                 |    3 +-
- tools/perf/util/session.c               |   10 +-
- tools/perf/util/symbol.c                |   39 +-
- tools/perf/util/symbol.h                |    4 +
- tools/perf/util/thread.h                |   12 +
- 8 files changed, 1124 insertions(+), 31 deletions(-)
+[On ssh server machine running 3.12]
+1.  Add 'set-option -g default-shell /usr/bin/zsh' to /etc/tmux.conf
+2a. In terminal window, 'sudo tmux'
+       - also tried -
+2b. At root login on tty2, 'tmux'
 
--- 
-1.8.3.4 (Apple Git-47)
+Successfully starts tmux session. Then,
+
+[On ssh client machine]
+1. 'ssh user@server'
+2. 'sudo tmux attach'
+3. Switch to 2nd terminal window,
+4. ps -ef | grep ssh
+5. kill $pid_from_step4
+
+This *did not* leave the 'tmux attach' process alive.
+
+Is zsh your login shell as well? Maybe that's the required
+component to reproduce the behavior you've observed.
+
+Regards,
+Peter Hurley
+
+
+
 
