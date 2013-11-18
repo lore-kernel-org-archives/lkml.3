@@ -1,66 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3KRSwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:52:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53911 "EHLO mx1.redhat.com"
+	id S1753793Ab3KRSwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:52:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54732 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab3KRSwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:52:40 -0500
-Date: Mon, 18 Nov 2013 13:52:24 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131118185224.GD32168@redhat.com>
-References: <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
- <5285C639.5040203@zytor.com>
- <20131115140738.GB6637@redhat.com>
- <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
- <52865CA1.5020309@zytor.com>
- <20131115183002.GE6637@redhat.com>
- <52866C0D.3050006@zytor.com>
- <52867309.4040406@zytor.com>
- <20131118152255.GA32168@redhat.com>
- <528A5C7E.5080007@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752996Ab3KRSwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 13:52:46 -0500
+Date: Mon, 18 Nov 2013 13:51:54 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Mel Gorman <mgorman@suse.de>
+Message-ID: <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+References: <20131115225550.737E5C33@viggo.jf.intel.com>
+ <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+Subject: Re: [v3][PATCH 2/2] mm: thp: give transparent hugepage code aseparate
+ copy_page
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <528A5C7E.5080007@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 10:29:18AM -0800, H. Peter Anvin wrote:
-> On 11/18/2013 07:22 AM, Vivek Goyal wrote:
-> > 
-> > And if that's true, then reserving 72M extra due to crashkernel=X,high
-> > should not be a big issue in KVM guests. It will still be an issue on
-> > physical servers though.
-> > 
+On Fri, Nov 15, 2013 at 02:55:53PM -0800, Dave Hansen wrote:
 > 
-> Yes, but there it is a single instance and not a huge amount of RAM.
+> Changes from v2:
+>  * 
+> Changes from v1:
+>  * removed explicit might_sleep() in favor of the one that we
+>    get from the cond_resched();
+> 
+> --
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Right now, the migration code in migrate_page_copy() uses
+> copy_huge_page() for hugetlbfs and thp pages:
+> 
+>        if (PageHuge(page) || PageTransHuge(page))
+>                 copy_huge_page(newpage, page);
+> 
+> So, yay for code reuse.  But:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+> 
+> and a non-hugetlbfs page has no page_hstate().  This works 99% of
+> the time because page_hstate() determines the hstate from the
+> page order alone.  Since the page order of a THP page matches the
+> default hugetlbfs page order, it works.
+> 
+> But, if you change the default huge page size on the boot
+> command-line (say default_hugepagesz=1G), then we might not even
+> *have* a 2MB hstate so page_hstate() returns null and
+> copy_huge_page() oopses pretty fast since copy_huge_page()
+> dereferences the hstate:
+> 
+> void copy_huge_page(struct page *dst, struct page *src)
+> {
+>         struct hstate *h = page_hstate(src);
+>         if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+> ...
+> 
+> Mel noticed that the migration code is really the only user of
+> these functions.  This moves all the copy code over to migrate.c
+> and makes copy_huge_page() work for THP by checking for it
+> explicitly.
+> 
+> I believe the bug was introduced in b32967ff101:
+> Author: Mel Gorman <mgorman@suse.de>
+> Date:   Mon Nov 19 12:35:47 2012 +0000
+> mm: numa: Add THP migration for the NUMA working set scanning fault case.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-Agreed. But for some people it is. For example, we don't enable kdump
-by default on fedora. Often people don't like 128MB of their laptop
-memory not being used. And I have been thinking how to reduce memory
-usage further so that I can enable kdump by default on Fedora.
+Looks good to me with a few comments below. Thanks.
 
-Instead, now this 72MB increase come in picture which does not bring
-us any benefit for most of the people. Only people who benefit from
-it are large memory servers and everybody else (having memory more
-than 4G) pays this penalty.
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-I rather prefer that this penalty of 72M is paid only by those who need
-to have memory reservation above 4G.
+> ---
+> 
+>  linux.git-davehans/include/linux/hugetlb.h |    4 --
+>  linux.git-davehans/mm/hugetlb.c            |   34 --------------------
+>  linux.git-davehans/mm/migrate.c            |   48 +++++++++++++++++++++++++++++
+>  3 files changed, 48 insertions(+), 38 deletions(-)
+> 
+> diff -puN mm/migrate.c~copy-huge-separate-from-copy-transhuge mm/migrate.c
+> --- linux.git/mm/migrate.c~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.256970259 -0800
+> +++ linux.git-davehans/mm/migrate.c	2013-11-15 14:45:17.457963844 -0800
+> @@ -442,6 +442,54 @@ int migrate_huge_page_move_mapping(struc
+>  }
+>  
+>  /*
+> + * Gigantic pages are so large that the we do not guarantee
 
-Thanks
-Vivek
+s/the // ?
+
+> + * that page++ pointer arithmetic will work across the
+> + * entire page.  We need something more specialized.
+> + */
+> +static void __copy_gigantic_page(struct page *dst, struct page *src,
+> +				int nr_pages)
+> +{
+> +	int i;
+> +	struct page *dst_base = dst;
+> +	struct page *src_base = src;
+> +
+> +	for (i = 0; i < nr_pages; ) {
+> +		cond_resched();
+
+I think that this cond_resched() seems to be called too often.
+One cond_resched() per MAX_ORDER_NR_PAGES pages copy looks better
+than per single page copy. So I'll post a separate patch for this
+which is appled on top of your patches.
+
+> +		copy_highpage(dst, src);
+> +
+> +		i++;
+> +		dst = mem_map_next(dst, dst_base, i);
+> +		src = mem_map_next(src, src_base, i);
+> +	}
+> +}
+> +
+> +static void copy_huge_page(struct page *dst, struct page *src)
+> +{
+> +	int i;
+> +	int nr_pages;
+> +
+> +	if (PageHuge(src)) {
+> +		/* hugetlbfs page */
+> +		struct hstate *h = page_hstate(src);
+> +		nr_pages = pages_per_huge_page(h);
+> +
+> +		if (unlikely(nr_pages > MAX_ORDER_NR_PAGES)) {
+> +			__copy_gigantic_page(dst, src, nr_pages);
+> +			return;
+> +		}
+> +	} else {
+> +		/* thp page */
+> +		BUG_ON(!PageTransHuge(src));
+> +		nr_pages = hpage_nr_pages(src);
+> +	}
+> +
+> +	for (i = 0; i < nr_pages; i++ ) {
+
+Coding style violation?
+
+  ERROR: space prohibited before that close parenthesis ')'
+  #177: FILE: mm/migrate.c:486:                            
+  +       for (i = 0; i < nr_pages; i++ ) {                
+
+Thanks,
+Naoya Horiguchi
+
+> +		cond_resched();
+> +		copy_highpage(dst + i, src + i);
+> +	}
+> +}
+> +
+> +/*
+>   * Copy the page to its new location
+>   */
+>  void migrate_page_copy(struct page *newpage, struct page *page)
+> diff -puN mm/hugetlb.c~copy-huge-separate-from-copy-transhuge mm/hugetlb.c
+> --- linux.git/mm/hugetlb.c~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.261970484 -0800
+> +++ linux.git-davehans/mm/hugetlb.c	2013-11-15 14:44:55.389976227 -0800
+> @@ -476,40 +476,6 @@ static int vma_has_reserves(struct vm_ar
+>  	return 0;
+>  }
+>  
+> -static void copy_gigantic_page(struct page *dst, struct page *src)
+> -{
+> -	int i;
+> -	struct hstate *h = page_hstate(src);
+> -	struct page *dst_base = dst;
+> -	struct page *src_base = src;
+> -
+> -	for (i = 0; i < pages_per_huge_page(h); ) {
+> -		cond_resched();
+> -		copy_highpage(dst, src);
+> -
+> -		i++;
+> -		dst = mem_map_next(dst, dst_base, i);
+> -		src = mem_map_next(src, src_base, i);
+> -	}
+> -}
+> -
+> -void copy_huge_page(struct page *dst, struct page *src)
+> -{
+> -	int i;
+> -	struct hstate *h = page_hstate(src);
+> -
+> -	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+> -		copy_gigantic_page(dst, src);
+> -		return;
+> -	}
+> -
+> -	might_sleep();
+> -	for (i = 0; i < pages_per_huge_page(h); i++) {
+> -		cond_resched();
+> -		copy_highpage(dst + i, src + i);
+> -	}
+> -}
+> -
+>  static void enqueue_huge_page(struct hstate *h, struct page *page)
+>  {
+>  	int nid = page_to_nid(page);
+> diff -puN include/linux/hugetlb.h~copy-huge-separate-from-copy-transhuge include/linux/hugetlb.h
+> --- linux.git/include/linux/hugetlb.h~copy-huge-separate-from-copy-transhuge	2013-11-15 14:44:55.263970574 -0800
+> +++ linux.git-davehans/include/linux/hugetlb.h	2013-11-15 14:44:55.325973356 -0800
+> @@ -69,7 +69,6 @@ int dequeue_hwpoisoned_huge_page(struct
+>  bool isolate_huge_page(struct page *page, struct list_head *list);
+>  void putback_active_hugepage(struct page *page);
+>  bool is_hugepage_active(struct page *page);
+> -void copy_huge_page(struct page *dst, struct page *src);
+>  
+>  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+>  pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
+> @@ -140,9 +139,6 @@ static inline int dequeue_hwpoisoned_hug
+>  #define isolate_huge_page(p, l) false
+>  #define putback_active_hugepage(p)	do {} while (0)
+>  #define is_hugepage_active(x)	false
+> -static inline void copy_huge_page(struct page *dst, struct page *src)
+> -{
+> -}
+>  
+>  static inline unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+>  		unsigned long address, unsigned long end, pgprot_t newprot)
+> _
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
