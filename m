@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab3KRO4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 09:56:22 -0500
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:52367 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751030Ab3KRO4Q (ORCPT
+	id S1751623Ab3KRO43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 09:56:29 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:52738 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3KRO4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 09:56:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <4103ca6ab0e769ce07a327fcb5ade0d1@www.loen.fr>
-References: <1384780949-10922-1-git-send-email-vkale@apm.com>
-	<1384780949-10922-3-git-send-email-vkale@apm.com>
-	<3545e6650079200b6b364df14ef14a4f@www.loen.fr>
-	<CAPrCYkf0KH0zKFrFwG6XK1Kz2dsKUZC1wL5ONhNGvY3BLM8QGQ@mail.gmail.com>
-	<4103ca6ab0e769ce07a327fcb5ade0d1@www.loen.fr>
-Date: Mon, 18 Nov 2013 20:26:15 +0530
-Message-ID: <CAPrCYkdgkwt5mi9kd038cYRcunL4_ujNwjwmqhuu=GjUjuHVDQ@mail.gmail.com>
-Subject: Re: [PATCH V3 2/2] arm64: perf: add support for percpu pmu interrupt
-From: Vinayak Kale <vkale@apm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>, patches <patches@apm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>, tglx <tglx@linutronix.de>,
-        Tuan Phan <tphan@apm.com>,
+	Mon, 18 Nov 2013 09:56:21 -0500
+Date: Mon, 18 Nov 2013 14:56:14 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        angus.clark@st.com
+Subject: Re: [PATCH 02/10] mtd: st_spi_fsm: Supply all register address and
+ bit logic defines
+Message-ID: <20131118145614.GM13640@lee--X1>
+References: <1384438956-31153-1-git-send-email-lee.jones@linaro.org>
+ <1384438956-31153-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaccxcTfKc-y7rPEH1H3yua3ubLvuvTzWnMs1rOwjiVNw@mail.gmail.com>
+ <20131118093229.GB13640@lee--X1>
+ <20131118133940.GC14306@sirena.org.uk>
+ <20131118142447.GJ13640@lee--X1>
+ <20131118144512.GB24408@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131118144512.GB24408@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 8:10 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> On 2013-11-18 14:18, Vinayak Kale wrote:
->>
->> On Mon, Nov 18, 2013 at 7:16 PM, Marc Zyngier <marc.zyngier@arm.com>
->> wrote:
->>>
->>> Vinayak,
->>>
->>>
->>> On 2013-11-18 13:22, Vinayak Kale wrote:
->>>>
->>>>
->>>> Add support for irq registration when pmu interrupt is percpu.
->>>>
->>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
->>>> Signed-off-by: Tuan Phan <tphan@apm.com>
->>>> ---
->>>>  arch/arm64/kernel/perf_event.c |  102
->>>> +++++++++++++++++++++++++++++-----------
->>>>  1 file changed, 74 insertions(+), 28 deletions(-)
->>>>
->>>> diff --git a/arch/arm64/kernel/perf_event.c
->>>> b/arch/arm64/kernel/perf_event.c
->>>> index cea1594..23475f6 100644
->>>> --- a/arch/arm64/kernel/perf_event.c
->>>> +++ b/arch/arm64/kernel/perf_event.c
->>>> @@ -22,6 +22,7 @@
->>>>
->>>>  #include <linux/bitmap.h>
->>>>  #include <linux/interrupt.h>
->>>> +#include <linux/irq.h>
->>>>  #include <linux/kernel.h>
->>>>  #include <linux/export.h>
->>>>  #include <linux/perf_event.h>
->>>> @@ -363,22 +364,51 @@ validate_group(struct perf_event *event)
->>>>  }
->>>>
->>>>  static void
->>>> +armpmu_disable_percpu_irq(void *data)
->>>> +{
->>>> +       struct arm_pmu *armpmu = data;
->>>> +       struct platform_device *pmu_device = armpmu->plat_device;
->>>> +       int irq = platform_get_irq(pmu_device, 0);
->>>> +
->>>> +       cpumask_test_and_clear_cpu(smp_processor_id(),
->>>> &armpmu->active_irqs);
->>>> +       disable_percpu_irq(irq);
->>>> +}
->>>> +
->>>> +static void
->>>>  armpmu_release_hardware(struct arm_pmu *armpmu)
->>>>  {
->>>>         int i, irq, irqs;
->>>>         struct platform_device *pmu_device = armpmu->plat_device;
->>>>
->>>> -       irqs = min(pmu_device->num_resources, num_possible_cpus());
->>>> +       irq = platform_get_irq(pmu_device, 0);
->>>>
->>>> -       for (i = 0; i < irqs; ++i) {
->>>> -               if (!cpumask_test_and_clear_cpu(i,
->>>> &armpmu->active_irqs))
->>>> -                       continue;
->>>> -               irq = platform_get_irq(pmu_device, i);
->>>> -               if (irq >= 0)
->>>> -                       free_irq(irq, armpmu);
->>>> +       if (irq_to_desc(irq) && irq_is_percpu(irq)) {
->>>
->>>
->>>
->>> Why do you need to check the irq_desc here? It really looks like a misuse
->>> of
->>> the API.
->>
->> I don't think it's being misused. In case of invalid irq number, the
->> API would return null.
->
->
-> And feeding an error code to irq_to_desc() doesn't disturb you?
-Since the API handles the error condition and returns null, so it
-won't break stuff.
-But I think your earlier suggestion of checking invalid irq number
-beforehand is better, since it would help to avoid wasting time in
-searching the irq desc.
-> Do you call that a normal use of the API? Humfff....
->
->         M.
->
-> --
-> Fast, cheap, reliable. Pick two.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Mon, 18 Nov 2013, Mark Brown wrote:
+
+> On Mon, Nov 18, 2013 at 02:24:47PM +0000, Lee Jones wrote:
+> 
+> > For example, we have thought about inserting a layer which handles the
+> > type of communication that'll be utilised i.e. true SPI, or our
+> > bespoke FSM implementation for instance. This would enable us to issue
+> > serial_flash_write(), serial_flash_write_then_read(), ... in the m25p80
+> > driver and not care which protocol is used. However, in reality this
+> > won't really save a great deal of code - not in our case at least.
+> 
+> Right, that's what I'm suggesting.  It's not so much for the code saving
+> as for the data saving, allowing device trees that just say "flash chip
+> X is connected" rather than requiring either the flash chip information
+> in multiple places in the kernel or (worse) have the commands added to
+> the DTs of individual boards using the flash chip.
+
+I think it's a good idea for people using the m25p80, but still
+doesn't effect us. All of our chips are dynamically probable. We are
+moving completely away from saying anything is connected using DT or
+platform data. The FSM will be registered and will dynamically add
+devices based on what it can find. We have no plans to use any of the
+m25p80 functionality, as it's almost completely different.
+
+I'm keen on the reuse of frameworks and abstracting common code, but
+there just isn't any in our case.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
