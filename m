@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3KRRLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:11:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43108 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab3KRRK4 (ORCPT
+	id S1751965Ab3KRRNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:13:18 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51627 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab3KRRNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:10:56 -0500
-Date: Mon, 18 Nov 2013 17:10:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>, Tomasz Figa <t.figa@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
-Message-ID: <20131118171023.GH16735@n2100.arm.linux.org.uk>
-References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com> <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com> <52898417.80601@nvidia.com> <20131118115842.GE4050@arm.com> <528A4869.2020701@wwwdotorg.org>
+	Mon, 18 Nov 2013 12:13:14 -0500
+Date: Mon, 18 Nov 2013 18:13:10 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, tytso@mit.edu,
+        adilger.kernel@dilger.ca
+Subject: Re: perf bug: bad page map
+Message-ID: <20131118171310.GA28736@gmail.com>
+References: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu>
+ <20131118151746.GC10022@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1311181138390.18020@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528A4869.2020701@wwwdotorg.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.10.1311181138390.18020@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 10:03:37AM -0700, Stephen Warren wrote:
-> On 11/18/2013 04:58 AM, Catalin Marinas wrote:
-> ...
-> > Of course, trusted foundations interface could be plugged into cpu_ops
-> > on arm64 but I will NAK it on the grounds of not using the PSCI API, nor
-> > the SMC calling convention (and it's easy to fix when porting to ARMv8).
-> > If a supported standard API is used, then there is no need for
-> > additional code in the kernel.
-> 
-> What happens when someone takes an existing working secure-mode SW stack
-> and simply re-uses it on some new ARMv8 SoC. Are you going to force
-> people working on upstream to re-write the secure mode firmware in
-> shipped hardware before allowing upstream kernel support?
 
-I'll tell you what will happen.  They'll say "screw mainline, we're doing
-our own thing".  Vendors have been doing that for years, this will be no
-different and require no additional effort from them.
+* Vince Weaver <vincent.weaver@maine.edu> wrote:
+
+> On Mon, 18 Nov 2013, Peter Zijlstra wrote:
+> 
+> > On Fri, Nov 15, 2013 at 01:04:23PM -0500, Vince Weaver wrote:
+> > > 
+> > > (figured out the minicom issue).
+> > > 
+> > > Anyway while trying to reproduce the last bug I instead got this with
+> > > the perf_fuzzer.
+> > > 
+> > > Is it worth continuing to run and report these issues?  I'm losing track 
+> > > of all the open bugs.
+> > 
+> > This is looks like ext4. Not entirely sure how perf ties into this.
+> 
+> It's believable the filesystem could have issues (it's a fuzzer 
+> machine, so it's had 100+ unclean shutdowns on an SSD drive in the 
+> past few months) but as far as I know there shouldn't have been any 
+> filesystem accesses happening at all when the bug triggered.
+> 
+> I thought it might be perf related due to the perf references in the 
+> backtrace (and since it was being perf-fuzzed at the time).
+
+Maybe the connection is that ext4 has lots of tracepoints?
+
+Thanks,
+
+	Ingo
