@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab3KRUYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:24:50 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43297 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab3KRUYs (ORCPT
+	id S1752181Ab3KRU0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:26:14 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:11455 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab3KRU0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:24:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384805151.5181.82.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1384523146-9290-1-git-send-email-roberto.sassu@polito.it>
-	<1384523146-9290-6-git-send-email-roberto.sassu@polito.it>
-	<CACE9dm9CjjLkv4oh7vpm=AiHSRfuouEkOrMaRpv3EA_c1_LO=A@mail.gmail.com>
-	<1384789840.5181.76.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<CACE9dm8n2fyOuMcgVM7NGpptP-G9WhHnh-NR0bsTQO4bG3XCuQ@mail.gmail.com>
-	<1384805151.5181.82.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Mon, 18 Nov 2013 22:24:46 +0200
-Message-ID: <CACE9dm8tUtz9eA_cyDOZW_9Ku0SuxjmqqhJcABb=8jpEtT4FtQ@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ima: do not include field length in template digest
- calc for ima template
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Roberto Sassu <roberto.sassu@polito.it>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ima-devel@lists.sourceforge.net, Mimi Zohar <zohar@us.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, james.l.morris@oracle.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Nov 2013 15:26:10 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-60-528a77e0e644
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-security-module@vger.kernel.org,
+        zohar@linux.vnet.ibm.com, jmorris@namei.org
+Cc: dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 0/2] ima: directory integrity appraisal
+Date: Mon, 18 Nov 2013 22:24:57 +0200
+Message-id: <cover.1384806012.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xy7oPyruCDJqWqlnc+ruX2eLL0jqL
+	desXM1ns2XuSxeLyrjlsFh96HrFZnP97nNXi04pJzA4cHjtn3WX3eHBoM4tHz/dkj74tqxg9
+	Pm+S89j05C1TAFsUl01Kak5mWWqRvl0CV8aNjpiCVrGKHVvesTUw7hHsYuTkkBAwkbi7fikj
+	hC0mceHeerYuRi4OIYGljBLT102DcrqZJJoWfmUDqWIT0JPY0PyDHSQhIrCBUeLb3hdg7cwC
+	7hIbft5hBrGFBcwl9k28yAJiswioStx79x8szitgKXG3v4sVYp2CxLIva5knMHIvYGRYxSia
+	WppcUJyUnmukV5yYW1yal66XnJ+7iRESNl93MC49ZnWIUYCDUYmHd6J7V5AQa2JZcWXuIUYJ
+	DmYlEd7fpUAh3pTEyqrUovz4otKc1OJDjEwcnFINjGufq8mdMDK6OmFFLc9sfjPFVb6ub9Su
+	31CK1DD/4K9zUl61t9djW07IhB590zlpS7+JmjIc9dyUekCSbeFN0UX/JfgOqDH9z0zg0GXc
+	9MXFNza+7ZjTzxfCZXuM92XxOiaffat3bkpYaLSioJHTukkXbVosep8cSVs0kXHZ+4lin1g/
+	7aiep8RSnJFoqMVcVJwIAOJvWib5AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 10:05 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Mon, 2013-11-18 at 21:40 +0200, Dmitry Kasatkin wrote:
->> On Mon, Nov 18, 2013 at 5:50 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> > On Mon, 2013-11-18 at 17:30 +0200, Dmitry Kasatkin wrote:
->> >> On Fri, Nov 15, 2013 at 3:45 PM, Roberto Sassu <roberto.sassu@polito.it> wrote:
->> >
->> >> > @@ -160,12 +161,13 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
->> >> >                 return rc;
->> >> >
->> >> >         for (i = 0; i < num_fields; i++) {
->> >> > -               rc = crypto_shash_update(&desc.shash,
->> >> > -                                        (const u8 *) &field_data[i].len,
->> >> > -                                        sizeof(field_data[i].len));
->> >> > -               if (rc)
->> >> > -                       break;
->> >> > -
->> >> > +               if (strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
->> >> > +                       rc = crypto_shash_update(&desc.shash,
->> >> > +                                               (const u8 *) &field_data[i].len,
->> >> > +                                               sizeof(field_data[i].len));
->> >> > +                       if (rc)
->> >> > +                               break;
->> >> > +               }
->> >>
->> >> What was actually the point in including field length in the hash calculation?
->> >> Does it really make it cryptographically stronger?
->> >> If not then remove it at all...
->> >
->> > We should be able to walk the measurement list without needing to
->> > understand template specific data.  All of the template data, including
->> > the field lengths, needs to be included in the template hash.
->> >
->>
->> Sorry, how adding field length helps walking measurement list?
->> It makes it even more tricky...
->
-> The new template architecture adds sending the field length.
->
->> Previously, I could calculate the hash over the whole template data
->> from binary_measurement_list to get template hash.
->
->> Now every field must be processed separately to get template hash...
->
-> You still calculate the template hash based on the entire template data,
-> including the lengths.  Without including the lengths in the hash
-> calculation, you would need to parse the individual template field
-> data.
+Hello,
 
-Right.. Exactly reverse.. Yes, binary measurement list includes length field..
-My mistake here...
+This patchset provides extension to IMA to protect appraisal of directories.
+
+Both IMA-appraisal and EVM protect the integrity of regular files.
+IMA protects file data integrity, while EVM protects the file meta-data
+integrity, such as file attributes and extended attributes. This patch
+set adds offline directory integrity protection.
+
+An inode itself does not have any file name associated with it. The
+association of the file name to inode is done via directory entries.
+On a running system, mandatory and/or discretionary access control prevent
+unprivileged file deletion, file name change, or hardlink creation.
+In an offline attack, without these protections, the association between
+a file name and an inode is unprotected. Files can be deleted, renamed
+or moved from one directory to another. In all of these cases,
+the integrity of the file data and metadata are good.
+
+To prevent such attacks, it is necessary to protect the integrity of the
+directory content.  This patchset calculates a hash of the directory content
+and verify this hash against good reference value stored in 'security.ima'
+extended attribute. The directory hash is a hash over the list of directory
+entries, that includes name, ino, d_type. Initial idea how to calculate the
+directory hash was suggested by Jayant Mangalampalli (Intel).
+
+This patchset adds 2 new hooks for directory integrity protection:
+ima_dir_check() and ima_dir_update().
+
+ima_dir_check() verifies the directory integrity during the initial path
+lookup, when the dentry is just being created and may block. It allocates
+the needed data structures and performs the integrity verification.
+The results of which are cached. Subsequent calls mostly happen under
+RCU locking, when the code may not block, and returns immediately with
+the cached verification status. So ima_dir_check() does not interrupt
+RCU path walk.
+
+ima_dir_update(), which is called from several places in namei.c when
+the directory content is changing, for updating the directory hash.
 
 - Dmitry
 
->
-> Mimi
->
+Dmitry Kasatkin (2):
+  ima: hooks for directory integrity protection
+  ima: directory integrity protection implementation
 
-
+ fs/namei.c                          |  42 ++++-
+ fs/open.c                           |   6 +
+ include/linux/ima.h                 |  23 +++
+ net/unix/af_unix.c                  |   2 +
+ security/integrity/ima/Kconfig      |  10 +
+ security/integrity/ima/Makefile     |   1 +
+ security/integrity/ima/ima.h        |   3 +-
+ security/integrity/ima/ima_dir.c    | 358 ++++++++++++++++++++++++++++++++++++
+ security/integrity/ima/ima_main.c   |   3 +
+ security/integrity/ima/ima_policy.c |   2 +
+ 10 files changed, 446 insertions(+), 4 deletions(-)
+ create mode 100644 security/integrity/ima/ima_dir.c
 
 -- 
-Thanks,
-Dmitry
+1.8.3.2
+
