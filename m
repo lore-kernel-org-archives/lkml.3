@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3KRSr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:47:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57638 "EHLO
+	id S1753001Ab3KRSso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:48:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab3KRSme (ORCPT
+	with ESMTP id S1753016Ab3KRSm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:42:34 -0500
+	Mon, 18 Nov 2013 13:42:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kaplansky <victork@il.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, michael@ellerman.id.au,
-        anton@samba.org, benh@kernel.crashing.org
-Subject: [PATCH 3.10 16/24] perf: Fix perf ring buffer memory ordering
-Date: Mon, 18 Nov 2013 10:42:26 -0800
-Message-Id: <20131118184223.209489760@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 10/24] xen-netback: transition to CLOSED when removing a VIF
+Date: Mon, 18 Nov 2013 10:42:20 -0800
+Message-Id: <20131118184222.766362590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184222.017393843@linuxfoundation.org>
 References: <20131118184222.017393843@linuxfoundation.org>
@@ -33,109 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit bf378d341e4873ed928dc3c636252e6895a21f50 upstream.
+[ Upstream commit dc62ccaccfb139d9b04bbc5a2688a4402adbfab3 ]
 
-The PPC64 people noticed a missing memory barrier and crufty old
-comments in the perf ring buffer code. So update all the comments and
-add the missing barrier.
+If a guest is destroyed without transitioning its frontend to CLOSED,
+the domain becomes a zombie as netback was not grant unmapping the
+shared rings.
 
-When the architecture implements local_t using atomic_long_t there
-will be double barriers issued; but short of introducing more
-conditional barrier primitives this is the best we can do.
+When removing a VIF, transition the backend to CLOSED so the VIF is
+disconnected if necessary (which will unmap the shared rings etc).
 
-Reported-by: Victor Kaplansky <victork@il.ibm.com>
-Tested-by: Victor Kaplansky <victork@il.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: michael@ellerman.id.au
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: anton@samba.org
-Cc: benh@kernel.crashing.org
-Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Michael Neuling <mikey@neuling.org>
+This fixes a regression introduced by
+279f438e36c0a70b23b86d2090aeec50155034a9 (xen-netback: Don't destroy
+the netdev until the vif is shut down).
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Paul Durrant <Paul.Durrant@citrix.com>
+Acked-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by:  Paul Durrant <paul.durrant@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/xen-netback/xenbus.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 009a655a5d35..2fc1602e23bb 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -456,13 +456,15 @@ struct perf_event_mmap_page {
- 	/*
- 	 * Control data for the mmap() data buffer.
- 	 *
--	 * User-space reading the @data_head value should issue an rmb(), on
--	 * SMP capable platforms, after reading this value -- see
--	 * perf_event_wakeup().
-+	 * User-space reading the @data_head value should issue an smp_rmb(),
-+	 * after reading this value.
- 	 *
- 	 * When the mapping is PROT_WRITE the @data_tail value should be
--	 * written by userspace to reflect the last read data. In this case
--	 * the kernel will not over-write unread data.
-+	 * written by userspace to reflect the last read data, after issueing
-+	 * an smp_mb() to separate the data read from the ->data_tail store.
-+	 * In this case the kernel will not over-write unread data.
-+	 *
-+	 * See perf_output_put_handle() for the data ordering.
- 	 */
- 	__u64   data_head;		/* head in the data section */
- 	__u64	data_tail;		/* user-space written tail */
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index cd55144270b5..9c2ddfbf4525 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -87,10 +87,31 @@ again:
- 		goto out;
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -39,11 +39,15 @@ static int connect_rings(struct backend_
+ static void connect(struct backend_info *);
+ static void backend_create_xenvif(struct backend_info *be);
+ static void unregister_hotplug_status_watch(struct backend_info *be);
++static void set_backend_state(struct backend_info *be,
++			      enum xenbus_state state);
  
- 	/*
--	 * Publish the known good head. Rely on the full barrier implied
--	 * by atomic_dec_and_test() order the rb->head read and this
--	 * write.
-+	 * Since the mmap() consumer (userspace) can run on a different CPU:
-+	 *
-+	 *   kernel				user
-+	 *
-+	 *   READ ->data_tail			READ ->data_head
-+	 *   smp_mb()	(A)			smp_rmb()	(C)
-+	 *   WRITE $data			READ $data
-+	 *   smp_wmb()	(B)			smp_mb()	(D)
-+	 *   STORE ->data_head			WRITE ->data_tail
-+	 *
-+	 * Where A pairs with D, and B pairs with C.
-+	 *
-+	 * I don't think A needs to be a full barrier because we won't in fact
-+	 * write data until we see the store from userspace. So we simply don't
-+	 * issue the data WRITE until we observe it. Be conservative for now.
-+	 *
-+	 * OTOH, D needs to be a full barrier since it separates the data READ
-+	 * from the tail WRITE.
-+	 *
-+	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-+	 * an RMB is sufficient since it separates two READs.
-+	 *
-+	 * See perf_output_begin().
- 	 */
-+	smp_wmb();
- 	rb->user_page->data_head = head;
+ static int netback_remove(struct xenbus_device *dev)
+ {
+ 	struct backend_info *be = dev_get_drvdata(&dev->dev);
  
- 	/*
-@@ -154,9 +175,11 @@ int perf_output_begin(struct perf_output_handle *handle,
- 		 * Userspace could choose to issue a mb() before updating the
- 		 * tail pointer. So that all reads will be completed before the
- 		 * write is issued.
-+		 *
-+		 * See perf_output_put_handle().
- 		 */
- 		tail = ACCESS_ONCE(rb->user_page->data_tail);
--		smp_rmb();
-+		smp_mb();
- 		offset = head = local_read(&rb->head);
- 		head += size;
- 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
++	set_backend_state(be, XenbusStateClosed);
++
+ 	unregister_hotplug_status_watch(be);
+ 	if (be->vif) {
+ 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
 
 
