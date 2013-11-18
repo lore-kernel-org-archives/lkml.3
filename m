@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab3KRQls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 11:41:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:57688 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab3KRQll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 11:41:41 -0500
-Message-ID: <528A4340.3020508@ti.com>
-Date: Mon, 18 Nov 2013 10:41:36 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751701Ab3KRQmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 11:42:43 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:58946 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab3KRQmd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 11:42:33 -0500
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-References: <1384568535-26611-1-git-send-email-nm@ti.com> <20131116134445.GI11014@S2101-09.ap.freescale.net> <CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com> <528A27F8.3070402@ti.com> <20131118155753.GU11014@S2101-09.ap.freescale.net>
-In-Reply-To: <20131118155753.GU11014@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1384791864.2001.19.camel@dabdike.int.hansenpartnership.com>
+References: <1384714284-13712-1-git-send-email-geyslan@gmail.com>
+	<1384717371.2050.2.camel@dabdike.int.hansenpartnership.com>
+	<CAGG-pURSnEeNvmHhQ-GvrnyuMHPrTRMoCKt3P=bB23OD9Vmkpg@mail.gmail.com>
+	<1384724339.2050.6.camel@dabdike.int.hansenpartnership.com>
+	<CAGG-pUT_h1eNnHDpxRvMPWeN5zi6L2mckHMPsV92Qf3hqtf7EQ@mail.gmail.com>
+	<1384786707.2001.6.camel@dabdike.int.hansenpartnership.com>
+	<CAGG-pURDPHOGuSt7a1G=CpdgvyiUvW0ugKq0K_o7-ThCS39F-A@mail.gmail.com>
+	<1384791864.2001.19.camel@dabdike.int.hansenpartnership.com>
+Date: Mon, 18 Nov 2013 14:42:33 -0200
+Message-ID: <CAGG-pUSOa-kP7-NfyX6gizSrASc8_hAjN=Knn3cmfO2CK=txZw@mail.gmail.com>
+Subject: Re: [PATCH] scsi: be_iscsi: fix possible memory leak and refactor code
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        "open list:SERVER ENGINES 10..." <linux-scsi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 09:57 AM, Shawn Guo wrote:
-> On Mon, Nov 18, 2013 at 08:45:12AM -0600, Nishanth Menon wrote:
-> <snip>
->> I do not agree about this stance - device tree describes hardware
->> capabilities to kernel -> I agree with that statement. Kernel should
->> not care if that is provided by bootloader/firmware/fused into
->> flash/ROM etc.
-> 
-> Yea, ideally kernel should just believe that the device tree is always
-> the correct one.  But the following text in your commit log suggests
-> that might not be always the case.
-> 
-> | a) older or default bootloader in development platform without latest
-> | updates
-> | b) SoC documentation update that may have occurred in kernel
-> | c) kernel definitions are out of date Vs bootloader which is updated
-> | etc..
-> | 
-> | In these cases, we should assume from a kernel perspective, the only
-> | safe frequency that the system can be on is the ones available in the
-> | OPP table. This may not handle case (c), but, that is a different
-> | kernel bug of it's own.
-> 
-> It says that the device tree might be wrong as well.  That's why I
-> think the best/safest thing that kernel can do when seeing a mismatch
-> is to throw out an error message and fail out.
-
-In the case of mismatch, to consider that device tree may be wrong in
-driver is also to assume that hardware was always configured correctly
-and we assume description is the flawed data. That is just plain
-wrong. we need to assume device tree is the correct description of the
-hardware and any mismatch must be assumed as bad configuration - and
-this is what the patch does.
-
-Now, if the description is wrong, that is a dts bug of it's own.
-
-If the suggestion is to improve my commit message, I am more than
-happy to do so - please suggest how I could improve the same.
-
-> 
-> Shawn
-> 
+2013/11/18 James Bottomley <James.Bottomley@hansenpartnership.com>:
+> On Mon, 2013-11-18 at 14:18 -0200, Geyslan Gregório Bem wrote:
+>> 2013/11/18 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>> > On Sun, 2013-11-17 at 23:12 -0200, Geyslan Gregório Bem wrote:
+>> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>> >> > On Sun, 2013-11-17 at 19:09 -0200, Geyslan Gregório Bem wrote:
+>> >> >> 2013/11/17 James Bottomley <James.Bottomley@hansenpartnership.com>:
+>> >> >> > On Sun, 2013-11-17 at 15:51 -0300, Geyslan G. Bem wrote:
+>> >> >> >> This patch fix memory leakage in cases 'ISCSI_NET_PARAM_VLAN_ID' and
+>> >> >> >> 'ISCSI_NET_PARAM_VLAN_PRIORITY' and refactors code 'going out' when
+>> >> >> >> necessary.
+>> >> >> >
+>> >> >> > You pointlessly renamed a variable, which makes the diff hard to read.
+>> >> >> > Please don't do that.
+>> >> >>
+>> >> >> Ok, I can agree. 'len' means length? What is returned in case of non
+>> >> >> error?
+>> >> >
+>> >> > it returns the length of buf written to or negative error.
+>> >> >
+>> >> >> > You missed the fact that the passed in pointer is unmodified if
+>> >> >> > mgmt_get_if_info() returns non zero, so the kfree frees junk and would
+>> >> >> > oops.
+>> >> >> >
+>> >> >> > There's no need for a goto; len = -EINVAL; does everything that's
+>> >> >> > needed.
+>> >> >>
+>> >> >> Well, that is a coverity catch. CID 1128954. Check it.
+>> >> >
+>> >> > I didn't say coverity was wrong, I said your patch was (well not wrong,
+>> >> > just over complex and incomplete).  This is the way to fix both
+>> >> > problems.
+>> >> >
+>> >> > James
+>> >> >
+>> >> > ---
+>> >> >
+>> >> > diff --git a/drivers/scsi/be2iscsi/be_iscsi.c b/drivers/scsi/be2iscsi/be_iscsi.c
+>> >> > index ffadbee..9dcbdfa 100644
+>> >> > --- a/drivers/scsi/be2iscsi/be_iscsi.c
+>> >> > +++ b/drivers/scsi/be2iscsi/be_iscsi.c
+>> >> > @@ -541,10 +541,8 @@ static int be2iscsi_get_if_param(struct beiscsi_hba *phba,
+>> >> >                 ip_type = BE2_IPV6;
+>> >>
+>> >> James, this approach will not prevent the leakage.
+>> >
+>> > I don't see why not.  The -EINVAL case goes through the kfree() now too,
+>> > no?
 >>
->> If we agree with that statement, the moment kernel sees device
->> operating in a configuration that is not hardware capability, it is
->> our job to switch to the right configuration if it is possible for us
->> to do so (which in this case, we can). to give a comparison - if i2c
->> bus was configured for 3.4MHz and device tree describes the bus to
->> operate at 100KHz, do we ignore device tree recommended configuration?
->> No. we would switch to 100KHz. as far as kernel is concerned, it can
->> detect invalid configuration and switch back to a valid configuration
->> based on hardware description provided by device tree.
+>> I'm refering to the removal of kfree in your suggestion.
+>
+> That's the second bug I pointed out via code inspection.  If the
+> function returns an error (any non zero return) then the pointer isn't
+> altered, so we return without the free.  It's a standard error pattern.
+
+Ok. So kfree is useless until the code go to the function bail. Right?
+
+>
+>> >
+>> >>  We can initialize the if_info with NULL and always kfree it without
+>> >> to care about junk.
+>> >
+>> > Why?  Error return means no allocation.
+>> Setting if_info to NULL allow to kfree without concerns.
 >>
+>> Eg.:
 >>
+>> - struct be_cmd_get_if_info_resp *if_info;
+>> + struct be_cmd_get_if_info_resp *if_info = NULL;
 >>
->> -- 
->> Regards,
->> Nishanth Menon
-> 
+>> ...
+>>
+>> +       if (len)
+>> +               goto out;
+>>
+>> ...
+>>
+>> -               if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE)
+>> -                       return -EINVAL;
+>> +               if (if_info->vlan_priority == BEISCSI_VLAN_DISABLE) {
+>> +                       len = -EINVAL;
+>> +                       goto out;
+>> +               }
+>
+> What's the point of that?  Just removing the goto out; has the code
+> going to the same place because of the break below.
+>
+> James
+>
+>
+
+I agree whit you that the code goes to same place with or without goto
+out. It's just a pattern to simplify future changes in the function.
+
+But I can remove it if you want.
 
 
 -- 
 Regards,
-Nishanth Menon
+
+Geyslan G. Bem
+hackingbits.com
