@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751300Ab3KRIqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 03:46:37 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42768 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab3KRIq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 03:46:29 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: netdev@vger.kernel.org
-Cc: mst@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] net, virtio_net: replace the magic value
-Date: Mon, 18 Nov 2013 16:46:20 +0800
-Message-Id: <1384764380-16832-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111808-6688-0000-0000-0000039E23DB
+	id S1751355Ab3KRIrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 03:47:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21343 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab3KRIrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 03:47:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="410419553"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] kernel/bounds: avoid circular dependencies in generated headers
+Date: Mon, 18 Nov 2013 10:47:27 +0200
+Message-Id: <1384764447-17832-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+<linux/spinlock.h> has havy dependencies on other header files.
+It triggers circular dependencies in generated headers on IA64, at
+least:
 
-It is more appropriate to use # of queue pairs currently used by
-the driver instead of a magic value.
+  CC      kernel/bounds.s
+In file included from /home/space/kas/git/public/linux/arch/ia64/include/asm/thread_info.h:9:0,
+                 from include/linux/thread_info.h:54,
+                 from include/asm-generic/preempt.h:4,
+                 from arch/ia64/include/generated/asm/preempt.h:1,
+                 from include/linux/preempt.h:18,
+                 from include/linux/spinlock.h:50,
+                 from kernel/bounds.c:14:
+/home/space/kas/git/public/linux/arch/ia64/include/asm/asm-offsets.h:1:35: fatal error: generated/asm-offsets.h: No such file or directory
+compilation terminated.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Let's replace <linux/spinlock.h> with <linux/spinlock_types.h>, it's
+enough to find out size of spinlock_t.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-and-Tested-by: Tony Luck <tony.luck@intel.com>
 ---
- drivers/net/virtio_net.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/bounds.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index cdc7c90..e0cb2d1 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1619,8 +1619,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (err)
- 		goto free_stats;
+diff --git a/kernel/bounds.c b/kernel/bounds.c
+index 578782ef6ae1..5253204afdca 100644
+--- a/kernel/bounds.c
++++ b/kernel/bounds.c
+@@ -11,7 +11,7 @@
+ #include <linux/kbuild.h>
+ #include <linux/page_cgroup.h>
+ #include <linux/log2.h>
+-#include <linux/spinlock.h>
++#include <linux/spinlock_types.h>
  
--	netif_set_real_num_tx_queues(dev, 1);
--	netif_set_real_num_rx_queues(dev, 1);
-+	netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
-+	netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
- 
- 	err = register_netdev(dev);
- 	if (err) {
+ void foo(void)
+ {
 -- 
-1.7.6.5
+1.8.4.3
 
