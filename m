@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3KRS7R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:59:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57485 "EHLO
+	id S1753272Ab3KRTAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 14:00:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3KRSku (ORCPT
+	with ESMTP id S1752679Ab3KRSkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:50 -0500
+	Mon, 18 Nov 2013 13:40:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerd Hoffmann <kraxel@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.11 13/25] hyperv-fb: add pci stub
-Date: Mon, 18 Nov 2013 10:40:42 -0800
-Message-Id: <20131118184036.363134643@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 11/25] xen-netback: transition to CLOSED when removing a VIF
+Date: Mon, 18 Nov 2013 10:40:40 -0800
+Message-Id: <20131118184035.731688822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -28,104 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 7ad9684721606efbfb9b347346816e1e6baff8bb upstream.
+[ Upstream commit dc62ccaccfb139d9b04bbc5a2688a4402adbfab3 ]
 
-This patch adds a pci stub driver to hyper-fb.  The hyperv framebuffer
-driver will bind to the pci device then, so linux kernel and userspace
-know there is a proper kernel driver for the device active.  lspci shows
-this for example:
+If a guest is destroyed without transitioning its frontend to CLOSED,
+the domain becomes a zombie as netback was not grant unmapping the
+shared rings.
 
-[root@dhcp231 ~]# lspci -vs8
-00:08.0 VGA compatible controller: Microsoft Corporation Hyper-V virtual
-VGA (prog-if 00 [VGA controller])
-        Flags: bus master, fast devsel, latency 0, IRQ 11
-        Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
-        Expansion ROM at <unassigned> [disabled]
-        Kernel driver in use: hyperv_fb
+When removing a VIF, transition the backend to CLOSED so the VIF is
+disconnected if necessary (which will unmap the shared rings etc).
 
-Another effect is that the xorg vesa driver will not attach to the
-device and thus the Xorg server will automatically use the fbdev
-driver instead.
+This fixes a regression introduced by
+279f438e36c0a70b23b86d2090aeec50155034a9 (xen-netback: Don't destroy
+the netdev until the vif is shut down).
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Paul Durrant <Paul.Durrant@citrix.com>
+Acked-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by:  Paul Durrant <paul.durrant@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/video/hyperv_fb.c |   40 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 39 insertions(+), 1 deletion(-)
+ drivers/net/xen-netback/xenbus.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/video/hyperv_fb.c
-+++ b/drivers/video/hyperv_fb.c
-@@ -795,12 +795,21 @@ static int hvfb_remove(struct hv_device
- }
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -39,11 +39,15 @@ static int connect_rings(struct backend_
+ static void connect(struct backend_info *);
+ static void backend_create_xenvif(struct backend_info *be);
+ static void unregister_hotplug_status_watch(struct backend_info *be);
++static void set_backend_state(struct backend_info *be,
++			      enum xenbus_state state);
  
- 
-+static DEFINE_PCI_DEVICE_TABLE(pci_stub_id_table) = {
-+	{
-+		.vendor      = PCI_VENDOR_ID_MICROSOFT,
-+		.device      = PCI_DEVICE_ID_HYPERV_VIDEO,
-+	},
-+	{ /* end of list */ }
-+};
-+
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* Synthetic Video Device GUID */
- 	{HV_SYNTHVID_GUID},
- 	{}
- };
- 
-+MODULE_DEVICE_TABLE(pci, pci_stub_id_table);
- MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- static struct hv_driver hvfb_drv = {
-@@ -810,14 +819,43 @@ static struct hv_driver hvfb_drv = {
- 	.remove = hvfb_remove,
- };
- 
-+static int hvfb_pci_stub_probe(struct pci_dev *pdev,
-+			       const struct pci_device_id *ent)
-+{
-+	return 0;
-+}
-+
-+static void hvfb_pci_stub_remove(struct pci_dev *pdev)
-+{
-+}
-+
-+static struct pci_driver hvfb_pci_stub_driver = {
-+	.name =		KBUILD_MODNAME,
-+	.id_table =	pci_stub_id_table,
-+	.probe =	hvfb_pci_stub_probe,
-+	.remove =	hvfb_pci_stub_remove,
-+};
- 
- static int __init hvfb_drv_init(void)
+ static int netback_remove(struct xenbus_device *dev)
  {
--	return vmbus_driver_register(&hvfb_drv);
-+	int ret;
-+
-+	ret = vmbus_driver_register(&hvfb_drv);
-+	if (ret != 0)
-+		return ret;
-+
-+	ret = pci_register_driver(&hvfb_pci_stub_driver);
-+	if (ret != 0) {
-+		vmbus_driver_unregister(&hvfb_drv);
-+		return ret;
-+	}
-+
-+	return 0;
- }
+ 	struct backend_info *be = dev_get_drvdata(&dev->dev);
  
- static void __exit hvfb_drv_exit(void)
- {
-+	pci_unregister_driver(&hvfb_pci_stub_driver);
- 	vmbus_driver_unregister(&hvfb_drv);
- }
- 
++	set_backend_state(be, XenbusStateClosed);
++
+ 	unregister_hotplug_status_watch(be);
+ 	if (be->vif) {
+ 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
 
 
