@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3KRSqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:46:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57651 "EHLO
+	id S1752437Ab3KRSqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:46:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab3KRSmh (ORCPT
+	with ESMTP id S1753062Ab3KRSmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 13:42:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Schmitt <peter.schmitt82@yahoo.de>,
-        Pravin B Shelar <pshelar@nicira.com>
-Subject: [PATCH 3.10 01/24] ip_gre: Fix WCCPv2 header parsing.
-Date: Mon, 18 Nov 2013 10:42:11 -0800
-Message-Id: <20131118184222.158956366@linuxfoundation.org>
+        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 20/24] backlight: atmel-pwm-bl: fix deferred probe from __init
+Date: Mon, 18 Nov 2013 10:42:30 -0800
+Message-Id: <20131118184223.479438415@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184222.017393843@linuxfoundation.org>
 References: <20131118184222.017393843@linuxfoundation.org>
@@ -28,79 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ No applicable upstream commit, the upstream implementation is
-  now completely different and doesn't have this bug. ]
+commit 9d3fde86b15303decea632c929fbf1f3ae4501f2 upstream.
 
-In case of WCCPv2 GRE header has extra four bytes.  Following
-patch pull those extra four bytes so that skb offsets are set
-correctly.
+Move probe out of __init section and don't use platform_driver_probe
+which cannot be used with deferred probing.
 
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Peter Schmitt <peter.schmitt82@yahoo.de>
-Tested-by: Peter Schmitt <peter.schmitt82@yahoo.de>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Since commit e9354576 ("gpiolib: Defer failed gpio requests by default")
+this driver might return -EPROBE_DEFER if a gpio_request fails.
+
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/ip_tunnels.h |    2 +-
- net/ipv4/ip_gre.c        |    2 +-
- net/ipv4/ip_tunnel.c     |    4 ++--
- net/ipv4/ipip.c          |    2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -113,7 +113,7 @@ struct ip_tunnel *ip_tunnel_lookup(struc
- 				   __be32 key);
+---
+ drivers/video/backlight/atmel-pwm-bl.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -118,7 +118,7 @@ static const struct backlight_ops atmel_
+ 	.update_status  = atmel_pwm_bl_set_intensity,
+ };
  
- int ip_tunnel_rcv(struct ip_tunnel *tunnel, struct sk_buff *skb,
--		  const struct tnl_ptk_info *tpi, bool log_ecn_error);
-+		  const struct tnl_ptk_info *tpi, int hdr_len, bool log_ecn_error);
- int ip_tunnel_changelink(struct net_device *dev, struct nlattr *tb[],
- 			 struct ip_tunnel_parm *p);
- int ip_tunnel_newlink(struct net_device *dev, struct nlattr *tb[],
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -335,7 +335,7 @@ static int ipgre_rcv(struct sk_buff *skb
- 				  iph->saddr, iph->daddr, tpi.key);
- 
- 	if (tunnel) {
--		ip_tunnel_rcv(tunnel, skb, &tpi, log_ecn_error);
-+		ip_tunnel_rcv(tunnel, skb, &tpi, hdr_len, log_ecn_error);
- 		return 0;
- 	}
- 	icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PORT_UNREACH, 0);
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -402,7 +402,7 @@ static struct ip_tunnel *ip_tunnel_creat
+-static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
++static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ {
+ 	struct backlight_properties props;
+ 	const struct atmel_pwm_bl_platform_data *pdata;
+@@ -203,7 +203,7 @@ err_free_mem:
+ 	return retval;
  }
  
- int ip_tunnel_rcv(struct ip_tunnel *tunnel, struct sk_buff *skb,
--		  const struct tnl_ptk_info *tpi, bool log_ecn_error)
-+		  const struct tnl_ptk_info *tpi, int hdr_len, bool log_ecn_error)
+-static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
++static int atmel_pwm_bl_remove(struct platform_device *pdev)
  {
- 	struct pcpu_tstats *tstats;
- 	const struct iphdr *iph = ip_hdr(skb);
-@@ -413,7 +413,7 @@ int ip_tunnel_rcv(struct ip_tunnel *tunn
- 	skb->protocol = tpi->proto;
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
  
- 	skb->mac_header = skb->network_header;
--	__pskb_pull(skb, tunnel->hlen);
-+	__pskb_pull(skb, hdr_len);
- 	skb_postpull_rcsum(skb, skb_transport_header(skb), tunnel->hlen);
- #ifdef CONFIG_NET_IPGRE_BROADCAST
- 	if (ipv4_is_multicast(iph->daddr)) {
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -195,7 +195,7 @@ static int ipip_rcv(struct sk_buff *skb)
- 	if (tunnel) {
- 		if (!xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb))
- 			goto drop;
--		return ip_tunnel_rcv(tunnel, skb, &tpi, log_ecn_error);
-+		return ip_tunnel_rcv(tunnel, skb, &tpi, 0, log_ecn_error);
- 	}
+@@ -222,10 +222,11 @@ static struct platform_driver atmel_pwm_
+ 		.name = "atmel-pwm-bl",
+ 	},
+ 	/* REVISIT add suspend() and resume() */
+-	.remove = __exit_p(atmel_pwm_bl_remove),
++	.probe = atmel_pwm_bl_probe,
++	.remove = atmel_pwm_bl_remove,
+ };
  
- 	return -1;
+-module_platform_driver_probe(atmel_pwm_bl_driver, atmel_pwm_bl_probe);
++module_platform_driver(atmel_pwm_bl_driver);
+ 
+ MODULE_AUTHOR("Hans-Christian egtvedt <hans-christian.egtvedt@atmel.com>");
+ MODULE_DESCRIPTION("Atmel PWM backlight driver");
 
 
