@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3KRSkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:40:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57350 "EHLO
+	id S1752699Ab3KRSku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:40:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab3KRShi (ORCPT
+	with ESMTP id S1751787Ab3KRShg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:38 -0500
+	Mon, 18 Nov 2013 13:37:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 15/19] ALSA: hda - hdmi: Fix reported channel map on common default layouts
-Date: Mon, 18 Nov 2013 10:37:28 -0800
-Message-Id: <20131118183648.611561032@linuxfoundation.org>
+        Rui li <li.rui27@zte.com.cn>
+Subject: [PATCH 3.12 14/19] USB: add new zte 3g-dongles pid to option.c
+Date: Mon, 18 Nov 2013 10:37:27 -0800
+Message-Id: <20131118183648.102339144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -26,52 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Rui li <li.rui27@zte.com.cn>
 
-commit 56cac413dd6d43af8355f5d1f90a199b540f73fc upstream.
+commit 0636fc507a976cdc40f21bdbcce6f0b98ff1dfe9 upstream.
 
-hdmi_setup_fake_chmap() is supposed to set the reported channel map when
-the channel map is not specified by the user.
-
-However, the function indexes channel_allocations[] with a wrong value
-and extracts the wrong nibble from hdmi_channel_mapping[], causing wrong
-channel maps to be shown.
-
-Fix those issues.
-
-Tested on Intel HDMI to correctly generate various channel maps, for
-example 3,4,14,15,7,8,5,6 (instead of incorrect 3,4,8,7,5,6,14,0) for
-standard 7.1 channel audio. (Note that the side and rear channels are
-reported as RL/RR and RLC/RRC, respectively, as per the CEA-861
-standard, instead of the more traditional SL/SR and RL/RR.)
-
-Note that this only fixes the layouts that only contain traditional 7.1
-speakers (2.0, 2.1, 4.0, 5.1, 7.1, etc.). E.g. the rear center of 6.1
-is still being shown wrongly due to an issue with from_cea_slot()
-which will be fixed in a later patch.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Rui li <li.rui27@zte.com.cn>
+Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/option.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -740,9 +740,10 @@ static int hdmi_manual_setup_channel_map
- static void hdmi_setup_fake_chmap(unsigned char *map, int ca)
- {
- 	int i;
-+	int ordered_ca = get_channel_allocation_order(ca);
- 	for (i = 0; i < 8; i++) {
--		if (i < channel_allocations[ca].channels)
--			map[i] = from_cea_slot((hdmi_channel_mapping[ca][i] >> 4) & 0x0f);
-+		if (i < channel_allocations[ordered_ca].channels)
-+			map[i] = from_cea_slot(hdmi_channel_mapping[ca][i] & 0x0f);
- 		else
- 			map[i] = 0;
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1376,6 +1376,23 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1545, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1546, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1547, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1565, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1566, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1567, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1589, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1590, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1591, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1592, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1594, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1596, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1598, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1600, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
+ 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
 
 
