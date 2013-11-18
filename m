@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3KRUbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 15:31:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50589 "EHLO
+	id S1752833Ab3KRUb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:31:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50557 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab3KRU2Q (ORCPT
+	with ESMTP id S1752122Ab3KRU2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 15:28:16 -0500
+	Mon, 18 Nov 2013 15:28:13 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/16] perf header: Fix possible memory leaks in process_group_desc()
-Date: Mon, 18 Nov 2013 17:27:58 -0300
-Message-Id: <1384806484-29869-11-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/16] perf completion: introduce zsh support
+Date: Mon, 18 Nov 2013 17:27:55 -0300
+Message-Id: <1384806484-29869-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384806484-29869-1-git-send-email-acme@infradead.org>
 References: <1384806484-29869-1-git-send-email-acme@infradead.org>
@@ -26,40 +25,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-After processing all group descriptors or encountering an error, it
-frees all descriptors.  However, current logic can leak memory since it
-might not traverse all descriptors.
+__perfcomp(), __perfcomp_colon(), and _perf() have to be overridden.
+Inspired by the way the git.git completion system is structured.
 
-Note that the 'i' can have different value than nr_groups when an error
-occurred and it's safe to call free(desc[i].name) for every desc since
-we already make it NULL when it's reused for group names.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1384741244-7271-2-git-send-email-namhyung@kernel.org
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1384704807-15779-5-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/bash_completion | 63 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 559c516f1cec..1cd035708931 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2107,7 +2107,7 @@ static int process_group_desc(struct perf_file_section *section __maybe_unused,
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 573599b42be2..49494882d9bb 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -1,4 +1,4 @@
+-# perf completion
++# perf bash and zsh completion
  
- 	ret = 0;
- out_free:
--	while ((int) --i >= 0)
-+	for (i = 0; i < nr_groups; i++)
- 		free(desc[i].name);
- 	free(desc);
+ # Taken from git.git's completion script.
+ __my_reassemble_comp_words_by_ref()
+@@ -129,6 +129,67 @@ __perf_main ()
+ 	fi
+ }
  
++if [[ -n ${ZSH_VERSION-} ]]; then
++	autoload -U +X compinit && compinit
++
++	__perfcomp ()
++	{
++		emulate -L zsh
++
++		local c IFS=$' \t\n'
++		local -a array
++
++		for c in ${=1}; do
++			case $c in
++			--*=*|*.) ;;
++			*) c="$c " ;;
++			esac
++			array[${#array[@]}+1]="$c"
++		done
++
++		compset -P '*[=:]'
++		compadd -Q -S '' -a -- array && _ret=0
++	}
++
++	__perfcomp_colon ()
++	{
++		emulate -L zsh
++
++		local cur_="${2-$cur}"
++		local c IFS=$' \t\n'
++		local -a array
++
++		if [[ "$cur_" == *:* ]]; then
++			local colon_word=${cur_%"${cur_##*:}"}
++		fi
++
++		for c in ${=1}; do
++			case $c in
++			--*=*|*.) ;;
++			*) c="$c " ;;
++			esac
++			array[$#array+1]=${c#"$colon_word"}
++		done
++
++		compset -P '*[=:]'
++		compadd -Q -S '' -a -- array && _ret=0
++	}
++
++	_perf ()
++	{
++		local _ret=1 cur cword prev
++		cur=${words[CURRENT]}
++		prev=${words[CURRENT-1]}
++		let cword=CURRENT-1
++		emulate ksh -c __perf_main
++		let _ret && _default && _ret=0
++		return _ret
++	}
++
++	compdef _perf perf
++	return
++fi
++
+ type perf &>/dev/null &&
+ _perf()
+ {
 -- 
 1.8.1.4
 
