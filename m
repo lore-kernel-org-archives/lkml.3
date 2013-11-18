@@ -1,118 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab3KRHGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 02:06:34 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:59031 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab3KRHGZ (ORCPT
+	id S1751281Ab3KRHea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 02:34:30 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.102]:6958
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751051Ab3KRHeX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 02:06:25 -0500
+	Mon, 18 Nov 2013 02:34:23 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <527CBCE4.3080106@oracle.com>
-References: <1383904203.2715.2.camel@ubuntu>
-	<527CBCE4.3080106@oracle.com>
-Date: Mon, 18 Nov 2013 15:06:24 +0800
-Message-ID: <CAL1ERfPfPi0jGH-vBK-ABC64xh1nY9Ee-zxipPTE84wR1Md4gQ@mail.gmail.com>
-Subject: Re: [Patch 3.11.7 1/1]mm: remove and free expired data in time in zswap
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: "changkun.li" <xfishcoder@gmail.com>, sjenning@linux.vnet.ibm.com,
-        linux-mm@kvack.org, luyi@360.cn, lichangkun@360.cn,
-        linux-kernel@vger.kernel.org, Seth Jennings <sjennings@variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: XMAS PROMOTION
+To: Recipients <82@MoorePeter502.onmicrosoft.com>
+From: Peter Moore <82@MoorePeter502.onmicrosoft.com>
+Date: Mon, 18 Nov 2013 12:48:46 +0530
+Reply-To: <qaterfoundationxmaspromo@gmail.com>
+Message-ID: <906baf70-de2b-47a8-b875-486328a34497@SIXPR02MB192.apcprd02.prod.outlook.com>
+X-Originating-IP: [180.215.36.55]
+X-ClientProxiedBy: BLUPR06CA016.namprd06.prod.outlook.com (10.141.20.36) To
+ SIXPR02MB192.apcprd02.prod.outlook.com (10.141.122.148)
+X-Forefront-PRVS: 00342DD5BC
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(51856001)(42186004)(54356001)(81342001)(69226001)(74876001)(74366001)(76576001)(76796001)(76786001)(81542001)(74706001)(87976001)(56816003)(74316001)(87266001)(50466002)(46102001)(80976001)(19580405001)(83322001)(19580395003)(56776001)(23756003)(558084003)(85306002)(47446002)(81816001)(43066001)(31686002)(74662001)(81686001)(221733001)(54316002)(76482001)(74502001)(83072001)(59766001)(77982001)(33646001)(4396001)(79102001)(53256004)(50986001)(17643785005)(47976001)(49866001)(47736001)(66066001)(77096001)(47776003)(63696002)(76176001)(65816001)(80022001)(64872004)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:SIXPR02MB192;H:[180.215.36.55];CLIP:180.215.36.55;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: MoorePeter502.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add cc Seth 's new email address.
-
-On Fri, Nov 8, 2013 at 6:28 PM, Bob Liu <bob.liu@oracle.com> wrote:
-> On 11/08/2013 05:50 PM, changkun.li wrote:
->> In zswap, store page A to zbud if the compression ratio is high, insert
->> its entry into rbtree. if there is a entry B which has the same offset
->> in the rbtree.Remove and free B before insert the entry of A.
->>
->> case:
->> if the compression ratio of page A is not high, return without checking
->> the same offset one in rbtree.
->>
->> if there is a entry B which has the same offset in the rbtree. Now, we
->> make sure B is invalid or expired. But the entry and compressed memory
->> of B are not freed in time.
->>
->> Because zswap spaces data in memory, it makes the utilization of memory
->> lower. the other valid data in zbud is writeback to swap device more
->> possibility, when zswap is full.
->>
->> So if we make sure a entry is expired, free it in time.
->>
->> Signed-off-by: changkun.li<xfishcoder@gmail.com>
->> ---
->>  mm/zswap.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index cbd9578..90a2813 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -596,6 +596,7 @@ fail:
->>       return ret;
->>  }
->>
->> +static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t
->> offset);
->>  /*********************************
->>  * frontswap hooks
->>  **********************************/
->> @@ -614,7 +615,7 @@ static int zswap_frontswap_store(unsigned type,
->> pgoff_t offset,
->>
->>       if (!tree) {
->>               ret = -ENODEV;
->> -             goto reject;
->> +             goto nodev;
->>       }
->>
->>       /* reclaim space if needed */
->> @@ -695,6 +696,8 @@ freepage:
->>       put_cpu_var(zswap_dstmem);
->>       zswap_entry_cache_free(entry);
->>  reject:
->> +     zswap_frontswap_invalidate_page(type, offset);
->
-> I'm afraid when arrives here zswap_rb_search(offset) will always return
-> NULL entry. So most of the time, it's just waste time to call
-> zswap_frontswap_invalidate_page() to search rbtree.
-
-Yes, it is a bug.
-
-But I agree with Bob, this patch is not efficient.
-
-How about like this?
-
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 1b24bdc..1227896
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
-                  the (older) page from frontswap
-                 */
-                inc_frontswap_failed_stores();
--               if (dup)
-+               if (dup) {
-+                       frontswap_ops->invalidate_page(type, offset);
-                        __frontswap_clear(sis, offset);
-+               }
-        }
-        if (frontswap_writethrough_enabled)
-                /* report failure so swap also writes to swap device */
-
-
-> --
-> Regards,
-> -Bob
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+CONGRATULATIONS! YOU HAVE BEEN AWARDED 1 MILLION POUNDS FROM QATAR
+FOUNDATION XMAS PROMOTION..CONTACT FOR MORE INFORMATION.qaterfoundationxmaspromo@gmail.com
