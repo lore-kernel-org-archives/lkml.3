@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab3KRPXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:23:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1813 "EHLO mx1.redhat.com"
+	id S1751544Ab3KRP1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:27:45 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33026 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751199Ab3KRPXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:23:15 -0500
-Date: Mon, 18 Nov 2013 10:22:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-Message-ID: <20131118152255.GA32168@redhat.com>
-References: <20131115005049.GJ5116@anatevka.fc.hp.com>
- <20131115062417.GB9237@gmail.com>
- <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
- <5285C639.5040203@zytor.com>
- <20131115140738.GB6637@redhat.com>
- <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
- <52865CA1.5020309@zytor.com>
- <20131115183002.GE6637@redhat.com>
- <52866C0D.3050006@zytor.com>
- <52867309.4040406@zytor.com>
+	id S1751167Ab3KRP1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 10:27:37 -0500
+Message-ID: <528A318E.1090209@ti.com>
+Date: Mon, 18 Nov 2013 17:26:06 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52867309.4040406@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
+        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Fwd: [PATCH 7/8] watchdog: davinci: add "clocks" property
+References: <1383680783-12114-8-git-send-email-ivan.khoronzhuk@ti.com> <527A28E8.4010204@ti.com> <528829DB.7020003@roeck-us.net>
+In-Reply-To: <528829DB.7020003@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 11:16:25AM -0800, H. Peter Anvin wrote:
-> On 11/15/2013 10:46 AM, H. Peter Anvin wrote:
-> > On 11/15/2013 10:30 AM, Vivek Goyal wrote:
-> >>
-> >> I agree taking assistance of hypervisor should be useful.
-> >>
-> >> One reason we use kdump for VM too because it makes life simple. There
-> >> is no difference in how we configure, start and manage crash dumps
-> >> in baremetal or inside VM. And in practice have not heard of lot of
-> >> failures of kdump in VM environment.
-> >>
-> >> So while reliability remains a theoritical concern, in practice it
-> >> has not been a real concern and that's one reason I think we have
-> >> not seen a major push for alternative method in VM environment.
-> >>
-> > 
-> > Another reason, again, is that it doesn't sit on all that memory.
-> > 
-> 
-> This led me to a potentially interesting idea.  If we can tell the
-> hypervisor about which memory blocks belong to kdump, we can still use
-> kdump in its current form with only a few hypervisor calls thrown in.
-> 
-> One set of calls would mark memory ranges as belonging to kdump.  This
-> would (a) make them protected,
+On 11/17/2013 04:28 AM, Guenter Roeck wrote:
+> On 11/06/2013 03:32 AM, ivan.khoronzhuk wrote:
+>> The Keystone arch is using clocks in DT and source clock for watchdog
+>> has to be specified, so add this to binding.
+>>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>>   .../devicetree/bindings/watchdog/davinci-wdt.txt   |    5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git
+>> a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> index fddced9..4db4d0e 100644
+>> --- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> +++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+>> @@ -7,6 +7,10 @@ Required properties:
+>>
+>>   - reg : Should contain WDT registers location and length
+>>
+>> +- clocks: phandle reference to the controller clock.
+>> +      Required only for Keystone arch.
+>> +      See clock-bindings.txt
+>> +
+>
+> Yet another form of formatting. Also, wonder if it makes sense to merge
+> this with the patch adding keystone support.
+>
 
-This sounds good. We already have arch hooks to map/unmap crash kernel
-ranges, crash_map_reserved_pages() and crash_unmap_reserved_pages(). Now x86,
-should be able to use these hooks to tell hypervisor to remove mappings
-for certain physical certain ranges and remap these back when needed. s390
-already does some magic there.
+Ok, I'll squash them.
 
-> and (b) tell the hypervisor that these
-> memory ranges will not be accessed and don't need to occupy physical RAM.
+>>   Optional properties:
+>>
+>>   - timeout-sec:        Contains the watchdog timeout in seconds
+>> @@ -21,4 +25,5 @@ wdt: wdt@2320000 {
+>>       compatible = "ti,davinci-wdt";
+>>       reg = <0x02320000 0x80>;
+>>       timeout-sec = <30>;
+>> +    clocks = <&clkwdtimer0>;
+>>   };
+>>
+>
 
-I am not sure if we need to do anything here. I am assuming that most of
-the crashkernel memory has not been touched and does not occupy physical
-memory till crash actually happens. We probably will touch only 20-30MB
-of crashkernel memory during kernel load and that should ultimately make
-its way to swap at some point of time.
-
-And if that's true, then reserving 72M extra due to crashkernel=X,high
-should not be a big issue in KVM guests. It will still be an issue on
-physical servers though.
-
-Thanks
-Vivek
+-- 
+Regards,
+Ivan Khoronzhuk
