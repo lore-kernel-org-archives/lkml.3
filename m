@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3KRS7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:59:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57488 "EHLO
+	id S1753445Ab3KRS7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:59:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab3KRSkv (ORCPT
+	with ESMTP id S1752693Ab3KRSku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:40:51 -0500
+	Mon, 18 Nov 2013 13:40:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rui li <li.rui27@zte.com.cn>
-Subject: [PATCH 3.11 14/25] USB: add new zte 3g-dongles pid to option.c
-Date: Mon, 18 Nov 2013 10:40:43 -0800
-Message-Id: <20131118184036.666719580@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [PATCH 3.11 12/25] Thermal: x86_pkg_temp: change spin lock
+Date: Mon, 18 Nov 2013 10:40:41 -0800
+Message-Id: <20131118184035.991787661@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184032.248465920@linuxfoundation.org>
 References: <20131118184032.248465920@linuxfoundation.org>
@@ -26,43 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rui li <li.rui27@zte.com.cn>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 0636fc507a976cdc40f21bdbcce6f0b98ff1dfe9 upstream.
+commit 7bed1b3caaedd5918f0820b29f3b7a2ddc812922 upstream.
 
-Signed-off-by: Rui li <li.rui27@zte.com.cn>
-Cc: stable <stable@vger.kernel.org>
+x86_pkg_temp receives thermal notifications via a callback from a
+therm_throt driver, where thermal interrupts are processed.
+This callback is pkg_temp_thermal_platform_thermal_notify. Here to
+avoid multiple interrupts from cores in a package, we disable the
+source and also set a variable to avoid scheduling delayed work function.
+This variable is protected via spin_lock_irqsave. On one buggy platform,
+we still receiving interrupts even if the source is disabled. This
+can cause deadlock/lockdep warning, when interrupt is generated while under
+spinlock in work function.
+Change spin_lock to spin_lock_irqsave and spin_unlock to
+spin_unlock_irqrestore as the data it is trying to protect can also
+be modified in a notification call called from interrupt handler.
+
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/thermal/x86_pkg_temp_thermal.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1376,6 +1376,23 @@ static const struct usb_device_id option
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1545, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1546, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1547, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1565, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1566, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1567, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1589, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1590, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1591, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1592, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1594, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1596, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1598, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1600, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
- 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+--- a/drivers/thermal/x86_pkg_temp_thermal.c
++++ b/drivers/thermal/x86_pkg_temp_thermal.c
+@@ -316,18 +316,19 @@ static void pkg_temp_thermal_threshold_w
+ 	int phy_id = topology_physical_package_id(cpu);
+ 	struct phy_dev_entry *phdev = pkg_temp_thermal_get_phy_entry(cpu);
+ 	bool notify = false;
++	unsigned long flags;
+ 
+ 	if (!phdev)
+ 		return;
+ 
+-	spin_lock(&pkg_work_lock);
++	spin_lock_irqsave(&pkg_work_lock, flags);
+ 	++pkg_work_cnt;
+ 	if (unlikely(phy_id > max_phy_id)) {
+-		spin_unlock(&pkg_work_lock);
++		spin_unlock_irqrestore(&pkg_work_lock, flags);
+ 		return;
+ 	}
+ 	pkg_work_scheduled[phy_id] = 0;
+-	spin_unlock(&pkg_work_lock);
++	spin_unlock_irqrestore(&pkg_work_lock, flags);
+ 
+ 	enable_pkg_thres_interrupt();
+ 	rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
+@@ -397,6 +398,7 @@ static int pkg_temp_thermal_device_add(u
+ 	int thres_count;
+ 	u32 eax, ebx, ecx, edx;
+ 	u8 *temp;
++	unsigned long flags;
+ 
+ 	cpuid(6, &eax, &ebx, &ecx, &edx);
+ 	thres_count = ebx & 0x07;
+@@ -420,19 +422,19 @@ static int pkg_temp_thermal_device_add(u
+ 		goto err_ret_unlock;
+ 	}
+ 
+-	spin_lock(&pkg_work_lock);
++	spin_lock_irqsave(&pkg_work_lock, flags);
+ 	if (topology_physical_package_id(cpu) > max_phy_id)
+ 		max_phy_id = topology_physical_package_id(cpu);
+ 	temp = krealloc(pkg_work_scheduled,
+ 			(max_phy_id+1) * sizeof(u8), GFP_ATOMIC);
+ 	if (!temp) {
+-		spin_unlock(&pkg_work_lock);
++		spin_unlock_irqrestore(&pkg_work_lock, flags);
+ 		err = -ENOMEM;
+ 		goto err_ret_free;
+ 	}
+ 	pkg_work_scheduled = temp;
+ 	pkg_work_scheduled[topology_physical_package_id(cpu)] = 0;
+-	spin_unlock(&pkg_work_lock);
++	spin_unlock_irqrestore(&pkg_work_lock, flags);
+ 
+ 	phy_dev_entry->phys_proc_id = topology_physical_package_id(cpu);
+ 	phy_dev_entry->first_cpu = cpu;
 
 
