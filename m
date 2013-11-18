@@ -1,119 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3KRKkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 05:40:53 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:37344 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab3KRKks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 05:40:48 -0500
-Message-ID: <5289EEA9.1000202@mev.co.uk>
-Date: Mon, 18 Nov 2013 10:40:41 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751585Ab3KRKlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 05:41:09 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6541 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3KRKlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 05:41:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 18 Nov 2013 02:35:13 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] ARM: tegra: properly use FUSE clock
+Date: Mon, 18 Nov 2013 19:40:47 +0900
+Message-ID: <1384771247-16547-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Conrad Gomes <conrad.s.j.gomes@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Staging: comedi: fix coding style issues in unioxx5.c
-References: <1383309116-8042-1-git-send-email-conrad.s.j.gomes@gmail.com>	<20131112001540.GA26611@kroah.com> <CALxff2GmatgMQF_2yQ9g=tZzh=J-5fKt89sFAU4oYq_FBJHNag@mail.gmail.com>
-In-Reply-To: <CALxff2GmatgMQF_2yQ9g=tZzh=J-5fKt89sFAU4oYq_FBJHNag@mail.gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-11-17 03:42, Conrad Gomes wrote:
-> Hi,
->
-> No problem, I'll break this up and resend it.
->
-> In order to use dev_info type functions I was planning on assigning the
-> comedi device's struct device to the struct subdevice's class_dev as
-> follows in comedi_alloc_subdevices as it appears that is is not used(I
-> could be wrong):
->
-> diff --git a/drivers/staging/comedi/drivers.c
-> b/drivers/staging/comedi/drivers.c
-> index 8f02bf6..e4c44ae 100644
-> --- a/drivers/staging/comedi/drivers.c
-> +++ b/drivers/staging/comedi/drivers.c
-> @@ -90,6 +90,7 @@ int comedi_alloc_subdevices(struct comedi_device *dev,
-> int num_subdevices)
->                  s->async_dma_dir = DMA_NONE;
->                  spin_lock_init(&s->spin_lock);
->                  s->minor = -1;
-> +               s->class_dev = dev->class_dev;
->          }
->          return 0;
->   }
+FUSE clock is enabled by most bootloaders, but we cannot expect it to be
+on in all contexts (e.g. kexec).
 
-The class_dev member is assigned by comedi_alloc_subdevice_minor(s) 
-(which will be called if the subdevice supports asynchronous comedi 
-commands) and is kept around for the call to comedi_free_subdevice_minor(s).
+This patch adds a FUSE clkdev to all Tegra platforms and makes sure
+it is enabled before touching FUSE registers. tegra_init_fuse() is
+invoked during very early boot and thus cannot rely on the clock
+framework ; therefore the FUSE clock is forcibly enabled using a
+register write in that function, and remains that way until the
+clock framework can be used.
 
-The struct comedi_subdevice has a pointer back to the struct 
-comedi_device.  The class_dev member in the struct comedi_device can be 
-used as the device pointer parameter of dev_info() etc.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ arch/arm/mach-tegra/fuse.c       | 41 +++++++++++++++++++++++++++++++++++++++-
+ drivers/clk/tegra/clk-tegra114.c |  1 +
+ drivers/clk/tegra/clk-tegra124.c |  1 +
+ drivers/clk/tegra/clk-tegra20.c  |  1 +
+ 4 files changed, 43 insertions(+), 1 deletion(-)
 
-> And adding a reference to the subdevice in the private  data structure
-> unioxx5_subd_priv in order to substitute pr_info with dev_info. If this
-> is fine I'll remove all references of pr_info in the file:
->
-> diff --git a/drivers/staging/comedi/drivers/unioxx5.c
-> b/drivers/staging/comedi/drivers/unioxx5.c
-> index 2b1ece8..bb8f5a4 100644
-> --- a/drivers/staging/comedi/drivers/unioxx5.c
-> +++ b/drivers/staging/comedi/drivers/unioxx5.c
-> @@ -72,6 +72,7 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
->
->   /* 'private' structure for each subdevice */
->   struct unioxx5_subd_priv {
-> +       struct comedi_subdevice *subdevice;
->          int usp_iobase;
->          /* 12 modules. each can be 70L or 73L */
->          unsigned char usp_module_type[12];
-> @@ -94,9 +95,10 @@ static int __unioxx5_define_chan_offset(int chan_num)
->   static void __unioxx5_digital_config(struct unioxx5_subd_priv *usp,
-> int mode)
->   {
->          int i, mask;
-> +       struct device *dev = usp->subdevice->class_dev;
->
->          mask = (mode == ALL_2_OUTPUT) ? 0xFF : 0x00;
-> -       printk("COMEDI: mode = %d\n", mask);
-> +       dev_info(dev, "COMEDI: mode = %d\n", mask);
->
->          outb(1, usp->usp_iobase + 0);
-
-It would be better to change those functions to pass the pointer to the 
-struct comedi_subdevice instead of the pointer to the struct 
-unioxx5_subd_priv.
-
-A variable or parameter named 'dev' in the comedi drivers is usually of 
-type struct comedi_device for consistency.
-
-The message passed to dev_info() wouldn't need the "COMEDI:" prefix - 
-it's redundant.
-
-Also, this particular message should be a dev_dbg() at best, and 
-probably better not to have it at all!
-
-For the sake of example, the above function could start as follows:
-
-static void __unioxx5_digital_config(struct comedi_subdevice *s, int mode)
-{
-	struct unioxx5_subd_priv *usp = s->private;
-	struct device *csdev = s->device->class_dev;
-	int i, mask;
-
-	mask = (mode == ALL_2_OUTPUT) ? 0xFF : 0x00;
-	dev_dbg(csdev, "mode = %d\n", mask);
-
+diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+index 9a4e910c3796..3b9191b930b5 100644
+--- a/arch/arm/mach-tegra/fuse.c
++++ b/arch/arm/mach-tegra/fuse.c
+@@ -22,6 +22,7 @@
+ #include <linux/io.h>
+ #include <linux/export.h>
+ #include <linux/random.h>
++#include <linux/clk.h>
+ #include <linux/tegra-soc.h>
+ 
+ #include "fuse.h"
+@@ -54,6 +55,7 @@ int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+ int tegra_soc_speedo_id;
+ enum tegra_revision tegra_revision;
+ 
++static struct clk *fuse_clk;
+ static int tegra_fuse_spare_bit;
+ static void (*tegra_init_speedo_data)(void);
+ 
+@@ -77,6 +79,22 @@ static const char *tegra_revision_name[TEGRA_REVISION_MAX] = {
+ 	[TEGRA_REVISION_A04]     = "A04",
+ };
+ 
++static void tegra_fuse_enable_clk(void)
++{
++	if (IS_ERR(fuse_clk))
++		fuse_clk = clk_get_sys("fuse-tegra", "fuse");
++	if (IS_ERR(fuse_clk))
++		return;
++	clk_prepare_enable(fuse_clk);
++}
++
++static void tegra_fuse_disable_clk(void)
++{
++	if (IS_ERR(fuse_clk))
++		return;
++	clk_disable_unprepare(fuse_clk);
++}
++
+ u32 tegra_fuse_readl(unsigned long offset)
+ {
+ 	return tegra_apb_readl(TEGRA_FUSE_BASE + offset);
+@@ -84,7 +102,15 @@ u32 tegra_fuse_readl(unsigned long offset)
+ 
+ bool tegra_spare_fuse(int bit)
+ {
+-	return tegra_fuse_readl(tegra_fuse_spare_bit + bit * 4);
++	bool ret;
++
++	tegra_fuse_enable_clk();
++
++	ret = tegra_fuse_readl(tegra_fuse_spare_bit + bit * 4);
++
++	tegra_fuse_disable_clk();
++
++	return ret;
+ }
+ 
+ static enum tegra_revision tegra_get_revision(u32 id)
+@@ -113,10 +139,14 @@ static void tegra_get_process_id(void)
+ {
+ 	u32 reg;
+ 
++	tegra_fuse_enable_clk();
++
+ 	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
+ 	tegra_cpu_process_id = (reg >> 6) & 3;
+ 	reg = tegra_fuse_readl(tegra_fuse_spare_bit);
+ 	tegra_core_process_id = (reg >> 12) & 3;
++
++	tegra_fuse_disable_clk();
+ }
+ 
+ u32 tegra_read_chipid(void)
+@@ -159,6 +189,15 @@ void __init tegra_init_fuse(void)
+ 	reg |= 1 << 28;
+ 	writel(reg, IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x48));
+ 
++	/*
++	 * Enable FUSE clock. This needs to be hardcoded because the clock
++	 * subsystem is not active during early boot.
++	 */
++	reg = readl(IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x14));
++	reg |= 1 << 7;
++	writel(reg, IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x14));
++	fuse_clk = ERR_PTR(-EINVAL);
++
+ 	reg = tegra_fuse_readl(FUSE_SKU_INFO);
+ 	randomness[0] = reg;
+ 	tegra_sku_id = reg & 0xFF;
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index dbab27f773b5..a83fdfd19bfc 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -925,6 +925,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA114_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA114_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA114_CLK_PCLK },
++	{ .con_id = "fuse", .dev_id = "fuse-tegra", .dt_id = TEGRA114_CLK_FUSE },
+ 	{ .dev_id = "rtc-tegra", .dt_id = TEGRA114_CLK_RTC },
+ 	{ .dev_id = "timer", .dt_id = TEGRA114_CLK_TIMER },
+ };
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index 266e80b51d38..0a324a2d7309 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -1007,6 +1007,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA124_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA124_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA124_CLK_PCLK },
++	{ .con_id = "fuse", .dev_id = "fuse-tegra", .dt_id = TEGRA124_CLK_FUSE },
+ 	{ .dev_id = "rtc-tegra", .dt_id = TEGRA124_CLK_RTC },
+ 	{ .dev_id = "timer", .dt_id = TEGRA124_CLK_TIMER },
+ };
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index 58faac5f509e..48dca0f4762a 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -452,6 +452,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA20_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA20_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA20_CLK_PCLK },
++	{ .con_id = "fuse", .dev_id = "fuse-tegra", .dt_id = TEGRA20_CLK_FUSE },
+ 	{ .con_id = "twd", .dt_id = TEGRA20_CLK_TWD },
+ 	{ .con_id = "audio", .dt_id = TEGRA20_CLK_AUDIO },
+ 	{ .con_id = "audio_2x", .dt_id = TEGRA20_CLK_AUDIO_2X },
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.8.4.2
+
