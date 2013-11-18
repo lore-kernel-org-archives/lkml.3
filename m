@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab3KRSvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:51:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57566 "EHLO
+	id S1753709Ab3KRSvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:51:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3KRSlg (ORCPT
+	with ESMTP id S1752847Ab3KRSlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:41:36 -0500
+	Mon, 18 Nov 2013 13:41:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rui li <li.rui27@zte.com.cn>
-Subject: [PATCH 3.4 05/12] USB: add new zte 3g-dongles pid to option.c
-Date: Mon, 18 Nov 2013 10:41:38 -0800
-Message-Id: <20131118184131.632184610@linuxfoundation.org>
+        Nikhil P Rao <nikhil.rao@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.4 04/12] PCI: fix truncation of resource size to 32 bits
+Date: Mon, 18 Nov 2013 10:41:37 -0800
+Message-Id: <20131118184131.435164886@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118184130.257996039@linuxfoundation.org>
 References: <20131118184130.257996039@linuxfoundation.org>
@@ -26,43 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rui li <li.rui27@zte.com.cn>
+From: Nikhil P Rao <nikhil.rao@intel.com>
 
-commit 0636fc507a976cdc40f21bdbcce6f0b98ff1dfe9 upstream.
+commit d6776e6d5c2f8db0252f447b09736075e1bbe387 upstream.
 
-Signed-off-by: Rui li <li.rui27@zte.com.cn>
-Cc: stable <stable@vger.kernel.org>
+_pci_assign_resource() took an int "size" argument, which meant that
+sizes larger than 4GB were truncated.  Change type to resource_size_t.
+
+[bhelgaas: changelog]
+Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/pci/setup-res.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1391,6 +1391,23 @@ static const struct usb_device_id option
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1545, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1546, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1547, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1565, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1566, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1567, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1589, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1590, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1591, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1592, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1594, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1596, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1598, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1600, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
- 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -206,7 +206,8 @@ static int pci_revert_fw_address(struct
+ 	return ret;
+ }
+ 
+-static int _pci_assign_resource(struct pci_dev *dev, int resno, int size, resource_size_t min_align)
++static int _pci_assign_resource(struct pci_dev *dev, int resno,
++				resource_size_t size, resource_size_t min_align)
+ {
+ 	struct resource *res = dev->resource + resno;
+ 	struct pci_bus *bus;
 
 
