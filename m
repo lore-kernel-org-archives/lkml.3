@@ -1,48 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab3KRVS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 16:18:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38268 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab3KRVS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 16:18:56 -0500
-Message-ID: <528A831B.8020602@zytor.com>
-Date: Mon, 18 Nov 2013 13:14:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Elena Ufimtseva <ufimtseva@gmail.com>, xen-devel@lists.xenproject.org
-CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, akpm@linux-foundation.org, tangchen@cn.fujitsu.com,
-        wency@cn.fujitsu.com, ian.campbell@citrix.com,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 1/2] xen: vnuma support for PV guests running as domU
-References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com> <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
-In-Reply-To: <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1751887Ab3KRVWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 16:22:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50083 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3KRVWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 16:22:21 -0500
+Date: Mon, 18 Nov 2013 16:22:19 -0500 (EST)
+Message-Id: <20131118.162219.1206321207733675662.davem@davemloft.net>
+To: zwu.kernel@gmail.com
+Cc: netdev@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, wuzhy@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/2] vhost: remove the dead branch
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1384780716-25433-1-git-send-email-zwu.kernel@gmail.com>
+References: <1384780716-25433-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 18 Nov 2013 13:22:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 12:25 PM, Elena Ufimtseva wrote:
-> +/* Checks if hypercall is supported */
-> +bool xen_vnuma_supported()
 
-This isn't C++...
+These two patches are cleanups, please resubmit them after the merge
+window closes and the net-next tree opens back up.
 
-http://lwn.net/Articles/487493/
-
-There are several more things in this patchset that get flagged by
-checkpatch, but apparently this rather common (and rather serious)
-problem is still not being detected, even through a patch was submitted
-almost two years ago:
-
-https://lkml.org/lkml/2012/3/16/510
-
-	-hpa
-
-
+Thank you.
