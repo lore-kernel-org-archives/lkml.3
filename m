@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab3KRPSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 10:18:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42413 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3KRPSA (ORCPT
+	id S1751788Ab3KRPSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 10:18:41 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:53583 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3KRPSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 10:18:00 -0500
-Date: Mon, 18 Nov 2013 16:17:46 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, tytso@mit.edu,
-        adilger.kernel@dilger.ca
-Subject: Re: perf bug: bad page map
-Message-ID: <20131118151746.GC10022@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu>
+	Mon, 18 Nov 2013 10:18:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131118085439.GD3866@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1311131739560.5706@vincent-weaver-1.um.maine.edu>
+	<20131115145944.GA3694@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1311151223040.11932@vincent-weaver-1.um.maine.edu>
+	<20131118085439.GD3866@twins.programming.kicks-ass.net>
+Date: Mon, 18 Nov 2013 16:18:34 +0100
+Message-ID: <CABPqkBRe0xK_mf4JE+0e-UDs92Os_3dreHfh-wnG78fquTCRHQ@mail.gmail.com>
+Subject: Re: perf sw_event related lockup
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 01:04:23PM -0500, Vince Weaver wrote:
-> 
-> (figured out the minicom issue).
-> 
-> Anyway while trying to reproduce the last bug I instead got this with
-> the perf_fuzzer.
-> 
-> Is it worth continuing to run and report these issues?  I'm losing track 
-> of all the open bugs.
+Peter,
 
-This is looks like ext4. Not entirely sure how perf ties into this.
+I missed the beginning of this thread somehow.
+What's the initial problem?
 
-Anyway, yes, I do think its useful to keep running these tests, we do
-fix various issues -- although probably not at the rate you seem to be
-finding them.
 
-> [ 1618.118179] BUG: Bad page map in process perf_fuzzer  pte:ffff8800c4d60040 pmd:bd86a067
-> [ 1618.142177] addr:0000000000409000 vm_flags:00000875 anon_vma:          (null) mapping:ffff8800cb74adf0 index:9
-> [ 1618.172142] vma->vm_ops->fault: filemap_fault+0x0/0x358
-> [ 1618.187783] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x48
-> [ 1618.204981] CPU: 1 PID: 24819 Comm: perf_fuzzer Not tainted 3.12.0 #4
-> [ 1618.224256] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-> [ 1618.250825]  0000000000409000 ffff8800bf6dfaa8 ffffffff8151d8ec 0000000000000000
-> [ 1618.273081]  ffff8800c89ac928 ffff8800bf6dfaf8 ffffffff810ed692 dead000000200200
-> [ 1618.295345]  00000000c03df067 ffff8800bf6dfbe8 0000000000409000 ffffea0002bc2fe8
-> [ 1618.317603] Call Trace:
-> [ 1618.324951]  [<ffffffff8151d8ec>] dump_stack+0x49/0x5d
-> [ 1618.340355]  [<ffffffff810ed692>] print_bad_pte+0x1f5/0x213
-> [ 1618.357059]  [<ffffffff810ef43c>] unmap_single_vma+0x511/0x666
-> [ 1618.374540]  [<ffffffff810ef5c3>] unmap_vmas+0x32/0x49
-> [ 1618.389934]  [<ffffffff810f3804>] exit_mmap+0x84/0x10d
-> [ 1618.405343]  [<ffffffff8105bb15>] ? hrtimer_try_to_cancel+0x41/0x4b
-> [ 1618.424129]  [<ffffffff8103ac43>] mmput+0x4b/0xd1
-> [ 1618.438227]  [<ffffffff8103ec76>] do_exit+0x36c/0x936
-> [ 1618.453366]  [<ffffffff810c7312>] ? update_context_time+0x11/0x34
-> [ 1618.471628]  [<ffffffff8100951b>] ? native_sched_clock+0x3b/0x3d
-> [ 1618.489635]  [<ffffffff8106730d>] ? sched_clock_local+0x1c/0x82
-> [ 1618.507376]  [<ffffffff8103f2b8>] do_group_exit+0x78/0xa0
-> [ 1618.523563]  [<ffffffff8104c898>] get_signal_to_deliver+0x46d/0x48a
-> [ 1618.542347]  [<ffffffff810c8ac7>] ? ctx_sched_in+0x35/0x185
-> [ 1618.559051]  [<ffffffff810c8c80>] ? perf_event_sched_in+0x69/0x72
-> [ 1618.577318]  [<ffffffff81002513>] do_signal+0x46/0x5f5
-> [ 1618.592724]  [<ffffffff810c8ffe>] ? __perf_event_task_sched_in+0x3a/0x10e
-> [ 1618.613071]  [<ffffffff8106699f>] ? finish_task_switch+0x46/0x98
-> [ 1618.631075]  [<ffffffff8151f832>] ? __schedule+0x51c/0x54b
-> [ 1618.647516]  [<ffffffff81002aee>] do_notify_resume+0x2c/0x64
-> [ 1618.664486]  [<ffffffff81520ef5>] retint_signal+0x3d/0x78
-> [ 1618.680661] Disabling lock debugging due to kernel taint
-> 
+On Mon, Nov 18, 2013 at 9:54 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Nov 15, 2013 at 12:26:16PM -0500, Vince Weaver wrote:
+>> On Fri, 15 Nov 2013, Peter Zijlstra wrote:
+>> >
+>> > Please enable CONFIG_FRAME_POINTER to get better backtraces, but the
+>> > above suggests the pagefault swevent, will have a look.
+>>
+>> here it is again I think.  I compiled with CONFIG_FRAME_POINTER but the
+>> backtraces don't look that different.
+>
+> Looks to be that other one -- the one where the intel constraints thing
+> goes belly up. I was hoping Stephane would look at that since I know
+> he's been rewriting that code.
