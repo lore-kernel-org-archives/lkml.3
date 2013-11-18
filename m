@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab3KRX1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 18:27:00 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:34470 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab3KRX05 (ORCPT
+	id S1751884Ab3KRX1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 18:27:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59391 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3KRX1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 18:26:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131119102047.a103f012e381f64da3cd4c2d@canb.auug.org.au>
-References: <20131119102047.a103f012e381f64da3cd4c2d@canb.auug.org.au>
-Date: Mon, 18 Nov 2013 17:26:56 -0600
-Message-ID: <CAH2r5mvZmGqXzuDX2G=WaWV-XD24dPEdwkS1SCSOO8EzB+=h3Q@mail.gmail.com>
-Subject: Re: linux-next: error fetching the cifs tree
-From: Steve French <smfrench@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Nov 2013 18:27:47 -0500
+Date: Mon, 18 Nov 2013 15:27:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Marek Belisko <marek@goldelico.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH/RFC] wait_for_completion_timeout() considered harmful.
+Message-Id: <20131118152746.937b2b7971d7a4bba4ef996d@linux-foundation.org>
+In-Reply-To: <20131117080603.2a0d3b6d@notabene.brown>
+References: <20131117080603.2a0d3b6d@notabene.brown>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is there now.  I had just (very briefly) deleted it for a few
-minutes to update the branch with David Disseldorp's ack on an earlier
-patch so you might have tried in the very few minutes it was gone
-(Murphy's law?)
+On Sun, 17 Nov 2013 08:06:03 +1100 NeilBrown <neilb@suse.de> wrote:
 
-On Mon, Nov 18, 2013 at 5:20 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Fetching the cifs tree produces this error:
->
-> fatal: Couldn't find remote ref refs/heads/for-next
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> It would be reasonable to assume that
+> 
+>       wait_for_completion_timeout(&wm8350->auxadc_done, msecs_to_jiffies(5));
+> 
+> would wait at least 5 msecs for the auxadc_done to complete.  But it does not.
+> With a HZ of 200 or less, msecs_to_jiffies(5) has value '1', and so this
+> will only wait until the next "timer tick", which could happen immediately.
+> 
+> This can lead to incorrect results - and has done so in out-of-tree patches
+> for drivers/misc/bmp085.c which uses a very similar construct to enable interrupt
+> based result collection.
+> 
+> The documentation for several *_timeout* functions claim they will wait for
+> "timeout jiffies" to have elapsed where this is not the case.  They will
+> actually wait for "timeout" jiffies to have started implying an elapsed time
+> between (timeout-1) and (timeout).
+> 
+> This patch corrects some of this documentation, and adds a collection of
+>   wait_for_completion*_msecs()
+> interfaces which wait at least the given number of milliseconds for the
+> completion (or a signal).
 
+Mutter.  wait_for_x(..., 5ms) should wait for a minimum of 5ms, no matter
+what.
 
-
--- 
-Thanks,
-
-Steve
+So I'd suggest we make that happen, rather than adding some new interfaces?
