@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab3KRJtW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 04:49:22 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:21173 "EHLO mail.abilis.ch"
+	id S1751961Ab3KRJtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 04:49:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18013 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab3KRJsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751722Ab3KRJsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Nov 2013 04:48:52 -0500
-Date: Mon, 18 Nov 2013 10:48:08 +0100
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Roskin <proski@gnu.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Noam Camus <noamc@ezchip.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] [FIX] init/Kconfig: fix option to disable kernel
- compression
-Message-ID: <20131118094807.GC31741@ab42.lan>
-References: <1384494227-24029-1-git-send-email-hpa@zytor.com>
- <1384534267-14746-1-git-send-email-christian.ruppert@abilis.com>
- <52873E20.6010307@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52873E20.6010307@synopsys.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,722,1378882800"; 
+   d="scan'208";a="435266916"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/4] perf tools: Allow '--inherit' as the negation of '--no-inherit'
+Date: Mon, 18 Nov 2013 11:55:55 +0200
+Message-Id: <1384768557-23331-3-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1384768557-23331-1-git-send-email-adrian.hunter@intel.com>
+References: <1384768557-23331-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 03:12:56PM +0530, Vineet Gupta wrote:
-> On 11/15/2013 10:21 PM, Christian Ruppert wrote:
-> > Some architectures with self-decompressing kernel images did not compile
-> > with commit 69f0554ec261fd686ac7fa1c598cc9eb27b83a80 because they don't
-> > provide a non-decompression mechanism for uncompressed kernels.
-> > 
-> > Rectify this problem by allowing uncompressed kernels only for architectures
-> > which explicitly state they support them.
-> > 
-> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> Acked-by: Vineet Gupta <vgupta@synopsys.com>
+Long options can be negated by prefixing them
+with 'no-'.  However options that already start
+with 'no-', such as '--no-inherit' result in ugly
+double 'no's.  Avoid that by accepting that the
+removal of 'no-' also negates the long option.
 
-Looks like the revert was applied to main line (and not this fix). In
-the follow-up the complete (fixed) patch set rebased on the latest main
-line: First patch for Kconfig/ARC and as requested a cleaned up second
-patch for x86. I could only test the second patch on one physical
-machine and one VM so some more testing might be required on x86.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+---
+ tools/perf/util/parse-options.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-Greetings,
-  Christian
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index 31f404a..b6b39ff 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -224,6 +224,24 @@ static int parse_long_opt(struct parse_opt_ctx_t *p, const char *arg,
+ 			return 0;
+ 		}
+ 		if (!rest) {
++			if (!prefixcmp(options->long_name, "no-")) {
++				/*
++				 * The long name itself starts with "no-", so
++				 * accept the option without "no-" so that users
++				 * do not have to enter "no-no-" to get the
++				 * negation.
++				 */
++				rest = skip_prefix(arg, options->long_name + 3);
++				if (rest) {
++					flags |= OPT_UNSET;
++					goto match;
++				}
++				/* Abbreviated case */
++				if (!prefixcmp(options->long_name + 3, arg)) {
++					flags |= OPT_UNSET;
++					goto is_abbreviated;
++				}
++			}
+ 			/* abbreviated? */
+ 			if (!strncmp(options->long_name, arg, arg_end - arg)) {
+ is_abbreviated:
+@@ -259,6 +277,7 @@ is_abbreviated:
+ 			if (!rest)
+ 				continue;
+ 		}
++match:
+ 		if (*rest) {
+ 			if (*rest != '=')
+ 				continue;
+-- 
+1.7.11.7
+
