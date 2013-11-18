@@ -1,126 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab3KRG22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 01:28:28 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15688 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab3KRG2V (ORCPT
+	id S1751199Ab3KRGoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 01:44:03 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56237 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab3KRGny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 01:28:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 17 Nov 2013 22:22:27 -0800
-Message-ID: <5289B37E.2030208@nvidia.com>
-Date: Mon, 18 Nov 2013 15:28:14 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 01:43:54 -0500
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tomasz Figa <t.figa@samsung.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+In-Reply-To: <20131115163718.GH19468@mudshark.cambridge.arm.com>
+References: <1382008671-4515-1-git-send-email-sandeepa.prabhu@linaro.org>
+	<1382008671-4515-3-git-send-email-sandeepa.prabhu@linaro.org>
+	<20131108165639.GD15074@mudshark.cambridge.arm.com>
+	<CA+b37P2Yt8Hb_fgtLfw56DO=ZGC0LxVkxJHftHdxa45HQTXJcQ@mail.gmail.com>
+	<20131111112110.GD28302@mudshark.cambridge.arm.com>
+	<CA+b37P1REzXJabkiNEc5Ji+n6p02PfuSdaPrb-k4P25kgfkLNQ@mail.gmail.com>
+	<20131115163718.GH19468@mudshark.cambridge.arm.com>
+Date: Mon, 18 Nov 2013 12:13:53 +0530
+Message-ID: <CA+b37P1foRWLWk_5VqvXGe8L=F6yHXysoKLkS5My3L=r_r15+A@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/6] arm64: Kprobes with single stepping support
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 0/7] ARM: support for Trusted Foundations secure monitor
-References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <52828EF5.6090909@wwwdotorg.org> <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com> <5282E068.1070608@nvidia.com> <CAOesGMgcvTFD4u9b7T5HNhuJe_PQyV25Ei++v8hG8AsY_rOdyw@mail.gmail.com> <52842553.2080807@nvidia.com> <CAAVeFu+Uh9fi_kGv-g-0fH=p4758sCRONexZN25weS0s3PrvxA@mail.gmail.com>
-In-Reply-To: <CAAVeFu+Uh9fi_kGv-g-0fH=p4758sCRONexZN25weS0s3PrvxA@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "srikar@linux.vnet.ibm.com" <srikar@linux.vnet.ibm.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "masami.hiramatsu.pt@hitachi.com" <masami.hiramatsu.pt@hitachi.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2013 06:03 PM, Alexandre Courbot wrote:
-> On Thu, Nov 14, 2013 at 10:20 AM, Alex Courbot <acourbot@nvidia.com> wrote:
->> On 11/14/2013 02:57 AM, Olof Johansson wrote:
->>>
->>> On Tue, Nov 12, 2013 at 6:14 PM, Alex Courbot <acourbot@nvidia.com> wrote:
->>>>
->>>> On 11/13/2013 05:38 AM, Olof Johansson wrote:
->>>>>
->>>>>
->>>>> On Tue, Nov 12, 2013 at 12:26 PM, Stephen Warren <swarren@wwwdotorg.org>
->>>>> wrote:
->>>>>>
->>>>>>
->>>>>> On 11/07/2013 03:11 AM, Alexandre Courbot wrote:
->>>>>>>
->>>>>>>
->>>>>>> Just a set of small fixes to address the concerns expressed on v9 with
->>>>>>> the
->>>>>>> non-prefixed version DT properties. I hope there won't be a need for
->>>>>>> an
->>>>>>> eleventh (!) version. :P
->>>>>>
->>>>>>
->>>>>>
->>>>>> BTW, this version looks fine to me. On IRC, Olof said it looked OK to
->>>>>> him. I'm just waiting to hear back from Olof/Russell whether I should
->>>>>> merge this through the Tegra tree, or whether the first 1-3 patches
->>>>>> should go through Russell's tree.
->>>>>
->>>>>
->>>>>
->>>>> I pinged Russell, and he brought up the fact that there were earlier
->>>>> requests to move it to drivers/firmware. It would make sense to try to
->>>>> get that done before merging, especially if you anticipate someone
->>>>> using TF on 64-bit platforms.
->>>>
->>>>
->>>>
->>>> IIRC when we discussed this point your last comment was as follows:
->>>
->>>
->>> Touche. :) Thanks for the reminder.
->>>
->>>> On Tue, Oct 29, 2013 at 6:55 AM, Olof Johansson <olof@lixom.net> wrote:
->>>>>
->>>>> I think we can probably merge this under arch/arm now, and when we
->>>>> figure out what needs to be common with ARM64 we can move it out to a
->>>>> good location. It might be that mostly just a header file with ABI
->>>>> conventions needs to be shared, not actual implementation, for
->>>>> example.
->>>>
->>>>
->>>> So I thought we agreed on that. If in the end we prefer to move the ARM
->>>> firmware interface into drivers/firmware, I'm fine with that too (Tomasz
->>>> also confirmed he would be ok with it) but I wonder if that would not be
->>>> somehow premature.
->>>>
->>>> Another worry of mine is that this might delay this patchset some more.
->>>> Support for TF is one of the last remaining step towards making NVIDIA
->>>> branded Tegra retail devices (SHIELD and TegraNote at the moment) run
->>>> upstream directly. I missed 3.13, I'd like to make sure I won't miss
->>>> 3.14.
->>>> Would it be acceptable if we move the ARM firmware interface to a common
->>>> place after this patchset is merged?
->>>
->>>
->>> Well, as I already said I'm ok with things going into arch/arm to
->>> start with, as long as Russell is. Once we see 64-bit needs for the
->>> same we'll move it out -- it's not like it's a whole lot of code to
->>> start with. But Russell has veto on the topic. :-)
->>
->>
->> Thanks Olof. Russell, are you ok with the patchset in its current form? I
->> can start moving the firmware interface out of arch/arm if that's what you
->> want (there is no user outside of ARM at the moment, but as Olof pointed out
->> that's not too much code) but I'd really like to see this series secured for
->> 3.14.
->
-> Never mind, I have submitted a patch that moves firmware_ops to
-> drivers/firmware, that will hopefully settle this issue. Then maybe we
-> can finally flush this series as well (I will need to resubmit a new
-> version though).
+On 15 November 2013 22:07, Will Deacon <will.deacon@arm.com> wrote:
 
-... and that patch is very likely to not make it, for (I think) valid 
-reasons. Thus I'm not quite sure where we are with this series now.
+>> well, kprobes does not step from kernel address, but it prepares a
+>> allocated memory(executable),  copies the instruction and update the
+>> single step address (ELR) to enable stepping while ERET.
+>> So, don't we need NOP at next location after the instruction because
+>> next instruction will be in decode stage and might throw "undefined
+>> instruction" error?
+>
+> You can't take speculative prefetch aborts like that, so unless you actually
+> go and *execute* garbage, you don't need that NOP. From the sounds of it, it's
+> not required, as long as you handle the step exception correctly.
+Ok, the stepping is for exactly one instruction, after trapping again
+stepping is disabled.
+so clear that NOP is not necessary. I will remove NOP in next version.
+
+>> > Is this recursion only to support setting kprobes on the kprobe
+>> > implementation? The problem is that the rest of the debug infrastructure is
+>> > not set up to deal with recursive exceptions, so allowing them can break
+>> > state machines maintained by code like hw_breakpoint.
+>> No, upon one kprobe hit for an address, the subsystem can call the
+>> user-defined handlers (pre- and -post) which can call same function
+>> again. Example, if we place kprobe on "printk" entry, and registered
+>> handler can invoke printk to print more info.
+>
+> Hang on, I think I'm missing something here. If you run into a recursive
+> probe, you'll simply hit another BRK instruction, right? That should be
+> fine, since PSTATE.D doesn't mask software breakpoint exceptions. The
+> tricky part comes when you try to step over that guy, but you might be ok
+> if you clear PSTATE.D *only* while you step your single instruction that you
+> copied out to the buffer.
+Yes exactly, D-flag was enabled so that single step can run on BRK
+handler code! exactly once. So I was unmasking D-flag before
+taking(expecting) a BRK so that saved spsr_el1 in pt_regs have it
+stored and restore when return with single stepping!
+I agree with your suggestion to unmask D-flag just before ERET for
+stepping, makes more sense, is it as simple as updating pt_regs
+(regs->pstate)?
+
+>
+> What do you think? I'd really like you to try testing something like:
+>
+>   1. Place a hardware breakpoint in the kernel
+>   2. Place a kprobe on the same address
+>   3. Place a kprobe somewhere in the pre- hook for the kprobe placed in (2)
+>
+> then check that (a) we manage to get through that lot without locking up and
+> (b) each probe/breakpoint is hit exactly once.
+Ok, will do, this can be easily done with kprobing "printk" with pre-
+handler invoking printk, and then placing a hw_breakpoint.  (also we
+need to check for kprobe-watchpoint concurrency right?)
+I would update with results.
+
+>
+>> This will make kprobe to trigger again and re-enter, so the kprobe
+>> subsystem need to handle the 2nd instance first, and then return back
+>> to previous execution. D-flag is enabled only the duration when the
+>> pre- and post- handler are called, so they they can recurse and handle
+>> single stepping, after that, D-flag is kept disabled.   I am yet to
+>> test the concurrency with hw_breakpoint, would update once I run these
+>> tests.
+>
+> If you really want to support this, you need to do more than just clear the
+> D flag. Not only do you need to deal with hardware breakpoints, but also
+> things like scheduling... Assuming that the user-defined handlers can block,
+> then you run the risk of context-switching with the D-flag set, which
+> introduces a significant black-out period to kernel debugging. There are
+> also issues like returning to userspace with MDSCR_EL1.SS set because of a
+> context switch triggered by the pre- handler, resulting in a single-step
+> exception from userspace.
+kprobe user-defined handlers should not block no blocking calls) and
+this is one of the requirements of kprobes, so we cannot manage
+context-switching or interrupts until the kprobe trap is completely
+handled. So, we basically disable local interrupts throughout
+exception handler.
+
+Masami,
+kprobe framework cannot check if the  supplied user-handlers can block
+right? and blocking call would cause undesired sequences, how to
+handle this? (recommendations/policies?)
+
+>
+> I reckon what I suggested above might work, but I'd like your input.
+Sure, would come back with more clear picture after running all tests
+and making the changes as per your suggestion.
+
+Thanks for reviewing this in detail,
+-Sandeepa
+>
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
