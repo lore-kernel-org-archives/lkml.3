@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab3KRRSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:18:42 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33224 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab3KRRSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:18:37 -0500
-Message-ID: <528A4BE9.9070501@wwwdotorg.org>
-Date: Mon, 18 Nov 2013 10:18:33 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751646Ab3KRRUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:20:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59847 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab3KRRUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 12:20:34 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Strashko Grygorii <grygorii.strashko@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v2 0/6] Update Davinci watchdog driver
+Date: Mon, 18 Nov 2013 19:18:53 +0200
+Message-ID: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>, Tomasz Figa <t.figa@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
-References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com> <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com> <52898417.80601@nvidia.com> <20131118115842.GE4050@arm.com> <528A4869.2020701@wwwdotorg.org> <20131118171023.GH16735@n2100.arm.linux.org.uk>
-In-Reply-To: <20131118171023.GH16735@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 10:10 AM, Russell King - ARM Linux wrote:
-> On Mon, Nov 18, 2013 at 10:03:37AM -0700, Stephen Warren wrote:
->> On 11/18/2013 04:58 AM, Catalin Marinas wrote:
->> ...
->>> Of course, trusted foundations interface could be plugged into cpu_ops
->>> on arm64 but I will NAK it on the grounds of not using the PSCI API, nor
->>> the SMC calling convention (and it's easy to fix when porting to ARMv8).
->>> If a supported standard API is used, then there is no need for
->>> additional code in the kernel.
->>
->> What happens when someone takes an existing working secure-mode SW stack
->> and simply re-uses it on some new ARMv8 SoC. Are you going to force
->> people working on upstream to re-write the secure mode firmware in
->> shipped hardware before allowing upstream kernel support?
-> 
-> I'll tell you what will happen.  They'll say "screw mainline, we're doing
-> our own thing".  Vendors have been doing that for years, this will be no
-> different and require no additional effort from them.
+These patches are intended to update Davinci watchdog to use WDT core
+and reuse driver for keystone arch, because Keystone uses the similar
+IP like Davinci.
 
-Yes, that's my point.
+See Documentation:
+Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
+Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
 
-However, what does that mean for those people within the company trying
-to move the SW stack towards mainline? If the answer from upstream is:
-"no, you can't support the shipping HW in mainline", rather than a
-practical approach that recognizes that the HW/SW/firmware really does
-exist and might be useful to support in mainline, then that just makes
-the life of people trying to push for mainline that much harder.
+Also:
+ - improved to support GET_TIMELEFT option.
+ - added "clocks" and "timeout-sec" properties to DT.
+
+Based on
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+keystone/master
+
+v1..v2:
+- watchdog: davinci: change driver to use WDT core
+	corrected 2011 -> 2006-2013
+	removed useless function comment
+	corrected initialization of heartbeat
+	switched on CONFIG_WATCHDOG_NOWAYOUT option
+
+- watchdog: davinci: use davinci_wdt_device structure to hold device data
+	substituted wdd to watchdog device in commit message
+
+- watchdog: davinci: add GET_TIMELEFT option support
+	corrected comment (is -> has)
+	removed redundant error message "clock freq is not set"
+
+- watchdog: davinci: add GET_STATUS option support
+	dropped
+
+- watchdog: davinci: add "timeout-sec" property
+	use consistent formatting
+
+- watchdog: davinci: reuse driver for keystone arch
+	use consistent formatting
+
+- watchdog: davinci: add "clocks" property
+	merged with above patch
+
+Ivan Khoronzhuk (6):
+  watchdog: davinci: change driver to use WDT core
+  watchdog: davinci: use davinci_wdt_device structure to hold device
+    data
+  watchdog: davinci: add GET_TIMELEFT option support
+  watchdog: davinci: add "timeout-sec" property
+  watchdog: davinci: reuse driver for keystone arch
+  arm: dts: keystone: add watchdog entry
+
+ .../devicetree/bindings/watchdog/davinci-wdt.txt   |   15 +-
+ arch/arm/boot/dts/keystone.dts                     |    6 +
+ drivers/watchdog/Kconfig                           |    6 +-
+ drivers/watchdog/davinci_wdt.c                     |  227 +++++++++-----------
+ 4 files changed, 122 insertions(+), 132 deletions(-)
+
+-- 
+1.7.9.5
+
