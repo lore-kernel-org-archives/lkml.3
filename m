@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab3KRShq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:37:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57329 "EHLO
+	id S1752121Ab3KRSht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:37:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3KRSh1 (ORCPT
+	with ESMTP id S1751979Ab3KRSha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:27 -0500
+	Mon, 18 Nov 2013 13:37:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 03/19] net: flow_dissector: fail on evil iph->ihl
-Date: Mon, 18 Nov 2013 10:37:16 -0800
-Message-Id: <20131118183645.021559102@linuxfoundation.org>
+Subject: [PATCH 3.12 07/19] tcp: gso: fix truesize tracking
+Date: Mon, 18 Nov 2013 10:37:20 -0800
+Message-Id: <20131118183646.248381899@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc0.dirty
 In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
 References: <20131118183644.030738675@linuxfoundation.org>
@@ -30,39 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6f092343855a71e03b8d209815d8c45bf3a27fcd ]
+[ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
 
-We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
-skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
-is evil (less than 5).
+commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
+had an heuristic that can trigger a warning in skb_try_coalesce(),
+because skb->truesize of the gso segments were exactly set to mss.
 
-This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
-(rps: support IPIP encapsulation).
+This breaks the requirement that
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+skb->truesize >= skb->len + truesizeof(struct sk_buff);
+
+It can trivially be reproduced by :
+
+ifconfig lo mtu 1500
+ethtool -K lo tso off
+netperf
+
+As the skbs are looped into the TCP networking stack, skb_try_coalesce()
+warns us of these skb under-estimating their truesize.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/flow_dissector.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_offload.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/net/core/flow_dissector.c
-+++ b/net/core/flow_dissector.c
-@@ -40,7 +40,7 @@ again:
- 		struct iphdr _iph;
- ip:
- 		iph = skb_header_pointer(skb, nhoff, sizeof(_iph), &_iph);
--		if (!iph)
-+		if (!iph || iph->ihl < 5)
- 			return false;
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -18,6 +18,7 @@ struct sk_buff *tcp_tso_segment(struct s
+ 				netdev_features_t features)
+ {
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
++	unsigned int sum_truesize = 0;
+ 	struct tcphdr *th;
+ 	unsigned int thlen;
+ 	unsigned int seq;
+@@ -102,13 +103,7 @@ struct sk_buff *tcp_tso_segment(struct s
+ 		if (copy_destructor) {
+ 			skb->destructor = gso_skb->destructor;
+ 			skb->sk = gso_skb->sk;
+-			/* {tcp|sock}_wfree() use exact truesize accounting :
+-			 * sum(skb->truesize) MUST be exactly be gso_skb->truesize
+-			 * So we account mss bytes of 'true size' for each segment.
+-			 * The last segment will contain the remaining.
+-			 */
+-			skb->truesize = mss;
+-			gso_skb->truesize -= mss;
++			sum_truesize += skb->truesize;
+ 		}
+ 		skb = skb->next;
+ 		th = tcp_hdr(skb);
+@@ -125,7 +120,9 @@ struct sk_buff *tcp_tso_segment(struct s
+ 	if (copy_destructor) {
+ 		swap(gso_skb->sk, skb->sk);
+ 		swap(gso_skb->destructor, skb->destructor);
+-		swap(gso_skb->truesize, skb->truesize);
++		sum_truesize += skb->truesize;
++		atomic_add(sum_truesize - gso_skb->truesize,
++			   &skb->sk->sk_wmem_alloc);
+ 	}
  
- 		if (ip_is_fragment(iph))
+ 	delta = htonl(oldlen + (skb_tail_pointer(skb) -
 
 
