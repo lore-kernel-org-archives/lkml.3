@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab3KRSjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 13:39:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57358 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3KRShq (ORCPT
+	id S1752477Ab3KRSje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 13:39:34 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:35242 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab3KRSjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 13:37:46 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Valentijn Sessink <valentyn@blub.net>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 12/19] ipv6: reset dst.expires value when clearing expire flag
-Date: Mon, 18 Nov 2013 10:37:25 -0800
-Message-Id: <20131118183647.634973769@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc0.dirty
-In-Reply-To: <20131118183644.030738675@linuxfoundation.org>
-References: <20131118183644.030738675@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Mon, 18 Nov 2013 13:39:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131116190202.GD22666@redhat.com>
+References: <20131101232521.GA23119@www.outflux.net>
+	<20131114170337.GA11068@redhat.com>
+	<CAGXu5jLXpLqjCAMFwKp7t7GpMq4+WBqNzSFC=up+CBvgGDuFCw@mail.gmail.com>
+	<20131115203652.GA13476@redhat.com>
+	<CAGXu5j+=LZYAczLVawGPAxd=9VX1FupWZq+2858GsrD1YprL3w@mail.gmail.com>
+	<20131116190057.GA22666@redhat.com>
+	<20131116190202.GD22666@redhat.com>
+Date: Mon, 18 Nov 2013 10:39:21 -0800
+X-Google-Sender-Auth: gDTFDVijd-UKPk3CgMRe_RTK7A4
+Message-ID: <CAGXu5jLxD6fqMxakwNP+dToFS=aZ-AyLaPZu9LaoSkYofoq10w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] make __get_dumpable/get_dumpable inline, kill fs/coredump.h
+From: Kees Cook <keescook@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasily Kulikov <segoon@openwall.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Alex Kelly <alex.page.kelly@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Nov 16, 2013 at 11:02 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> 1. Remove fs/coredump.h. It is not clear why do we need it,
+>    it only declares __get_dumpable(), signal.c includes it
+>    for no reason.
+>
+> 2. Now that get_dumpable() and __get_dumpable() are really
+>    trivial make them inline in linux/sched.h.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-------------------
+Acked-by: Kees Cook <keescook@chromium.org>
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-
-[ Upstream commit 01ba16d6ec85a1ec4669c75513a76b61ec53ee50 ]
-
-On receiving a packet too big icmp error we update the expire value by
-calling rt6_update_expires. This function uses dst_set_expires which is
-implemented that it can only reduce the expiration value of the dst entry.
-
-If we insert new routing non-expiry information into the ipv6 fib where
-we already have a matching rt6_info we only clear the RTF_EXPIRES flag
-in rt6i_flags and leave the dst.expires value as is.
-
-When new mtu information arrives for that cached dst_entry we again
-call dst_set_expires. This time it won't update the dst.expire value
-because we left the dst.expire value intact from the last update. So
-dst_set_expires won't touch dst.expires.
-
-Fix this by resetting dst.expires when clearing the RTF_EXPIRE flag.
-dst_set_expires checks for a zero expiration and updates the
-dst.expires.
-
-In the past this (not updating dst.expires) was necessary because
-dst.expire was placed in a union with the dst_entry *from reference
-and rt6_clean_expires did assign NULL to it. This split happend in
-ecd9883724b78cc72ed92c98bcb1a46c764fff21 ("ipv6: fix race condition
-regarding dst->expires and dst->from").
-
-Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Reported-by: Valentijn Sessink <valentyn@blub.net>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Valentijn Sessink <valentyn@blub.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/ip6_fib.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/include/net/ip6_fib.h
-+++ b/include/net/ip6_fib.h
-@@ -165,6 +165,7 @@ static inline struct inet6_dev *ip6_dst_
- static inline void rt6_clean_expires(struct rt6_info *rt)
- {
- 	rt->rt6i_flags &= ~RTF_EXPIRES;
-+	rt->dst.expires = 0;
- }
- 
- static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
-
-
+-- 
+Kees Cook
+Chrome OS Security
