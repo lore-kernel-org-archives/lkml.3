@@ -1,209 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3KRWoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 17:44:39 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54732 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab3KRWoi (ORCPT
+	id S1752023Ab3KRWrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 17:47:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50843 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KRWrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 17:44:38 -0500
-Date: Mon, 18 Nov 2013 14:44:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Matthew Whitehead <tedheadster@gmail.com>, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, mwhitehe@redhat.com
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20131118224434.GH4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
- <20131113102153.5f10e6b5@gandalf.local.home>
- <20131113103134.5b8cf02f@gandalf.local.home>
- <20131113105737.3f7a0b1b@gandalf.local.home>
- <alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
- <20131113111257.482c2955@gandalf.local.home>
- <20131113161829.GE4138@linux.vnet.ibm.com>
- <20131113112338.7d303c0f@gandalf.local.home>
- <20131113163552.GF4138@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+	Mon, 18 Nov 2013 17:47:13 -0500
+Date: Mon, 18 Nov 2013 16:46:47 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+CC: <linux-omap@vger.kernel.org>, <linaro-networking@linaro.org>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 14/23] USB: ehci-omap: raw read and write endian fix
+Message-ID: <20131118224647.GE12294@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
+ <1384560086-11994-15-git-send-email-taras.kondratiuk@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qz2CZ664xQdCRdPu"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+In-Reply-To: <1384560086-11994-15-git-send-email-taras.kondratiuk@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13111822-1344-0000-0000-0000035B2A10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 09:01:57PM +0100, Thomas Gleixner wrote:
-> On Wed, 13 Nov 2013, Paul E. McKenney wrote:
-> > On Wed, Nov 13, 2013 at 11:23:38AM -0500, Steven Rostedt wrote:
-> > > On Wed, 13 Nov 2013 08:18:29 -0800
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > On Wed, Nov 13, 2013 at 11:12:57AM -0500, Steven Rostedt wrote:
-> > > > > On Wed, 13 Nov 2013 17:07:18 +0100 (CET)
-> > > > > Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > > > 
-> > > > > 
-> > > > > > Right. It's telling you if NOHZ is enabled. It's not telling you that
-> > > > > > NOHZ is active.
-> > > > > 
-> > > > > Yeah, which makes this code rather silly:
-> > > > > 
-> > > > > in rcu_prepare_for_idle():
-> > > > > 
-> > > > > 	/* Handle nohz enablement switches conservatively. */
-> > > > > 	tne = ACCESS_ONCE(tick_nohz_enabled);
-> > > > > 	if (tne != rdtp->tick_nohz_enabled_snap) {
-> > > > > 		if (rcu_cpu_has_callbacks(cpu, NULL))
-> > > > > 			invoke_rcu_core(); /* force nohz to see update. */
-> > > > > 		rdtp->tick_nohz_enabled_snap = tne;
-> > > > > 		return;
-> > > > > 	}
-> > > > 
-> > > > OK, what should I be checking instead?  Not much point in trying to
-> > > > get RCU out of the way of disabling the scheduling-clock interrupt
-> > > > if NOHZ is disabled.  ;-)
-> > > 
-> > > I'll leave the answer to Thomas, but checking tick_nohz_enabled just
-> > > lets you know if someone booted with nohz=off or not (and has nohz
-> > > configured). But it doesn't tell you if nohz is actually being used.
-> > 
-> > Based on Thomas's most recent response, it sounds like I need to check
-> > a frozen shark or something.  ;-)
-> 
-> Correct. Fix for the whole mess below.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> ---------------->
-> Subject: NOHZ: Check for nohz active instead of nohz enabled
-> 
-> RCU and the fine grained idle time accounting functions check
-> tick_nohz_enabled. But that variable is merily telling that NOHZ has
-> been enabled in the config and not been disabled on the command line.
-> 
-> But it does not tell anything about nohz being active. That's what all
-> this should check for.
-> 
-> Matthew reported, that the idle accounting on his old P1 machine
-> showed bogus values, when he enabled NOHZ in the config and did not
-> disable it on the kernel command line. The reason is that his machine
-> uses (refined) jiffies as a clocksource which explains why the "fine"
-> grained accounting went into lala land, because it depends on when the
-> system goes and leaves idle relative to the jiffies increment.
-> 
-> Provide a tick_nohz_active indicator and let RCU and the accounting
-> code use this instead of tick_nohz_enable.
-> 
-> Reported-by: Matthew Whitehead <tedheadster@gmail.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+--Qz2CZ664xQdCRdPu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Sat, Nov 16, 2013 at 02:01:17AM +0200, Taras Kondratiuk wrote:
+> From: Victor Kamensky <victor.kamensky@linaro.org>
+>=20
+> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
+> Need to use endian neutral functions to read/write h/w registers.
+> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+> need to use read[lw]_relaxed and write[lw]_relaxed functions.
+> If the first simply reads/writes register, the second will byteswap
+> it if host operates in BE mode.
+>=20
+> Changes are trivial sed like replacement of __raw_xxx functions
+> with xxx_relaxed variant.
+>=20
+> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+
+Acked-by: Felipe Balbi <balbi@ti.com>
 
 > ---
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 3822ac0..da6e6de 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -1632,7 +1632,7 @@ module_param(rcu_idle_gp_delay, int, 0644);
->  static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
->  module_param(rcu_idle_lazy_gp_delay, int, 0644);
-> 
-> -extern int tick_nohz_enabled;
-> +extern int tick_nohz_active;
-> 
->  /*
->   * Try to advance callbacks for all flavors of RCU on the current CPU, but
-> @@ -1729,7 +1729,7 @@ static void rcu_prepare_for_idle(int cpu)
->  	int tne;
-> 
->  	/* Handle nohz enablement switches conservatively. */
-> -	tne = ACCESS_ONCE(tick_nohz_enabled);
-> +	tne = ACCESS_ONCE(tick_nohz_active);
->  	if (tne != rdtp->tick_nohz_enabled_snap) {
->  		if (rcu_cpu_has_callbacks(cpu, NULL))
->  			invoke_rcu_core(); /* force nohz to see update. */
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 3612fc7..a12df5a 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -361,8 +361,8 @@ void __init tick_nohz_init(void)
->  /*
->   * NO HZ enabled ?
->   */
-> -int tick_nohz_enabled __read_mostly  = 1;
-> -
-> +static int tick_nohz_enabled __read_mostly  = 1;
-> +int tick_nohz_active  __read_mostly;
->  /*
->   * Enable / Disable tickless mode
->   */
-> @@ -465,7 +465,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
->  	ktime_t now, idle;
-> 
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return -1;
-> 
->  	now = ktime_get();
-> @@ -506,7 +506,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
->  	ktime_t now, iowait;
-> 
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return -1;
-> 
->  	now = ktime_get();
-> @@ -799,11 +799,6 @@ void tick_nohz_idle_enter(void)
->  	local_irq_disable();
-> 
->  	ts = &__get_cpu_var(tick_cpu_sched);
-> -	/*
-> -	 * set ts->inidle unconditionally. even if the system did not
-> -	 * switch to nohz mode the cpu frequency governers rely on the
-> -	 * update of the idle time accounting in tick_nohz_start_idle().
-> -	 */
->  	ts->inidle = 1;
->  	__tick_nohz_idle_enter(ts);
-> 
-> @@ -973,7 +968,7 @@ static void tick_nohz_switch_to_nohz(void)
->  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
->  	ktime_t next;
-> 
-> -	if (!tick_nohz_enabled)
-> +	if (!tick_nohz_active)
->  		return;
-> 
->  	local_irq_disable();
-> @@ -981,7 +976,7 @@ static void tick_nohz_switch_to_nohz(void)
->  		local_irq_enable();
->  		return;
->  	}
-> -
-> +	tick_nohz_active = 1;
->  	ts->nohz_mode = NOHZ_MODE_LOWRES;
-> 
->  	/*
-> @@ -1139,8 +1134,10 @@ void tick_setup_sched_timer(void)
->  	}
-> 
->  #ifdef CONFIG_NO_HZ_COMMON
-> -	if (tick_nohz_enabled)
-> +	if (tick_nohz_enabled) {
->  		ts->nohz_mode = NOHZ_MODE_HIGHRES;
-> +		tick_nohz_active = 1;
-> +	}
->  #endif
+>  drivers/usb/host/ehci-omap.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 6fa82d6..803e706 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -73,12 +73,12 @@ struct omap_hcd {
+> =20
+>  static inline void ehci_write(void __iomem *base, u32 reg, u32 val)
+>  {
+> -	__raw_writel(val, base + reg);
+> +	writel_relaxed(val, base + reg);
 >  }
->  #endif /* HIGH_RES_TIMERS */
-> 
+> =20
+>  static inline u32 ehci_read(void __iomem *base, u32 reg)
+>  {
+> -	return __raw_readl(base + reg);
+> +	return readl_relaxed(base + reg);
+>  }
+> =20
+>  /* configure so an HC device and id are always provided */
+> --=20
+> 1.7.9.5
+>=20
 
+--=20
+balbi
+
+--Qz2CZ664xQdCRdPu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSipjXAAoJEIaOsuA1yqREA/MQAKab9xc4Y86C41FFYkoEGywX
+tE5cVe1EvBDbba6QZ6C5w+snckoitr8fXF/gMMQzsyQNXonhxMu5Gvak9X1J1iGN
+BZAiVrZTzo3WnbihqOpNsY9ZjBILXEW92ixYlck9pWx0kyWPwGrGwIJDcAV+Gh6s
+RO2x904QHJ9BvWBXHaeOPQhFxQm6eS3F01yhSwt9Bi7PhhPd04KjcKzaXjo3Hh09
+Qx0J3nk4b7LbUVIxkRk2+7vnV4x6bvGs0Oc9t2IaMtV8RNFa441ugzNPzKxKonEY
+KCjIOziYYnWgl2aozD+SsP32x4XtMR6i5aKI6CHhacoXTAXg1WZoSCS3PZDxvjff
+s2D7hwh/B3ePdFmXtzEXX0RsR75KPpUFTfMpCGVE0tSQC+3+/01lfvJ/YeA+zzza
+M3WfoaHAE82DRrwvxzXepmIKUoG3UE8ed46i2GKywCJL8PPxwBpepC85L7smaPRV
+weYVXTq2plD/E0Td4rs+0EZUFAL9La/q8wHCJ/EwfYXk7R7on//jV2ETehlINzTu
+pX+sfbgLOr9FzbtjQEIo/ZYHFKWLk+C7/7lZZjXw+ked5NCGMH0Z6qOVvznV27+u
+hfK7Y7V8GBYVgtDMtbkZaxjzfMAdAxt+FyWF/BRM2InxDiQoDUfWb+KB5Fdmb1r7
+wmBaOWqdxvtbyw4E8PTA
+=rzKl
+-----END PGP SIGNATURE-----
+
+--Qz2CZ664xQdCRdPu--
