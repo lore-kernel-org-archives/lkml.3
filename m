@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3KRT52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 14:57:28 -0500
-Received: from relay.sodetel.net.lb ([89.108.129.69]:33680 "EHLO
-	smtp.sodetel.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3KRT51 (ORCPT
+	id S1752238Ab3KRUBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 15:01:15 -0500
+Received: from nm25-vm7.access.bullet.mail.bf1.yahoo.com ([216.109.115.198]:42520
+	"EHLO nm25-vm7.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751527Ab3KRUBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 14:57:27 -0500
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Nov 2013 14:57:27 EST
+	Mon, 18 Nov 2013 15:01:13 -0500
+X-Yahoo-Newman-Id: 185968.81308.bm@smtp113.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: QZ8dj3UVM1myn3LTtq6bgjS_rdkHi_QqK7htNALgeH.irwc
+ nyBKhTjOVlHtGkt9mb98cHQL_xHLHGwRnBq5QU4p3GxYUCb7FtVJCrBwQwfc
+ 2UmMnxDDxG77BCTP1HM1k3MmHJN7AKYw9nhnpA48EQ5lGhS7RWqeKmfPfsii
+ yCxdSP2MjCMMfJIbN7pevgYG0lgQb2KdLImuyqcGZTFWmJemOUfu9QOabwLV
+ ptGb73aIOeD5sWDr2CAezuQTGSLeF.1g_V3_jIppMurJHamvp7nKnyGyq_Q0
+ TBesg7lqRFT9059jXwGtEf73xX42rh_lbFFYfJyJqYaHFKlwFjESNp1uATIO
+ KBuOT4uq79pYhfQI1u4jARvuRkxBDXk23IiLpP0Frhe6ZehPb4ng0iOLELmQ
+ fxBoi9k21Eoil7ecRAm9BeXOwbqlzwXaWkW0G3QD_DIt4aV7FaRKKKGzHV9b
+ za9qoLpKSfEH_7q66MlcxjS4qEcAxEZgidiHw6h7h0GXTYH71c05JH10Q9C2
+ UUO4I1Dpxm.wSEJP5nv2cBfIpcQLJRBoMmt9Th1SaseTHOYzVmXM.DGo7gA-
+ -
+X-Yahoo-SMTP: 0h0Q7euswBD_g.kcEqbzJWRFfrba801gq1M1
+X-Rocket-Received: from mistral.localnet (stilor@216.100.252.242 with )
+        by smtp113.sbc.mail.ne1.yahoo.com with SMTP; 18 Nov 2013 20:01:12 +0000 UTC
+From: Alexey Neyman <stilor@att.net>
+To: Dong Aisheng <dongas86@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>,
+        "open list:SECURE DIGITAL HO..." <linux-mmc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc: sdhci: Avoid needless loop while handling SDIO interrupts in sdhci_irq()
+Date: Mon, 18 Nov 2013 12:01:11 -0800
+Message-ID: <2863850.GcQ0l6lPBj@mistral>
+User-Agent: KMail/4.11.2 (Linux/3.11.0-12-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1383709236-26692-1-git-send-email-stilor@att.net>
+References: <CAA+hA=StthxfMWjQ+0fhdRiPuDDVWUGrrW9E71Q+E3RoF_QdHw@mail.gmail.com> <1383709236-26692-1-git-send-email-stilor@att.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Mon, 18 Nov 2013 21:57:20 +0200
-From: "Mr. smith Tiangaye" <smithtiangayesqq@gmail.com>
-To: undisclosed-recipients:;
-Subject: Private Request;
-Reply-To: <tnsmth@blumail.org>
-Mail-Reply-To: <tnsmth@blumail.org>
-Message-ID: <fa211737276cb314d2b0d0522f9e1c9f@sodetel.net.lb>
-User-Agent: Roundcube Webmail/0.8.6
-X-TM-AS-Product-Ver: IMSVA-8.2.0.1391-7.0.0.1014-20300.001
-X-TM-AS-Result: No-2.721-7.0-31-10
-X-imss-scan-details: No-2.721-7.0-31-10
-X-TMASE-Version: IMSVA-8.2.0.1391-7.0.1014-20300.001
-X-TMASE-Result: 10-2.721100-5.000000
-X-TMASE-MatchedRID: J/NqXV0mzJfaA1ogOA3LT/Qajs/YwumpeIzkNJY25w/qBVsSZMfnVR+D
-	i3+4QSRc60o/Y97F/jc6MG3DN6MjhjUiizuKy5Csox5cBdU3pAfEkmLzgU2KepacqsSFIP2UyeM
-	tMD9QOgDOaJ8pAsqf+8Ub74GNAVZom9ukrtqhno/sJ1GsTl4VieTCMddcL/gjxlblqLlYqXKQG8
-	BiThsTiFsmJP+Oj6wkqYoguUidFVYZ9g1u+6K6gSivAs2n9kiVKvmth1CpTKCzd8QA7Hiqtk3BI
-	CEyD4L2W59sNrfVRMLDyDYcE1wXmQ==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[yet another patch ping]
 
+On Tuesday, November 05, 2013 07:40:36 PM Alexey Neyman wrote:
+> Ignore Card Interrupt bit in the interrupt status if we already know that
+> mmc_signal_sdio_irq() is going to be called at the end of sdhci_irq(). This
+> avoids a needless loop in sdhci_irq() repeatedly reading interrupt status
+> and doing nothing.
+> 
+> Signed-off-by: Alexey Neyman <stilor@att.net>
+> Acked-by: Dong Aisheng <b29396@freescale.com>
+> ---
+>  drivers/mmc/host/sdhci.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 7a7fb4f..a83cd1b 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2491,6 +2491,14 @@ again:
+>  	result = IRQ_HANDLED;
+> 
+>  	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+> +
+> +	/*
+> +	 * If we know we'll call the driver to signal SDIO IRQ, disregard
+> +	 * further indications of Card Interrupt in the status to avoid a
+> +	 * needless loop.
+> +	 */
+> +	if (cardint)
+> +		intmask &= ~SDHCI_INT_CARD_INT;
+>  	if (intmask && --max_loops)
+>  		goto again;
+>  out:
 
-
-Hi,
-
-My name is Mr. smith Tiangaye from Central Africa but currently 
-residing in South Africa. I want to invest in South Africa with your 
-assistance. Contact me for more information.
-
-Best regard,
-Mr. smith Tiangaye
-084 023 9962
