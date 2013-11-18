@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab3KRBAu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Nov 2013 20:00:50 -0500
-Received: from outbound002.roc2.bluetie.com ([208.89.132.142]:32870 "EHLO
-	outbound002.roc2.bluetie.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752664Ab3KRBAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Nov 2013 20:00:44 -0500
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Nov 2013 20:00:44 EST
-X-CMAE-OUT-Analysis: v=2.1 cv=Oa2hUHjY c=1 sm=1 tr=0
- a=41l5LDBFByitqw60Fh41mg==:117 a=QoHJ8kPOAAAA:8 a=oti87C7NwtcA:10
- a=IkcTkHD0fZMA:10 a=deDS6JXDAAAA:8 a=VwQbUJbxAAAA:8 a=Esf2-M-d1o4A:10
- a=vr8e0IWMAAAA:20 a=pBNvEoUoGgXK0RjA868A:9 a=jjr//+d8++h3idp61RL+V+rVJvg=:19
- a=jkwP77aQ2psP8Imo3Zf8GXsARoQ=:19 a=QEXdDO2ut3YA:10 a=13ZDGRVGG7MA:10
- a=jPYMW6S8CTwA:10 a=o0eJl8sZrB0A:10 a=wb-pirtmBt4A:10
-X-CMAE-OUT-Score: 0.00
-Message-ID: <20131117195057.556@web002.roc2.bluetie.com>
-X-HTTP-Received: from 2e91ozwh7m.myway [177.43.224.98] by web002.roc2.bluetie.com (BlueTie WebMail ); Sun, 17 Nov 2013 19:50:57 -0500
-X-Mailer: BlueTie MTA
-Date: Sun, 17 Nov 2013 19:50:57 -0500
-To: 2e91ozwh7m@myway.com
-From: "Full Name" <2e91ozwh7m@myway.com>
-Importance: normal
-Subject: Diploma?
-Content-Type: text/plain; charset=UTF-8
+	id S1753152Ab3KRBEi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Nov 2013 20:04:38 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41832 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752102Ab3KRBEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Nov 2013 20:04:30 -0500
+Date: Mon, 18 Nov 2013 02:04:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Kevin Easton <kevin@guarana.org>
+Cc: Francis Moreau <francis.moro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+Message-ID: <20131118010428.GT27323@pd.tnic>
+References: <52888F6D.6000802@gmail.com>
+ <20131117132531.GB27696@pd.tnic>
+ <5288E5BF.2020608@gmail.com>
+ <20131117160126.GG27323@pd.tnic>
+ <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com>
+ <20131117195358.GO27323@pd.tnic>
+ <20131117220611.GQ27323@pd.tnic>
+ <20131118003325.GA25843@chicago.guarana.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131118003325.GA25843@chicago.guarana.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id rAI10r37024269
 
-Diploma?
+On Mon, Nov 18, 2013 at 11:33:25AM +1100, Kevin Easton wrote:
+> That's part of an ASCII string, "DEP=2\0SE", so if that looks familiar
+> to anyone (part of a kernel command line?) it might give a clue to
+> where the timer callback pointer is being overwritten.
 
-http://tiny.cc/2e91ozwh7m
+Yeah, it could be anything, maybe even part of dmesg although nothing
+matches "DEP" in there.
+
+And command line is:
+
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-linux root=UUID=b588f212-e32e-4914-9841-5246e0bd7632 rw quiet
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
