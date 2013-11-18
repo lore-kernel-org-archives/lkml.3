@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3KRRhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 12:37:15 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54344 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751297Ab3KRRhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 12:37:10 -0500
-Message-ID: <528A5043.6030901@hurleysoftware.com>
-Date: Mon, 18 Nov 2013 12:37:07 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751700Ab3KRRh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 12:37:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6826 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297Ab3KRRhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 12:37:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,725,1378882800"; 
+   d="scan'208";a="429744769"
+Message-ID: <528A4FED.3030709@linux.intel.com>
+Date: Mon, 18 Nov 2013 09:35:41 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Heorhi Valakhanovich <valahanovich@tut.by>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] tty: Only hangup once
-References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>	<20131117203850.46df2124@tormoz-pc> <20131118134211.17861db3@alan.etchedpixels.co.uk>
-In-Reply-To: <20131118134211.17861db3@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Christoph Hellwig <hch@infradead.org>
+CC: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH v1.1] x86: intel-mid: add test module for sfi_device()
+References: <1384370961-30847-1-git-send-email-david.a.cohen@linux.intel.com> <1384560558-10462-1-git-send-email-david.a.cohen@linux.intel.com> <20131118152806.GB19649@infradead.org>
+In-Reply-To: <20131118152806.GB19649@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 08:42 AM, One Thousand Gnomes wrote:
->> After upgrading to kernel 3.12 I noticed one issue with tmux software.
->> The easiest way to reproduce will be:
->> 1. Start tmux session as root.
->> 2. Connect via ssh and use "tmux attach" to attach to the running
->> session.
->> 3. Kill ssh client.
+On 11/18/2013 07:28 AM, Christoph Hellwig wrote:
+> On Fri, Nov 15, 2013 at 04:09:18PM -0800, David Cohen wrote:
+>> This patch adds a test module to validate sfi_device() when used from a
+>> driver module.
+> 
+> I don't think this is all that useful.  How about you prepeare a few
+> of the more useful drivers from your tree for submission instead?
 
-Heorhi,
+One of these drivers you can track here:
+https://patchwork.kernel.org/patch/3109791/
+This is necessary to enable serial console on Saltbay (Merrifield based
+platform). But the driver is still being reworked to be upstreamed.
 
-Thanks for the report.
+Anyway, upstream those drivers won't work to validate this patch set
+we're discussion here. All platform codes are bool (can't be module).
+The real purpose of these patches is to make my internal tree to be
+equal to upstream. My intention is to upstream *all* internal patches
+of Intel MID and temporarily move away from arch/x86/platform/intel-
+mid/device_libs/ the platform code from still-on-staging-state drivers.
 
->> You can notice that shell (zsh in my case) and "tmux attach" are still
->> remains in process' list. That didn't happen in previous kernels.
+So, we need a dummy module on upstream to make this code testable.
 
-This may have been a bug in previous kernels.
-The tmux(1) man page has this to say:
+In case this code is not accepted, I'll will have to maintain 2
+official public branches: one with these patches and one without them.
 
-      Each session is persistent and will survive accidental disconnection
-      (such as ssh(1) connection timeout) or intentional detaching (with the
-      `C-b d' key strokes).  tmux may be reattached using:
-
-            $ tmux attach
-
-
-I'll confirm with tmux author(s) what the intended behavior is.
-
->> I've tried to bisect this in kernel sources and found commit
->> cb50e5235b8ae5aa0fe422eaaa8e444024c5bd98 which contains this exact
->> patch. I have not enough experience to investigate more so most likely
->> I will not find anything more. But it will be good if someone more
->> experienced will have a look at it.
->
-> The patch should be reverted. The submission gives no reason that the
-> patch was required - it just adds code and optimises a path that doesn't
-> need optimising anyway.
-
-Alan,
-
-This patch isn't about optimizing; it's about guaranteeing the line discipline
-and a tty driver that ops->hangup() will only occur once for any given tty.
-
-> It's theoretically true you only need one hangup, unfortunately however
-> I think it has to be the *last* hangup not the first or there are races
-> between the tty code and the process group handling.
-
-I doubt this is caused by a race condition; the first hangup would do most
-of the destruction regardless, and a second hangup can't really race with
-the first because of the tty_lock() held for most of the hangup.
-
-In any event, it's worth discovering what state a subsequent hangup can
-effect that the first hangup left incomplete. I'll look into it.
-
-Regards,
-Peter Hurley
+Br, David
