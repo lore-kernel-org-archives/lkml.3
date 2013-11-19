@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3KSSrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:47:06 -0500
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:52268
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751307Ab3KSSrE (ORCPT
+	id S1753016Ab3KSSrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:47:41 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:50237 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3KSSri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:47:04 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: len.brown@intel.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, joe@perches.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH v2] power: Replace printks with dev_* and pr_* routines
-Date: Tue, 19 Nov 2013 11:46:58 -0700
-Message-Id: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 19 Nov 2013 13:47:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131119154253.GA12219@gmail.com>
+References: <20131119154253.GA12219@gmail.com>
+Date: Tue, 19 Nov 2013 10:47:36 -0800
+X-Google-Sender-Auth: dQp3S00hQScV6r7gR93mmc1gaLs
+Message-ID: <CA+55aFzyBxFi8_4C4hAz6+SAgtHCmQtpxSyJhRyWzggoRGTD5w@mail.gmail.com>
+Subject: Re: [GIT PULL] core kernel update
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>, Josh Boyer <jwboyer@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced printks with dev_* and pr_* routines. Replacing printk in
-__suspend_report_result() will require passing in struct device *
-pointer from calling routines and this will require changes to
-external interface suspend_report_result() which is used by several
-drivers. Hence, this one instance is replaced by pr_err().
+On Tue, Nov 19, 2013 at 7:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Josh Boyer (1):
+>       smp/cpumask: Make CONFIG_CPUMASK_OFFSTACK=y usable without debug dependency
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/base/power/main.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+This seems to be just pure stupid.
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 9f098a8..3f42c43 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -349,8 +349,8 @@ static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
- static void pm_dev_err(struct device *dev, pm_message_t state, char *info,
- 			int error)
- {
--	printk(KERN_ERR "PM: Device %s failed to %s%s: error %d\n",
--		dev_name(dev), pm_verb(state.event), info, error);
-+	dev_err(dev, "PM: failed to %s%s: error %d\n",
-+		pm_verb(state.event), info, error);
- }
- 
- static void dpm_show_time(ktime_t starttime, pm_message_t state, char *info)
-@@ -1308,9 +1308,8 @@ int dpm_prepare(pm_message_t state)
- 				error = 0;
- 				continue;
- 			}
--			printk(KERN_INFO "PM: Device %s not prepared "
--				"for power transition: code %d\n",
--				dev_name(dev), error);
-+			dev_info("PM: not prepared for power transition: ",
-+				 "code %d\n", error);
- 			put_device(dev);
- 			break;
- 		}
-@@ -1347,7 +1346,7 @@ EXPORT_SYMBOL_GPL(dpm_suspend_start);
- void __suspend_report_result(const char *function, void *fn, int ret)
- {
- 	if (ret)
--		printk(KERN_ERR "%s(): %pF returns %d\n", function, fn, ret);
-+		pr_err("%s(): %pF returns %d\n", function, fn, ret);
- }
- EXPORT_SYMBOL_GPL(__suspend_report_result);
- 
--- 
-1.8.3.2
+Why the hell should we ever ask the user whethr they want to force
+CPUMASK offstack?
 
+Seriously, it only leaves room for mistakes and stupidities. There is
+no reason for any normal use-case to ask the user about this. Even the
+help message is pure and utter garbage ("This is a bit more expensive,
+but avoids stack overflow").
+
+The fact is, an on-stack CPUMASK is *smaller* than a pointer to an
+offstack one when NR_CPU is small. The question makes no sense then.
+And when NR_CPU is huge, the question makes no sense _either_, since
+we can't have the cpumasks on stack.
+
+Asking the user questions that make no f*cking sense to ask is stupid.
+And I'm not knowingly pulling stupid crap.
+
+                   Linus
