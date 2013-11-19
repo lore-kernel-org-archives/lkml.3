@@ -1,141 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab3KSBms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:42:48 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:12863 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KSBmr convert rfc822-to-8bit (ORCPT
+	id S1751741Ab3KSBoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:44:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48892 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab3KSBoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:42:47 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-1b-528ac215d77b
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?UTF-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
-References: <000001cee293$3b6e3030$b24a9090$@samsung.com>
- <1384734560.26319.10.camel@kjgkr>
- <000901cee3fe$edfa8660$c9ef9320$@samsung.com> <1384765870.26319.16.camel@kjgkr>
-In-reply-to: <1384765870.26319.16.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
- merging contiguous read
-Date: Tue, 19 Nov 2013 09:41:54 +0800
-Message-id: <001101cee4c8$a51286d0$ef379470$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQEjOp1BQ4p72/eUWik9AupolSecHAFKR9WBAljK8Y8CUi66IptTYK2g
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jQV3RQ11BBvuvC1tc3/WXyeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxrRJ29gK
-	7ktUfPqk0MC4WbiLkZNDQsBEom3qHWYIW0ziwr31bF2MXBxCAtMZJTa/+8UO4fxglGjZ9Z4J
-	pIpNQEViecd/MFtEQFpi1qd5LCA2s8BsoI7ZjhAN6xkl/v6HaOAU0JO4tWMuWJGwQIZE49RJ
-	rCA2i4CqxO4bB8BsXgFLiWPvb7BA2IISPybfgxqqLjFp3iJmCFtb4sm7C6wQpypI7Dj7mhHi
-	CDeJLa3NjBA14hIbj9ximcAoNAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz
-	0vWS83M3MYKj4Jn0DsZVDRaHGAU4GJV4eCe4dwUJsSaWFVfmHmKU4GBWEuHdvwcoxJuSWFmV
-	WpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTHjdsii/I7uiylaM2TX
-	24d3/VnDFfTp1qta23nqxW0Nflc8hL433A7Uj9wunH5/abWr7OWcRpuzAhxR3PdPP6wX2Pn2
-	2pF5tucOL/RQiGmcUWdwPmGtSdsFqclm3QoHvJttOF2uZfkVuW1eG9nI9ovr+7ukB/9mvL//
-	cYLiqqiag28tS/fXWiuxFGckGmoxFxUnAgAe2UgUfgIAAA==
+	Mon, 18 Nov 2013 20:44:09 -0500
+Date: Tue, 19 Nov 2013 12:43:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: linux-next: manual merge of the gpio tree with the pm tree
+Message-Id: <20131119124357.a6191743b0f568d40c8291d5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Monday, November 18, 2013 5:11 PM
-> To: Chao Yu
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net; '谭姝'
-> Subject: RE: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
-> merging contiguous read
-> 
-> Hi,
-> 
-> 2013-11-18 (월), 09:37 +0800, Chao Yu:
-> > Hi Kim,
-> >
-> > > -----Original Message-----
-> > > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> > > Sent: Monday, November 18, 2013 8:29 AM
-> > > To: Chao Yu
-> > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net; 谭姝
-> > > Subject: Re: [f2fs-dev] [PATCH V2 1/2] f2fs: add a new function to support for
-> merging contiguous read
-> > >
-> > > Hi Chao,
-> > >
-> > > 2013-11-16 (토), 14:14 +0800, Chao Yu:
-> > > > For better read performance, we add a new function to support for merging
-> contiguous read as the one for write.
-> > >
-> > > Please consider 80 columns for the description.
-> > > I cannot fix this at every time though. :(
-> >
-> > Got it, sorry about my carelessness in previous patch.
-> >
-> > >
-> > > >
-> > > > v1-->v2:
-> > > >  o add declarations here as Gu Zheng suggested.
-> > > >
-> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> > > > ---
-> > > >  fs/f2fs/data.c |   45
-> +++++++++++++++++++++++++++++++++++++++++++++
-> > > >  fs/f2fs/f2fs.h |    4 ++++
-> > > >  2 files changed, 49 insertions(+)
-> > > >
-> > > > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> > > > index aa3438c..18107cb 100644
-> > > > --- a/fs/f2fs/data.c
-> > > > +++ b/fs/f2fs/data.c
-> > > > @@ -404,6 +404,51 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct
-> page *page,
-> > > >  	return 0;
-> > > >  }
-> > > >
-> > > > +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
-> > > > +{
-> > > > +	down_read(&sbi->bio_sem);
-> > >
-> > > Is there any reason to use down_read()?
-> >
-> > Isn't that we use bio_sem to let w/r or w/w submitting be mutex?
-> 
-> As I examined the bio_sem, I think we don't need to use a semaphore for
-> read and write IOs.
-> Just it is enough to use a mutex for writes only.
+Hi Linus,
 
-Agreed, it could also improve efficiency of read/write request concurrent.
+Today's linux-next merge of the gpio tree got a conflict in
+drivers/gpio/gpiolib.c between commit 7b1998116bbb ("ACPI / driver core:
+Store an ACPI device pointer in struct acpi_dev_node") from the pm tree
+and commit f760f1967ee8 ("gpiolib: use dedicated flags for GPIO
+properties") from the gpio tree.
 
-> 
-> >
-> > > It seems that we need to declare sbi->bio_read and sbi->bio_write
-> > > instead of sbi->bio_sem.
-> > > In addition to that, we need to use down_write(&sbi->bio_read) here.
-> >
-> > If so, it looks similar between (struct rw_semaphore) sbi->bio_read
-> > and (struct bio *) sbi->read_bio.
-> > How about using read_bio_sem/rbio_sem to differentiate
-> > from sbi->read_bio?
-> 
-> I think sbi->write_mutex and sbi->read_mutex are much better.
-> 
-> Could you refer the following patches?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-It's better, I will refer your patch.
-And how about this following patch to reduce race of write_mutex 
-between DATA/NODE/META writer?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Thanks,
-> 
-> --
-> Jaegeuk Kim
-> Samsung
+diff --cc drivers/gpio/gpiolib.c
+index 4e10b10d3ddd,48d1a67ed488..000000000000
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@@ -13,7 -13,7 +13,8 @@@
+  #include <linux/acpi_gpio.h>
+  #include <linux/idr.h>
+  #include <linux/slab.h>
+ +#include <linux/acpi.h>
++ #include <linux/gpio/driver.h>
+ =20
+  #define CREATE_TRACE_POINTS
+  #include <trace/events/gpio.h>
 
+--Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSisJhAAoJEMDTa8Ir7ZwVK6cP/3FoZjxUJgXaeH0rwJZJqOCP
+CcreoXBl9xBvX1f/pSaG8XZ+qdJ++ms/hR0zXVjMDrznucc/3DxI2y1hpAr2oMXf
+ceQPRzFv4ZIShKpeJGIHvZCuUENa16MiY+EMJbNfb1cM4h3DDZz5bzoclr/uIoTv
+MuIIEeI/mpi96HdOFaXxCHpYdIfoRcd1efbHWZ0IXVcTIffEIbtMnfK7S9SFhy3O
+yC+dWy2AZ3Gll5H565yG9CzKaSulO8O+ZpO9qsU59QS3scWSEcT7KvgfQK4vcCSw
+twDOhtFYBsiklNbBnmRP4L5PyzP0csTsf/HtHgmIzLGzvRV6TPCDeTM3gH3U84+u
+Oty2Orlh7DE38xITOqn1INrBSgkrVlVh4aG7BBsRiw+dIQlQif2NXmJVv1pLcywN
+TTDRqBqYsSokZ6x0EOWTxGDzu0yOfb+XplsUqymg121jczxsWMCkA3tkg5wMZwwe
+lBffsCKXZK65O4OTlv36Kwcq3JJQhBdcoPj33a8T1NOzcXZDACip5svXb7y2s6LX
+c7o9x9koiKYegeUODmX1KsyOdg+eibHpFZCXwPmxYygp0GZG82fBSonElbv3ei0x
+O8UXwSt9W7KlAo4Qib//RTGj4hmf7vQzBAfbn5RD5I1Cbm+N3NZqfgb03cRCXXeM
+hOFGmfGveXTQyrsMzisC
+=Zx0D
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0--
