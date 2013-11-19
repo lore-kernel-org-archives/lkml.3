@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3KSVuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:50:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab3KSVuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:50:11 -0500
-Date: Tue, 19 Nov 2013 23:53:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-Message-ID: <20131119215312.GE15004@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131119204909.GA15004@redhat.com>
- <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1753109Ab3KSVwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:52:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57610 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3KSVwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 16:52:06 -0500
+Message-ID: <528BDD81.1000507@wwwdotorg.org>
+Date: Tue, 19 Nov 2013 14:52:01 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        grant.likely@linaro.org, thierry.reding@gmail.com,
+        galak@codeaurora.org
+CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 6/9] iommu/tegra: smmu: get swgroups from DT "iommus="
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> <1384853593-32202-7-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1384853593-32202-7-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 01:36:36PM -0800, Eric Dumazet wrote:
-> On Tue, 2013-11-19 at 22:49 +0200, Michael S. Tsirkin wrote:
-> > On Tue, Nov 19, 2013 at 06:03:48AM -0800, Eric Dumazet wrote:
-> > > On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
-> > > > We need to drop the refcnt of page when we fail to allocate an skb for frag
-> > > > list, otherwise it will be leaked. The bug was introduced by commit
-> > > > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
-> > > > buffers to page frag allocators").
-> > > > 
-> > > > Cc: Michael Dalton <mwdalton@google.com>
-> > > > Cc: Eric Dumazet <edumazet@google.com>
-> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > > ---
-> > > > The patch was needed for 3.12 stable.
-> > > 
-> > > Good catch, but if we return from receive_mergeable() in the 'middle'
-> > > of the frags we would need for the current skb, who will
-> > > call the virtqueue_get_buf() to flush the remaining frags ?
-> > > 
-> > > Don't we also need to call virtqueue_get_buf() like 
-> > > 
-> > > while (--num_buf) {
-> > >     buf = virtqueue_get_buf(rq->vq, &len);
-> > >     if (!buf)
-> > >         break;
-> > >     put_page(virt_to_head_page(buf));
-> > > }
-> > > 
-> > > ?
-> > > 
-> > > 
-> > 
-> > 
-> > Let me explain what worries me in your suggestion:
-> > 
-> >                         struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
-> >                         if (unlikely(!nskb)) {
-> >                                 head_skb->dev->stats.rx_dropped++;
-> >                                 return -ENOMEM;
-> >                         }
-> > 
-> > is this the failure case we are talking about?
-> 
-> I thought Jason patch was about this, no ?
-> 
-> > 
-> > I think this is a symprom of a larger problem
-> > introduced by 2613af0ed18a11d5c566a81f9a6510b73180660a,
-> > namely that we now need to allocate memory in the
-> > middle of processing a packet.
-> > 
-> > 
-> > I think discarding a completely valid and well-formed
-> > packet from the receive queue because we are unable
-> > to allocate new memory with GFP_ATOMIC
-> > for future packets is not a good idea.
-> 
-> How is it different with NIC processing in RX path ?
+On 11/19/2013 02:33 AM, Hiroshi Doyu wrote:
+> This provides the info about which swgroups a device belongs to. This
+> info is passed from DT. This is necessary for the unified SMMU driver
+> among Tegra SoCs since each has different H/W accelerators.
 
+> diff --git a/Documentation/devicetree/bindings/iommu/nvidia,tegra30-smmu.txt b/Documentation/devicetree/bindings/iommu/nvidia,tegra30-smmu.txt
 
-Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
-it didn't drop packets received from host as far as I can tell.
-virtio is more like a pipe than a real NIC in this respect.
+>  - nvidia,#asids : # of ASIDs
+>  - dma-window : IOVA start address and length.
+>  - nvidia,ahb : phandle to the ahb bus connected to SMMU.
+> +- iommus: phandle to an iommu device which a device is
+> +  attached to and indicates which swgroups a device belongs to(SWGROUP ID).
+> +  SWGROUP ID is from 0 to 63, and a device can belong to multiple SWGROUPS.
 
-> > 
-> > It certainly violates the principle of least surprize:
-> > when one sees host pass packet to guest, one expects
-> > the packet to get into the networking stack, not get
-> > dropped by the driver internally.
-> > Guest stack can do with the packet what it sees fit.
-> > 
-> > We actually wake up a thread if we can't fill up the queue,
-> > that will fill it up in GFP_KERNEL context.
-> > 
-> > So I think we should find a way to pre-allocate if necessary and avoid
-> > error paths where allocating new memory is a required to avoid drops.
-> > 
-> 
-> Really, under ATOMIC context, there is no way you can avoid dropping
-> packets if you cannot allocate memory. If you cannot allocate sk_buff
-> (256 bytes !!), you wont be able to allocate the 1500+ bytes to hold the
-> payload of next packets anyway. 
+I'm sure I've said this before:
 
-that's why we do:
+#iommu-cells isn't documented.
 
-                if (!try_fill_recv(rq, GFP_ATOMIC))
-                        schedule_delayed_work(&vi->refill, 0);
+The list of properties you added to is a list of properties that the
+IOMMU node should contain. However, the iommus property is something
+that *client* nodes should contain, not the IOMMU node itself.
 
+Instead, I think you want something like:
 
-the queues are large enough for a single failure not to be
-an immediate problem.
+-Required properties:
++Required properties in the IOMMU node:
+ ... the current list of properties
++#iommu-cells. Should be 2. In client IOMMU specifiers, the two cells
++  represent a 64-bit bitmask of SWGROUP IDs under which the device
++  initiates transactions. The least significant word is first. See
++  <dt-bindings/memory/tegra-swgroup.h> for a list of valid values.
++
++Required properties in device nodes affected by the IOMMU:
++- iommus: A list of phandle plus specifier pairs for each IOMMU that
++    affects master transactions initiated by the device. The number of
++    cells in each specifier is defined by the #iommu-cells property in
++    the IOMMU node referred to by the phandle. The meaning of the
++    specifier cells is defined by the referenced IOMMU's binding.
 
+Aside from those layout/wording issues, this is certainly the binding
+that I think makes sense.
 
-> Same problem on a real NIC.
-> 
-> Under memory pressure we _do_ packet drops.
-> Nobody really complained.
->
-> Sure, you can add yet another cache of pre-allocated skbs and pay the
-> price of managing yet another cache layer, but still need to trop
-> packets under stress.
+> +	host1x {
+> +		compatible = "nvidia,tegra30-host1x", "simple-bus";
+> +		iommus = <&smmu TEGRA_SWGROUP_CELLS(HC)>;
+> +		....
+> +		gr3d {
+> +			compatible = "nvidia,tegra30-gr3d";
+> +			nvidia,memory-clients = <&smmu TEGRA_SWGROUP_CELLS(NV)
+> +						       TEGRA_SWGROUP_CELLS(NV2)>;
 
-We don't need a cache even. Just enough to avoid dropping packets
-if allocation failed in the middle so we don't dequeue a buffer and then
-drop it.
+I think you forgot to update "nvidia,memory-clients" to "iommus" there.
 
-Once we use this reserved skb, we stop processing the queue until
-refill gives it back.
+> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
 
-> Pre-allocating skb on real NIC has a performance cost, because we clear
-> sk_buff way ahead of time. By the time skb is finally received, cpu has
-> to bring back into its cache memory cache lines.
-> 
+> +static int smmu_of_get_swgroups(struct device *dev, unsigned long *swgroups)
 
-Alternatively we can pre-allocate the memory but avoid clearing it maybe?
+This doesn't seem to be used by anything in this patch.
 
--- 
-MST
