@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3KSEdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 23:33:50 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7798 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3KSEdr (ORCPT
+	id S1751875Ab3KSEeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 23:34:20 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:28111 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3KSEeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 23:33:47 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 18 Nov 2013 20:27:52 -0800
-Message-ID: <528AEA27.9090004@nvidia.com>
-Date: Tue, 19 Nov 2013 13:33:43 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 18 Nov 2013 23:34:03 -0500
+From: "Long, Wai Man" <waiman.long@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Andi Kleen" <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        "Tim Chen" <tim.c.chen@linux.intel.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: RE: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
+Thread-Topic: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
+Thread-Index: AQHO37ZsRmhWO/O1R0CDPqIo3jMJ9JorU94AgACr++A=
+Date: Tue, 19 Nov 2013 04:33:09 +0000
+Message-ID: <401F72D6D1DFE3499766D25AA4EED18A35440103@G6W2503.americas.hpqcorp.net>
+References: <1384267735-43213-1-git-send-email-Waiman.Long@hp.com>
+	<1384267735-43213-5-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFxXu7eC1WGfZ=_JQbLLJHM5HYRkJPjm3jBDC51SL66Ecw@mail.gmail.com>
+In-Reply-To: <CA+55aFxXu7eC1WGfZ=_JQbLLJHM5HYRkJPjm3jBDC51SL66Ecw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.201.12.21]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH] ARM: tegra: properly use FUSE clock
-References: <1384771247-16547-1-git-send-email-acourbot@nvidia.com> <20131118114330.GD8646@ulmo.nvidia.com>
-In-Reply-To: <20131118114330.GD8646@ulmo.nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAJ4YZ0P032639
 
-On 11/18/2013 08:43 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Nov 18, 2013 at 07:40:47PM +0900, Alexandre Courbot wrote:
->> FUSE clock is enabled by most bootloaders, but we cannot expect it to be
->> on in all contexts (e.g. kexec).
->>
->> This patch adds a FUSE clkdev to all Tegra platforms and makes sure
->> it is enabled before touching FUSE registers. tegra_init_fuse() is
->> invoked during very early boot and thus cannot rely on the clock
->> framework ; therefore the FUSE clock is forcibly enabled using a
->> register write in that function, and remains that way until the
->> clock framework can be used.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>   arch/arm/mach-tegra/fuse.c       | 41 +++++++++++++++++++++++++++++++++++++++-
->>   drivers/clk/tegra/clk-tegra114.c |  1 +
->>   drivers/clk/tegra/clk-tegra124.c |  1 +
->>   drivers/clk/tegra/clk-tegra20.c  |  1 +
->
-> Isn't this missing the clock driver changes for Tegra30? Ah... Tegra30
-> already has this clock defined. I wonder why only Tegra30 has it. grep
-> says that fuse-tegra isn't used by any drivers, which also indicates
-> that perhaps we don't need the .dev_id in the first place. We should be
-> able to get by with just the .con_id = "fuse".
+Sorry for the late reply.
 
-Will fix that.
+The presence of the unfair option as default is largely due to fixing the recursive read lock in interrupt handler problem. You are right that it is no longer a valid reason now. 
 
-> Also are there any reasons to keep this in one single patch? Since none
-> of the fuse clocks are used yet, I think the clock changes could be a
-> separate patch that can go in through the clock tree. And there isn't
-> even a hard runtime dependency, since if the Tegra changes were to go in
-> without the clock changes, then the fallback code in this patch should
-> still turn the clock on properly. It just might not be turned off again,
-> but isn't that something we can live with for a short period of time? I
-> think perhaps that could even be improved, see further below.
->
-> I've added Mike on Cc, he'll need to either take the patch in through
-> his tree or Ack this one, so he needs to see it eventually.
+An unfair lock may have a better performance characteristics, especially for a highly contended lock. Other than that, I have no other reason to keep an unfair option. I don't mind taking out the unfair option and make the fair qrwlock the default. It does simplify the code. I will send out an updated patchset with only the fair qrwlock.
 
-I will split the change into two patches - at first I thought it would 
-not be worth the trouble, but I overlooked the fact this needed to go 
-through the clock source tree.
+Thank for suggestion.
+-Longman
 
->
->>   4 files changed, 43 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
->> index 9a4e910c3796..3b9191b930b5 100644
->> --- a/arch/arm/mach-tegra/fuse.c
->> +++ b/arch/arm/mach-tegra/fuse.c
->> @@ -22,6 +22,7 @@
->>   #include <linux/io.h>
->>   #include <linux/export.h>
->>   #include <linux/random.h>
->> +#include <linux/clk.h>
->>   #include <linux/tegra-soc.h>
->>
->>   #include "fuse.h"
->> @@ -54,6 +55,7 @@ int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
->>   int tegra_soc_speedo_id;
->>   enum tegra_revision tegra_revision;
->>
->> +static struct clk *fuse_clk;
->>   static int tegra_fuse_spare_bit;
->>   static void (*tegra_init_speedo_data)(void);
->>
->> @@ -77,6 +79,22 @@ static const char *tegra_revision_name[TEGRA_REVISION_MAX] = {
->>   	[TEGRA_REVISION_A04]     = "A04",
->>   };
->>
->> +static void tegra_fuse_enable_clk(void)
->> +{
->> +	if (IS_ERR(fuse_clk))
->> +		fuse_clk = clk_get_sys("fuse-tegra", "fuse");
->> +	if (IS_ERR(fuse_clk))
->> +		return;
->
-> Perhaps instead of just returning here, this should actually be where
-> the code to enable the clock should go.
->
->> +	clk_prepare_enable(fuse_clk);
->> +}
->> +
->> +static void tegra_fuse_disable_clk(void)
->> +{
->> +	if (IS_ERR(fuse_clk))
->> +		return;
->
-> And this is where we could disable it again. That way we should get
-> equal functionality in both cases.
+-----Original Message-----
+From: linus971@gmail.com [mailto:linus971@gmail.com] On Behalf Of Linus Torvalds
+Sent: Monday, November 18, 2013 1:12 PM
+To: Long, Wai Man
+Cc: Thomas Gleixner; Ingo Molnar; H. Peter Anvin; Arnd Bergmann; linux-arch@vger.kernel.org; the arch/x86 maintainers; Linux Kernel Mailing List; Peter Zijlstra; Steven Rostedt; Andrew Morton; Michel Lespinasse; Andi Kleen; Rik van Riel; Paul E. McKenney; Raghavendra K T; George Spelvin; Tim Chen; Chandramouleeswaran, Aswin; Norton, Scott J
+Subject: Re: [PATCH v6 3/5] qrwlock: Enable fair queue read/write lock
 
-What Stephen said, basically - but let me address that in the other mail.
+On Tue, Nov 12, 2013 at 6:48 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+> By default, queue rwlock is fair among writers and gives preference to 
+> readers allowing them to steal lock even if a writer is waiting. 
+> However, there is a desire to have a fair variant of rwlock that is 
+> more deterministic. To enable this [..]
 
-Thanks for the review!
-Alex.
+Is there really any point in having the option for unfair at all?
 
+>From your timings, it looks like the unfair locks are more expensive for the writer side, but since pretty much the whole point of rwlocks is when readers are the common case, I don't think we care.
+
+And I'm not at all convinced we want the complexity of two different kinds of rwlocks with different semantics and extra code for said semantics..
+
+Your *original* fair rwlocks were unusable, since they didn't allow for the irq semantics that most users need, but afaik your current version always makes an irq/bh-context reader work even when the lock is otherwise trying to be fair, so this whole dual behavior seems to be largely pointless.
+
+No?
+
+                        Linus
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
