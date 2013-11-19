@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3KSTQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:16:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51687 "EHLO
+	id S1753697Ab3KSTQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:16:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51695 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab3KSTQQ (ORCPT
+	with ESMTP id S1753645Ab3KSTQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:16:16 -0500
-Date: Tue, 19 Nov 2013 11:15:43 -0800
-From: tip-bot for Alex Shi <tipbot@zytor.com>
-Message-ID: <tip-b972fc308c2763096b61b62169f2167ee0ca5a19@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alex.shi@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, alex.shi@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
-References: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
+	Tue, 19 Nov 2013 14:16:23 -0500
+Date: Tue, 19 Nov 2013 11:15:52 -0800
+From: tip-bot for Shigeru Yoshida <tipbot@zytor.com>
+Message-ID: <tip-0515973ffb16c2852a1bb1df2ca1456556faaaa5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, shigeru.yoshida@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, shigeru.yoshida@gmail.com
+In-Reply-To: <20131117.121236.1990617639803941055.shigeru.yoshida@gmail.com>
+References: <20131117.121236.1990617639803941055.shigeru.yoshida@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Remove unused variable in '
- struct sched_domain'
-Git-Commit-ID: b972fc308c2763096b61b62169f2167ee0ca5a19
+Subject: [tip:sched/urgent] sched: Fix a trivial typo in comments
+Git-Commit-ID: 0515973ffb16c2852a1bb1df2ca1456556faaaa5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,42 +27,40 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 19 Nov 2013 11:15:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 19 Nov 2013 11:15:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b972fc308c2763096b61b62169f2167ee0ca5a19
-Gitweb:     http://git.kernel.org/tip/b972fc308c2763096b61b62169f2167ee0ca5a19
-Author:     Alex Shi <alex.shi@linaro.org>
-AuthorDate: Tue, 19 Nov 2013 17:21:52 +0800
+Commit-ID:  0515973ffb16c2852a1bb1df2ca1456556faaaa5
+Gitweb:     http://git.kernel.org/tip/0515973ffb16c2852a1bb1df2ca1456556faaaa5
+Author:     Shigeru Yoshida <shigeru.yoshida@gmail.com>
+AuthorDate: Sun, 17 Nov 2013 12:12:36 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Nov 2013 17:01:17 +0100
+CommitDate: Tue, 19 Nov 2013 17:01:18 +0100
 
-sched: Remove unused variable in 'struct sched_domain'
+sched: Fix a trivial typo in comments
 
-The 'u64 last_update' variable isn't used now, remove it to save a bit of space.
+Fix a trivial typo in rq_attach_root().
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
+Signed-off-by: Shigeru Yoshida <shigeru.yoshida@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Morten.Rasmussen@arm.com
-Cc: linaro-kernel@lists.linaro.org
-Link: http://lkml.kernel.org/r/1384852912-24791-1-git-send-email-alex.shi@linaro.org
+Link: http://lkml.kernel.org/r/20131117.121236.1990617639803941055.shigeru.yoshida@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f7efc86..b122395 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -823,8 +823,6 @@ struct sched_domain {
- 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
- 	unsigned int nr_balance_failed; /* initialise to 0 */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a1591ca..718730d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4762,7 +4762,7 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
+ 		cpumask_clear_cpu(rq->cpu, old_rd->span);
  
--	u64 last_update;
--
- 	/* idle_balance() stats */
- 	u64 max_newidle_lb_cost;
- 	unsigned long next_decay_max_lb_cost;
+ 		/*
+-		 * If we dont want to free the old_rt yet then
++		 * If we dont want to free the old_rd yet then
+ 		 * set old_rd to NULL to skip the freeing later
+ 		 * in this function:
+ 		 */
