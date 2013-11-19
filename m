@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab3KSVwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:52:09 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57610 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab3KSVwG (ORCPT
+	id S1753240Ab3KSVxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:53:33 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20623 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750812Ab3KSVxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:52:06 -0500
-Message-ID: <528BDD81.1000507@wwwdotorg.org>
-Date: Tue, 19 Nov 2013 14:52:01 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
-        grant.likely@linaro.org, thierry.reding@gmail.com,
-        galak@codeaurora.org
-CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 6/9] iommu/tegra: smmu: get swgroups from DT "iommus="
-References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> <1384853593-32202-7-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1384853593-32202-7-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Nov 2013 16:53:32 -0500
+Date: Tue, 19 Nov 2013 16:53:27 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.19-rt16
+Message-ID: <20131119165327.6c828f8a@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 02:33 AM, Hiroshi Doyu wrote:
-> This provides the info about which swgroups a device belongs to. This
-> info is passed from DT. This is necessary for the unified SMMU driver
-> among Tegra SoCs since each has different H/W accelerators.
 
-> diff --git a/Documentation/devicetree/bindings/iommu/nvidia,tegra30-smmu.txt b/Documentation/devicetree/bindings/iommu/nvidia,tegra30-smmu.txt
+Dear RT Folks,
 
->  - nvidia,#asids : # of ASIDs
->  - dma-window : IOVA start address and length.
->  - nvidia,ahb : phandle to the ahb bus connected to SMMU.
-> +- iommus: phandle to an iommu device which a device is
-> +  attached to and indicates which swgroups a device belongs to(SWGROUP ID).
-> +  SWGROUP ID is from 0 to 63, and a device can belong to multiple SWGROUPS.
+I'm pleased to announce the 3.10.19-rt16 stable release.
 
-I'm sure I've said this before:
 
-#iommu-cells isn't documented.
+This release is just an update to the new stable 3.10.19 version
+and no RT specific changes have been made.
 
-The list of properties you added to is a list of properties that the
-IOMMU node should contain. However, the iommus property is something
-that *client* nodes should contain, not the IOMMU node itself.
 
-Instead, I think you want something like:
+You can get this release via the git tree at:
 
--Required properties:
-+Required properties in the IOMMU node:
- ... the current list of properties
-+#iommu-cells. Should be 2. In client IOMMU specifiers, the two cells
-+  represent a 64-bit bitmask of SWGROUP IDs under which the device
-+  initiates transactions. The least significant word is first. See
-+  <dt-bindings/memory/tegra-swgroup.h> for a list of valid values.
-+
-+Required properties in device nodes affected by the IOMMU:
-+- iommus: A list of phandle plus specifier pairs for each IOMMU that
-+    affects master transactions initiated by the device. The number of
-+    cells in each specifier is defined by the #iommu-cells property in
-+    the IOMMU node referred to by the phandle. The meaning of the
-+    specifier cells is defined by the referenced IOMMU's binding.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-Aside from those layout/wording issues, this is certainly the binding
-that I think makes sense.
+  branch: v3.10-rt
+  Head SHA1: 43e96656ef2011da4e692b909ab30a0f3be8a5f5
 
-> +	host1x {
-> +		compatible = "nvidia,tegra30-host1x", "simple-bus";
-> +		iommus = <&smmu TEGRA_SWGROUP_CELLS(HC)>;
-> +		....
-> +		gr3d {
-> +			compatible = "nvidia,tegra30-gr3d";
-> +			nvidia,memory-clients = <&smmu TEGRA_SWGROUP_CELLS(NV)
-> +						       TEGRA_SWGROUP_CELLS(NV2)>;
 
-I think you forgot to update "nvidia,memory-clients" to "iommus" there.
+Or to build 3.10.19-rt16 directly, the following patches should be applied:
 
-> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
 
-> +static int smmu_of_get_swgroups(struct device *dev, unsigned long *swgroups)
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.19.xz
 
-This doesn't seem to be used by anything in this patch.
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.19-rt16.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
 
