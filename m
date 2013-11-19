@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab3KSHrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 02:47:12 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:34927 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab3KSHrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 02:47:09 -0500
-Message-ID: <528B177B.5020604@siemens.com>
-Date: Tue, 19 Nov 2013 08:47:07 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1751694Ab3KSHsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 02:48:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37620 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab3KSHsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 02:48:50 -0500
+Message-ID: <528B17DC.9020004@suse.cz>
+Date: Tue, 19 Nov 2013 08:48:44 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jailhouse <jailhouse-dev@googlegroups.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-Subject: [ANNOUNCE] Jailhouse: A Linux-based Partitioning Hypervisor
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, ldewangan@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Make MFD_AS3722 depend on I2C=y
+References: <1384795559-2116-1-git-send-email-mmarek@suse.cz> <528AA08C.6080608@wwwdotorg.org>
+In-Reply-To: <528AA08C.6080608@wwwdotorg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are happy to announce the Jailhouse project, now also to a broader
-community!
+On 19.11.2013 00:19, Stephen Warren wrote:
+> On 11/18/2013 10:25 AM, Michal Marek wrote:
+>> MFD_AS3722 can only be builtin, so it needs I2C builtin as well.
+>> With I2C=m, we get:
+>>
+>> drivers/mfd/as3722.c:372: undefined reference to `devm_regmap_init_i2c'
+>> drivers/built-in.o: In function `as3722_i2c_driver_init':
+>> drivers/mfd/as3722.c:444: undefined reference to `i2c_register_driver'
+>> drivers/built-in.o: In function `as3722_i2c_driver_exit':
+>> drivers/mfd/as3722.c:444: undefined reference to `i2c_del_driver'
+> 
+> Shouldn't Kconfig handle this; if a Boolean config option depends on a
+> tri-state config option, shouldn't it automatically validate that the
+> tri-state is "y" not "m"?
 
-Jailhouse is a partitioning hypervisor that can create asymmetric
-multiprocessing (AMP) setups on Linux-based systems. That means it runs
-bare-metal applications or non-Linux OSes aside a standard Linux kernel
-on one multicore hardware platform. Jailhouse ensures isolation between
-these "cells", as we call them, via hardware-assisted virtualization.
-The typical workloads we expect to see in non-Linux cells are
-applications with highly demanding real-time, safety or security
-requirements. In contrast to comparable hypervisors, Jailhouse is loaded
-and configured via Linux, not the other way around. Give it a try to see
-and "feel" the difference.
+That's what I initially though as well. But then you have cases where
+intuitively you prefer the current m -> y promotion:
 
-The aim of Jailhouse is to keep the amount of code responsible for
-establishing and maintaining cell isolation as small as possible. And
-with small we mean a few thousand lines of code at the privilege level
-of the hypervisor. This is obviously much less than you can achieve with
-full-featured hypervisors like KVM. See also the Jailhouse presentation
-at this year's KVM Forum for the differentiation between KVM and
-Jailhouse, as well as possible combinations of both:
+config EXT3_FS
+	tristate "Ext3 journalling file system support"
 
-https://docs.google.com/file/d/0B6HTUUWSPdd-Zl93MVhlMnRJRjg
+config EXT3_DEFAULTS_TO_ORDERED
+	bool "Default to 'data=ordered' in ext3"
+	depends on EXT3_FS
+	default y
 
-Jailhouse is clearly in an incubator stage. We currently only support
-Intel x86, including a demonstration setup inside QEMU/KVM. Also, we
-still lack a number features and measures in order to truly and provably
-isolate cells from each other. Besides working on this, ARM support is
-on our road map as well. As we would like to motivate early feedback,
-including potential contributions, we already released the code under GPLv2:
+Ternary logic is fun only as long as it is not mixed with boolean :-(.
 
-https://github.com/siemens/jailhouse
-
-Aside the master branch, you can also find a first step towards the
-KVM-on-Jailhouse concept presented at KVM Forum 2013.
-
-Looking forward to your feedback!
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Michal
