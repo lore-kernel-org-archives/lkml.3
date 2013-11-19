@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab3KSLIT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:08:19 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:40992 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab3KSLIQ (ORCPT
+	id S1752369Ab3KSLI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:08:27 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:36228 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab3KSLIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:08:16 -0500
+	Tue, 19 Nov 2013 06:08:23 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
-        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 06/10] ASoC: ux500_pcm: Extend Device Tree support to deal with DMA data
-Date: Tue, 19 Nov 2013 11:07:45 +0000
-Message-Id: <1384859269-19801-7-git-send-email-lee.jones@linaro.org>
+Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 10/10] ASoC: ux500: Dynamically fill DAI driver data on probe
+Date: Tue, 19 Nov 2013 11:07:49 +0000
+Message-Id: <1384859269-19801-11-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
 References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
@@ -21,104 +20,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soon we will strip out pdata support from the Ux500 set of ASoC drivers.
-When this happens it will have to supply a DMA slave_config to the
-dmaengine. At the moment a great deal of this comes from pdata via
-AUXDATA. We need to become independent of this soon. This patch starts
-the process by allocating memory for the associated data structures and
-fetches the MSP id used for const struct indexing.
+We no longer have a means to differentiate MSP devices at probe time,
+mainline because we don't really have to. So rather than have an over-
+sized static data structure in place, where the only difference between
+devices is the ID and name (which are unused), we'll create them only
+when required and omit the unnecessary information.
 
-Cc: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@kernel.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- sound/soc/ux500/ux500_msp_i2s.c | 56 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 41 insertions(+), 15 deletions(-)
+ sound/soc/ux500/ux500_msp_dai.c | 108 ++++++++++------------------------------
+ 1 file changed, 26 insertions(+), 82 deletions(-)
 
-diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
-index 1ca8b08..7f2a4ac 100644
---- a/sound/soc/ux500/ux500_msp_i2s.c
-+++ b/sound/soc/ux500/ux500_msp_i2s.c
-@@ -646,6 +646,34 @@ int ux500_msp_i2s_close(struct ux500_msp *msp, unsigned int dir)
+diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
+index 8d1b01f..153fb3f 100644
+--- a/sound/soc/ux500/ux500_msp_dai.c
++++ b/sound/soc/ux500/ux500_msp_dai.c
+@@ -718,87 +718,20 @@ static struct snd_soc_dai_ops ux500_msp_dai_ops[] = {
+ 	}
+ };
  
- }
- 
-+int ux500_msp_i2s_of_init_msp(struct platform_device *pdev,
-+			      struct ux500_msp *msp,
-+			      struct msp_i2s_platform_data **platform_data)
+-static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
+-	{
+-		.name = "ux500-msp-i2s.0",
+-		.probe = ux500_msp_dai_probe,
+-		.id = 0,
+-		.suspend = NULL,
+-		.resume = NULL,
+-		.playback = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.capture = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.ops = ux500_msp_dai_ops,
+-	},
+-	{
+-		.name = "ux500-msp-i2s.1",
+-		.probe = ux500_msp_dai_probe,
+-		.id = 1,
+-		.suspend = NULL,
+-		.resume = NULL,
+-		.playback = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.capture = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.ops = ux500_msp_dai_ops,
+-	},
+-	{
+-		.name = "ux500-msp-i2s.2",
+-		.id = 2,
+-		.probe = ux500_msp_dai_probe,
+-		.suspend = NULL,
+-		.resume = NULL,
+-		.playback = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.capture = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.ops = ux500_msp_dai_ops,
+-	},
+-	{
+-		.name = "ux500-msp-i2s.3",
+-		.probe = ux500_msp_dai_probe,
+-		.id = 3,
+-		.suspend = NULL,
+-		.resume = NULL,
+-		.playback = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.capture = {
+-			.channels_min = UX500_MSP_MIN_CHANNELS,
+-			.channels_max = UX500_MSP_MAX_CHANNELS,
+-			.rates = UX500_I2S_RATES,
+-			.formats = UX500_I2S_FORMATS,
+-		},
+-		.ops = ux500_msp_dai_ops,
+-	},
++void ux500_msp_populate_dai_drv(struct snd_soc_dai_driver *ux500_msp_dai_drv)
 +{
-+	struct msp_i2s_platform_data *pdata;
-+
-+	*platform_data = devm_kzalloc(&pdev->dev,
-+				     sizeof(struct msp_i2s_platform_data),
-+				     GFP_KERNEL);
-+	pdata = *platform_data;
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	msp->playback_dma_data.dma_cfg = devm_kzalloc(&pdev->dev,
-+					sizeof(struct stedma40_chan_cfg),
-+					GFP_KERNEL);
-+	if (!msp->playback_dma_data.dma_cfg)
-+		return -ENOMEM;
-+
-+	msp->capture_dma_data.dma_cfg = devm_kzalloc(&pdev->dev,
-+					sizeof(struct stedma40_chan_cfg),
-+					GFP_KERNEL);
-+	if (!msp->capture_dma_data.dma_cfg)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
- int ux500_msp_i2s_init_msp(struct platform_device *pdev,
- 			struct ux500_msp **msp_p,
- 			struct msp_i2s_platform_data *platform_data)
-@@ -653,30 +681,28 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
- 	struct resource *res = NULL;
- 	struct device_node *np = pdev->dev.of_node;
- 	struct ux500_msp *msp;
-+	int ret;
++	ux500_msp_dai_drv->probe                 = ux500_msp_dai_probe;
++	ux500_msp_dai_drv->suspend               = NULL;
++	ux500_msp_dai_drv->resume                = NULL;
++	ux500_msp_dai_drv->playback.channels_min = UX500_MSP_MIN_CHANNELS;
++	ux500_msp_dai_drv->playback.channels_max = UX500_MSP_MAX_CHANNELS;
++	ux500_msp_dai_drv->playback.rates        = UX500_I2S_RATES;
++	ux500_msp_dai_drv->playback.formats      = UX500_I2S_FORMATS;
++	ux500_msp_dai_drv->capture.channels_min  = UX500_MSP_MIN_CHANNELS;
++	ux500_msp_dai_drv->capture.channels_max  = UX500_MSP_MAX_CHANNELS;
++	ux500_msp_dai_drv->capture.rates         = UX500_I2S_RATES;
++	ux500_msp_dai_drv->capture.formats       = UX500_I2S_FORMATS;
++	ux500_msp_dai_drv->ops                   = ux500_msp_dai_ops;
+ };
  
- 	*msp_p = devm_kzalloc(&pdev->dev, sizeof(struct ux500_msp), GFP_KERNEL);
- 	msp = *msp_p;
- 	if (!msp)
- 		return -ENOMEM;
+ static const struct snd_soc_component_driver ux500_msp_component = {
+@@ -809,6 +742,7 @@ static const struct snd_soc_component_driver ux500_msp_component = {
+ static int ux500_msp_drv_probe(struct platform_device *pdev)
+ {
+ 	struct ux500_msp_i2s_drvdata *drvdata;
++	struct snd_soc_dai_driver *ux500_msp_dai_drv;
+ 	int ret = 0;
  
--	if (np) {
--		if (!platform_data) {
--			platform_data = devm_kzalloc(&pdev->dev,
--				sizeof(struct msp_i2s_platform_data), GFP_KERNEL);
--			if (!platform_data)
--				return -ENOMEM;
--		}
--	} else
--		if (!platform_data)
-+	if (!platform_data) {
-+		if (np) {
-+			ret = ux500_msp_i2s_of_init_msp(pdev, msp,
-+							&platform_data);
-+			if (ret)
-+				return ret;
-+		} else
- 			return -EINVAL;
-+	} else {
-+		msp->playback_dma_data.dma_cfg = platform_data->msp_i2s_dma_tx;
-+		msp->capture_dma_data.dma_cfg = platform_data->msp_i2s_dma_rx;
-+		msp->id = platform_data->id;
+ 	dev_dbg(&pdev->dev, "%s: Enter (pdev->name = %s).\n", __func__,
+@@ -863,8 +797,18 @@ static int ux500_msp_drv_probe(struct platform_device *pdev)
+ 	}
+ 	dev_set_drvdata(&pdev->dev, drvdata);
+ 
++	ux500_msp_dai_drv = devm_kzalloc(&pdev->dev,
++					 sizeof(*ux500_msp_dai_drv),
++					 GFP_KERNEL);
++	if (!ux500_msp_dai_drv) {
++		ret = -ENOMEM;
++		goto err_init_msp;
 +	}
- 
--	dev_dbg(&pdev->dev, "%s: Enter (name: %s, id: %d).\n", __func__,
--		pdev->name, platform_data->id);
--
--	msp->id = platform_data->id;
- 	msp->dev = &pdev->dev;
--	msp->playback_dma_data.dma_cfg = platform_data->msp_i2s_dma_tx;
--	msp->capture_dma_data.dma_cfg = platform_data->msp_i2s_dma_rx;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res == NULL) {
++
++	ux500_msp_populate_dai_drv(ux500_msp_dai_drv);
++
+ 	ret = snd_soc_register_component(&pdev->dev, &ux500_msp_component,
+-					 &ux500_msp_dai_drv[drvdata->msp->id], 1);
++					 ux500_msp_dai_drv, 1);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Error: %s: Failed to register MSP%d!\n",
+ 			__func__, drvdata->msp->id);
 -- 
 1.8.1.2
 
