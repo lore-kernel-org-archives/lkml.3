@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3KSSgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:36:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39963 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3KSSgw (ORCPT
+	id S1752595Ab3KSSju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:39:50 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34539 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab3KSSjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:36:52 -0500
-Date: Tue, 19 Nov 2013 10:37:14 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Amir Shehata <amir.shehata@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 4/9] staging/lustre/lnet: Fix assert on empty group in
- selftest module
-Message-ID: <20131119183714.GA26216@kroah.com>
-References: <1384867428-8395-1-git-send-email-bergwolf@gmail.com>
- <1384867428-8395-5-git-send-email-bergwolf@gmail.com>
+	Tue, 19 Nov 2013 13:39:48 -0500
+Date: Tue, 19 Nov 2013 18:39:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, alsa-devel@alsa-project.org
+Message-ID: <20131119183943.GE2674@sirena.org.uk>
+References: <1384858698-19027-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DRp5/Sds4nAqvQzf"
 Content-Disposition: inline
-In-Reply-To: <1384867428-8395-5-git-send-email-bergwolf@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1384858698-19027-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] ASoC: ab8500: Revert "ASoC: ab8500: Explicitly set
+ I/O up"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 09:23:43PM +0800, Peng Tao wrote:
-> From: Amir Shehata <amir.shehata@intel.com>
-> 
-> The core of the issue is that the selftest module doesn't sanitize its
-> own API, but it depends on lst utility to do such checks.  As a result
-> this issue manifests itself in this particular LU through an assert
-> on an empty group.  If the NID is misspelled then an empty group is
-> added.  An error output is provided, but if that's never checked in a
-> batch script, as is the case with this issue, then the script will try
-> to add an empty group to a test to run in a batch, and that will cause
-> an assert
-> 
-> The fix is two fold.  Ensure that lst utility checks that a group is
-> added with at least one node.  If not the group is subsequently
-> deleted.  And the add_test command would fail, since the group no
-> longer exists.
-> 
-> The second fix is to ensure that the kernel module itself sanitizes
-> its own API in this particular case, so that if a different utility is
-> used other than lst to communicate with the selftest kernel module
-> then this error would be caught.  This fix looks up the batch and the
-> groups, src and dst, in the ioctl handle and sanitizes that input at
-> this point.  If the group looked up either doesn't exist or doesn't
-> have at least one ACTIVE node, then the command fails.
-> 
-> NOTE:there are many other cases in the code where the selftest kernel
-> module doesn't check for sanity of the input, but depends totally on
-> the lst module to do such checks.  Particularly around length of
-> strings passed in.  Thus it is possible to crash the selftest module
-> if someone tries to create another userspace app to communicate with
-> the selftest kernel module without ensuring sanity of the params sent
-> to the kernel module.  In effect, it's always assumed that lst is the
-> front end for selftest and no other front end is to be used.
 
-This patch adds build warnings to the kernel build process, so I can't
-apply it, sorry.  Please fix that up before sending it again.
+--DRp5/Sds4nAqvQzf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-greg k-h
+On Tue, Nov 19, 2013 at 10:58:17AM +0000, Lee Jones wrote:
+> This reverts commit 2245e3c31c15c2d2a26926c4b734f4d3a37ae252, as it
+> is one of two patches which stop audio from working on Snowball.
+
+As discussed in person someone with access to the hardware really needs
+to figure out what's going on here properly since this code does need to
+be fixed, the ASoC level register I/O code is going away - I'm aiming
+for the next merge window all being well.  I've applied both squashed
+together for v3.13 though.
+
+--DRp5/Sds4nAqvQzf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSi7BsAAoJELSic+t+oim9mB8P/33zGX29j+aySL9nHwxDhKzJ
+vuAnc/91hXB2gn3PUwBDy0yxu4KFwrRXVmdq1B/WiIXwYtDZDhVFfshyyCWQWZwu
++34/QPoOhDnZ/EHF7hbANvyT4CvsQ+L3SvtvJ0Bzx4WZmKpLGrQYEAFOf7IfwQau
+fV9xfhwhcaoiznwVjaWTIH1q9cIjeBLiRvqpxTxI0Gi1sR7k3HmeoAosFLnt+Aso
+e4wY0oAAudXsWdgHOLAYnJHjjlsLglGmvl0a1g0gpdxd/c+vhRW4E1SBl0ThG57l
+uZx0W1c5H8N5t2HDAh/e+692RKvL9ebjQ7T4fNqD1C1Rm8B3iEHXvhDwkX80lxrn
+qGy9+kXvpxj5IN3ArMumGRhpYw39NvcpA764iexqb8VMVxBJYsSpQSsy2XJWCwj4
+4WiPOs5/tLvbT6CGkukBdhr5wGBW1P9opP2Eo5ClzB/h2gGE4dpjChBhI7wFjmfX
+U0dgwXNvMciqMqvviNtxBWcpACcxjJnda5Efz8Ihevng/GeCVSEcYkVaStTGaV40
+UOnUtl9WhyzalojFIROSTOOGfOmx0zcu00h7isviO7tRh5cc+un1Tw3knXAWTydA
+HoDky2tTn3vrpmgOgtkMs0wgWgswYYlLsAdqfCFjN3ymsPQo/xsUqnxlD5+OZnCy
+dUraaxlLxxvlm3rQSxQH
+=TbJ+
+-----END PGP SIGNATURE-----
+
+--DRp5/Sds4nAqvQzf--
