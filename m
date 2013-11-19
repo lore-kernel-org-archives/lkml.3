@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab3KSW6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:58:13 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:62277 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab3KSW6K (ORCPT
+	id S1753482Ab3KSW7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:59:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42360 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab3KSW7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:58:10 -0500
-Message-ID: <528BECFF.7000900@gmail.com>
-Date: Tue, 19 Nov 2013 14:58:07 -0800
-From: Rajat Jain <rajatjain.linux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 19 Nov 2013 17:59:03 -0500
+Date: Tue, 19 Nov 2013 14:59:17 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: Joe Perches <joe@perches.com>, len.brown@intel.com, pavel@ucw.cz,
+        rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH v2] power: Replace printks with dev_* and pr_* routines
+Message-ID: <20131119225917.GA12930@kroah.com>
+References: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
+ <1384887205.17783.40.camel@joe-AO722>
+ <528BB492.8090404@samsung.com>
 MIME-Version: 1.0
-To: Linux-PCI <linux-pci@vger.kernel.org>,
-        Linux-hotplug <linux-hotplug@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-CC: Bjorn Helgaas <bhelgaas@google.com>, Guenter Roeck <linux@roeck-us.net>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Subject: [RFC PATCH 1/4] pciehp: Make check_link_active() non-static
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528BB492.8090404@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 19, 2013 at 11:57:22AM -0700, Shuah Khan wrote:
+> On 11/19/2013 11:53 AM, Joe Perches wrote:
+> > On Tue, 2013-11-19 at 11:46 -0700, Shuah Khan wrote:
+> >> Replaced printks with dev_* and pr_* routines. Replacing printk in
+> >> __suspend_report_result() will require passing in struct device *
+> >> pointer from calling routines and this will require changes to
+> >> external interface suspend_report_result() which is used by several
+> >> drivers. Hence, this one instance is replaced by pr_err().
+> > []
+> >> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> > []
+> >> @@ -1308,9 +1308,8 @@ int dpm_prepare(pm_message_t state)
+> >>   				error = 0;
+> >>   				continue;
+> >>   			}
+> >> -			printk(KERN_INFO "PM: Device %s not prepared "
+> >> -				"for power transition: code %d\n",
+> >> -				dev_name(dev), error);
+> >> +			dev_info("PM: not prepared for power transition: ",
+> >> +				 "code %d\n", error);
+> >
+> > Shuah, you have to make sure the files modified by
+> > your patches compile successfully before sending
+> > patches like this.
+> >
+> >
+> 
+> Oops. I did compile. Missed the warning. Sorry about that.
 
-check_link_active() functionality needs to be used by subsequent patches
-(that introduce link state change based hotplug). Thus make the function
-non-static, and rename it to pciehp_check_link_active() so as to be
-consistent with other non-static functions.
+It should be an "error"...
 
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
----
- drivers/pci/hotplug/pciehp.h     |    1 +
- drivers/pci/hotplug/pciehp_hpc.c |    6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+It adds a codingstyle warning as well, so fix that up for the next
+version please :)
 
-diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-index 541bbe6..fc322ed 100644
---- a/drivers/pci/hotplug/pciehp.h
-+++ b/drivers/pci/hotplug/pciehp.h
-@@ -154,6 +154,7 @@ void pciehp_green_led_on(struct slot *slot);
- void pciehp_green_led_off(struct slot *slot);
- void pciehp_green_led_blink(struct slot *slot);
- int pciehp_check_link_status(struct controller *ctrl);
-+bool pciehp_check_link_active(struct controller *ctrl);
- void pciehp_release_ctrl(struct controller *ctrl);
- int pciehp_reset_slot(struct slot *slot, int probe);
- 
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index 51f56ef..3a5eee7 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -241,7 +241,7 @@ static int pcie_write_cmd(struct controller *ctrl, u16 cmd, u16 mask)
- 	return retval;
- }
- 
--static bool check_link_active(struct controller *ctrl)
-+bool pciehp_check_link_active(struct controller *ctrl)
- {
- 	bool ret = false;
- 	u16 lnk_status;
-@@ -261,12 +261,12 @@ static void __pcie_wait_link_active(struct controller *ctrl, bool active)
- {
- 	int timeout = 1000;
- 
--	if (check_link_active(ctrl) == active)
-+	if (pciehp_check_link_active(ctrl) == active)
- 		return;
- 	while (timeout > 0) {
- 		msleep(10);
- 		timeout -= 10;
--		if (check_link_active(ctrl) == active)
-+		if (pciehp_check_link_active(ctrl) == active)
- 			return;
- 	}
- 	ctrl_dbg(ctrl, "Data Link Layer Link Active not %s in 1000 msec\n",
--- 
-1.7.9.5
-
+greg k-h
