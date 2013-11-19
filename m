@@ -1,361 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3KSTmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:42:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55163 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab3KSTmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:42:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438017433"
-Subject: Re: [PATCH v5 1/4] MCS Lock: Restructure the MCS lock defines and
- locking code into its own file
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <20131119191038.GN4138@linux.vnet.ibm.com>
-References: <cover.1383935697.git.tim.c.chen@linux.intel.com>
-	 <1383940312.11046.414.camel@schen9-DESK>
-	 <20131119191038.GN4138@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Nov 2013 11:42:32 -0800
-Message-ID: <1384890152.11046.434.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752700Ab3KSTnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:43:45 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:63872 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab3KSTno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 14:43:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131119180007.GB16693@roeck-us.net>
+References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+	<20131114172427.GA11062@roeck-us.net>
+	<CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
+	<20131114181845.GA13727@roeck-us.net>
+	<CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
+	<20131114190044.GE13727@roeck-us.net>
+	<CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
+	<CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
+	<CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+	<20131119165438.GD30481@roeck-us.net>
+	<20131119180007.GB16693@roeck-us.net>
+Date: Tue, 19 Nov 2013 19:43:43 +0000
+X-Google-Sender-Auth: qS-dnFMk2JIBxLTzRGHUVxeo0hc
+Message-ID: <CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:10 -0800, Paul E. McKenney wrote:
-> On Fri, Nov 08, 2013 at 11:51:52AM -0800, Tim Chen wrote:
-> > We will need the MCS lock code for doing optimistic spinning for rwsem
-> > and queue rwlock.  Extracting the MCS code from mutex.c and put into
-> > its own file allow us to reuse this code easily.
-> > 
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> Please see comments below.
-> 
+On Tue, Nov 19, 2013 at 6:00 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Tue, Nov 19, 2013 at 08:54:38AM -0800, Guenter Roeck wrote:
+>> On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
+>> > On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
+>> > <marcus.folkesson@gmail.com> wrote:
+>> > >
+>> > >> This is just one use case of those, you could also use it for
+>> > >> non-generic gpio functionality, like alarm, "full-on", internal clock,
+>> > >> external clock, etc. I believe it is always a bit tricky with MFD. I
+>> > >> personally prefer to put it into the chip driver because this is not
+>> > >> clearly a generic gpio interface here, and I need to drive it
+>> > >> dynamically.
+>> > >
+>> > > I agree.
+>> > >
+>> > > I think the solution with expose the "GPIOs" in sysfs is the right way to
+>> > > go.
+>> > > The chip-function is of a dynamic nature and should therefor not be set in
+>> > > platform data / devicetree.
+>> > >
+>> > > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
+>> > > but the the gpio-functionality is just a subset of
+>> > > functions these pins may be set to.
+>> > >
+>> > > Also, the I think the *real* reason why the entries is called "gpio" is that
+>> > > it is so the registers are are mentioned in the datasheet.
+>> > > Everyone that is working with the device will know what it is all about.
+>> > > I see it more as an register expose than a gpio interface...
+>> > >
+>> > > I agree that the entries does not really fit here. But they does not fit
+>> > > better elsewhere either.
+>> > > And I don't think they fit worse than the alarm-entries that is already in
+>> > > mainline.
+>> > >
+>> > > Anyway, I think the documentation file should mention what function each
+>> > > valid value represent.
+>> >
+>> > Yes, makes sense to make the documentation more comprehensive. Thanks.
+>> >
+>> > Any other issues from anyone before submitting a polished version?
+>> >
+>> You'll have to get feedback from Jean. I won't accept the patch.
+>>
+> To add to this: The datasheet clearly states that the pins are GPIO pins,
+> three of which can be configured as ALERT output, ALL_ON input, or clock
+> input/output.
 
-Thanks for reviewing the code.
+Which is inline with what we wrote before. Although, you probably
+meant FULL_ON rather than ALL_ON. There is no "ALL_ON" in this
+context.
 
-> 							Thanx, Paul
-> 
-> > ---
-> >  include/linux/mcs_spinlock.h |   64 ++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mutex.h        |    5 ++-
-> >  kernel/locking/mutex.c       |   60 ++++----------------------------------
-> >  3 files changed, 74 insertions(+), 55 deletions(-)
-> >  create mode 100644 include/linux/mcs_spinlock.h
-> > 
-> > diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-> > new file mode 100644
-> > index 0000000..b5de3b0
-> > --- /dev/null
-> > +++ b/include/linux/mcs_spinlock.h
-> > @@ -0,0 +1,64 @@
-> > +/*
-> > + * MCS lock defines
-> > + *
-> > + * This file contains the main data structure and API definitions of MCS lock.
-> > + *
-> > + * The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spin-lock
-> > + * with the desirable properties of being fair, and with each cpu trying
-> > + * to acquire the lock spinning on a local variable.
-> > + * It avoids expensive cache bouncings that common test-and-set spin-lock
-> > + * implementations incur.
-> > + */
-> > +#ifndef __LINUX_MCS_SPINLOCK_H
-> > +#define __LINUX_MCS_SPINLOCK_H
-> > +
-> > +struct mcs_spinlock {
-> > +	struct mcs_spinlock *next;
-> > +	int locked; /* 1 if lock acquired */
-> > +};
-> > +
-> > +/*
-> > + * We don't inline mcs_spin_lock() so that perf can correctly account for the
-> > + * time spent in this lock function.
-> > + */
-> > +static noinline
-> > +void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> > +{
-> > +	struct mcs_spinlock *prev;
-> > +
-> > +	/* Init node */
-> > +	node->locked = 0;
-> > +	node->next   = NULL;
-> > +
-> > +	prev = xchg(lock, node);
-> 
-> OK, the full memory barriers implied by xchg() ensure that *node will be
-> initialized before the "ACCESS_ONCE(prev->next) = node" below puts the
-> node into the list.  This rules out the misordering scenario that Tim
-> Chen called out in message-id <1380322005.3467.186.camel@schen9-DESK>
-> on September 27th.
-> 
-> Assuming of course a corresponding barrier on the lock handoff side.
-> 
-> > +	if (likely(prev == NULL)) {
-> > +		/* Lock acquired */
-> > +		node->locked = 1;
-> > +		return;
-> > +	}
-> > +	ACCESS_ONCE(prev->next) = node;
-> > +	smp_wmb();
-> 
-> I don't see what the above memory barrier does.  Here are some things
-> that it cannot be doing:
-> 
-> o	Ordering the insertion into the list above with the polling
-> 	below.  First, smp_wmb() does not order prior writes against
-> 	later reads, and second misordering is harmless.  If we start
-> 	polling before the insertion is complete, all that happens
-> 	is that the first few polls have no chance of seeing a lock
-> 	grant.
-> 
-> o	Ordering the polling against the initialization -- the above
-> 	xchg() is already doing that for us.
-> 
-> So what is its purpose?
+> GPIO pins should be made available to the kernel through
+> the GPIO subsystem; any clock configuration should be configured through the
+> clock subsystem if needed.
 
-Agree that the smp_wmb is not needed.  It is in the existing mcs code
-residing in mutex.c and we're re-factoring the code only here and hasn't
-corrected the memory barrier.
+I believe we will agree to disagree there. I find it more convenient
+(along with Markus, etc) to have clearly chip specific feature
+available for the chip in one place - especially when that follows the
+consistency - rather than distributed in several sub-spaces. Not that
+this is only a minor feature. Splitting them into even tinier is
+strange in my opinion.
 
-The particular smp_wmb() is removed in Patch 4/4 that corrects the
-memory barriers.
+> The pin configuration as ALERT output/ALL_ON
+> input/clock is clearly board specific and should thus be provided as
+> platform data and/or devicetree data if needed.
 
-> 
-> > +	/* Wait until the lock holder passes the lock down */
-> > +	while (!ACCESS_ONCE(node->locked))
-> > +		arch_mutex_cpu_relax();
-> 
-> On the other hand, I don't see how we get away without a barrier here.
-> As written, what prevents the caller's load from ->owner from being
-> reordered with the above load from ->locked?  (Perhaps you can argue
-> that such reordering is only a performance problem, but if so we need
-> that argument recorded in comments.)
-> 
-> Of course, if anyone ever tries to use mcs_spin_lock() as a full lock,
-> they will need a memory barrier here to prevent the critical section
-> from leaking out.
+That is still static, not dynamic, hence inappropriate for the use case at hand.
 
-Agree too.  The appropriate memory barrier is added in Patch 4/4.
+> The existing GPIO alarm attributes should be removed. The pin values should be
+> reported as GPIO pin values instead.
 
-> 
-> > +}
-> > +
-> > +static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> > +{
-> > +	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-> > +
-> > +	if (likely(!next)) {
-> > +		/*
-> > +		 * Release the lock by setting it to NULL
-> > +		 */
-> > +		if (cmpxchg(lock, node, NULL) == node)
-> > +			return;
-> > +		/* Wait until the next pointer is set */
-> > +		while (!(next = ACCESS_ONCE(node->next)))
-> > +			arch_mutex_cpu_relax();
-> > +	}
-> 
-> We need a memory barrier somewhere before here in this function,
-> otherwise the critical section can leak out.  I do not believe that
-> we can rely on the prohibition against speculative stores that Peter
-> Zijlstra and I have been discussing because that does not provide the
-> transitivity required by locking primitives.  I believe that we -could-
-> make the access below be an smp_store_release(), though.
-> 
-> Placing the barrier here (or at least not preceding the initial
-> fetch from node->next) has the advantage of allowing it to pair with
-> the xchg() in mcs_spin_lock(), though given the dependency only an
-> smp_read_barrier_depends() is required for that purpose.
-> 
-> > +	ACCESS_ONCE(next->locked) = 1;
-> > +	smp_wmb();
-> 
-> I don't see what this barrier does for us.  It is ordering the unlock
-> store with what, exactly?
-> 
-> If it really is doing something, we need a big fat comment stating what
-> that is, and checkpatch.pl will be happy to inform you.  ;-)
-> 
-> > +}
-> > +
-> > +#endif /* __LINUX_MCS_SPINLOCK_H */
-> > diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-> > index bab49da..32a32e6 100644
-> > --- a/include/linux/mutex.h
-> > +++ b/include/linux/mutex.h
-> > @@ -46,6 +46,7 @@
-> >   * - detects multi-task circular deadlocks and prints out all affected
-> >   *   locks and tasks (and only those tasks)
-> >   */
-> > +struct mcs_spinlock;
-> >  struct mutex {
-> >  	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
-> >  	atomic_t		count;
-> > @@ -55,7 +56,7 @@ struct mutex {
-> >  	struct task_struct	*owner;
-> >  #endif
-> >  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-> > -	void			*spin_mlock;	/* Spinner MCS lock */
-> > +	struct mcs_spinlock	*mcs_lock;	/* Spinner MCS lock */
-> >  #endif
-> >  #ifdef CONFIG_DEBUG_MUTEXES
-> >  	const char 		*name;
-> > @@ -179,4 +180,4 @@ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-> >  # define arch_mutex_cpu_relax() cpu_relax()
-> >  #endif
-> > 
-> > -#endif
-> > +#endif /* __LINUX_MUTEX_H */
-> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> > index d24105b..e08b183 100644
-> > --- a/kernel/locking/mutex.c
-> > +++ b/kernel/locking/mutex.c
-> > @@ -25,6 +25,7 @@
-> >  #include <linux/spinlock.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/debug_locks.h>
-> > +#include <linux/mcs_spinlock.h>
-> > 
-> >  /*
-> >   * In the DEBUG case we are using the "NULL fastpath" for mutexes,
-> > @@ -52,7 +53,7 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
-> >  	INIT_LIST_HEAD(&lock->wait_list);
-> >  	mutex_clear_owner(lock);
-> >  #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-> > -	lock->spin_mlock = NULL;
-> > +	lock->mcs_lock = NULL;
-> >  #endif
-> > 
-> >  	debug_mutex_init(lock, name, key);
-> > @@ -111,54 +112,7 @@ EXPORT_SYMBOL(mutex_lock);
-> >   * more or less simultaneously, the spinners need to acquire a MCS lock
-> >   * first before spinning on the owner field.
-> >   *
-> > - * We don't inline mspin_lock() so that perf can correctly account for the
-> > - * time spent in this lock function.
-> >   */
-> > -struct mspin_node {
-> > -	struct mspin_node *next ;
-> > -	int		  locked;	/* 1 if lock acquired */
-> > -};
-> > -#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
-> > -
-> > -static noinline
-> > -void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
-> > -{
-> > -	struct mspin_node *prev;
-> > -
-> > -	/* Init node */
-> > -	node->locked = 0;
-> > -	node->next   = NULL;
-> > -
-> > -	prev = xchg(lock, node);
-> > -	if (likely(prev == NULL)) {
-> > -		/* Lock acquired */
-> > -		node->locked = 1;
-> > -		return;
-> > -	}
-> > -	ACCESS_ONCE(prev->next) = node;
-> > -	smp_wmb();
-> > -	/* Wait until the lock holder passes the lock down */
-> > -	while (!ACCESS_ONCE(node->locked))
-> > -		arch_mutex_cpu_relax();
-> > -}
-> > -
-> > -static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
-> > -{
-> > -	struct mspin_node *next = ACCESS_ONCE(node->next);
-> > -
-> > -	if (likely(!next)) {
-> > -		/*
-> > -		 * Release the lock by setting it to NULL
-> > -		 */
-> > -		if (cmpxchg(lock, node, NULL) == node)
-> > -			return;
-> > -		/* Wait until the next pointer is set */
-> > -		while (!(next = ACCESS_ONCE(node->next)))
-> > -			arch_mutex_cpu_relax();
-> > -	}
-> > -	ACCESS_ONCE(next->locked) = 1;
-> > -	smp_wmb();
-> > -}
-> > 
-> >  /*
-> >   * Mutex spinning code migrated from kernel/sched/core.c
-> > @@ -448,7 +402,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> > 
-> >  	for (;;) {
-> >  		struct task_struct *owner;
-> > -		struct mspin_node  node;
-> > +		struct mcs_spinlock  node;
-> > 
-> >  		if (use_ww_ctx && ww_ctx->acquired > 0) {
-> >  			struct ww_mutex *ww;
-> > @@ -470,10 +424,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		 * If there's an owner, wait for it to either
-> >  		 * release the lock or go to sleep.
-> >  		 */
-> > -		mspin_lock(MLOCK(lock), &node);
-> > +		mcs_spin_lock(&lock->mcs_lock, &node);
-> >  		owner = ACCESS_ONCE(lock->owner);
-> >  		if (owner && !mutex_spin_on_owner(lock, owner)) {
-> > -			mspin_unlock(MLOCK(lock), &node);
-> > +			mcs_spin_unlock(&lock->mcs_lock, &node);
-> >  			goto slowpath;
-> >  		}
-> > 
-> > @@ -488,11 +442,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  			}
-> > 
-> >  			mutex_set_owner(lock);
-> > -			mspin_unlock(MLOCK(lock), &node);
-> > +			mcs_spin_unlock(&lock->mcs_lock, &node);
-> >  			preempt_enable();
-> >  			return 0;
-> >  		}
-> > -		mspin_unlock(MLOCK(lock), &node);
-> > +		mcs_spin_unlock(&lock->mcs_lock, &node);
-> > 
-> >  		/*
-> >  		 * When there's no owner, we might have preempted between the
-> > -- 
-> > 1.7.4.4
-> > 
-> > 
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Feel free to provide a change for review if you wish.
 
+I would like to note that I am not planning to rewrite an already
+existing and tested feature as of now. Not sure if I could find the
+motivation and time for doing that any soon. To me, it only looks
+personal taste nitpicking so far, and the feature would be more
+important to me. There are pro/cons for both sides, but if this
+feature cannot get it in with this design, there might be no feature
+like this for the posterity.
 
+So unless there are good arguments with modulo critical answers why it
+is unacceptably wrong as is for now, let us drop this change in
+upstream, then.
