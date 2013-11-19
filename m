@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab3KSOPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:15:49 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:48718 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3KSOPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:15:47 -0500
-Message-ID: <1384870550.8604.101.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: net/usb/ax88179_178a driver broken in linux-3.12
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Mark Lord <mlord@pobox.com>
-Cc: David Laight <David.Laight@ACULAB.COM>, Ming Lei <ming.lei@canonical.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Date: Tue, 19 Nov 2013 06:15:50 -0800
-In-Reply-To: <528B6F73.7040801@pobox.com>
-References: <52890C7E.6000607@pobox.com> <52891178.2080509@pobox.com>
-	 <52891341.4020403@pobox.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B742B@saturn3.aculab.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B742F@saturn3.aculab.com>
-	 <528A9A36.50903@pobox.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7431@saturn3.aculab.com>
-	 <528B6F73.7040801@pobox.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752834Ab3KSOP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:15:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40706 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab3KSOPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:15:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,729,1378882800"; 
+   d="scan'208";a="436018968"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] PCI / hotplug / ACPI: Drop unused acpiphp_debug declaration
+Date: Tue, 19 Nov 2013 16:15:35 +0200
+Message-Id: <1384870535-20532-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 09:02 -0500, Mark Lord wrote:
-> On 13-11-19 05:04 AM, David Laight wrote:
-> >> From: Mark Lord
-> ..
-> >> except the ax88179_178a driver still does not work in linux-3.12,
-> >> whereas it works fine in all earlier kernels.
-> >>
-> >> That's a regression.
-> >> And a simple revert (earlier in this thread) fixes it.
-> >> So.. let's revert it for now, until a proper xhci compatible patch is produced.
-> ...
-> > There is a patch to xhci-ring.c that should fix the SG problem.
-> > http://www.spinics.net/lists/linux-usb/msg97176.html
-> > 
-> > I think it should apply to the 3.12 sources.
-> 
-> I am running with that patch here now (thanks),
-> and it too appears to prevent the lockups.
-> 
-> But is this patch upstream already?
-> If yes, then it needs to get pushed out to -stable for 3.12 at least.
-> 
-> If not upstream, then the revert is probably safest for -stable,
-> rather than new code that has never been upstream before.
-> 
+Commit bd950799d951 (PCI: acpiphp: Convert to dynamic debug) removed users
+of acpiphp_debug variable and the variable itself but the declaration was
+left in the header file. Drop this unused declaration.
 
-> Both patches are attached to this email.
-> One or the other is required for the USB 3.0 network adapters to function in 3.12.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/pci/hotplug/acpiphp.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-I do not see any error in commit f27070158d6754765f2
-("ax88179_178a: avoid copy of tx tcp packets")
-
-Quite the contrary in fact...
-
-I suspect a TSO bug, and would rather disable TSO for this nic.
-
-Have you tried to revert 3804fad45411b482
-("USBNET: ax88179_178a: enable tso if usb host supports sg dma")
-
-
+diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+index 26100f510b10..1592dbe4f904 100644
+--- a/drivers/pci/hotplug/acpiphp.h
++++ b/drivers/pci/hotplug/acpiphp.h
+@@ -176,7 +176,6 @@ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot);
+ u8 acpiphp_get_adapter_status(struct acpiphp_slot *slot);
+ 
+ /* variables */
+-extern bool acpiphp_debug;
+ extern bool acpiphp_disabled;
+ 
+ #endif /* _ACPIPHP_H */
+-- 
+1.8.4.3
 
