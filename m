@@ -1,135 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab3KSM1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 07:27:47 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51337 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751563Ab3KSM1p (ORCPT
+	id S1752404Ab3KSM1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 07:27:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53829 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752333Ab3KSM1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 07:27:45 -0500
-Date: Tue, 19 Nov 2013 12:26:56 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
-Message-ID: <20131119122656.GF26487@arm.com>
-References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
- <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
- <52898417.80601@nvidia.com>
- <20131118115842.GE4050@arm.com>
- <528AD11F.7060009@nvidia.com>
+	Tue, 19 Nov 2013 07:27:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="411117709"
+From: "Potenza, Leonardo" <leonardo.potenza@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Verplanke, Edwin" <edwin.verplanke@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] PM: export hibernation_set_ops
+Thread-Topic: [PATCH] PM: export hibernation_set_ops
+Thread-Index: Ac7kYwNfmA3glKHSTcGiSAbFM+fZwA==
+Date: Tue, 19 Nov 2013 12:27:41 +0000
+Message-ID: <A03916A9EAE8D346B5F2093CCA95C34346489DC7@IRSMSX101.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528AD11F.7060009@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 02:46:55AM +0000, Alex Courbot wrote:
-> On 11/18/2013 08:58 PM, Catalin Marinas wrote:
-> > On Mon, Nov 18, 2013 at 03:05:59AM +0000, Alex Courbot wrote:
-> >> On 11/18/2013 12:59 AM, Catalin Marinas wrote:
-> >>> On 17 November 2013 08:49, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> >>>> The ARM tree includes a firmware_ops interface that is designed to
-> >>>> implement support for simple, TrustZone-based firmwares but could
-> >>>> also cover other use-cases. It has been suggested that this
-> >>>> interface might be useful to other architectures (e.g. arm64) and
-> >>>> that it should be moved out of arch/arm.
-> >>>
-> >>> NAK. I'm for code sharing with arm via common locations but this API
-> >>> goes against the ARMv8 firmware standardisation efforts like PSCI,
-> >>> encouraging each platform to define there own non-standard interface.
-> >>
-> >> I have to say, I pretty much agree with your NAK.
-> >>
-> >> The reason for this patch is that the suggestion to move firmware_ops
-> >> out of arch/arm is the last (I hope) thing that prevents my Trusted
-> >> Foundation support series from being merged.
-> >
-> > Moving it into drivers shouldn't be a workaround. Nice try ;).
-> 
-> Hehe. I thought that just sending a patch would settle the issue one way 
-> or the other and avoid a huge discussion. Woke up this morning to see 
-> how wrong I was.
+From: Leonardo Potenza <leonardo.potenza@intel.com>
 
-It's a sensitive topic ;).
+To support the ability to implement PM hibernation code as modules
+the hibernation_set_ops function requires to be exported.
 
-> > BTW, is legacy code the reason for not converting the SMC # to PSCI?
-> > It's already supported on ARMv7, so you may not have much code left to
-> > merge in the kernel ;).
-> 
-> The problem here is twofold:
-> 
-> 1) we are just consumers of the TrustZone secure monitor who receive a 
-> binary and do not have any control over its calling conventions. I agree 
-> that it would be trivial to make it compatible with PSCI, but it's just 
-> not something we can make by ourselves (TF does not even follow the SMC 
-> calling convention). If this problem is to be addressed, it should be 
-> done by forcing the TrustZone secure monitors providers to follow PSCI.
+Similar solution already available for suspend_set_ops
+(please refer to commit a5e4fd8783a2bec861ecf1138cdc042269ff59aa).
 
-I agree and such discussions do happen ('forcing' is a bit harder, more
-like 'strongly recommending'). On my side, I voice this message via the
-Linux channels, so SoC vendors can also encourage their secure provider
-in this direction. The benefit is that the Linux changes are minimal
-afterwards, single image is easier.
+Signed-off-by: Leonardo Potenza <leonardo.potenza@intel.com>
+Signed-off-by: Edwin Verplanke <edwin.verplanke@intel.com>
+Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+Index: linux/kernel/power/hibernate.c
+===================================================================
+--- linux.orig/kernel/power/hibernate.c
++++ linux/kernel/power/hibernate.c
+@@ -82,6 +82,7 @@ void hibernation_set_ops(const struct pl
+ 
+ 	unlock_system_sleep();
+ }
++EXPORT_SYMBOL_GPL(hibernation_set_ops);
+ 
+ static bool entering_platform_hibernation;
 
-But as I replied to Stephen, make sure you separate the secure OS (EL1)
-from the secure firmware (EL3). The latter (or parts of it) are provided
-by the SoC vendor (e.g. NVidia) and may be eventually linked into a big
-blob by the secure OS provider. ARM is encouraging separation here and a
-multi-stage firmware loading approach (and ARM started a public generic
-firmware project, it's in the early days now).
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
 
-> 2) devices have already shipped with this firmware. Are we going to just 
-> renounce supporting them, even though the necessary support is 
-> lightweight and fits within already existing interfaces?
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
 
-I'm talking only about ARMv8 here. Please see my reply to Stephen for
-the details of (not) reusing existing firmware.
 
-> I certainly do hope that for ARMv8 things will be different and more 
-> standardized. But that's not something that can be guaranteed unless ARM 
-> strongly enforces it to firmware vendors. In case such a non-standard 
-> firmware gets used again, I *do* hope that using cpu_ops will be 
-> preferred over saying "this device cannot be supported in mainline, ever".
-
-cpu_ops or firmware_ops is just a name and can be unified (TBD what
-common functionality it contains). What I don't want to encourage is
-each SoC registering its own firmware interface.
-
-> The kernel already supports non-standard hardware, BIOS, ACPI through 
-> hacks that are *way* more horrible than that. This should certainly not 
-> be encouraged, but that's not a valid reason to forbid otherwise 
-> perfectly fine devices to run mainline IMHO.
-
-So you say we should just stop trying to standardise anything because
-people don't care anyway. Why do we even bother with DT (or ACPI) since
-board files were fine in the past (with a bit more code)?
-
-> >> * that should a need to move it (for whatever reason) occur later, it
-> >> will be easy to do (as this patch hopefully demonstrates).
-> >
-> > I agree, it's not hard to unify this but so far I haven't seen a good
-> > reason.
-> 
-> Same here. arm64 has its own cpu_operations. Other archs have different 
-> needs and if we move this to a common place it will just become a messy 
-> placeholder for function pointers from which each arch will only use a 
-> subset.
-
-That was my initial point but it turned into a thread against PSCI
-(again ;)).
-
--- 
-Catalin
