@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3KSRkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:40:35 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:41717 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab3KSRkb (ORCPT
+	id S1753542Ab3KSRkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:40:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39683 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219Ab3KSRkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:40:31 -0500
+	Tue, 19 Nov 2013 12:40:33 -0500
+Date: Tue, 19 Nov 2013 09:40:32 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Heorhi Valakhanovich <valahanovich@tut.by>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: Only hangup once
+Message-ID: <20131119174032.GB22604@kroah.com>
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
+ <20131117203850.46df2124@tormoz-pc>
+ <20131118134211.17861db3@alan.etchedpixels.co.uk>
+ <528A5043.6030901@hurleysoftware.com>
+ <528A797B.6020807@hurleysoftware.com>
+ <20131119000923.5ca40e51@tormoz-pc>
+ <528B6BB3.7020303@hurleysoftware.com>
+ <20131119201952.2d63b8ce@tormoz-pc>
 MIME-Version: 1.0
-In-Reply-To: <20131119055714.GA3451@adam-laptop>
-References: <1384767652-20567-1-git-send-email-adam.lee@canonical.com>
- <CAErSpo7bERHRbBNOzb6g+666jMmFXQvv2T2U6dv82fVh1dU5kA@mail.gmail.com> <20131119055714.GA3451@adam-laptop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Nov 2013 10:40:09 -0700
-Message-ID: <CAErSpo45HV27k-ULgj4JFzEWqDC+o9dH11qVwO21YfYBFGP9Mw@mail.gmail.com>
-Subject: Re: [PATCH] pci: check PCI_EXP_FLAGS_SLOT before setting hotplug bridge
-To: Adam Lee <adam.lee@canonical.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Amos Kong <kongjianjun@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Thomas Renninger <trenn@suse.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131119201952.2d63b8ce@tormoz-pc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 10:57 PM, Adam Lee <adam.lee@canonical.com> wrote:
-> On Mon, Nov 18, 2013 at 10:38:17AM -0700, Bjorn Helgaas wrote:
->> [+cc Myron, Amos, Thomas, Ben]
->>
->> On Mon, Nov 18, 2013 at 2:40 AM, Adam Lee <adam.lee@canonical.com> wrote:
->> > This patch adds the PCI_EXP_FLAGS_SLOT check back before setting
->> > hotplug bridge, which is omitted by an API switching commit,
->> > 59875ae489609b2267548dc85160c5f0f0c6f9d4 "PCI/core: Use PCI Express
->> > Capability accessors".
->> >
->> > Some Lenovo laptops hang in booting without this fix.
->>
->> What kernel version hangs?  I suspect you might be missing 6d3a1741f1
->> ("PCI: Support PCIe Capability Slot registers only for ports with
->> slots"), because it *looks* like the current kernel should work
->> correctly even without your patch.
->
-> No, patching 6d3a1741f1 and d3694d4fa3 doesn't fix the hang.
->
-> It hangs in acpi_evaluate_integer() from
-> 59875ae489609b2267548dc85160c5f0f0c6f9d4 "PCI/core: Use PCI Express
-> Capability accessors" and before
-> ac212b6980d8d5eda705864fc5a8ecddc6d6eacc "ACPI / processor: Use common
-> hotplug infrastructure", 3.4~3.11. (double confirmed)
+On Tue, Nov 19, 2013 at 08:19:52PM +0300, Heorhi Valakhanovich wrote:
+> On Tue, 19 Nov 2013 08:46:27 -0500
+> Peter Hurley <peter@hurleysoftware.com> wrote:
+> 
+> > Would you please test the patch below and confirm the fix?
+> > 
+> > --->%---
+> > Subject: [PATCH] tty: Reset hupped state on open
+> > 
+> > A common security idiom is to hangup the current tty (via vhangup())
+> > after forking but before execing a root shell. This hangs up any
+> > existing opens which other processes may have and ensures subsequent
+> > opens have the necessary permissions to open the root shell tty/pty.
+> > 
+> > Reset the TTY_HUPPED state after the driver has successfully
+> > returned the opened tty (perform the reset while the tty is locked
+> > to avoid racing with concurrent hangups).
+> > 
+> > Reported-by: Heorhi Valakhanovich <valahanovich@tut.by>
+> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > ---
+> >   drivers/tty/tty_io.c | 1 +
+> >   1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> > index 3a1a01a..c74a00a 100644
+> > --- a/drivers/tty/tty_io.c
+> > +++ b/drivers/tty/tty_io.c
+> > @@ -2086,6 +2086,7 @@ retry_open:
+> >   			filp->f_op = &tty_fops;
+> >   		goto retry_open;
+> >   	}
+> > +	clear_bit(TTY_HUPPED, &tty->flags);
+> >   	tty_unlock(tty);
+> > 
+> > 
+> 
+> It looks like this patch works. It solves my problem. Thanks.
+> Will wait for such fix in mainline.
 
-I don't understand what you're saying here.  We're talking about this path:
+I'll queue this up after 3.13-rc1 is out.
 
-    set_pcie_hotplug_bridge
-      pcie_capability_read_dword(dev, PCI_EXP_SLTCAP, ...)
-        pcie_capability_reg_implemented(dev, PCI_EXP_SLTCAP)
-          pcie_cap_has_sltctl(dev)
+It should be backported to 3.12, and any other kernels?
 
-This path doesn't invoke acpi_evaluate_integer().  How does a hang
-there relate to the patch you posted?  Are you saying you bisected the
-hang to one of the commits you mentioned?
+thanks,
 
-Your patch appears to be functionally equivalent to 6d3a1741f1 -- they
-both check the PCI_EXP_FLAGS_SLOT bit in the PCI_EXP_FLAGS word.  But
-6d3a1741f1 uses a cached copy of PCI_EXP_FLAGS, so it could be that
-you found a path where the cached copy hasn't been updated yet.
-
-I don't want to apply a patch that is logically unnecessary, because
-then it's likely that somebody in the future will think "there's no
-need to check PCI_EXP_FLAGS_SLOT twice, so I'll remove the second
-one," which will break things again.  Your patch appears unnecessary,
-so obviously I'm missing something.  I'm just trying to understand
-what I'm missing.
-
-Bjorn
+greg k-h
