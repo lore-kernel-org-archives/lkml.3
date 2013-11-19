@@ -1,178 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab3KSLJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:09:27 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49285 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3KSLJY (ORCPT
+	id S1752575Ab3KSLKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:10:02 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:39502 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab3KSLIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:09:24 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAJB8q50012381, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 2/2] mmc: rtsx: modify phase searching method for tunning
-Date: Tue, 19 Nov 2013 19:10:35 +0800
-Message-ID: <38cd1d9d7f10f6a65b4dc608f310ac3818da827f.1384858553.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1384858553.git.micky_ching@realsil.com.cn>
-References: <cover.1384858553.git.micky_ching@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+	Tue, 19 Nov 2013 06:08:18 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
+        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 07/10] ASoC: ux500: Store DMA data in the DAI differently in the pdata and DT case
+Date: Tue, 19 Nov 2013 11:07:46 +0000
+Message-Id: <1384859269-19801-8-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+In this patch we do two things. Firstly, instead of open coding the
+store of DMA data in to the DAI for later use, we use the API provided.
+Secondly we create and store similar DMA data for the DT case, only
+this time we use 'struct snd_dmaengine_dai_dma_data' which is provided
+by the core for this very reason.
 
-The new phase searching method is more concise and easier to
-understand.
-
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+Cc: alsa-devel@alsa-project.org
+Cc: Mark Brown <broonie@kernel.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c |  108 +++++++++++--------------------------
- 1 file changed, 30 insertions(+), 78 deletions(-)
+ sound/soc/ux500/ux500_msp_dai.c | 42 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index c9a7328..fb2f159 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -31,16 +31,6 @@
- #include <linux/mfd/rtsx_pci.h>
- #include <asm/unaligned.h>
+diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
+index c6fb5cc..8d1b01f 100644
+--- a/sound/soc/ux500/ux500_msp_dai.c
++++ b/sound/soc/ux500/ux500_msp_dai.c
+@@ -17,12 +17,14 @@
+ #include <linux/bitops.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
++#include <linux/of.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/mfd/dbx500-prcmu.h>
+ #include <linux/platform_data/asoc-ux500-msp.h>
  
--/* SD Tuning Data Structure
-- * Record continuous timing phase path
-- */
--struct timing_phase_path {
--	int start;
--	int end;
--	int mid;
--	int len;
--};
--
- struct realtek_pci_sdmmc {
- 	struct platform_device	*pdev;
- 	struct rtsx_pcr		*pcr;
-@@ -511,85 +501,47 @@ static int sd_change_phase(struct realtek_pci_sdmmc *host,
+ #include <sound/soc.h>
+ #include <sound/soc-dai.h>
++#include <sound/dmaengine_pcm.h>
+ 
+ #include "ux500_msp_i2s.h"
+ #include "ux500_msp_dai.h"
+@@ -654,16 +656,52 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
+ 	return ret;
+ }
+ 
++static int ux500_msp_dai_of_probe(struct snd_soc_dai *dai)
++{
++	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(dai->dev);
++	struct snd_dmaengine_dai_dma_data *playback_dma_data;
++	struct snd_dmaengine_dai_dma_data *capture_dma_data;
++
++	playback_dma_data = devm_kzalloc(dai->dev,
++					 sizeof(*playback_dma_data),
++					 GFP_KERNEL);
++	if (!playback_dma_data)
++		return -ENOMEM;
++
++	capture_dma_data = devm_kzalloc(dai->dev,
++					sizeof(*capture_dma_data),
++					GFP_KERNEL);
++	if (!capture_dma_data)
++		return -ENOMEM;
++
++	playback_dma_data->addr = drvdata->msp->playback_dma_data.tx_rx_addr;
++	capture_dma_data->addr = drvdata->msp->capture_dma_data.tx_rx_addr;
++
++	playback_dma_data->maxburst = 4;
++	capture_dma_data->maxburst = 4;
++
++	snd_soc_dai_init_dma_data(dai, playback_dma_data, capture_dma_data);
++
++	return 0;
++}
++
+ static int ux500_msp_dai_probe(struct snd_soc_dai *dai)
+ {
+ 	struct ux500_msp_i2s_drvdata *drvdata = dev_get_drvdata(dai->dev);
++	struct device_node *np = dai->dev->of_node;
++	int ret;
+ 
+-	dai->playback_dma_data = &drvdata->msp->playback_dma_data;
+-	dai->capture_dma_data = &drvdata->msp->capture_dma_data;
++	if (np) {
++		ret = ux500_msp_dai_of_probe(dai);
++		return ret;
++	}
+ 
+ 	drvdata->msp->playback_dma_data.data_size = drvdata->slot_width;
+ 	drvdata->msp->capture_dma_data.data_size = drvdata->slot_width;
+ 
++	snd_soc_dai_init_dma_data(dai,
++				  &drvdata->msp->playback_dma_data,
++				  &drvdata->msp->capture_dma_data);
  	return 0;
  }
  
--static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
-+static inline u32 sd_get_phase_point(u32 phase_map, unsigned int idx)
- {
--	struct timing_phase_path path[MAX_PHASE + 1];
--	int i, j, cont_path_cnt;
--	int new_block, max_len, final_path_idx;
--	u8 final_phase = 0xFF;
-+	idx &= MAX_PHASE;
-+	return phase_map & (1 << idx);
-+}
-+
-+static int sd_get_phase_len(u32 phase_map, unsigned int idx)
-+{
-+	int i;
- 
--	/* Parse phase_map, take it as a bit-ring */
--	cont_path_cnt = 0;
--	new_block = 1;
--	j = 0;
- 	for (i = 0; i < MAX_PHASE + 1; i++) {
--		if (phase_map & (1 << i)) {
--			if (new_block) {
--				new_block = 0;
--				j = cont_path_cnt++;
--				path[j].start = i;
--				path[j].end = i;
--			} else {
--				path[j].end = i;
--			}
--		} else {
--			new_block = 1;
--			if (cont_path_cnt) {
--				/* Calculate path length and middle point */
--				int idx = cont_path_cnt - 1;
--				path[idx].len =
--					path[idx].end - path[idx].start + 1;
--				path[idx].mid =
--					path[idx].start + path[idx].len / 2;
--			}
--		}
-+		if (sd_get_phase_point(phase_map, idx + i) == 0)
-+			return i;
- 	}
-+	return MAX_PHASE + 1;
-+}
- 
--	if (cont_path_cnt == 0) {
--		dev_dbg(sdmmc_dev(host), "No continuous phase path\n");
--		goto finish;
--	} else {
--		/* Calculate last continuous path length and middle point */
--		int idx = cont_path_cnt - 1;
--		path[idx].len = path[idx].end - path[idx].start + 1;
--		path[idx].mid = path[idx].start + path[idx].len / 2;
--	}
-+static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
-+{
-+	int start = 0, len = 0;
-+	int start_final = 0, len_final = 0;
-+	u8 final_phase = 0xFF;
- 
--	/* Connect the first and last continuous paths if they are adjacent */
--	if (!path[0].start && (path[cont_path_cnt - 1].end == MAX_PHASE)) {
--		/* Using negative index */
--		path[0].start = path[cont_path_cnt - 1].start - MAX_PHASE - 1;
--		path[0].len += path[cont_path_cnt - 1].len;
--		path[0].mid = path[0].start + path[0].len / 2;
--		/* Convert negative middle point index to positive one */
--		if (path[0].mid < 0)
--			path[0].mid += MAX_PHASE + 1;
--		cont_path_cnt--;
-+	if (phase_map == 0) {
-+		dev_dbg(sdmmc_dev(host), "Phase: [map:%x]\n", phase_map);
-+		return final_phase;
- 	}
- 
--	/* Choose the longest continuous phase path */
--	max_len = 0;
--	final_phase = 0;
--	final_path_idx = 0;
--	for (i = 0; i < cont_path_cnt; i++) {
--		if (path[i].len > max_len) {
--			max_len = path[i].len;
--			final_phase = (u8)path[i].mid;
--			final_path_idx = i;
-+	while (start < MAX_PHASE + 1) {
-+		len = sd_get_phase_len(phase_map, start);
-+		if (len_final < len) {
-+			start_final = start;
-+			len_final = len;
- 		}
--
--		dev_dbg(sdmmc_dev(host), "path[%d].start = %d\n",
--				i, path[i].start);
--		dev_dbg(sdmmc_dev(host), "path[%d].end = %d\n",
--				i, path[i].end);
--		dev_dbg(sdmmc_dev(host), "path[%d].len = %d\n",
--				i, path[i].len);
--		dev_dbg(sdmmc_dev(host), "path[%d].mid = %d\n",
--				i, path[i].mid);
-+		start += len ? len : 1;
- 	}
- 
--finish:
--	dev_dbg(sdmmc_dev(host), "Final chosen phase: %d\n", final_phase);
-+	final_phase = (start_final + len_final / 2) & MAX_PHASE;
-+	dev_dbg(sdmmc_dev(host), "Phase: [map:%x] [maxlen:%d] [final:%d]\n",
-+		phase_map, len_final, final_phase);
-+
- 	return final_phase;
- }
- 
 -- 
-1.7.9.5
+1.8.1.2
 
