@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab3KSWIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:08:34 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39147 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab3KSWIc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:08:32 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1753072Ab3KSWKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:10:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34392 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab3KSWKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 17:10:45 -0500
+Date: Tue, 19 Nov 2013 23:08:40 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Catalin Marinas <Catalin.Marinas@arm.com>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: Multiple local register variables w/ same register
+Message-ID: <20131119220840.GB892@tucnak.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <52803E5D.3050109@mentor.com>
+ <52851395.3010306@mentor.com>
+ <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+ <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+ <20131119160502.GG11778@mudshark.cambridge.arm.com>
+ <1656507422.70913.1384880540574.JavaMail.zimbra@efficios.com>
+ <20131119173312.GP16796@laptop.programming.kicks-ass.net>
+ <528BDEA9.1050708@twiddle.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "Jonghwan Choi" <jhbird.choi@gmail.com>
-From: Sebastian Capella <sebastian.capella@linaro.org>
-In-Reply-To: <27161890.Zx6CiZOMr8@amdc1032>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "MyungJoo Ham" <myungjoo.ham@samsung.com>,
-        "Kukjin Kim" <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "Jonghwan Choi" <jhbird.choi@samsung.com>
-References: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
- <27161890.Zx6CiZOMr8@amdc1032>
-Message-ID: <20131119220829.27502.62997@capellas-linux>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 4/4] PM / devfreq: Consider hibernation in pm notifier
-Date: Tue, 19 Nov 2013 14:08:29 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528BDEA9.1050708@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Bartlomiej Zolnierkiewicz (2013-11-19 06:50:05)
-> Hi,
+On Wed, Nov 20, 2013 at 07:56:57AM +1000, Richard Henderson wrote:
+> It appears not:
 > 
-> Are you planning to add hibernation support to ARM?
+> int __attribute__((noinline)) f(void)
+> {
+>   {
+>     register int x __asm__("eax");
+>     x = 1;
+>   }
+>   {
+>     register int y __asm__("eax");
+>     return ++y;
+>   }
+> }
 > 
-> If so then this should be stated somewhere in the patch description.
+> extern void abort(void);
 > 
-> OTOH if you are not going to add hibernation support to ARM I see
-> a little sense in adding hibernation support to ARM-only drivers..
+> int main(void)
+> {
+>   if (f() != 2)
+>     abort();
+>   return 0;
+> }
+> 
+> Anyone see anything wrong with the testcase?  Do we thing this sort of thing
+> ought to work, perhaps with scopes lengthened?
 
-FYI, we at Linaro and a few others have been working on adding
-hibernation support for ARM.  I have not coordinated with Jonghwan
-however.
+I'd say this is undefined, when a local register var goes out of scope,
+it's value can change arbitrarily.  If you insert some call in between the
+two scopes, it will surely have clobbered value, and even if there isn't
+any call in between those, any insn could in theory clobber those.
 
-Apoligies for the earlier toppost.
-
-Thanks,
-
-Sebastian Capella
+	Jakub
