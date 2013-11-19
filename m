@@ -1,91 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3KSQYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:24:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47320 "EHLO mx1.redhat.com"
+	id S1753428Ab3KSQZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:25:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753363Ab3KSQYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:24:37 -0500
-Date: Tue, 19 Nov 2013 17:25:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] uprobes: Document xol_area and arch_uprobe->insn/ixol
-Message-ID: <20131119162545.GA776@redhat.com>
-References: <20131109190344.GA32281@redhat.com> <20131111084149.GC12405@gmail.com> <20131111195836.GA20615@redhat.com> <20131111210327.GG18886@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131111210327.GG18886@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751307Ab3KSQZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 11:25:01 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, x86@kernel.org
+Subject: [PATCH] x86, Fix do_IRQ interrupt warning for cpu hotplug retriggered irqs
+Date: Tue, 19 Nov 2013 11:24:56 -0500
+Message-Id: <1384878296-5155-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11, Ingo Molnar wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 11/11, Ingo Molnar wrote:
-> > >
-> > > You guys are changing code that reads like gobbledygook to people
-> > > reading it for the first time.
-> >
-> > Not that I am trying to defense uprobes, but this is equally true for
-> > any piece of kernel code, at least to me ;)
->
-> I'm really not suggesting to do overly much - only for some minimal blurb
-> like the scheduler has in most places:
-
-OK. Let me try to make a first step to improve this a little bit...
-
-How about the patch below? Srikar?
+Second try at this ....
 
 
-Subject: [PATCH] uprobes: Document xol_area and arch_uprobe->insn/ixol
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64831
 
-Document xol_area and arch_uprobe.
+When downing a cpu it is possible that there are unhandled irqs left in
+the APIC IRR register.  fixup_irqs() goes through the IRR and retriggers
+the IRQs left in the APIC IRR.  After this, the vector for the irq is set
+to -1.  There is a possibility here, however, that the CPU does handle an
+irq in the IRR and then calls the vector.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+When this happens, do_IRQ() spits out a warning like
+
+kernel: [  612.014573] do_IRQ: 56.134 No irq handler for vector (irq -1)
+
+I added a debug printk to output which CPU & vector was retriggered and
+discovered that that we are getting bogus events.  This patchset resolves
+this by adding definitions for VECTOR_UNDEFINED(-1) and
+VECTOR_RETRIGGERED(-2) and modifying the code to use them.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: x86@kernel.org
 ---
- kernel/events/uprobes.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |    2 ++
+ arch/x86/kernel/apic/io_apic.c |   13 +++++++------
+ arch/x86/kernel/irq.c          |   17 +++++++++++------
+ arch/x86/kernel/irqinit.c      |    4 ++--
+ 4 files changed, 22 insertions(+), 14 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 51a7f53..b886a5e 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -73,6 +73,17 @@ struct uprobe {
- 	struct inode		*inode;		/* Also hold a ref to inode */
- 	loff_t			offset;
- 	unsigned long		flags;
-+
-+	/*
-+	 * The generic code assumes that it has two members of unknown type
-+	 * owned by the arch-specific code:
-+	 *
-+	 * 	insn -	copy_insn() saves the original instruction here for
-+	 *		arch_uprobe_analyze_insn().
-+	 *
-+	 *	ixol -	potentially modified instruction to execute out of
-+	 *		line, copied to xol_area by xol_get_insn_slot().
-+	 */
- 	struct arch_uprobe	arch;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 92b3bae..22c425e 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -188,6 +188,8 @@ extern __visible void smp_invalidate_interrupt(struct pt_regs *);
+ 
+ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+ 
++#define VECTOR_UNDEFINED	-1
++#define VECTOR_RETRIGGERED	-2
+ typedef int vector_irq_t[NR_VECTORS];
+ DECLARE_PER_CPU(vector_irq_t, vector_irq);
+ extern void setup_vector_irq(int cpu);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e63a5bd..6e1541c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1143,7 +1143,8 @@ next:
+ 			goto next;
+ 
+ 		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
+-			if (per_cpu(vector_irq, new_cpu)[vector] != -1)
++			if (per_cpu(vector_irq, new_cpu)[vector] >
++							      VECTOR_UNDEFINED)
+ 				goto next;
+ 		/* Found one! */
+ 		current_vector = vector;
+@@ -1183,7 +1184,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 
+ 	vector = cfg->vector;
+ 	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
+-		per_cpu(vector_irq, cpu)[vector] = -1;
++		per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 
+ 	cfg->vector = 0;
+ 	cpumask_clear(cfg->domain);
+@@ -1195,7 +1196,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 								vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
+ 				continue;
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 			break;
+ 		}
+ 	}
+@@ -1228,12 +1229,12 @@ void __setup_vector_irq(int cpu)
+ 	/* Mark the free vectors */
+ 	for (vector = 0; vector < NR_VECTORS; ++vector) {
+ 		irq = per_cpu(vector_irq, cpu)[vector];
+-		if (irq < 0)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		cfg = irq_cfg(irq);
+ 		if (!cpumask_test_cpu(cpu, cfg->domain))
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 	}
+ 	raw_spin_unlock(&vector_lock);
+ }
+@@ -2208,7 +2209,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 		struct irq_cfg *cfg;
+ 		irq = __this_cpu_read(vector_irq[vector]);
+ 
+-		if (irq == -1)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		desc = irq_to_desc(irq);
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687..030f0e2 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -193,9 +193,10 @@ __visible unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ 	if (!handle_irq(irq, regs)) {
+ 		ack_APIC_irq();
+ 
+-		if (printk_ratelimit())
+-			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+-				__func__, smp_processor_id(), vector, irq);
++		if (irq != VECTOR_RETRIGGERED)
++			pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %d)\n",
++					     __func__, smp_processor_id(),
++					     vector, irq);
+ 	}
+ 
+ 	irq_exit();
+@@ -344,7 +345,7 @@ void fixup_irqs(void)
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 		unsigned int irr;
+ 
+-		if (__this_cpu_read(vector_irq[vector]) < 0)
++		if (__this_cpu_read(vector_irq[vector]) <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
+@@ -355,11 +356,15 @@ void fixup_irqs(void)
+ 			data = irq_desc_get_irq_data(desc);
+ 			chip = irq_data_get_irq_chip(data);
+ 			raw_spin_lock(&desc->lock);
+-			if (chip->irq_retrigger)
++			if (chip->irq_retrigger) {
+ 				chip->irq_retrigger(data);
++				__this_cpu_write(vector_irq[vector],
++						 VECTOR_RETRIGGERED);
++			}
+ 			raw_spin_unlock(&desc->lock);
+ 		}
+-		__this_cpu_write(vector_irq[vector], -1);
++		if (__this_cpu_read(vector_irq[vector]) != VECTOR_RETRIGGERED)
++			__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+ 	}
+ }
+ #endif
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index a2a1fbc..7f50156 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -52,7 +52,7 @@ static struct irqaction irq2 = {
  };
  
-@@ -86,6 +97,10 @@ struct return_instance {
+ DEFINE_PER_CPU(vector_irq_t, vector_irq) = {
+-	[0 ... NR_VECTORS - 1] = -1,
++	[0 ... NR_VECTORS - 1] = VECTOR_UNDEFINED,
  };
  
- /*
-+ * Execute out of line area: anonymous executable mapping installed
-+ * by the probed task to execute the copy of the original instruction
-+ * mangled by set_swbp().
-+ *
-  * On a breakpoint hit, thread contests for a slot.  It frees the
-  * slot after singlestep. Currently a fixed number of slots are
-  * allocated.
+ int vector_used_by_percpu_irq(unsigned int vector)
+@@ -60,7 +60,7 @@ int vector_used_by_percpu_irq(unsigned int vector)
+ 	int cpu;
+ 
+ 	for_each_online_cpu(cpu) {
+-		if (per_cpu(vector_irq, cpu)[vector] != -1)
++		if (per_cpu(vector_irq, cpu)[vector] > VECTOR_UNDEFINED)
+ 			return 1;
+ 	}
+ 
 -- 
-1.5.5.1
-
+1.7.9.3
 
