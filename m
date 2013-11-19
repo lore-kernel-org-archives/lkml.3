@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3KSSN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:13:57 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:49031 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab3KSSNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:13:54 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+	id S1752122Ab3KSSU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:20:58 -0500
+Received: from relay.parallels.com ([195.214.232.42]:50880 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3KSSU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:20:57 -0500
+Message-ID: <528BABF7.1010009@parallels.com>
+Date: Tue, 19 Nov 2013 22:20:39 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Andrey Vagin <avagin@openvz.org>, "David S. Miller" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <criu@openvz.org>, Eric Dumazet <edumazet@google.com>,
         Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
         James Morris <jmorris@namei.org>,
         Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
         Patrick McHardy <kaber@trash.net>
-Subject: [PATCH] tcp: don't update snd_nxt, when a socket is switched from repair mode
-Date: Tue, 19 Nov 2013 22:10:06 +0400
-Message-Id: <1384884606-9978-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.3.1
+Subject: Re: [PATCH] tcp: don't update snd_nxt, when a socket is switched
+ from repair mode
+References: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-snd_nxt must be updated synchronously with sk_send_head.  Otherwise
-tp->packets_out may be updated incorrectly, what may bring a kernel panic.
+On 11/19/2013 10:10 PM, Andrey Vagin wrote:
+> 
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Here is a kernel panic from my host.
-[  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
-[  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
-...
-[  146.301158] Call Trace:
-[  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 
-Before this panic a tcp socket was restored. This socket had sent and
-unsent data in the write queue. Sent data was restored in repair mode,
-then the socket was switched from reapair mode and unsent data was
-restored. After that the socket was switched back into repair mode.
+> ---
+>  net/ipv4/tcp_output.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+> index 6728546..fa9f57d 100644
+> --- a/net/ipv4/tcp_output.c
+> +++ b/net/ipv4/tcp_output.c
+> @@ -3093,7 +3093,6 @@ void tcp_send_window_probe(struct sock *sk)
+>  {
+>  	if (sk->sk_state == TCP_ESTABLISHED) {
+>  		tcp_sk(sk)->snd_wl1 = tcp_sk(sk)->rcv_nxt - 1;
+> -		tcp_sk(sk)->snd_nxt = tcp_sk(sk)->write_seq;
+>  		tcp_xmit_probe_skb(sk, 0);
+>  	}
+>  }
+> 
 
-In that moment we had a socket where write queue looks like this:
-snd_una    snd_nxt   write_seq
-   |_________|________|
-             |
-	  sk_send_head
-
-After a second switching from repair mode the state of socket was
-changed:
-
-snd_una          snd_nxt, write_seq
-   |_________ ________|
-             |
-	  sk_send_head
-
-This state is inconsistent, because snd_nxt and sk_send_head are not
-synchronized.
-
-Bellow you can find a call trace, how packets_out can be incremented
-twice for one skb, if snd_nxt and sk_send_head are not synchronized.
-In this case packets_out will be always positive, even when
-sk_write_queue is empty.
-
-tcp_write_wakeup
-	skb = tcp_send_head(sk);
-	tcp_fragment
-		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
-			tcp_adjust_pcount(sk, skb, diff);
-	tcp_event_new_data_sent
-		tp->packets_out += tcp_skb_pcount(skb);
-
-I think update of snd_nxt isn't required, when a socket is switched from
-repair mode.  Because it's initialized in tcp_connect_init. Then when a
-write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
-so it's always is in consistent state.
-
-I have checked, that the bug is not reproduced with this patch and
-all tests about restoring tcp connections work fine.
-
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- net/ipv4/tcp_output.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 6728546..fa9f57d 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -3093,7 +3093,6 @@ void tcp_send_window_probe(struct sock *sk)
- {
- 	if (sk->sk_state == TCP_ESTABLISHED) {
- 		tcp_sk(sk)->snd_wl1 = tcp_sk(sk)->rcv_nxt - 1;
--		tcp_sk(sk)->snd_nxt = tcp_sk(sk)->write_seq;
- 		tcp_xmit_probe_skb(sk, 0);
- 	}
- }
--- 
-1.8.3.1
 
