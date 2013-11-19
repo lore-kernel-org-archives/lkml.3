@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab3KSOma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:42:30 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34039 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab3KSOm0 (ORCPT
+	id S1753461Ab3KSOqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:46:22 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53966 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab3KSOma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:42:26 -0500
+	Tue, 19 Nov 2013 09:42:30 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 03/13] staging/lustre: remove lustreapi.h
-Date: Tue, 19 Nov 2013 22:38:37 +0800
-Message-Id: <1384871927-8553-4-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 04/13] staging/lustre: remove fsfilt_ext3.c
+Date: Tue, 19 Nov 2013 22:38:38 +0800
+Message-Id: <1384871927-8553-5-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384871927-8553-1-git-send-email-bergwolf@gmail.com>
 References: <1384871927-8553-1-git-send-email-bergwolf@gmail.com>
@@ -21,21 +21,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is only used by user space.
+It is only used by server.
 
 Cc: Andreas Dilger <andreas.dilger@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 ---
- .../lustre/lustre/include/lustre/lustreapi.h       |  310 --------------------
- 1 file changed, 310 deletions(-)
- delete mode 100644 drivers/staging/lustre/lustre/include/lustre/lustreapi.h
+ drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c |  760 ----------------------
+ 1 file changed, 760 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustreapi.h b/drivers/staging/lustre/lustre/include/lustre/lustreapi.h
+diff --git a/drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c b/drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c
 deleted file mode 100644
-index 63da665..0000000
---- a/drivers/staging/lustre/lustre/include/lustre/lustreapi.h
+index ee75994..0000000
+--- a/drivers/staging/lustre/lustre/lvfs/fsfilt_ext3.c
 +++ /dev/null
-@@ -1,310 +0,0 @@
+@@ -1,760 +0,0 @@
 -/*
 - * GPL HEADER START
 - *
@@ -62,290 +62,740 @@ index 63da665..0000000
 - * GPL HEADER END
 - */
 -/*
-- * Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
+- * Copyright (c) 2002, 2010, Oracle and/or its affiliates. All rights reserved.
 - * Use is subject to license terms.
 - *
-- * Copyright (c) 2011, 2012, Whamcloud, Inc.
+- * Copyright (c) 2011, 2012, Intel Corporation.
 - */
 -/*
 - * This file is part of Lustre, http://www.lustre.org/
 - * Lustre is a trademark of Sun Microsystems, Inc.
-- */
--
--#ifndef _LUSTREAPI_H_
--#define _LUSTREAPI_H_
--
--/** \defgroup llapi llapi
 - *
-- * @{
+- * lustre/lvfs/fsfilt_ext3.c
+- *
+- * Author: Andreas Dilger <adilger@clusterfs.com>
 - */
 -
--#include <lustre/lustre_user.h>
+-#define DEBUG_SUBSYSTEM S_FILTER
 -
--typedef void (*llapi_cb_t)(char *obd_type_name, char *obd_name, char *obd_uuid, void *args);
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/slab.h>
+-#include <linux/pagemap.h>
+-#include <ldiskfs/ldiskfs_config.h>
+-#include <ext4/ext4.h>
+-#include <ext4/ext4_jbd2.h>
+-#include <linux/bitops.h>
+-#include <linux/quota.h>
 -
--/* lustreapi message severity level */
--enum llapi_message_level {
--	LLAPI_MSG_OFF    = 0,
--	LLAPI_MSG_FATAL  = 1,
--	LLAPI_MSG_ERROR  = 2,
--	LLAPI_MSG_WARN   = 3,
--	LLAPI_MSG_NORMAL = 4,
--	LLAPI_MSG_INFO   = 5,
--	LLAPI_MSG_DEBUG  = 6,
--	LLAPI_MSG_MAX
+-#include <linux/libcfs/libcfs.h>
+-#include <lustre_fsfilt.h>
+-#include <obd.h>
+-#include <linux/lustre_compat25.h>
+-#include <linux/lprocfs_status.h>
+-
+-#include <ext4/ext4_extents.h>
+-
+-#ifdef HAVE_EXT_PBLOCK /* Name changed to ext4_ext_pblock for kernel 2.6.35 */
+-#define ext3_ext_pblock(ex) ext_pblock((ex))
+-#endif
+-
+-/* for kernels 2.6.18 and later */
+-#define FSFILT_SINGLEDATA_TRANS_BLOCKS(sb) EXT3_SINGLEDATA_TRANS_BLOCKS(sb)
+-
+-#define fsfilt_ext3_ext_insert_extent(handle, inode, path, newext, flag) \
+-	       ext3_ext_insert_extent(handle, inode, path, newext, flag)
+-
+-#define ext3_mb_discard_inode_preallocations(inode) \
+-		 ext3_discard_preallocations(inode)
+-
+-#define fsfilt_log_start_commit(journal, tid) jbd2_log_start_commit(journal, tid)
+-#define fsfilt_log_wait_commit(journal, tid) jbd2_log_wait_commit(journal, tid)
+-
+-static struct kmem_cache *fcb_cache;
+-
+-struct fsfilt_cb_data {
+-	struct ext4_journal_cb_entry cb_jcb; /* private data - MUST BE FIRST */
+-	fsfilt_cb_t cb_func;	    /* MDS/OBD completion function */
+-	struct obd_device *cb_obd;      /* MDS/OBD completion device */
+-	__u64 cb_last_rcvd;	     /* MDS/OST last committed operation */
+-	void *cb_data;		  /* MDS/OST completion function data */
 -};
 -
--/* the bottom three bits reserved for llapi_message_level */
--#define LLAPI_MSG_MASK	  0x00000007
--#define LLAPI_MSG_NO_ERRNO      0x00000010
--
--extern void llapi_msg_set_level(int level);
--extern void llapi_error(int level, int rc, char *fmt, ...);
--#define llapi_err_noerrno(level, fmt, a...)			     \
--	llapi_error((level) | LLAPI_MSG_NO_ERRNO, 0, fmt, ## a)
--extern void llapi_printf(int level, char *fmt, ...);
--extern int llapi_file_create(const char *name, unsigned long long stripe_size,
--			     int stripe_offset, int stripe_count,
--			     int stripe_pattern);
--extern int llapi_file_open(const char *name, int flags, int mode,
--			   unsigned long long stripe_size, int stripe_offset,
--			   int stripe_count, int stripe_pattern);
--extern int llapi_file_create_pool(const char *name,
--				  unsigned long long stripe_size,
--				  int stripe_offset, int stripe_count,
--				  int stripe_pattern, char *pool_name);
--extern int llapi_file_open_pool(const char *name, int flags, int mode,
--				unsigned long long stripe_size,
--				int stripe_offset, int stripe_count,
--				int stripe_pattern, char *pool_name);
--extern int llapi_poollist(const char *name);
--extern int llapi_get_poollist(const char *name, char **poollist, int list_size,
--			      char *buffer, int buffer_size);
--extern int llapi_get_poolmembers(const char *poolname, char **members,
--				 int list_size, char *buffer, int buffer_size);
--extern int llapi_file_get_stripe(const char *path, struct lov_user_md *lum);
--#define HAVE_LLAPI_FILE_LOOKUP
--extern int llapi_file_lookup(int dirfd, const char *name);
--
--#define VERBOSE_COUNT      0x1
--#define VERBOSE_SIZE       0x2
--#define VERBOSE_OFFSET     0x4
--#define VERBOSE_POOL       0x8
--#define VERBOSE_DETAIL     0x10
--#define VERBOSE_OBJID      0x20
--#define VERBOSE_GENERATION 0x40
--#define VERBOSE_MDTINDEX   0x80
--#define VERBOSE_ALL	(VERBOSE_COUNT | VERBOSE_SIZE | VERBOSE_OFFSET | \
--			    VERBOSE_POOL | VERBOSE_OBJID | VERBOSE_GENERATION)
--
--struct find_param {
--	unsigned int maxdepth;
--	time_t  atime;
--	time_t  mtime;
--	time_t  ctime;
--	int     asign;  /* cannot be bitfields due to using pointers to */
--	int     csign;  /* access them during argument parsing. */
--	int     msign;
--	int     type;
--	int	     size_sign:2,	/* these need to be signed values */
--			stripesize_sign:2,
--			stripecount_sign:2;
--	unsigned long long size;
--	unsigned long long size_units;
--	uid_t uid;
--	gid_t gid;
--
--	unsigned long   zeroend:1,
--			recursive:1,
--			exclude_pattern:1,
--			exclude_type:1,
--			exclude_obd:1,
--			exclude_mdt:1,
--			exclude_gid:1,
--			exclude_uid:1,
--			check_gid:1,	    /* group ID */
--			check_uid:1,	    /* user ID */
--			check_pool:1,	   /* LOV pool name */
--			check_size:1,	   /* file size */
--			exclude_pool:1,
--			exclude_size:1,
--			exclude_atime:1,
--			exclude_mtime:1,
--			exclude_ctime:1,
--			get_lmv:1,	      /* get MDT list from LMV */
--			raw:1,		  /* do not fill in defaults */
--			check_stripesize:1,     /* LOV stripe size */
--			exclude_stripesize:1,
--			check_stripecount:1,    /* LOV stripe count */
--			exclude_stripecount:1;
--
--	int     verbose;
--	int     quiet;
--
--	/* regular expression */
--	char   *pattern;
--
--	char   *print_fmt;
--
--	struct  obd_uuid       *obduuid;
--	int		     num_obds;
--	int		     num_alloc_obds;
--	int		     obdindex;
--	int		    *obdindexes;
--
--	struct  obd_uuid       *mdtuuid;
--	int		     num_mdts;
--	int		     num_alloc_mdts;
--	int		     mdtindex;
--	int		    *mdtindexes;
--	int		     file_mdtindex;
--
--	int	lumlen;
--	struct  lov_user_mds_data *lmd;
--
--	char poolname[LOV_MAXPOOLNAME + 1];
--
--	int			fp_lmv_count;
--	struct lmv_user_md	*fp_lmv_md;
--
--	unsigned long long stripesize;
--	unsigned long long stripesize_units;
--	unsigned long long stripecount;
--
--	/* In-process parameters. */
--	unsigned long   got_uuids:1,
--			obds_printed:1,
--			have_fileinfo:1;	/* file attrs and LOV xattr */
--	unsigned int    depth;
--	dev_t	   st_dev;
--};
--
--extern int llapi_ostlist(char *path, struct find_param *param);
--extern int llapi_uuid_match(char *real_uuid, char *search_uuid);
--extern int llapi_getstripe(char *path, struct find_param *param);
--extern int llapi_find(char *path, struct find_param *param);
--
--extern int llapi_file_fget_mdtidx(int fd, int *mdtidx);
--extern int llapi_dir_create_pool(const char *name, int flags, int stripe_offset,
--				 int stripe_count, int stripe_pattern,
--				 char *poolname);
--int llapi_direntry_remove(char *dname);
--extern int llapi_obd_statfs(char *path, __u32 type, __u32 index,
--		     struct obd_statfs *stat_buf,
--		     struct obd_uuid *uuid_buf);
--extern int llapi_ping(char *obd_type, char *obd_name);
--extern int llapi_target_check(int num_types, char **obd_types, char *dir);
--extern int llapi_file_get_lov_uuid(const char *path, struct obd_uuid *lov_uuid);
--extern int llapi_file_get_lmv_uuid(const char *path, struct obd_uuid *lmv_uuid);
--extern int llapi_file_fget_lov_uuid(int fd, struct obd_uuid *lov_uuid);
--extern int llapi_lov_get_uuids(int fd, struct obd_uuid *uuidp, int *ost_count);
--extern int llapi_lmv_get_uuids(int fd, struct obd_uuid *uuidp, int *mdt_count);
--extern int llapi_is_lustre_mnttype(const char *type);
--extern int llapi_search_ost(char *fsname, char *poolname, char *ostname);
--extern int llapi_get_obd_count(char *mnt, int *count, int is_mdt);
--extern int parse_size(char *optarg, unsigned long long *size,
--		      unsigned long long *size_units, int bytes_spec);
--extern int llapi_search_mounts(const char *pathname, int index,
--			       char *mntdir, char *fsname);
--extern int llapi_search_fsname(const char *pathname, char *fsname);
--extern int llapi_getname(const char *path, char *buf, size_t size);
--
--extern void llapi_ping_target(char *obd_type, char *obd_name,
--			      char *obd_uuid, void *args);
--
--extern int llapi_search_rootpath(char *pathname, const char *fsname);
--
--struct mntent;
--#define HAVE_LLAPI_IS_LUSTRE_MNT
--extern int llapi_is_lustre_mnt(struct mntent *mnt);
--extern int llapi_quotachown(char *path, int flag);
--extern int llapi_quotacheck(char *mnt, int check_type);
--extern int llapi_poll_quotacheck(char *mnt, struct if_quotacheck *qchk);
--extern int llapi_quotactl(char *mnt, struct if_quotactl *qctl);
--extern int llapi_target_iterate(int type_num, char **obd_type, void *args,
--				llapi_cb_t cb);
--extern int llapi_get_connect_flags(const char *mnt, __u64 *flags);
--extern int llapi_lsetfacl(int argc, char *argv[]);
--extern int llapi_lgetfacl(int argc, char *argv[]);
--extern int llapi_rsetfacl(int argc, char *argv[]);
--extern int llapi_rgetfacl(int argc, char *argv[]);
--extern int llapi_cp(int argc, char *argv[]);
--extern int llapi_ls(int argc, char *argv[]);
--extern int llapi_fid2path(const char *device, const char *fidstr, char *path,
--			  int pathlen, long long *recno, int *linkno);
--extern int llapi_path2fid(const char *path, lustre_fid *fid);
--extern int llapi_fd2fid(const int fd, lustre_fid *fid);
--
--extern int llapi_get_version(char *buffer, int buffer_size, char **version);
--extern int llapi_get_data_version(int fd, __u64 *data_version, __u64 flags);
--extern int llapi_hsm_state_get(const char *path, struct hsm_user_state *hus);
--extern int llapi_hsm_state_set(const char *path, __u64 setmask, __u64 clearmask,
--			       __u32 archive_id);
--
--extern int llapi_create_volatile_idx(char *directory, int idx, int mode);
--static inline int llapi_create_volatile(char *directory, int mode)
+-static char *fsfilt_ext3_get_label(struct super_block *sb)
 -{
--	return llapi_create_volatile_idx(directory, -1, mode);
+-	return EXT3_SB(sb)->s_es->s_volume_name;
 -}
 -
+-/* kernel has ext4_blocks_for_truncate since linux-3.1.1 */
+-# include <ext4/truncate.h>
 -
--extern int llapi_fswap_layouts(const int fd1, const int fd2,
--			       __u64 dv1, __u64 dv2, __u64 flags);
--extern int llapi_swap_layouts(const char *path1, const char *path2,
--			      __u64 dv1, __u64 dv2, __u64 flags);
--
--/* Changelog interface.  priv is private state, managed internally
--   by these functions */
--#define CHANGELOG_FLAG_FOLLOW 0x01   /* Not yet implemented */
--#define CHANGELOG_FLAG_BLOCK  0x02   /* Blocking IO makes sense in case of
--   slow user parsing of the records, but it also prevents us from cleaning
--   up if the records are not consumed. */
--
--/* Records received are in extentded format now, though most of them are still
-- * written in disk in changelog_rec format (to save space and time), it's
-- * converted to extented format in the lustre api to ease changelog analysis. */
--#define HAVE_CHANGELOG_EXTEND_REC 1
--
--extern int llapi_changelog_start(void **priv, int flags, const char *mdtname,
--				 long long startrec);
--extern int llapi_changelog_fini(void **priv);
--extern int llapi_changelog_recv(void *priv, struct changelog_ext_rec **rech);
--extern int llapi_changelog_free(struct changelog_ext_rec **rech);
--/* Allow records up to endrec to be destroyed; requires registered id. */
--extern int llapi_changelog_clear(const char *mdtname, const char *idstr,
--				 long long endrec);
--
--/* HSM copytool interface.
-- * priv is private state, managed internally by these functions
+-/*
+- * We don't currently need any additional blocks for rmdir and
+- * unlink transactions because we are storing the OST oa_id inside
+- * the inode (which we will be changing anyways as part of this
+- * transaction).
 - */
--struct hsm_copytool_private;
--extern int llapi_hsm_copytool_start(struct hsm_copytool_private **priv,
--				    char *fsname, int flags,
--				    int archive_count, int *archives);
--extern int llapi_hsm_copytool_fini(struct hsm_copytool_private **priv);
--extern int llapi_hsm_copytool_recv(struct hsm_copytool_private *priv,
--				   struct hsm_action_list **hal, int *msgsize);
--extern int llapi_hsm_copytool_free(struct hsm_action_list **hal);
--extern int llapi_hsm_copy_start(char *mnt, struct hsm_copy *copy,
--				const struct hsm_action_item *hai);
--extern int llapi_hsm_copy_end(char *mnt, struct hsm_copy *copy,
--			      const struct hsm_progress *hp);
--extern int llapi_hsm_progress(char *mnt, struct hsm_progress *hp);
--extern int llapi_hsm_import(const char *dst, int archive, struct stat *st,
--			    unsigned long long stripe_size, int stripe_offset,
--			    int stripe_count, int stripe_pattern,
--			    char *pool_name, lustre_fid *newfid);
+-static void *fsfilt_ext3_start(struct inode *inode, int op, void *desc_private,
+-			       int logs)
+-{
+-	/* For updates to the last received file */
+-	int nblocks = FSFILT_SINGLEDATA_TRANS_BLOCKS(inode->i_sb);
+-	journal_t *journal;
+-	void *handle;
 -
--/* HSM user interface */
--extern struct hsm_user_request *llapi_hsm_user_request_alloc(int itemcount,
--							     int data_len);
--extern int llapi_hsm_request(char *mnt, struct hsm_user_request *request);
--extern int llapi_hsm_current_action(const char *path,
--				    struct hsm_current_action *hca);
--/** @} llapi */
+-	if (current->journal_info) {
+-		CDEBUG(D_INODE, "increasing refcount on %p\n",
+-		       current->journal_info);
+-		goto journal_start;
+-	}
 -
+-	switch(op) {
+-	case FSFILT_OP_UNLINK:
+-		/* delete one file + create/update logs for each stripe */
+-		nblocks += EXT3_DELETE_TRANS_BLOCKS(inode->i_sb);
+-		nblocks += (EXT3_INDEX_EXTRA_TRANS_BLOCKS +
+-			    FSFILT_SINGLEDATA_TRANS_BLOCKS(inode->i_sb)) * logs;
+-		break;
+-	case FSFILT_OP_CANCEL_UNLINK:
+-		LASSERT(logs == 1);
+-
+-		/* blocks for log header bitmap update OR
+-		 * blocks for catalog header bitmap update + unlink of logs +
+-		 * blocks for delete the inode (include blocks truncating). */
+-		nblocks = (LLOG_CHUNK_SIZE >> inode->i_blkbits) +
+-			  EXT3_DELETE_TRANS_BLOCKS(inode->i_sb) +
+-			  ext4_blocks_for_truncate(inode) + 3;
+-		break;
+-	default: CERROR("unknown transaction start op %d\n", op);
+-		LBUG();
+-	}
+-
+-	LASSERT(current->journal_info == desc_private);
+-	journal = EXT3_SB(inode->i_sb)->s_journal;
+-	if (nblocks > journal->j_max_transaction_buffers) {
+-		CWARN("too many credits %d for op %ux%u using %d instead\n",
+-		       nblocks, op, logs, journal->j_max_transaction_buffers);
+-		nblocks = journal->j_max_transaction_buffers;
+-	}
+-
+- journal_start:
+-	LASSERTF(nblocks > 0, "can't start %d credit transaction\n", nblocks);
+-	handle = ext3_journal_start(inode, nblocks);
+-
+-	if (!IS_ERR(handle))
+-		LASSERT(current->journal_info == handle);
+-	else
+-		CERROR("error starting handle for op %u (%u credits): rc %ld\n",
+-		       op, nblocks, PTR_ERR(handle));
+-	return handle;
+-}
+-
+-static int fsfilt_ext3_commit(struct inode *inode, void *h, int force_sync)
+-{
+-	int rc;
+-	handle_t *handle = h;
+-
+-	LASSERT(current->journal_info == handle);
+-	if (force_sync)
+-		handle->h_sync = 1; /* recovery likes this */
+-
+-	rc = ext3_journal_stop(handle);
+-
+-	return rc;
+-}
+-
+-#ifndef EXT3_EXTENTS_FL
+-#define EXT3_EXTENTS_FL		 0x00080000 /* Inode uses extents */
 -#endif
+-
+-#ifndef EXT_ASSERT
+-#define EXT_ASSERT(cond)  BUG_ON(!(cond))
+-#endif
+-
+-#define EXT_GENERATION(inode)	   (EXT4_I(inode)->i_ext_generation)
+-#define ext3_ext_base		   inode
+-#define ext3_ext_base2inode(inode)      (inode)
+-#define EXT_DEPTH(inode)		ext_depth(inode)
+-#define fsfilt_ext3_ext_walk_space(inode, block, num, cb, cbdata) \
+-			ext3_ext_walk_space(inode, block, num, cb, cbdata);
+-
+-struct bpointers {
+-	unsigned long *blocks;
+-	unsigned long start;
+-	int num;
+-	int init_num;
+-	int create;
+-};
+-
+-static long ext3_ext_find_goal(struct inode *inode, struct ext3_ext_path *path,
+-			       unsigned long block, int *aflags)
+-{
+-	struct ext3_inode_info *ei = EXT3_I(inode);
+-	unsigned long bg_start;
+-	unsigned long colour;
+-	int depth;
+-
+-	if (path) {
+-		struct ext3_extent *ex;
+-		depth = path->p_depth;
+-
+-		/* try to predict block placement */
+-		if ((ex = path[depth].p_ext))
+-			return ext4_ext_pblock(ex) + (block - le32_to_cpu(ex->ee_block));
+-
+-		/* it looks index is empty
+-		 * try to find starting from index itself */
+-		if (path[depth].p_bh)
+-			return path[depth].p_bh->b_blocknr;
+-	}
+-
+-	/* OK. use inode's group */
+-	bg_start = (ei->i_block_group * EXT3_BLOCKS_PER_GROUP(inode->i_sb)) +
+-		le32_to_cpu(EXT3_SB(inode->i_sb)->s_es->s_first_data_block);
+-	colour = (current->pid % 16) *
+-		(EXT3_BLOCKS_PER_GROUP(inode->i_sb) / 16);
+-	return bg_start + colour + block;
+-}
+-
+-#define ll_unmap_underlying_metadata(sb, blocknr) \
+-	unmap_underlying_metadata((sb)->s_bdev, blocknr)
+-
+-#ifndef EXT3_MB_HINT_GROUP_ALLOC
+-static unsigned long new_blocks(handle_t *handle, struct ext3_ext_base *base,
+-				struct ext3_ext_path *path, unsigned long block,
+-				unsigned long *count, int *err)
+-{
+-	unsigned long pblock, goal;
+-	int aflags = 0;
+-	struct inode *inode = ext3_ext_base2inode(base);
+-
+-	goal = ext3_ext_find_goal(inode, path, block, &aflags);
+-	aflags |= 2; /* block have been already reserved */
+-	pblock = ext3_mb_new_blocks(handle, inode, goal, count, aflags, err);
+-	return pblock;
+-
+-}
+-#else
+-static unsigned long new_blocks(handle_t *handle, struct ext3_ext_base *base,
+-				struct ext3_ext_path *path, unsigned long block,
+-				unsigned long *count, int *err)
+-{
+-	struct inode *inode = ext3_ext_base2inode(base);
+-	struct ext3_allocation_request ar;
+-	unsigned long pblock;
+-	int aflags;
+-
+-	/* find neighbour allocated blocks */
+-	ar.lleft = block;
+-	*err = ext3_ext_search_left(base, path, &ar.lleft, &ar.pleft);
+-	if (*err)
+-		return 0;
+-	ar.lright = block;
+-	*err = ext3_ext_search_right(base, path, &ar.lright, &ar.pright);
+-	if (*err)
+-		return 0;
+-
+-	/* allocate new block */
+-	ar.goal = ext3_ext_find_goal(inode, path, block, &aflags);
+-	ar.inode = inode;
+-	ar.logical = block;
+-	ar.len = *count;
+-	ar.flags = EXT3_MB_HINT_DATA;
+-	pblock = ext3_mb_new_blocks(handle, &ar, err);
+-	*count = ar.len;
+-	return pblock;
+-}
+-#endif
+-
+-static int ext3_ext_new_extent_cb(struct ext3_ext_base *base,
+-				  struct ext3_ext_path *path,
+-				  struct ext3_ext_cache *cex,
+-#ifdef HAVE_EXT_PREPARE_CB_EXTENT
+-				   struct ext3_extent *ex,
+-#endif
+-				  void *cbdata)
+-{
+-	struct bpointers *bp = cbdata;
+-	struct inode *inode = ext3_ext_base2inode(base);
+-	struct ext3_extent nex;
+-	unsigned long pblock;
+-	unsigned long tgen;
+-	int err, i;
+-	unsigned long count;
+-	handle_t *handle;
+-
+-#ifdef EXT3_EXT_CACHE_EXTENT
+-	if (cex->ec_type == EXT3_EXT_CACHE_EXTENT)
+-#else
+-	if ((cex->ec_len != 0) && (cex->ec_start != 0))
+-#endif
+-						   {
+-		err = EXT_CONTINUE;
+-		goto map;
+-	}
+-
+-	if (bp->create == 0) {
+-		i = 0;
+-		if (cex->ec_block < bp->start)
+-			i = bp->start - cex->ec_block;
+-		if (i >= cex->ec_len)
+-			CERROR("nothing to do?! i = %d, e_num = %u\n",
+-					i, cex->ec_len);
+-		for (; i < cex->ec_len && bp->num; i++) {
+-			*(bp->blocks) = 0;
+-			bp->blocks++;
+-			bp->num--;
+-			bp->start++;
+-		}
+-
+-		return EXT_CONTINUE;
+-	}
+-
+-	tgen = EXT_GENERATION(base);
+-	count = ext3_ext_calc_credits_for_insert(base, path);
+-
+-	handle = ext3_journal_start(inode, count+EXT3_ALLOC_NEEDED+1);
+-	if (IS_ERR(handle)) {
+-		return PTR_ERR(handle);
+-	}
+-
+-	if (tgen != EXT_GENERATION(base)) {
+-		/* the tree has changed. so path can be invalid at moment */
+-		ext3_journal_stop(handle);
+-		return EXT_REPEAT;
+-	}
+-
+-	/* In 2.6.32 kernel, ext4_ext_walk_space()'s callback func is not
+-	 * protected by i_data_sem as whole. so we patch it to store
+-	 * generation to path and now verify the tree hasn't changed */
+-	down_write((&EXT4_I(inode)->i_data_sem));
+-
+-	/* validate extent, make sure the extent tree does not changed */
+-	if (EXT_GENERATION(base) != path[0].p_generation) {
+-		/* cex is invalid, try again */
+-		up_write(&EXT4_I(inode)->i_data_sem);
+-		ext3_journal_stop(handle);
+-		return EXT_REPEAT;
+-	}
+-
+-	count = cex->ec_len;
+-	pblock = new_blocks(handle, base, path, cex->ec_block, &count, &err);
+-	if (!pblock)
+-		goto out;
+-	EXT_ASSERT(count <= cex->ec_len);
+-
+-	/* insert new extent */
+-	nex.ee_block = cpu_to_le32(cex->ec_block);
+-	ext3_ext_store_pblock(&nex, pblock);
+-	nex.ee_len = cpu_to_le16(count);
+-	err = fsfilt_ext3_ext_insert_extent(handle, base, path, &nex, 0);
+-	if (err) {
+-		/* free data blocks we just allocated */
+-		/* not a good idea to call discard here directly,
+-		 * but otherwise we'd need to call it every free() */
+-#ifdef EXT3_MB_HINT_GROUP_ALLOC
+-		ext3_mb_discard_inode_preallocations(inode);
+-#endif
+-#ifdef HAVE_EXT_FREE_BLOCK_WITH_BUFFER_HEAD /* Introduced in 2.6.32-rc7 */
+-		ext3_free_blocks(handle, inode, NULL, ext4_ext_pblock(&nex),
+-				 cpu_to_le16(nex.ee_len), 0);
+-#else
+-		ext3_free_blocks(handle, inode, ext4_ext_pblock(&nex),
+-				 cpu_to_le16(nex.ee_len), 0);
+-#endif
+-		goto out;
+-	}
+-
+-	/*
+-	 * Putting len of the actual extent we just inserted,
+-	 * we are asking ext3_ext_walk_space() to continue
+-	 * scaning after that block
+-	 */
+-	cex->ec_len = le16_to_cpu(nex.ee_len);
+-	cex->ec_start = ext4_ext_pblock(&nex);
+-	BUG_ON(le16_to_cpu(nex.ee_len) == 0);
+-	BUG_ON(le32_to_cpu(nex.ee_block) != cex->ec_block);
+-
+-out:
+-	up_write((&EXT4_I(inode)->i_data_sem));
+-	ext3_journal_stop(handle);
+-map:
+-	if (err >= 0) {
+-		/* map blocks */
+-		if (bp->num == 0) {
+-			CERROR("hmm. why do we find this extent?\n");
+-			CERROR("initial space: %lu:%u\n",
+-				bp->start, bp->init_num);
+-#ifdef EXT3_EXT_CACHE_EXTENT
+-			CERROR("current extent: %u/%u/%llu %d\n",
+-				cex->ec_block, cex->ec_len,
+-				(unsigned long long)cex->ec_start,
+-				cex->ec_type);
+-#else
+-			CERROR("current extent: %u/%u/%llu\n",
+-				cex->ec_block, cex->ec_len,
+-				(unsigned long long)cex->ec_start);
+-#endif
+-		}
+-		i = 0;
+-		if (cex->ec_block < bp->start)
+-			i = bp->start - cex->ec_block;
+-		if (i >= cex->ec_len)
+-			CERROR("nothing to do?! i = %d, e_num = %u\n",
+-					i, cex->ec_len);
+-		for (; i < cex->ec_len && bp->num; i++) {
+-			*(bp->blocks) = cex->ec_start + i;
+-#ifdef EXT3_EXT_CACHE_EXTENT
+-			if (cex->ec_type != EXT3_EXT_CACHE_EXTENT)
+-#else
+-			if ((cex->ec_len == 0) || (cex->ec_start == 0))
+-#endif
+-									{
+-				/* unmap any possible underlying metadata from
+-				 * the block device mapping.  bug 6998. */
+-				ll_unmap_underlying_metadata(inode->i_sb,
+-							     *(bp->blocks));
+-			}
+-			bp->blocks++;
+-			bp->num--;
+-			bp->start++;
+-		}
+-	}
+-	return err;
+-}
+-
+-int fsfilt_map_nblocks(struct inode *inode, unsigned long block,
+-		       unsigned long num, unsigned long *blocks,
+-		       int create)
+-{
+-	struct ext3_ext_base *base = inode;
+-	struct bpointers bp;
+-	int err;
+-
+-	CDEBUG(D_OTHER, "blocks %lu-%lu requested for inode %u\n",
+-	       block, block + num - 1, (unsigned) inode->i_ino);
+-
+-	bp.blocks = blocks;
+-	bp.start = block;
+-	bp.init_num = bp.num = num;
+-	bp.create = create;
+-
+-	err = fsfilt_ext3_ext_walk_space(base, block, num,
+-					 ext3_ext_new_extent_cb, &bp);
+-	ext3_ext_invalidate_cache(base);
+-
+-	return err;
+-}
+-
+-int fsfilt_ext3_map_ext_inode_pages(struct inode *inode, struct page **page,
+-				    int pages, unsigned long *blocks,
+-				    int create)
+-{
+-	int blocks_per_page = PAGE_CACHE_SIZE >> inode->i_blkbits;
+-	int rc = 0, i = 0;
+-	struct page *fp = NULL;
+-	int clen = 0;
+-
+-	CDEBUG(D_OTHER, "inode %lu: map %d pages from %lu\n",
+-		inode->i_ino, pages, (*page)->index);
+-
+-	/* pages are sorted already. so, we just have to find
+-	 * contig. space and process them properly */
+-	while (i < pages) {
+-		if (fp == NULL) {
+-			/* start new extent */
+-			fp = *page++;
+-			clen = 1;
+-			i++;
+-			continue;
+-		} else if (fp->index + clen == (*page)->index) {
+-			/* continue the extent */
+-			page++;
+-			clen++;
+-			i++;
+-			continue;
+-		}
+-
+-		/* process found extent */
+-		rc = fsfilt_map_nblocks(inode, fp->index * blocks_per_page,
+-					clen * blocks_per_page, blocks,
+-					create);
+-		if (rc)
+-			GOTO(cleanup, rc);
+-
+-		/* look for next extent */
+-		fp = NULL;
+-		blocks += blocks_per_page * clen;
+-	}
+-
+-	if (fp)
+-		rc = fsfilt_map_nblocks(inode, fp->index * blocks_per_page,
+-					clen * blocks_per_page, blocks,
+-					create);
+-cleanup:
+-	return rc;
+-}
+-
+-int fsfilt_ext3_map_bm_inode_pages(struct inode *inode, struct page **page,
+-				   int pages, unsigned long *blocks,
+-				   int create)
+-{
+-	int blocks_per_page = PAGE_CACHE_SIZE >> inode->i_blkbits;
+-	unsigned long *b;
+-	int rc = 0, i;
+-
+-	for (i = 0, b = blocks; i < pages; i++, page++) {
+-		rc = ext3_map_inode_page(inode, *page, b, create);
+-		if (rc) {
+-			CERROR("ino %lu, blk %lu create %d: rc %d\n",
+-			       inode->i_ino, *b, create, rc);
+-			break;
+-		}
+-
+-		b += blocks_per_page;
+-	}
+-	return rc;
+-}
+-
+-int fsfilt_ext3_map_inode_pages(struct inode *inode, struct page **page,
+-				int pages, unsigned long *blocks,
+-				int create, struct mutex *optional_mutex)
+-{
+-	int rc;
+-
+-	if (EXT3_I(inode)->i_flags & EXT3_EXTENTS_FL) {
+-		rc = fsfilt_ext3_map_ext_inode_pages(inode, page, pages,
+-						     blocks, create);
+-		return rc;
+-	}
+-	if (optional_mutex != NULL)
+-		mutex_lock(optional_mutex);
+-	rc = fsfilt_ext3_map_bm_inode_pages(inode, page, pages, blocks, create);
+-	if (optional_mutex != NULL)
+-		mutex_unlock(optional_mutex);
+-
+-	return rc;
+-}
+-
+-int fsfilt_ext3_read(struct inode *inode, void *buf, int size, loff_t *offs)
+-{
+-	unsigned long block;
+-	struct buffer_head *bh;
+-	int err, blocksize, csize, boffs, osize = size;
+-
+-	/* prevent reading after eof */
+-	spin_lock(&inode->i_lock);
+-	if (i_size_read(inode) < *offs + size) {
+-		size = i_size_read(inode) - *offs;
+-		spin_unlock(&inode->i_lock);
+-		if (size < 0) {
+-			CDEBUG(D_EXT2, "size %llu is too short for read @%llu\n",
+-			       i_size_read(inode), *offs);
+-			return -EBADR;
+-		} else if (size == 0) {
+-			return 0;
+-		}
+-	} else {
+-		spin_unlock(&inode->i_lock);
+-	}
+-
+-	blocksize = 1 << inode->i_blkbits;
+-
+-	while (size > 0) {
+-		block = *offs >> inode->i_blkbits;
+-		boffs = *offs & (blocksize - 1);
+-		csize = min(blocksize - boffs, size);
+-		bh = ext3_bread(NULL, inode, block, 0, &err);
+-		if (!bh) {
+-			CERROR("can't read block: %d\n", err);
+-			return err;
+-		}
+-
+-		memcpy(buf, bh->b_data + boffs, csize);
+-		brelse(bh);
+-
+-		*offs += csize;
+-		buf += csize;
+-		size -= csize;
+-	}
+-	return osize;
+-}
+-EXPORT_SYMBOL(fsfilt_ext3_read);
+-
+-static int fsfilt_ext3_read_record(struct file * file, void *buf,
+-				   int size, loff_t *offs)
+-{
+-	int rc;
+-	rc = fsfilt_ext3_read(file->f_dentry->d_inode, buf, size, offs);
+-	if (rc > 0)
+-		rc = 0;
+-	return rc;
+-}
+-
+-int fsfilt_ext3_write_handle(struct inode *inode, void *buf, int bufsize,
+-				loff_t *offs, handle_t *handle)
+-{
+-	struct buffer_head *bh = NULL;
+-	loff_t old_size = i_size_read(inode), offset = *offs;
+-	loff_t new_size = i_size_read(inode);
+-	unsigned long block;
+-	int err = 0, blocksize = 1 << inode->i_blkbits, size, boffs;
+-
+-	while (bufsize > 0) {
+-		if (bh != NULL)
+-			brelse(bh);
+-
+-		block = offset >> inode->i_blkbits;
+-		boffs = offset & (blocksize - 1);
+-		size = min(blocksize - boffs, bufsize);
+-		bh = ext3_bread(handle, inode, block, 1, &err);
+-		if (!bh) {
+-			CERROR("can't read/create block: %d\n", err);
+-			break;
+-		}
+-
+-		err = ext3_journal_get_write_access(handle, bh);
+-		if (err) {
+-			CERROR("journal_get_write_access() returned error %d\n",
+-			       err);
+-			break;
+-		}
+-		LASSERT(bh->b_data + boffs + size <= bh->b_data + bh->b_size);
+-		memcpy(bh->b_data + boffs, buf, size);
+-		err = ext3_journal_dirty_metadata(handle, bh);
+-		if (err) {
+-			CERROR("journal_dirty_metadata() returned error %d\n",
+-			       err);
+-			break;
+-		}
+-		if (offset + size > new_size)
+-			new_size = offset + size;
+-		offset += size;
+-		bufsize -= size;
+-		buf += size;
+-	}
+-	if (bh)
+-		brelse(bh);
+-
+-	/* correct in-core and on-disk sizes */
+-	if (new_size > i_size_read(inode)) {
+-		spin_lock(&inode->i_lock);
+-		if (new_size > i_size_read(inode))
+-			i_size_write(inode, new_size);
+-		if (i_size_read(inode) > EXT3_I(inode)->i_disksize)
+-			EXT3_I(inode)->i_disksize = i_size_read(inode);
+-		if (i_size_read(inode) > old_size) {
+-			spin_unlock(&inode->i_lock);
+-			mark_inode_dirty(inode);
+-		} else {
+-			spin_unlock(&inode->i_lock);
+-		}
+-	}
+-
+-	if (err == 0)
+-		*offs = offset;
+-	return err;
+-}
+-EXPORT_SYMBOL(fsfilt_ext3_write_handle);
+-
+-static int fsfilt_ext3_write_record(struct file *file, void *buf, int bufsize,
+-				    loff_t *offs, int force_sync)
+-{
+-	struct inode *inode = file->f_dentry->d_inode;
+-	handle_t *handle;
+-	int err, block_count = 0, blocksize;
+-
+-	/* Determine how many transaction credits are needed */
+-	blocksize = 1 << inode->i_blkbits;
+-	block_count = (*offs & (blocksize - 1)) + bufsize;
+-	block_count = (block_count + blocksize - 1) >> inode->i_blkbits;
+-
+-	handle = ext3_journal_start(inode,
+-			block_count * EXT3_DATA_TRANS_BLOCKS(inode->i_sb) + 2);
+-	if (IS_ERR(handle)) {
+-		CERROR("can't start transaction for %d blocks (%d bytes)\n",
+-		       block_count * EXT3_DATA_TRANS_BLOCKS(inode->i_sb) + 2,
+-		       bufsize);
+-		return PTR_ERR(handle);
+-	}
+-
+-	err = fsfilt_ext3_write_handle(inode, buf, bufsize, offs, handle);
+-
+-	if (!err && force_sync)
+-		handle->h_sync = 1; /* recovery likes this */
+-
+-	ext3_journal_stop(handle);
+-
+-	return err;
+-}
+-
+-static int fsfilt_ext3_setup(struct super_block *sb)
+-{
+-	if (!EXT3_HAS_COMPAT_FEATURE(sb,
+-				EXT3_FEATURE_COMPAT_HAS_JOURNAL)) {
+-		CERROR("ext3 mounted without journal\n");
+-		return -EINVAL;
+-	}
+-
+-#ifdef S_PDIROPS
+-	CWARN("Enabling PDIROPS\n");
+-	set_opt(EXT3_SB(sb)->s_mount_opt, PDIROPS);
+-	sb->s_flags |= S_PDIROPS;
+-#endif
+-	if (!EXT3_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_DIR_INDEX))
+-		CWARN("filesystem doesn't have dir_index feature enabled\n");
+-	return 0;
+-}
+-static struct fsfilt_operations fsfilt_ext3_ops = {
+-	.fs_type		= "ext3",
+-	.fs_owner	       = THIS_MODULE,
+-	.fs_getlabel	    = fsfilt_ext3_get_label,
+-	.fs_start	       = fsfilt_ext3_start,
+-	.fs_commit	      = fsfilt_ext3_commit,
+-	.fs_map_inode_pages     = fsfilt_ext3_map_inode_pages,
+-	.fs_write_record	= fsfilt_ext3_write_record,
+-	.fs_read_record	 = fsfilt_ext3_read_record,
+-	.fs_setup	       = fsfilt_ext3_setup,
+-};
+-
+-static int __init fsfilt_ext3_init(void)
+-{
+-	int rc;
+-
+-	fcb_cache = kmem_cache_create("fsfilt_ext3_fcb",
+-					 sizeof(struct fsfilt_cb_data), 0, 0);
+-	if (!fcb_cache) {
+-		CERROR("error allocating fsfilt journal callback cache\n");
+-		GOTO(out, rc = -ENOMEM);
+-	}
+-
+-	rc = fsfilt_register_ops(&fsfilt_ext3_ops);
+-
+-	if (rc) {
+-		int err = kmem_cache_destroy(fcb_cache);
+-		LASSERTF(err == 0, "error destroying new cache: rc %d\n", err);
+-	}
+-out:
+-	return rc;
+-}
+-
+-static void __exit fsfilt_ext3_exit(void)
+-{
+-	int rc;
+-
+-	fsfilt_unregister_ops(&fsfilt_ext3_ops);
+-	rc = kmem_cache_destroy(fcb_cache);
+-	LASSERTF(rc == 0, "couldn't destroy fcb_cache slab\n");
+-}
+-
+-module_init(fsfilt_ext3_init);
+-module_exit(fsfilt_ext3_exit);
+-
+-MODULE_AUTHOR("Sun Microsystems, Inc. <http://www.lustre.org/>");
+-MODULE_DESCRIPTION("Lustre ext3 Filesystem Helper v0.1");
+-MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
