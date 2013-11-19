@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3KSDOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 22:14:09 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:35933 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab3KSDOG (ORCPT
+	id S1751923Ab3KSDQu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 22:16:50 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:9332 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3KSDQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 22:14:06 -0500
-Date: Mon, 18 Nov 2013 19:13:54 -0800 (PST)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-cc: "Charley (Hao Chuan) Chu" <charley.chu@broadcom.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] FS: Fixed buffer overflow issue in seq_read()
-In-Reply-To: <20131119012042.GA10323@ZenIV.linux.org.uk>
-Message-ID: <alpine.LFD.2.10.1311181912090.7995@i7.linux-foundation.org>
-References: <FB8A4655DFD2B34DB16AE06DDDD6C0E21BDB93D2@SJEXCHMB12.corp.ad.broadcom.com> <20131119012042.GA10323@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 18 Nov 2013 22:16:46 -0500
+Message-ID: <1384831002.2459.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:sched/urgent] sched: Optimize task_sched_runtime()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, pjt@google.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, lwoodman@redhat.com
+Cc: linux-tip-commits@vger.kernel.org
+Date: Mon, 18 Nov 2013 19:16:42 -0800
+In-Reply-To: <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
+References: <20131111172925.GG26898@twins.programming.kicks-ass.net>
+	 <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 19 Nov 2013, Al Viro wrote:
+On Wed, 2013-11-13 at 09:25 -0800, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  911b2898b3c9fe0048e9485ad1629ed4fce330fd
+> Gitweb:     http://git.kernel.org/tip/911b2898b3c9fe0048e9485ad1629ed4fce330fd
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Mon, 11 Nov 2013 18:21:56 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 13 Nov 2013 13:33:54 +0100
 > 
-> seq_file: always clear m->count when we free m->buf
+> sched: Optimize task_sched_runtime()
+> 
+> Large multi-threaded apps like to hit this using do_sys_times() and
+> then queue up on the rq->lock.
+> 
+> Avoid when possible.
+> 
+> Larry reported ~20% performance increase his test case.
+> 
+> Reported-by: Larry Woodman <lwoodman@redhat.com>
+> Suggested-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Link: http://lkml.kernel.org/r/20131111172925.GG26898@twins.programming.kicks-ass.net
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-Ok, applied.
+For what it's worth:
 
-What do you think about then just abstracing out that now common sequence 
-of re-allocating a larger buffer, while clearing m->count?
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
 
-IOW, something like the appended..
-
-              Linus
-
----
- fs/seq_file.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 1d641bb108d2..f513e1efa49d 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -82,6 +82,14 @@ int seq_open(struct file *file, const struct seq_operations *op)
- }
- EXPORT_SYMBOL(seq_open);
- 
-+static int grow_seq_buf(struct seq_file *m)
-+{
-+	kfree(m->buf);
-+	m->count = 0;
-+	m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
-+	return m->buf != NULL;
-+}
-+
- static int traverse(struct seq_file *m, loff_t offset)
- {
- 	loff_t pos = 0, index;
-@@ -135,10 +143,7 @@ static int traverse(struct seq_file *m, loff_t offset)
- 
- Eoverflow:
- 	m->op->stop(m, p);
--	kfree(m->buf);
--	m->count = 0;
--	m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
--	return !m->buf ? -ENOMEM : -EAGAIN;
-+	return grow_seq_buf(m) ? -EAGAIN : -ENOMEM;
- }
- 
- /**
-@@ -232,10 +237,7 @@ ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
- 		if (m->count < m->size)
- 			goto Fill;
- 		m->op->stop(m, p);
--		kfree(m->buf);
--		m->count = 0;
--		m->buf = kmalloc(m->size <<= 1, GFP_KERNEL);
--		if (!m->buf)
-+		if (!grow_seq_buf(m))
- 			goto Enomem;
- 		m->version = 0;
- 		pos = m->index;
