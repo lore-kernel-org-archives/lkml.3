@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3KSQGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:06:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49273 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753309Ab3KSQFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753313Ab3KSQFW (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Nov 2013 11:05:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49231 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752465Ab3KSQEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 11:04:52 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org, lee.jones@linaro.org
 Cc: lgirdwood@gmail.com, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmico.com, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
 Subject: [PATCH 3/4] ASoC: wm5110: Add basic support for ISRCs
-Date: Tue, 19 Nov 2013 16:04:02 +0000
-Message-Id: <1384877043-5640-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Date: Tue, 19 Nov 2013 16:03:34 +0000
+Message-Id: <1384877015-5596-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-Reply-To: <1384877015-5596-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1384877015-5596-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
