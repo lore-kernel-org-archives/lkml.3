@@ -1,97 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3KSQGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:06:03 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48089 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753264Ab3KSQGA (ORCPT
+	id S1753343Ab3KSQFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:05:23 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58024 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab3KSQFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:06:00 -0500
-Date: Tue, 19 Nov 2013 16:05:02 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
-Message-ID: <20131119160502.GG11778@mudshark.cambridge.arm.com>
-References: <52803E5D.3050109@mentor.com>
- <52851395.3010306@mentor.com>
- <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
- <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+	Tue, 19 Nov 2013 11:05:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAM7YAkOLM_C-ydXQN9wpCXuHTJL1drOucdLdVNX1UB66uaXbA@mail.gmail.com>
+References: <1383278208-4053-1-git-send-email-liwang@ubuntukylin.com>
+	<CANP1eJH2ewpYyWe2Oo4OMMg2UB+RE8DBt=Xg-MUDo6uJ5aGcpg@mail.gmail.com>
+	<alpine.DEB.2.00.1311051543170.9474@cobra.newdream.net>
+	<CANP1eJEF4UTr-UC3S5TWsD9p69_gwy5i4_OkAmg=_GUFHF3TBQ@mail.gmail.com>
+	<CAAM7YAkOLM_C-ydXQN9wpCXuHTJL1drOucdLdVNX1UB66uaXbA@mail.gmail.com>
+Date: Tue, 19 Nov 2013 11:05:11 -0500
+Message-ID: <CANP1eJHsmD8nyV0inPViW8-LCwthSqig1RzCcE+16Qw4Kvj=Og@mail.gmail.com>
+Subject: Re: [PATCH] ceph: Update the pages in fscache in writepages() path
+From: Milosz Tanski <milosz@adfin.com>
+To: "Yan, Zheng" <ukernel@gmail.com>
+Cc: Sage Weil <sage@inktank.com>, Li Wang <liwang@ubuntukylin.com>,
+        ceph-devel <ceph-devel@vger.kernel.org>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        linux-kernel@vger.kernel.org, Min Chen <minchen@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
-> Hi,
+Yan and Sage,
 
-Hi Mathieu,
+I've ran into this issue again on my test cluster. The client hangs
+all requests for a particular inode, I did a dump cache to see what's
+going... but I don't understand to enough to be able to read this line
+well enough.
 
-> I got a bug report on ARM which appears to be caused by an aggressive gcc optimisation starting from gcc 4.8.x due to lack of constraints on the current_thread_info() inline assembly. The only logical explanation for his issue I see so far is that read of the preempt_count within might_sleep() is reordered with preempt_enable() or preempt_disable(). AFAIU, this kind of issue also applies to other architectures.
-> 
-> First thing, preempt enable/disable only contains barrier() between the inc/dec and the inside of the critical section, not the outside. Therefore, we are relying on program order to ensure that the preempt_count() read in might_sleep() is not reordered with the preempt count inc/dec.
+Can you guys help me read this, so I can further track down and
+hopefully fix this issue.
 
-This sounds almost identical to an issue I experienced with our optimised
-per-cpu code (more below).
+[inode 10000346eed [2,head]
+/petabucket/beta/17511b3d12466609785b6a0e34597431721d177240371c0a1a4e347a1605381b/advertiser_id.dict
+auth v214 ap=5+0 dirtyparent s=925 n(v0 b925 1=1+0) (ifile sync->mix)
+(iversion lock) cr={59947=0-4194304@1}
+caps={59947=pAsLsXsFr/pAsxXsxFxwb@26,60001=pAsLsXsFr/-@1,60655=pAsLsXsFr/pAsLsXsFscr/pFscr@36}
+| ptrwaiter=0 request=4 lock=1 caps=1 dirtyparent=1 dirty=1 waiter=1
+authpin=1 0x17dd6b70]
 
-> However, looking at ARM arch/arm/include/asm/thread_info.h:
-> 
-> static inline struct thread_info *current_thread_info(void)
-> {
->         register unsigned long sp asm ("sp");
->         return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-> }
-> 
-> The inline assembly has no clobber and is not volatile. (this is also true for all other architectures I've looked at so far, which includes x86 and powerpc)
-> 
-> As long as someone does:
-> 
-> struct thread_info *myinfo = current_thread_info();
-> 
-> load from myinfo->preempt_count;
-> store to myinfo->preempt_count;
-> 
-> The program order should be preserved, because the read and the write are done wrt same base. However, what we have here in the case of might_sleep() followed by preempt_enable() is:
-> 
-> load from current_thread_info()->preempt_count;
-> store to current_thread_info()->preempt_count;
-> 
-> Since each current_thread_info() is a different asm ("sp") without clobber nor volatile, AFAIU, the compiler is within its right to reorder them.
-> 
-> One possible solution to this might be to add "memory" clobber and volatile to this inline asm, but I fear it would put way too much constraints on the compiler optimizations (too heavyweight).
+root@bnode-16a1ed7d:~# cat
+/sys/kernel/debug/ceph/e23a1bfc-8328-46bf-bc59-1209df3f5434.client60655/mdsc
+15659 mds0 getattr #10000346eed
+15679 mds0 getattr #10000346eed
+15710 mds0 getattr #10000346eed
+15922 mds0 getattr #10000346eed
 
-Yup, that sucks, because you end up unable to cache the value when you know
-it hasn't changed.
+On Wed, Nov 6, 2013 at 10:01 AM, Yan, Zheng <ukernel@gmail.com> wrote:
+> On Wed, Nov 6, 2013 at 9:41 PM, Milosz Tanski <milosz@adfin.com> wrote:
+>> Sage,
+>>
+>> I think the incrementing version counter on the whole is a neater
+>> solution then using size and mtime. If nothing else it's more explicit
+>> in the the read cache version. With what you suggested plus additional
+>> changes to the open code (where the cookie gets created) the
+>> write-through scenario should be correct.
+>>
+>> Sadly, my understanding of the MDS protocol is still not great. So
+>> when doing this in the first place I erred on the side of using what
+>> was already in place.
+>>
+>> In a kind of un-related question. Is there a debug hook in the kclient
+>> (or MDS for that matter) to dump the current file inodes (names) with
+>> issues caps and to which hosts. This would be very helpful for
+>> debugging, since from time to time I see a one of the clients get
+>> stuck in getattr (via mdsc debug log).
+>>
+>
+> "ceph mds tell \* dumpcache" dump the mds cache to a file. the dump
+> file contains caps information.
+>
+> Regards
+> Yan, Zheng
+>
+>> Thanks,
+>> - Milosz
+>>
+>> On Tue, Nov 5, 2013 at 6:56 PM, Sage Weil <sage@inktank.com> wrote:
+>>> On Tue, 5 Nov 2013, Milosz Tanski wrote:
+>>>> Li,
+>>>>
+>>>> First, sorry for the late reply on this.
+>>>>
+>>>> Currently fscache is only supported for files that are open in read
+>>>> only mode. I originally was going to let fscache cache in the write
+>>>> path as well as long as the file was open in with O_LAZY. I abandoned
+>>>> that idea. When a user opens the file in O_LAZY we can cache things
+>>>> locally with the assumption that the user will care of the
+>>>> synchronization in some other manner. There is no way of invalidating
+>>>> a subset of the pages in object cached by fscache, there is no way we
+>>>> can make O_LAZY work well.
+>>>>
+>>>> The ceph_readpage_to_fscache() in writepage has no effect and it
+>>>> should be removed. ceph_readpage_to_fscache() calls cache_valid() to
+>>>> see if it should perform the page save, and since the file can't have
+>>>> a CACHE cap at the point in time it doesn't do it.
+>>>
+>>> (Hmm, Dusting off my understanding of fscache and reading
+>>> fs/ceph/cache.c; watch out!)  It looks like cache_valid is
+>>>
+>>> static inline int cache_valid(struct ceph_inode_info *ci)
+>>> {
+>>>         return ((ceph_caps_issued(ci) & CEPH_CAP_FILE_CACHE) &&
+>>>                 (ci->i_fscache_gen == ci->i_rdcache_gen));
+>>> }
+>>>
+>>> and in the FILE_EXCL case, the MDS will issue CACHE|BUFFER caps.  But I
+>>> think the aux key (size+mtime) will prevent any use of the cache as soon
+>>> as the first write happens and mtime changes, right?
+>>>
+>>> I think that in order to make this work, we need to fix/create a
+>>> file_version (or something similar) field in the (mds) inode_t to have
+>>> some useful value.  I.e., increment it any time
+>>>
+>>>  - a different client/writer comes along
+>>>  - a file is modified by the mds (e.g., truncated or recovered)
+>>>
+>>> but allow it to otherwise remain the same as long as only a single client
+>>> is working with the file exclusively.  This will be more precise than the
+>>> (size, mtime) check that is currently used, and would remain valid when a
+>>> single client opens the same file for exclusive read/write multiple times
+>>> but there are no other intervening changes.
+>>>
+>>> Milosz, if that were in place, is there any reason not to wire up
+>>> writepage and allow the fscache to be used write-through?
+>>>
+>>> sage
+>>>
+>>>
+>>>
+>>>
+>>>>
+>>>> Thanks,
+>>>> - Milosz
+>>>>
+>>>> On Thu, Oct 31, 2013 at 11:56 PM, Li Wang <liwang@ubuntukylin.com> wrote:
+>>>> > Currently, the pages in fscache only are updated in writepage() path,
+>>>> > add the process in writepages().
+>>>> >
+>>>> > Signed-off-by: Min Chen <minchen@ubuntukylin.com>
+>>>> > Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+>>>> > Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+>>>> > ---
+>>>> >  fs/ceph/addr.c |    8 +++++---
+>>>> >  1 file changed, 5 insertions(+), 3 deletions(-)
+>>>> >
+>>>> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+>>>> > index 6df8bd4..cc57911 100644
+>>>> > --- a/fs/ceph/addr.c
+>>>> > +++ b/fs/ceph/addr.c
+>>>> > @@ -746,7 +746,7 @@ retry:
+>>>> >
+>>>> >         while (!done && index <= end) {
+>>>> >                 int num_ops = do_sync ? 2 : 1;
+>>>> > -               unsigned i;
+>>>> > +               unsigned i, j;
+>>>> >                 int first;
+>>>> >                 pgoff_t next;
+>>>> >                 int pvec_pages, locked_pages;
+>>>> > @@ -894,7 +894,6 @@ get_more_pages:
+>>>> >                 if (!locked_pages)
+>>>> >                         goto release_pvec_pages;
+>>>> >                 if (i) {
+>>>> > -                       int j;
+>>>> >                         BUG_ON(!locked_pages || first < 0);
+>>>> >
+>>>> >                         if (pvec_pages && i == pvec_pages &&
+>>>> > @@ -924,7 +923,10 @@ get_more_pages:
+>>>> >
+>>>> >                 osd_req_op_extent_osd_data_pages(req, 0, pages, len, 0,
+>>>> >                                                         !!pool, false);
+>>>> > -
+>>>> > +               for(j = 0; j < locked_pages; j++) {
+>>>> > +                       struct page *page = pages[j];
+>>>> > +                       ceph_readpage_to_fscache(inode, page);
+>>>> > +               }
+>>>> >                 pages = NULL;   /* request message now owns the pages array */
+>>>> >                 pool = NULL;
+>>>> >
+>>>> > --
+>>>> > 1.7.9.5
+>>>> >
+>>>> > --
+>>>> > To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+>>>> > the body of a message to majordomo@vger.kernel.org
+>>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Milosz Tanski
+>>>> CTO
+>>>> 10 East 53rd Street, 37th floor
+>>>> New York, NY 10022
+>>>>
+>>>> p: 646-253-9055
+>>>> e: milosz@adfin.com
+>>>>
+>>>>
+>>
+>>
+>>
+>> --
+>> Milosz Tanski
+>> CTO
+>> 10 East 53rd Street, 37th floor
+>> New York, NY 10022
+>>
+>> p: 646-253-9055
+>> e: milosz@adfin.com
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-> Have any of you experienced this issue ? Any thoughts on the matter ?
 
-The way I got around this for the per-cpu code is to include a dummy memory
-constraint for the stack. This has a couple of advantages:
 
-	(1) It hazards against a "memory" clobber, so doesn't require use of
-	    `volatile'
+-- 
+Milosz Tanski
+CTO
+10 East 53rd Street, 37th floor
+New York, NY 10022
 
-	(2) It doesn't require GCC to emit any address generation code,
-	    since dereferencing the sp is valid in ARM assembly
-
-so adding something like:
-
-	asm("" :: "Q" (*sp));
-
-immediately after the declaration of sp in current_therad_info might do the
-trick. Do you have a way to test that?
-
-Cheers,
-
-Will
+p: 646-253-9055
+e: milosz@adfin.com
