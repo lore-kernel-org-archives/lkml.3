@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab3KSHLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 02:11:34 -0500
+	id S1751865Ab3KSHLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 02:11:49 -0500
 Received: from mailout4.samsung.com ([203.254.224.34]:38770 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3KSHLb (ORCPT
+	with ESMTP id S1750980Ab3KSHLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 02:11:31 -0500
-X-AuditID: cbfee691-b7f866d000001b8c-dc-528b0f216b1a
+	Tue, 19 Nov 2013 02:11:32 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-de-528b0f224701
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: disable the extent cache ops on high fragmented files
-Date: Tue, 19 Nov 2013 16:10:36 +0900
-Message-id: <1384845037-7872-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 2/2] f2fs: introduce a bio array for per-page write bios
+Date: Tue, 19 Nov 2013 16:10:37 +0900
+Message-id: <1384845037-7872-2-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t8zfV0l/u4gg5lbmCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytj1rYG14Lp0xdZp
-	i9kaGFeIdTFyckgImEg87W1mhLDFJC7cW8/WxcjFISSwjFFi2cStQA4HWNHJzywgNUIC0xkl
-	Jn83hahpZpJYOeUiO0gNm4C2xOb9BiA1IgLMEgumnmcEqWEWmMAo8X/RexaQGmGBAInPP3JB
-	algEVCW29D9kBgnzCrhJnJ1iA3GCtsS25xPBWiUE7rNJXPlxhBGiXkDi2+RDLBDnyEpsOsAM
-	US8pcXDFDZYJjIILGBlWMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYoQE38QdjPcPWB9iTAYa
-	N5FZSjQ5Hxi8eSXxhsZmRhamJqbGRuaWZqQJK4nzpj9KChISSE8sSc1OTS1ILYovKs1JLT7E
-	yMTBKdXAOGehCNP21Lyl6xfJCZg0XN776MXyjHK1yS73nt79sn7WAuuewJuXfFkW/g6zTi+P
-	Pn3gM+vJ/yK+kzx7s+WEU+OXnOLyCTa22nnxyy5m1QNd0zdp888MOFsld2IWG9/N6x+X3NQ8
-	9lHp9I5Nrz8+WjOBJTZIOfP2lYYLUck571n51zdNK081KlNiKc5INNRiLipOBABvqFaeVAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t9jQV1F/u4gg+Zea4vru/4yWVxa5G6x
-	Z+9JFovLu+awObB47F7wmcmjb8sqRo/Pm+QCmKMaGG0yUhNTUosUUvOS81My89JtlbyD453j
-	Tc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgLYpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUN
-	CYLrMTJAAwnrGDN2fWtgLbguXbF12mK2BsYVYl2MHBwSAiYSJz+zdDFyApliEhfurWcDsYUE
-	pjNKTP5u2sXIBWQ3M0msnHKRHaSeTUBbYvN+A5AaEQFmiQVTzzOC1DALTGCU+L/oPQtIjbBA
-	gMTnH7kgNSwCqhJb+h8yg4R5Bdwkzk6xgVilLbHt+UTGCYzcCxgZVjGKphYkFxQnpeca6RUn
-	5haX5qXrJefnbmIEh/Yz6R2MqxosDjEKcDAq8fBOcO8KEmJNLCuuzD3EKMHBrCTCK3kFKMSb
-	klhZlVqUH19UmpNafIgxGWj5RGYp0eR8YNzllcQbGpuYGVkamVkYmZibkyasJM57sNU6UEgg
-	PbEkNTs1tSC1CGYLEwenVAOjuObk3/F/HP0PCYs22mbpGVe0uG6Je8/i+sf49L1bkgx/OA4d
-	VMhkyt7CpuawXK6XZVLXXs6tHxm+sNm9y0l9sSiu99GB1KmcwdNZLt9z3uMo9mPKpOsvmVPt
-	Li8VWDndVDpB32Miy/XD/+dbTknK1p527H7Lc5Wrf8qWztu/68WOa8H63jFRSizFGYmGWsxF
-	xYkAI7DRA7ECAAA=
+In-reply-to: <1384845037-7872-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1384845037-7872-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t8zfV0l/u4gg0edghbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZfy5cYSl4JJOxZSL
+	/A2M/SpdjJwcEgImElP/vGKBsMUkLtxbz9bFyMUhJLCMUaL13DM2mKLGyd9YIRLTGSVePd4D
+	5TQzSayccpG9i5GDg01AW2LzfgOQBhEBZokFU88zgtQwC0xglPi/6D3YCmEBD4nLk/vBbBYB
+	VYnOc92MIDavgJvE+ZfbWCG2aUtsez4RLM4p4C5x6NIjZhBbCKjm2vuNTCBDJQS+s0ks2vyR
+	DWKQgMS3yYdYQI6QEJCV2HSAGWKOpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtcmpeu
+	l5yfu4kRErITdzDeP2B9iDEZaNxEZinR5HxgyOeVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClI
+	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OHlu2E9MaGicX718Q4hd/f17308sV3R0/OcxaN
+	r9mvxFnKwmuiteXheZdfNltv7fsT89Oh++PPf0/fKtzT4Jz7c/X51GABG9t7xhkNWwXuzV2q
+	GLW4K+K8de2jhc1GRn8SflnsW7v+b0L0hO9fF20t4W+JKf7J3daqduxiw4U4kx+GfRnXpC4r
+	sRRnJBpqMRcVJwIAoQHTe28CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQV0l/u4gg9m3eCyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8z4c+MIS8ElnYopF/kbGPtVuhg5OSQETCQaJ39jhbDFJC7cW8/WxcjFISQw
+	nVHi1eM9rBBOM5PEyikX2bsYOTjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4AkhAU8
+	JC5P7gezWQRUJTrPdTOC2LwCbhLnX26D2qYtse35RLA4p4C7xKFLj5hBbCGgmmvvNzJNYORd
+	wMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4Ip5J72Bc1WBxiFGAg1GJh3eCe1eQEGti
+	WXFl7iFGCQ5mJRFeyStAId6UxMqq1KL8+KLSnNTiQ4zJQFdNZJYSTc4HRmteSbyhsYmZkaWR
+	mYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTC6TfhyrGXS8qCmG11fd73JVD4j
+	nPHYZ/WsSfOEZGbczuaYkXX3rvZMPTk7u7YNHtEHTc7sOPC63Xl+pHXi1kID+dg/dQYXtVPd
+	jj9zXOVRL/C/eI1eTJ0612KPN192tFxir+vY3e+jp8X4M34730+zma63fh4xlrl77jPfPu+i
+	J1/0Fs+MWVOmxFKckWioxVxUnAgAwGN32MwCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -45,114 +48,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The f2fs manages an extent cache to search a number of consecutive data blocks
-very quickly.
+The f2fs has three bio types, NODE, DATA, and META, and manages some data
+structures per each bio types.
 
-However it conducts unnecessary cache operations if the file is highly
-fragmented with no valid extent cache.
+The codes are a little bit messy, thus, this patch introduces a bio array
+which groups individual data structures as follows.
 
-In such the case, we don't need to handle the extent cache, but just can disable
-the cache facility.
+struct f2fs_bio_info {
+	struct bio *bio;		/* bios to merge */
+	sector_t last_block_in_bio;	/* last block number */
+	struct mutex io_mutex;		/* mutex for bio */
+};
 
-Nevertheless, this patch gives one more chance to enable the extent cache.
+struct f2fs_sb_info {
+	...
+	struct f2fs_bio_info write_io[NR_PAGE_TYPE];	/* for write bios */
+	...
+};
 
-For example,
-1. create a file
-2. write data sequentially which produces a large valid extent cache
-3. update some data, resulting in a fragmented extent
-4. if the fragmented extent is too small, then drop extent cache
-5. close the file
-
-6. open the file again
-7. give another chance to make a new extent cache
-8. write data sequentially again which creates another big extent cache.
-...
+The code changes from this new data structure are trivial.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/data.c | 22 ++++++++++++++++++----
- fs/f2fs/f2fs.h |  3 +++
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ fs/f2fs/f2fs.h    | 12 +++++++++---
+ fs/f2fs/segment.c | 44 ++++++++++++++++++++++----------------------
+ fs/f2fs/super.c   |  2 +-
+ 3 files changed, 32 insertions(+), 26 deletions(-)
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 5920639..2e54522 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -71,6 +71,9 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
- 	pgoff_t start_fofs, end_fofs;
- 	block_t start_blkaddr;
- 
-+	if (is_inode_flag_set(fi, FI_NO_EXTENT))
-+		return 0;
-+
- 	read_lock(&fi->ext.ext_lock);
- 	if (fi->ext.len == 0) {
- 		read_unlock(&fi->ext.ext_lock);
-@@ -109,6 +112,7 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
- 	struct f2fs_inode_info *fi = F2FS_I(dn->inode);
- 	pgoff_t fofs, start_fofs, end_fofs;
- 	block_t start_blkaddr, end_blkaddr;
-+	int need_update = true;
- 
- 	f2fs_bug_on(blk_addr == NEW_ADDR);
- 	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
-@@ -117,6 +121,9 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
- 	/* Update the page address in the parent node */
- 	__set_data_blkaddr(dn, blk_addr);
- 
-+	if (is_inode_flag_set(fi, FI_NO_EXTENT))
-+		return;
-+
- 	write_lock(&fi->ext.ext_lock);
- 
- 	start_fofs = fi->ext.fofs;
-@@ -163,14 +170,21 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
- 					fofs - start_fofs + 1;
- 			fi->ext.len -= fofs - start_fofs + 1;
- 		}
--		goto end_update;
-+	} else {
-+		need_update = false;
- 	}
--	write_unlock(&fi->ext.ext_lock);
--	return;
- 
-+	/* Finally, if the extent is very fragmented, let's drop the cache. */
-+	if (fi->ext.len < F2FS_MIN_EXTENT_LEN) {
-+		fi->ext.len = 0;
-+		set_inode_flag(fi, FI_NO_EXTENT);
-+		need_update = true;
-+	}
- end_update:
- 	write_unlock(&fi->ext.ext_lock);
--	sync_inode_page(dn);
-+	if (need_update)
-+		sync_inode_page(dn);
-+	return;
- }
- 
- struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index c2de549..e9038bb 100644
+index e9038bb..05f8fe1 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -169,6 +169,8 @@ enum {
- #define F2FS_LINK_MAX		32000	/* maximum link count per file */
- 
- /* for in-memory extent cache entry */
-+#define F2FS_MIN_EXTENT_LEN	16	/* minimum extent length */
-+
- struct extent_info {
- 	rwlock_t ext_lock;	/* rwlock for consistency */
- 	unsigned int fofs;	/* start offset in a file */
-@@ -889,6 +891,7 @@ enum {
- 	FI_NO_ALLOC,		/* should not allocate any blocks */
- 	FI_UPDATE_DIR,		/* should update inode block for consistency */
- 	FI_DELAY_IPUT,		/* used for the recovery */
-+	FI_NO_EXTENT,		/* not to use the extent cache */
- 	FI_INLINE_XATTR,	/* used for inline xattr */
+@@ -361,6 +361,12 @@ enum page_type {
+ 	META_FLUSH,
  };
  
++struct f2fs_bio_info {
++	struct bio *bio;		/* bios to merge */
++	sector_t last_block_in_bio;	/* last block number */
++	struct mutex io_mutex;		/* mutex for bio */
++};
++
+ struct f2fs_sb_info {
+ 	struct super_block *sb;			/* pointer to VFS super block */
+ 	struct proc_dir_entry *s_proc;		/* proc entry */
+@@ -374,9 +380,9 @@ struct f2fs_sb_info {
+ 
+ 	/* for segment-related operations */
+ 	struct f2fs_sm_info *sm_info;		/* segment manager */
+-	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
+-	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
+-	struct mutex write_mutex[NR_PAGE_TYPE];	/* mutex for writing IOs */
++
++	/* for bio operations */
++	struct f2fs_bio_info write_io[NR_PAGE_TYPE];	/* for write bios */
+ 
+ 	/* for checkpoint */
+ 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 119af0b..9607cc4 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -838,65 +838,65 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+ {
+ 	int rw = sync ? WRITE_SYNC : WRITE;
+ 	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+-	struct bio *bio = sbi->bio[btype];
++	struct f2fs_bio_info *io = &sbi->write_io[btype];
+ 	struct bio_private *p;
+ 
+-	if (!bio)
++	if (!io->bio)
+ 		return;
+ 
+-	sbi->bio[btype] = NULL;
+-
+ 	if (type >= META_FLUSH)
+ 		rw = WRITE_FLUSH_FUA;
+ 	if (btype == META)
+ 		rw |= REQ_META;
+ 
+-	p = bio->bi_private;
++	p = io->bio->bi_private;
+ 	p->sbi = sbi;
+-	bio->bi_end_io = f2fs_end_io_write;
++	io->bio->bi_end_io = f2fs_end_io_write;
+ 
+-	trace_f2fs_do_submit_bio(sbi->sb, btype, sync, bio);
++	trace_f2fs_do_submit_bio(sbi->sb, btype, sync, io->bio);
+ 
+ 	if (type == META_FLUSH) {
+ 		DECLARE_COMPLETION_ONSTACK(wait);
+ 		p->is_sync = true;
+ 		p->wait = &wait;
+-		submit_bio(rw, bio);
++		submit_bio(rw, io->bio);
+ 		wait_for_completion(&wait);
+ 	} else {
+ 		p->is_sync = false;
+-		submit_bio(rw, bio);
++		submit_bio(rw, io->bio);
+ 	}
++	io->bio = NULL;
+ }
+ 
+ void f2fs_submit_bio(struct f2fs_sb_info *sbi, enum page_type type, bool sync)
+ {
+-	enum page_type btype = PAGE_TYPE_OF_BIO(type);
++	struct f2fs_bio_info *io = &sbi->write_io[PAGE_TYPE_OF_BIO(type)];
+ 
+-	if (!sbi->bio[btype])
++	if (!io->bio)
+ 		return;
+ 
+-	mutex_lock(&sbi->write_mutex[btype]);
++	mutex_lock(&io->io_mutex);
+ 	do_submit_bio(sbi, type, sync);
+-	mutex_unlock(&sbi->write_mutex[btype]);
++	mutex_unlock(&io->io_mutex);
+ }
+ 
+ static void submit_write_page(struct f2fs_sb_info *sbi, struct page *page,
+ 				block_t blk_addr, enum page_type type)
+ {
+ 	struct block_device *bdev = sbi->sb->s_bdev;
++	struct f2fs_bio_info *io = &sbi->write_io[type];
+ 	int bio_blocks;
+ 
+ 	verify_block_addr(sbi, blk_addr);
+ 
+-	mutex_lock(&sbi->write_mutex[type]);
++	mutex_lock(&io->io_mutex);
+ 
+ 	inc_page_count(sbi, F2FS_WRITEBACK);
+ 
+-	if (sbi->bio[type] && sbi->last_block_in_bio[type] != blk_addr - 1)
++	if (io->bio && io->last_block_in_bio != blk_addr - 1)
+ 		do_submit_bio(sbi, type, false);
+ alloc_new:
+-	if (sbi->bio[type] == NULL) {
++	if (io->bio == NULL) {
+ 		struct bio_private *priv;
+ retry:
+ 		priv = kmalloc(sizeof(struct bio_private), GFP_NOFS);
+@@ -906,9 +906,9 @@ retry:
+ 		}
+ 
+ 		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+-		sbi->bio[type] = f2fs_bio_alloc(bdev, bio_blocks);
+-		sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+-		sbi->bio[type]->bi_private = priv;
++		io->bio = f2fs_bio_alloc(bdev, bio_blocks);
++		io->bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
++		io->bio->bi_private = priv;
+ 		/*
+ 		 * The end_io will be assigned at the sumbission phase.
+ 		 * Until then, let bio_add_page() merge consecutive IOs as much
+@@ -916,15 +916,15 @@ retry:
+ 		 */
+ 	}
+ 
+-	if (bio_add_page(sbi->bio[type], page, PAGE_CACHE_SIZE, 0) <
++	if (bio_add_page(io->bio, page, PAGE_CACHE_SIZE, 0) <
+ 							PAGE_CACHE_SIZE) {
+ 		do_submit_bio(sbi, type, false);
+ 		goto alloc_new;
+ 	}
+ 
+-	sbi->last_block_in_bio[type] = blk_addr;
++	io->last_block_in_bio = blk_addr;
+ 
+-	mutex_unlock(&sbi->write_mutex[type]);
++	mutex_unlock(&io->io_mutex);
+ 	trace_f2fs_submit_write_page(page, blk_addr, type);
+ }
+ 
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index e194578..8c677e9 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -879,7 +879,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	spin_lock_init(&sbi->stat_lock);
+ 
+ 	for (i = 0; i < NR_PAGE_TYPE; i++)
+-		mutex_init(&sbi->write_mutex[i]);
++		mutex_init(&sbi->write_io[i].io_mutex);
+ 
+ 	init_rwsem(&sbi->cp_rwsem);
+ 	init_waitqueue_head(&sbi->cp_wait);
 -- 
 1.8.4.474.g128a96c
 
