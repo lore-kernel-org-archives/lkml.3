@@ -1,192 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab3KSTqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:46:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:31619 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab3KSTqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:46:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438019518"
-Subject: Re: [PATCH v5 4/4] MCS Lock: Barrier corrections
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <20131119192136.GQ4138@linux.vnet.ibm.com>
-References: <cover.1383935697.git.tim.c.chen@linux.intel.com>
-	 <1383940358.11046.417.camel@schen9-DESK>
-	 <20131119192136.GQ4138@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Nov 2013 11:46:08 -0800
-Message-ID: <1384890368.11046.437.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1752407Ab3KSTt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:49:56 -0500
+Received: from smtp-out-036.synserver.de ([212.40.185.36]:1053 "EHLO
+	smtp-out-164.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752058Ab3KSTtz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 14:49:55 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 30819
+Message-ID: <528BBE90.4020802@metafoo.de>
+Date: Tue, 19 Nov 2013 20:40:00 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 08/10] ASoC: ux500_pcm: Differentiate between pdata and
+ DT initialisation
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org> <1384859269-19801-9-git-send-email-lee.jones@linaro.org> <20131119184829.GF2674@sirena.org.uk> <20131119193341.GC19953@lee--X1>
+In-Reply-To: <20131119193341.GC19953@lee--X1>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:21 -0800, Paul E. McKenney wrote:
-> On Fri, Nov 08, 2013 at 11:52:38AM -0800, Tim Chen wrote:
-> > From: Waiman Long <Waiman.Long@hp.com>
-> > 
-> > This patch corrects the way memory barriers are used in the MCS lock
-> > with smp_load_acquire and smp_store_release fucnction.
-> > It removes ones that are not needed.
-> > 
-> > It uses architecture specific load-acquire and store-release
-> > primitives for synchronization, if available. Generic implementations
-> > are provided in case they are not defined even though they may not
-> > be optimal. These generic implementation could be removed later on
-> > once changes are made in all the relevant header files.
-> > 
-> > Suggested-by: Michel Lespinasse <walken@google.com>
-> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+On 11/19/2013 08:33 PM, Lee Jones wrote:
+> On Tue, 19 Nov 2013, Mark Brown wrote:
 > 
-> Please see comments below.
+>> On Tue, Nov 19, 2013 at 11:07:47AM +0000, Lee Jones wrote:
+>>
+>>> require slightly different flags to inform the core that we 'are'
+>>> booting with DT.
+>>
+>> Is there some situation when we would want to say we're booting from DT
+>> when we aren't?  Just wondering about the quotes.
 > 
-> 							Thanx, Paul
+> The quotes do 'not' mean anything special. :)
 > 
-> > ---
-> >  kernel/locking/mcs_spinlock.c |   48 +++++++++++++++++++++++++++++++++++------
-> >  1 files changed, 41 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> > index b6f27f8..df5c167 100644
-> > --- a/kernel/locking/mcs_spinlock.c
-> > +++ b/kernel/locking/mcs_spinlock.c
-> > @@ -23,6 +23,31 @@
-> >  #endif
-> > 
-> >  /*
-> > + * Fall back to use the regular atomic operations and memory barrier if
-> > + * the acquire/release versions are not defined.
-> > + */
-> > +#ifndef	xchg_acquire
-> > +# define xchg_acquire(p, v)		xchg(p, v)
-> > +#endif
-> > +
-> > +#ifndef	smp_load_acquire
-> > +# define smp_load_acquire(p)				\
-> > +	({						\
-> > +		typeof(*p) __v = ACCESS_ONCE(*(p));	\
-> > +		smp_mb();				\
-> > +		__v;					\
-> > +	})
-> > +#endif
-> > +
-> > +#ifndef smp_store_release
-> > +# define smp_store_release(p, v)		\
-> > +	do {					\
-> > +		smp_mb();			\
-> > +		ACCESS_ONCE(*(p)) = v;		\
-> > +	} while (0)
-> > +#endif
-> > +
-> > +/*
-> >   * In order to acquire the lock, the caller should declare a local node and
-> >   * pass a reference of the node to this function in addition to the lock.
-> >   * If the lock has already been acquired, then this will proceed to spin
-> > @@ -37,15 +62,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> >  	node->locked = 0;
-> >  	node->next   = NULL;
-> > 
-> > -	prev = xchg(lock, node);
-> > +	/* xchg() provides a memory barrier */
-> > +	prev = xchg_acquire(lock, node);
+>>> +static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
+>>> +	.pcm_hardware = &ux500_pcm_hw,
+>>> +	.prealloc_buffer_size = 128 * 1024,
+>>
+>> You shouldn't need to set this explicitly, the generic code should be
+>> able to pick a number for you - if you do need this number please
+>> explain why the number was chosen in the comments (or fix the core to
+>> guess better).  At the minute the core just makes up a number too but at
+>> least then it's a consistent random number between platforms.
+>>
+>> Can you also get away without the pcm_hardware - the core should also
+>> have support for discovering this by querying the DMA controller?
 > 
-> But if this is xchg_acquire() with only acquire semantics, it need not
-> ensure that the initializations of node->locked and node->next above
-> will happen before the "ACCESS_ONCE(prev->next) = node" below.  This
-> therefore needs to remain xchg().  Or you need an smp_store_release()
-> below instead of an ACCESS_ONCE() assignment.
-
-Good point.  Will keep it as xchg.
-
-> 
-> As currently written, the poor CPU doing the unlock can be fatally
-> disappointed by seeing pre-initialized values of ->locked and ->next.
-> This could, among other things, result in a hang where the handoff
-> happens before the initialization.
-> 
-> >  	if (likely(prev == NULL)) {
-> >  		/* Lock acquired */
-> >  		return;
-> >  	}
-> >  	ACCESS_ONCE(prev->next) = node;
-> > -	smp_wmb();
-> > -	/* Wait until the lock holder passes the lock down */
-> > -	while (!ACCESS_ONCE(node->locked))
-> > +	/*
-> > +	 * Wait until the lock holder passes the lock down.
-> > +	 * Using smp_load_acquire() provides a memory barrier that
-> > +	 * ensures subsequent operations happen after the lock is acquired.
-> > +	 */
-> > +	while (!(smp_load_acquire(&node->locked)))
-> >  		arch_mutex_cpu_relax();
-> 
-> OK, this smp_load_acquire() makes sense!
-> 
-> >  }
-> >  EXPORT_SYMBOL_GPL(mcs_spin_lock);
-> > @@ -54,7 +83,7 @@ EXPORT_SYMBOL_GPL(mcs_spin_lock);
-> >   * Releases the lock. The caller should pass in the corresponding node that
-> >   * was used to acquire the lock.
-> >   */
-> > -static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> > +void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> >  {
-> >  	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-> > 
-> > @@ -68,7 +97,12 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
-> >  		while (!(next = ACCESS_ONCE(node->next)))
-> >  			arch_mutex_cpu_relax();
-> >  	}
-> > -	ACCESS_ONCE(next->locked) = 1;
-> > -	smp_wmb();
-> > +	/*
-> > +	 * Pass lock to next waiter.
-> > +	 * smp_store_release() provides a memory barrier to ensure
-> > +	 * all operations in the critical section has been completed
-> > +	 * before unlocking.
-> > +	 */
-> > +	smp_store_release(&next->locked , 1);
-> 
-> This smp_store_release() makes sense as well!
-> 
-> Could you please get rid of the extraneous space before the comma?
-
-Will do.
-
-> 
-> >  }
-> >  EXPORT_SYMBOL_GPL(mcs_spin_unlock);
-> > -- 
-> > 1.7.4.4
-> > 
-> > 
+> Despite the '+'s, I'm not actually adding these parameters, I'm
+> duplicating the pdata version and removing the stuff I 'know' that's
+> not required. I don't know what happens when/if these two parameters
+> are removed. I can add this to my TODO when I rip out platform data
+> support, which will happen when this stuff lands.
 > 
 
+I think the patch is fine for now. Once non-DT support has been removed for
+ux500 we should be able to remove the whole ux500_pcm.c file (Assuming that
+the ux500 DMA engine driver gains dma_slave_caps support).
 
+- Lars
