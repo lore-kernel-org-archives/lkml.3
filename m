@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3KSIR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 03:17:56 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52397 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab3KSIRz (ORCPT
+	id S1751607Ab3KSIUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 03:20:44 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:44411 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3KSIUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 03:17:55 -0500
-X-AuditID: 9c93017e-b7ba2ae00000088c-10-528b1eb28657
-Date: Tue, 19 Nov 2013 17:18:20 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] Squashfs: Check stream is not NULL in
- decompressor_multi.c
-Message-ID: <20131119081820.GY4407@bbox>
-References: <1384406059-28567-1-git-send-email-phillip@squashfs.org.uk>
- <1384406059-28567-5-git-send-email-phillip@squashfs.org.uk>
+	Tue, 19 Nov 2013 03:20:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384406059-28567-5-git-send-email-phillip@squashfs.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <528AA08C.6080608@wwwdotorg.org>
+References: <1384795559-2116-1-git-send-email-mmarek@suse.cz>
+	<528AA08C.6080608@wwwdotorg.org>
+Date: Tue, 19 Nov 2013 09:20:41 +0100
+X-Google-Sender-Auth: Xtsl6feL0kG9ZV4rHW-T1RULhlY
+Message-ID: <CAMuHMdVkWmYGM5XvH0f41JdwK_g-PdvdDBzR8uJWn0wYBQrAcg@mail.gmail.com>
+Subject: Re: [PATCH] mfd: Make MFD_AS3722 depend on I2C=y
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, ldewangan@nvidia.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 05:14:19AM +0000, Phillip Lougher wrote:
-> Fix static checker complaint that stream is not checked in
-> squashfs_decompressor_destroy().
-> 
-> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
+On Tue, Nov 19, 2013 at 12:19 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/18/2013 10:25 AM, Michal Marek wrote:
+>> MFD_AS3722 can only be builtin, so it needs I2C builtin as well.
+>> With I2C=m, we get:
+>>
+>> drivers/mfd/as3722.c:372: undefined reference to `devm_regmap_init_i2c'
+>> drivers/built-in.o: In function `as3722_i2c_driver_init':
+>> drivers/mfd/as3722.c:444: undefined reference to `i2c_register_driver'
+>> drivers/built-in.o: In function `as3722_i2c_driver_exit':
+>> drivers/mfd/as3722.c:444: undefined reference to `i2c_del_driver'
+>
+> Shouldn't Kconfig handle this; if a Boolean config option depends on a
+> tri-state config option, shouldn't it automatically validate that the
+> tri-state is "y" not "m"?
 
-Thanks for handling my fault.
+Unfortunately not. While tristate is always used to declare code modules,
+bool can be used to declare two different things: code modules or optional
+features.
 
-Reviewd-by: Minchan Kim <minchan@kernel.org>
+For optional features, "depends on x" means "depends on x=y or x=m".
+For code modules, "depends on x" should really by "depends on x=y".
 
--- 
-Kind regards,
-Minchan Kim
+To handle this automatically, we need to introduce a new Kconfig symbol,
+and convert all the thousands existing ones...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
