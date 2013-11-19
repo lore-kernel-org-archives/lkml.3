@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab3KSIhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 03:37:11 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:44265 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3KSIhH (ORCPT
+	id S1751743Ab3KSIkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 03:40:13 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:61533 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3KSIkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 03:37:07 -0500
+	Tue, 19 Nov 2013 03:40:10 -0500
+Date: Tue, 19 Nov 2013 09:40:06 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: akpm@linux-foundation.org
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@elte.hu, sboyd@codeaurora.org,
+        rmk@arm.linux.org.uk, voice.shen@atmel.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [patch 1/3] sched_clock: document 4Mhz vs 1Mhz decision
+Message-ID: <20131119084006.GC1243@gmail.com>
+References: <20131115221529.43E8B1CA1A1@corp2gmr1-1.eem.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
-References: <1384431530-2166-1-git-send-email-r.sricharan@ti.com>
-Date: Tue, 19 Nov 2013 09:37:06 +0100
-Message-ID: <CACRpkdYM1XcBAznCpmPU+j2kHFPKYA98OAYrpLhcSJr4KbRZzA@mail.gmail.com>
-Subject: Re: [PATCH V4 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        ext Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Nishanth Menon <nm@ti.com>,
-        Benoit Cousson <bcousson@baylibre.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131115221529.43E8B1CA1A1@corp2gmr1-1.eem.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 1:18 PM, Sricharan R <r.sricharan@ti.com> wrote:
 
-> The minimal crossbar driver to track and allocate free GIC lines and configure the
-> crossbar is added here, along with the DT bindings.
->
-> V4:
->    Addressed a couple of comments and split the DTS file updates in to
->    a separate series.
+* akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
 
-I'm pretty happy with the work and effort put into this now it's looking
-real elegant.
-FWIW: Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> From: Stephen Boyd <sboyd@codeaurora.org>
+> Subject: sched_clock: document 4Mhz vs 1Mhz decision
+> 
+> Bo Shen sent a patch to change this to 1Mhz instead of 4Mhz but according
+> to Russell King the use of 4Mhz was intentional.  Add a comment to this
+> effect so that others don't try to change the code as well.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Bo Shen <voice.shen@atmel.com>
+> Cc: Russell King <rmk@arm.linux.org.uk>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  kernel/time/sched_clock.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff -puN kernel/time/sched_clock.c~sched_clock-document-4mhz-vs-1mhz-decision kernel/time/sched_clock.c
+> --- a/kernel/time/sched_clock.c~sched_clock-document-4mhz-vs-1mhz-decision
+> +++ a/kernel/time/sched_clock.c
+> @@ -132,6 +132,10 @@ void __init sched_clock_register(u64 (*r
+>  	clocks_calc_mult_shift(&cd.mult, &cd.shift, rate, NSEC_PER_SEC, 3600);
+>  
+>  	r = rate;
+> +	/*
+> +	 * Use 4MHz instead of 1MHz so that things like 1.832Mhz show as
+> +	 * 1832Khz
+> +	 */
+>  	if (r >= 4000000) {
+>  		r /= 1000000;
+>  		r_unit = 'M';
 
-Yours,
-Linus Walleij
+Instead of magic precision cutoff limits the better solution would be 
+to simply display not just decimal part but also the first 3 digits of 
+the fractional part:
+
+          1.123  Hz
+	990.134 kHz
+	  1.832 MHz
+	 12.314 GHz
+
+etc. - then every number could be displayed in its natural unit 
+without magic precision limits.
+
+It would also be mostly self-documenting.
+
+Thanks,
+
+	Ingo
