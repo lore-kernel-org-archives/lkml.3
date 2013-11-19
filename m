@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab3KSU6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:58:40 -0500
-Received: from mga14.intel.com ([143.182.124.37]:46388 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353Ab3KSU6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:58:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,731,1378882800"; 
-   d="scan'208";a="430478434"
-Date: Tue, 19 Nov 2013 23:05:13 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH 0/10] ACPI: Device objects for all namespace nodes and
- PCI root hotplug integration
-Message-ID: <20131119210512.GS2281@intel.com>
-References: <1421028.Rsfpmhnym3@vostro.rjw.lan>
- <20131119143046.GL2281@intel.com>
- <3736594.HRILCo6Ms2@vostro.rjw.lan>
+	id S1752636Ab3KSVCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:02:23 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:36016 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab3KSVCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 16:02:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3736594.HRILCo6Ms2@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384859269-19801-2-git-send-email-lee.jones@linaro.org>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+	<1384859269-19801-2-git-send-email-lee.jones@linaro.org>
+Date: Tue, 19 Nov 2013 22:02:21 +0100
+Message-ID: <CACRpkdZKKeTOReMey5+yOeX+4-7vPWgnKx-b8p68ECdweXpQug@mail.gmail.com>
+Subject: Re: [PATCH 01/10] dma: ste_dma40: Expand DT binding to accept
+ 'high-priority channel' flag
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 09:51:19PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, November 19, 2013 04:30:46 PM Mika Westerberg wrote:
-> > On Sun, Nov 17, 2013 at 05:29:41PM +0100, Rafael J. Wysocki wrote:
-> > > This is 3.14 material, but I'm posting it today to let you know it is coming.
-> > > Of course, if you see any immediate problems with the following patches, please
-> > > let me know.
-> > 
-> > For what it's worth, I have tested this series on three different systems
-> > that have Thunderbolt and it still works fine after the series has been
-> > applied :)
-> 
-> Awesome, thanks!
-> 
-> I hope you won't mind if I add your Tested-by to the series. :-)
+On Tue, Nov 19, 2013 at 12:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Not at all,
+> This is used for MSP (audio) devices which is about to be fully DT:ed.
+>
+> Cc: devicetree@vger.kernel.org
+> Acked-by: Vinod Koul <vinod.koul@intel.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Since this was ACKed by Vinod I have applied it to the ux500-devicetree
+branch.
+
+Yours,
+Linus Walleij
