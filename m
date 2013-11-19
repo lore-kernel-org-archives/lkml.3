@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab3KSS3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:29:00 -0500
-Received: from smtprelay0005.hostedemail.com ([216.40.44.5]:41319 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751421Ab3KSS26 (ORCPT
+	id S1752534Ab3KSS3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:29:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39937 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab3KSS3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:28:58 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3870:3876:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trees43_6ada7a9a0cb15
-X-Filterd-Recvd-Size: 1361
-Message-ID: <1384885733.17783.37.camel@joe-AO722>
-Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Johannes =?ISO-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Nov 2013 10:28:53 -0800
-In-Reply-To: <528BACCB.1090604@zytor.com>
-References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>
-	 <528ACB6A.1040809@zytor.com> <20131119072241.GB32478@gmail.com>
-	 <20131119103408.GA3640@pd.tnic> <1384883323.17783.35.camel@joe-AO722>
-	 <20131119182306.GD3515@pd.tnic> <528BACCB.1090604@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 13:29:05 -0500
+Date: Tue, 19 Nov 2013 10:29:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 1/9] staging/lustre/llite: Access to released file trigs
+ a restore
+Message-ID: <20131119182917.GA4842@kroah.com>
+References: <1384867428-8395-1-git-send-email-bergwolf@gmail.com>
+ <1384867428-8395-2-git-send-email-bergwolf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384867428-8395-2-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 10:24 -0800, H. Peter Anvin wrote:
-> I'll take a proper cleanup,
-> but just whitespace... just pointless churn.
+"trigs"?  Come on, we don't have a lack of characters here...
 
-What in your view would be "a proper cleanup" for a20.c?
+On Tue, Nov 19, 2013 at 09:23:40PM +0800, Peng Tao wrote:
+> From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+> 
+> When a client accesses data in a released file,
+> or truncate it, client must trig a restore request.
+> During this restore, the client must not glimpse and
+> must use size from MDT. To bring the "restore is running"
+> information on the client we add a new t_state bit field
+> to mdt_info which will be used to carry transient file state.
+> To memorise this information in the inode we add a new flag
+> LLIF_FILE_RESTORING.
+> 
+> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3432
+> Lustre-change: http://review.whamcloud.com/6537
+> Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+> Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+> Tested-by: Oleg Drokin <oleg.drokin@intel.com>
+> Signed-off-by: Peng Tao <bergwolf@gmail.com>
+> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+> ---
+>  drivers/staging/lustre/lustre/include/cl_object.h  |    6 ++-
+>  .../lustre/lustre/include/lustre/lustre_idl.h      |   14 +++--
+>  drivers/staging/lustre/lustre/lclient/lcommon_cl.c |    6 +++
+>  drivers/staging/lustre/lustre/llite/file.c         |   39 +++++++++++++-
+>  .../staging/lustre/lustre/llite/llite_internal.h   |    3 ++
+>  drivers/staging/lustre/lustre/llite/llite_lib.c    |   36 +++++++++++++
+>  drivers/staging/lustre/lustre/llite/vvp_io.c       |   54 ++++++++++++++++++--
+>  drivers/staging/lustre/lustre/lov/lov_io.c         |   15 ++++--
+>  .../staging/lustre/lustre/ptlrpc/pack_generic.c    |    2 +-
+>  drivers/staging/lustre/lustre/ptlrpc/wiretest.c    |   17 +++---
+>  10 files changed, 168 insertions(+), 24 deletions(-)
 
+This patch has checkpatch errors, sorry, please fix them before sending
+them again.
+
+greg k-h
