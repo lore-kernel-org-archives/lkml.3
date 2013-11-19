@@ -1,141 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3KSX7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:59:15 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:26271 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab3KSX7J (ORCPT
+	id S1753527Ab3KSX7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:59:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42741 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab3KSX7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Nov 2013 18:59:09 -0500
-X-AuditID: cbfec37c-b7fd86d00000670b-c2-528bfb4cf3f6
-Message-id: <528BFB4A.3030600@samsung.com>
-Date: Tue, 19 Nov 2013 16:59:06 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net, anton@enomsg.org,
-        dwmw2@infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 1/2] power_supply: Fix Oops from NULL pointer dereference
- from wakeup_source_activate
-References: <cover.1384875691.git.shuah.kh@samsung.com>
- <9575239e8eb1b813425e4297e26589946d5cdd1c.1384875691.git.shuah.kh@samsung.com>
- <20131119231300.GB24054@kroah.com>
-In-reply-to: <20131119231300.GB24054@kroah.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wr67P7+4gg7ObzC0ObtW0mLhyMrNF
-	8+L1bBazpuxlsri8aw6bxefeI4wWd08dZbM4c/oSq8XXnw4OnB4T+j8xeuycdZfdY/MKLY/F
-	e14yeeyfu4bdY8vVdhaPFau/s3t83iQXwBHFZZOSmpNZllqkb5fAlfFg4USWgvm6FS3fL7E1
-	MM5T62Lk5JAQMJGYP+chK4QtJnHh3nq2LkYuDiGBZYwSu5edYoVwepkkurt+QWU2MUo8adwI
-	1sIroCVxacl5dhCbRUBVovn8G7A4m4C6xOfXO8DiQgJyEk1LVjOD2KICERJHVz+D6hWU+DH5
-	HguILSKgIfHy6C0WkAXMApeBFmy/wgiSEBbIllgz8RUrxKC1jBKb/zCB2JwC+hI/NzwDG8os
-	YC2xctI2RghbXmLzmrfMEPXKEn8unwKq5wD6TVFi+2qrCYwis5CsnoWkexaS7gWMzKsYxUqL
-	kwuKk9JTK4z1ihNzi0vz0vWS83M3MULirmYH472vNocYBTgYlXh4CxZ1BwmxJpYVV+YeYpTg
-	YFYS4V3zAijEm5JYWZValB9fVJqTWnyIkYmDU6qB0V4zXprBbNaj74+nXJRPKFy98WVR+XvT
-	17uuaDskl14wdz8ncLBkUc6xHpYdtzpdn1j87Yw+WXJo4zT7jCez18f47Twzh1GOb0PmQ96X
-	fKxL3nu8+eS6cY60u/LDienSM71/fHmbImPzq89mo+3espuR20UMO5Y98C1kFg/2Ljz6ds8p
-	4xrdrUosxRmJhlrMRcWJAF56bOeZAgAA
+Date: Tue, 19 Nov 2013 15:59:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Yang Bai <hamo.by@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
+Message-Id: <20131119155907.11fbdecea0aa40764a3d927a@linux-foundation.org>
+In-Reply-To: <CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
+References: <20131115093645.6dc03918@gandalf.local.home>
+	<CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 04:13 PM, Greg KH wrote:
-> On Tue, Nov 19, 2013 at 08:59:35AM -0700, Shuah Khan wrote:
->> power_supply_register() calls device_init_wakeup() to register a wakeup
->> source before initializing dev_name. As a result, device_wakeup_enable()
->> end up registering wakeup source with a null name when wakeup_source_register()
->> gets called with dev_name(dev) which is null at the time.
->>
->> When kernel is booted with wakeup_source_activate enabled, it will panic
->> when the trace point code tries to dereferences ws->name.
->>
->> Fixed the problem by moving up the kobject_set_name() call prior to accesses
->> to dev_name(). Replaced kobject_set_name() with dev_set_name() which is the
->> right interface to be called from drivers. Fixed the call to device_del() prior
->> to device_add() in for wakeup_init_failed error handling code.
->>
->> [  819.769934] device: 'BAT1': device_add
->> [  819.770078] PM: Adding info for No Bus:BAT1
->> [  819.770235] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> [  819.770435] IP: [<ffffffff813381c0>] skip_spaces+0x30/0x30
->> [  819.770572] PGD 3efd90067 PUD 3eff61067 PMD 0
->> [  819.770716] Oops: 0000 [#1] SMP
->> [  819.770829] Modules linked in: arc4 iwldvm mac80211 x86_pkg_temp_thermal coretemp kvm_intel joydev i915 kvm uvcvideo ghash_clmulni_intel videobuf2_vmalloc aesni_intel videobuf2_memops videobuf2_core aes_x86_64 ablk_helper cryptd videodev iwlwifi lrw rfcomm gf128mul glue_helper bnep btusb media bluetooth parport_pc hid_generic ppdev snd_hda_codec_hdmi drm_kms_helper snd_hda_codec_realtek cfg80211 drm tpm_infineon samsung_laptop snd_hda_intel usbhid snd_hda_codec hid snd_hwdep snd_pcm microcode snd_page_alloc snd_timer psmouse i2c_algo_bit lpc_ich tpm_tis video wmi mac_hid serio_raw ext2 lp parport r8169 mii
->> [  819.771802] CPU: 0 PID: 2167 Comm: bash Not tainted 3.12.0+ #25
->> [  819.771876] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X4C/900X4D/SAMSUNG_NP1234567890, BIOS P03AAC 07/12/2012
->> [  819.772022] task: ffff88002e6ddcc0 ti: ffff8804015ca000 task.ti: ffff8804015ca000
->> [  819.772119] RIP: 0010:[<ffffffff813381c0>]  [<ffffffff813381c0>] skip_spaces+0x30/0x30
->> [  819.772242] RSP: 0018:ffff8804015cbc70  EFLAGS: 00010046
->> [  819.772310] RAX: 0000000000000003 RBX: ffff88040cfd6d40 RCX: 0000000000000018
->> [  819.772397] RDX: 0000000000020001 RSI: 0000000000000000 RDI: 0000000000000000
->> [  819.772484] RBP: ffff8804015cbcc0 R08: 0000000000000000 R09: ffff8803f0768d40
->> [  819.772570] R10: ffffea001033b800 R11: 0000000000000000 R12: ffffffff81c519c0
->> [  819.772656] R13: 0000000000020001 R14: 0000000000000000 R15: 0000000000020001
->> [  819.772744] FS:  00007ff98309b740(0000) GS:ffff88041f200000(0000) knlGS:0000000000000000
->> [  819.772845] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  819.772917] CR2: 0000000000000000 CR3: 00000003f59dc000 CR4: 00000000001407f0
->> [  819.773001] Stack:
->> [  819.773030]  ffffffff81114003 ffff8804015cbcb0 0000000000000000 0000000000000046
->> [  819.773146]  ffff880409757a18 ffff8803f065a160 0000000000000000 0000000000020001
->> [  819.773273]  0000000000000000 0000000000000000 ffff8804015cbce8 ffffffff8143e388
->> [  819.773387] Call Trace:
->> [  819.773434]  [<ffffffff81114003>] ? ftrace_raw_event_wakeup_source+0x43/0xe0
->> [  819.773520]  [<ffffffff8143e388>] wakeup_source_report_event+0xb8/0xd0
->> [  819.773595]  [<ffffffff8143e3cd>] __pm_stay_awake+0x2d/0x50
->> [  819.773724]  [<ffffffff8153395c>] power_supply_changed+0x3c/0x90
->> [  819.773795]  [<ffffffff8153407c>] power_supply_register+0x18c/0x250
->> [  819.773869]  [<ffffffff813d8d18>] sysfs_add_battery+0x61/0x7b
->> [  819.773935]  [<ffffffff813d8d69>] battery_notify+0x37/0x3f
->> [  819.774001]  [<ffffffff816ccb7c>] notifier_call_chain+0x4c/0x70
->> [  819.774071]  [<ffffffff81073ded>] __blocking_notifier_call_chain+0x4d/0x70
->> [  819.774149]  [<ffffffff81073e26>] blocking_notifier_call_chain+0x16/0x20
->> [  819.774227]  [<ffffffff8109397a>] pm_notifier_call_chain+0x1a/0x40
->> [  819.774316]  [<ffffffff81095b66>] hibernate+0x66/0x1c0
->> [  819.774407]  [<ffffffff81093931>] state_store+0x71/0xa0
->> [  819.774507]  [<ffffffff81331d8f>] kobj_attr_store+0xf/0x20
->> [  819.774613]  [<ffffffff811f8618>] sysfs_write_file+0x128/0x1c0
->> [  819.774735]  [<ffffffff8118579d>] vfs_write+0xbd/0x1e0
->> [  819.774841]  [<ffffffff811861d9>] SyS_write+0x49/0xa0
->> [  819.774939]  [<ffffffff816d1052>] system_call_fastpath+0x16/0x1b
->> [  819.775055] Code: 89 f8 48 89 e5 f6 82 c0 a6 84 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 c0 a6 84 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
->> [  819.775760] RIP  [<ffffffff813381c0>] skip_spaces+0x30/0x30
->> [  819.775881]  RSP <ffff8804015cbc70>
->> [  819.775949] CR2: 0000000000000000
->> [  819.794175] ---[ end trace c4ef25127039952e ]---
->>
->> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->
-> Care to add a:
-> 	Cc: stable <stable@vger.kernel.org>
-> to this so that it gets backported to the older kernels that have this
-> problem?
+On Sun, 17 Nov 2013 10:14:46 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-Yes this should be in stable as well. However, this patch failed to 
-apply to 3.10 and 3.11 (the two releases I spot checked while I was 
-contemplating adding cc stable tag.
+> On Fri, Nov 15, 2013 at 3:36 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > It is really annoying when I use emacs TAGS to search for something
+> > like "dev_name" and have to go through 12 iterations before I find the
+> > function "dev_name". I really do not care about structures that include
+> > "dev_name" as one of its fields, and I'm sure pretty much all other
+> > developers do not care either.
+> 
+> While I'm also annoyed by this (although with vim/tags), I regularly do search
+> for struct members, so losing this ability would hurt, too.
 
-I plan to back-port and send the stable patch once this gets into the 
-mainline. Sounds good?
->
-> Oh, and feel free to also add:
-> 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+metoo.
 
-thanks,
->
-> thanks for the dev_set_name() change,
->
-> greg k-h
->
+> Is there a solution, without throwing out the baby with the bath water?
 
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Remove the tags for those struct members whose name duplicates some
+other symbol?
