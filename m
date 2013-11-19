@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab3KSCCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:02:21 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64930 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab3KSCCU (ORCPT
+	id S1751896Ab3KSCCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:02:36 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43936 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab3KSCCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:02:20 -0500
-X-AuditID: 9c930197-b7caaae000001cef-24-528ac6aa27a5
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
-	<1384267617-3446-5-git-send-email-dsahern@gmail.com>
-	<20131112145707.GV5056@laptop.programming.kicks-ass.net>
-	<20131112150751.GA19321@ghostprotocols.net>
-	<20131112151944.GX5056@laptop.programming.kicks-ass.net>
-	<52824AE3.4050207@gmail.com> <20131112211121.GC25913@gmail.com>
-	<20131113113439.GI21461@twins.programming.kicks-ass.net>
-	<52864ED1.1080607@gmail.com>
-	<20131118090117.GE3866@twins.programming.kicks-ass.net>
-	<20131118094036.GA26251@gmail.com> <877gc5utkf.fsf@sejong.aot.lge.com>
-	<528AB229.6030603@gmail.com>
-Date: Tue, 19 Nov 2013 11:02:18 +0900
-In-Reply-To: <528AB229.6030603@gmail.com> (David Ahern's message of "Mon, 18
-	Nov 2013 17:34:49 -0700")
-Message-ID: <871u2dup1x.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 18 Nov 2013 21:02:32 -0500
+Message-ID: <528AC4F2.40708@huawei.com>
+Date: Tue, 19 Nov 2013 09:54:58 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Andreas Noever <andreas.noever@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com> <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com> <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com> <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com> <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com> <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com> <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com> <20131115115235.GA2281@intel.com> <20131119013343.GA17294@google.com>
+In-Reply-To: <20131119013343.GA17294@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013 17:34:49 -0700, David Ahern wrote:
-> On 11/18/13, 5:24 PM, Namhyung Kim wrote:
->>>>> What now? Can we add the mmap path as an option?
->>>>
->>>> I'd say an option is always a possibility, but someone please try
->>>> what happens if you use stupid large events (dwarf stack copies) on
->>>> PERF_COUNT_SW_PAGE_FAULTS (.period=1) while recording with mmap().
->>>>
->>>> The other option is to simply disallow PERF_SAMPLE_STACK_USER for
->>>> that event.
->>>>
->>>> Personally I think 8k copies for every event are way stupid anyway,
->>>> that's a metric ton of data at a huge cost.
->>>
->>> Well, with 1 khz sampling of a single threaded workload it's 8MB per
->>> second - that's 80 MB for 10 seconds profiling - not the end of the
->>> world.
->>
->> We now use 4 khz sampling frequency by default, just FYI. :)
->
-> I think Peter is asking about:
->     perf record -e faults -c 1 --call-graph dwarf,8192 -a -- sleep 1
->
-> And as expected it is a massive feedback spiraling out of control.
+> The pcie_portdrv .probe() method calls pci_enable_device() once, in
+> pcie_port_device_register(), but the .remove() method calls
+> pci_disable_device() twice, in pcie_port_device_remove() and in
+> pcie_portdrv_remove().
+> 
+> That causes a "disabling already-disabled device" warning when removing a
+> PCIe port device.  This happens all the time when removing Thunderbolt
+> devices, but is also easy to reproduce with, e.g.,
+> "echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
+> 
+> This patch removes the disable from pcie_portdrv_remove().
+> 
+> [bhelgaas: changelog, tag for stable]
+> Reported-by: David Bulkow <David.Bulkow@stratus.com>
+> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: stable@vger.kernel.org	# v2.6.32+
 
-How about adding an option to exclude the perf tools from recording for
-system-wide (or cpu-wide) session?
+Hi Bjorn,
+   This issue in X86 seems to be introduced after commit 928bea9 "PCI: Delay enabling bridges until they're needed"
+So this patch needs to back port to 2.6.32+ ?
 
-This way, we can prevent the feedback loops for page-fault or syscall
-events you mentioned IMHO.
+> ---
+>  drivers/pci/pcie/portdrv_pci.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+> index cd1e57e51aa7..0d8fdc48e642 100644
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -223,7 +223,6 @@ static int pcie_portdrv_probe(struct pci_dev *dev,
+>  static void pcie_portdrv_remove(struct pci_dev *dev)
+>  {
+>  	pcie_port_device_remove(dev);
+> -	pci_disable_device(dev);
+>  }
+>  
+>  static int error_detected_iter(struct device *device, void *data)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> .
+> 
 
-Thanks,
-Namhyung
+
+-- 
+Thanks!
+Yijing
+
