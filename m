@@ -1,76 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab3KSQym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:54:42 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:53387 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KSQyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:54:40 -0500
-Date: Tue, 19 Nov 2013 08:54:38 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
-Message-ID: <20131119165438.GD30481@roeck-us.net>
-References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
- <20131114172427.GA11062@roeck-us.net>
- <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
- <20131114181845.GA13727@roeck-us.net>
- <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
- <20131114190044.GE13727@roeck-us.net>
- <CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
- <CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
- <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+	id S1753047Ab3KSRCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:02:22 -0500
+Received: from mail.efficios.com ([78.47.125.74]:56888 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab3KSRCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 12:02:21 -0500
+Date: Tue, 19 Nov 2013 17:02:20 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <Catalin.Marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <1656507422.70913.1384880540574.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20131119160502.GG11778@mudshark.cambridge.arm.com>
+References: <52803E5D.3050109@mentor.com> <52851395.3010306@mentor.com> <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com> <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com> <20131119160502.GG11778@mudshark.cambridge.arm.com>
+Subject: Re: current_thread_info() not respecting program order with gcc
+ 4.8.x
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
+Thread-Topic: current_thread_info() not respecting program order with gcc 4.8.x
+Thread-Index: 3CCIkbbcGBl5hOaZk6y9jHzTub7UCQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
-> On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
-> <marcus.folkesson@gmail.com> wrote:
-> >
-> >> This is just one use case of those, you could also use it for
-> >> non-generic gpio functionality, like alarm, "full-on", internal clock,
-> >> external clock, etc. I believe it is always a bit tricky with MFD. I
-> >> personally prefer to put it into the chip driver because this is not
-> >> clearly a generic gpio interface here, and I need to drive it
-> >> dynamically.
-> >
-> > I agree.
-> >
-> > I think the solution with expose the "GPIOs" in sysfs is the right way to
-> > go.
-> > The chip-function is of a dynamic nature and should therefor not be set in
-> > platform data / devicetree.
-> >
-> > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
-> > but the the gpio-functionality is just a subset of
-> > functions these pins may be set to.
-> >
-> > Also, the I think the *real* reason why the entries is called "gpio" is that
-> > it is so the registers are are mentioned in the datasheet.
-> > Everyone that is working with the device will know what it is all about.
-> > I see it more as an register expose than a gpio interface...
-> >
-> > I agree that the entries does not really fit here. But they does not fit
-> > better elsewhere either.
-> > And I don't think they fit worse than the alarm-entries that is already in
-> > mainline.
-> >
-> > Anyway, I think the documentation file should mention what function each
-> > valid value represent.
+----- Original Message -----
+> From: "Will Deacon" <will.deacon@arm.com>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Catalin Marinas" <Catalin.Marinas@arm.com>, "Peter Zijlstra"
+> <peterz@infradead.org>, lttng-dev@lists.lttng.org, "Nathan Lynch" <Nathan_Lynch@mentor.com>, "Paul E. McKenney"
+> <paulmck@linux.vnet.ibm.com>, "Linus Torvalds" <torvalds@linux-foundation.org>, "Andrew Morton"
+> <akpm@linux-foundation.org>
+> Sent: Tuesday, November 19, 2013 11:05:02 AM
+> Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
 > 
-> Yes, makes sense to make the documentation more comprehensive. Thanks.
+> On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
+> > Hi,
 > 
-> Any other issues from anyone before submitting a polished version?
-> 
-You'll have to get feedback from Jean. I won't accept the patch.
+> Hi Mathieu,
 
-Guenter
+Hi Will,
+
+> 
+> > I got a bug report on ARM which appears to be caused by an aggressive gcc
+> > optimisation starting from gcc 4.8.x due to lack of constraints on the
+> > current_thread_info() inline assembly. The only logical explanation for
+> > his issue I see so far is that read of the preempt_count within
+> > might_sleep() is reordered with preempt_enable() or preempt_disable().
+> > AFAIU, this kind of issue also applies to other architectures.
+> > 
+> > First thing, preempt enable/disable only contains barrier() between the
+> > inc/dec and the inside of the critical section, not the outside.
+> > Therefore, we are relying on program order to ensure that the
+> > preempt_count() read in might_sleep() is not reordered with the preempt
+> > count inc/dec.
+> 
+> This sounds almost identical to an issue I experienced with our optimised
+> per-cpu code (more below).
+> 
+> > However, looking at ARM arch/arm/include/asm/thread_info.h:
+> > 
+> > static inline struct thread_info *current_thread_info(void)
+> > {
+> >         register unsigned long sp asm ("sp");
+> >         return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
+> > }
+> > 
+> > The inline assembly has no clobber and is not volatile. (this is also true
+> > for all other architectures I've looked at so far, which includes x86 and
+> > powerpc)
+> > 
+> > As long as someone does:
+> > 
+> > struct thread_info *myinfo = current_thread_info();
+> > 
+> > load from myinfo->preempt_count;
+> > store to myinfo->preempt_count;
+> > 
+> > The program order should be preserved, because the read and the write are
+> > done wrt same base. However, what we have here in the case of
+> > might_sleep() followed by preempt_enable() is:
+> > 
+> > load from current_thread_info()->preempt_count;
+> > store to current_thread_info()->preempt_count;
+> > 
+> > Since each current_thread_info() is a different asm ("sp") without clobber
+> > nor volatile, AFAIU, the compiler is within its right to reorder them.
+> > 
+> > One possible solution to this might be to add "memory" clobber and volatile
+> > to this inline asm, but I fear it would put way too much constraints on
+> > the compiler optimizations (too heavyweight).
+> 
+> Yup, that sucks, because you end up unable to cache the value when you know
+> it hasn't changed.
+> 
+> > Have any of you experienced this issue ? Any thoughts on the matter ?
+> 
+> The way I got around this for the per-cpu code is to include a dummy memory
+> constraint for the stack. This has a couple of advantages:
+> 
+> 	(1) It hazards against a "memory" clobber, so doesn't require use of
+> 	    `volatile'
+> 
+> 	(2) It doesn't require GCC to emit any address generation code,
+> 	    since dereferencing the sp is valid in ARM assembly
+> 
+> so adding something like:
+> 
+> 	asm("" :: "Q" (*sp));
+> 
+> immediately after the declaration of sp in current_therad_info might do the
+> trick. Do you have a way to test that?
+
+Unfortunately I don't have a ARM cross-compiler setup ready. Nathan could test
+it for us though.
+
+It might shuffle things around enough to work around the issue, but with the
+approach you propose, I would be concerned about the compiler being within
+its rights to reorder the code into the following sequence:
+
+struct thread_info *ptra, *ptrb;
+
+ptra = current_thread_info();
+/*
+ * each current_thread_info() would have a clobber on *sp, which orders
+ * those two wrt each other.
+  */
+ptrb = current_thread_info();
+
+load from ptra->preempt_count;
+/*
+ * however, the following accesses that depend on ptra and ptrb could be
+ * reordered if the compiler has no way to know that ptra and ptrb are
+ * aliased.
+ */
+store to ptrb->preempt_count;
+
+One question that might be worth asking: with the local register variable
+extension (http://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/Local-Reg-Vars.html#Local-Reg-Vars)
+(thanks to Jakub for the pointer), should the compiler consider two variables
+bound to the same register as being aliased or not ? AFAIU, local reg vars appear
+to be architecture-specific, so maybe there is something fishy on ARM ?
+
+Thanks,
+
+Mathieu
+
+
+> 
+> Cheers,
+> 
+> Will
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
