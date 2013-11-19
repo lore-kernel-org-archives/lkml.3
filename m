@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab3KSKAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:00:07 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39715 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751597Ab3KSKAF (ORCPT
+	id S1752026Ab3KSKAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:00:43 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:34728 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab3KSKAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:00:05 -0500
-Date: Tue, 19 Nov 2013 09:59:29 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH v2] itg3200: add dt support.
-Message-ID: <20131119095929.GG5914@e106331-lin.cambridge.arm.com>
-References: <20131119113013.39dae3cd@notabene.brown>
+	Tue, 19 Nov 2013 05:00:42 -0500
+Message-ID: <528B36EA.20301@gmail.com>
+Date: Tue, 19 Nov 2013 11:01:14 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119113013.39dae3cd@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@alien8.de>
+CC: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+References: <52888F6D.6000802@gmail.com> <20131117132531.GB27696@pd.tnic> <5288E5BF.2020608@gmail.com> <20131117160126.GG27323@pd.tnic> <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com> <20131117195358.GO27323@pd.tnic> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com> <20131118133210.GG24851@pd.tnic>
+In-Reply-To: <20131118133210.GG24851@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 12:30:13AM +0000, NeilBrown wrote:
+On 11/18/2013 02:32 PM, Borislav Petkov wrote:
+> On Mon, Nov 18, 2013 at 01:19:28PM +0100, Francis Moreau wrote:
+>> Just out of curiosity, running "objdump -D" doesn't seem to show the
+>> same thing here. How did you get such dump with function names for
+>> example ?
 > 
+> There's another, non-stripped vmlinux in the kernel package:
 > 
-> No new configuration, just a 'compatible' string and documentation.
+> $ objdump -D usr/src/linux-3.12.0-1-ARCH/vmlinux | less
 > 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+
+oh I see, thks.
+
+>> The thing is that I'd like to avoid to oops my kernel to avoid to
+>> corrupt my filesystem.
 > 
-> diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-> b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt new file mode 100644
-> index 000000000000..4581620632df
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-> @@ -0,0 +1,20 @@
-> +* InvenSense ITG3200 3-axis gyroscope
-> +
-> +Required properties:
-> +
-> +  - compatible : "invensense,itg3200"
+> Then debugging this thing would be very hard, if not impossible but it
+> is your decision at the end of the day...
+> 
 
-I couldn't see "invensense" in vendor-prefixes.txt. Assuming I haven't
-missed a patch adding it, could you amend this patch to do so?
+This issue is really annoying so I'll try to debug it.
 
-Otherwise this looks fine to me.
+I think the easiest way to do it is to install a minimal system on a USB
+stick and try to reproduce first in order to preserve my system.
 
-Cheers,
-Mark.
+Then I'll try to see if this issue exists in a previous kernel version
+and if so, I'll do a git-bisect session.
 
-> +  - reg : I2C address, typically 0x68
-> +
-> +Optional properties:
-> +
-> +  - interrupt-parent : should be the phandle for the interrupt controller
-> +  - interrupts : interrupt mapping for IRQ
-> +
-> +Example:
-> +
-> +itg3200@68 {
-> +	compatible = "invensense,itg3200";
-> +	reg = <0x68>;
-> +	interrupt-parent = <&gpio2>;
-> +	interrupts = <24 IRQ_TYPE_EDGE_RISING>;
-> +};
-> diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
-> index 4d3f3b92b361..1ed3003ef41a 100644
-> --- a/drivers/iio/gyro/itg3200_core.c
-> +++ b/drivers/iio/gyro/itg3200_core.c
-> @@ -374,10 +374,17 @@ static const struct i2c_device_id itg3200_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, itg3200_id);
->  
-> +static const struct of_device_id itg3200_of_match[] = {
-> +	{ .compatible = "invensense,itg3200", },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, itg3200_of_match);
-> +
->  static struct i2c_driver itg3200_driver = {
->  	.driver = {
->  		.owner  = THIS_MODULE,
->  		.name	= "itg3200",
-> +		.of_match_table = of_match_ptr(itg3200_of_match),
->  	},
->  	.id_table	= itg3200_id,
->  	.probe		= itg3200_probe,
+I can't find a quicker way to do that although using git-bisect (which
+implies several kernel builds) is a PITA.
 
-
+Thanks.
