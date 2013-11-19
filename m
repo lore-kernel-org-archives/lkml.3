@@ -1,86 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab3KSCCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:02:36 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:43936 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab3KSCCc (ORCPT
+	id S1751607Ab3KSCMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:12:16 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45149 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab3KSCMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:02:32 -0500
-Message-ID: <528AC4F2.40708@huawei.com>
-Date: Tue, 19 Nov 2013 09:54:58 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 18 Nov 2013 21:12:13 -0500
+X-AuditID: 9c930197-b7caaae000001cef-47-528ac8fb22af
+Date: Tue, 19 Nov 2013 11:12:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: linux-kernel@vger.kernel.org, Phillip Lougher <phillip@squashfs.org.uk>,
+        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH 3/6] Squashfs: add multi-threaded decompression using
+ percpu variables
+Message-ID: <20131119021235.GP4407@bbox>
+References: <1383855865-4683-1-git-send-email-phillip@squashfs.org.uk>
+ <1383855865-4683-4-git-send-email-phillip@squashfs.org.uk>
+ <20131108024210.GB21064@bbox>
+ <528502A4.3030505@lougher.demon.co.uk>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Andreas Noever <andreas.noever@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com> <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com> <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com> <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com> <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com> <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com> <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com> <20131115115235.GA2281@intel.com> <20131119013343.GA17294@google.com>
-In-Reply-To: <20131119013343.GA17294@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528502A4.3030505@lougher.demon.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The pcie_portdrv .probe() method calls pci_enable_device() once, in
-> pcie_port_device_register(), but the .remove() method calls
-> pci_disable_device() twice, in pcie_port_device_remove() and in
-> pcie_portdrv_remove().
-> 
-> That causes a "disabling already-disabled device" warning when removing a
-> PCIe port device.  This happens all the time when removing Thunderbolt
-> devices, but is also easy to reproduce with, e.g.,
-> "echo 0000:00:1c.3 > /sys/bus/pci/drivers/pcieport/unbind"
-> 
-> This patch removes the disable from pcie_portdrv_remove().
-> 
-> [bhelgaas: changelog, tag for stable]
-> Reported-by: David Bulkow <David.Bulkow@stratus.com>
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> CC: stable@vger.kernel.org	# v2.6.32+
+Hello Phillip,
 
-Hi Bjorn,
-   This issue in X86 seems to be introduced after commit 928bea9 "PCI: Delay enabling bridges until they're needed"
-So this patch needs to back port to 2.6.32+ ?
+Sorry for late response.
 
-> ---
->  drivers/pci/pcie/portdrv_pci.c |    1 -
->  1 file changed, 1 deletion(-)
+On Thu, Nov 14, 2013 at 05:04:36PM +0000, Phillip Lougher wrote:
+> CCing Junjiro Okijima and Stephen Hemminger
 > 
-> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-> index cd1e57e51aa7..0d8fdc48e642 100644
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -223,7 +223,6 @@ static int pcie_portdrv_probe(struct pci_dev *dev,
->  static void pcie_portdrv_remove(struct pci_dev *dev)
->  {
->  	pcie_port_device_remove(dev);
-> -	pci_disable_device(dev);
->  }
->  
->  static int error_detected_iter(struct device *device, void *data)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> On 08/11/13 02:42, Minchan Kim wrote:
+> >
+> >Hello Phillip,
+> >
+> >On Thu, Nov 07, 2013 at 08:24:22PM +0000, Phillip Lougher wrote:
+> >>Add a multi-threaded decompression implementation which uses
+> >>percpu variables.
+> >>
+> >>Using percpu variables has advantages and disadvantages over
+> >>implementations which do not use percpu variables.
+> >>
+> >>Advantages: the nature of percpu variables ensures decompression is
+> >>load-balanced across the multiple cores.
+> >>
+> >>Disadvantages: it limits decompression to one thread per core.
+> >
+> >At a glance, I understand your concern but I don't see benefit to
+> >make this feature as separate new config because we can modify the
+> >number of decompressor per core in the future.
+> >I don't want to create new config SQUASHFS_DECOMP_MULTI_3,
+> >SQUASHFS_DECOMP_MULTI_4 and so on. :)
 > 
-> .
+> You misunderstand
 > 
+> I have been sent two multi-threaded implementations in the
+> past which use percpu variables:
+> 
+> 1.  First patch set:
+> 
+>    http://www.spinics.net/lists/linux-fsdevel/msg34365.html
+> 
+>    Later in early 2011, I explained why I'd not merged the
+>    patches, and promised to do so when I got time
+> 
+>    http://www.spinics.net/lists/linux-fsdevel/msg42392.html
+> 
+> 
+> 2.  Second patch set sent in 2011
+> 
+>    http://www.spinics.net/lists/linux-fsdevel/msg44111.html
+> 
+> So, these patches have been in my inbox, waiting until I got
+> time to refactor Squashfs so that they could be merged... and
+> I finally got to do this last month, which is why I'm merging
+> a combined version of both patches now.
+> 
+> As to why have *two* implementations, I previously explained these
+> two approaches are complementary, and merging both allows the
+> user to decide which method of parallelising Squashfs they want
+> to do.
 
+What I see for benefit decompressor_multi_percpu is only limit
+memory overhead but it could be solved by dynamic shrinking as
+I mentioned earlier.
+
+About CPU usage, I'm not sure how decompressor_multi is horrible.
+If it's really concern, we can fix it to limit number of decomp
+stream by admin via sysfs or something.
+
+Decompression load balance? Acutally, I don't understand your claim.
+Could you elaborate it a bit?
+I couldn't understand why decompressor_multi_percpu is better than
+decompressor_multi.
+
+> 
+> The percpu implementation is a good approach to parallelising
+> Squashfs.  It is extremely simple, both in code and overhead.
+
+I agree about code but not sure about overhead.
+I admit decompressor_multi is bigger but it consists of simple opeartions.
+Sometime, kmalloc's cost could be higher if system memory pressure is
+severe so that file system's performance would fluctuate. If it's
+your concern, we could make threshold min/high so that it could guarantee
+some speed at least.
+
+
+> The decompression hotpath simply consists of taking a percpu
+> variable, doing the decompression, and then a release.
+
+When decomp buffer is created dynamically, it could be rather overhead
+compared to percpu approach but once it did, the overhead of decompress
+would be marginal.
+
+> Looking at code sizes:
+> 
+> fs/squashfs/decompressor_multi.c        |  199 +++++++++++++++++++++++++++++++
+> fs/squashfs/decompressor_multi_percpu.c |  104 ++++++++++++++++
+> fs/squashfs/decompressor_single.c       |   85 +++++++++++++
+> 
+> The simplicity of the percpu approach is readily apparent, at 104
+> lines it is only slightly larger than the single threaded
+> implementation.
+> 
+> Personally I like both approaches, and I have no reason not to
+> merge both implementations I have been sent.
+
+Okay. I'm not a maintainer so I'm not strong against your thougt.
+I just wanted to unify them if either of them isn't sigificantly win
+because I thought it makes maintainer and contributors happy due to
+avoid more CONFIG options which should be considered when some feature
+is added.
+
+> 
+> But what does the community think here?  Do you want the percpu
+> implementation?  Do you see value in having two implementations?
+> Feedback is appreciated.
+
+As I mentioned, my opinion is that let's unify them if either of them
+is significantly win. It would be better to see some benchmark result.
+
+> 
+> >
+> >How about this?
+> >
+> >1. Let's make CONFIG_DECOMPRESSOR_MAX which could be tuned by admin
+> >  in Kconfig. default is CPU *2 or CPU, Otherwise, we can put it
+> >  to sysfs so user can tune it in rumtime.
+> >
+> >2. put decompressor shrink logic by slab shrinker so if system has
+> >  memory pressure, we could catch the event and free some of decompressor
+> >  but memory pressure is not severe again in the future, we can create
+> >  new decompressor until reaching threadhold user define.
+> >  We could know system memory is enough by GFP_NOWAIT, not GFP_KERNEL
+> >  in get_decomp_stream's allocation indirectly.
+> 
+> This adds extra complexity to an implementation already 199 lines long
+> (as opposed to 104 for the percpu implementation).   The whole point of
+> the percpu implementation is to add a simple implementation that
+> may suit many systems.
+
+Okay. finally I agree because I guess decompressor_multi's code complexity
+might be large in future to control decomp_stream's size dynamically
+in many core system and some system might hate it by memory overhead
+In that case, per-cpu approach could works well by small amount of code.
+
+>From now on, I don't object.
+
+Thanks.
+
+> 
+> Phillip
+> 
+> >
 
 -- 
-Thanks!
-Yijing
-
+Kind regards,
+Minchan Kim
