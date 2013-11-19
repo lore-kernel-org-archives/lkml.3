@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab3KSBsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:48:55 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:37268 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3KSBsx (ORCPT
+	id S1751743Ab3KSBtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:49:06 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:47165 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KSBtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:48:53 -0500
-Date: Mon, 18 Nov 2013 20:57:16 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, tytso@mit.edu,
-        adilger.kernel@dilger.ca
-Subject: Re: perf bug: bad page map
-In-Reply-To: <20131118230553.32c478df@alan.etchedpixels.co.uk>
-Message-ID: <alpine.DEB.2.10.1311182055490.20279@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1311151300120.12594@vincent-weaver-1.um.maine.edu> <20131118151746.GC10022@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1311181138390.18020@vincent-weaver-1.um.maine.edu> <20131118230553.32c478df@alan.etchedpixels.co.uk>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 18 Nov 2013 20:49:04 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <528AB229.6030603@gmail.com>
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+ <1384267617-3446-5-git-send-email-dsahern@gmail.com> <20131112145707.GV5056@laptop.programming.kicks-ass.net>
+ <20131112150751.GA19321@ghostprotocols.net> <20131112151944.GX5056@laptop.programming.kicks-ass.net>
+ <52824AE3.4050207@gmail.com> <20131112211121.GC25913@gmail.com>
+ <20131113113439.GI21461@twins.programming.kicks-ass.net> <52864ED1.1080607@gmail.com>
+ <20131118090117.GE3866@twins.programming.kicks-ass.net> <20131118094036.GA26251@gmail.com>
+ <877gc5utkf.fsf@sejong.aot.lge.com> <528AB229.6030603@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 19 Nov 2013 01:48:43 +0000
+X-Google-Sender-Auth: 00W8rFC6ArJJLIRgaonkyw3Vkw8
+Message-ID: <CAM9d7chehcrE2ZsvNThK-GeNTY_OChsPDkmm5NpJG5bwnKciaQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, One Thousand Gnomes wrote:
+Hi David,
 
-> On Mon, 18 Nov 2013 11:41:22 -0500 (EST)
-> Vince Weaver <vincent.weaver@maine.edu> wrote:
-> 
-> > On Mon, 18 Nov 2013, Peter Zijlstra wrote:
-> > 
-> > > On Fri, Nov 15, 2013 at 01:04:23PM -0500, Vince Weaver wrote:
-> > > > 
-> > > > (figured out the minicom issue).
-> > > > 
-> > > > Anyway while trying to reproduce the last bug I instead got this with
-> > > > the perf_fuzzer.
-> > > > 
-> > > > Is it worth continuing to run and report these issues?  I'm losing track 
-> > > > of all the open bugs.
-> > > 
-> > > This is looks like ext4. Not entirely sure how perf ties into this.
-> > 
-> > It's believable the filesystem could have issues (it's a fuzzer machine, 
-> > so it's had 100+ unclean shutdowns on an SSD drive in the past few months)
-> > but as far as I know there shouldn't have been any filesystem accesses 
-> > happening at all when the bug triggered.
-> 
-> Obvious question - does it pass fsck currently. If it does then
-> presumably it was sane at the time it went pop ?
+On Tue, Nov 19, 2013 at 12:34 AM, David Ahern <dsahern@gmail.com> wrote:
+> On 11/18/13, 5:24 PM, Namhyung Kim wrote:
+>>>>>
+>>>>> What now? Can we add the mmap path as an option?
+>>>>
+>>>>
+>>>> I'd say an option is always a possibility, but someone please try
+>>>> what happens if you use stupid large events (dwarf stack copies) on
+>>>> PERF_COUNT_SW_PAGE_FAULTS (.period=1) while recording with mmap().
+>>>>
+>>>> The other option is to simply disallow PERF_SAMPLE_STACK_USER for
+>>>> that event.
+>>>>
+>>>> Personally I think 8k copies for every event are way stupid anyway,
+>>>> that's a metric ton of data at a huge cost.
+>>>
+>>>
+>>> Well, with 1 khz sampling of a single threaded workload it's 8MB per
+>>> second - that's 80 MB for 10 seconds profiling - not the end of the
+>>> world.
+>>
+>>
+>> We now use 4 khz sampling frequency by default, just FYI. :)
+>
+>
+> I think Peter is asking about:
+>     perf record -e faults -c 1 --call-graph dwarf,8192 -a -- sleep 1
+>
+> And as expected it is a massive feedback spiraling out of control.
 
-# e2fsck -f /dev/sda1                                                           
-e2fsck 1.42.8 (20-Jun-2013)                                                     
-Pass 1: Checking inodes, blocks, and sizes                                      
-Pass 2: Checking directory structure                                            
-Pass 3: Checking directory connectivity                                         
-Pass 4: Checking reference counts                                               
-Pass 5: Checking group summary information                                      
-/dev/sda1: 620972/3514368 files (0.5% non-contiguous), 9796212/14047744 blocks  
+Ah, I missed that part - just blindly answered about the freq -
+thinking he's talking about the default freq of perf record/top.
 
-so it looks clean now...
+Anyway, for above case, I guess it won't affect much as stack usually
+is in memory so no page fault will occur even recording with mmap
+unless the system suffers from a high memory pressure, right?
 
-Vince
+But I agree that copying 8KB for each sample seems too large.
+
+
+-- 
+Thanks,
+Namhyung
