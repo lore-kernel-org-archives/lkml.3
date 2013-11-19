@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3KSFYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 00:24:19 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:41568
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751822Ab3KSFYO (ORCPT
+	id S1752067Ab3KSFYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:24:25 -0500
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:31905
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751822Ab3KSFYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 00:24:14 -0500
+	Tue, 19 Nov 2013 00:24:19 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h20cfi1155h)
+X-SpamScore: 10
+X-BigFish: VS10(zz146fIc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h20cfi1155h)
 From: Bharat Bhushan <r65777@freescale.com>
 To: <alex.williamson@redhat.com>, <joro@8bytes.org>, <bhelgaas@google.com>,
         <agraf@suse.de>, <scottwood@freescale.com>,
@@ -18,9 +18,9 @@ To: <alex.williamson@redhat.com>, <joro@8bytes.org>, <bhelgaas@google.com>,
         <linux-kernel@vger.kernel.org>
 CC: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
         Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: [PATCH 7/9 v2] pci: msi: Extend msi iova setting interface to powerpc arch
-Date: Tue, 19 Nov 2013 10:47:11 +0530
-Message-ID: <1384838233-24847-8-git-send-email-Bharat.Bhushan@freescale.com>
+Subject: [PATCH 8/9 v2] vfio: moving some functions in common file
+Date: Tue, 19 Nov 2013 10:47:12 +0530
+Message-ID: <1384838233-24847-9-git-send-email-Bharat.Bhushan@freescale.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
 References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
@@ -33,199 +33,540 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we Keep track of devices which have msi page mapping to specific
-iova page for all msi bank. When composing MSI address and data then
-this list will be traversed. If device found in the list then use
-configured iova page otherwise iova page will be taken as before.
+Some function defined in vfio_iommu_type1.c are generic (not specific
+or type1 iommu) and we want to use these for FSL IOMMU (PAMU) and
+going forward in iommu-none driver.
+So I have created a new file naming vfio_iommu_common.c and moved some
+of generic functions into this file.
+
+I Agree (with Alex Williamson and myself :-)) that some more functions
+can be moved to this new common file (with some changes in type1/fsl_pamu
+and others). But in this patch i avoided doing these changes and
+just moved functions which are straight forward and allow me to
+get fsl-powerpc vfio framework in place.
 
 Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
 ---
-v2
- - new patch
+v1->v2
+ - removed un-necessary header file inclusion
+ - mark static function which are internal to *common.c
 
- arch/powerpc/sysdev/fsl_msi.c |   90 +++++++++++++++++++++++++++++++++++++++++
- arch/powerpc/sysdev/fsl_msi.h |   16 ++++++-
- 2 files changed, 104 insertions(+), 2 deletions(-)
+ drivers/vfio/Makefile            |    4 +-
+ drivers/vfio/vfio_iommu_common.c |  227 ++++++++++++++++++++++++++++++++++++++
+ drivers/vfio/vfio_iommu_common.h |   27 +++++
+ drivers/vfio/vfio_iommu_type1.c  |  206 +----------------------------------
+ 4 files changed, 257 insertions(+), 207 deletions(-)
+ create mode 100644 drivers/vfio/vfio_iommu_common.c
+ create mode 100644 drivers/vfio/vfio_iommu_common.h
 
-diff --git a/arch/powerpc/sysdev/fsl_msi.c b/arch/powerpc/sysdev/fsl_msi.c
-index eeebbf0..52d2beb 100644
---- a/arch/powerpc/sysdev/fsl_msi.c
-+++ b/arch/powerpc/sysdev/fsl_msi.c
-@@ -137,6 +137,75 @@ static int fsl_msi_get_region(int region_num, struct msi_region *region)
- 	return -ENODEV;
- }
- 
-+/* Add device to the list which have iova page mapping */
-+static int fsl_msi_add_iova_device(struct fsl_msi *msi_data,
-+				   struct pci_dev *pdev, dma_addr_t iova)
+diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+index 72bfabc..c5792ec 100644
+--- a/drivers/vfio/Makefile
++++ b/drivers/vfio/Makefile
+@@ -1,4 +1,4 @@
+ obj-$(CONFIG_VFIO) += vfio.o
+-obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+-obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
++obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_common.o vfio_iommu_type1.o
++obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_common.o vfio_iommu_spapr_tce.o
+ obj-$(CONFIG_VFIO_PCI) += pci/
+diff --git a/drivers/vfio/vfio_iommu_common.c b/drivers/vfio/vfio_iommu_common.c
+new file mode 100644
+index 0000000..08eea71
+--- /dev/null
++++ b/drivers/vfio/vfio_iommu_common.c
+@@ -0,0 +1,227 @@
++/*
++ * VFIO: Common code for vfio IOMMU support
++ *
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *     Author: Bharat Bhushan <bharat.bhushan@freescale.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/compat.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/slab.h>
++#include <linux/workqueue.h>
++
++static bool disable_hugepages;
++module_param_named(disable_hugepages,
++		   disable_hugepages, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(disable_hugepages,
++		 "Disable VFIO IOMMU support for IOMMU hugepages.");
++
++struct vwork {
++	struct mm_struct	*mm;
++	long			npage;
++	struct work_struct	work;
++};
++
++/* delayed decrement/increment for locked_vm */
++static void vfio_lock_acct_bg(struct work_struct *work)
 +{
-+	struct fsl_msi_device *device;
++	struct vwork *vwork = container_of(work, struct vwork, work);
++	struct mm_struct *mm;
 +
-+	mutex_lock(&msi_data->lock);
-+	list_for_each_entry(device, &msi_data->device_list, list) {
-+		/* If mapping already exits then update with new page mapping */
-+		if (device->dev == pdev) {
-+			device->iova = iova;
-+			mutex_unlock(&msi_data->lock);
-+			return 0;
++	mm = vwork->mm;
++	down_write(&mm->mmap_sem);
++	mm->locked_vm += vwork->npage;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	kfree(vwork);
++}
++
++void vfio_lock_acct(long npage)
++{
++	struct vwork *vwork;
++	struct mm_struct *mm;
++
++	if (!current->mm || !npage)
++		return; /* process exited or nothing to do */
++
++	if (down_write_trylock(&current->mm->mmap_sem)) {
++		current->mm->locked_vm += npage;
++		up_write(&current->mm->mmap_sem);
++		return;
++	}
++
++	/*
++	 * Couldn't get mmap_sem lock, so must setup to update
++	 * mm->locked_vm later. If locked_vm were atomic, we
++	 * wouldn't need this silliness
++	 */
++	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
++	if (!vwork)
++		return;
++	mm = get_task_mm(current);
++	if (!mm) {
++		kfree(vwork);
++		return;
++	}
++	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
++	vwork->mm = mm;
++	vwork->npage = npage;
++	schedule_work(&vwork->work);
++}
++
++/*
++ * Some mappings aren't backed by a struct page, for example an mmap'd
++ * MMIO range for our own or another device.  These use a different
++ * pfn conversion and shouldn't be tracked as locked pages.
++ */
++static bool is_invalid_reserved_pfn(unsigned long pfn)
++{
++	if (pfn_valid(pfn)) {
++		bool reserved;
++		struct page *tail = pfn_to_page(pfn);
++		struct page *head = compound_trans_head(tail);
++		reserved = !!(PageReserved(head));
++		if (head != tail) {
++			/*
++			 * "head" is not a dangling pointer
++			 * (compound_trans_head takes care of that)
++			 * but the hugepage may have been split
++			 * from under us (and we may not hold a
++			 * reference count on the head page so it can
++			 * be reused before we run PageReferenced), so
++			 * we've to check PageTail before returning
++			 * what we just read.
++			 */
++			smp_rmb();
++			if (PageTail(tail))
++				return reserved;
 +		}
++		return PageReserved(tail);
 +	}
 +
-+	device = kzalloc(sizeof(struct fsl_msi_device), GFP_KERNEL);
-+	if (!device) {
-+		pr_err("%s: Memory allocation failed\n", __func__);
-+		mutex_unlock(&msi_data->lock);
-+		return -ENOMEM;
-+	}
++	return true;
++}
 +
-+	device->dev = pdev;
-+	device->iova = iova;
-+	list_add_tail(&device->list, &msi_data->device_list);
-+	mutex_unlock(&msi_data->lock);
++static int put_pfn(unsigned long pfn, int prot)
++{
++	if (!is_invalid_reserved_pfn(pfn)) {
++		struct page *page = pfn_to_page(pfn);
++		if (prot & IOMMU_WRITE)
++			SetPageDirty(page);
++		put_page(page);
++		return 1;
++	}
 +	return 0;
 +}
 +
-+/* Remove device to the list which have iova page mapping */
-+static int fsl_msi_del_iova_device(struct fsl_msi *msi_data,
-+				   struct pci_dev *pdev)
++static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
 +{
-+	struct fsl_msi_device *device;
++	struct page *page[1];
++	struct vm_area_struct *vma;
++	int ret = -EFAULT;
 +
-+	mutex_lock(&msi_data->lock);
-+	list_for_each_entry(device, &msi_data->device_list, list) {
-+		if (device->dev == pdev) {
-+			list_del(&device->list);
-+			kfree(device);
-+			break;
-+		}
++	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
++		*pfn = page_to_pfn(page[0]);
++		return 0;
 +	}
-+	mutex_unlock(&msi_data->lock);
-+	return 0;
-+}
 +
-+/* set/clear device iova mapping for the requested msi region */
-+static int fsl_msi_set_iova(struct pci_dev *pdev, int region_num,
-+			    dma_addr_t iova, bool set)
-+{
-+	struct fsl_msi *msi_data;
-+	int ret = -EINVAL;
++	down_read(&current->mm->mmap_sem);
 +
-+	list_for_each_entry(msi_data, &msi_head, list) {
-+		if (msi_data->bank_index != region_num)
-+			continue;
++	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
 +
-+		if (set)
-+			ret = fsl_msi_add_iova_device(msi_data, pdev, iova);
-+		else
-+			ret = fsl_msi_del_iova_device(msi_data, pdev);
-+
-+		break;
++	if (vma && vma->vm_flags & VM_PFNMAP) {
++		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
++		if (is_invalid_reserved_pfn(*pfn))
++			ret = 0;
 +	}
++
++	up_read(&current->mm->mmap_sem);
++
 +	return ret;
 +}
 +
- static int fsl_msi_check_device(struct pci_dev *pdev, int nvec, int type)
- {
- 	if (type == PCI_CAP_ID_MSIX)
-@@ -167,6 +236,7 @@ static void fsl_compose_msi_msg(struct pci_dev *pdev, int hwirq,
- 				struct msi_msg *msg,
- 				struct fsl_msi *fsl_msi_data)
- {
-+	struct fsl_msi_device *device;
- 	struct fsl_msi *msi_data = fsl_msi_data;
- 	struct pci_controller *hose = pci_bus_to_host(pdev->bus);
- 	u64 address; /* Physical address of the MSIIR */
-@@ -181,6 +251,15 @@ static void fsl_compose_msi_msg(struct pci_dev *pdev, int hwirq,
- 		address = fsl_pci_immrbar_base(hose) +
- 			   (msi_data->msiir & 0xfffff);
- 
-+	mutex_lock(&msi_data->lock);
-+	list_for_each_entry(device, &msi_data->device_list, list) {
-+		if (device->dev == pdev) {
-+			address = device->iova | (msi_data->msiir & 0xfff);
++/*
++ * Attempt to pin pages.  We really don't want to track all the pfns and
++ * the iommu can only map chunks of consecutive pfns anyway, so get the
++ * first page and all consecutive pages with the same locking.
++ */
++long vfio_pin_pages(unsigned long vaddr, long npage,
++			   int prot, unsigned long *pfn_base)
++{
++	unsigned long limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
++	bool lock_cap = capable(CAP_IPC_LOCK);
++	long ret, i;
++
++	if (!current->mm)
++		return -ENODEV;
++
++	ret = vaddr_get_pfn(vaddr, prot, pfn_base);
++	if (ret)
++		return ret;
++
++	if (is_invalid_reserved_pfn(*pfn_base))
++		return 1;
++
++	if (!lock_cap && current->mm->locked_vm + 1 > limit) {
++		put_pfn(*pfn_base, prot);
++		pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n", __func__,
++			limit << PAGE_SHIFT);
++		return -ENOMEM;
++	}
++
++	if (unlikely(disable_hugepages)) {
++		vfio_lock_acct(1);
++		return 1;
++	}
++
++	/* Lock all the consecutive pages from pfn_base */
++	for (i = 1, vaddr += PAGE_SIZE; i < npage; i++, vaddr += PAGE_SIZE) {
++		unsigned long pfn = 0;
++
++		ret = vaddr_get_pfn(vaddr, prot, &pfn);
++		if (ret)
++			break;
++
++		if (pfn != *pfn_base + i || is_invalid_reserved_pfn(pfn)) {
++			put_pfn(pfn, prot);
++			break;
++		}
++
++		if (!lock_cap && current->mm->locked_vm + i + 1 > limit) {
++			put_pfn(pfn, prot);
++			pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
++				__func__, limit << PAGE_SHIFT);
 +			break;
 +		}
 +	}
-+	mutex_unlock(&msi_data->lock);
 +
- 	msg->address_lo = lower_32_bits(address);
- 	msg->address_hi = upper_32_bits(address);
- 
-@@ -356,6 +435,7 @@ static int fsl_of_msi_remove(struct platform_device *ofdev)
- 	struct fsl_msi *msi = platform_get_drvdata(ofdev);
- 	int virq, i;
- 	struct fsl_msi_cascade_data *cascade_data;
-+	struct fsl_msi_device *device;
- 
- 	if (msi->list.prev != NULL)
- 		list_del(&msi->list);
-@@ -371,6 +451,13 @@ static int fsl_of_msi_remove(struct platform_device *ofdev)
- 		msi_bitmap_free(&msi->bitmap);
- 	if ((msi->feature & FSL_PIC_IP_MASK) != FSL_PIC_IP_VMPIC)
- 		iounmap(msi->msi_regs);
++	vfio_lock_acct(i);
 +
-+	mutex_lock(&msi->lock);
-+	list_for_each_entry(device, &msi->device_list, list) {
-+		list_del(&device->list);
-+		kfree(device);
-+	}
-+	mutex_unlock(&msi->lock);
- 	kfree(msi);
- 
- 	return 0;
-@@ -436,6 +523,8 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 		dev_err(&dev->dev, "No memory for MSI structure\n");
- 		return -ENOMEM;
- 	}
-+	INIT_LIST_HEAD(&msi->device_list);
-+	mutex_init(&msi->lock);
- 	platform_set_drvdata(dev, msi);
- 
- 	msi->irqhost = irq_domain_add_linear(dev->dev.of_node,
-@@ -558,6 +647,7 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 		ppc_md.msi_check_device = fsl_msi_check_device;
- 		ppc_md.msi_get_region_count = fsl_msi_get_region_count;
- 		ppc_md.msi_get_region = fsl_msi_get_region;
-+		ppc_md.msi_set_iova = fsl_msi_set_iova;
- 	} else if (ppc_md.setup_msi_irqs != fsl_setup_msi_irqs) {
- 		dev_err(&dev->dev, "Different MSI driver already installed!\n");
- 		err = -ENODEV;
-diff --git a/arch/powerpc/sysdev/fsl_msi.h b/arch/powerpc/sysdev/fsl_msi.h
-index a2cc5a2..4da2af9 100644
---- a/arch/powerpc/sysdev/fsl_msi.h
-+++ b/arch/powerpc/sysdev/fsl_msi.h
-@@ -27,9 +27,16 @@
- #define FSL_PIC_IP_IPIC   0x00000002
- #define FSL_PIC_IP_VMPIC  0x00000003
- 
-+/* List of devices having specific iova page mapping */
-+struct fsl_msi_device {
-+	struct list_head list;
-+	struct pci_dev *dev;
-+	dma_addr_t iova;
-+};
++	return i;
++}
 +
- struct fsl_msi {
- 	struct irq_domain *irqhost;
++long vfio_unpin_pages(unsigned long pfn, long npage,
++			     int prot, bool do_accounting)
++{
++	unsigned long unlocked = 0;
++	long i;
++
++	for (i = 0; i < npage; i++)
++		unlocked += put_pfn(pfn++, prot);
++
++	if (do_accounting)
++		vfio_lock_acct(-unlocked);
++
++	return unlocked;
++}
+diff --git a/drivers/vfio/vfio_iommu_common.h b/drivers/vfio/vfio_iommu_common.h
+new file mode 100644
+index 0000000..2566ce6
+--- /dev/null
++++ b/drivers/vfio/vfio_iommu_common.h
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ */
++
++#ifndef _VFIO_IOMMU_COMMON_H
++#define _VFIO_IOMMU_COMMON_H
++
++void vfio_lock_acct(long npage);
++long vfio_pin_pages(unsigned long vaddr, long npage, int prot,
++		    unsigned long *pfn_base);
++long vfio_unpin_pages(unsigned long pfn, long npage,
++		      int prot, bool do_accounting);
++#endif
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index a9807de..e9a58fa 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -37,6 +37,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/vfio.h>
+ #include <linux/workqueue.h>
++#include "vfio_iommu_common.h"
+ 
+ #define DRIVER_VERSION  "0.2"
+ #define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
+@@ -48,12 +49,6 @@ module_param_named(allow_unsafe_interrupts,
+ MODULE_PARM_DESC(allow_unsafe_interrupts,
+ 		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
+ 
+-static bool disable_hugepages;
+-module_param_named(disable_hugepages,
+-		   disable_hugepages, bool, S_IRUGO | S_IWUSR);
+-MODULE_PARM_DESC(disable_hugepages,
+-		 "Disable VFIO IOMMU support for IOMMU hugepages.");
 -
-+	struct mutex lock;
- 	unsigned long cascade_irq;
- 	phys_addr_t msiir; /* MSIIR Address in CCSR */
- 	u32 ibs_shift; /* Shift of interrupt bit select */
-@@ -37,7 +44,12 @@ struct fsl_msi {
- 	void __iomem *msi_regs;
- 	u32 feature;
- 	int msi_virqs[NR_MSI_REG_MAX];
+ struct vfio_iommu {
+ 	struct iommu_domain	*domain;
+ 	struct mutex		lock;
+@@ -123,205 +118,6 @@ static void vfio_remove_dma(struct vfio_iommu *iommu, struct vfio_dma *old)
+ 	rb_erase(&old->node, &iommu->dma_list);
+ }
+ 
+-struct vwork {
+-	struct mm_struct	*mm;
+-	long			npage;
+-	struct work_struct	work;
+-};
 -
-+	/*
-+	 * Keep track of devices which have msi page mapping to specific
-+	 * iova page. Default this is NULL which means legacy way of
-+	 * setting iova will be used.
-+	 */
-+	struct list_head device_list;
- 	/*
- 	 * During probe each bank is assigned a index number.
- 	 * index number start from 0.
+-/* delayed decrement/increment for locked_vm */
+-static void vfio_lock_acct_bg(struct work_struct *work)
+-{
+-	struct vwork *vwork = container_of(work, struct vwork, work);
+-	struct mm_struct *mm;
+-
+-	mm = vwork->mm;
+-	down_write(&mm->mmap_sem);
+-	mm->locked_vm += vwork->npage;
+-	up_write(&mm->mmap_sem);
+-	mmput(mm);
+-	kfree(vwork);
+-}
+-
+-static void vfio_lock_acct(long npage)
+-{
+-	struct vwork *vwork;
+-	struct mm_struct *mm;
+-
+-	if (!current->mm || !npage)
+-		return; /* process exited or nothing to do */
+-
+-	if (down_write_trylock(&current->mm->mmap_sem)) {
+-		current->mm->locked_vm += npage;
+-		up_write(&current->mm->mmap_sem);
+-		return;
+-	}
+-
+-	/*
+-	 * Couldn't get mmap_sem lock, so must setup to update
+-	 * mm->locked_vm later. If locked_vm were atomic, we
+-	 * wouldn't need this silliness
+-	 */
+-	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
+-	if (!vwork)
+-		return;
+-	mm = get_task_mm(current);
+-	if (!mm) {
+-		kfree(vwork);
+-		return;
+-	}
+-	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
+-	vwork->mm = mm;
+-	vwork->npage = npage;
+-	schedule_work(&vwork->work);
+-}
+-
+-/*
+- * Some mappings aren't backed by a struct page, for example an mmap'd
+- * MMIO range for our own or another device.  These use a different
+- * pfn conversion and shouldn't be tracked as locked pages.
+- */
+-static bool is_invalid_reserved_pfn(unsigned long pfn)
+-{
+-	if (pfn_valid(pfn)) {
+-		bool reserved;
+-		struct page *tail = pfn_to_page(pfn);
+-		struct page *head = compound_trans_head(tail);
+-		reserved = !!(PageReserved(head));
+-		if (head != tail) {
+-			/*
+-			 * "head" is not a dangling pointer
+-			 * (compound_trans_head takes care of that)
+-			 * but the hugepage may have been split
+-			 * from under us (and we may not hold a
+-			 * reference count on the head page so it can
+-			 * be reused before we run PageReferenced), so
+-			 * we've to check PageTail before returning
+-			 * what we just read.
+-			 */
+-			smp_rmb();
+-			if (PageTail(tail))
+-				return reserved;
+-		}
+-		return PageReserved(tail);
+-	}
+-
+-	return true;
+-}
+-
+-static int put_pfn(unsigned long pfn, int prot)
+-{
+-	if (!is_invalid_reserved_pfn(pfn)) {
+-		struct page *page = pfn_to_page(pfn);
+-		if (prot & IOMMU_WRITE)
+-			SetPageDirty(page);
+-		put_page(page);
+-		return 1;
+-	}
+-	return 0;
+-}
+-
+-static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
+-{
+-	struct page *page[1];
+-	struct vm_area_struct *vma;
+-	int ret = -EFAULT;
+-
+-	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
+-		*pfn = page_to_pfn(page[0]);
+-		return 0;
+-	}
+-
+-	down_read(&current->mm->mmap_sem);
+-
+-	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
+-
+-	if (vma && vma->vm_flags & VM_PFNMAP) {
+-		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+-		if (is_invalid_reserved_pfn(*pfn))
+-			ret = 0;
+-	}
+-
+-	up_read(&current->mm->mmap_sem);
+-
+-	return ret;
+-}
+-
+-/*
+- * Attempt to pin pages.  We really don't want to track all the pfns and
+- * the iommu can only map chunks of consecutive pfns anyway, so get the
+- * first page and all consecutive pages with the same locking.
+- */
+-static long vfio_pin_pages(unsigned long vaddr, long npage,
+-			   int prot, unsigned long *pfn_base)
+-{
+-	unsigned long limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+-	bool lock_cap = capable(CAP_IPC_LOCK);
+-	long ret, i;
+-
+-	if (!current->mm)
+-		return -ENODEV;
+-
+-	ret = vaddr_get_pfn(vaddr, prot, pfn_base);
+-	if (ret)
+-		return ret;
+-
+-	if (is_invalid_reserved_pfn(*pfn_base))
+-		return 1;
+-
+-	if (!lock_cap && current->mm->locked_vm + 1 > limit) {
+-		put_pfn(*pfn_base, prot);
+-		pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n", __func__,
+-			limit << PAGE_SHIFT);
+-		return -ENOMEM;
+-	}
+-
+-	if (unlikely(disable_hugepages)) {
+-		vfio_lock_acct(1);
+-		return 1;
+-	}
+-
+-	/* Lock all the consecutive pages from pfn_base */
+-	for (i = 1, vaddr += PAGE_SIZE; i < npage; i++, vaddr += PAGE_SIZE) {
+-		unsigned long pfn = 0;
+-
+-		ret = vaddr_get_pfn(vaddr, prot, &pfn);
+-		if (ret)
+-			break;
+-
+-		if (pfn != *pfn_base + i || is_invalid_reserved_pfn(pfn)) {
+-			put_pfn(pfn, prot);
+-			break;
+-		}
+-
+-		if (!lock_cap && current->mm->locked_vm + i + 1 > limit) {
+-			put_pfn(pfn, prot);
+-			pr_warn("%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
+-				__func__, limit << PAGE_SHIFT);
+-			break;
+-		}
+-	}
+-
+-	vfio_lock_acct(i);
+-
+-	return i;
+-}
+-
+-static long vfio_unpin_pages(unsigned long pfn, long npage,
+-			     int prot, bool do_accounting)
+-{
+-	unsigned long unlocked = 0;
+-	long i;
+-
+-	for (i = 0; i < npage; i++)
+-		unlocked += put_pfn(pfn++, prot);
+-
+-	if (do_accounting)
+-		vfio_lock_acct(-unlocked);
+-
+-	return unlocked;
+-}
+-
+ static int vfio_unmap_unpin(struct vfio_iommu *iommu, struct vfio_dma *dma,
+ 			    dma_addr_t iova, size_t *size)
+ {
 -- 
 1.7.0.4
 
