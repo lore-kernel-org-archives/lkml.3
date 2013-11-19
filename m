@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab3KSVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:11:29 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44246 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab3KSVLZ (ORCPT
+	id S1752730Ab3KSVPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:15:19 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58190 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3KSVPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:11:25 -0500
-Date: Tue, 19 Nov 2013 13:11:21 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, dwmw2@infradead.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH 0/2] power_supply: Fix Oops from NULL pointer dereference
- from wakeup_source_activate
-Message-ID: <20131119211121.GA20193@teo>
-References: <cover.1384875691.git.shuah.kh@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cover.1384875691.git.shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Nov 2013 16:15:14 -0500
+Date: Tue, 19 Nov 2013 16:15:11 -0500 (EST)
+Message-Id: <20131119.161511.2201597699288568150.davem@davemloft.net>
+To: avagin@openvz.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        xemul@parallels.com, edumazet@google.com, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [PATCH] tcp: don't update snd_nxt, when a socket is switched
+ from repair mode
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+References: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 19 Nov 2013 13:15:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 08:59:34AM -0700, Shuah Khan wrote:
-> power_supply_register() calls device_init_wakeup() to register a wakeup
-> source before initializing dev_name. As a result, device_wakeup_enable()
-> end up registering wakeup source with a null name when wakeup_source_register()
-> gets called with dev_name(dev) which is null at the time.
-> 
-> device_wakeup_enable() uses dev_name(dev) as the wakeup source name.
-> When it gets called with a device with its name not yet set, ws structure
-> with ws->name = NULL gets created.
-> 
-> When kernel is booted with wakeup_source_activate enabled, it will panic
-> when the trace point code tries to dereferences ws->name.
-> 
-> This patch series fixes power_supply_register() to initialize the device name
-> prior to calling device_init_wakeup() and adds WARN_ON on null device name to
-> device_wakeup_enable() to detect driver bugs that result in calling
-> device_wakeup_enable() before device is fully initialized with its name in
-> device_wakeup_enable().
-> 
-> It is important that these two fixes to be pulled in together as a series. The
-> change to add WARN_ON on null device name without the power_supply_register()
-> fix will result in early boot panics when AC Adapter and Battery device drivers
-> try to register wakeup source.
+From: Andrey Vagin <avagin@openvz.org>
+Date: Tue, 19 Nov 2013 22:10:06 +0400
 
-I am all for it, so for the power_supply part:
+> snd_nxt must be updated synchronously with sk_send_head.  Otherwise
+> tp->packets_out may be updated incorrectly, what may bring a kernel panic.
+> 
+> Here is a kernel panic from my host.
+> [  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+> [  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
+> ...
+> [  146.301158] Call Trace:
+> [  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
+> 
+> Before this panic a tcp socket was restored. This socket had sent and
+> unsent data in the write queue. Sent data was restored in repair mode,
+> then the socket was switched from reapair mode and unsent data was
+> restored. After that the socket was switched back into repair mode.
+> 
+> In that moment we had a socket where write queue looks like this:
+> snd_una    snd_nxt   write_seq
+>    |_________|________|
+>              |
+> 	  sk_send_head
+> 
+> After a second switching from repair mode the state of socket was
+> changed:
+> 
+> snd_una          snd_nxt, write_seq
+>    |_________ ________|
+>              |
+> 	  sk_send_head
+> 
+> This state is inconsistent, because snd_nxt and sk_send_head are not
+> synchronized.
+> 
+> Bellow you can find a call trace, how packets_out can be incremented
+> twice for one skb, if snd_nxt and sk_send_head are not synchronized.
+> In this case packets_out will be always positive, even when
+> sk_write_queue is empty.
+> 
+> tcp_write_wakeup
+> 	skb = tcp_send_head(sk);
+> 	tcp_fragment
+> 		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
+> 			tcp_adjust_pcount(sk, skb, diff);
+> 	tcp_event_new_data_sent
+> 		tp->packets_out += tcp_skb_pcount(skb);
+> 
+> I think update of snd_nxt isn't required, when a socket is switched from
+> repair mode.  Because it's initialized in tcp_connect_init. Then when a
+> write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
+> so it's always is in consistent state.
+> 
+> I have checked, that the bug is not reproduced with this patch and
+> all tests about restoring tcp connections work fine.
+> 
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Acked-by: Anton Vorontsov <anton@enomsg.org>
+Applied and queued up for -stable, thank you.
