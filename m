@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab3KSTH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:07:28 -0500
-Received: from smtprelay0096.hostedemail.com ([216.40.44.96]:40443 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752030Ab3KSTHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:07:20 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2693:2828:2898:2912:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3870:3871:3873:3874:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12679:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: key32_55c706769721
-X-Filterd-Recvd-Size: 2461
-Message-ID: <1384888035.17783.45.camel@joe-AO722>
-Subject: Re: [PATCH v2] power: Replace printks with dev_* and pr_* routines
-From: Joe Perches <joe@perches.com>
-To: shuah.kh@samsung.com
-Cc: len.brown@intel.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Tue, 19 Nov 2013 11:07:15 -0800
-In-Reply-To: <528BB492.8090404@samsung.com>
-References: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
-	 <1384887205.17783.40.camel@joe-AO722> <528BB492.8090404@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752737Ab3KSTIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:08:25 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:3472 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752521Ab3KSTIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 14:08:20 -0500
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Markus Mayer" <markus.mayer@linaro.org>
+To: "Wim Van Sebroeck" <wim@iguana.be>, "Guenter Roeck" <linux@roeck-us.net>,
+        "Christian Daudt" <bcm@fixthebug.org>
+cc: "Linaro Patches" <patches@linaro.org>,
+        "Matt Porter" <matt.porter@linaro.org>,
+        "One Thousand Gnomes" <gnomes@lxorguk.ukuu.org.uk>,
+        "Linux Watchdog List" <linux-watchdog@vger.kernel.org>,
+        "ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Markus Mayer" <markus.mayer@linaro.org>
+Subject: [PATCH v4 0/2] watchdog: bcm281xx: Watchdog Driver
+Date: Tue, 19 Nov 2013 11:07:52 -0800
+Message-ID: <1384888074-19696-1-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+X-WSS-ID: 7E95696E1SC9380506-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:57 -0700, Shuah Khan wrote:
-> On 11/19/2013 11:53 AM, Joe Perches wrote:
-> > On Tue, 2013-11-19 at 11:46 -0700, Shuah Khan wrote:
-> >> Replaced printks with dev_* and pr_* routines. Replacing printk in
-> >> __suspend_report_result() will require passing in struct device *
-> >> pointer from calling routines and this will require changes to
-> >> external interface suspend_report_result() which is used by several
-> >> drivers. Hence, this one instance is replaced by pr_err().
-> > []
-> >> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> > []
-> >> @@ -1308,9 +1308,8 @@ int dpm_prepare(pm_message_t state)
-> >>   				error = 0;
-> >>   				continue;
-> >>   			}
-> >> -			printk(KERN_INFO "PM: Device %s not prepared "
-> >> -				"for power transition: code %d\n",
-> >> -				dev_name(dev), error);
-> >> +			dev_info("PM: not prepared for power transition: ",
-> >> +				 "code %d\n", error);
-> >
-> > Shuah, you have to make sure the files modified by
-> > your patches compile successfully before sending
-> > patches like this.
-> Oops. I did compile. Missed the warning. Sorry about that.
+This is version 4 of the watchdog driver for the BCM281xx family of mobile
+SoCs.
 
-btw:
+Changes since version 3:
+- Removed #include <linux/miscdevice.h>
+- Added Reviewed-by:/Acked-by: Guenter Roeck
 
-When you're doing patches like this, not bugfixes,
-not something that's going to be applied to current
-or stable, please make them against -next and not
-against Linus' tree.
+Changes since version 2:
 
-Also, I would make the larger change that modifies
-all the drivers like I suggested.  What you've done
-I think is a half-measure and is incomplete.
+- BCM_KONA_WDT_NAME: "bcm-kona-wdt" -> "bcm_kona_wdt"
+- Don't initialize static variable
+- Removed '{'/'}' from single-line statements
+- busy_count retains the maximum loop count of the longest loop rather
+  than an over-all maximum
+- Use seq_puts() in lieu of seq_printf() in 2 locations
+- Removed error message after devm_kzalloc()
+- Added MODULE_ALIAS
 
-cheers, Joe
+Changes since version 1:
+
+- Added module name to "help" section in Kconfig A few cosmetic code
+- simplifications and fixes Removed most dev_info() calls and changed the
+- remaining ones to dev_dbg() Renamed SECWDOG_WD_LOAD_FLAG_MASK to
+- SECWDOG_WD_LOAD_FLAG Added some comments to secure_register_read() and
+- struct bcm_kona_wdt Added delay to secure_register_read() Reduced maximum
+- retry loop from 10000 to 1000 Introduced "busy_count" variable to count
+- how often secure_register_read() gets stalled; this is available through
+- debugfs Simplified secure_register_read() to return -ETIMEDOUT rather than
+- using a variable parameter to indicate a timeout error Got rid of all uses
+- of -EAGAIN Fixed return value check for debugfs_create_dir() Simplified
+- bcm_kona_wdt_debugfs_init() by getting rid of goto Created new generic
+- function bcm_kona_wdt_ctrl_reg_modify() The following functions now use
+- bcm_kona_wdt_ctrl_reg_modify():
+    - bcm_kona_wdt_set_resolution_reg() bcm_kona_wdt_set_timeout_reg()
+    - bcm_kona_wdt_stop()
+- Made bcm_kona_wdt_set_timeout_reg() more generic, so bcm_kona_wdt_start()
+  can use it Removed MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR)
+
+Markus Mayer (2):
+  watchdog: bcm281xx: Watchdog Driver
+  ARM: bcm281xx: watchdog configuration
+
+ arch/arm/configs/bcm_defconfig  |    3 +
+ drivers/watchdog/Kconfig        |   22 +++
+ drivers/watchdog/Makefile       |    1 +
+ drivers/watchdog/bcm_kona_wdt.c |  365 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 391 insertions(+)
+ create mode 100644 drivers/watchdog/bcm_kona_wdt.c
+
+-- 
+1.7.9.5
+
 
