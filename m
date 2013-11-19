@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab3KSBto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:49:44 -0500
-Received: from ring0.de ([91.143.88.219]:47139 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab3KSBtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:49:42 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Tue, 19 Nov 2013 02:49:38 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Grant Likely <grant.likely@linaro.org>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH v2] itg3200: add dt support.
-Message-ID: <20131119014938.GA20782@earth.universe>
-Mail-Followup-To: NeilBrown <neilb@suse.de>,
-	Jonathan Cameron <jic23@cam.ac.uk>,
-	Grant Likely <grant.likely@linaro.org>,
-	Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-	Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-References: <20131119113013.39dae3cd@notabene.brown>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
-Content-Disposition: inline
-In-Reply-To: <20131119113013.39dae3cd@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751585Ab3KSB7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:59:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16709 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751341Ab3KSB7M convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 20:59:12 -0500
+Date: Mon, 18 Nov 2013 20:59:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Cedric Le Goater <clg@fr.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] nsproxy: Check to make sure count is truly zero before
+ freeing
+Message-ID: <20131118205909.6bc27f0e@gandalf.local.home>
+In-Reply-To: <528ABD6E.8020004@cn.fujitsu.com>
+References: <20131113160339.7e0726fb@gandalf.local.home>
+	<877gc5l3hq.fsf@xmission.com>
+	<20131118190457.7ad4e0a0@gandalf.local.home>
+	<528ABD6E.8020004@cn.fujitsu.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Nov 2013 09:22:54 +0800
+Gao feng <gaofeng@cn.fujitsu.com> wrote:
 
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 11/19/2013 08:04 AM, Steven Rostedt wrote:
+> > 
+> > I'll start out saying that this email was a complete oops. I only kept
+> > it around for reference, as this didn't fix the bug we were seeing, and
+> > I used this email to just document what I initially thought.
+> > 
+> 
+> Can you describe the panic situation and the way to reproduce?
+> it's useful for us to find out the real problem.
+> 
 
-Hi,
+I need to talk with more people to get more information as it happened
+in our test labs. From what I remember, it was caused on 3.10-rt (even
+with PREEMPT_RT disabled). We are currently testing 3.10 vanilla, to
+make sure that it really does occur on mainline.
 
-On Tue, Nov 19, 2013 at 11:30:13AM +1100, NeilBrown wrote:
-> No new configuration, just a 'compatible' string and
-> documentation.
+>From what I understand, it was ltp-lite that caused the panic and it
+happened on a box with 16 CPUs.
 
-itg3200 looks like a candidate for the list of trivial i2c
-devices [0] to me.
+I'll keep you posted when we get more data that is relevant to mainline.
 
-[0] Documentation/devicetree/bindings/i2c/trivial-devices.txt
+This is another reason that the email went out prematurely.
 
--- Sebastian
-
---4Ckj6UjgE2iN1+kY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSisOyAAoJENju1/PIO/qac5cP/iCPHuNN8ht8/7Iezs6XWBis
-qXaWY64apj93jpbXAsMtjQB4A8QcboJEvLAZeZycOC4h4C36VtWpe7iOM/j0Ty83
-rgMtOVhU88s7QSigk1DUymG4gcudm7qX+iRCdmHP4YVtesY1uGELKWPKnnrkTmpW
-T0wYC05zg2ENiGcBdz0+gb2Xj2wG9LMcV7cHJjoRIWSLiNCN3Zu3OJR/adhdJjv3
-ggtA+pqAwoBn73JwGMooE6u6nhX3jzgEJU+J8uu+VLcuUTL544pBJpPw6VJBFjVp
-AQFH8JnF5Ykpi4XgVYnc12QuhDroLJk6xbaQNq4s/NvSaGj6mMBxdTT6SqKR4+AC
-tgCcbsPcp6sbrkHZ0S9rZbMefwbtArrnKGb2SBd3abnshPRPRsk3paVfJ3tx198w
-OvTiJeUCNgrHHRdpeoCRy8B5nS1KMOvV7QnaSHX70vyBXJkSqdD14TIx+MjY43QN
-61Y/7/AEWmhEfAIyCnpFlFwI4v8JIPFmUg26GAyFgGqbRvSRkPCIFEjjFkqr46qW
-I01R715BEjDjZ9ZFwGoWZHDc6sFbhTeScmp4yHpOVIYExRCWIs+NQs1gTEfBGhgi
-lDW4qKM0DMDH6ExXhkUqI/c+iLLw7JMefFSLI8qE0/xiakOnmTV4ZgDVobghTqJQ
-Szg0wyj+eWPUeqAp0jRh
-=aIxF
------END PGP SIGNATURE-----
-
---4Ckj6UjgE2iN1+kY--
+-- Steve
