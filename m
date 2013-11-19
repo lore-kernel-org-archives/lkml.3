@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3KSRxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:53:34 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:45120 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab3KSRxb (ORCPT
+	id S1753331Ab3KSSAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:00:15 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53366 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab3KSSAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:53:31 -0500
-Message-ID: <1384883331.1791.23.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Date: Tue, 19 Nov 2013 10:48:51 -0700
-In-Reply-To: <1384816407.1791.19.camel@misato.fc.hp.com>
-References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
-	 <3206422.AfXMUDqMXZ@vostro.rjw.lan>
-	 <1384798205.1791.14.camel@misato.fc.hp.com>
-	 <11362197.FWMPl6Gp0A@vostro.rjw.lan>
-	 <1384816407.1791.19.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 13:00:11 -0500
+Date: Tue, 19 Nov 2013 10:00:07 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+Message-ID: <20131119180007.GB16693@roeck-us.net>
+References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+ <20131114172427.GA11062@roeck-us.net>
+ <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
+ <20131114181845.GA13727@roeck-us.net>
+ <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
+ <20131114190044.GE13727@roeck-us.net>
+ <CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
+ <CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
+ <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+ <20131119165438.GD30481@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131119165438.GD30481@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-18 at 16:13 -0700, Toshi Kani wrote:
-> On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
-> > On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
-> > > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Since the PCI host bridge scan handler does not set hotplug.enabled,
-> > > > the check of it in acpi_bus_device_eject() effectively prevents the
-> > > > root bridge hot removal from working after commit a3b1b1ef78cd
-> > > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
-> > > > check is not necessary, because the other acpi_bus_device_eject()
-> > > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
-> > > > check by themselves before executing that function.
-> > > > 
-> > > > For this reason, remove the scan handler check from
-> > > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
-> > > > again.
-> > > 
-> > > I am curious why the PCI host bridge scan handler does not set
-> > > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
-> > > enables via ACPI notification? 
+On Tue, Nov 19, 2013 at 08:54:38AM -0800, Guenter Roeck wrote:
+> On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
+> > On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
+> > <marcus.folkesson@gmail.com> wrote:
+> > >
+> > >> This is just one use case of those, you could also use it for
+> > >> non-generic gpio functionality, like alarm, "full-on", internal clock,
+> > >> external clock, etc. I believe it is always a bit tricky with MFD. I
+> > >> personally prefer to put it into the chip driver because this is not
+> > >> clearly a generic gpio interface here, and I need to drive it
+> > >> dynamically.
+> > >
+> > > I agree.
+> > >
+> > > I think the solution with expose the "GPIOs" in sysfs is the right way to
+> > > go.
+> > > The chip-function is of a dynamic nature and should therefor not be set in
+> > > platform data / devicetree.
+> > >
+> > > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
+> > > but the the gpio-functionality is just a subset of
+> > > functions these pins may be set to.
+> > >
+> > > Also, the I think the *real* reason why the entries is called "gpio" is that
+> > > it is so the registers are are mentioned in the datasheet.
+> > > Everyone that is working with the device will know what it is all about.
+> > > I see it more as an register expose than a gpio interface...
+> > >
+> > > I agree that the entries does not really fit here. But they does not fit
+> > > better elsewhere either.
+> > > And I don't think they fit worse than the alarm-entries that is already in
+> > > mainline.
+> > >
+> > > Anyway, I think the documentation file should mention what function each
+> > > valid value represent.
 > > 
-> > It just doesn't register for hotplug at all.  I guess it could set that
-> > bit alone, but then it would be quite confusing and the check is not
-> > necessary anyway.
+> > Yes, makes sense to make the documentation more comprehensive. Thanks.
+> > 
+> > Any other issues from anyone before submitting a polished version?
+> > 
+> You'll have to get feedback from Jean. I won't accept the patch.
 > 
-> I see.  Given how the PCI host bridge scan handler is integrated today,
-> the change looks reasonable to me.
+To add to this: The datasheet clearly states that the pins are GPIO pins,
+three of which can be configured as ALERT output, ALL_ON input, or clock
+input/output. GPIO pins should be made available to the kernel through
+the GPIO subsystem; any clock configuration should be configured through the
+clock subsystem if needed. The pin configuration as ALERT output/ALL_ON
+input/clock is clearly board specific and should thus be provided as
+platform data and/or devicetree data if needed.
 
-Looking further, I noticed that there is one more issue to address.  The
-patch below applies on top of your patchset.
+The existing GPIO alarm attributes should be removed. The pin values should be
+reported as GPIO pin values instead.
 
-Thanks,
--Toshi
-
-====
-From: Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI / hotplug: Fix conflicted PCI bridge notify
-handlers
-
-The PCI host bridge scan handler installs its own notify handler,
-handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
-hotplug framework also installs the common notify handler,
-acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
-acpi_hotplug_notify_cb() to call _OST method with unsupported
-error as hotplug.enabled is not set.
-
-To address this issue, introduce hotplug.self_install flag, which
-indicates that the scan handler installs its own notify handler by
-itself.  The ACPI hotplug framework does not install the common
-notify handler when this flag is set.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/acpi/pci_root.c |    3 +++
- drivers/acpi/scan.c     |    2 +-
- include/acpi/acpi_bus.h |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 0703bff..ab52541 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -65,6 +65,9 @@ static struct acpi_scan_handler pci_root_handler = {
- 	.ids = root_device_ids,
- 	.attach = acpi_pci_root_add,
- 	.detach = acpi_pci_root_remove,
-+	.hotplug = {
-+		.self_install = true,
-+	},
- };
- 
- static DEFINE_MUTEX(osc_lock);
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 337109d..ec95a19 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1772,7 +1772,7 @@ static void acpi_scan_init_hotplug(acpi_handle
-handle, int type)
- 	 */
- 	list_for_each_entry(hwid, &pnp.ids, list) {
- 		handler = acpi_scan_match_handler(hwid->id, NULL);
--		if (handler) {
-+		if (handler && !handler->hotplug.self_install) {
- 			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 					acpi_hotplug_notify_cb, handler);
- 			break;
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 89c60b0..87c918e 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -100,6 +100,7 @@ enum acpi_hotplug_mode {
- struct acpi_hotplug_profile {
- 	struct kobject kobj;
- 	bool enabled:1;
-+	bool self_install:1;
- 	enum acpi_hotplug_mode mode;
- };
- 
-
-
+Guenter
