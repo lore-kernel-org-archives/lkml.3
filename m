@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab3KSQFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:05:55 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:59531 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753347Ab3KSQFw (ORCPT
+	id S1753435Ab3KSQGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:06:03 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48089 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753264Ab3KSQGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:05:52 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, anton@enomsg.org, dwmw2@infradead.org
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH 2/2] power: Change device_wakeup_enable() to WARN_ON on null dev_name(dev)
-Date: Tue, 19 Nov 2013 09:05:46 -0700
-Message-Id: <622a097f9780dc721354d0e2b6cb512280da1ebc.1384875691.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1384875691.git.shuah.kh@samsung.com>
-References: <cover.1384875691.git.shuah.kh@samsung.com>
+	Tue, 19 Nov 2013 11:06:00 -0500
+Date: Tue, 19 Nov 2013 16:05:02 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+Message-ID: <20131119160502.GG11778@mudshark.cambridge.arm.com>
+References: <52803E5D.3050109@mentor.com>
+ <52851395.3010306@mentor.com>
+ <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+ <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_wakeup_enable() uses dev_name(dev) as the wakeup source name.
-When it gets called with a device with its name not yet set, ws structure
-with ws->name = NULL gets created.
+On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
+> Hi,
 
-When kernel is booted with wakeup_source_activate enabled, it will panic
-when the trace point code tries to dereferences ws->name.
+Hi Mathieu,
 
-Change device_wakeup_enable() to WARN_ON on dev_name(dev) null condition
-to detect driver bugs that result in calling device_wakeup_enable() before
-device is fully initialized with its name in device_wakeup_enable().
+> I got a bug report on ARM which appears to be caused by an aggressive gcc optimisation starting from gcc 4.8.x due to lack of constraints on the current_thread_info() inline assembly. The only logical explanation for his issue I see so far is that read of the preempt_count within might_sleep() is reordered with preempt_enable() or preempt_disable(). AFAIU, this kind of issue also applies to other architectures.
+> 
+> First thing, preempt enable/disable only contains barrier() between the inc/dec and the inside of the critical section, not the outside. Therefore, we are relying on program order to ensure that the preempt_count() read in might_sleep() is not reordered with the preempt count inc/dec.
 
-This change without the power_supply_register() fix will result in early
-boot panics when AC Adapter and Battery device drivers try to register
-wakeup source.
+This sounds almost identical to an issue I experienced with our optimised
+per-cpu code (more below).
 
-The following panic resulted from power_supply_register() registering
-wakeup source with a null device name.
+> However, looking at ARM arch/arm/include/asm/thread_info.h:
+> 
+> static inline struct thread_info *current_thread_info(void)
+> {
+>         register unsigned long sp asm ("sp");
+>         return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
+> }
+> 
+> The inline assembly has no clobber and is not volatile. (this is also true for all other architectures I've looked at so far, which includes x86 and powerpc)
+> 
+> As long as someone does:
+> 
+> struct thread_info *myinfo = current_thread_info();
+> 
+> load from myinfo->preempt_count;
+> store to myinfo->preempt_count;
+> 
+> The program order should be preserved, because the read and the write are done wrt same base. However, what we have here in the case of might_sleep() followed by preempt_enable() is:
+> 
+> load from current_thread_info()->preempt_count;
+> store to current_thread_info()->preempt_count;
+> 
+> Since each current_thread_info() is a different asm ("sp") without clobber nor volatile, AFAIU, the compiler is within its right to reorder them.
+> 
+> One possible solution to this might be to add "memory" clobber and volatile to this inline asm, but I fear it would put way too much constraints on the compiler optimizations (too heavyweight).
 
-[  819.769934] device: 'BAT1': device_add
-[  819.770078] PM: Adding info for No Bus:BAT1
-[  819.770235] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  819.770435] IP: [<ffffffff813381c0>] skip_spaces+0x30/0x30
-[  819.770572] PGD 3efd90067 PUD 3eff61067 PMD 0
-[  819.770716] Oops: 0000 [#1] SMP
-[  819.770829] Modules linked in: arc4 iwldvm mac80211 x86_pkg_temp_thermal coretemp kvm_intel joydev i915 kvm uvcvideo ghash_clmulni_intel videobuf2_vmalloc aesni_intel videobuf2_memops videobuf2_core aes_x86_64 ablk_helper cryptd videodev iwlwifi lrw rfcomm gf128mul glue_helper bnep btusb media bluetooth parport_pc hid_generic ppdev snd_hda_codec_hdmi drm_kms_helper snd_hda_codec_realtek cfg80211 drm tpm_infineon samsung_laptop snd_hda_intel usbhid snd_hda_codec hid snd_hwdep snd_pcm microcode snd_page_alloc snd_timer psmouse i2c_algo_bit lpc_ich tpm_tis video wmi mac_hid serio_raw ext2 lp parport r8169 mii
-[  819.771802] CPU: 0 PID: 2167 Comm: bash Not tainted 3.12.0+ #25
-[  819.771876] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X4C/900X4D/SAMSUNG_NP1234567890, BIOS P03AAC 07/12/2012
-[  819.772022] task: ffff88002e6ddcc0 ti: ffff8804015ca000 task.ti: ffff8804015ca000
-[  819.772119] RIP: 0010:[<ffffffff813381c0>]  [<ffffffff813381c0>] skip_spaces+0x30/0x30
-[  819.772242] RSP: 0018:ffff8804015cbc70  EFLAGS: 00010046
-[  819.772310] RAX: 0000000000000003 RBX: ffff88040cfd6d40 RCX: 0000000000000018
-[  819.772397] RDX: 0000000000020001 RSI: 0000000000000000 RDI: 0000000000000000
-[  819.772484] RBP: ffff8804015cbcc0 R08: 0000000000000000 R09: ffff8803f0768d40
-[  819.772570] R10: ffffea001033b800 R11: 0000000000000000 R12: ffffffff81c519c0
-[  819.772656] R13: 0000000000020001 R14: 0000000000000000 R15: 0000000000020001
-[  819.772744] FS:  00007ff98309b740(0000) GS:ffff88041f200000(0000) knlGS:0000000000000000
-[  819.772845] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  819.772917] CR2: 0000000000000000 CR3: 00000003f59dc000 CR4: 00000000001407f0
-[  819.773001] Stack:
-[  819.773030]  ffffffff81114003 ffff8804015cbcb0 0000000000000000 0000000000000046
-[  819.773146]  ffff880409757a18 ffff8803f065a160 0000000000000000 0000000000020001
-[  819.773273]  0000000000000000 0000000000000000 ffff8804015cbce8 ffffffff8143e388
-[  819.773387] Call Trace:
-[  819.773434]  [<ffffffff81114003>] ? ftrace_raw_event_wakeup_source+0x43/0xe0
-[  819.773520]  [<ffffffff8143e388>] wakeup_source_report_event+0xb8/0xd0
-[  819.773595]  [<ffffffff8143e3cd>] __pm_stay_awake+0x2d/0x50
-[  819.773724]  [<ffffffff8153395c>] power_supply_changed+0x3c/0x90
-[  819.773795]  [<ffffffff8153407c>] power_supply_register+0x18c/0x250
-[  819.773869]  [<ffffffff813d8d18>] sysfs_add_battery+0x61/0x7b
-[  819.773935]  [<ffffffff813d8d69>] battery_notify+0x37/0x3f
-[  819.774001]  [<ffffffff816ccb7c>] notifier_call_chain+0x4c/0x70
-[  819.774071]  [<ffffffff81073ded>] __blocking_notifier_call_chain+0x4d/0x70
-[  819.774149]  [<ffffffff81073e26>] blocking_notifier_call_chain+0x16/0x20
-[  819.774227]  [<ffffffff8109397a>] pm_notifier_call_chain+0x1a/0x40
-[  819.774316]  [<ffffffff81095b66>] hibernate+0x66/0x1c0
-[  819.774407]  [<ffffffff81093931>] state_store+0x71/0xa0
-[  819.774507]  [<ffffffff81331d8f>] kobj_attr_store+0xf/0x20
-[  819.774613]  [<ffffffff811f8618>] sysfs_write_file+0x128/0x1c0
-[  819.774735]  [<ffffffff8118579d>] vfs_write+0xbd/0x1e0
-[  819.774841]  [<ffffffff811861d9>] SyS_write+0x49/0xa0
-[  819.774939]  [<ffffffff816d1052>] system_call_fastpath+0x16/0x1b
-[  819.775055] Code: 89 f8 48 89 e5 f6 82 c0 a6 84 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 c0 a6 84 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
-[  819.775760] RIP  [<ffffffff813381c0>] skip_spaces+0x30/0x30
-[  819.775881]  RSP <ffff8804015cbc70>
-[  819.775949] CR2: 0000000000000000
-[  819.794175] ---[ end trace c4ef25127039952e ]---
+Yup, that sucks, because you end up unable to cache the value when you know
+it hasn't changed.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/base/power/wakeup.c | 3 +++
- 1 file changed, 3 insertions(+)
+> Have any of you experienced this issue ? Any thoughts on the matter ?
 
-diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-index 2d56f41..a605f0d 100644
---- a/drivers/base/power/wakeup.c
-+++ b/drivers/base/power/wakeup.c
-@@ -223,6 +223,9 @@ int device_wakeup_enable(struct device *dev)
- 	if (!dev || !dev->power.can_wakeup)
- 		return -EINVAL;
- 
-+	if (WARN_ON(!dev_name(dev)))
-+		return -EINVAL;
-+
- 	ws = wakeup_source_register(dev_name(dev));
- 	if (!ws)
- 		return -ENOMEM;
--- 
-1.8.3.2
+The way I got around this for the per-cpu code is to include a dummy memory
+constraint for the stack. This has a couple of advantages:
 
+	(1) It hazards against a "memory" clobber, so doesn't require use of
+	    `volatile'
+
+	(2) It doesn't require GCC to emit any address generation code,
+	    since dereferencing the sp is valid in ARM assembly
+
+so adding something like:
+
+	asm("" :: "Q" (*sp));
+
+immediately after the declaration of sp in current_therad_info might do the
+trick. Do you have a way to test that?
+
+Cheers,
+
+Will
