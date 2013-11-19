@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3KSWxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:53:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab3KSWxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:53:21 -0500
-Date: Tue, 19 Nov 2013 23:52:52 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/3] mm: hugetlbfs: fix hugetlbfs optimization v2
-Message-ID: <20131119225252.GD10493@redhat.com>
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
- <528A56A7.3020301@oracle.com>
- <528BC9AA.5020300@oracle.com>
+	id S1753235Ab3KSWzb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:55:31 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:42053 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab3KSWz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 17:55:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528BC9AA.5020300@oracle.com>
+In-Reply-To: <528BE8F2.3030507@linaro.org>
+References: <1384896471-9384-1-git-send-email-linus.walleij@linaro.org>
+	<528BE8F2.3030507@linaro.org>
+Date: Tue, 19 Nov 2013 23:55:28 +0100
+Message-ID: <CACRpkdab=1xJtcAg-_oUBr_jC5DgDre-f9jxuzDnZmXGFShvLw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: ux500: decomission the non-DT MTU init sequence
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-5~Hi Khalid,
+On Tue, Nov 19, 2013 at 11:40 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 11/19/2013 10:27 PM, Linus Walleij wrote:
 
-On Tue, Nov 19, 2013 at 01:27:22PM -0700, Khalid Aziz wrote:
-> > Block size        3.12         3.12+patch 1      3.12+patch 1,2,3
-> > ----------        ----         ------------      ----------------
-> > 1M                8467           8114              7648
-> > 64K               4049           4043              4175
-> >
-> > Performance numbers with 64K reads look good but there is further
-> > deterioration with 1M reads.
-> >
-> > --
-> > Khalid
-> 
-> Hi Andrea,
-> 
-> I found that a background task running on my test server had influenced 
-> the performance numbers for 1M reads. I cleaned that problem up and 
-> re-ran the test. I am seeing 8456 MB/sec with all three patches applied, 
-> so 1M number is looking good as well.
+>> -       if (!of_have_populated_dt())
+>> -               nmdk_timer_init(mtu_timer_base, IRQ_MTU0);
+>
+> If no timer have been defined in the dt [or wrongly defined], is there a
+> message to tell the user what is wrong ?
 
-Good news thanks!
+Isn't that a question to be asked about a whole lot of such
+clocksource drivers and ARM platforms?
 
-1/3 should go in -mm I think as it fixes many problems.
+Most DT-only ARM platforms rely on
+arch/arm/kernel/time.c to call clocksource_of_init() if the
+machine_desc->init_time() hook is not set and has zero
+code to handle any such situation.
 
-The rest can be applied with less priority and is not as urgent.
+So I guess what you're asking is whether we should patch
+clocksource_of_init() to warn if it cannot find any
+matching clock sources, like this:
 
-I've also tried to optimize it further in the meantime as I thought it
-wasn't fully ok yet. So I could send another patchset. I haven't
-changed 1/3 and I don't plan changing it. And I kept 3/3 at the end as
-it's the one with a bit more of complexity than the rest.
+>From e55cf038b238d96b28d9fb01b5b6cdf345990d53 Mon Sep 17 00:00:00 2001
+From: Linus Walleij <linus.walleij@linaro.org>
+Date: Tue, 19 Nov 2013 23:52:56 +0100
+Subject: [PATCH] clksrc-of: warn if no clock sources are found
 
-I basically removed a few more atomic ops for each put_page/get_page
-for both hugetlbfs and slab, and the important thing is they're zero
-cost changes for the non-hugetlbfs/slab fast paths so they're probably
-worth it.
+Many platforms rely on clocksource_of_init() being implicitly
+called for registering clock sources and will get zero warnings
+if no working clock source is available. Let's print a critical
+error message if no clock source is found.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/clocksource/clksrc-of.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+index 35639cf4e5a2..a30b42c3ac3b 100644
+--- a/drivers/clocksource/clksrc-of.c
++++ b/drivers/clocksource/clksrc-of.c
+@@ -28,6 +28,7 @@ void __init clocksource_of_init(void)
+     struct device_node *np;
+     const struct of_device_id *match;
+     clocksource_of_init_fn init_func;
++    unsigned clocksources = 0;
+
+     for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
+         if (!of_device_is_available(np))
+@@ -36,5 +37,8 @@ void __init clocksource_of_init(void)
+         init_func = match->data;
+         init_func(np);
+         of_node_put(np);
++        clocksources++;
+     }
++    if (!clocksources)
++        pr_crit("%s: no matching clocksources found\n", __func__);
+ }
+-- 
+1.8.3.1
+
+You can apply this by itself to get the desired warning.
+Tell me if you want me to send the patch separately.
+
+Yours,
+Linus Walleij
