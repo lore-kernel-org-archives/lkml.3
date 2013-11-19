@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab3KSJWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:22:16 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:50515 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3KSJWN (ORCPT
+	id S1751936Ab3KSJY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:24:26 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60083 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3KSJYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:22:13 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: peterz@infradead.org, mingo@redhat.com
-Cc: Morten.Rasmussen@arm.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Alex Shi <alex.shi@linaro.org>
-Subject: [PATCH] sched: remove unused variable in sched_domain
-Date: Tue, 19 Nov 2013 17:21:52 +0800
-Message-Id: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 19 Nov 2013 04:24:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 19 Nov 2013 10:24:22 +0100
+Message-ID: <CACRpkdaP+tkJn8jcR_RaCz_c6hk66F8qde2KRiCzNyyLWUkgjw@mail.gmail.com>
+Subject: Re: [PATCH v1.2] gpiolib: append SFI helpers for GPIO API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        David Cohen <david.a.cohen@intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Cc: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'u64 last_update' variable isn't used now, remove it to save a
-bit space.
+On Wed, Jun 5, 2013 at 3:58 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- include/linux/sched.h | 2 --
- 1 file changed, 2 deletions(-)
+> To support some (legacy) firmwares and platforms let's make life easier for
+> their customers.
+>
+> This patch extracts SFI GPIO API from arch/x86/platform/mrst/mrst.c.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6f7ffa4..ac68802 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -831,8 +831,6 @@ struct sched_domain {
- 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
- 	unsigned int nr_balance_failed; /* initialise to 0 */
- 
--	u64 last_update;
--
- 	/* idle_balance() stats */
- 	u64 max_newidle_lb_cost;
- 	unsigned long next_decay_max_lb_cost;
--- 
-1.8.1.2
+So since this patch was ACKed the world has changed a bit and now
+I want new changes (or maybe I was tired and not paying enough
+attention at the time).
 
+(...)
+> +int sfi_get_gpio_by_name(const char *name)
+> +{
+> +       struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
+> +       int i;
+> +
+> +       if (!pentry)
+> +               return -EINVAL;
+> +
+> +       for (i = 0; i < sfi_gpio_num_entry; i++, pentry++) {
+> +               if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
+> +                       return pentry->pin_no;
+> +       }
+> +
+> +       return -ENODEV;
+> +}
+> +EXPORT_SYMBOL_GPL(sfi_get_gpio_by_name);
+
+Last merge window we merged the GPIO descriptor API and this
+is now the recommended way to handle GPIOs and it is also
+deployed into the ACPI and DT implementations.
+
+So I'd like the signature of this function changed to return
+a GPIO descriptor rather than an int so we don't stockpile more
+stuff to refactor.
+
+i.e.:
+struct gpio_desc *sfi_get_gpio_by_name(const char *name);
+
+ --- /dev/null
+> +++ b/include/linux/sfi_gpio.h
+
+Maybe that header could move to <linux/gpio/sfi.h> instead.
+Alexandre what do you think?
+
+Yours,
+Linus Walleij
