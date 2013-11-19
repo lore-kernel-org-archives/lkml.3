@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3KSUZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:25:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:57821 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab3KSUZj (ORCPT
+	id S1752897Ab3KSU2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:28:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22090 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3KSU2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:25:39 -0500
-Date: Tue, 19 Nov 2013 15:25:36 -0500 (EST)
-Message-Id: <20131119.152536.146706009595105149.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net v4 3/4] r8152: support stopping/waking tx queue
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1384831511-1625-4-git-send-email-hayeswang@realtek.com>
-References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
-	<1384831511-1625-1-git-send-email-hayeswang@realtek.com>
-	<1384831511-1625-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 19 Nov 2013 15:28:11 -0500
+Message-ID: <528BC9AA.5020300@oracle.com>
+Date: Tue, 19 Nov 2013 13:27:22 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pravin Shelar <pshelar@nicira.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/3] mm: hugetlbfs: fix hugetlbfs optimization v2
+References: <1384537668-10283-1-git-send-email-aarcange@redhat.com> <528A56A7.3020301@oracle.com>
+In-Reply-To: <528A56A7.3020301@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 19 Nov 2013 12:25:38 -0800 (PST)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Tue, 19 Nov 2013 11:25:10 +0800
+On 11/18/2013 11:04 AM, Khalid Aziz wrote:
+> On 11/15/2013 10:47 AM, Andrea Arcangeli wrote:
+>> Hi,
+>>
+>> 1/3 is a bugfix so it should be applied more urgently. 1/3 is not as
+>> fast as the current upstream code in the hugetlbfs + directio extreme
+>> 8GB/sec benchmark (but 3/3 should fill the gap later). The code is
+>> identical to the one I posted in v1 just rebased on upstream and was
+>> developed in collaboration with Khalid who already tested it.
+>>
+>> 2/3 and 3/3 had very little testing yet, and they're incremental
+>> optimization. 2/3 is minor and most certainly worth applying later.
+>>
+>> 3/3 instead complicates things a bit and adds more branches to the THP
+>> fast paths, so it should only be applied if the benchmarks of
+>> hugetlbfs + directio show that it is very worthwhile (that has not
+>> been verified yet). If it's not worthwhile 3/3 should be dropped (and
+>> the gap should be filled in some other way if the gap is not caused by
+>> the _mapcount mangling as I guessed). Ideally this should bring even
+>> more performance than current upstream code, as current upstream code
+>> still increased the _mapcount in gup_fast by mistake, while this
+>> eliminates the locked op on the tail page cacheline in gup_fast too
+>> (which is required for correctness too).
+>
+> Hi Andrea,
+>
+> I ran directio benchmark and here are the performance numbers (MBytes/sec):
+>
+> Block size        3.12         3.12+patch 1      3.12+patch 1,2,3
+> ----------        ----         ------------      ----------------
+> 1M                8467           8114              7648
+> 64K               4049           4043              4175
+>
+> Performance numbers with 64K reads look good but there is further
+> deterioration with 1M reads.
+>
+> --
+> Khalid
 
-> The maximum packet number which a tx aggregation buffer could contain
-> is the buffer size / (packet size + descriptor size).
-> 
-> If the tx buffer is empty and the tx queue length is more than the
-> maximum value which is defined above, stop the tx queue. Wake the tx
-> queue after any queued packet is filled in a available tx buffer.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Hi Andrea,
 
-This is racy.
+I found that a background task running on my test server had influenced 
+the performance numbers for 1M reads. I cleaned that problem up and 
+re-ran the test. I am seeing 8456 MB/sec with all three patches applied, 
+so 1M number is looking good as well.
 
-You have nothing which synchronizes r8152_tx_agg_fill() and rtl8152_start_xmit(),
-therefore:
-
-> +	if (netif_queue_stopped(tp->netdev))
-> +		netif_wake_queue(tp->netdev);
-> +
-
-A netif_stop_queue() can occur right after the netif_queue_stopped() check,
-meaning you can end up with the queue being stopped forever and the TX queue
-stuck.
-
-I am finding this patch series _very_ tiring, every single time I take
-the time to review it, I find major problems.
+--
+Khalid
