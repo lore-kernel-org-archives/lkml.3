@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab3KSOWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:22:18 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:48891 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab3KSOWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:22:15 -0500
+	id S1752754Ab3KSOXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:23:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12803 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab3KSOXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:23:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="437821455"
+Message-ID: <528B7433.7020507@linux.intel.com>
+Date: Tue, 19 Nov 2013 06:22:43 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1384850540.3381.6.camel@linaro1.home>
-References: <b0a2e5d26be45d1d2853940d318d50415db48f6f.1384839287.git.viresh.kumar@linaro.org>
-	<1384850540.3381.6.camel@linaro1.home>
-Date: Tue, 19 Nov 2013 19:52:14 +0530
-Message-ID: <CAKohpomZeD-1gsh-u_wyabaYLoqm3A=cyUNyZDMmzE3_fKA8-g@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq/stats: Add "unknown" frequency field in stats tables
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Nishanth Menon <nm@ti.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: shaohua.li@intel.com, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, hpa@zytor.com
+Subject: Re: [PATCH] x86, acpi, idle: Restructure the mwait idle routines
+References: <20131119090019.GJ3866@twins.programming.kicks-ass.net> <20131119090859.GC3694@twins.programming.kicks-ass.net> <20131119113153.GD3694@twins.programming.kicks-ass.net>
+In-Reply-To: <20131119113153.GD3694@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2013 14:12, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> I'm wondering if this would break any user-side code parsing this output
-> and does that matter? (E.g. powertop will end up doing strtoull on
-> "unknown" and get zero as the frequency.)  Would omitting 'unknown' if
-> the time is zero be safer in this repect? Possibly not, inconsistency is
-> probably worse than change.
+> diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+> index 8f181b3f842b..e8275f2df9af 100644
+> --- a/drivers/thermal/intel_powerclamp.c
+> +++ b/drivers/thermal/intel_powerclamp.c
+> @@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
+>   			 */
+>   			local_touch_nmi();
+>   			stop_critical_timings();
+> -			__monitor((void *)&current_thread_info()->flags, 0, 0);
+> -			cpu_relax(); /* allow HT sibling to run */
+> -			__mwait(eax, ecx);
+> +			mwait_idle_with_hints(eax, ecx);
+>   			start_critical_timings();
+>   			atomic_inc(&idle_wakeup_counter);
+>   		}
+>
 
-We wouldn't know about this on bootup all the time. I thought of doing
-this only when an invalid frequency is configured at boot. Because after
-that cpufreq will never configure any freq out of freq-table.
-
-But in case of suspend/resume control again goes to bootloaders and
-they might end up configuring unknown freq again. And we aren't
-allocating these data structures on suspend resume but only during
-system boot.
-
-Even if powertop reads it zero then also it isn't that bad.. because the
-other option we had was to mark it zero or -1 (uint max).. But unknown
-looks better for readability..
-
---
-viresh
+hmm I take it that mwait_idle_with_hints is the one that also checks need_resched() ?
+if so... powerclamp may not want to use that (the whole point is to NOT give the cpu
+to tasks!)
