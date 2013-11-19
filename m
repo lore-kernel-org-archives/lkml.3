@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab3KSP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:58:16 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41378 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3KSP6O (ORCPT
+	id S1753187Ab3KSP7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:59:43 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:34451 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753136Ab3KSP7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:58:14 -0500
-Date: Tue, 19 Nov 2013 16:57:49 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, lttng-dev@lists.lttng.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>
-Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
-Message-ID: <20131119155749.GL10022@twins.programming.kicks-ass.net>
-References: <52803E5D.3050109@mentor.com>
- <52851395.3010306@mentor.com>
- <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
- <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 19 Nov 2013 10:59:41 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net,
+        gregkh@linuxfoundation.org, anton@enomsg.org, dwmw2@infradead.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH 0/2] power_supply: Fix Oops from NULL pointer dereference from wakeup_source_activate 
+Date: Tue, 19 Nov 2013 08:59:34 -0700
+Message-Id: <cover.1384875691.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
-> Hi,
-> 
-> I got a bug report on ARM which appears to be caused by an aggressive
-> gcc optimisation starting from gcc 4.8.x due to lack of constraints on
-> the current_thread_info() inline assembly. The only logical
-> explanation for his issue I see so far is that read of the
-> preempt_count within might_sleep() is reordered with preempt_enable()
-> or preempt_disable(). AFAIU, this kind of issue also applies to other
-> architectures.
-> 
-> First thing, preempt enable/disable only contains barrier() between
-> the inc/dec and the inside of the critical section, not the outside.
-> Therefore, we are relying on program order to ensure that the
-> preempt_count() read in might_sleep() is not reordered with the
-> preempt count inc/dec.
-> 
-> However, looking at ARM arch/arm/include/asm/thread_info.h:
-> 
-> static inline struct thread_info *current_thread_info(void) { register
-> unsigned long sp asm ("sp"); return (struct thread_info *)(sp &
-> ~(THREAD_SIZE - 1)); }
-> 
-> The inline assembly has no clobber and is not volatile. (this is also
-> true for all other architectures I've looked at so far, which includes
-> x86 and powerpc)
-> 
-> As long as someone does:
-> 
-> struct thread_info *myinfo = current_thread_info();
-> 
-> load from myinfo->preempt_count; store to myinfo->preempt_count;
-> 
-> The program order should be preserved, because the read and the write
-> are done wrt same base. However, what we have here in the case of
-> might_sleep() followed by preempt_enable() is:
-> 
-> load from current_thread_info()->preempt_count; store to
-> current_thread_info()->preempt_count;
-> 
-> Since each current_thread_info() is a different asm ("sp") without
-> clobber nor volatile, AFAIU, the compiler is within its right to
-> reorder them.
-> 
-> One possible solution to this might be to add "memory" clobber and
-> volatile to this inline asm, but I fear it would put way too much
-> constraints on the compiler optimizations (too heavyweight).
-> 
-> Have any of you experienced this issue ? Any thoughts on the matter ?
-> 
-> I'm providing the original bug report email exchange below. I had
-> confirmation that adding barrier() outside
-> preempt_enable()/preempt_disable() does indeed work-around the issue,
-> but I fear that this work-around would be leaving the
-> current_thread_info() semantic gap in place: people expect program
-> order to be respected.
+power_supply_register() calls device_init_wakeup() to register a wakeup
+source before initializing dev_name. As a result, device_wakeup_enable()
+end up registering wakeup source with a null name when wakeup_source_register()
+gets called with dev_name(dev) which is null at the time.
 
-This all brings to mind commit 509eb76ebf977 ("ARM: 7747/1: pcpu: ensure
-__my_cpu_offset cannot be re-ordered across barrier()").
+device_wakeup_enable() uses dev_name(dev) as the wakeup source name.
+When it gets called with a device with its name not yet set, ws structure
+with ws->name = NULL gets created.
 
-GCC seems overly happy with reordering asm() thingies.
+When kernel is booted with wakeup_source_activate enabled, it will panic
+when the trace point code tries to dereferences ws->name.
 
-Ideally we'd be able to tell gcc that:
+This patch series fixes power_supply_register() to initialize the device name
+prior to calling device_init_wakeup() and adds WARN_ON on null device name to
+device_wakeup_enable() to detect driver bugs that result in calling
+device_wakeup_enable() before device is fully initialized with its name in
+device_wakeup_enable().
 
-  register unsigned long *sp asm ("sp")
+It is important that these two fixes to be pulled in together as a series. The
+change to add WARN_ON on null device name without the power_supply_register()
+fix will result in early boot panics when AC Adapter and Battery device drivers
+try to register wakeup source.
 
-not only acts like a variable but should be treated like a variable and
-thus such reshuffeling should be limited to preserve program-order.
+Shuah Khan (2):
+  power_supply: Fix Oops from NULL pointer dereference from
+    wakeup_source_activate
+  power: Change device_wakeup_enable() to WARN_ON on null dev_name(dev)
 
-There doesn't seem to be any __attribute__() that can do this, and
-currently out only recourse seems to add either volatile, which seems
-overly strict as Mathieu said, or add fake input like Will did.
+ drivers/base/power/wakeup.c       |  3 +++
+ drivers/power/power_supply_core.c | 12 ++++++------
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+-- 
+1.8.3.2
+
