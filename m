@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab3KSOmX (ORCPT <rfc822;w@1wt.eu>);
+	id S1753120Ab3KSOmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:42:36 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63408 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab3KSOmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Nov 2013 09:42:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab3KSOmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:42:16 -0500
-Date: Tue, 19 Nov 2013 15:43:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Kees Cook <keescook@chromium.org>, Petr Matousek <pmatouse@redhat.com>,
-        Vasily Kulikov <segoon@openwall.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] kill MMF_DUMPABLE and MMF_DUMP_SECURELY
-Message-ID: <20131119144318.GA28865@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119144300.GA28842@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 02/13] staging/lustre: remove liblustreapi.h
+Date: Tue, 19 Nov 2013 22:38:36 +0800
+Message-Id: <1384871927-8553-3-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384871927-8553-1-git-send-email-bergwolf@gmail.com>
+References: <1384871927-8553-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody actually needs MMF_DUMPABLE/MMF_DUMP_SECURELY, they
-are only used to enforce the encoding of SUID_DUMP_* enum
-in mm->flags & MMF_DUMPABLE_MASK.
+It is only used by user space.
 
-Now that set_dumpable() updates both bits atomically we can
-kill them and simply store the value "as is" in 2 lower bits.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
 ---
- fs/exec.c             |   21 ++++++---------------
- include/linux/sched.h |    4 +---
- 2 files changed, 7 insertions(+), 18 deletions(-)
+ .../lustre/lustre/include/lustre/liblustreapi.h    |   43 --------------------
+ 1 file changed, 43 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/include/lustre/liblustreapi.h
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 613c9dc..6ce1f86 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1620,33 +1620,24 @@ void set_binfmt(struct linux_binfmt *new)
- EXPORT_SYMBOL(set_binfmt);
- 
- /*
-- * set_dumpable converts traditional three-value dumpable to two flags and
-- * stores them into mm->flags.
-+ * set_dumpable stores three-value SUID_DUMP_* into mm->flags.
-  */
- void set_dumpable(struct mm_struct *mm, int value)
- {
- 	unsigned long old, new;
- 
-+	if (WARN_ON((unsigned)value > SUID_DUMP_ROOT))
-+		return;
-+
- 	do {
- 		old = ACCESS_ONCE(mm->flags);
--		new = old & ~MMF_DUMPABLE_MASK;
+diff --git a/drivers/staging/lustre/lustre/include/lustre/liblustreapi.h b/drivers/staging/lustre/lustre/include/lustre/liblustreapi.h
+deleted file mode 100644
+index 707eb74..0000000
+--- a/drivers/staging/lustre/lustre/include/lustre/liblustreapi.h
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/*
+- * GPL HEADER START
+- *
+- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 only,
+- * as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License version 2 for more details (a copy is included
+- * in the LICENSE file that accompanied this code).
+- *
+- * You should have received a copy of the GNU General Public License
+- * version 2 along with this program; If not, see
+- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
+- *
+- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
+- * CA 95054 USA or visit www.sun.com if you need additional information or
+- * have any questions.
+- *
+- * GPL HEADER END
+- */
+-/*
+- * This file is part of Lustre, http://www.lustre.org/
+- * Lustre is a trademark of Sun Microsystems, Inc.
+- */
 -
--		switch (value) {
--		case SUID_DUMP_ROOT:
--			new |= (1 << MMF_DUMP_SECURELY);
--		case SUID_DUMP_USER:
--			new |= (1<< MMF_DUMPABLE);
--		}
+-/*
+- * NOTE: This file is DEPRECATED!  Please include lustreapi.h directly
+- * instead of this file.  This file will be removed from a future version
+- * of lustre!
+- */
 -
-+		new = (old & ~MMF_DUMPABLE_MASK) | value;
- 	} while (cmpxchg(&mm->flags, old, new) != old);
- }
- 
- int __get_dumpable(unsigned long mm_flags)
- {
--	int ret;
+-#ifndef _LIBLUSTREAPI_H_
+-#define _LIBLUSTREAPI_H_
 -
--	ret = mm_flags & MMF_DUMPABLE_MASK;
--	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
-+	return mm_flags & MMF_DUMPABLE_MASK;
- }
- 
- /*
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 838a3d9..828c00d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -326,10 +326,8 @@ extern int get_dumpable(struct mm_struct *mm);
- #define SUID_DUMP_ROOT		2	/* Dump as root */
- 
- /* mm flags */
--/* dumpable bits */
--#define MMF_DUMPABLE      0  /* core dump is permitted */
--#define MMF_DUMP_SECURELY 1  /* core file is readable only by root */
- 
-+/* for SUID_DUMP_* above */
- #define MMF_DUMPABLE_BITS 2
- #define MMF_DUMPABLE_MASK ((1 << MMF_DUMPABLE_BITS) - 1)
- 
+-#include <lustre/lustreapi.h>
+-#warning "Including liblustreapi.h is deprecated. Include lustreapi.h directly."
+-
+-#endif
 -- 
-1.5.5.1
+1.7.9.5
 
