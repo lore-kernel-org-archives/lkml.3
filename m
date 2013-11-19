@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab3KSSAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:00:15 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:53366 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab3KSSAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:00:11 -0500
-Date: Tue, 19 Nov 2013 10:00:07 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
-Message-ID: <20131119180007.GB16693@roeck-us.net>
-References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
- <20131114172427.GA11062@roeck-us.net>
- <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
- <20131114181845.GA13727@roeck-us.net>
- <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
- <20131114190044.GE13727@roeck-us.net>
- <CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
- <CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
- <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
- <20131119165438.GD30481@roeck-us.net>
+	id S1751976Ab3KSSEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:04:35 -0500
+Received: from claw.goop.org ([74.207.240.146]:51482 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab3KSSEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:04:32 -0500
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Nov 2013 13:04:32 EST
+Message-ID: <528BA6A6.9050403@goop.org>
+Date: Tue, 19 Nov 2013 09:57:58 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119165438.GD30481@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel@lists.xenproject.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Xen S3 host resume: "Interrupts enabled after xen_acpi_processor_resume+0x0/0x34"
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 08:54:38AM -0800, Guenter Roeck wrote:
-> On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
-> > On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
-> > <marcus.folkesson@gmail.com> wrote:
-> > >
-> > >> This is just one use case of those, you could also use it for
-> > >> non-generic gpio functionality, like alarm, "full-on", internal clock,
-> > >> external clock, etc. I believe it is always a bit tricky with MFD. I
-> > >> personally prefer to put it into the chip driver because this is not
-> > >> clearly a generic gpio interface here, and I need to drive it
-> > >> dynamically.
-> > >
-> > > I agree.
-> > >
-> > > I think the solution with expose the "GPIOs" in sysfs is the right way to
-> > > go.
-> > > The chip-function is of a dynamic nature and should therefor not be set in
-> > > platform data / devicetree.
-> > >
-> > > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
-> > > but the the gpio-functionality is just a subset of
-> > > functions these pins may be set to.
-> > >
-> > > Also, the I think the *real* reason why the entries is called "gpio" is that
-> > > it is so the registers are are mentioned in the datasheet.
-> > > Everyone that is working with the device will know what it is all about.
-> > > I see it more as an register expose than a gpio interface...
-> > >
-> > > I agree that the entries does not really fit here. But they does not fit
-> > > better elsewhere either.
-> > > And I don't think they fit worse than the alarm-entries that is already in
-> > > mainline.
-> > >
-> > > Anyway, I think the documentation file should mention what function each
-> > > valid value represent.
-> > 
-> > Yes, makes sense to make the documentation more comprehensive. Thanks.
-> > 
-> > Any other issues from anyone before submitting a polished version?
-> > 
-> You'll have to get feedback from Jean. I won't accept the patch.
-> 
-To add to this: The datasheet clearly states that the pins are GPIO pins,
-three of which can be configured as ALERT output, ALL_ON input, or clock
-input/output. GPIO pins should be made available to the kernel through
-the GPIO subsystem; any clock configuration should be configured through the
-clock subsystem if needed. The pin configuration as ALERT output/ALL_ON
-input/clock is clearly board specific and should thus be provided as
-platform data and/or devicetree data if needed.
+After an S3 host resume, I'm seeing:
 
-The existing GPIO alarm attributes should be removed. The pin values should be
-reported as GPIO pin values instead.
+[48002.772629] ACPI: Low-level resume complete
+[48002.772802] PM: Restoring platform NVS memory
+[48002.776143] xen_acpi_processor: Uploading Xen processor PM info
+[48002.776691] ------------[ cut here ]------------
+[48002.776712] WARNING: CPU: 0 PID: 10235 at drivers/base/syscore.c:104 syscore_resume+0x9a/0xe0()
+[48002.776751] Interrupts enabled after xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+[48002.776836] Modules linked in: tcp_lp btrfs zlib_deflate raid6_pq xor ufs hfsplus hfs
+ minix vfat msdos fat jfs xfs libcrc32c reiserfs xt_CHECKSUM tun hidp fuse nf_conntrack_
+netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT xt_conntrack ebtable_nat eb
+table_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_de
+frag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6
+_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack ipt
+able_mangle iptable_security iptable_raw rfcomm bnep snd_hda_codec_hdmi snd_hda_codec_co
+nexant iTCO_wdt iTCO_vendor_support arc4 x86_pkg_temp_thermal coretemp iwldvm microcode 
+btusb snd_hda_intel mac80211 bluetooth joydev snd_hda_codec snd_hwdep snd_seq serio_raw 
+iwlwifi i2c_i801 snd_seq_device
+[48002.776894]  snd_pcm cfg80211 sdhci_pci sdhci mmc_core thinkpad_acpi wmi tpm_tis e100
+0e rfkill snd_page_alloc tpm tpm_bios snd_timer ptp snd mei_me mei soundcore shpchp lpc_
+ich pps_core mfd_core mperf xen_acpi_processor xen_netback xen_blkback xen_gntdev xen_ev
+tchn xenfs xen_privcmd uinput binfmt_misc nfsd auth_rpcgss nfs_acl lockd sunrpc dm_crypt
+ crc32_pclmul crc32c_intel i915 ghash_clmulni_intel i2c_algo_bit drm_kms_helper drm i2c_
+core video
+[48002.776903] CPU: 0 PID: 10235 Comm: systemd-sleep Not tainted 3.11.7-200.fc19.x86_64 #1
+[48002.776905] Hardware name: LENOVO 4286CTO/4286CTO, BIOS 8DET59WW (1.29 ) 04/02/2012
+[48002.776917]  0000000000000009 ffff8801c7697d30 ffffffff8164777b ffff8801c7697d78
+[48002.776924]  ffff8801c7697d68 ffffffff8106715d ffffffffa01f6000 0000000000000003
+[48002.776931]  ffff8801c7697e08 ffff8801fd970000 0000000000000000 ffff8801c7697dc8
+[48002.776933] Call Trace:
+[48002.776949]  [<ffffffff8164777b>] dump_stack+0x45/0x56
+[48002.776959]  [<ffffffff8106715d>] warn_slowpath_common+0x7d/0xa0
+[48002.776972]  [<ffffffff810671cc>] warn_slowpath_fmt+0x4c/0x50
+[48002.776989]  [<ffffffffa01f4bb0>] ? xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
+[48002.776996]  [<ffffffff813f252a>] syscore_resume+0x9a/0xe0
+[48002.777006]  [<ffffffff810abd7c>] suspend_devices_and_enter+0x40c/0x480
+[48002.777014]  [<ffffffff810abf68>] pm_suspend+0x178/0x260
+[48002.777020]  [<ffffffff810aae19>] state_store+0x79/0xf0
+[48002.777033]  [<ffffffff812fc4af>] kobj_attr_store+0xf/0x20
+[48002.777043]  [<ffffffff8121a226>] sysfs_write_file+0xc6/0x140
+[48002.777054]  [<ffffffff811a819d>] vfs_write+0xbd/0x1e0
+[48002.777062]  [<ffffffff811a8bd9>] SyS_write+0x49/0xa0
+[48002.777073]  [<ffffffff81656999>] system_call_fastpath+0x16/0x1b
+[48002.777077] ---[ end trace 15c5658c596be9f3 ]---
+[48002.777081] Enabling non-boot CPUs ...
 
-Guenter
+
+I wonder if this is a result of upload_pm_data()'s use of mutexes, which
+being a sleeping synchronization operation, shouldn't be done in an
+interrupt-off context.
+
+I'm also having the machine hang in the suspended state on resume
+sometimes (that is, I open the lid/hit a key/press power to resume the
+laptop, but the sleep light keeps pulsing and I can't get it out of that
+state without a forced power-off. I wonder if these are related.
+
+This is with the stock Fedora 19 kernel, but I don't think there are any
+differences from upstream in this area?
+
+Thanks,
+    J
