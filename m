@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3KSSxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:53:32 -0500
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:41315 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751307Ab3KSSx3 (ORCPT
+	id S1753498Ab3KSSyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:54:01 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48960 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab3KSSyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:53:29 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:2898:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3873:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13163:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rub58_1e09b3cdd1e63
-X-Filterd-Recvd-Size: 1837
-Message-ID: <1384887205.17783.40.camel@joe-AO722>
-Subject: Re: [PATCH v2] power: Replace printks with dev_* and pr_* routines
-From: Joe Perches <joe@perches.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: len.brown@intel.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Tue, 19 Nov 2013 10:53:25 -0800
-In-Reply-To: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
-References: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 13:54:00 -0500
+Date: Tue, 19 Nov 2013 18:53:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Message-ID: <20131119185337.GK2674@sirena.org.uk>
+References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2XUWoe1nmt7t49kG"
+Content-Disposition: inline
+In-Reply-To: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 00/10] ASoC: dma: ARM: ux500: Obtain DMA data from Device
+ Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:46 -0700, Shuah Khan wrote:
-> Replaced printks with dev_* and pr_* routines. Replacing printk in
-> __suspend_report_result() will require passing in struct device *
-> pointer from calling routines and this will require changes to
-> external interface suspend_report_result() which is used by several
-> drivers. Hence, this one instance is replaced by pr_err().
-[]
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-[]
-> @@ -1308,9 +1308,8 @@ int dpm_prepare(pm_message_t state)
->  				error = 0;
->  				continue;
->  			}
-> -			printk(KERN_INFO "PM: Device %s not prepared "
-> -				"for power transition: code %d\n",
-> -				dev_name(dev), error);
-> +			dev_info("PM: not prepared for power transition: ",
-> +				 "code %d\n", error);
 
-Shuah, you have to make sure the files modified by
-your patches compile successfully before sending
-patches like this.
+--2XUWoe1nmt7t49kG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Nov 19, 2013 at 11:07:39AM +0000, Lee Jones wrote:
 
+> If this patch-set could go through ASoC as a whole, it would drive down
+> the chance of a dependency mess. Vinod has already provided Acks for his
+> parts, so it's just between you two Linus and Mark.
+
+I applied the refactoring patches since they didn't seem to depend on
+the DMA patches - they're on topic/ux500 in ASoC but I can easily drop
+them or they can be merged elsewhere if required (I'll rebase once the
+merge window closes anyway).  Let me know and I can provide a tag.
+
+I'm happy to merge the first few patches if that's easiest for everyone
+else, let me know and send them to me if that's what works for people.
+
+--2XUWoe1nmt7t49kG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSi7OuAAoJELSic+t+oim91OAP/3Xf395Qnd57uor+jcolwhIl
+5PGxr8dnO8KQnYJ8QLeDl1T6KeoIRKhXOfYxEESIHlW7+rgJja25S0vm2aJUQAbM
+gABOlYwLZB+ba00UmGltgkfK0yEQQZY5viKI5zi6Yt+M85zlOSAG8wq27RqiagXY
+KAqBjtKC1UA/KhbAkGrC35GaokxuuvoRivrD7BVEng5GDxMKz8RXEadY5G1z2bD6
+Vu3/6vizHGGY5f30T9MVGEP6njesQ94fXAJutriYCadsvIzQWArjKzsOH9pfCepc
+rmtimnwzewbMOKEIi66aPZHb10T19QeP3S1h2unsSL43tQOY/P2O3NvlnSQ3pPzO
+J04oeZ0NFccTvGSUguDtjtxN3oJBDPnrWhT9gIBFAqqzr2KvSzyBbV8/E6VfeNt5
+lDql2RNR+4hmcP08RrI7ZRmLub1KiGvptPWOGzA0sBuvVLFBaOpWLajg6SzOxLEY
+ME/mrKTDFtz2F4syFfMHH5My/q8D6fv+JWOIxlWdWpq8/Uobihtr+xSH7THXwlcJ
+Y7FohmFxWg8ZmHBbaqvOyVmseZ82D6WeCZjuZvzorbnH3kI7nEeWOZ75JbjLbWMK
+cKy5odtH8BgdRpKWskrLQ5NI2SmU/xIoOrKFyutQgpUkXyHfReVHxQO0wcMDQi+U
+3ckoHw1x8bbNauAJKm3o
+=HlK5
+-----END PGP SIGNATURE-----
+
+--2XUWoe1nmt7t49kG--
