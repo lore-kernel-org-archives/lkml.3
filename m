@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab3KSDQu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 22:16:50 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:9332 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3KSDQq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 22:16:46 -0500
-Message-ID: <1384831002.2459.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [tip:sched/urgent] sched: Optimize task_sched_runtime()
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, pjt@google.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com, lwoodman@redhat.com
-Cc: linux-tip-commits@vger.kernel.org
-Date: Mon, 18 Nov 2013 19:16:42 -0800
-In-Reply-To: <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
-References: <20131111172925.GG26898@twins.programming.kicks-ass.net>
-	 <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751676Ab3KSDRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 22:17:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab3KSDQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 22:16:57 -0500
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at> <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at> <527CBDD3.2020609@jp.fujitsu.com> <20131108143421.GB22636@console-pimps.org> <52809AEB.9080100@jp.fujitsu.com> <20131111105424.GD22636@console-pimps.org> <528AD50D.6060503@jp.fujitsu.com>
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Madper Xie <cxie@redhat.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Richard Weinberger <richard@nod.at>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matt.fleming@intel.com, matthew.garrett@nebula.com, jlee@suse.com
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter to efi_storage_paranoia
+In-reply-to: <528AD50D.6060503@jp.fujitsu.com>
+Date: Tue, 19 Nov 2013 11:16:32 +0800
+Message-ID: <87siutqdwv.fsf@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-13 at 09:25 -0800, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  911b2898b3c9fe0048e9485ad1629ed4fce330fd
-> Gitweb:     http://git.kernel.org/tip/911b2898b3c9fe0048e9485ad1629ed4fce330fd
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Mon, 11 Nov 2013 18:21:56 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 13 Nov 2013 13:33:54 +0100
-> 
-> sched: Optimize task_sched_runtime()
-> 
-> Large multi-threaded apps like to hit this using do_sys_times() and
-> then queue up on the rq->lock.
-> 
-> Avoid when possible.
-> 
-> Larry reported ~20% performance increase his test case.
-> 
-> Reported-by: Larry Woodman <lwoodman@redhat.com>
-> Suggested-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Link: http://lkml.kernel.org/r/20131111172925.GG26898@twins.programming.kicks-ass.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-For what it's worth:
+isimatu.yasuaki@jp.fujitsu.com writes:
 
-Tested-by: Davidlohr Bueso <davidlohr@hp.com>
+> Hi Matt,
+>
+> Sorry for late the reply.
+>
+>
+> (2013/11/11 19:54), Matt Fleming wrote:
+>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+>>> Hi Matt,
+>>>
+>>> I uses FUJITSU's x86 box.
+>>> This does not become bricked even if I use all efi variable storage.
+>>> Thus I want a way to not need to specify efi_no_storage_paranoia
+>>> parameter.
+>>
+>> The efi_no_storage_paranoia parameter was introduced because some
+>> machines do not initiate garbage collection of the NVRAM until you
+>> allocate all space - basically it's a switch to turn off the "save 5KB
+>> of stoarge at all times" workaround that is needed to avoid bricking
+>> some machines.
+>>
+>> The intention of the switch is not to allow you to fill your NVRAM just
+>> because you can. If that is something you want to do then I think it's
+>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+>> I'm assuming here that you are doing something like writing lots and
+>> lots of pstore entries and just want to write as many as your variable
+>> storage will allow? Or are you doing something more fundamental like
+>> creating BootXXXX entries?
+>>
+>> What are you doing to run into the 5KB reserve? How much NVRAM does your
+>> machine come with?
+>
+> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
+>
+Howdy Yasuaki,
+  If the remaining NVRAM is less than 5Kb, your writing will trigger a
+  NVRAM storage reclamation. However you still failed creating entry. So
+  I'm just curious what itmes occupy lots of nvram storage space.
 
+> Thanks,
+> Yasuaki Ishimatsu
+
+--
+Best,
+Madper
