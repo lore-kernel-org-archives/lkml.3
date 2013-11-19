@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab3KSChK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:37:10 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48311 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3KSChD (ORCPT
+	id S1751858Ab3KSCiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:38:23 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58033 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751467Ab3KSCiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:37:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <528ACDE7.3050107@gmail.com>
-References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
- <1384267617-3446-5-git-send-email-dsahern@gmail.com> <20131112145707.GV5056@laptop.programming.kicks-ass.net>
- <20131112150751.GA19321@ghostprotocols.net> <20131112151944.GX5056@laptop.programming.kicks-ass.net>
- <52824AE3.4050207@gmail.com> <20131112211121.GC25913@gmail.com>
- <20131113113439.GI21461@twins.programming.kicks-ass.net> <52864ED1.1080607@gmail.com>
- <20131118090117.GE3866@twins.programming.kicks-ass.net> <20131118094036.GA26251@gmail.com>
- <877gc5utkf.fsf@sejong.aot.lge.com> <528AB229.6030603@gmail.com>
- <87wqk5t9yd.fsf@sejong.aot.lge.com> <528ACA41.4030202@gmail.com>
- <87ob5ht962.fsf@sejong.aot.lge.com> <528ACDE7.3050107@gmail.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 19 Nov 2013 02:36:42 +0000
-X-Google-Sender-Auth: _Ra5sOJ_vObH42xHmw_gWPJ9Gsw
-Message-ID: <CAM9d7ciou7k6cXykpreS+d88WfzjOC8oFhYToEmra6O3sttLUw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Nov 2013 21:38:22 -0500
+Date: Mon, 18 Nov 2013 21:38:20 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH v2] tools lib traceevent: Report better error message on bad
+ function args
+Message-ID: <20131118213820.22173142@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 2:33 AM, David Ahern <dsahern@gmail.com> wrote:
-> On 11/18/13, 7:30 PM, Namhyung Kim wrote:
->>
->> On Mon, 18 Nov 2013 19:17:37 -0700, David Ahern wrote:
->>>
->>> On 11/18/13, 7:13 PM, Namhyung Kim wrote:
->>>>
->>>> I think it should be
->>>>
->>>>     perf record -e cycles -F 4000 -e faults -c 1 --call-graph dwarf,8192
->>>> -a -- sleep 1
->>>>
->>>> (at least to generate the feedback spiral more efficiently..)
->>>
->>>
->>> you don't need the cycles. faults by itself works. Each event contains
->>> 2 pages of data in the sample. With mmap-based output a single
->>> sample (1 page fault in any process) generates 2-3 page faults by perf
->>> which cause 2-3 >8k samples to be generated, which generates faults,
->>> ....
->>
->>
->> But after perf touches all pages in ring-buffer and stack, it won't
->> generate page-faults for itself anymore, right?
->>
->> Hmm.. thinking it again, perf has all ring-buffer pages in memory when
->> mmap() called, right?  If so why not doing something like MAP_POPULATE
->> so that it doesn't need to generate minor-faults?
->
->
-> This is mmap'ed output, not the ring buffers or its stack. As the output
-> file grows, new pages are needed and those are allocated on access via page
-> faults. The ftruncate only extends the file size, it does not allocate pages
-> at that time.
+When Jiri Olsa was writing a function callback for
+scsi_trace_parse_cdb(), he thought that the traceevent library had a
+bug in it because he was getting this error:
 
-Argh, I was completely confused! ;-)
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
 
-Please feel free to ignore what I said here..
+But in truth, he didn't have the write number of arguments for the
+function callback, and the error was the library detecting the
+discrepancy. A better error message would have prevented the confusion:
 
-Thanks,
-Namhyung
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_timeout has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_start has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_error has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_done has more
+
+Or
+
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_timeout only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_start only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_error only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_done only uses 3
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+
+V2:
+   Added '[PATCH.*]' in subject. Don't know how I missed that the first time.
+
+   Free token and farg. Thanks to Namhyung Kim for pointing that out.
+
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 0362d57..87dda60 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2691,7 +2691,6 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	struct print_arg *farg;
+ 	enum event_type type;
+ 	char *token;
+-	const char *test;
+ 	int i;
+ 
+ 	arg->type = PRINT_FUNC;
+@@ -2708,15 +2707,19 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 		}
+ 
+ 		type = process_arg(event, farg, &token);
+-		if (i < (func->nr_args - 1))
+-			test = ",";
+-		else
+-			test = ")";
+-
+-		if (test_type_token(type, token, EVENT_DELIM, test)) {
+-			free_arg(farg);
+-			free_token(token);
+-			return EVENT_ERROR;
++		if (i < (func->nr_args - 1)) {
++			if (type != EVENT_DELIM || strcmp(token, ",") != 0) {
++				warning("Error: function '%s()' expects %d arguments but event %s only uses %d",
++					func->name, func->nr_args,
++					event->name, i + 1);
++				goto err;
++			}
++		} else {
++			if (type != EVENT_DELIM || strcmp(token, ")") != 0) {
++				warning("Error: function '%s()' only expects %d arguments but event %s has more",
++					func->name, func->nr_args, event->name);
++				goto err;
++			}
+ 		}
+ 
+ 		*next_arg = farg;
+@@ -2728,6 +2731,11 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	*tok = token;
+ 
+ 	return type;
++
++err:
++	free_arg(farg);
++	free_token(token);
++	return EVENT_ERROR;
+ }
+ 
+ static enum event_type
