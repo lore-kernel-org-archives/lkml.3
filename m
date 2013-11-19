@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab3KSMfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 07:35:53 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:60286 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab3KSMfu (ORCPT
+	id S1752440Ab3KSMgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 07:36:15 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:32776 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab3KSMgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 07:35:50 -0500
+	Tue, 19 Nov 2013 07:36:08 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH-v2 0/6] ima: support per-measurement templates
-Date: Tue, 19 Nov 2013 13:33:39 +0100
-Message-Id: <1384864428-3895-1-git-send-email-roberto.sassu@polito.it>
+Subject: [PATCH-v2 2/6] ima: added new template helper lookup_template_desc_by_fmt()
+Date: Tue, 19 Nov 2013 13:33:41 +0100
+Message-Id: <1384864428-3895-3-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1384864428-3895-1-git-send-email-roberto.sassu@polito.it>
+References: <1384864428-3895-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----3407AD7EC0B6E4BC262C243ABCA12FB4"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----1AC811D0B85EC3CA4B66297FE5202939"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------3407AD7EC0B6E4BC262C243ABCA12FB4
+------1AC811D0B85EC3CA4B66297FE5202939
 
-Hi everyone
+This patch adds a new helper to search a template descriptor by its format.
+Also, the old function lookup_template_desc(), which performs the search
+by name, has been renamed to lookup_template_desc_by_name().
 
-one functionality that is missing in the new template management mechanism
-is the possibility to specify a custom template format per-measurement entry.
-Until now, once the template is determined from the kernel configuration
-or from the kernel command line parameters 'ima_template' and ima_template_fmt',
-this template is used to generate all measurements entries in the list.
-
-However, it is desirable to differentiate information included in measurement
-entries depending on the event type from which they are generated. To explain
-the usefulness of the proposed modification, I'll make an example.
-
-One feature coming soon is the addition of new template fields that represent
-LSM labels applied either to the current process and to the inode being
-measured. However, these information are not enough to capture the mapping
-between the executable code loaded for a given subject. Indeed, for example
-in SELinux, a type transition may occur if the type of the current process
-and the type of the inode being executed are matched in a 'type_transition'
-policy rule. In this case, the code should be mapped not to the label of the
-current process but instead to the label in the credentials (stored in the
-'linux_binprm' structure) being installed during the execution of the execve()
-system call.
-
-To correctly perform the mapping code - LSM label, it is needed to introduce
-a new template field to represent the LSM label in the 'linux_binprm' structure
-(e.g. with identifier 'target-subj') and a new IMA policy action
-(e.g. measure_log_all) to record a measurement for every event that match
-rule criteria, although the accessed inode has already been measured. Then,
-assuming that the format of the default template is "d-ng|n-ng|subj|obj"
-(digest + hash algo, long event name, subject LSM label, object LSM label),
-the policy to capture the mapping should be:
-
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
-measure_log_all func=BPRM_CHECK mask=MAY_EXEC \
-    ima_template_fmt=d-ng|n-ng|subj|obj|target-subj
-measure_log_all func=FILE_MMAP mask=MAY_EXEC
----
+ security/integrity/ima/ima_template.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-In the first rule, the default template is overridden with a template that
-contains the label stored in the 'linux_binprm' structure. Thus, in the
-resulting measurements list, all entries that record file execution will
-include the additional template field, while those generated from the
-mapping into memory of shared libraries will contain only fields listed
-in the default template.
-
-
-
-=== UPDATE ===
-
-This new version of the patch set includes two important updates in respect
-to the previous one. First, newly created templates are added to the created
-linked list (whose head is the first element of the 'defined_templates' array)
-to avoid duplicates. Second, instead of storing the template name or format
-strings in the IMA policy structure (ima_rule_entry), this patch set records
-directly the pointer to newly created template descriptors obtained from
-the function ima_get_template_desc(). Callers of ima_alloc_init_template()
-determine the template to be used to produce a new measurement entry
-(the default template or that stored in a matched policy rule) and supply
-it as argument to this function. The benefit of the latter change is that
-template lookup operations happen only during IMA initialization or the
-loading of a custom policy (before, lookup was done each time an event matches
-a rule with a custom template to translate the name or format string into
-a template descriptor).
-
-Roberto Sassu
-
-
-Roberto Sassu (6):
-  ima: connect defined IMA templates through a linked list
-  ima: added new template helper lookup_template_desc_by_fmt()
-  ima: added ima_get_template_desc() for templates dynamic registration
-  ima: added ima_template and ima_template_fmt new policy options
-  ima: pass template descriptor to ima_alloc_init_template()
-  ima: use custom template obtained from a matched policy rule
-
- Documentation/ABI/testing/ima_policy     |  6 ++-
- Documentation/security/IMA-templates.txt | 19 +++++----
- security/integrity/ima/ima.h             | 14 +++++--
- security/integrity/ima/ima_api.c         | 22 ++++++----
- security/integrity/ima/ima_init.c        |  3 +-
- security/integrity/ima/ima_main.c        |  6 ++-
- security/integrity/ima/ima_policy.c      | 37 ++++++++++++++++-
- security/integrity/ima/ima_template.c    | 70 ++++++++++++++++++++++++++++++--
- 8 files changed, 147 insertions(+), 30 deletions(-)
-
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index 33c911a..c849723 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -38,7 +38,7 @@ static struct ima_template_field supported_fields[] = {
+ };
+ 
+ static struct ima_template_desc *ima_template;
+-static struct ima_template_desc *lookup_template_desc(const char *name);
++static struct ima_template_desc *lookup_template_desc_by_name(const char *name);
+ static struct ima_template_field *lookup_template_field(const char *field_id);
+ 
+ static int __init ima_template_setup(char *str)
+@@ -53,7 +53,7 @@ static int __init ima_template_setup(char *str)
+ 	 * Verify that a template with the supplied name exists.
+ 	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+ 	 */
+-	template_desc = lookup_template_desc(str);
++	template_desc = lookup_template_desc_by_name(str);
+ 	if (!template_desc) {
+ 		pr_err("IMA: template %s not found, using %s\n",
+ 		       str, CONFIG_IMA_DEFAULT_TEMPLATE);
+@@ -117,7 +117,7 @@ static int __init ima_template_fmt_setup(char *str)
+ }
+ __setup("ima_template_fmt=", ima_template_fmt_setup);
+ 
+-static struct ima_template_desc *lookup_template_desc(const char *name)
++static struct ima_template_desc *lookup_template_desc_by_name(const char *name)
+ {
+ 	int i;
+ 
+@@ -129,6 +129,18 @@ static struct ima_template_desc *lookup_template_desc(const char *name)
+ 	return NULL;
+ }
+ 
++static struct ima_template_desc *lookup_template_desc_by_fmt(const char *fmt)
++{
++	struct ima_template_desc *desc;
++
++	list_for_each_entry(desc, &defined_templates[0].list, list) {
++		if (strcmp(desc->fmt, fmt) == 0)
++			return desc;
++	}
++
++	return NULL;
++}
++
+ static struct ima_template_field *lookup_template_field(const char *field_id)
+ {
+ 	int i;
+@@ -232,7 +244,7 @@ struct ima_template_desc *ima_template_desc_current(void)
+ {
+ 	if (!ima_template)
+ 		ima_template =
+-		    lookup_template_desc(CONFIG_IMA_DEFAULT_TEMPLATE);
++		    lookup_template_desc_by_name(CONFIG_IMA_DEFAULT_TEMPLATE);
+ 	return ima_template;
+ }
+ 
 -- 
 1.8.1.4
 
 
-------3407AD7EC0B6E4BC262C243ABCA12FB4
+------1AC811D0B85EC3CA4B66297FE5202939
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -153,17 +138,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTkxMjMzNDhaMCMGCSqG
-SIb3DQEJBDEWBBTae4yo0HZgGEUO7jDlTTUmeA8LtjB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMTkxMjM0MzZaMCMGCSqG
+SIb3DQEJBDEWBBSvVwfOkaRwqX+IfaUogZn2BY1U6TB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAsB790w8J/4J+B27A7Qu2vt5pC
-otdzXFQf2Hso7qf7CrJzvRm6SvffpNfsaV9ldGynk7x+CubFPJjB2etrWZxIRJyx
-vV4BOdljxKbmKKyfu9+EMqJTOrlENCcDkl08WkLe2CvZYKntgYGGZuP5Yk17eoQt
-/MG+roXNCQSrYFFs3wJPnVXCZdECmwOyaJBpvmYoKY/KV5CB3KsPkpbdKHWBJlL8
-7mRYKoYARpo8pfYxVx2lfS0zEw5ojJmYEEx0d/LTA8YHYDXxa+L3qw9oN+iqNL3Q
-22x/T+v8Ui1zJFQgVkP4GMegyABdbpBo0BnSY803EDr6zR2cbH3wer0S3O8d
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQDQJwYw8yMa9aeIrDoUog/B51OZ
+RjD8x52Yk2KlcHdcHzhFtiyVzBjjJ96sdXwyLPfum7oQpCTxyo4P1R0VkNrKHRmG
+e32TsGcJrk5Ti2oo2d+ExnCPjfJWFBtoFq+9Hi9docY3NuTWkgyb1pGMlJSG/wd0
+nM0aMik/ey0v7gXnfxbrcin6e4lOXaLou0KTwVEmVnjAmh2vsHo1/ZqBayGJ/+oD
+4AJqWqn5U0lCKvXjDVfS0HTMcZ3nBtGtMz9CIhkFpBqLAEbw2HWatNdz5tukood/
+RHn7QWESmN5xJL3MnoheZY1qtME7XmrDIhv7WUtObdq4BRfxDvBsf9NXqnGX
 
-------3407AD7EC0B6E4BC262C243ABCA12FB4--
+------1AC811D0B85EC3CA4B66297FE5202939--
 
 
