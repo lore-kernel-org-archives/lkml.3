@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab3KSLDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:03:15 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54981 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751887Ab3KSLDN (ORCPT
+	id S1752083Ab3KSLII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:08:08 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:54044 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3KSLIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:03:13 -0500
-Date: Tue, 19 Nov 2013 11:02:16 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>, Tomasz Figa <t.figa@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
-Message-ID: <20131119110216.GD26487@arm.com>
-References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com>
- <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com>
- <52898417.80601@nvidia.com>
- <20131118115842.GE4050@arm.com>
- <528A4869.2020701@wwwdotorg.org>
- <20131118173047.GF9838@arm.com>
- <528A64D2.4020107@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528A64D2.4020107@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 19 Nov 2013 06:08:06 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 00/10] ASoC: dma: ARM: ux500: Obtain DMA data from Device Tree
+Date: Tue, 19 Nov 2013 11:07:39 +0000
+Message-Id: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 07:04:50PM +0000, Christopher Covington wrote:
-> On 11/18/2013 12:30 PM, Catalin Marinas wrote:
-> [...]
-> > You can't run legacy AArch32 code at EL3 and have lower levels in AArch64
-> > mode (architectural constraint).
-> 
-> What prevents AArch32 code from running at EL3 and then requesting a reset to
-> AArch64 by writing to the Reset Management Register before sliding down to
-> lower exception levels?
+At this moment in time the Ux500 ASoC driver obtains its DMA information
+via AUXDATA platform data passing. To make the driver more independent
+we have to start extracting it from the Device Tree.
+ 
+If this patch-set could go through ASoC as a whole, it would drive down
+the chance of a dependency mess. Vinod has already provided Acks for his
+parts, so it's just between you two Linus and Mark.
 
-You can do this for some initial code but the firmware still needs to
-switch to AArch64 before dropping to lower exception levels. What this
-thread is about is run-time calls to firmware for booting secondary
-CPUs, idle, l2x0. At this point, the code at EL3 must run in AArch64
-mode. There is no way you can bounce between AArch32 and AArch64 modes
-using reset just to handle some SMCs.
+ Documentation/devicetree/bindings/dma/ste-dma40.txt |   3 ++
+ arch/arm/boot/dts/ste-dbx5x0.dtsi                   |  15 ++++++++++
+ arch/arm/mach-ux500/board-mop500-audio.c            |   8 +++---
+ drivers/dma/ste_dma40.c                             |   4 +++
+ include/linux/platform_data/asoc-ux500-msp.h        |   9 +-----
+ sound/soc/ux500/mop500.c                            |   2 ++
+ sound/soc/ux500/ux500_msp_dai.c                     | 150 +++++++++++++++++++++++++++++++++++++++++++-------------------------------------------------------
+ sound/soc/ux500/ux500_msp_i2s.c                     |  56 +++++++++++++++++++++++++++----------
+ sound/soc/ux500/ux500_msp_i2s.h                     |   2 +-
+ sound/soc/ux500/ux500_pcm.c                         |  32 +++++++++++++++------
+ 10 files changed, 160 insertions(+), 121 deletions(-)
 
--- 
-Catalin
+Cc: Mark Brown <broonie@kernel.org>
+
