@@ -1,378 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab3KSXO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:14:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42430 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab3KSXOS (ORCPT
+	id S1753283Ab3KSXXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:23:34 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:27251 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752707Ab3KSXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:14:18 -0500
-Date: Tue, 19 Nov 2013 15:14:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm: tail page refcounting optimization for slab and
- hugetlbfs
-Message-Id: <20131119151416.9f5b298960db09a21d37418b@linux-foundation.org>
-In-Reply-To: <1384537668-10283-4-git-send-email-aarcange@redhat.com>
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
-	<1384537668-10283-4-git-send-email-aarcange@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 18:23:16 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnkIAPHxi1J5LGc//2dsb2JhbABZgweDLbdThUmBHhd0giUBAQU6HBYNEAgDGAklDwUlAyETiAC/fBcWj0EHhDIDmBGSDoFqgVIo
+Date: Wed, 20 Nov 2013 10:23:08 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
+ virtio devices
+Message-ID: <20131119232308.GS11434@dastard>
+References: <20131119080218.GJ11434@dastard>
+ <20131119201531.GA4094@kernel.dk>
+ <20131119212042.GB4094@kernel.dk>
+ <20131119213429.GQ11434@dastard>
+ <528BDB97.8090608@kernel.dk>
+ <528BE967.9070506@kernel.dk>
+ <528BEB6F.8040704@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528BEB6F.8040704@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Nov 2013 18:47:48 +0100 Andrea Arcangeli <aarcange@redhat.com> wrote:
-
-> This skips the _mapcount mangling for slab and hugetlbfs pages.
+On Tue, Nov 19, 2013 at 03:51:27PM -0700, Jens Axboe wrote:
+> On 11/19/2013 03:42 PM, Jens Axboe wrote:
+> > On 11/19/2013 02:43 PM, Jens Axboe wrote:
+> >> On 11/19/2013 02:34 PM, Dave Chinner wrote:
+> >>> On Tue, Nov 19, 2013 at 02:20:42PM -0700, Jens Axboe wrote:
+> >>>> On Tue, Nov 19 2013, Jens Axboe wrote:
+> >>>>> On Tue, Nov 19 2013, Dave Chinner wrote:
+> >>>>>> Hi Jens,
+> >>>>>>
+> >>>>>> I was just running xfstests on a 3.13 kernel that has had the block
+> >>>>>> layer changed merged into it. generic/269 on XFS is hanging on a 2
+> >>>>>> CPU VM using virtio,cache=none for the block devices under test,
+> >>>>>> with many (130+) threads stuck below submit_bio() like this:
+> >>>>>>
+> >>>>>>  Call Trace:
+> >>>>>>   [<ffffffff81adb1c9>] schedule+0x29/0x70
+> >>>>>>   [<ffffffff817833ee>] percpu_ida_alloc+0x16e/0x330
+> >>>>>>   [<ffffffff81759bef>] blk_mq_wait_for_tags+0x1f/0x40
+> >>>>>>   [<ffffffff81758bee>] blk_mq_alloc_request_pinned+0x4e/0xf0
+> >>>>>>   [<ffffffff8175931b>] blk_mq_make_request+0x3bb/0x4a0
+> >>>>>>   [<ffffffff8174d2b2>] generic_make_request+0xc2/0x110
+> >>>>>>   [<ffffffff8174e40c>] submit_bio+0x6c/0x120
+> >>>>>>
+> >>>>>> reads and writes are hung, both data (direct and buffered) and
+> >>>>>> metadata.
+> >>>>>>
+> >>>>>> Some IOs are sitting in io_schedule, waiting for IO completion (both
+> >>>>>> buffered and direct IO, both reads and writes) so it looks like IO
+> >>>>>> completion has stalled in some manner, too.
+> >>>>>
+> >>>>> Can I get a recipe to reproduce this? I haven't had any luck so far.
+> >>>>
+> >>>> OK, I reproduced it. Looks weird, basically all 64 commands are in
+> >>>> flight, but haven't completed. So the next one that comes in just sits
+> >>>> there forever. I can't find any sysfs debug entries for virtio, would be
+> >>>> nice to inspect its queue as well...
+> >>>
+> >>> Does it have anything to do with the fact that the request queue
+> >>> depth is 128 entries and the tag pool only has 66 tags in it? i.e:
+> >>>
+> >>> /sys/block/vdb/queue/nr_requests
+> >>> 128
+> >>>
+> >>> /sys/block/vdb/mq/0/tags
+> >>> nr_tags=66, reserved_tags=2, batch_move=16, max_cache=32
+> >>> nr_free=0, nr_reserved=1
+> >>>   cpu00: nr_free=0
+> >>>   cpu01: nr_free=0
+> >>>
+> >>> Seems to imply that if we queue up more than 66 IOs without
+> >>> dispatching them, we'll run out of tags. And without another IO
+> >>> coming through, the "none" scheduler that virtio uses will never
+> >>> get a trigger to push out the currently queued IO?
+> >>
+> >> No, the nr_requests isn't actually relevant in the blk-mq context, the
+> >> driver sets its own depth. For the above, it's 64 normal commands, and 2
+> >> reserved. The reserved would be for a flush, for instance. If someone
+> >> attempts to queue more than the allocated number of requests, it'll stop
+> >> the blk-mq queue and kick things into gear on the virtio side. Then when
+> >> requests complete, we start the queue again.
+> >>
+> >> If you look at virtio_queue_rq(), that handles a single request. This
+> >> request is already tagged at this point. If we can't add it to the ring,
+> >> we simply stop the queue and kick off whatever pending we might have. We
+> >> return BLK_MQ_RQ_QUEUE_BUSY to blk-mq, which tells that to back off on
+> >> sending us more. When we get the virtblk_done() callback from virtio, we
+> >> end the requests on the blk-mq side and restart the queue.
+> > 
+> > I added some debug code to see if we had anything pending on the blk-mq
+> > side, and it's all empty. It really just looks like we are missing
+> > completions on the virtio side. Very odd.
 > 
-> The main trouble in doing this is to guarantee that PageSlab and
-> PageHeadHuge remains constant for all get_page/put_page run on the
-> tail of slab or hugetlbfs compound pages. Otherwise if they're set
-> during get_page but not set during put_page, the _mapcount of the tail
-> page would underflow.
-> 
-> PageHeadHuge will remain true until the compound page is released and
-> enters the buddy allocator so it won't risk to change even if the tail
-> page is the last reference left on the page.
-> 
-> PG_slab instead is cleared before the slab frees the head page with
-> put_page, so if the tail pin is released after the slab freed the
-> page, we would have a problem. But in the slab case the tail pin
-> cannot be the last reference left on the page. This is because the
-> slab code is free to reuse the compound page after a
-> kfree/kmem_cache_free without having to check if there's any tail pin
-> left. In turn all tail pins must be always released while the head is
-> still pinned by the slab code and so we know PG_slab will be still set
-> too.
-> 
-> ...
->
-> +					if (put_page_testzero(page_head)) {
-> +						/*
-> +						 * If this is the tail
-> +						 * of a a slab
-> +						 * compound page, the
-> +						 * tail pin must not
-> +						 * be the last
-> +						 * reference held on
-> +						 * the page, because
-> +						 * the PG_slab cannot
-> +						 * be cleared before
-> +						 * all tail pins
-> +						 * (which skips the
-> +						 * _mapcount tail
-> +						 * refcounting) have
-> +						 * been released. For
-> +						 * hugetlbfs the tail
-> +						 * pin may be the last
-> +						 * reference on the
-> +						 * page instead,
-> +						 * because
-> +						 * PageHeadHuge will
-> +						 * not go away until
-> +						 * the compound page
-> +						 * enters the buddy
-> +						 * allocator.
-> +						 */
-> +						VM_BUG_ON(PageSlab(page_head));
+> Patching in the old rq path works however, so...
 
-This looks like it was attacked by Lindent.  How's this look?
+... we've found a race condition ;)
 
+FWIW, the thing that comes immediately to mind for me is that all
+the wakeups and queue kicking is done outside of any locks, using
+status gained from inside the lock context. Hence the mq stop/start
+and virt queue kicking can all race - perhaps that's resulting in a
+missed wakeup, restart or queue kick?
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/swap.c: reorganize put_compound_page()
+Cheers,
 
-Tweak it so save a tab stop, make code layout slightly less nutty.
-
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/swap.c |  238 +++++++++++++++++++++++-----------------------------
- 1 file changed, 107 insertions(+), 131 deletions(-)
-
-diff -puN mm/swap.c~mm-swapc-reorganize-put_compound_page mm/swap.c
---- a/mm/swap.c~mm-swapc-reorganize-put_compound_page
-+++ a/mm/swap.c
-@@ -82,150 +82,126 @@ static void __put_compound_page(struct p
- 
- static void put_compound_page(struct page *page)
- {
--	if (unlikely(PageTail(page))) {
--		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = compound_trans_head(page);
--
--		if (likely(page != page_head &&
--			   get_page_unless_zero(page_head))) {
--			unsigned long flags;
--
--			/*
--			 * THP can not break up slab pages or
--			 * hugetlbfs pages so avoid taking
--			 * compound_lock() and skip the tail page
--			 * refcounting (in _mapcount) too. Slab
--			 * performs non-atomic bit ops on page->flags
--			 * for better performance. In particular
--			 * slab_unlock() in slub used to be a hot
--			 * path. It is still hot on arches that do not
--			 * support this_cpu_cmpxchg_double().
--			 */
--			if (PageSlab(page_head) || PageHeadHuge(page_head)) {
--				if (likely(PageTail(page))) {
--					/*
--					 * __split_huge_page_refcount
--					 * cannot race here.
--					 */
--					VM_BUG_ON(!PageHead(page_head));
--					VM_BUG_ON(atomic_read(&page->_mapcount)
--						  != -1);
--					if (put_page_testzero(page_head))
--						VM_BUG_ON(1);
--					if (put_page_testzero(page_head)) {
--						/*
--						 * If this is the tail
--						 * of a a slab
--						 * compound page, the
--						 * tail pin must not
--						 * be the last
--						 * reference held on
--						 * the page, because
--						 * the PG_slab cannot
--						 * be cleared before
--						 * all tail pins
--						 * (which skips the
--						 * _mapcount tail
--						 * refcounting) have
--						 * been released. For
--						 * hugetlbfs the tail
--						 * pin may be the last
--						 * reference on the
--						 * page instead,
--						 * because
--						 * PageHeadHuge will
--						 * not go away until
--						 * the compound page
--						 * enters the buddy
--						 * allocator.
--						 */
--						VM_BUG_ON(PageSlab(page_head));
--						__put_compound_page(page_head);
--					}
--					return;
--				} else
--					/*
--					 * __split_huge_page_refcount
--					 * run before us, "page" was a
--					 * THP tail. The split
--					 * page_head has been freed
--					 * and reallocated as slab or
--					 * hugetlbfs page of smaller
--					 * order (only possible if
--					 * reallocated as slab on
--					 * x86).
--					 */
--					goto skip_lock;
--			}
--			/*
--			 * page_head wasn't a dangling pointer but it
--			 * may not be a head page anymore by the time
--			 * we obtain the lock. That is ok as long as it
--			 * can't be freed from under us.
--			 */
--			flags = compound_lock_irqsave(page_head);
--			if (unlikely(!PageTail(page))) {
--				/* __split_huge_page_refcount run before us */
--				compound_unlock_irqrestore(page_head, flags);
--skip_lock:
-+	struct page *page_head;
-+
-+	if (likely(PageTail(page))) {
-+		if (put_page_testzero(page)) {
-+			if (PageHead(page))
-+				__put_compound_page(page);
-+			else
-+				__put_single_page(page);
-+		}
-+		return;
-+	}
-+
-+	/* __split_huge_page_refcount can run under us */
-+	page_head = compound_trans_head(page);
-+
-+	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		unsigned long flags;
-+
-+		/*
-+		 * THP can not break up slab pages or hugetlbfs pages so avoid
-+		 * taking compound_lock() and skip the tail page refcounting
-+		 * (in _mapcount) too. Slab performs non-atomic bit ops on
-+		 * page->flags for better performance. In particular
-+		 * slab_unlock() in slub used to be a hot path. It is still hot
-+		 * on arches that do not support this_cpu_cmpxchg_double().
-+		 */
-+		if (PageSlab(page_head) || PageHeadHuge(page_head)) {
-+			if (likely(PageTail(page))) {
-+				/*
-+				 * __split_huge_page_refcount cannot race here.
-+				 */
-+				VM_BUG_ON(!PageHead(page_head));
-+				VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
-+				if (put_page_testzero(page_head))
-+					VM_BUG_ON(1);
- 				if (put_page_testzero(page_head)) {
- 					/*
--					 * The head page may have been
--					 * freed and reallocated as a
--					 * compound page of smaller
--					 * order and then freed again.
--					 * All we know is that it
--					 * cannot have become: a THP
--					 * page, a compound page of
--					 * higher order, a tail page.
--					 * That is because we still
--					 * hold the refcount of the
--					 * split THP tail and
--					 * page_head was the THP head
--					 * before the split.
-+					 * If this is the tail of a slab
-+					 * compound page, the tail pin must not
-+					 * be the last reference held on the
-+					 * page, because the PG_slab cannot be
-+					 * cleared before all tail pins (which
-+					 * skips the _mapcount tail refcounting)
-+					 * have been released. For hugetlbfs the
-+					 * tail pin may be the last reference on
-+					 * the page instead, because
-+					 * PageHeadHuge will not go away until
-+					 * the compound page enters the buddy
-+					 * allocator.
- 					 */
--					if (PageHead(page_head))
--						__put_compound_page(page_head);
--					else
--						__put_single_page(page_head);
-+					VM_BUG_ON(PageSlab(page_head));
-+					__put_compound_page(page_head);
- 				}
--out_put_single:
--				if (put_page_testzero(page))
--					__put_single_page(page);
- 				return;
--			}
--			VM_BUG_ON(page_head != page->first_page);
--			/*
--			 * We can release the refcount taken by
--			 * get_page_unless_zero() now that
--			 * __split_huge_page_refcount() is blocked on
--			 * the compound_lock.
--			 */
--			if (put_page_testzero(page_head))
--				VM_BUG_ON(1);
--			/* __split_huge_page_refcount will wait now */
--			VM_BUG_ON(page_mapcount(page) <= 0);
--			atomic_dec(&page->_mapcount);
--			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
--			VM_BUG_ON(atomic_read(&page->_count) != 0);
-+			} else
-+				/*
-+				 * __split_huge_page_refcount run before us,
-+				 * "page" was a THP tail. The split page_head
-+				 * has been freed and reallocated as slab or
-+				 * hugetlbfs page of smaller order (only
-+				 * possible if reallocated as slab on x86).
-+				 */
-+				goto skip_lock;
-+		}
-+		/*
-+		 * page_head wasn't a dangling pointer but it may not be a head
-+		 * page anymore by the time we obtain the lock. That is ok as
-+		 * long as it can't be freed from under us.
-+		 */
-+		flags = compound_lock_irqsave(page_head);
-+		if (unlikely(!PageTail(page))) {
-+			/* __split_huge_page_refcount run before us */
- 			compound_unlock_irqrestore(page_head, flags);
--
-+skip_lock:
- 			if (put_page_testzero(page_head)) {
-+				/*
-+				 * The head page may have been freed and
-+				 * reallocated as a compound page of smaller
-+				 * order and then freed again.  All we know is
-+				 * that it cannot have become: a THP page, a
-+				 * compound page of higher order, a tail page.
-+				 * That is because we still hold the refcount of
-+				 * the split THP tail and page_head was the THP
-+				 * head before the split.
-+				 */
- 				if (PageHead(page_head))
- 					__put_compound_page(page_head);
- 				else
- 					__put_single_page(page_head);
- 			}
--		} else {
--			/* page_head is a dangling pointer */
--			VM_BUG_ON(PageTail(page));
--			goto out_put_single;
-+out_put_single:
-+			if (put_page_testzero(page))
-+				__put_single_page(page);
-+			return;
-+		}
-+		VM_BUG_ON(page_head != page->first_page);
-+		/*
-+		 * We can release the refcount taken by get_page_unless_zero()
-+		 * now that __split_huge_page_refcount() is blocked on the
-+		 * compound_lock.
-+		 */
-+		if (put_page_testzero(page_head))
-+			VM_BUG_ON(1);
-+		/* __split_huge_page_refcount will wait now */
-+		VM_BUG_ON(page_mapcount(page) <= 0);
-+		atomic_dec(&page->_mapcount);
-+		VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
-+		VM_BUG_ON(atomic_read(&page->_count) != 0);
-+		compound_unlock_irqrestore(page_head, flags);
-+
-+		if (put_page_testzero(page_head)) {
-+			if (PageHead(page_head))
-+				__put_compound_page(page_head);
-+			else
-+				__put_single_page(page_head);
- 		}
--	} else if (put_page_testzero(page)) {
--		if (PageHead(page))
--			__put_compound_page(page);
--		else
--			__put_single_page(page);
-+	} else {
-+		/* page_head is a dangling pointer */
-+		VM_BUG_ON(PageTail(page));
-+		goto out_put_single;
- 	}
- }
- 
-_
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
