@@ -1,125 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3KSVgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:36:44 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:41349 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3KSVgk (ORCPT
+	id S1753323Ab3KSVhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:37:03 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45884 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab3KSVg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:36:40 -0500
-Message-ID: <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Date: Tue, 19 Nov 2013 13:36:36 -0800
-In-Reply-To: <20131119204909.GA15004@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
-	 <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20131119204909.GA15004@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 19 Nov 2013 16:36:59 -0500
+Message-ID: <528BD9F6.3080008@wwwdotorg.org>
+Date: Tue, 19 Nov 2013 14:36:54 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        grant.likely@linaro.org, thierry.reding@gmail.com,
+        galak@codeaurora.org
+CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 3/9] ARM: tegra: create a DT header defining SWGROUP
+ ID
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> <1384853593-32202-4-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1384853593-32202-4-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 22:49 +0200, Michael S. Tsirkin wrote:
-> On Tue, Nov 19, 2013 at 06:03:48AM -0800, Eric Dumazet wrote:
-> > On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
-> > > We need to drop the refcnt of page when we fail to allocate an skb for frag
-> > > list, otherwise it will be leaked. The bug was introduced by commit
-> > > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
-> > > buffers to page frag allocators").
-> > > 
-> > > Cc: Michael Dalton <mwdalton@google.com>
-> > > Cc: Eric Dumazet <edumazet@google.com>
-> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > ---
-> > > The patch was needed for 3.12 stable.
-> > 
-> > Good catch, but if we return from receive_mergeable() in the 'middle'
-> > of the frags we would need for the current skb, who will
-> > call the virtqueue_get_buf() to flush the remaining frags ?
-> > 
-> > Don't we also need to call virtqueue_get_buf() like 
-> > 
-> > while (--num_buf) {
-> >     buf = virtqueue_get_buf(rq->vq, &len);
-> >     if (!buf)
-> >         break;
-> >     put_page(virt_to_head_page(buf));
-> > }
-> > 
-> > ?
-> > 
-> > 
-> 
-> 
-> Let me explain what worries me in your suggestion:
-> 
->                         struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
->                         if (unlikely(!nskb)) {
->                                 head_skb->dev->stats.rx_dropped++;
->                                 return -ENOMEM;
->                         }
-> 
-> is this the failure case we are talking about?
+On 11/19/2013 02:33 AM, Hiroshi Doyu wrote:
+> Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
+> binding. "swgroup" is a group of H/W clients which a Tegra SoC
+> supports. This unique ID can be used to calculate MC_SMMU_<swgroup
+> name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
+> register bit. This will allow the same header to be used by both
+> device tree files, and drivers implementing this binding, which
+> guarantees that the two stay in sync. This also makes device trees
+> more readable by using names instead of magic numbers. For HOTRESET
+> bit shifting we need another conversion table, which will come later.
 
-I thought Jason patch was about this, no ?
+> diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-bindings/memory/tegra-swgroup.h
 
-> 
-> I think this is a symprom of a larger problem
-> introduced by 2613af0ed18a11d5c566a81f9a6510b73180660a,
-> namely that we now need to allocate memory in the
-> middle of processing a packet.
-> 
-> 
-> I think discarding a completely valid and well-formed
-> packet from the receive queue because we are unable
-> to allocate new memory with GFP_ATOMIC
-> for future packets is not a good idea.
+> +#define TEGRA_SWGROUP_PPCS2	32	/* 0xab0 */
+> +
+> +#define TWO_U32_OF_U64(x)	((x) & ~0UL) ((x) >> 32)
+> +#define TEGRA_SWGROUP_BIT(x)	(1ULL << TEGRA_SWGROUP_##x)
+> +#define TEGRA_SWGROUP_CELLS(x)	TWO_U32_OF_U64(TEGRA_SWGROUP_BIT(x))
 
-How is it different with NIC processing in RX path ?
+This still doesn't actually compile in dtc:
 
-> 
-> It certainly violates the principle of least surprize:
-> when one sees host pass packet to guest, one expects
-> the packet to get into the networking stack, not get
-> dropped by the driver internally.
-> Guest stack can do with the packet what it sees fit.
-> 
-> We actually wake up a thread if we can't fill up the queue,
-> that will fill it up in GFP_KERNEL context.
-> 
-> So I think we should find a way to pre-allocate if necessary and avoid
-> error paths where allocating new memory is a required to avoid drops.
-> 
+$ cat > tmp.dts <<ENDOFHERE
+/dts-v1/;
 
-Really, under ATOMIC context, there is no way you can avoid dropping
-packets if you cannot allocate memory. If you cannot allocate sk_buff
-(256 bytes !!), you wont be able to allocate the 1500+ bytes to hold the
-payload of next packets anyway. 
+#define TEGRA_SWGROUP_PPCS2	32	/* 0xab0 */
 
-Same problem on a real NIC.
+#define TWO_U32_OF_U64(x)	((x) & ~0UL) ((x) >> 32)
+#define TEGRA_SWGROUP_BIT(x)	(1ULL << TEGRA_SWGROUP_##x)
+#define TEGRA_SWGROUP_CELLS(x)	TWO_U32_OF_U64(TEGRA_SWGROUP_BIT(x))
 
-Under memory pressure we _do_ packet drops.
-Nobody really complained.
+/ {
+    prop = <TEGRA_SWGROUP_CELLS(PPCS2)>;
+};
+ENDOFHERE
 
-Sure, you can add yet another cache of pre-allocated skbs and pay the
-price of managing yet another cache layer, but still need to trop
-packets under stress.
+$ gcc -nostdinc -undef -D__DTS__ -E -x assembler-with-cpp -o tmp.dts.i \
+	tmp.dts
 
-Pre-allocating skb on real NIC has a performance cost, because we clear
-sk_buff way ahead of time. By the time skb is finally received, cpu has
-to bring back into its cache memory cache lines.
+$ ./scripts/dtc/dtc -O dts -o tmp-compiled.dts -I dts tmp.dts.i
+Error: tmp.dts:10.35-36 integer value out of range 0000000000000020 \
+	(32 bits)
+FATAL ERROR: Syntax error parsing input tree
 
+The reason is that "& ~0UL" expands to "& 0xffffffffffffffff" since dtc
+doesn't know about the size difference between UL and ULL. You need to
+change that to "& 0xffffffff" and it works, at least in dtc.
 
-
+Please test!
