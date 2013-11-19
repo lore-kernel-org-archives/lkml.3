@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab3KSQ2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:28:30 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:49597 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752947Ab3KSQ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:28:29 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: net/usb/ax88179_178a driver broken in linux-3.12
-Date: Tue, 19 Nov 2013 16:26:57 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7435@saturn3.aculab.com>
-In-Reply-To: <1384877400.8604.107.camel@edumazet-glaptop2.roam.corp.google.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: net/usb/ax88179_178a driver broken in linux-3.12
-Thread-Index: Ac7lQbqUiJag01MvS56MpcAf1tGRxwAAKBhg
-References: <52890C7E.6000607@pobox.com> <52891178.2080509@pobox.com> <52891341.4020403@pobox.com> <AE90C24D6B3A694183C094C60CF0A2F6026B742B@saturn3.aculab.com> <AE90C24D6B3A694183C094C60CF0A2F6026B742F@saturn3.aculab.com> <528A9A36.50903@pobox.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7431@saturn3.aculab.com> <528B6F73.7040801@pobox.com> <1384870550.8604.101.camel@edumazet-glaptop2.roam.corp.google.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7434@saturn3.aculab.com> <1384877400.8604.107.camel@edumazet-glaptop2.roam.corp.google.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Cc: "Mark Lord" <mlord@pobox.com>, "Ming Lei" <ming.lei@canonical.com>,
-        <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "Linux Kernel" <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>
+	id S1753334Ab3KSQa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:30:28 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:38711 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752372Ab3KSQa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 11:30:26 -0500
+From: James Custer <jcuster@sgi.com>
+To: linux-mm@kvack.org
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, James Custer <jcuster@sgi.com>
+Subject: [PATCH] Reimplement old functionality of vm_munmap to vm_munmap_mm
+Date: Tue, 19 Nov 2013 10:29:52 -0600
+Message-Id: <1384878592-194909-1-git-send-email-jcuster@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAJGSaPo003546
 
-> From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> On Tue, 2013-11-19 at 14:43 +0000, David Laight wrote:
-> 
-> > It isn't directly a TSO problem.
-> > There has always been a bug in the xhci driver for fragmented buffers.
-> > TSO just means it is given a lot of fragmented buffers.
-> >
-> > As well as user-supplied fragmented buffers, the bug affects
-> > internal fragmentation that happens whenever a buffer crosses a 64k
-> > byte boundary (please hw engineers - stop doing this!)
-> 
-> TCP stack uses order-3 allocations.
-> 
-> This means 32KB for x86 (PAGE_SIZE=4096)
-> 
-> What is PAGE_SIZE for your arches ?
-> 
-> If there is a 6KB limit, we might adapt TCP to make sure we do not cross
-> a 64KB boundary.
-> 
-> Other strategy would be to detect this case in the driver and split a
-> problematic segment into two parts.
+Commit bfce281c287a427d0841fadf5d59242757b4e620 killed the mm parameter to
+vm_munmap. Although the mm parameter was not used in any in-tree kernel
+modules, it is used by some out-of-tree modules.
 
-The xhci code does all the checks for buffer fragments crossing 64k boundaries.
-I've posted a patch that uses a conservative upper limit for the
-number of fragments: 2 * number_of_sg_buffs + xfer_len/65536.
-This saves scanning the sg list twice.
+We create a new function vm_munmap_mm that has the same functionality as
+vm_munmap, whereas vm_munmap uses current->mm, vm_munmap_mm takes the mm as
+a paramter.
 
-For those not reading linux-usb:
+Since this is a newly exported symbol it is marked EXPORT_SYMBOL_GPL.
+---
+ include/linux/mm.h | 1 +
+ mm/mmap.c          | 9 +++++++--
+ mm/nommu.c         | 9 +++++++--
+ 3 files changed, 15 insertions(+), 4 deletions(-)
 
-The xhci 'bug' is that an SG list may only cross the end of a ring
-segment at an aligned length.
-For USB2 devices this will be 512 bytes. For USB3 the documented alignment
-could be 16k (depends on a burst size), but might only be 1k.
-(This is another place where the hw engineers haven't made life easy.)
-The only simple solution is to ensure that a SG list doesn't cross
-the end of a ring segment.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 0548eb2..6e9917e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1724,6 +1724,7 @@ static inline void mm_populate(unsigned long addr, unsigned long len) {}
+ /* These take the mm semaphore themselves */
+ extern unsigned long vm_brk(unsigned long, unsigned long);
+ extern int vm_munmap(unsigned long, size_t);
++extern int vm_munmap_mm(struct mm_struct *, unsigned long, size_t);
+ extern unsigned long vm_mmap(struct file *, unsigned long,
+         unsigned long, unsigned long,
+         unsigned long, unsigned long);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 834b2d7..63eb96e 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2539,16 +2539,21 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
+ 	return 0;
+ }
+ 
+-int vm_munmap(unsigned long start, size_t len)
++int vm_munmap_mm(struct mm_struct *mm, unsigned long start, size_t len)
+ {
+ 	int ret;
+-	struct mm_struct *mm = current->mm;
+ 
+ 	down_write(&mm->mmap_sem);
+ 	ret = do_munmap(mm, start, len);
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(vm_munmap_mm);
++
++int vm_munmap(unsigned long start, size_t len)
++{
++	return vm_munmap_mm(current->mm, start, len);
++}
+ EXPORT_SYMBOL(vm_munmap);
+ 
+ SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
+diff --git a/mm/nommu.c b/mm/nommu.c
+index fec093a..5cf8677 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1717,9 +1717,8 @@ erase_whole_vma:
+ }
+ EXPORT_SYMBOL(do_munmap);
+ 
+-int vm_munmap(unsigned long addr, size_t len)
++int vm_munmap_mm(struct mm_struct *mm, unsigned long addr, size_t len)
+ {
+-	struct mm_struct *mm = current->mm;
+ 	int ret;
+ 
+ 	down_write(&mm->mmap_sem);
+@@ -1727,6 +1726,12 @@ int vm_munmap(unsigned long addr, size_t len)
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(vm_munmap_mm);
++
++int vm_munmap(unsigned long addr, size_t len)
++{
++	return vm_munmap_mm(current->mm, addr, len);
++}
+ EXPORT_SYMBOL(vm_munmap);
+ 
+ SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
+-- 
+1.8.2.1
 
-	David
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
