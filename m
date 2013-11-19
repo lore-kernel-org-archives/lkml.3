@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab3KSRYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:24:20 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:38334 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab3KSRYS (ORCPT
+	id S1753580Ab3KSRZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:25:20 -0500
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51056 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751720Ab3KSRZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:24:18 -0500
+	Tue, 19 Nov 2013 12:25:16 -0500
+Message-ID: <528B9EF6.3090708@mellanox.com>
+Date: Tue, 19 Nov 2013 19:25:10 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1384870535-20532-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1384870535-20532-1-git-send-email-mika.westerberg@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Nov 2013 10:23:57 -0700
-Message-ID: <CAErSpo56wWzNpkcEmkRnaGR4uk=eHrDzt2k-4PiHk9Rb=qRr-w@mail.gmail.com>
-Subject: Re: [PATCH] PCI / hotplug / ACPI: Drop unused acpiphp_debug declaration
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roland Dreier <roland@kernel.org>
+CC: <linux-rdma@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] please pull infiniband.git
+References: <1384800032-14755-1-git-send-email-roland@kernel.org>
+In-Reply-To: <1384800032-14755-1-git-send-email-roland@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 7:15 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> Commit bd950799d951 (PCI: acpiphp: Convert to dynamic debug) removed users
-> of acpiphp_debug variable and the variable itself but the declaration was
-> left in the header file. Drop this unused declaration.
+On 18/11/2013 20:40, Roland Dreier wrote:
+> Hi Linus,
 >
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Please pull from
+>
+>      git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+>
+> ----------------------------------------------------------------
+>
+> Main batch of InfiniBand/RDMA changes for 3.13:
+>
+>   - Re-enable flow steering verbs with new improved userspace ABI
+>   - Fixes for slow connection due to GID lookup scalability
+>   - IPoIB fixes
+>   - Many fixes to HW drivers including mlx4, mlx5, ocrdma and qib
+>   - Further improvements to SRP error handling
+>   - Add new transport type for Cisco usNIC
 
-Rafael, if it makes sense for you to apply this, you can add my:
+Hi Roland, can you spare few words on how you see the RoCE IP based Addressing V5 series? we have addressed the concerns you raised re compatibility and also simplified the series to avoid using uverbs extensions @ this point, anything else left there?
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+This series is pre-step for submitting SRIOV support to RoCE (the code is ready!) and hence no Cloud RoCE upstream solution for VMs before we nail that, it deserves your response. I have posted reply on Sep 17th, to your concerns http://marc.info/?l=linux-rdma&m=137945099714426&w=2 and didn't really hear from you. So went ahead and addressed the feedback as we captured it.
 
-Otherwise I can pick it up.
+Or.
 
-> ---
->  drivers/pci/hotplug/acpiphp.h | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
-> index 26100f510b10..1592dbe4f904 100644
-> --- a/drivers/pci/hotplug/acpiphp.h
-> +++ b/drivers/pci/hotplug/acpiphp.h
-> @@ -176,7 +176,6 @@ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot);
->  u8 acpiphp_get_adapter_status(struct acpiphp_slot *slot);
->
->  /* variables */
-> -extern bool acpiphp_debug;
->  extern bool acpiphp_disabled;
->
->  #endif /* _ACPIPHP_H */
-> --
-> 1.8.4.3
->
+
