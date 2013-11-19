@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab3KSBZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:25:19 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:60723 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab3KSBZQ (ORCPT
+	id S1751722Ab3KSB0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:26:53 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34932 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab3KSB0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:25:16 -0500
-Date: Mon, 18 Nov 2013 17:25:13 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 2/2] mm, memcg: add memory.oom_control notification for
- system oom
-In-Reply-To: <20131118185213.GA12923@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1311181722380.4292@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com> <20131031054942.GA26301@cmpxchg.org> <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com> <20131113233419.GJ707@cmpxchg.org> <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org> <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com> <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com> <alpine.DEB.2.02.1311141526300.30112@chino.kir.corp.google.com>
- <20131118185213.GA12923@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 18 Nov 2013 20:26:49 -0500
+Date: Tue, 19 Nov 2013 01:26:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Charley (Hao Chuan) Chu" <charley.chu@broadcom.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] FS: Fixed buffer overflow issue in seq_read()
+Message-ID: <20131119012647.GB10323@ZenIV.linux.org.uk>
+References: <FB8A4655DFD2B34DB16AE06DDDD6C0E21BDB93D2@SJEXCHMB12.corp.ad.broadcom.com>
+ <CA+55aFyE=EDqMt1E94FSOFNEVWMS+mNVsJZYwiRmWfyB5HkykA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyE=EDqMt1E94FSOFNEVWMS+mNVsJZYwiRmWfyB5HkykA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Michal Hocko wrote:
-
-> > A subset of applications that wait on memory.oom_control don't disable
-> > the oom killer for that memcg and simply log or cleanup after the kernel
-> > oom killer kills a process to free memory.
-> > 
-> > We need the ability to do this for system oom conditions as well, i.e.
-> > when the system is depleted of all memory and must kill a process.  For
-> > convenience, this can use memcg since oom notifiers are already present.
+On Mon, Nov 18, 2013 at 04:38:03PM -0800, Linus Torvalds wrote:
+> Hmm.. Al - this looks like a major oversight, but it also looks like
+> the wrong place to initialize count/from in, just because it doesn't
+> follow any sane patterns.
 > 
-> Using the memcg interface for "read-only" interface without any plan for
-> the "write" is only halfway solution. We want to handle global OOM in a
-> more user defined ways but we have to agree on the proper interface
-> first. I do not want to end up with something half baked with memcg and
-> a different interface to do the real thing just because memcg turns out
-> to be unsuitable.
+> My gut feel is that this needs more cleanup and some sane helper
+> function that always initializes those fields when allocating a new
+> buffer. Rather than the "initialize in random places and then miss a
+> few".
 > 
+> Afaik, those fields currently get (re-)initialized when:
+> 
+>  - We do the memset() of the whole seq_file structure at seq_open() time.
+> 
+>  - at the top of traverse()
+> 
+>  - count (but not from) gets reinitialized when growing the buffer or
+> after traverse() fails in seq_read()
+> 
+> and it really doesn't give me that happy fuzzy feeling of "that all
+> makes sense". Charley's patch seems to fix a missing initialization,
+> but I'd *really* like to have it all make more sense, and feel that
+> we're not missing some *other* initialization.
+> 
+> Al?
 
-This patch isn't really a halfway solution, you can still determine if the 
-open(O_WRONLY) succeeds or not to determine if that feature has been 
-implemented.  I'm concerned about disabling the oom killer entirely for 
-system oom conditions, though, so I didn't implement it to be writable.  I 
-don't think we should be doing anything special in terms of "write" 
-behavior for the root memcg memory.oom_control, so I'd argue against doing 
-anything other than disabling the oom killer.  That's scary.
+See upthread.  The bug is real, but I would rather go for a different
+fix; it's not worth helper functions, though - we have exactly two places
+where free m->buf without freeing m itself, and all we need to do is
+clearing m->count in those two places.  No point delaying that to the
+next call of seq_read() (and no point cleaning m->from at all), as soon
+as we free m->buf we obviously lose all the data that might've been in it.
