@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3KSP44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:56:56 -0500
-Received: from sauhun.de ([89.238.76.85]:52913 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab3KSP4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:56:55 -0500
-Date: Tue, 19 Nov 2013 16:56:46 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	id S1753079Ab3KSP6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:58:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41378 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab3KSP6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 10:58:14 -0500
+Date: Tue, 19 Nov 2013 16:57:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PULL REQUEST] i2c for 3.13
-Message-ID: <20131119155646.GA2569@katana>
-References: <20131118193802.GA14925@katana>
- <CA+55aFxZaC=beR+dN36Sv==6fjY7SdOdwXaSHU+wnk+-oDJp4g@mail.gmail.com>
- <3690707.5664qBQcL8@vostro.rjw.lan>
- <20131119150001.GM2281@intel.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+Message-ID: <20131119155749.GL10022@twins.programming.kicks-ass.net>
+References: <52803E5D.3050109@mentor.com>
+ <52851395.3010306@mentor.com>
+ <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+ <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131119150001.GM2281@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
+> Hi,
+> 
+> I got a bug report on ARM which appears to be caused by an aggressive
+> gcc optimisation starting from gcc 4.8.x due to lack of constraints on
+> the current_thread_info() inline assembly. The only logical
+> explanation for his issue I see so far is that read of the
+> preempt_count within might_sleep() is reordered with preempt_enable()
+> or preempt_disable(). AFAIU, this kind of issue also applies to other
+> architectures.
+> 
+> First thing, preempt enable/disable only contains barrier() between
+> the inc/dec and the inside of the critical section, not the outside.
+> Therefore, we are relying on program order to ensure that the
+> preempt_count() read in might_sleep() is not reordered with the
+> preempt count inc/dec.
+> 
+> However, looking at ARM arch/arm/include/asm/thread_info.h:
+> 
+> static inline struct thread_info *current_thread_info(void) { register
+> unsigned long sp asm ("sp"); return (struct thread_info *)(sp &
+> ~(THREAD_SIZE - 1)); }
+> 
+> The inline assembly has no clobber and is not volatile. (this is also
+> true for all other architectures I've looked at so far, which includes
+> x86 and powerpc)
+> 
+> As long as someone does:
+> 
+> struct thread_info *myinfo = current_thread_info();
+> 
+> load from myinfo->preempt_count; store to myinfo->preempt_count;
+> 
+> The program order should be preserved, because the read and the write
+> are done wrt same base. However, what we have here in the case of
+> might_sleep() followed by preempt_enable() is:
+> 
+> load from current_thread_info()->preempt_count; store to
+> current_thread_info()->preempt_count;
+> 
+> Since each current_thread_info() is a different asm ("sp") without
+> clobber nor volatile, AFAIU, the compiler is within its right to
+> reorder them.
+> 
+> One possible solution to this might be to add "memory" clobber and
+> volatile to this inline asm, but I fear it would put way too much
+> constraints on the compiler optimizations (too heavyweight).
+> 
+> Have any of you experienced this issue ? Any thoughts on the matter ?
+> 
+> I'm providing the original bug report email exchange below. I had
+> confirmation that adding barrier() outside
+> preempt_enable()/preempt_disable() does indeed work-around the issue,
+> but I fear that this work-around would be leaving the
+> current_thread_info() semantic gap in place: people expect program
+> order to be respected.
 
---vkogqOf2sHV7VnPd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This all brings to mind commit 509eb76ebf977 ("ARM: 7747/1: pcpu: ensure
+__my_cpu_offset cannot be re-ordered across barrier()").
 
+GCC seems overly happy with reordering asm() thingies.
 
-> Actually, can we remove the whole clientdata setting there?
->=20
-> Commit 0998d0631001 (device-core: Ensure drvdata =3D NULL when no driver =
-is
-> bound) modified the driver core to always clear out that field. Same seems
-> to apply if driver probe fails.
+Ideally we'd be able to tell gcc that:
 
-Oh, nice, missed that commit. That indeed should help cleaning up the i2c
-core a little. I will prepare something.
+  register unsigned long *sp asm ("sp")
 
+not only acts like a variable but should be treated like a variable and
+thus such reshuffeling should be limited to preserve program-order.
 
---vkogqOf2sHV7VnPd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSi4o+AAoJEBQN5MwUoCm2dDIQAJJAuFfAzmhcYrK1Ns8Y/K3y
-BhiBkbqdOKoyAVbdSCiqO7kNDGO+nVp+V9TiELLuJg3d74D4Sq7Ml9qRbIhWiH6E
-APoRjmgYC+c4XZ9/o57SGPmcBoFckx1KZaT9AI/W9/lL6FAnKIgrDLDcrwZOV4+V
-/F9OIbXKaDkDsIkDhPw7Yj89WGNKy+LAIlngUKLl6bYfq+Xa5Ympfr13z25qbh+y
-zZ9A5bM3ruImEAkdqtSH/d7Yop5LlRLDmwrGOZt620r/OYjJzfYbsvESCagetxrX
-uA0wrufem5shuON4zem8FgEHitnCzX8StkxZvGLWtUBOxNsnny+EV1uYWWpLCYdH
-pTaDCRdH0C7jVlAy9sLP96KAQDVCcTW3M5QKBevEs5NVom71P2oIufAwcuef5JTK
-t+oPuco1W2E0UNmaDh8CZmrXmtrS9WadUd1ubuTpkRrJhB4ec0cq/N03WCADapsg
-CjUZsm6+ve4osvVMmdPrkdcKBm2mjDSaY3V4m2LhgYSfijwzweklSMJgtejx2B7I
-7thHRh54xJ4btmq+HEDRck3t4ZKcMn77zp/ofdwqPIjuO29ub6VtM25M/8MCqLmc
-pZ0mwDXTiwjpIzSXEm0unpWrXzYuB3vWBfkwC5t2Iqmeegu6sBhmheTJ99xpxgXf
-0iMZf+Wis0ru1uhypHRh
-=aeJ0
------END PGP SIGNATURE-----
-
---vkogqOf2sHV7VnPd--
+There doesn't seem to be any __attribute__() that can do this, and
+currently out only recourse seems to add either volatile, which seems
+overly strict as Mathieu said, or add fake input like Will did.
