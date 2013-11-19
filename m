@@ -1,64 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab3KSRn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:43:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38149 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3KSRny (ORCPT
+	id S1753399Ab3KSRst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:48:49 -0500
+Received: from smtprelay0209.hostedemail.com ([216.40.44.209]:34727 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751624Ab3KSRsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:43:54 -0500
-Message-ID: <528BA355.4040008@ti.com>
-Date: Tue, 19 Nov 2013 11:43:49 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net>	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>	<528A27F8.3070402@ti.com>	<20131118155753.GU11014@S2101-09.ap.freescale.net>	<528A4340.3020508@ti.com>	<20131119022133.GB18434@S2101-09.ap.freescale.net>	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>	<528B72C1.5060006@ti.com>	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>	<528B7CE5.5040502@ti.com>	<CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>	<528B884C.7070908@ti.com> <CAKohpo=brpnLe68ExPRPg9h5ABMhg+GS85Ebn-+S5-vWaStrPQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=brpnLe68ExPRPg9h5ABMhg+GS85Ebn-+S5-vWaStrPQ@mail.gmail.com>
+	Tue, 19 Nov 2013 12:48:47 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:2:41:69:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2194:2196:2197:2198:2199:2200:2201:2202:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3291:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4117:4250:4321:4385:4605:4823:5007:6119:6238:7652:7903:9040:9592:10007:10848:11232:11233:11473:11658:11914:12043:12291:12295:12517:12519:12555:12679:12683:12740:13019:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: linen31_2f406c6651600
+X-Filterd-Recvd-Size: 6548
+Message-ID: <1384883323.17783.35.camel@joe-AO722>
+Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Johannes =?ISO-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Nov 2013 09:48:43 -0800
+In-Reply-To: <20131119103408.GA3640@pd.tnic>
+References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>
+	 <528ACB6A.1040809@zytor.com> <20131119072241.GB32478@gmail.com>
+	 <20131119103408.GA3640@pd.tnic>
 Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 11:10 AM, Viresh Kumar wrote:
-> On 19 November 2013 21:18, Nishanth Menon <nm@ti.com> wrote:
->> is that true for userspace governor
->> (CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE)?
->> /sys/devices/system/cpu/cpu0/cpufreq $ cat scaling_available_frequencies
->> 500000 1000000 1500000
->>
->> /sys/devices/system/cpu/cpu0/cpufreq $ cat scaling_cur_freq
->> 1100000
+On Tue, 2013-11-19 at 11:34 +0100, Borislav Petkov wrote:
+> On Tue, Nov 19, 2013 at 08:22:41AM +0100, Ingo Molnar wrote:
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > > On 11/18/2013 09:50 AM, Johannes Löthberg wrote:
+> > > > Replace all mixed indentation with tabs
+> > > > Signed-off-by: Johannes Löthberg <johannes@kyriasis.com>
+> > > NAK.  Not worth the churn in the absence of other changes.
+> > Yes.
+> > If a20.c was cleaned up altogether, that might be a more tempting 
+> > change, it has a good number of inconsistencies and improving it all 
+> > would make it more readable.
+> >  
+> > But it makes little sense to do an incomplete cleanup.
 > 
-> No, but userspace governor must take care of this stuff as it want's
-> to change freq from userspace..
-> 
+> Yeah, senseless cleanup without any benefit whatsoever (yeah, fuck
+> readability! :-)) should be forbidden, if you ask me. Especially
+> since it dilutes and muds up git history and finding the patch which
+> introduced a change turns into a serious undertaking.
 
-Right, the point is that CPUFREQ_GOV_LIMITS wont help in the case when
-it is within min-max bound.. the first transition will help bring it
-to a sane value - that I agree.
+just fyi:
 
->> OMAP5-UEVM will remain at this frequency for a long period of time
->> with AVS voltage(Adaptive Voltage Scaling technique used in OMAP to
->> optimize operational voltage) that was meant for 1GHz! that is
->> definitely not stable if there is no further transition to a valid
->> frequency.
-> 
-> I understand that point, but will this stay for a long time at that freq?
-> Why aren't governors coming into picture here?
+git diff -w and git blame -w both ignore whitespace changes
+and can help in tracking down actual modifications.
 
-we depend on the first transition to take us to a sane configuration -
-but we cannot predict when and if it will happen.
+If a20.c was to be modified for whatever reason, maybe this
+below would be OK, but I too think it's not particularly
+worthwhile as the file hasn't had or needed a significant
+change in quite awhile.
+
+This is sent as an example for Johannes, who it seems hasn't
+ever submitted a patch before, more than to be applied.
+
+Changes include:
+
+o whitespace space->tab conversions
+o spacing around arithmetic
+o comment style neatening
+
+Unsigned...
+
+---
+
+ arch/x86/boot/a20.c | 97 +++++++++++++++++++++++++++++------------------------
+ 1 file changed, 53 insertions(+), 44 deletions(-)
+
+diff --git a/arch/x86/boot/a20.c b/arch/x86/boot/a20.c
+index 64a31a6..e1dec7e 100644
+--- a/arch/x86/boot/a20.c
++++ b/arch/x86/boot/a20.c
+@@ -22,7 +22,7 @@ static int empty_8042(void)
+ {
+ 	u8 status;
+ 	int loops = MAX_8042_LOOPS;
+-	int ffs   = MAX_8042_FF;
++	int ffs = MAX_8042_FF;
+ 
+ 	while (loops--) {
+ 		io_delay();
+@@ -46,17 +46,21 @@ static int empty_8042(void)
+ 	return -1;
+ }
+ 
+-/* Returns nonzero if the A20 line is enabled.  The memory address
+-   used as a test is the int $0x80 vector, which should be safe. */
++/*
++ * Returns nonzero if the A20 line is enabled.
++ * The memory address used as a test is the int $0x80 vector,
++ * which should be safe.
++ */
+ 
+-#define A20_TEST_ADDR	(4*0x80)
+-#define A20_TEST_SHORT  32
+-#define A20_TEST_LONG	2097152	/* 2^21 */
++#define A20_TEST_ADDR	(4 * 0x80)
++#define A20_TEST_SHORT	32
++#define A20_TEST_LONG	(1 << 21)	/* 2^21 = 2097152 */
+ 
+ static int a20_test(int loops)
+ {
+ 	int ok = 0;
+-	int saved, ctr;
++	int saved;
++	int ctr;
+ 
+ 	set_fs(0x0000);
+ 	set_gs(0xffff);
+@@ -66,7 +70,7 @@ static int a20_test(int loops)
+ 	while (loops--) {
+ 		wrfs32(++ctr, A20_TEST_ADDR);
+ 		io_delay();	/* Serialize and make delay constant */
+-		ok = rdgs32(A20_TEST_ADDR+0x10) ^ ctr;
++		ok = rdgs32(A20_TEST_ADDR + 0x10) ^ ctr;
+ 		if (ok)
+ 			break;
+ 	}
+@@ -81,8 +85,10 @@ static int a20_test_short(void)
+ 	return a20_test(A20_TEST_SHORT);
+ }
+ 
+-/* Longer test that actually waits for A20 to come on line; this
+-   is useful when dealing with the KBC or other slow external circuitry. */
++/*
++ * Longer test that actually waits for A20 to come on line;
++ * this is useful when dealing with the KBC or other slow external circuitry.
++ */
+ static int a20_test_long(void)
+ {
+ 	return a20_test(A20_TEST_LONG);
+@@ -116,7 +122,7 @@ static void enable_a20_fast(void)
+ 	u8 port_a;
+ 
+ 	port_a = inb(0x92);	/* Configuration port A */
+-	port_a |=  0x02;	/* Enable A20 */
++	port_a |= 0x02;		/* Enable A20 */
+ 	port_a &= ~0x01;	/* Do not reset machine */
+ 	outb(port_a, 0x92);
+ }
+@@ -129,37 +135,40 @@ static void enable_a20_fast(void)
+ 
+ int enable_a20(void)
+ {
+-       int loops = A20_ENABLE_LOOPS;
+-       int kbc_err;
+-
+-       while (loops--) {
+-	       /* First, check to see if A20 is already enabled
+-		  (legacy free, etc.) */
+-	       if (a20_test_short())
+-		       return 0;
+-	       
+-	       /* Next, try the BIOS (INT 0x15, AX=0x2401) */
+-	       enable_a20_bios();
+-	       if (a20_test_short())
+-		       return 0;
+-	       
+-	       /* Try enabling A20 through the keyboard controller */
+-	       kbc_err = empty_8042();
+-
+-	       if (a20_test_short())
+-		       return 0; /* BIOS worked, but with delayed reaction */
+-	
+-	       if (!kbc_err) {
+-		       enable_a20_kbc();
+-		       if (a20_test_long())
+-			       return 0;
+-	       }
+-	       
+-	       /* Finally, try enabling the "fast A20 gate" */
+-	       enable_a20_fast();
+-	       if (a20_test_long())
+-		       return 0;
+-       }
+-       
+-       return -1;
++	int loops = A20_ENABLE_LOOPS;
++
++	while (loops--) {
++		int kbc_err;
++
++		/*
++		 * First, check to see if A20 is already enabled
++		 * (legacy free, etc.)
++		 */
++		if (a20_test_short())
++			return 0;
++
++		/* Next, try the BIOS (INT 0x15, AX=0x2401) */
++		enable_a20_bios();
++		if (a20_test_short())
++			return 0;
++
++		/* Try enabling A20 through the keyboard controller */
++		kbc_err = empty_8042();
++
++		if (a20_test_short())
++			return 0; /* BIOS worked, but with delayed reaction */
++
++		if (!kbc_err) {
++			enable_a20_kbc();
++			if (a20_test_long())
++				return 0;
++		}
++
++		/* Finally, try enabling the "fast A20 gate" */
++		enable_a20_fast();
++		if (a20_test_long())
++			return 0;
++	}
++
++	return -1;
+ }
 
 
--- 
-Regards,
-Nishanth Menon
+
