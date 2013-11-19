@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab3KSJ3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:29:10 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:41682 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab3KSJ3E (ORCPT
+	id S1751790Ab3KSJc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:32:58 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:44044 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3KSJcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:29:04 -0500
+	Tue, 19 Nov 2013 04:32:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1384560086-11994-2-git-send-email-taras.kondratiuk@linaro.org>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
-	<1384560086-11994-2-git-send-email-taras.kondratiuk@linaro.org>
-Date: Tue, 19 Nov 2013 10:29:02 +0100
-Message-ID: <CACRpkdYD-Yw+RFnX0GshyQn2oHYNnXXRF4RXTzCox=2Z0_gKqg@mail.gmail.com>
-Subject: Re: [RFC 01/23] gpio/omap: raw read and write endian fix
+In-Reply-To: <5289ECEE.4070505@nvidia.com>
+References: <1384605261-8682-1-git-send-email-acourbot@nvidia.com>
+	<CACRpkdZc0DWHe6AmawYp=SY=5==SUuJUHDETUTDw-6PbhR3tUg@mail.gmail.com>
+	<5289ECEE.4070505@nvidia.com>
+Date: Tue, 19 Nov 2013 10:32:54 +0100
+Message-ID: <CACRpkdb0Gb9AGKqWb01=xe1423kPTXzCB+gbygsaED8Q=c95iA@mail.gmail.com>
+Subject: Re: [PATCH v2] Documentation: gpiolib: document new interface
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Linux-OMAP <linux-omap@vger.kernel.org>, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Rob Landley <rob@landley.net>,
         "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 16, 2013 at 1:01 AM, Taras Kondratiuk
-<taras.kondratiuk@linaro.org> wrote:
+On Mon, Nov 18, 2013 at 11:33 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+> On 11/18/2013 06:34 PM, Linus Walleij wrote:
 
-> From: Victor Kamensky <victor.kamensky@linaro.org>
+>> Don't we need an 00-INDEX file?
+>> (Maybe Rob can tell whether this is desirable.)
 >
-> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
-> Need to use endian neutral functions to read/write h/w registers.
-> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
-> need to use read[lw]_relaxed and write[lw]_relaxed functions.
-> If the first simply reads/writes register, the second will byteswap
-> it if host operates in BE mode.
->
-> Changes are trivial sed like replacement of __raw_xxx functions
-> with xxx_relaxed variant.
->
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> Good idea. gpio.txt somehow fulfills that role, but it might be better if we
+> split it. Would you like me to submit a new revision?
 
-Since I generally just dislike __raw accessors I went and applied
-this. If it collides with any of Tony's fixup work I might need to
-take the patch out again, no big deal.
+No please just send some incremental patch on top of
+my "fixes" branch in the GPIO tree.
 
-Some ACKs would be nice, but unless there are major objections
-this stays merged.
+I've read through the docs and couldn't find anything
+really wrong with it BTW.
 
 Yours,
 Linus Walleij
