@@ -1,196 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3KSMLu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 07:11:50 -0500
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:46653 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751563Ab3KSMLt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 07:11:49 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=Ei/SUYm2RTd2ajRavrSfifiLrJl5yXMeTfE3Dd1tVzZbMGq5ws9PD2TMn9ZwvEGQ;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <528B5581.8040006@earthlink.net>
-Date: Tue, 19 Nov 2013 07:11:45 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	id S1752469Ab3KSMNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 07:13:36 -0500
+Received: from tundra.namei.org ([65.99.196.166]:39460 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752390Ab3KSMNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 07:13:31 -0500
+Date: Tue, 19 Nov 2013 23:20:33 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [GIT] Security subsystem updates for 3.13
+In-Reply-To: <CA+55aFyp2HnMATV1v81QwZFqXcyca-RTD93=55ba37kF4ANfCw@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1311192319180.27775@tundra.namei.org>
+References: <alpine.LRH.2.02.1311071146450.31522@tundra.namei.org> <CA+5PVA7C-SSg5TyQ14kUN2SbLi-=bk6isi05xgtR5j8MC7-Uhg@mail.gmail.com> <alpine.LRH.2.02.1311191029050.20131@tundra.namei.org>
+ <CA+55aFyp2HnMATV1v81QwZFqXcyca-RTD93=55ba37kF4ANfCw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 driver gpu hung kernel 3.11
-References: <52896862.5000300@earthlink.net> <20131118184107.67d6c875@neptune.home>
-In-Reply-To: <20131118184107.67d6c875@neptune.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79a30819f9e934601ff6065f0ac160c24f350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 24.144.93.126
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruno,
+Also, here's an updated branch to pull from with four new fixes from 
+David.
 
-Thanks for the response. I have subscribed to the intel-gfx list. I didn't post 
-the error_state file since it huge.
+---
 
-I was trying to play Myst Online using wine-1.3.24. I get started and start 
-moving my avatar fairly
-quickly I get the error.
+The following changes since commit be408cd3e1fef73e9408b196a79b9934697fe3b1:
 
-I have built the latest X, mesa etc from the git repo and loaded the latest 
-kernel but still have the problem,
-though now my screen doesn't lose horizontal sync like it used to before I 
-uppgraded X etc.
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-11-04 06:40:55 -0800)
 
-Below is a lspci of my laptop.
+are available in the git repository at:
 
-00:00.0 Host bridge: Intel Corporation Mobile 945GM/PM/GMS, 943/940GML and 945GT 
-Express Memory Controller Hub (rev 03)
-00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 
-943/940GML Express Integrated Graphics Controller (rev 03)
-00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML 
-Express Integrated Graphics Controller (rev 03)
-00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio 
-Controller (rev 02)
-00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 02)
-00:1c.1 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 2 (rev 02)
-00:1c.2 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 3 (rev 02)
-00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-#1 (rev 02)
-00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-#2 (rev 02)
-00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-#3 (rev 02)
-00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-#4 (rev 02)
-00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller 
-(rev 02)
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e2)
-00:1f.0 ISA bridge: Intel Corporation 82801GBM (ICH7-M) LPC Interface Bridge 
-(rev 02)
-00:1f.2 IDE interface: Intel Corporation 82801GBM/GHM (ICH7 Family) SATA IDE 
-Controller (rev 02)
-00:1f.3 SMBus: Intel Corporation N10/ICH 7 Family SMBus Controller (rev 02)
-03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] 
-Network Connection (rev 02)
-05:01.0 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller
-05:01.1 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host 
-Adapter (rev 19)
-05:01.2 System peripheral: Ricoh Co Ltd R5C843 MMC Host Controller (rev 01)
-05:01.3 System peripheral: Ricoh Co Ltd R5C592 Memory Stick Bus Host Adapter 
-(rev 0a)
-05:07.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC 
-Gigabit Ethernet (rev 10)
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus2
 
+Anand Avati (1):
+      selinux: consider filesystem subtype in policies
 
-On 11/18/2013 12:41 PM, Bruno Prémont wrote:
-> Hi Stephen,
->
-> You may want to CC intel-gfx@lists.freedesktop.org  for i915 issues (even
-> if you are not subscribed and you mail will wait for a moderator to let
-> it go through).
->
-> In case of intel GPU hangs you should at least include
-> /sys/kernel/debug/dri/0/i915_error_state, probably submitting as a
-> bug report on bugs.freedesktop.org due to its size.
->
-> If you have any indication on what triggers the hang, please add!
->
-> Bruno
->
-> On Sun, 17 November 2013 Stephen Clark<sclark46@earthlink.net>  wrote:
->> Hi List,
->>
->> I am getting this in kernel 3.11 x86_64
->>
->> Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on
->> render ring
->> Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more
->> information in /sys/kernel/debug/dri/0/i915_error_state
->> Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6,
->> mode:0x200020
->> Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted
->> 3.11.6-1.el6.elrepo.x86_64 #1
->> Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F,
->> BIOS 080012  08/29/2006
->> Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0
->> ffffffff815f7f89 0000000000000010
->> Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970
->> ffffffff8114243d ffff8800b778ab28
->> Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000
->> 0000000000000000 0000000600000002
->> Nov 17 18:56:19 joker4 kernel: Call Trace:
->> Nov 17 18:56:19 joker4 kernel:<IRQ>   [<ffffffff815f7f89>] dump_stack+0x49/0x60
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>]
->> __alloc_pages_slowpath+0x4ae/0x7c0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ?
->> get_page_from_freelist+0x2dd/0x710
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>]
->> __alloc_pages_nodemask+0x30e/0x330
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ?
->> i915_capture_error_state+0x379/0x720 [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>]
->> i915_capture_error_state+0x379/0x720 [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80
->> [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>]
->> i915_hangcheck_elapsed+0x2ce/0x350 [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
->> i915_handle_error+0x80/0x80 [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
->> i915_handle_error+0x80/0x80 [i915]
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>]
->> smp_apic_timer_interrupt+0x4a/0x5a
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
->> Nov 17 18:56:19 joker4 kernel:<EOI>   [<ffffffff810bb1aa>] ?
->> cpu_idle_loop+0x10a/0x210
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
->> Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
->> Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
->> Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
->> Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
->> Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
->> hung inside bo (0x85c000 ctx 0) at 0x85c97c
->>
->> is this fixed in 3.12?
->>
->> Just checked get the same thing in 3.12 but no trace back.
->>
->>
->> Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
->> Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more
->> information in /sys/class/drm/card0/error
->> Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
->> hung inside bo (0x7214000 ctx 0) at 0x72142e0
->> Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
->>
->>
->>
->>
->> Thanks,
->> Steve
+Antonio Alecrim Jr (1):
+      X.509: remove possible code fragility: enumeration values not handled
 
+Casey Schaufler (2):
+      Smack: Implement lock security mode
+      Smack: Ptrace access check mode
 
--- 
-Steve Clark
+Chen Gang (1):
+      kernel/system_certificate.S: use real contents instead of macro GLOBAL()
 
+Chris PeBenito (1):
+      Add SELinux policy capability for always checking packet and peer classes.
+
+David Howells (33):
+      KEYS: Skip key state checks when checking for possession
+      KEYS: Use bool in make_key_ref() and is_key_possessed()
+      KEYS: key_is_dead() should take a const key pointer argument
+      KEYS: Consolidate the concept of an 'index key' for key access
+      KEYS: Introduce a search context structure
+      KEYS: Search for auth-key by name rather than target key ID
+      KEYS: Define a __key_get() wrapper to use rather than atomic_inc()
+      KEYS: Drop the permissions argument from __keyring_search_one()
+      Add a generic associative array implementation.
+      KEYS: Expand the capacity of a keyring
+      KEYS: Implement a big key type that can save to tmpfs
+      KEYS: Add per-user_namespace registers for persistent per-UID kerberos caches
+      KEYS: Rename public key parameter name arrays
+      KEYS: Move the algorithm pointer array from x509 to public_key.c
+      KEYS: Store public key algo ID in public_key struct
+      KEYS: Split public_key_verify_signature() and make available
+      KEYS: Store public key algo ID in public_key_signature struct
+      X.509: struct x509_certificate needs struct tm declaring
+      X.509: Embed public_key_signature struct and create filler function
+      X.509: Check the algorithm IDs obtained from parsing an X.509 certificate
+      X.509: Handle certificates that lack an authorityKeyIdentifier field
+      X.509: Remove certificate date checks
+      KEYS: Load *.x509 files into kernel keyring
+      KEYS: Have make canonicalise the paths of the X.509 certs better to deduplicate
+      KEYS: Separate the kernel signature checking keyring from module signing
+      KEYS: Add a 'trusted' flag and a 'trusted only' flag
+      KEYS: Set the asymmetric-key type default search method
+      KEYS: Fix a race between negating a key and reading the error set
+      KEYS: Fix keyring quota misaccounting on key replacement and unlink
+      KEYS: The RSA public key algorithm needs to select MPILIB
+      KEYS: Fix UID check in keyctl_get_persistent()
+      KEYS: Fix error handling in big_key instantiation
+      KEYS: Fix keyring content gc scanner
+
+Dmitry Kasatkin (11):
+      ima: fix script messages
+      crypto: provide single place for hash algo information
+      keys: change asymmetric keys to use common hash definitions
+      ima: provide support for arbitrary hash algorithms
+      ima: read and use signature hash algorithm
+      ima: pass full xattr with the signature
+      ima: use dynamically allocated hash storage
+      ima: provide dedicated hash algo allocation function
+      ima: support arbitrary hash algorithms in ima_calc_buffer_hash
+      ima: ima_calc_boot_agregate must use SHA1
+      ima: provide hash algo info in the xattr
+
+Duan Jiong (1):
+      selinux: Use kmemdup instead of kmalloc + memcpy
+
+Eric Paris (13):
+      SELinux: fix selinuxfs policy file on big endian systems
+      SELinux: remove crazy contortions around proc
+      SELinux: make it harder to get the number of mnt opts wrong
+      SELinux: use define for number of bits in the mnt flags mask
+      SELinux: rename SE_SBLABELSUPP to SBLABEL_MNT
+      SELinux: do all flags twiddling in one place
+      SELinux: renumber the superblock options
+      SELinux: change sbsec->behavior to short
+      SELinux: do not handle seclabel as a special flag
+      SELinux: pass a superblock to security_fs_use
+      SELinux: use a helper function to determine seclabel
+      Revert "SELinux: do not handle seclabel as a special flag"
+      security: remove erroneous comment about capabilities.o link ordering
+
+James Morris (3):
+      Merge branch 'master' of git://git.infradead.org/users/pcmoore/selinux into ra-next
+      Merge branch 'smack-for-3.13' of git://git.gitorious.org/smack-next/kernel into ra-next
+      Merge branch 'keys-devel' of git://git.kernel.org/.../dhowells/linux-fs into ra-next
+
+Jason Gunthorpe (11):
+      tpm: ibmvtpm: Use %zd formatting for size_t format arguments
+      tpm atmel: Call request_region with the correct base
+      tpm: Store devname in the tpm_chip
+      tpm: Use container_of to locate the tpm_chip in tpm_open
+      tpm: Remove redundant dev_set_drvdata
+      tpm: st33: Remove chip->data_buffer access from this driver
+      tpm: Remove tpm_show_caps_1_2
+      tpm: Rename tpm.c to tpm-interface.c
+      tpm: Merge the tpm-bios module with tpm.o
+      tpm: Add support for the Nuvoton NPCT501 I2C TPM
+      tpm: Add support for Atmel I2C TPMs
+
+John Johansen (3):
+      apparmor: fix capability to not use the current task, during reporting
+      apparmor: remove tsk field from the apparmor_audit_struct
+      apparmor: remove parent task info from audit logging
+
+Josh Boyer (1):
+      KEYS: Make BIG_KEYS boolean
+
+Konstantin Khlebnikov (2):
+      MPILIB: add module description and license
+      X.509: add module description and license
+
+Mimi Zohar (10):
+      KEYS: Make the system 'trusted' keyring viewable by userspace
+      KEYS: verify a certificate is signed by a 'trusted' key
+      KEYS: initialize root uid and session keyrings early
+      Revert "ima: policy for RAMFS"
+      ima: differentiate between template hash and file data hash sizes
+      ima: add audit log support for larger hashes
+      ima: add Kconfig default measurement list template
+      ima: enable support for larger default filedata hash algorithms
+      ima: extend the measurement list to include the file signature
+      ima: define '_ima' as a builtin 'trusted' keyring
+
+Oleg Nesterov (1):
+      apparmor: remove the "task" arg from may_change_ptraced_domain()
+
+Paul Moore (13):
+      lsm: split the xfrm_state_alloc_security() hook implementation
+      selinux: cleanup and consolidate the XFRM alloc/clone/delete/free code
+      selinux: cleanup selinux_xfrm_policy_lookup() and selinux_xfrm_state_pol_flow_match()
+      selinux: cleanup selinux_xfrm_sock_rcv_skb() and selinux_xfrm_postroute_last()
+      selinux: cleanup some comment and whitespace issues in the XFRM code
+      selinux: cleanup selinux_xfrm_decode_session()
+      selinux: cleanup the XFRM header
+      selinux: remove the BUG_ON() from selinux_skb_xfrm_sid()
+      selinux: fix problems in netnode when BUG() is compiled out
+      Merge git://git.infradead.org/users/eparis/selinux
+      selinux: add Paul Moore as a SELinux maintainer
+      selinux: add Paul Moore as a SELinux maintainer
+      selinux: correct locking in selinux_netlbl_socket_connect)
+
+Peter Huewe (4):
+      tpm: MAINTAINERS: Add myself as tpm maintainer
+      tpm: cleanup checkpatch warnings
+      tpm: Fix module name description in Kconfig for tpm_i2c_infineon
+      tpm: use tabs instead of whitespaces in Kconfig
+
+Roberto Sassu (9):
+      ima: pass the file descriptor to ima_add_violation()
+      ima: pass the filename argument up to ima_add_template_entry()
+      ima: define new function ima_alloc_init_template() to API
+      ima: new templates management mechanism
+      ima: define template fields library and new helpers
+      ima: define new template ima-ng and template fields d-ng and n-ng
+      ima: switch to new template management mechanism
+      ima: defer determining the appraisal hash algorithm for 'ima' template
+      ima: define kernel parameter 'ima_template=' to change configured default
+
+Stephen Smalley (1):
+      SELinux: Enable setting security contexts on rootfs inodes.
+
+Waiman Long (2):
+      SELinux: Reduce overhead of mls_level_isvalid() function call
+      SELinux: Increase ebitmap_node size for 64-bit configuration
+
+Wei Yongjun (1):
+      KEYS: fix error return code in big_key_instantiate()
+
+ Documentation/assoc_array.txt                      |  574 +++++++
+ .../devicetree/bindings/i2c/trivial-devices.txt    |    3 +
+ Documentation/kernel-parameters.txt                |   11 +-
+ Documentation/security/00-INDEX                    |    2 +
+ Documentation/security/IMA-templates.txt           |   87 +
+ Documentation/security/keys.txt                    |   20 +-
+ MAINTAINERS                                        |    4 +-
+ crypto/Kconfig                                     |    3 +
+ crypto/Makefile                                    |    1 +
+ crypto/asymmetric_keys/Kconfig                     |    4 +-
+ crypto/asymmetric_keys/asymmetric_type.c           |    1 +
+ crypto/asymmetric_keys/public_key.c                |   66 +-
+ crypto/asymmetric_keys/public_key.h                |    6 +
+ crypto/asymmetric_keys/rsa.c                       |   14 +-
+ crypto/asymmetric_keys/x509_cert_parser.c          |   35 +-
+ crypto/asymmetric_keys/x509_parser.h               |   18 +-
+ crypto/asymmetric_keys/x509_public_key.c           |  232 ++-
+ crypto/hash_info.c                                 |   56 +
+ drivers/char/tpm/Kconfig                           |   37 +-
+ drivers/char/tpm/Makefile                          |   11 +-
+ drivers/char/tpm/{tpm.c => tpm-interface.c}        |  138 +-
+ drivers/char/tpm/tpm.h                             |    3 +-
+ drivers/char/tpm/tpm_atmel.c                       |    2 +-
+ drivers/char/tpm/tpm_eventlog.c                    |    3 -
+ drivers/char/tpm/tpm_i2c_atmel.c                   |  284 ++++
+ drivers/char/tpm/tpm_i2c_infineon.c                |    4 +-
+ drivers/char/tpm/tpm_i2c_nuvoton.c                 |  710 ++++++++
+ drivers/char/tpm/tpm_i2c_stm_st33.c                |   12 +-
+ drivers/char/tpm/tpm_ibmvtpm.c                     |    6 +-
+ drivers/char/tpm/tpm_ppi.c                         |    4 -
+ drivers/char/tpm/tpm_tis.c                         |    2 +-
+ drivers/char/tpm/xen-tpmfront.c                    |    2 -
+ include/crypto/hash_info.h                         |   40 +
+ include/crypto/public_key.h                        |   25 +-
+ include/keys/big_key-type.h                        |   25 +
+ include/keys/keyring-type.h                        |   17 +-
+ include/keys/system_keyring.h                      |   23 +
+ include/linux/assoc_array.h                        |   92 +
+ include/linux/assoc_array_priv.h                   |  182 ++
+ include/linux/key-type.h                           |    6 +
+ include/linux/key.h                                |   52 +-
+ include/linux/security.h                           |   26 +-
+ include/linux/user_namespace.h                     |    6 +
+ include/uapi/linux/hash_info.h                     |   37 +
+ include/uapi/linux/keyctl.h                        |    1 +
+ init/Kconfig                                       |   13 +
+ kernel/Makefile                                    |   50 +-
+ kernel/modsign_certificate.S                       |   12 -
+ kernel/modsign_pubkey.c                            |  104 --
+ kernel/module-internal.h                           |    2 -
+ kernel/module_signing.c                            |   11 +-
+ kernel/system_certificates.S                       |   10 +
+ kernel/system_keyring.c                            |  105 ++
+ kernel/user.c                                      |    4 +
+ kernel/user_namespace.c                            |    6 +
+ lib/Kconfig                                        |   14 +
+ lib/Makefile                                       |    1 +
+ lib/assoc_array.c                                  | 1746 ++++++++++++++++++++
+ lib/mpi/mpiutil.c                                  |    3 +
+ scripts/asn1_compiler.c                            |    2 +
+ security/Makefile                                  |    1 -
+ security/apparmor/audit.c                          |   14 +-
+ security/apparmor/capability.c                     |   15 +-
+ security/apparmor/domain.c                         |   16 +-
+ security/apparmor/include/audit.h                  |    1 -
+ security/apparmor/include/capability.h             |    5 +-
+ security/apparmor/include/ipc.h                    |    4 +-
+ security/apparmor/ipc.c                            |    9 +-
+ security/apparmor/lsm.c                            |    2 +-
+ security/capability.c                              |   15 +-
+ security/integrity/digsig.c                        |   37 +-
+ security/integrity/digsig_asymmetric.c             |   11 -
+ security/integrity/evm/evm_main.c                  |    4 +-
+ security/integrity/evm/evm_posix_acl.c             |    3 +-
+ security/integrity/iint.c                          |    2 +
+ security/integrity/ima/Kconfig                     |   72 +
+ security/integrity/ima/Makefile                    |    2 +-
+ security/integrity/ima/ima.h                       |  101 +-
+ security/integrity/ima/ima_api.c                   |  136 ++-
+ security/integrity/ima/ima_appraise.c              |  117 ++-
+ security/integrity/ima/ima_crypto.c                |  134 ++-
+ security/integrity/ima/ima_fs.c                    |   67 +-
+ security/integrity/ima/ima_init.c                  |   37 +-
+ security/integrity/ima/ima_main.c                  |   63 +-
+ security/integrity/ima/ima_policy.c                |    1 -
+ security/integrity/ima/ima_queue.c                 |   10 +-
+ security/integrity/ima/ima_template.c              |  178 ++
+ security/integrity/ima/ima_template_lib.c          |  347 ++++
+ security/integrity/ima/ima_template_lib.h          |   49 +
+ security/integrity/integrity.h                     |   47 +-
+ security/keys/Kconfig                              |   29 +
+ security/keys/Makefile                             |    2 +
+ security/keys/big_key.c                            |  207 +++
+ security/keys/compat.c                             |    3 +
+ security/keys/gc.c                                 |   47 +-
+ security/keys/internal.h                           |   74 +-
+ security/keys/key.c                                |  102 +-
+ security/keys/keyctl.c                             |    3 +
+ security/keys/keyring.c                            | 1536 +++++++++--------
+ security/keys/persistent.c                         |  167 ++
+ security/keys/proc.c                               |   17 +-
+ security/keys/process_keys.c                       |  141 +-
+ security/keys/request_key.c                        |   60 +-
+ security/keys/request_key_auth.c                   |   31 +-
+ security/keys/sysctl.c                             |   11 +
+ security/keys/user_defined.c                       |   18 +-
+ security/security.c                                |   13 +-
+ security/selinux/hooks.c                           |  146 ++-
+ security/selinux/include/objsec.h                  |    4 +-
+ security/selinux/include/security.h                |   13 +-
+ security/selinux/include/xfrm.h                    |   45 +-
+ security/selinux/netlabel.c                        |    6 +-
+ security/selinux/netnode.c                         |    2 +
+ security/selinux/selinuxfs.c                       |    4 +-
+ security/selinux/ss/ebitmap.c                      |   20 +-
+ security/selinux/ss/ebitmap.h                      |   10 +-
+ security/selinux/ss/mls.c                          |   22 +-
+ security/selinux/ss/mls_types.h                    |    2 +-
+ security/selinux/ss/policydb.c                     |    3 +-
+ security/selinux/ss/services.c                     |   66 +-
+ security/selinux/xfrm.c                            |  453 +++---
+ security/smack/smack.h                             |   12 +-
+ security/smack/smack_access.c                      |   10 +
+ security/smack/smack_lsm.c                         |   11 +-
+ security/smack/smackfs.c                           |   10 +-
+ 125 files changed, 7712 insertions(+), 2058 deletions(-)
+ create mode 100644 Documentation/assoc_array.txt
+ create mode 100644 Documentation/security/IMA-templates.txt
+ create mode 100644 crypto/hash_info.c
+ rename drivers/char/tpm/{tpm.c => tpm-interface.c} (93%)
+ create mode 100644 drivers/char/tpm/tpm_i2c_atmel.c
+ create mode 100644 drivers/char/tpm/tpm_i2c_nuvoton.c
+ create mode 100644 include/crypto/hash_info.h
+ create mode 100644 include/keys/big_key-type.h
+ create mode 100644 include/keys/system_keyring.h
+ create mode 100644 include/linux/assoc_array.h
+ create mode 100644 include/linux/assoc_array_priv.h
+ create mode 100644 include/uapi/linux/hash_info.h
+ delete mode 100644 kernel/modsign_certificate.S
+ delete mode 100644 kernel/modsign_pubkey.c
+ create mode 100644 kernel/system_certificates.S
+ create mode 100644 kernel/system_keyring.c
+ create mode 100644 lib/assoc_array.c
+ create mode 100644 security/integrity/ima/ima_template.c
+ create mode 100644 security/integrity/ima/ima_template_lib.c
+ create mode 100644 security/integrity/ima/ima_template_lib.h
+ create mode 100644 security/keys/big_key.c
+ create mode 100644 security/keys/persistent.c
