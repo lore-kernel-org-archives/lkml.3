@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380Ab3KSGRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 01:17:17 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:40885 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3KSGRN (ORCPT
+	id S1751442Ab3KSGeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 01:34:15 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:54679 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3KSGeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 01:17:13 -0500
-X-AuditID: cbfee68e-b7f416d0000020d6-b0-528b0266d54e
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-i2c@vger.kernel.org
-Cc: sjg@chromium.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, wsa@the-dreams.de,
-        ben-linux@fluff.org, grant.likely@secretlab.ca, broonie@kernel.org,
-        dianders@chromium.org, cpgs@samsung.com, t.figa@samsung.com
-Subject: [PATCH v3] i2c: s3c2410: dont need CPU_FREQ transitions for exynos
- series
-Date: Tue, 19 Nov 2013 11:48:35 +0530
-Message-id: <1384841915-8264-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkTjeNqTvI4NY0fotJ6w4wWUx9+ITN
-	4uUhTYuzyw6yWbw6s5HNouPvF0aLy7vmsFnMOL+PyeLblm2MFutnvGaxWHliFrMDt8fshoss
-	Hn9XvWD22LSqk82jb8sqRo+fL3U8Tp56wuLxeZNcAHsUl01Kak5mWWqRvl0CV8bxpXtZCn7y
-	VBx7/Y29gfExVxcjJ4eEgInEy+lL2SBsMYkL99YD2VwcQgJLGSWu3m1hgSlauucXWJGQwCJG
-	ifNHqiCKepgkbrTPZQZJsAmYSRxctJodxBYRkJVofbCGGaSIWeA9o8S9291gCWGBEIlV7buY
-	QGwWAVWJD8cOgTXzCrhIND94BHWGokT3swlgNqeAm8T7roOMXYwcQNtcJbqvq4HMlBA4xi7x
-	6tNKqDkCEt8mH2IBqZEAWrzpADPEGEmJgytusExgFF7AyLCKUTS1ILmgOCm9yEivODG3uDQv
-	XS85P3cTIzA+Tv971reD8eYB60OMyUDjJjJLiSbnA+MrryTe0NjMyMLUxNTYyNzSjDRhJXHe
-	RQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwFkQrm8XVpE6aypZ4Sbr8jOtUwws1b+et
-	ylJflvfnb/zt+G+P50wqtTQ+ZPrEV7LZUqzP9MLRD1n3Wmo/uvuuVmfd8vy44JPbkzN2X0r4
-	fvC+29Wzsu/OznR6/3DTglaxqWkhZxbeffJS4MzVpcaTjN8reT23e+4WNfO0Z64sB/vv86oL
-	vu789U+JpTgj0VCLuag4EQD7VJ1FpQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jAd00pu4gg0lz2CwmrTvAZDH14RM2
-	i5eHNC3OLjvIZvHqzEY2i46/XxgtLu8Cqphxfh+Txbct2xgt1s94zWKx8sQsZgduj9kNF1k8
-	/q56weyxaVUnm0ffllWMHj9f6nicPPWExePzJrkA9qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/g
-	eOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoBuVFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG
-	6PqGBMH1GBmggYQ1jBnHl+5lKfjJU3Hs9Tf2BsbHXF2MnBwSAiYSS/f8YoOwxSQu3FsPZgsJ
-	LGKUOH+kqouRC8juYZK40T6XGSTBJmAmcXDRanYQW0RAVqL1wRpmkCJmgfeMEvdud4MlhAVC
-	JFa172ICsVkEVCU+HDsE1swr4CLR/OAR1DZFie5nE8BsTgE3ifddBxm7GDmAtrlKdF9Xm8DI
-	u4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcPQ9k97BuKrB4hCjAAejEg/vBPeuICHW
-	xLLiytxDjBIczEoivJJXgEK8KYmVValF+fFFpTmpxYcYk4GOmsgsJZqcD0wMeSXxhsYm5qbG
-	ppYmFiZmlqQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAmHi+4Djr+29ve7Q6z+8WuaJ3
-	PmBPV9jWlz/+TFD0UOxQcIr3+Sd6+1TBgoCjJ7s2FzLo3d/ds3Pznw0rZsw8e+v/yfhX/cZz
-	ZOeLGR6YNH+b3+L4K4Vhz8VX3QkV6Dk4bQEH85MPn+4fT3LJbLZXzToWVnadt19wVdaJ/0tP
-	V15QEC1elf/ixHklluKMREMt5qLiRAD6V04LAgMAAA==
+	Tue, 19 Nov 2013 01:34:11 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-b7f836d000001b39-09-528b065c7257
+Content-transfer-encoding: 8BIT
+Message-id: <1384842794.26319.32.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Tue, 19 Nov 2013 15:33:14 +0900
+In-reply-to: <001401cee4e8$09cf01b0$1d6d0510$@samsung.com>
+References: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
+ <001401cee4e8$09cf01b0$1d6d0510$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t8zY90Ytu4gg7Nr1Sz+N31ks7i0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZSz+Wl9wVqBi0oZ7
+	rA2Ms3i7GDk4JARMJLZsruhi5AQyxSQu3FvP1sXIxSEksIxRYtrEFcwQCROJzzsns0MkFjFK
+	dE98ywaS4BUQlPgx+R4LyCBmAXmJI5eyQcLMAuoSk+YtYoaof8UosXDXVHaIel2J4x9msILY
+	wgKeEtfXXWUD6WUT0JbYvN8AJCwkoCjxdv9dsBIRASWJX/MXsULMzJSY83oymM0ioCqx9+d9
+	MJtTwErix7uJrBC95RLtG6cxgtj8AqIShxduh7pfSWJ3eyfY/RICx9glzh39xQIxSEDi2+RD
+	LJCAkJXYdACqXlLi4IobLBMYJWYh+XIWwpezkHy5gJF5FaNoakFyQXFSepGxXnFibnFpXrpe
+	cn7uJkZIrPXvYLx7wPoQYzLQxonMUqLJ+cBYzSuJNzQ2M7IwNTE1NjK3NCNNWEmc9/7DpCAh
+	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjOopar9P2j3O42Jxu+mR62dRw2axT+GYseSLbf6r
+	qvmvyUhNeXep7sjW4Mz/8wNDtrpPDuNgvJJ//xLvu/z7qUXue71786/PiRdXEA9Nm9N+gTG/
+	zI7T8nTitPv3kzfe5Z+cOr9QbmFYD8eVKVVT9pufcDPYr76zxjGNac4bzehltlOzhSWOK7EU
+	ZyQaajEXFScCAK4nGzjLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jAd0Ytu4gg79LFC3+N31ks7i0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWYs/lpfcFagYtKGe6wNjLN4uxg5OSQETCQ+75zMDmGLSVy4t56ti5GLQ0hg
+	EaNE98S3bCAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP0rRomFu6ayQ9TrShz/
+	MIMVxBYW8JS4vu4qG0gvm4C2xOb9BiBhIQFFibf774KViAgoSfyav4gVYmamxJzXk8FsFgFV
+	ib0/74PZnAJWEj/eTWSF6C2XaN84jRHE5hcQlTi8cDszxP1KErvbO9knMArNQnL1LISrZyG5
+	egEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Fh+Jr2DcVWDxSFGAQ5GJR7eCe5dQUKs
+	iWXFlbmHGCU4mJVEeCWvAIV4UxIrq1KL8uOLSnNSiw8xJgMdPpFZSjQ5H5hm8kriDY1NzIws
+	jcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBsa36htT5d2dvpWvzH7v41nzF
+	gkMnfvt8+DJhmtNlq98aE6XFP7QVnXMVOPcgd92eaJEPwe2XN/bqLl4++5j698WGf+++Mrnz
+	fZfZjRs2378teXGjk9/Sf6MI38HeI5a7uj20/Oa7hN7a2GgS8V74xjJJ5pMrRS7/E9kT3LpJ
+	86Vk34NDhhuiN09TYinOSDTUYi4qTgQARJfawCkDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,53 +56,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
-on a fixed 66 MHz peripheral clock, and therefore is completely
-independent of the cpu frequency.
-Thus, registering for a CPU freq notifier is very wasteful.
+Hi,
 
-This patch modifes the code such that, i2c bus registers to
-cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
+2013-11-19 (화), 13:25 +0800, Chao Yu:
+> Hi
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > Sent: Monday, November 18, 2013 5:12 PM
+> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> > Subject: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
+> > 
+> > This patch introduces PAGE_TYPE_OF_BIO() and cleans up do_submit_bio() with it.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  fs/f2fs/f2fs.h    |  1 +
+> >  fs/f2fs/segment.c | 39 +++++++++++++++++++++------------------
+> >  2 files changed, 22 insertions(+), 18 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > index fe5c2fc..1c783fd 100644
+> > --- a/fs/f2fs/f2fs.h
+> > +++ b/fs/f2fs/f2fs.h
+> > @@ -351,6 +351,7 @@ enum count_type {
+> >   *			with waiting the bio's completion
+> >   * ...			Only can be used with META.
+> >   */
+> > +#define PAGE_TYPE_OF_BIO(type)	(type) > META ? META : (type)
 
-This change should save a bunch of cpufreq transitions calls
-which does not apply to exynos SoCs.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
----
-Changes since v2:
-None, Rebased on for-next of linux-i2c git repo.
+I'll add parenthesis as you suggested. Thanks.
 
-Changes since v1:
-Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
-As commented by Tomasz
+> >  enum page_type {
+> >  	DATA,
+> >  	NODE,
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 1f83999..dad5f1a 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -837,32 +837,35 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+> >  				enum page_type type, bool sync)
+> >  {
+> >  	int rw = sync ? WRITE_SYNC : WRITE;
+> > -	enum page_type btype = type > META ? META : type;
+> > +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+> 
+> ->f2fs_submit_bio()
+> 	: enum page_type btype = PAGE_TYPE_OF_BIO(type);
+> 	->do_submit_bio()
+> 		: enum page_type btype = PAGE_TYPE_OF_BIO(type);
+> 
+> Could we remove PAGE_TYPE_OF_BIO or use f2fs_bug_on to instead
+> in do_submit_bio()? because it looks redundant , and also 
+> submit_write_page() will not pass the type which is larger than META.
 
- drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The f2fs_submit_bio(type) calls do_submit_bio(type) in which the type is
+able to be META_FLUSH from sync_meta_pages().
+So, we need to do this. :)
 
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index bf8fb94..fa51dff 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -123,7 +123,7 @@ struct s3c24xx_i2c {
- 	struct s3c2410_platform_i2c	*pdata;
- 	int			gpios[2];
- 	struct pinctrl          *pctrl;
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_CPU_FREQ_S3C24XX)
- 	struct notifier_block	freq_transition;
- #endif
- };
-@@ -843,7 +843,7 @@ static int s3c24xx_i2c_clockrate(struct s3c24xx_i2c *i2c, unsigned int *got)
- 	return 0;
- }
- 
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_CPU_FREQ_S3C24XX)
- 
- #define freq_to_i2c(_n) container_of(_n, struct s3c24xx_i2c, freq_transition)
- 
 -- 
-1.7.10.4
+Jaegeuk Kim
+Samsung
 
