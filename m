@@ -1,35 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab3KSPhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:37:53 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:53686 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab3KSPhw (ORCPT
+	id S1753062Ab3KSPkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:40:17 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25233 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3KSPkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:37:52 -0500
-X-Greylist: delayed 929 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Nov 2013 10:37:52 EST
-Message-ID: <528B73FE.9@ovekarlsen.com>
-Date: Tue, 19 Nov 2013 15:21:50 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 19 Nov 2013 10:40:15 -0500
+Date: Tue, 19 Nov 2013 10:38:37 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+Cc: xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] xen: vnuma introduction for pv guest
+Message-ID: <20131119153837.GA5966@phenom.dumpdata.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: "Demoscene"
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello. I wrote a little bit about demoscene, for the multimedia 
-enthusiasts, which pretty much ends in how low-jitter Linux is the best 
-OS now, and how an Irix-nux, would be the best workstation and desktop 
-linux-config/distro.
+On Mon, Nov 18, 2013 at 03:25:48PM -0500, Elena Ufimtseva wrote:
+> Xen vnuma introduction.
+> 
+> The patchset introduces vnuma to paravirtualized Xen guests
+> runnning as domU.
+> Xen subop hypercall is used to retreive vnuma topology information.
+> Bases on the retreived topology from Xen, NUMA number of nodes,
+> memory ranges, distance table and cpumask is being set.
+> If initialization is incorrect, sets 'dummy' node and unsets
+> nodemask.
+> vNUMA topology is constructed by Xen toolstack. Xen patchset is
+> available at https://git.gitorious.org/xenvnuma/xenvnuma.git:v3.
 
-http://ovekarlsen.com/Blog/demoscene/
+Yeey!
 
-Peace Be With You.
+One question - I know you had questions about the
+PROT_GLOBAL | ~PAGE_PRESENT being set on PTEs that are going to
+be harvested for AutoNUMA balancing. 
 
--- 
-Ove Karlsen,
-www.ovekarlsen.com
+And that the hypercall to set such PTE entry disallows the
+PROT_GLOBAL (it stripts it off)? That means that when the
+Linux page system kicks in (as it has ~PAGE_PRESENT) the
+Linux pagehandler won't see the PROT_GLOBAL (as it has
+been filtered out). Which means that the AutoNUMA code won't
+kick in.
+
+(see http://article.gmane.org/gmane.comp.emulators.xen.devel/174317)
+
+Was that problem ever answered?
