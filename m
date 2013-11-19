@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab3KSCY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:24:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41722 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab3KSCYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:24:55 -0500
-Message-ID: <528ACBD8.3070804@zytor.com>
-Date: Mon, 18 Nov 2013 18:24:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751585Ab3KSCat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:30:49 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64552 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3KSCaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 21:30:46 -0500
+X-AuditID: 9c93017d-b7b24ae000002834-0b-528acd556d7f
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+	<1384267617-3446-5-git-send-email-dsahern@gmail.com>
+	<20131112145707.GV5056@laptop.programming.kicks-ass.net>
+	<20131112150751.GA19321@ghostprotocols.net>
+	<20131112151944.GX5056@laptop.programming.kicks-ass.net>
+	<52824AE3.4050207@gmail.com> <20131112211121.GC25913@gmail.com>
+	<20131113113439.GI21461@twins.programming.kicks-ass.net>
+	<52864ED1.1080607@gmail.com>
+	<20131118090117.GE3866@twins.programming.kicks-ass.net>
+	<20131118094036.GA26251@gmail.com> <877gc5utkf.fsf@sejong.aot.lge.com>
+	<528AB229.6030603@gmail.com> <87wqk5t9yd.fsf@sejong.aot.lge.com>
+	<528ACA41.4030202@gmail.com>
+Date: Tue, 19 Nov 2013 11:30:45 +0900
+In-Reply-To: <528ACA41.4030202@gmail.com> (David Ahern's message of "Mon, 18
+	Nov 2013 19:17:37 -0700")
+Message-ID: <87ob5ht962.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Andreas Werner <wernerandy@gmx.de>, tglx@linutronix.de
-CC: mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        bp@alien8.de
-Subject: Re: [PATCH v2] X86: MM: Add PAT Type write-through in combination
- with mtrr
-References: <1383480142-5665-1-git-send-email-wernerandy@gmx.de>
-In-Reply-To: <1383480142-5665-1-git-send-email-wernerandy@gmx.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2013 04:02 AM, Andreas Werner wrote:
-> Revision 2:
-> 	added comment in code.
-> 
-> This patch adds the Write-through memory type in combination with mtrr.
-> If you call ioremap_cache to request cachable memory (write-back) the
-> function tries to set the PAT to write-back only if the mtrr setting of
-> the requested region is also marked as Write-Back.
-> 
-> If the mttr regions are marked e.g. as Write-through or with other
-> types, the function will always return UC- memory.
-> 
-> If you check the Intel document " IA-32 SDM vol 3a table Effective
-> Memory Type", there
-> are many other combinations possible.
-> 
-> This patch will only add the following combination:
-> PAT=Write-Back + MTRR=Write-Through.
-> 
-> Since marking IO Memory as cachable is not valid, WT is the
-> best way for caching/bursting on MMIO Devices.
-> 
-> Tested on - Intel (R) Atom E680 (Tunnel Creek)
->           - Intel (R) Core(TM)2 Duo
-> 
-> Signed-off-by: Andreas Werner <wernerandy@gmx.de>
+On Mon, 18 Nov 2013 19:17:37 -0700, David Ahern wrote:
+> On 11/18/13, 7:13 PM, Namhyung Kim wrote:
+>> I think it should be
+>>
+>>    perf record -e cycles -F 4000 -e faults -c 1 --call-graph dwarf,8192 -a -- sleep 1
+>>
+>> (at least to generate the feedback spiral more efficiently..)
+>
+> you don't need the cycles. faults by itself works. Each event contains
+> 2 pages of data in the sample. With mmap-based output a single
+> sample (1 page fault in any process) generates 2-3 page faults by perf
+> which cause 2-3 >8k samples to be generated, which generates faults,
+> ....
 
-I don't quite know where this ended up, but I am *really* not happy
-about going back to using MTRRs to mark I/O devices with the chronic
-problems of MTRR exhaustion that entails.  As such I do insist that PAT
-is properly updated to support WT if we're going to do this.
+But after perf touches all pages in ring-buffer and stack, it won't
+generate page-faults for itself anymore, right?
 
-	-hpa
+Hmm.. thinking it again, perf has all ring-buffer pages in memory when
+mmap() called, right?  If so why not doing something like MAP_POPULATE
+so that it doesn't need to generate minor-faults?
 
-
+Thanks,
+Namhyung
