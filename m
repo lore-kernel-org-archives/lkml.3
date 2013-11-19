@@ -1,235 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3KSQFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:05:23 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58024 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab3KSQFN (ORCPT
+	id S1753454Ab3KSQGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:06:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49273 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753309Ab3KSQFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:05:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAM7YAkOLM_C-ydXQN9wpCXuHTJL1drOucdLdVNX1UB66uaXbA@mail.gmail.com>
-References: <1383278208-4053-1-git-send-email-liwang@ubuntukylin.com>
-	<CANP1eJH2ewpYyWe2Oo4OMMg2UB+RE8DBt=Xg-MUDo6uJ5aGcpg@mail.gmail.com>
-	<alpine.DEB.2.00.1311051543170.9474@cobra.newdream.net>
-	<CANP1eJEF4UTr-UC3S5TWsD9p69_gwy5i4_OkAmg=_GUFHF3TBQ@mail.gmail.com>
-	<CAAM7YAkOLM_C-ydXQN9wpCXuHTJL1drOucdLdVNX1UB66uaXbA@mail.gmail.com>
-Date: Tue, 19 Nov 2013 11:05:11 -0500
-Message-ID: <CANP1eJHsmD8nyV0inPViW8-LCwthSqig1RzCcE+16Qw4Kvj=Og@mail.gmail.com>
-Subject: Re: [PATCH] ceph: Update the pages in fscache in writepages() path
-From: Milosz Tanski <milosz@adfin.com>
-To: "Yan, Zheng" <ukernel@gmail.com>
-Cc: Sage Weil <sage@inktank.com>, Li Wang <liwang@ubuntukylin.com>,
-        ceph-devel <ceph-devel@vger.kernel.org>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org, Min Chen <minchen@ubuntukylin.com>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Nov 2013 11:05:22 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, lee.jones@linaro.org
+Cc: lgirdwood@gmail.com, sameo@linux.intel.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] ASoC: wm5110: Add basic support for ISRCs
+Date: Tue, 19 Nov 2013 16:04:02 +0000
+Message-Id: <1384877043-5640-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yan and Sage,
+Add support for the ISRCs that matches the current support on the w5102.
 
-I've ran into this issue again on my test cluster. The client hangs
-all requests for a particular inode, I did a dump cache to see what's
-going... but I don't understand to enough to be able to read this line
-well enough.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/wm5110.c |  178 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 178 insertions(+), 0 deletions(-)
 
-Can you guys help me read this, so I can further track down and
-hopefully fix this issue.
-
-[inode 10000346eed [2,head]
-/petabucket/beta/17511b3d12466609785b6a0e34597431721d177240371c0a1a4e347a1605381b/advertiser_id.dict
-auth v214 ap=5+0 dirtyparent s=925 n(v0 b925 1=1+0) (ifile sync->mix)
-(iversion lock) cr={59947=0-4194304@1}
-caps={59947=pAsLsXsFr/pAsxXsxFxwb@26,60001=pAsLsXsFr/-@1,60655=pAsLsXsFr/pAsLsXsFscr/pFscr@36}
-| ptrwaiter=0 request=4 lock=1 caps=1 dirtyparent=1 dirty=1 waiter=1
-authpin=1 0x17dd6b70]
-
-root@bnode-16a1ed7d:~# cat
-/sys/kernel/debug/ceph/e23a1bfc-8328-46bf-bc59-1209df3f5434.client60655/mdsc
-15659 mds0 getattr #10000346eed
-15679 mds0 getattr #10000346eed
-15710 mds0 getattr #10000346eed
-15922 mds0 getattr #10000346eed
-
-On Wed, Nov 6, 2013 at 10:01 AM, Yan, Zheng <ukernel@gmail.com> wrote:
-> On Wed, Nov 6, 2013 at 9:41 PM, Milosz Tanski <milosz@adfin.com> wrote:
->> Sage,
->>
->> I think the incrementing version counter on the whole is a neater
->> solution then using size and mtime. If nothing else it's more explicit
->> in the the read cache version. With what you suggested plus additional
->> changes to the open code (where the cookie gets created) the
->> write-through scenario should be correct.
->>
->> Sadly, my understanding of the MDS protocol is still not great. So
->> when doing this in the first place I erred on the side of using what
->> was already in place.
->>
->> In a kind of un-related question. Is there a debug hook in the kclient
->> (or MDS for that matter) to dump the current file inodes (names) with
->> issues caps and to which hosts. This would be very helpful for
->> debugging, since from time to time I see a one of the clients get
->> stuck in getattr (via mdsc debug log).
->>
->
-> "ceph mds tell \* dumpcache" dump the mds cache to a file. the dump
-> file contains caps information.
->
-> Regards
-> Yan, Zheng
->
->> Thanks,
->> - Milosz
->>
->> On Tue, Nov 5, 2013 at 6:56 PM, Sage Weil <sage@inktank.com> wrote:
->>> On Tue, 5 Nov 2013, Milosz Tanski wrote:
->>>> Li,
->>>>
->>>> First, sorry for the late reply on this.
->>>>
->>>> Currently fscache is only supported for files that are open in read
->>>> only mode. I originally was going to let fscache cache in the write
->>>> path as well as long as the file was open in with O_LAZY. I abandoned
->>>> that idea. When a user opens the file in O_LAZY we can cache things
->>>> locally with the assumption that the user will care of the
->>>> synchronization in some other manner. There is no way of invalidating
->>>> a subset of the pages in object cached by fscache, there is no way we
->>>> can make O_LAZY work well.
->>>>
->>>> The ceph_readpage_to_fscache() in writepage has no effect and it
->>>> should be removed. ceph_readpage_to_fscache() calls cache_valid() to
->>>> see if it should perform the page save, and since the file can't have
->>>> a CACHE cap at the point in time it doesn't do it.
->>>
->>> (Hmm, Dusting off my understanding of fscache and reading
->>> fs/ceph/cache.c; watch out!)  It looks like cache_valid is
->>>
->>> static inline int cache_valid(struct ceph_inode_info *ci)
->>> {
->>>         return ((ceph_caps_issued(ci) & CEPH_CAP_FILE_CACHE) &&
->>>                 (ci->i_fscache_gen == ci->i_rdcache_gen));
->>> }
->>>
->>> and in the FILE_EXCL case, the MDS will issue CACHE|BUFFER caps.  But I
->>> think the aux key (size+mtime) will prevent any use of the cache as soon
->>> as the first write happens and mtime changes, right?
->>>
->>> I think that in order to make this work, we need to fix/create a
->>> file_version (or something similar) field in the (mds) inode_t to have
->>> some useful value.  I.e., increment it any time
->>>
->>>  - a different client/writer comes along
->>>  - a file is modified by the mds (e.g., truncated or recovered)
->>>
->>> but allow it to otherwise remain the same as long as only a single client
->>> is working with the file exclusively.  This will be more precise than the
->>> (size, mtime) check that is currently used, and would remain valid when a
->>> single client opens the same file for exclusive read/write multiple times
->>> but there are no other intervening changes.
->>>
->>> Milosz, if that were in place, is there any reason not to wire up
->>> writepage and allow the fscache to be used write-through?
->>>
->>> sage
->>>
->>>
->>>
->>>
->>>>
->>>> Thanks,
->>>> - Milosz
->>>>
->>>> On Thu, Oct 31, 2013 at 11:56 PM, Li Wang <liwang@ubuntukylin.com> wrote:
->>>> > Currently, the pages in fscache only are updated in writepage() path,
->>>> > add the process in writepages().
->>>> >
->>>> > Signed-off-by: Min Chen <minchen@ubuntukylin.com>
->>>> > Signed-off-by: Li Wang <liwang@ubuntukylin.com>
->>>> > Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
->>>> > ---
->>>> >  fs/ceph/addr.c |    8 +++++---
->>>> >  1 file changed, 5 insertions(+), 3 deletions(-)
->>>> >
->>>> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
->>>> > index 6df8bd4..cc57911 100644
->>>> > --- a/fs/ceph/addr.c
->>>> > +++ b/fs/ceph/addr.c
->>>> > @@ -746,7 +746,7 @@ retry:
->>>> >
->>>> >         while (!done && index <= end) {
->>>> >                 int num_ops = do_sync ? 2 : 1;
->>>> > -               unsigned i;
->>>> > +               unsigned i, j;
->>>> >                 int first;
->>>> >                 pgoff_t next;
->>>> >                 int pvec_pages, locked_pages;
->>>> > @@ -894,7 +894,6 @@ get_more_pages:
->>>> >                 if (!locked_pages)
->>>> >                         goto release_pvec_pages;
->>>> >                 if (i) {
->>>> > -                       int j;
->>>> >                         BUG_ON(!locked_pages || first < 0);
->>>> >
->>>> >                         if (pvec_pages && i == pvec_pages &&
->>>> > @@ -924,7 +923,10 @@ get_more_pages:
->>>> >
->>>> >                 osd_req_op_extent_osd_data_pages(req, 0, pages, len, 0,
->>>> >                                                         !!pool, false);
->>>> > -
->>>> > +               for(j = 0; j < locked_pages; j++) {
->>>> > +                       struct page *page = pages[j];
->>>> > +                       ceph_readpage_to_fscache(inode, page);
->>>> > +               }
->>>> >                 pages = NULL;   /* request message now owns the pages array */
->>>> >                 pool = NULL;
->>>> >
->>>> > --
->>>> > 1.7.9.5
->>>> >
->>>> > --
->>>> > To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
->>>> > the body of a message to majordomo@vger.kernel.org
->>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>>
->>>>
->>>> --
->>>> Milosz Tanski
->>>> CTO
->>>> 10 East 53rd Street, 37th floor
->>>> New York, NY 10022
->>>>
->>>> p: 646-253-9055
->>>> e: milosz@adfin.com
->>>>
->>>>
->>
->>
->>
->> --
->> Milosz Tanski
->> CTO
->> 10 East 53rd Street, 37th floor
->> New York, NY 10022
->>
->> p: 646-253-9055
->> e: milosz@adfin.com
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
+diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
+index d5ecdd2..c4da1bd 100644
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -258,6 +258,10 @@ SOC_ENUM("LHPF2 Mode", arizona_lhpf2_mode),
+ SOC_ENUM("LHPF3 Mode", arizona_lhpf3_mode),
+ SOC_ENUM("LHPF4 Mode", arizona_lhpf4_mode),
+ 
++SOC_VALUE_ENUM("ISRC1 FSL", arizona_isrc_fsl[0]),
++SOC_VALUE_ENUM("ISRC2 FSL", arizona_isrc_fsl[1]),
++SOC_VALUE_ENUM("ISRC3 FSL", arizona_isrc_fsl[2]),
++
+ ARIZONA_MIXER_CONTROLS("DSP1L", ARIZONA_DSP1LMIX_INPUT_1_SOURCE),
+ ARIZONA_MIXER_CONTROLS("DSP1R", ARIZONA_DSP1RMIX_INPUT_1_SOURCE),
+ ARIZONA_MIXER_CONTROLS("DSP2L", ARIZONA_DSP2LMIX_INPUT_1_SOURCE),
+@@ -474,6 +478,36 @@ ARIZONA_MUX_ENUMS(ASRC1R, ARIZONA_ASRC1RMIX_INPUT_1_SOURCE);
+ ARIZONA_MUX_ENUMS(ASRC2L, ARIZONA_ASRC2LMIX_INPUT_1_SOURCE);
+ ARIZONA_MUX_ENUMS(ASRC2R, ARIZONA_ASRC2RMIX_INPUT_1_SOURCE);
+ 
++ARIZONA_MUX_ENUMS(ISRC1INT1, ARIZONA_ISRC1INT1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1INT2, ARIZONA_ISRC1INT2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1INT3, ARIZONA_ISRC1INT3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1INT4, ARIZONA_ISRC1INT4MIX_INPUT_1_SOURCE);
++
++ARIZONA_MUX_ENUMS(ISRC1DEC1, ARIZONA_ISRC1DEC1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1DEC2, ARIZONA_ISRC1DEC2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1DEC3, ARIZONA_ISRC1DEC3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC1DEC4, ARIZONA_ISRC1DEC4MIX_INPUT_1_SOURCE);
++
++ARIZONA_MUX_ENUMS(ISRC2INT1, ARIZONA_ISRC2INT1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2INT2, ARIZONA_ISRC2INT2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2INT3, ARIZONA_ISRC2INT3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2INT4, ARIZONA_ISRC2INT4MIX_INPUT_1_SOURCE);
++
++ARIZONA_MUX_ENUMS(ISRC2DEC1, ARIZONA_ISRC2DEC1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2DEC2, ARIZONA_ISRC2DEC2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2DEC3, ARIZONA_ISRC2DEC3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC2DEC4, ARIZONA_ISRC2DEC4MIX_INPUT_1_SOURCE);
++
++ARIZONA_MUX_ENUMS(ISRC3INT1, ARIZONA_ISRC3INT1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3INT2, ARIZONA_ISRC3INT2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3INT3, ARIZONA_ISRC3INT3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3INT4, ARIZONA_ISRC3INT4MIX_INPUT_1_SOURCE);
++
++ARIZONA_MUX_ENUMS(ISRC3DEC1, ARIZONA_ISRC3DEC1MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3DEC2, ARIZONA_ISRC3DEC2MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3DEC3, ARIZONA_ISRC3DEC3MIX_INPUT_1_SOURCE);
++ARIZONA_MUX_ENUMS(ISRC3DEC4, ARIZONA_ISRC3DEC4MIX_INPUT_1_SOURCE);
++
+ static const char *wm5110_aec_loopback_texts[] = {
+ 	"HPOUT1L", "HPOUT1R", "HPOUT2L", "HPOUT2R", "HPOUT3L", "HPOUT3R",
+ 	"SPKOUTL", "SPKOUTR", "SPKDAT1L", "SPKDAT1R", "SPKDAT2L", "SPKDAT2R",
+@@ -619,6 +653,60 @@ WM_ADSP2("DSP2", 1),
+ WM_ADSP2("DSP3", 2),
+ WM_ADSP2("DSP4", 3),
+ 
++SND_SOC_DAPM_PGA("ISRC1INT1", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_INT0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1INT2", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_INT1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1INT3", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_INT2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1INT4", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_INT3_ENA_SHIFT, 0, NULL, 0),
++
++SND_SOC_DAPM_PGA("ISRC1DEC1", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_DEC0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1DEC2", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_DEC1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1DEC3", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_DEC2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC1DEC4", ARIZONA_ISRC_1_CTRL_3,
++		 ARIZONA_ISRC1_DEC3_ENA_SHIFT, 0, NULL, 0),
++
++SND_SOC_DAPM_PGA("ISRC2INT1", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_INT0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2INT2", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_INT1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2INT3", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_INT2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2INT4", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_INT3_ENA_SHIFT, 0, NULL, 0),
++
++SND_SOC_DAPM_PGA("ISRC2DEC1", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_DEC0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2DEC2", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_DEC1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2DEC3", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_DEC2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC2DEC4", ARIZONA_ISRC_2_CTRL_3,
++		 ARIZONA_ISRC2_DEC3_ENA_SHIFT, 0, NULL, 0),
++
++SND_SOC_DAPM_PGA("ISRC3INT1", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_INT0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3INT2", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_INT1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3INT3", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_INT2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3INT4", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_INT3_ENA_SHIFT, 0, NULL, 0),
++
++SND_SOC_DAPM_PGA("ISRC3DEC1", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_DEC0_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3DEC2", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_DEC1_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3DEC3", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_DEC2_ENA_SHIFT, 0, NULL, 0),
++SND_SOC_DAPM_PGA("ISRC3DEC4", ARIZONA_ISRC_3_CTRL_3,
++		 ARIZONA_ISRC3_DEC3_ENA_SHIFT, 0, NULL, 0),
++
+ SND_SOC_DAPM_VALUE_MUX("AEC Loopback", ARIZONA_DAC_AEC_CONTROL_1,
+ 		       ARIZONA_AEC_LOOPBACK_ENA_SHIFT, 0,
+ 		       &wm5110_aec_loopback_mux),
+@@ -826,6 +914,36 @@ ARIZONA_DSP_WIDGETS(DSP2, "DSP2"),
+ ARIZONA_DSP_WIDGETS(DSP3, "DSP3"),
+ ARIZONA_DSP_WIDGETS(DSP4, "DSP4"),
+ 
++ARIZONA_MUX_WIDGETS(ISRC1DEC1, "ISRC1DEC1"),
++ARIZONA_MUX_WIDGETS(ISRC1DEC2, "ISRC1DEC2"),
++ARIZONA_MUX_WIDGETS(ISRC1DEC3, "ISRC1DEC3"),
++ARIZONA_MUX_WIDGETS(ISRC1DEC4, "ISRC1DEC4"),
++
++ARIZONA_MUX_WIDGETS(ISRC1INT1, "ISRC1INT1"),
++ARIZONA_MUX_WIDGETS(ISRC1INT2, "ISRC1INT2"),
++ARIZONA_MUX_WIDGETS(ISRC1INT3, "ISRC1INT3"),
++ARIZONA_MUX_WIDGETS(ISRC1INT4, "ISRC1INT4"),
++
++ARIZONA_MUX_WIDGETS(ISRC2DEC1, "ISRC2DEC1"),
++ARIZONA_MUX_WIDGETS(ISRC2DEC2, "ISRC2DEC2"),
++ARIZONA_MUX_WIDGETS(ISRC2DEC3, "ISRC2DEC3"),
++ARIZONA_MUX_WIDGETS(ISRC2DEC4, "ISRC2DEC4"),
++
++ARIZONA_MUX_WIDGETS(ISRC2INT1, "ISRC2INT1"),
++ARIZONA_MUX_WIDGETS(ISRC2INT2, "ISRC2INT2"),
++ARIZONA_MUX_WIDGETS(ISRC2INT3, "ISRC2INT3"),
++ARIZONA_MUX_WIDGETS(ISRC2INT4, "ISRC2INT4"),
++
++ARIZONA_MUX_WIDGETS(ISRC3DEC1, "ISRC3DEC1"),
++ARIZONA_MUX_WIDGETS(ISRC3DEC2, "ISRC3DEC2"),
++ARIZONA_MUX_WIDGETS(ISRC3DEC3, "ISRC3DEC3"),
++ARIZONA_MUX_WIDGETS(ISRC3DEC4, "ISRC3DEC4"),
++
++ARIZONA_MUX_WIDGETS(ISRC3INT1, "ISRC3INT1"),
++ARIZONA_MUX_WIDGETS(ISRC3INT2, "ISRC3INT2"),
++ARIZONA_MUX_WIDGETS(ISRC3INT3, "ISRC3INT3"),
++ARIZONA_MUX_WIDGETS(ISRC3INT4, "ISRC3INT4"),
++
+ SND_SOC_DAPM_OUTPUT("HPOUT1L"),
+ SND_SOC_DAPM_OUTPUT("HPOUT1R"),
+ SND_SOC_DAPM_OUTPUT("HPOUT2L"),
+@@ -895,6 +1013,30 @@ SND_SOC_DAPM_OUTPUT("MICSUPP"),
+ 	{ name, "ASRC1R", "ASRC1R" }, \
+ 	{ name, "ASRC2L", "ASRC2L" }, \
+ 	{ name, "ASRC2R", "ASRC2R" }, \
++	{ name, "ISRC1DEC1", "ISRC1DEC1" }, \
++	{ name, "ISRC1DEC2", "ISRC1DEC2" }, \
++	{ name, "ISRC1DEC3", "ISRC1DEC3" }, \
++	{ name, "ISRC1DEC4", "ISRC1DEC4" }, \
++	{ name, "ISRC1INT1", "ISRC1INT1" }, \
++	{ name, "ISRC1INT2", "ISRC1INT2" }, \
++	{ name, "ISRC1INT3", "ISRC1INT3" }, \
++	{ name, "ISRC1INT4", "ISRC1INT4" }, \
++	{ name, "ISRC2DEC1", "ISRC2DEC1" }, \
++	{ name, "ISRC2DEC2", "ISRC2DEC2" }, \
++	{ name, "ISRC2DEC3", "ISRC2DEC3" }, \
++	{ name, "ISRC2DEC4", "ISRC2DEC4" }, \
++	{ name, "ISRC2INT1", "ISRC2INT1" }, \
++	{ name, "ISRC2INT2", "ISRC2INT2" }, \
++	{ name, "ISRC2INT3", "ISRC2INT3" }, \
++	{ name, "ISRC2INT4", "ISRC2INT4" }, \
++	{ name, "ISRC3DEC1", "ISRC3DEC1" }, \
++	{ name, "ISRC3DEC2", "ISRC3DEC2" }, \
++	{ name, "ISRC3DEC3", "ISRC3DEC3" }, \
++	{ name, "ISRC3DEC4", "ISRC3DEC4" }, \
++	{ name, "ISRC3INT1", "ISRC3INT1" }, \
++	{ name, "ISRC3INT2", "ISRC3INT2" }, \
++	{ name, "ISRC3INT3", "ISRC3INT3" }, \
++	{ name, "ISRC3INT4", "ISRC3INT4" }, \
+ 	{ name, "DSP1.1", "DSP1" }, \
+ 	{ name, "DSP1.2", "DSP1" }, \
+ 	{ name, "DSP1.3", "DSP1" }, \
+@@ -1117,6 +1259,36 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
+ 	ARIZONA_DSP_ROUTES("DSP3"),
+ 	ARIZONA_DSP_ROUTES("DSP4"),
+ 
++	ARIZONA_MUX_ROUTES("ISRC1INT1", "ISRC1INT1"),
++	ARIZONA_MUX_ROUTES("ISRC1INT2", "ISRC1INT2"),
++	ARIZONA_MUX_ROUTES("ISRC1INT3", "ISRC1INT3"),
++	ARIZONA_MUX_ROUTES("ISRC1INT4", "ISRC1INT4"),
++
++	ARIZONA_MUX_ROUTES("ISRC1DEC1", "ISRC1DEC1"),
++	ARIZONA_MUX_ROUTES("ISRC1DEC2", "ISRC1DEC2"),
++	ARIZONA_MUX_ROUTES("ISRC1DEC3", "ISRC1DEC3"),
++	ARIZONA_MUX_ROUTES("ISRC1DEC4", "ISRC1DEC4"),
++
++	ARIZONA_MUX_ROUTES("ISRC2INT1", "ISRC2INT1"),
++	ARIZONA_MUX_ROUTES("ISRC2INT2", "ISRC2INT2"),
++	ARIZONA_MUX_ROUTES("ISRC2INT3", "ISRC2INT3"),
++	ARIZONA_MUX_ROUTES("ISRC2INT4", "ISRC2INT4"),
++
++	ARIZONA_MUX_ROUTES("ISRC2DEC1", "ISRC2DEC1"),
++	ARIZONA_MUX_ROUTES("ISRC2DEC2", "ISRC2DEC2"),
++	ARIZONA_MUX_ROUTES("ISRC2DEC3", "ISRC2DEC3"),
++	ARIZONA_MUX_ROUTES("ISRC2DEC4", "ISRC2DEC4"),
++
++	ARIZONA_MUX_ROUTES("ISRC3INT1", "ISRC3INT1"),
++	ARIZONA_MUX_ROUTES("ISRC3INT2", "ISRC3INT2"),
++	ARIZONA_MUX_ROUTES("ISRC3INT3", "ISRC3INT3"),
++	ARIZONA_MUX_ROUTES("ISRC3INT4", "ISRC3INT4"),
++
++	ARIZONA_MUX_ROUTES("ISRC3DEC1", "ISRC3DEC1"),
++	ARIZONA_MUX_ROUTES("ISRC3DEC2", "ISRC3DEC2"),
++	ARIZONA_MUX_ROUTES("ISRC3DEC3", "ISRC3DEC3"),
++	ARIZONA_MUX_ROUTES("ISRC3DEC4", "ISRC3DEC4"),
++
+ 	{ "AEC Loopback", "HPOUT1L", "OUT1L" },
+ 	{ "AEC Loopback", "HPOUT1R", "OUT1R" },
+ 	{ "HPOUT1L", NULL, "OUT1L" },
+@@ -1419,6 +1591,12 @@ static int wm5110_probe(struct platform_device *pdev)
+ 			 ARIZONA_IRQ_FLL2_LOCK, ARIZONA_IRQ_FLL2_CLOCK_OK,
+ 			 &wm5110->fll[1]);
+ 
++	/* SR2 fixed at 8kHz, SR3 fixed at 16kHz */
++	regmap_update_bits(arizona->regmap, ARIZONA_SAMPLE_RATE_2,
++			   ARIZONA_SAMPLE_RATE_2_MASK, 0x11);
++	regmap_update_bits(arizona->regmap, ARIZONA_SAMPLE_RATE_3,
++			   ARIZONA_SAMPLE_RATE_3_MASK, 0x12);
++
+ 	for (i = 0; i < ARRAY_SIZE(wm5110_dai); i++)
+ 		arizona_init_dai(&wm5110->core, i);
+ 
 -- 
-Milosz Tanski
-CTO
-10 East 53rd Street, 37th floor
-New York, NY 10022
+1.7.2.5
 
-p: 646-253-9055
-e: milosz@adfin.com
