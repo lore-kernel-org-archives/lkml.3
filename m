@@ -1,69 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3KSWYq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:24:46 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48584 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab3KSWYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:24:43 -0500
+	id S1753338Ab3KSWZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:25:20 -0500
+Received: from mail.efficios.com ([78.47.125.74]:58070 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905Ab3KSWZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 17:25:16 -0500
+Date: Tue, 19 Nov 2013 22:25:18 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <Catalin.Marinas@arm.com>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>, gcc@gcc.gnu.org
+Message-ID: <554114696.71072.1384899918486.JavaMail.zimbra@efficios.com>
+In-Reply-To: <528BDEA9.1050708@twiddle.net>
+References: <52803E5D.3050109@mentor.com> <52851395.3010306@mentor.com> <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com> <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com> <20131119160502.GG11778@mudshark.cambridge.arm.com> <1656507422.70913.1384880540574.JavaMail.zimbra@efficios.com> <20131119173312.GP16796@laptop.programming.kicks-ass.net> <528BDEA9.1050708@twiddle.net>
+Subject: Re: Multiple local register variables w/ same register
 MIME-Version: 1.0
-In-Reply-To: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Nov 2013 15:24:22 -0700
-Message-ID: <CAErSpo5bYwgK618AOgvD=mgbfjcLLGE3CVw1SN3sP3PqRaCk5A@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-Cc: Yu Zhao <yu.zhao@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [67.212.11.60]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Multiple local register variables w/ same register
+Thread-Index: M70R/uo0XUMpi9MkwofOuGT9/N66yA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci]
+----- Original Message -----
+> From: "Richard Henderson" <rth@twiddle.net>
+> To: "Peter Zijlstra" <peterz@infradead.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Will Deacon" <will.deacon@arm.com>, linux-kernel@vger.kernel.org, "Catalin Marinas" <Catalin.Marinas@arm.com>,
+> lttng-dev@lists.lttng.org, "Nathan Lynch" <Nathan_Lynch@mentor.com>, "Paul E. McKenney"
+> <paulmck@linux.vnet.ibm.com>, "Linus Torvalds" <torvalds@linux-foundation.org>, "Andrew Morton"
+> <akpm@linux-foundation.org>, "Jakub Jelinek" <jakub@redhat.com>, gcc@gcc.gnu.org
+> Sent: Tuesday, November 19, 2013 4:56:57 PM
+> Subject: Multiple local register variables w/ same register
+> 
+> On 11/20/2013 03:33 AM, Peter Zijlstra wrote:
+> > On Tue, Nov 19, 2013 at 05:02:20PM +0000, Mathieu Desnoyers wrote:
+> >> Unfortunately I don't have a ARM cross-compiler setup ready. Nathan could
+> >> test
+> >> it for us though.
+> >>
+> >> It might shuffle things around enough to work around the issue, but with
+> >> the
+> >> approach you propose, I would be concerned about the compiler being within
+> >> its rights to reorder the code into the following sequence:
+> >>
+> >> struct thread_info *ptra, *ptrb;
+> >>
+> >> ptra = current_thread_info();
+> >> /*
+> >>  * each current_thread_info() would have a clobber on *sp, which orders
+> >>  * those two wrt each other.
+> >>   */
+> >> ptrb = current_thread_info();
+> >>
+> >> load from ptra->preempt_count;
+> >> /*
+> >>  * however, the following accesses that depend on ptra and ptrb could be
+> >>  * reordered if the compiler has no way to know that ptra and ptrb are
+> >>  * aliased.
+> >>  */
+> >> store to ptrb->preempt_count;
+> >>
+> >> One question that might be worth asking: with the local register variable
+> >> extension
+> >> (http://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/Local-Reg-Vars.html#Local-Reg-Vars)
+> >> (thanks to Jakub for the pointer), should the compiler consider two
+> >> variables
+> >> bound to the same register as being aliased or not ? AFAIU, local reg vars
+> >> appear
+> >> to be architecture-specific, so maybe there is something fishy on ARM ?
+> 
+> It appears not:
+> 
+> int __attribute__((noinline)) f(void)
+> {
+>   {
+>     register int x __asm__("eax");
+>     x = 1;
+>   }
+>   {
+>     register int y __asm__("eax");
+>     return ++y;
+>   }
+> }
+> 
+> extern void abort(void);
+> 
+> int main(void)
+> {
+>   if (f() != 2)
+>     abort();
+>   return 0;
+> }
+> 
+> Anyone see anything wrong with the testcase?
 
-On Wed, Nov 6, 2013 at 7:49 AM, ethan.zhao <ethan.kernel@gmail.com> wrote:
-> Though no specification about NumVFs register initial value after POST, to void the confusion
-> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
-> to zero:
->
-> $lspci -vvv -s 03:00.0
-> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
-> ~
-> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
->                 IOVCap: Migration-, Interrupt Message Number: 000
->                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
->                 IOVSta: Migration-
->                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
->                                                               ^dazed !
-> ~
-> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> ---
->  drivers/pci/iov.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index de8ffac..a4941ad 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
->
->  found:
->         pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
-> +       /* VF Enable is cleared, so we could init the NumVFs register to 0 */
-> +       pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
->         pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
->         pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
->         if (!offset || (total > 1 && !stride))
+This testcase is targeting a general purpose register, whereas the issue I'm presenting gets the stack pointer as base address for many memory operations targeting the same offset from this base address. So strictly speaking, I think the two cases are slightly different.
 
-I'm not 100% sure we should always disable SR-IOV when we enumerate a
-PF, but as long as we do, it seems OK to me to clear NumVFs at the
-same time.
+Thanks,
 
-We already clear NumVFs at other places where we disable SR-IOV
-(sriov_enable() failure path and sriov_disable()).
+Mathieu
 
-Bjorn
+
+> Do we thing this sort of thing
+> ought to work, perhaps with scopes lengthened?
+> 
+> 
+> r~
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
