@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab3KSQVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:21:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41965 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab3KSQVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:21:15 -0500
-Date: Tue, 19 Nov 2013 17:21:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, lttng-dev@lists.lttng.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Henderson <rth@twiddle.net>
-Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
-Message-ID: <20131119162101.GM10022@twins.programming.kicks-ass.net>
-References: <52803E5D.3050109@mentor.com>
- <52851395.3010306@mentor.com>
- <67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
- <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
- <20131119155749.GL10022@twins.programming.kicks-ass.net>
- <20131119161322.GX892@tucnak.redhat.com>
+	id S1753309Ab3KSQVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:21:34 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34221 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab3KSQVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 11:21:32 -0500
+Message-ID: <528B8F1C.3090506@ti.com>
+Date: Tue, 19 Nov 2013 18:17:32 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119161322.GX892@tucnak.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/6] watchdog: davinci: change driver to use WDT core
+References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <1384795139-19466-2-git-send-email-ivan.khoronzhuk@ti.com> <528AF349.9070902@roeck-us.net>
+In-Reply-To: <528AF349.9070902@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 05:13:22PM +0100, Jakub Jelinek wrote:
-> On Tue, Nov 19, 2013 at 04:57:49PM +0100, Peter Zijlstra wrote:
-> > On Tue, Nov 19, 2013 at 03:29:12PM +0000, Mathieu Desnoyers wrote:
-> > > However, looking at ARM arch/arm/include/asm/thread_info.h:
-> > > 
-> > > static inline struct thread_info *current_thread_info(void) { register
-> > > unsigned long sp asm ("sp"); return (struct thread_info *)(sp &
-> > > ~(THREAD_SIZE - 1)); }
-> > > 
-> > > The inline assembly has no clobber and is not volatile. (this is also
-> > > true for all other architectures I've looked at so far, which includes
-> > > x86 and powerpc)
-> 
-> The above is not inline assembly, it is a local register variable extension,
-> see
-> http://gcc.gnu.org/onlinedocs/gcc-4.8.2/gcc/Local-Reg-Vars.html#Local-Reg-Vars
-> 
-> > > Since each current_thread_info() is a different asm ("sp") without
-> > > clobber nor volatile, AFAIU, the compiler is within its right to
-> > > reorder them.
-> 
-> Sure.
-> 
-> > > One possible solution to this might be to add "memory" clobber and
-> > > volatile to this inline asm, but I fear it would put way too much
-> > > constraints on the compiler optimizations (too heavyweight).
-> 
-> As it is not inline asm extension, you can't.
-> Of course you could add asm volatile ("" : "=r" (ret) : "0" (sp));
-> or similar and thus make it a barrier, but I think the current
-> definition of current_thread_info meant to avoid all that extra
-> overhead.  Why does it matter when sp is different between the
-> current_thread_info () calls?  As long as sp & ~(THREAD_SIZE - 1) is
-> the same, it shouldn't make a difference.  Or is the call in between those
-> changing sp to something else?
+On 11/19/2013 07:12 AM, Guenter Roeck wrote:
+> On 11/18/2013 09:18 AM, Ivan Khoronzhuk wrote:
+>> To reduce code duplicate and increase code readability use WDT core
+>> code to handle WDT interface.
+>>
+>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+>> Remove wdt_state as the WDT core track state with its own variable.
+>>
+>> The watchdog_init_timeout() can read timeout value from timeout-sec
+>> property if the passed value is out of bounds. The heartbeat is
+>> initialized in next way. If heartbeat is not set thought module
+>> parameter, try to read it's value from WDT node timeout-sec property.
+>> If node has no one, use default value.
+>>
+>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+>> order to set timeout period.
+>>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>   drivers/watchdog/Kconfig       |    2 +
+>>   drivers/watchdog/davinci_wdt.c |  152
+>> ++++++++++------------------------------
+>>   2 files changed, 39 insertions(+), 115 deletions(-)
+>>
+>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>> index d1d53f3..d7db13d 100644
+>> --- a/drivers/watchdog/Kconfig
+>> +++ b/drivers/watchdog/Kconfig
+>> @@ -271,6 +271,8 @@ config IOP_WATCHDOG
+>>   config DAVINCI_WATCHDOG
+>>       tristate "DaVinci watchdog"
+>>       depends on ARCH_DAVINCI
+>> +    select WATCHDOG_CORE
+>> +    select WATCHDOG_NOWAYOUT
+>
+> Is this mandatory, ie is it correct that the watchdog can not be stopped
+> once started ?
+>
+> Assuming it is,
 
-So what appears to be happening is that:
+Yes, it is. Davinci WDT can't be stopped and once it's expired - it can 
+be rearmed only after hardware reset.
 
-    preempt_enable()
- 	barrier();
- 	current_thread_info()->preempt_count--;
+>
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>
 
-    (1)
+Thanks a lot for your review.
 
-    might_sleep()
- 	if (current_thread_info()->preempt_count)
-		/* raise all bloody hell */
-
-Gets re-ordered like:
-
-	barrier();
-	if (current_thread_info()->preempt_count)
-		/* raise hell */
-	current_thread_info()->preempt_count--;
+Regards,
+-grygorii
 
 
-And by inserting a barrier() at (1) things revert to normal and work
-again.
-
-The "sp" reg value itself doesn't change here.
