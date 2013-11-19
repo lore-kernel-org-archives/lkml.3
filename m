@@ -1,136 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab3KSFaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 00:30:23 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:49308 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab3KSFaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 00:30:19 -0500
-Message-ID: <528AF70A.7080603@st.com>
-Date: Tue, 19 Nov 2013 06:28:42 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752008Ab3KSFbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:31:06 -0500
+Received: from tundra.namei.org ([65.99.196.166]:35370 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803Ab3KSFbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 00:31:04 -0500
+Date: Tue, 19 Nov 2013 16:38:02 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [GIT] Security subsystem updates for 3.13
+In-Reply-To: <CA+55aFyp2HnMATV1v81QwZFqXcyca-RTD93=55ba37kF4ANfCw@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1311191637280.20384@tundra.namei.org>
+References: <alpine.LRH.2.02.1311071146450.31522@tundra.namei.org> <CA+5PVA7C-SSg5TyQ14kUN2SbLi-=bk6isi05xgtR5j8MC7-Uhg@mail.gmail.com> <alpine.LRH.2.02.1311191029050.20131@tundra.namei.org>
+ <CA+55aFyp2HnMATV1v81QwZFqXcyca-RTD93=55ba37kF4ANfCw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: <srinivas.kandagatla@st.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <stephen.gallimore@st.com>,
-        <linux-kernel@vger.kernel.org>, <kernel@stlinux.com>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH RFC 00/10] ARM: STi: Add dwmac glue and reset controller
-References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.236]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2013 2:51 PM, srinivas.kandagatla@st.com wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> Hi All,
->
-> This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
-> STi SOC series integrates dwmac IP from synopsis, however there is a hardware
-> glue on top of this standard IP, this glue needs to configured before the
-> actual dwmac can be used.
-> To add this a new driver dwmac-sti is introduced whose responsibility is to
-> configure dwmac glue and before dwmac driver, this is achieved by making dwmac
-> device node as child to ethernet glue node. Inspired by usb/dwc3.
-> Also the glue needs to come out of softreset which is why we have added a
-> softreset controller to driver which looked perfectly neat, rather then
-> driving the softreset bit from the glue driver.
->
-> Also as part of power management in glue driver, I found that there was no
-> function to determine if the child device is a wakeup source or not.
-> I have added a new api device_child_may_wakeup API which could be useful for
-> drivers like this. "PM / wakeup : Introduce device_child_may_wakeup" patch has
-> that new API and "net: stmmac:sti: Add STi SOC glue driver." glue driver uses
-> this new API.
->
-> The reason for combining all these patches in a same series is because of
-> dependencies.
->
-> This patch series is tested on B2000 and B2020 boards with STiH415, STiH416
-> SOC on ethernet 100/1000 Links.
->
-> Comments?
+On Mon, 18 Nov 2013, Linus Torvalds wrote:
 
-Hello Srini
-ll these patches are ok for me and, as you know, I have already started
-using them while porting other SoC. Glue logic is mandatory now!
+> On Mon, Nov 18, 2013 at 3:30 PM, James Morris <jmorris@namei.org> wrote:
+> > On Mon, 18 Nov 2013, Josh Boyer wrote:
+> >>
+> >> Unless I'm missing something, I don't think this has landed in Linus'
+> >> tree yet.  Linus, did this pull request get NAKed or fall through the
+> >> cracks?
+> >
+> > I think Linus is on vacation and merging only sporadically at the moment.
+> 
+> No,while it is true that I've been traveling, I've also been actively
+> merging, and no, that pull request isn't lost.
+> 
+> I don't really like the look of it though (particularly all the magic
+> new keys changes), so I've been delaying it and merging other regular
+> stuff that I don't have any issues with. I'm leaving that pull for
+> later in order to go over it more carefully when I'm not doing fifteen
+> other pulls the same day..
+> 
+> If somebody wants to explain about the rationale new keys code, that might help.
 
-Thanks
-peppe
+Thanks -- I've cc'd David for comment.
 
->
-> Thanks,
-> srini
->
-> Srinivas Kandagatla (6):
->    drivers: reset: stih415: add softreset controller
->    drivers: reset: stih416: add softreset controller
->    PM / wakeup : Introduce device_child_may_wakeup
->    net: stmmac:sti: Add STi SOC glue driver.
->    ARM: STi: Add STiH415 ethernet support.
->    ARM: STi: Add STiH416 ethernet support.
->
-> Stephen Gallimore (4):
->    drivers: reset: STi SoC system configuration reset controller support
->    drivers: reset: Reset controller driver for STiH415
->    drivers: reset: Reset controller driver for STiH416
->    ARM: STi: Add reset controller support to mach-sti Kconfig
->
->   .../devicetree/bindings/net/sti-dwmac.txt          |   45 +++
->   .../devicetree/bindings/reset/st,sti-powerdown.txt |   46 +++
->   .../devicetree/bindings/reset/st,sti-softreset.txt |   45 +++
->   arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
->   arch/arm/boot/dts/stih415-pinctrl.dtsi             |   82 ++++++
->   arch/arm/boot/dts/stih415.dtsi                     |   67 +++++
->   arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
->   arch/arm/boot/dts/stih416-pinctrl.dtsi             |  106 +++++++
->   arch/arm/boot/dts/stih416.dtsi                     |   69 +++++
->   arch/arm/boot/dts/stih41x-b2000.dtsi               |   32 +++
->   arch/arm/boot/dts/stih41x-b2020.dtsi               |   33 +++
->   arch/arm/mach-sti/Kconfig                          |    3 +
->   drivers/base/power/wakeup.c                        |   23 ++
->   drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
->   drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  294 ++++++++++++++++++++
->   drivers/reset/Kconfig                              |    2 +
->   drivers/reset/Makefile                             |    3 +
->   drivers/reset/sti/Kconfig                          |   15 +
->   drivers/reset/sti/Makefile                         |    4 +
->   drivers/reset/sti/reset-stih415.c                  |   99 +++++++
->   drivers/reset/sti/reset-stih416.c                  |  101 +++++++
->   drivers/reset/sti/reset-syscfg.c                   |  186 ++++++++++++
->   drivers/reset/sti/reset-syscfg.h                   |   69 +++++
->   .../dt-bindings/reset-controller/stih415-resets.h  |   23 ++
->   .../dt-bindings/reset-controller/stih416-resets.h  |   25 ++
->   include/linux/pm_wakeup.h                          |    1 +
->   26 files changed, 1402 insertions(+), 0 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
->   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
->   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-softreset.txt
->   create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
->   create mode 100644 drivers/reset/sti/Kconfig
->   create mode 100644 drivers/reset/sti/Makefile
->   create mode 100644 drivers/reset/sti/reset-stih415.c
->   create mode 100644 drivers/reset/sti/reset-stih416.c
->   create mode 100644 drivers/reset/sti/reset-syscfg.c
->   create mode 100644 drivers/reset/sti/reset-syscfg.h
->   create mode 100644 include/dt-bindings/reset-controller/stih415-resets.h
->   create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
->
 
+-- 
+James Morris
+<jmorris@namei.org>
