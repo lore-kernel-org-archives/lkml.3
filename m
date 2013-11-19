@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3KSJc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:32:58 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44044 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3KSJcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:32:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <5289ECEE.4070505@nvidia.com>
-References: <1384605261-8682-1-git-send-email-acourbot@nvidia.com>
-	<CACRpkdZc0DWHe6AmawYp=SY=5==SUuJUHDETUTDw-6PbhR3tUg@mail.gmail.com>
-	<5289ECEE.4070505@nvidia.com>
-Date: Tue, 19 Nov 2013 10:32:54 +0100
-Message-ID: <CACRpkdb0Gb9AGKqWb01=xe1423kPTXzCB+gbygsaED8Q=c95iA@mail.gmail.com>
-Subject: Re: [PATCH v2] Documentation: gpiolib: document new interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Rob Landley <rob@landley.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	id S1751998Ab3KSJdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:33:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829Ab3KSJdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 04:33:15 -0500
+Date: Tue, 19 Nov 2013 10:33:02 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Petr Machata <pmachata@redhat.com>
+Subject: Re: [PATCH] perf top: Make -g refer to callchains
+Message-ID: <20131119093302.GA18286@host2.jankratochvil.net>
+References: <20131118142653.GA27191@gmail.com>
+ <20131118174945.GD24375@krava.brq.redhat.com>
+ <20131118201619.GA26312@host2.jankratochvil.net>
+ <CAFrcx1mnh2odWmzJMcKKwR=5F2dydAQctp+1LKan0w5NcFaexA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1mnh2odWmzJMcKKwR=5F2dydAQctp+1LKan0w5NcFaexA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 11:33 AM, Alex Courbot <acourbot@nvidia.com> wrote:
-> On 11/18/2013 06:34 PM, Linus Walleij wrote:
+On Tue, 19 Nov 2013 10:26:42 +0100, Jean Pihet wrote:
+> Do you know about the support of AARCH64, both in 64-bit and 32-bit
+> (compat) mode?
+> I would be glad to give it a try.
 
->> Don't we need an 00-INDEX file?
->> (Maybe Rob can tell whether this is desirable.)
->
-> Good idea. gpio.txt somehow fulfills that role, but it might be better if we
-> split it. Would you like me to submit a new revision?
+Please move this topic to:
+	https://lists.fedorahosted.org/mailman/listinfo/elfutils-devel
 
-No please just send some incremental patch on top of
-my "fixes" branch in the GPIO tree.
+aarch64 elfutils port is now posted by Petr Machata.
+The elfutils unwinder part for aarch64 (or arm) has not been written yet.
 
-I've read through the docs and couldn't find anything
-really wrong with it BTW.
 
-Yours,
-Linus Walleij
+Jan
