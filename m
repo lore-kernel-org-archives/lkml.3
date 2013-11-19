@@ -1,72 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab3KSOQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:16:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51589 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab3KSOQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:16:38 -0500
-Message-ID: <528B72C1.5060006@ti.com>
-Date: Tue, 19 Nov 2013 08:16:33 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752922Ab3KSORO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:17:14 -0500
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:60424 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3KSORL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:17:11 -0500
+X-Greylist: delayed 883 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Nov 2013 09:17:11 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:subject:references:in-reply-to
+	:content-type; q=dns; s=sasl; b=fGGKC644JKlXwiz1WS27oODdwhaA6zdV
+	t5BhLDs2O1A5VuUMMl2ThNVPDlXyY3TMoboNIJ5XZdDD4IjkBeDDsrPRdbptwFIz
+	cDzjhX1l2R1jfSBtmlqpA6SVXSPwYRbc52wCHGiSts6Uc/uOrN7q6X0ywK6E0Hhy
+	l20RfZGs9RE=
+Message-ID: <528B6F73.7040801@pobox.com>
+Date: Tue, 19 Nov 2013 09:02:27 -0500
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, Shawn Guo <shawn.guo@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net>	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>	<528A27F8.3070402@ti.com>	<20131118155753.GU11014@S2101-09.ap.freescale.net>	<528A4340.3020508@ti.com>	<20131119022133.GB18434@S2101-09.ap.freescale.net> <CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
-In-Reply-To: <CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: David Laight <David.Laight@ACULAB.COM>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ming Lei <ming.lei@canonical.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: net/usb/ax88179_178a driver broken in linux-3.12
+References: <52890C7E.6000607@pobox.com> <52891178.2080509@pobox.com> <52891341.4020403@pobox.com> <AE90C24D6B3A694183C094C60CF0A2F6026B742B@saturn3.aculab.com> <AE90C24D6B3A694183C094C60CF0A2F6026B742F@saturn3.aculab.com> <528A9A36.50903@pobox.com> <AE90C24D6B3A694183C094C60CF0A2F6026B7431@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7431@saturn3.aculab.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/mixed;
+ boundary="------------070103020705010902070906"
+X-Pobox-Relay-ID: 3946F34C-5123-11E3-BED5-F66B0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 09:46 PM, Viresh Kumar wrote:
-> On 19 November 2013 07:51, Shawn Guo <shawn.guo@linaro.org> wrote:
->> No, I did not say that.  IMO, when cpufreq-cpu0 sees a mismatch, it has
->> no way to know or assume which one is correct and which is incorrect.
->> The best thing it can do is to fail out without changing anything about
->> running frequency and voltage.
+This is a multi-part message in MIME format.
+--------------070103020705010902070906
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+On 13-11-19 05:04 AM, David Laight wrote:
+>> From: Mark Lord
+..
+>> except the ax88179_178a driver still does not work in linux-3.12,
+>> whereas it works fine in all earlier kernels.
+>>
+>> That's a regression.
+>> And a simple revert (earlier in this thread) fixes it.
+>> So.. let's revert it for now, until a proper xhci compatible patch is produced.
+...
+> There is a patch to xhci-ring.c that should fix the SG problem.
+> http://www.spinics.net/lists/linux-usb/msg97176.html
 > 
-> Not specifically on this patch, but this is what I feel about this issue:
-> 
-> - As we are discussing on the other thread, there is scope of adding
-> "unknown" field in tables so that people would know that they were
-> running out of table freq at some point..
+> I think it should apply to the 3.12 sources.
 
-Consider something like userspace governor selection -> the device at
-boot will probably remain in an unknown/"invalid" configuration till
-the very first transition attempt. I am less worried about the stats
-than not following what the hardware description is (as stated by
-device tree/other forms).
+I am running with that patch here now (thanks),
+and it too appears to prevent the lockups.
 
-I staunchly disagree that at a point of mismatch detection, we just
-refuse to load up cpufreq governor -even though we know from device
-tree/other alternative entries what the hardware behavior is supposed
-to be. To refuse to loadup to a known configuration is considering the
-"valid configuration" data provided to the driver is wrong - an
-equivalent(considering the i2c example) is that if i2c driver sees bus
-configured for 3.4MHz and was asked to use 100KHz, it just refuses to
-load up!
+But is this patch upstream already?
+If yes, then it needs to get pushed out to -stable for 3.12 at least.
 
-> - This is a common problem for all drivers/platforms and not only
-> cpufreq-cpu0, so the solution has to be generic and not driver
-> specific.. So, atleast I don't want to get this patch in at any cost,
-> unless there is a generic solution present..
-> - There are non-dt drivers as well, and so freq table is present
-> with the kernel and we can't support all frequencies that bootloader
-> may end up with..
-The above two are fair comments -> but that implies that policy->cur
-population should no longer be the responsibility of cpufreq drivers
-and be the responsibility of cpufreq core. are we stating we want to
-move that to cpufreq core?
+If not upstream, then the revert is probably safest for -stable,
+rather than new code that has never been upstream before.
 
+Both patches are attached to this email.
+One or the other is required for the USB 3.0 network adapters to function in 3.12.
+
+Thanks
 -- 
-Regards,
-Nishanth Menon
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
+
+--------------070103020705010902070906
+Content-Type: text/x-patch;
+ name="51_ax88179_178a_revert_3.12_lockups.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="51_ax88179_178a_revert_3.12_lockups.patch"
+
+Revert USB 3.0 network driver changes that break the adapter (lockups)
+in 3.12.  This just puts back the original code from previous kernels.
+
+Signed-off-by: Mark Lord <mlord@pobox.com>
+
+--- linux/drivers/net/usb/ax88179_178a.c.orig	2013-11-03 18:41:51.000000000 -0500
++++ linux/drivers/net/usb/ax88179_178a.c	2013-11-17 13:23:39.525734277 -0500
+@@ -1177,18 +1177,31 @@
+ 	int frame_size = dev->maxpacket;
+ 	int mss = skb_shinfo(skb)->gso_size;
+ 	int headroom;
++	int tailroom;
+ 
+ 	tx_hdr1 = skb->len;
+ 	tx_hdr2 = mss;
+ 	if (((skb->len + 8) % frame_size) == 0)
+ 		tx_hdr2 |= 0x80008000;	/* Enable padding */
+ 
+-	headroom = skb_headroom(skb) - 8;
++	headroom = skb_headroom(skb);
++	tailroom = skb_tailroom(skb);
+ 
+-	if ((skb_header_cloned(skb) || headroom < 0) &&
+-	    pskb_expand_head(skb, headroom < 0 ? 8 : 0, 0, GFP_ATOMIC)) {
++	if (!skb_header_cloned(skb) &&
++	    !skb_cloned(skb) &&
++	    (headroom + tailroom) >= 8) {
++		if (headroom < 8) {
++			skb->data = memmove(skb->head + 8, skb->data, skb->len);
++			skb_set_tail_pointer(skb, skb->len);
++		}
++	} else {
++		struct sk_buff *skb2;
++
++		skb2 = skb_copy_expand(skb, 8, 0, flags);
+ 		dev_kfree_skb_any(skb);
+-		return NULL;
++		skb = skb2;
++		if (!skb)
++			return NULL;
+ 	}
+ 
+ 	skb_push(skb, 4);
+
+--------------070103020705010902070906
+Content-Type: text/x-patch;
+ name="55_usb_xhci_TRB_scatter_gather_fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="55_usb_xhci_TRB_scatter_gather_fix.patch"
+
+Section 4.11.7.1 of rev 1.0 of the xhci specification states that a link TRB
+can only occur at a boundary between underlying USB frames (512 bytes for 480M).
+
+If this isn't done the USB frames aren't formatted correctly and, for example,
+the USB3 ethernet ax88179_178a card will stop sending (while still receiving)
+when running a netperf tcp transmit test with (say) and 8k buffer.
+
+This should be a candidate for stable, the ax88179_178a driver defaults to
+gso and tso enabled so it passes a lot of fragmented skb to the USB stack.
+
+Signed-off-by: David Laight &lt;david.laight@xxxxxxxxxx&gt;
+---
+
+Changes for v2:
+
+1) Only act on bulk endpoints.
+   While isoc endpoints could suffer from the same problem it is much less
+   likely and can't be fixed by adding NOP TRBs (they would stop data being
+   sent in the poll interval).
+
+2) When writing the NOP TRB use the count of TRBs instead of scanning for
+   the link TRB.
+
+ drivers/usb/host/xhci-ring.c | 53 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 51 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 5480215..c1342dc 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2929,8 +2929,57 @@
+ 	}
+ 
+ 	while (1) {
+-		if (room_on_ring(xhci, ep_ring, num_trbs))
+-			break;
++		if (room_on_ring(xhci, ep_ring, num_trbs)) {
++			union xhci_trb *trb = ep_ring->enqueue;
++			unsigned int usable = ep_ring->enq_seg->trbs +
++					TRBS_PER_SEGMENT - 1 - trb;
++			u32 nop_cmd;
++
++			/*
++			 * Section 4.11.7.1 TD Fragments states that a link
++			 * TRB must only occur at the boundary between
++			 * data bursts (eg 512 bytes for 480M).
++			 * While it is possible to split a large fragment
++			 * we don't know the size yet.
++			 * Simplest solution is to fill the trb before the
++			 * LINK with nop commands.
++			 */
++			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
++				break;
++
++			if (ep_ring->type != TYPE_BULK)
++				/*
++				 * While isoc transfers might have a buffer that
++				 * crosses a 64k boundary it is unlikely.
++				 * Since we can't add NOPs without generating
++				 * gaps in the traffic just hope it never
++				 * happens at the end of the ring.
++				 * This could be fixed by writing a LINK TRB
++				 * instead of the first NOP - however the
++				 * TRB_TYPE_LINK_LE32() calls would all need
++				 * changing to check the ring length. */
++				break;
++
++			if (num_trbs >= TRBS_PER_SEGMENT) {
++				xhci_err(xhci, "Too many fragments %d, max %d\n",
++						num_trbs, TRBS_PER_SEGMENT - 1);
++				return -ENOMEM;
++			}
++
++			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
++					ep_ring->cycle_state);
++			ep_ring->num_trbs_free -= usable;
++			do {
++				trb->generic.field[0] = 0;
++				trb->generic.field[1] = 0;
++				trb->generic.field[2] = 0;
++				trb->generic.field[3] = nop_cmd;
++				trb++;
++			} while (--usable);
++			ep_ring->enqueue = trb;
++			if (room_on_ring(xhci, ep_ring, num_trbs))
++				break;
++		}
+ 
+ 		if (ep_ring == xhci->cmd_ring) {
+ 			xhci_err(xhci, "Do not support expand command ring\n");
+
+--------------070103020705010902070906--
