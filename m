@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3KSSlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:41:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab3KSSlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:41:05 -0500
-Date: Tue, 19 Nov 2013 20:44:11 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-Message-ID: <20131119184411.GA14587@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1753029Ab3KSSmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:42:07 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:54689 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3KSSmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:42:04 -0500
+Date: Tue, 19 Nov 2013 19:42:00 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] Expose sysctls for enabling slab/file_cache
+ interleaving
+Message-ID: <20131119184200.GD29695@two.firstfloor.org>
+References: <1384822222-28795-1-git-send-email-andi@firstfloor.org>
+ <20131119104203.GB18872@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <20131119104203.GB18872@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 06:03:48AM -0800, Eric Dumazet wrote:
-> On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
-> > We need to drop the refcnt of page when we fail to allocate an skb for frag
-> > list, otherwise it will be leaked. The bug was introduced by commit
-> > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
-> > buffers to page frag allocators").
-> > 
-> > Cc: Michael Dalton <mwdalton@google.com>
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> > The patch was needed for 3.12 stable.
+On Tue, Nov 19, 2013 at 11:42:03AM +0100, Michal Hocko wrote:
+> On Mon 18-11-13 16:50:22, Andi Kleen wrote:
+> [...]
+> > diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+> > index cc1b01c..10966f5 100644
+> > --- a/include/linux/cpuset.h
+> > +++ b/include/linux/cpuset.h
+> > @@ -72,12 +72,14 @@ extern int cpuset_slab_spread_node(void);
+> >  
+> >  static inline int cpuset_do_page_mem_spread(void)
+> >  {
+> > -	return current->flags & PF_SPREAD_PAGE;
+> > +	return (current->flags & PF_SPREAD_PAGE) ||
+> > +		sysctl_spread_file_cache;
+> >  }
 > 
-> Good catch, but if we return from receive_mergeable() in the 'middle'
-> of the frags we would need for the current skb, who will
-> call the virtqueue_get_buf() to flush the remaining frags ?
-> 
-> Don't we also need to call virtqueue_get_buf() like 
-> 
-> while (--num_buf) {
->     buf = virtqueue_get_buf(rq->vq, &len);
->     if (!buf)
->         break;
->     put_page(virt_to_head_page(buf));
-> }
-> 
-> ?
-> 
-> 
-> 
+> But this might break applications that explicitly opt out from
+> spreading.
 
+What do you mean? There's no such setting at the moment.
 
-virtqueue_get_buf only gives you back a buffer that has been DMA-ed
-to by hardware. ATM there's no way to get back a buffer once you
-gave it to hardware without doing a NIC reset.
+They can only enable it.
 
+-Andi
