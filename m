@@ -1,124 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab3KSNQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:16:02 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61973 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752611Ab3KSNP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:15:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in sysfs_remove_group()
-Date: Tue, 19 Nov 2013 14:28:37 +0100
-Message-ID: <1860373.lFaAX58EHT@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752410Ab3KSNR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:17:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58791 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004Ab3KSNR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 08:17:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,729,1378882800"; 
+   d="scan'208";a="435992005"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, hpa@zytor.com,
+        tglx@linutronix.de, kirill.shutemov@linux.intel.com,
+        dave.hansen@intel.com, mingo@redhat.com, n-horiguchi@ah.jp.nec.com,
+        willy@linux.intel.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20131119083053.GB1243@gmail.com>
+References: <20131115221406.1692E1E418F@corp2gmr1-2.eem.corp.google.com>
+ <20131119083053.GB1243@gmail.com>
+Subject: Re: [patch 3/3] x86, mm: get ASLR work for hugetlb mappings
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131119131750.EA45CE0090@blue.fi.intel.com>
+Date: Tue, 19 Nov 2013 15:17:50 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 19, 2013 03:09:58 PM Mika Westerberg wrote:
-> Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
-> the behavior so that directory removals will be done recursively. This
-> means that the sysfs group might already be removed if its parent directory
-> has been removed.
+Ingo Molnar wrote:
 > 
-> The current code outputs warnings similar to following log snippet when it
-> detects that there is no group for the given kobject:
+> * akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
 > 
->  WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
->  sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
->  Modules linked in:
->  CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
->  Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
->  Workqueue: kacpi_hotplug acpi_hotplug_work_fn
->   0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
->   ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
->   ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
->  Call Trace:
->   [<ffffffff817daab1>] dump_stack+0x45/0x56
->   [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
->   [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
->   [<ffffffff811ad319>] ? sysfs_get_dirent_ns+0x49/0x70
->   [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
->   [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
->   [<ffffffff8142a0d0>] device_del+0x40/0x1b0
->   [<ffffffff8142a24d>] device_unregister+0xd/0x20
->   [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
->   [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
->   [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
->   [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
->   [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
->   [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
->   [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
->   [<ffffffff8142a1b1>] device_del+0x121/0x1b0
->   [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
->   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
->   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
->   [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
->   [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
->   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
->   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
->   [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
->   [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
->   [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
->   [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
->   [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
->   [<ffffffff8105db29>] worker_thread+0x119/0x390
->   [<ffffffff8105da10>] ? manage_workers.isra.25+0x2a0/0x2a0
->   [<ffffffff81063a5d>] kthread+0xcd/0xf0
->   [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
->   [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
->   [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > Subject: x86, mm: get ASLR work for hugetlb mappings
+> > 
+> > Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.  The
+> > reason is genereic hugetlb_get_unmapped_area() which is used on x86-64. 
+> > It doesn't support randomization and use bottom-up unmapped area lookup,
+> > instead of usual top-down on x86-64.
+> > 
+> > x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+> > x86-32.
+> > 
+> > Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.  It
+> > fixes the issue and make hugetlb use top-down unmapped area lookup.
 > 
-> On this particular machine I see ~16 of these message during Thunderbolt
-> hot-unplug.
+> So the title and the changelog has typos (I counted three), which 
+> makes me wonder how well this was tested.
 > 
-> Fix this in similar way that was done for sysfs_remove_one() by checking
-> if the parent directory has already been removed and bailing out early.
+> To show/document the testing effort a before/after /proc/PID/maps 
+> output showing hugetlb vma addresses would be nice, showing that ASLR 
+> didn't work before and that it works adequately after the patch.
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
-> I'm not 100% sure that this is the correct solution. It seem to fix my case
-> but I might be missing something as I'm not that familiar with sysfs.
+> A word about the range and granularity of randomization in the typical 
+> case would be nice as well.
 
-It's done analogously in sysfs_remove_one(), so this looks like a correct fix
-to me:
+What about this:
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>From 440f2cd4a7e6918b9238680e4eacd75dc30291b6 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Fri, 15 Nov 2013 14:14:05 -0800
+Subject: [PATCH] x86, mm: get ASLR works for hugetlb mappings
 
-> 
->  fs/sysfs/group.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-> index 1898a10e38ce..8951bfb4e567 100644
-> --- a/fs/sysfs/group.c
-> +++ b/fs/sysfs/group.c
-> @@ -206,6 +206,15 @@ void sysfs_remove_group(struct kobject *kobj,
->  	struct sysfs_dirent *dir_sd = kobj->sd;
->  	struct sysfs_dirent *sd;
->  
-> +	/*
-> +	 * Sysfs directories are now removed recursively by
-> +	 * sysfs_remove_dir(). This means that this function can be called
-> +	 * multiple times on the same group. If the parent directory is
-> +	 * already removed we don't do anything here.
-> +	 */
-> +	if (dir_sd->s_flags & SYSFS_FLAG_REMOVED)
-> +		return;
-> +
->  	if (grp->name) {
->  		sd = sysfs_get_dirent(dir_sd, grp->name);
->  		if (!sd) {
-> 
+Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.
+
+%  for i in `seq 3`; do
+> tools/testing/selftests/vm/map_hugetlb | grep address
+> done
+Returned address is 0x2aaaaac00000
+Returned address is 0x2aaaaac00000
+Returned address is 0x2aaaaac00000
+
+/proc/PID/maps entries for the mapping are always the same (except inode
+number):
+
+2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 8200                       /anon_hugepage (deleted)
+2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 256                        /anon_hugepage (deleted)
+2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 7180                       /anon_hugepage (deleted)
+
+The reason is generic hugetlb_get_unmapped_area() which is used on
+x86-64.  It doesn't support randomization and use bottom-up unmapped
+area lookup, instead of usual top-down on x86-64.
+
+x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+x86-32.
+
+Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.
+It fixes the issue and switch hugetlb to use top-down unmapped area
+lookup.
+
+%  for i in `seq 3`; do
+> tools/testing/selftests/vm/map_hugetlb | grep address
+> done
+Returned address is 0x7f4f08a00000
+Returned address is 0x7fdda4200000
+Returned address is 0x7febe0000000
+
+/proc/PID/maps entries:
+
+7f4f08a00000-7f4f18a00000 rw-p 00000000 00:0c 1168                       /anon_hugepage (deleted)
+7fdda4200000-7fddb4200000 rw-p 00000000 00:0c 7092                       /anon_hugepage (deleted)
+7febe0000000-7febf0000000 rw-p 00000000 00:0c 7183                       /anon_hugepage (deleted)
+
+Unmapped area lookup policy for hugetlb mappings is consistent with
+normal mappings now -- the only difference is alignment requirements for
+huge pages.
+
+libhugetlbfs test-suite didn't detect any regressions with the patch
+applied (although it shows few failures on my machine regardless the
+patch).
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ arch/x86/include/asm/page.h    | 1 +
+ arch/x86/include/asm/page_32.h | 4 ----
+ arch/x86/mm/hugetlbpage.c      | 9 +++------
+ 3 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index c87892442e53..775873d3be55 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -71,6 +71,7 @@ extern bool __virt_addr_valid(unsigned long kaddr);
+ #include <asm-generic/getorder.h>
+ 
+ #define __HAVE_ARCH_GATE_AREA 1
++#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
+ 
+ #endif	/* __KERNEL__ */
+ #endif /* _ASM_X86_PAGE_H */
+diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
+index 4d550d04b609..904f528cc8e8 100644
+--- a/arch/x86/include/asm/page_32.h
++++ b/arch/x86/include/asm/page_32.h
+@@ -5,10 +5,6 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
+-#ifdef CONFIG_HUGETLB_PAGE
+-#define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
+-#endif
+-
+ #define __phys_addr_nodebug(x)	((x) - PAGE_OFFSET)
+ #ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 9d980d88b747..8c9f647ff9e1 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -87,9 +87,7 @@ int pmd_huge_support(void)
+ }
+ #endif
+ 
+-/* x86_64 also uses this file */
+-
+-#ifdef HAVE_ARCH_HUGETLB_UNMAPPED_AREA
++#ifdef CONFIG_HUGETLB_PAGE
+ static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
+ 		unsigned long addr, unsigned long len,
+ 		unsigned long pgoff, unsigned long flags)
+@@ -99,7 +97,7 @@ static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
+ 
+ 	info.flags = 0;
+ 	info.length = len;
+-	info.low_limit = TASK_UNMAPPED_BASE;
++	info.low_limit = current->mm->mmap_legacy_base;
+ 	info.high_limit = TASK_SIZE;
+ 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
+ 	info.align_offset = 0;
+@@ -172,8 +170,7 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
+ 		return hugetlb_get_unmapped_area_topdown(file, addr, len,
+ 				pgoff, flags);
+ }
+-
+-#endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/
++#endif /* CONFIG_HUGETLB_PAGE */
+ 
+ #ifdef CONFIG_X86_64
+ static __init int setup_hugepagesz(char *opt)
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+ Kirill A. Shutemov
