@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab3KSOwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:52:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43065 "EHLO mx1.redhat.com"
+	id S1753015Ab3KSOxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:53:30 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28113 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab3KSOwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:52:07 -0500
-Date: Tue, 19 Nov 2013 09:51:16 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        devel@openvz.org, bfields@fieldses.org, bharrosh@panasas.com
-Subject: Re: call_usermodehelper in containers
-Message-ID: <20131119095116.1254aeaa@tlielax.poochiereds.net>
-In-Reply-To: <20131118180259.GA11722@redhat.com>
-References: <20131111071825.62da01d1@tlielax.poochiereds.net>
-	<20131112004703.GB15377@kroah.com>
-	<20131112061201.04cf25ab@tlielax.poochiereds.net>
-	<528226EC.4050701@parallels.com>
-	<20131112083043.0ab78e67@tlielax.poochiereds.net>
-	<5285FA0A.2080802@parallels.com>
-	<871u2incyo.fsf@xmission.com>
-	<20131118172844.GA10005@redhat.com>
-	<20131118180259.GA11722@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752219Ab3KSOx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:53:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,729,1378882800"; 
+   d="scan'208";a="430258300"
+Date: Tue, 19 Nov 2013 17:00:01 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL REQUEST] i2c for 3.13
+Message-ID: <20131119150001.GM2281@intel.com>
+References: <20131118193802.GA14925@katana>
+ <CA+55aFxZaC=beR+dN36Sv==6fjY7SdOdwXaSHU+wnk+-oDJp4g@mail.gmail.com>
+ <3690707.5664qBQcL8@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3690707.5664qBQcL8@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013 19:02:59 +0100
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-> On 11/18, Oleg Nesterov wrote:
-> >
-> > On 11/15, Eric W. Biederman wrote:
+On Tue, Nov 19, 2013 at 01:11:25AM +0100, Rafael J. Wysocki wrote:
+> On Monday, November 18, 2013 03:46:34 PM Linus Torvalds wrote:
+> > On Mon, Nov 18, 2013 at 11:38 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
 > > >
-> > > I don't understand that one.  Having a preforked thread with the proper
-> > > environment that can act like kthreadd in terms of spawning user mode
-> > > helpers works and is simple.
-> >
-> > Can't we ask ->child_reaper to create the non-daemonized kernel thread
-> > with the "right" ->nsproxy, ->fs, etc?
-> >
-> > IOW. Please the the "patch" below. It is obviously incomplete and wrong,
-> > and it can be more clear/clean. And probably we need another API. Just
-> > to explain what I mean.
+> > > here is the pull request from the i2c subsystem for 3.13:
+> > 
+> > So while resolving some fairly trivial conflicts here, I noticed that
+> > commit a76e9bd89ae7 ("i2c: attach/detach I2C client device to the ACPI
+> > power domain") that I got earlier through the ACPI/PM tree calls
+> > acpi_dev_pm_detach() even when the device "->remove()" function fails.
+> > But it only sets clientdata to NULL if it succeeds.
+> > 
+> > That looks a bit odd.
+> > 
+> > I didn't try to fix it, though. I just thought I'd point out the oddity.
 > 
-> Or, perhaps UMH_IN_MY_NS should only work if ->child_reaper explicitly
-> does, say, prctl(PR_SPAWN_UMH_IN_NS_HELPER) which forks the non-daemonized
-> kernel kthread_worker thread, I dunno.
-> 
-> Oleg.
-> 
+> Well, given that the driver core doesn't even check the return value of
+> dev->bus->remove(dev), I think doing the unconditional acpi_dev_pm_detach()
+> is actually correct and clientdata should be cleared unconditionally too.
 
-Neat idea.
+Actually, can we remove the whole clientdata setting there?
 
-So is it always the case that tasks in a container have the same
-namespace settings and capabilities as the child_reaper?
-
-We'll still have the basic problem for nfsd that we'll need to keep
-track of what the child_reaper is when nfsd is started, but I think
-that's not too hard to solve.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Commit 0998d0631001 (device-core: Ensure drvdata = NULL when no driver is
+bound) modified the driver core to always clear out that field. Same seems
+to apply if driver probe fails.
