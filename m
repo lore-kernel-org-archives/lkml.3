@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab3KSB0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:26:53 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34932 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3KSB0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:26:49 -0500
-Date: Tue, 19 Nov 2013 01:26:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Charley (Hao Chuan) Chu" <charley.chu@broadcom.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] FS: Fixed buffer overflow issue in seq_read()
-Message-ID: <20131119012647.GB10323@ZenIV.linux.org.uk>
-References: <FB8A4655DFD2B34DB16AE06DDDD6C0E21BDB93D2@SJEXCHMB12.corp.ad.broadcom.com>
- <CA+55aFyE=EDqMt1E94FSOFNEVWMS+mNVsJZYwiRmWfyB5HkykA@mail.gmail.com>
+	id S1751640Ab3KSBcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:32:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41269 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab3KSBcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 20:32:48 -0500
+Message-ID: <528ABFA3.6060905@zytor.com>
+Date: Mon, 18 Nov 2013 17:32:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyE=EDqMt1E94FSOFNEVWMS+mNVsJZYwiRmWfyB5HkykA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com> <20131114180455.GA32212@anatevka.fc.hp.com> <CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com> <20131115005049.GJ5116@anatevka.fc.hp.com> <20131115062417.GB9237@gmail.com> <CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com> <5285C639.5040203@zytor.com> <20131115140738.GB6637@redhat.com> <CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com> <52865CA1.5020309@zytor.com> <20131115183002.GE6637@redhat.com>
+In-Reply-To: <20131115183002.GE6637@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 04:38:03PM -0800, Linus Torvalds wrote:
-> Hmm.. Al - this looks like a major oversight, but it also looks like
-> the wrong place to initialize count/from in, just because it doesn't
-> follow any sane patterns.
+On 11/15/2013 10:30 AM, Vivek Goyal wrote:
 > 
-> My gut feel is that this needs more cleanup and some sane helper
-> function that always initializes those fields when allocating a new
-> buffer. Rather than the "initialize in random places and then miss a
-> few".
+> And IOMMU support is very flaky with kdump. And IOMMU's can be turned
+> off at command line. And that would force one to remove crahkernel_low=0.
+> So change of one command line option forces change of another. It is
+> complicated.
 > 
-> Afaik, those fields currently get (re-)initialized when:
+> Also there are very few systems which work with IOMMU on. A lot more
+> which work without IOMMU. We have all these DMAR issues and still nobody
+> has been able to address IOMMU issues properly.
 > 
->  - We do the memset() of the whole seq_file structure at seq_open() time.
-> 
->  - at the top of traverse()
-> 
->  - count (but not from) gets reinitialized when growing the buffer or
-> after traverse() fails in seq_read()
-> 
-> and it really doesn't give me that happy fuzzy feeling of "that all
-> makes sense". Charley's patch seems to fix a missing initialization,
-> but I'd *really* like to have it all make more sense, and feel that
-> we're not missing some *other* initialization.
-> 
-> Al?
 
-See upthread.  The bug is real, but I would rather go for a different
-fix; it's not worth helper functions, though - we have exactly two places
-where free m->buf without freeing m itself, and all we need to do is
-clearing m->count in those two places.  No point delaying that to the
-next call of seq_read() (and no point cleaning m->from at all), as soon
-as we free m->buf we obviously lose all the data that might've been in it.
+Why do we need such a big bounce buffer for kdump swiotlb anyway?
+Surely the vast majority of all dump devices don't need it, so it is
+there for completeness, no?
+
+	-hpa
+
+
