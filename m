@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3KSALh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 19:11:37 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:45215 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752205Ab3KSALe (ORCPT
+	id S1752117Ab3KSAS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 19:18:26 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:44698 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab3KSASX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 19:11:34 -0500
-Date: Mon, 18 Nov 2013 19:11:31 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: tools lib traceevent: Report better error message on bad function
- args
-Message-ID: <20131118191131.165034f8@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 18 Nov 2013 19:18:23 -0500
+X-AuditID: 9c93017e-b7ba2ae00000088c-a8-528aae4d8ca2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH v2 2/3] perf script: Print comm, fork and exit events also
+References: <1384752894-10974-1-git-send-email-namhyung@kernel.org>
+	<1384752894-10974-2-git-send-email-namhyung@kernel.org>
+	<20131118135700.GB3669@ghostprotocols.net>
+Date: Tue, 19 Nov 2013 09:18:20 +0900
+In-Reply-To: <20131118135700.GB3669@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Mon, 18 Nov 2013 10:57:00 -0300")
+Message-ID: <87bo1hutv7.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When Jiri Olsa was writing a function callback for
-scsi_trace_parse_cdb(), he thought that the traceevent library had a
-bug in it because he was getting this error:
+Hi Arnaldo,
 
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
+On Mon, 18 Nov 2013 10:57:00 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Nov 18, 2013 at 02:34:53PM +0900, Namhyung Kim escreveu:
+>> If --show-task option is given, also print internal COMM, FORK and
+>> EXIT events.  It would be helpful for debugging.
+>
+> Humm, --show-task-events is clearer albeit long :-\ With shell
+> completion shouldn't be an issue tho.
 
-But in truth, he didn't have the write number of arguments for the
-function callback, and the error was the library detecting the
-discrepancy. A better error message would have prevented the confusion:
+Okay, will change.
 
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_timeout has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_start has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_error has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_done has more
+>
+> Also, can't we use: perf_event__fprintf_{mmap,comm,task}?
 
-Or
+We can do it.  The output will look like below if we use
+perf_event__fprintf():
 
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_timeout only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_start only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_error only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_done only uses 3
+          swapper     0 [009] 3350640.335261: sched:sched_switch: prev_comm=swapper/9
+            sleep  9486 [009] 3350640.335509: PERF_RECORD_COMM: sleep:9486
+            sleep  9486 [009] 3350640.335806: sched:sched_stat_runtime: comm=sleep pid=9486
+          firefox  2635 [003] 3350641.275896: PERF_RECORD_FORK(2635:9487):(2635:2635)
+          firefox  2635 [003] 3350641.275896: sched:sched_process_fork: comm=firefox pid=2635
+            sleep  9486 [009] 3350641.336009: PERF_RECORD_EXIT(9486:9486):(9486:9486)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 0362d57..f7aab3d 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2691,7 +2691,6 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	struct print_arg *farg;
- 	enum event_type type;
- 	char *token;
--	const char *test;
- 	int i;
- 
- 	arg->type = PRINT_FUNC;
-@@ -2708,15 +2707,19 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 		}
- 
- 		type = process_arg(event, farg, &token);
--		if (i < (func->nr_args - 1))
--			test = ",";
--		else
--			test = ")";
--
--		if (test_type_token(type, token, EVENT_DELIM, test)) {
--			free_arg(farg);
--			free_token(token);
--			return EVENT_ERROR;
-+		if (i < (func->nr_args - 1)) {
-+			if (type != EVENT_DELIM || strcmp(token, ",") != 0) {
-+				warning("Error: function '%s()' expects %d arguments but event %s only uses %d",
-+					func->name, func->nr_args,
-+					event->name, i + 1);
-+				return EVENT_ERROR;
-+			}
-+		} else {
-+			if (type != EVENT_DELIM || strcmp(token, ")") != 0) {
-+				warning("Error: function '%s()' only expects %d arguments but event %s has more",
-+					func->name, func->nr_args, event->name);
-+				return EVENT_ERROR;
-+			}
- 		}
- 
- 		*next_arg = farg;
+But I'd prefer original version below since it shows the changes more
+intuitively, no?
+
+Thanks,
+Namhyung
+
+>  
+>>   $ perf script --show-task
+>>   ...
+>>          swapper     0 [009] 3350640.335261: sched:sched_switch: prev_comm=swapper/9
+>>            sleep  9486 [009] 3350640.335509: comm: perf --> sleep (9486)
+>>            sleep  9486 [009] 3350640.335806: sched:sched_stat_runtime: comm=sleep pid=9486
+>>          firefox  2635 [003] 3350641.275896: fork: firefox (2635 --> 9487)
+>>          firefox  2635 [003] 3350641.275896: sched:sched_process_fork: comm=firefox pid=2635
+>>            sleep  9486 [009] 3350641.336009: exit: sleep (9486)
