@@ -1,115 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab3KSCiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:38:23 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58033 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751467Ab3KSCiW (ORCPT
+	id S1751676Ab3KSCrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:47:04 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5036 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab3KSCrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:38:22 -0500
-Date: Mon, 18 Nov 2013 21:38:20 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v2] tools lib traceevent: Report better error message on bad
- function args
-Message-ID: <20131118213820.22173142@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 18 Nov 2013 21:47:00 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 18 Nov 2013 18:45:05 -0800
+Message-ID: <528AD11F.7060009@nvidia.com>
+Date: Tue, 19 Nov 2013 11:46:55 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: move firmware_ops to drivers/firmware
+References: <1384678169-28228-1-git-send-email-acourbot@nvidia.com> <CAHkRjk5LBOFx3ir49RgEsaFwvp5UCpTjYFWto+URXebAsOP0RA@mail.gmail.com> <52898417.80601@nvidia.com> <20131118115842.GE4050@arm.com>
+In-Reply-To: <20131118115842.GE4050@arm.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When Jiri Olsa was writing a function callback for
-scsi_trace_parse_cdb(), he thought that the traceevent library had a
-bug in it because he was getting this error:
+On 11/18/2013 08:58 PM, Catalin Marinas wrote:
+> On Mon, Nov 18, 2013 at 03:05:59AM +0000, Alex Courbot wrote:
+>> On 11/18/2013 12:59 AM, Catalin Marinas wrote:
+>>> On 17 November 2013 08:49, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>>> The ARM tree includes a firmware_ops interface that is designed to
+>>>> implement support for simple, TrustZone-based firmwares but could
+>>>> also cover other use-cases. It has been suggested that this
+>>>> interface might be useful to other architectures (e.g. arm64) and
+>>>> that it should be moved out of arch/arm.
+>>>
+>>> NAK. I'm for code sharing with arm via common locations but this API
+>>> goes against the ARMv8 firmware standardisation efforts like PSCI,
+>>> encouraging each platform to define there own non-standard interface.
+>>
+>> I have to say, I pretty much agree with your NAK.
+>>
+>> The reason for this patch is that the suggestion to move firmware_ops
+>> out of arch/arm is the last (I hope) thing that prevents my Trusted
+>> Foundation support series from being merged.
+>
+> Moving it into drivers shouldn't be a workaround. Nice try ;).
 
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
-  Error: expected ')' but read ','
+Hehe. I thought that just sending a patch would settle the issue one way 
+or the other and avoid a huge discussion. Woke up this morning to see 
+how wrong I was.
 
-But in truth, he didn't have the write number of arguments for the
-function callback, and the error was the library detecting the
-discrepancy. A better error message would have prevented the confusion:
+>
+>> Now if we can all agree:
+>>
+>> * that ARMv8 will only use PSCI
+>
+> Or spin-table (which does not require secure calls). Otherwise, if
+> secure firmware is present, SoCs should use PSCI (as the only firmware
+> standard currently supported in the arm64 kernel).
+>
+> However, things evolve and we may have other needs in the future or PSCI
+> may not be sufficient or we get newer PSCI revisions. This can be
+> extended but my requirement is to decouple booting standard from SoC
+> support (together with the aim of having no SoC-specific code under
+> arch/arm64). I really don't see why SoCs can't agree on one (or very
+> few) standard booting protocol (and legacy argument doesn't work since
+> the ARMv8 firmware needs to be converted to AArch64 anyway).
+>
+>> * that there is no use-case of this interface outside of arch/arm as of
+>> today (and none foreseen in the near future)
+>
+> The firmware_ops are only used under arch/arm so far, I don't see any
+> drivers doing anything with it. Also, l2x0_init is ARMv7 only.
+>
+> On arm64, support for PSCI is handled via cpu_operations in the latest
+> kernel. That's an arm64 abstraction and is extensible (but we want to
+> keep tight control of this, hence no register_cpu_ops function).
+>
+>> * that the firmware_ops interface is quite ARMv7-specific anyway,
+>
+> This was introduced to allow SoC code to enable hooks for SoC-specific
+> firmware calls like cpu_idle, l2x0_init. By standardising the interface
+> and decoupling it from SoC code on arm64, we don't need per-SoC
+> firmware_ops.
+>
+> Of course, trusted foundations interface could be plugged into cpu_ops
+> on arm64 but I will NAK it on the grounds of not using the PSCI API, nor
+> the SMC calling convention (and it's easy to fix when porting to ARMv8).
+> If a supported standard API is used, then there is no need for
+> additional code in the kernel.
+>
+> BTW, is legacy code the reason for not converting the SMC # to PSCI?
+> It's already supported on ARMv7, so you may not have much code left to
+> merge in the kernel ;).
 
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_timeout has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_start has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_error has more
-  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_done has more
+The problem here is twofold:
 
-Or
+1) we are just consumers of the TrustZone secure monitor who receive a 
+binary and do not have any control over its calling conventions. I agree 
+that it would be trivial to make it compatible with PSCI, but it's just 
+not something we can make by ourselves (TF does not even follow the SMC 
+calling convention). If this problem is to be addressed, it should be 
+done by forcing the TrustZone secure monitors providers to follow PSCI.
 
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_timeout only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_start only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_error only uses 3
-  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_done only uses 3
+2) devices have already shipped with this firmware. Are we going to just 
+renounce supporting them, even though the necessary support is 
+lightweight and fits within already existing interfaces?
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
+I certainly do hope that for ARMv8 things will be different and more 
+standardized. But that's not something that can be guaranteed unless ARM 
+strongly enforces it to firmware vendors. In case such a non-standard 
+firmware gets used again, I *do* hope that using cpu_ops will be 
+preferred over saying "this device cannot be supported in mainline, ever".
 
-V2:
-   Added '[PATCH.*]' in subject. Don't know how I missed that the first time.
+The kernel already supports non-standard hardware, BIOS, ACPI through 
+hacks that are *way* more horrible than that. This should certainly not 
+be encouraged, but that's not a valid reason to forbid otherwise 
+perfectly fine devices to run mainline IMHO.
 
-   Free token and farg. Thanks to Namhyung Kim for pointing that out.
+>
+>> * that should a need to move it (for whatever reason) occur later, it
+>> will be easy to do (as this patch hopefully demonstrates).
+>
+> I agree, it's not hard to unify this but so far I haven't seen a good
+> reason.
 
+Same here. arm64 has its own cpu_operations. Other archs have different 
+needs and if we move this to a common place it will just become a messy 
+placeholder for function pointers from which each arch will only use a 
+subset.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 0362d57..87dda60 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2691,7 +2691,6 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	struct print_arg *farg;
- 	enum event_type type;
- 	char *token;
--	const char *test;
- 	int i;
- 
- 	arg->type = PRINT_FUNC;
-@@ -2708,15 +2707,19 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 		}
- 
- 		type = process_arg(event, farg, &token);
--		if (i < (func->nr_args - 1))
--			test = ",";
--		else
--			test = ")";
--
--		if (test_type_token(type, token, EVENT_DELIM, test)) {
--			free_arg(farg);
--			free_token(token);
--			return EVENT_ERROR;
-+		if (i < (func->nr_args - 1)) {
-+			if (type != EVENT_DELIM || strcmp(token, ",") != 0) {
-+				warning("Error: function '%s()' expects %d arguments but event %s only uses %d",
-+					func->name, func->nr_args,
-+					event->name, i + 1);
-+				goto err;
-+			}
-+		} else {
-+			if (type != EVENT_DELIM || strcmp(token, ")") != 0) {
-+				warning("Error: function '%s()' only expects %d arguments but event %s has more",
-+					func->name, func->nr_args, event->name);
-+				goto err;
-+			}
- 		}
- 
- 		*next_arg = farg;
-@@ -2728,6 +2731,11 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	*tok = token;
- 
- 	return type;
-+
-+err:
-+	free_arg(farg);
-+	free_token(token);
-+	return EVENT_ERROR;
- }
- 
- static enum event_type
+Not to mention that if we follow the logic completely, we should then 
+implement PCSI on top of cpu_ops and cpu_ops on top of firmware_ops (or 
+the other way around ;)).
+
+Alex.
+
