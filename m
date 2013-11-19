@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3KSWFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:05:45 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:51796 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab3KSWFn (ORCPT
+	id S1752982Ab3KSWIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:08:34 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:39147 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab3KSWIc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:05:43 -0500
+	Tue, 19 Nov 2013 17:08:32 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20131119213557.3839.56953.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20131119212714.3839.52182.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20131119213557.3839.56953.stgit@bhelgaas-glaptop.roam.corp.google.com>
-Date: Tue, 19 Nov 2013 15:05:42 -0700
-Message-ID: <CAL-B5D3id0nh_Mt-ZZahWf5Z7WPjgV8-Eu=keXU0mDdgLPXmBQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] PCI: Support PCIe Capability Slot registers only
- for ports with slots
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: stable@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Amos Kong <kongjianjun@gmail.com>, Adam Lee <adam.lee@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yuval Mintz <yuvalmin@broadcom.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Thomas Renninger <trenn@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "Jonghwan Choi" <jhbird.choi@gmail.com>
+From: Sebastian Capella <sebastian.capella@linaro.org>
+In-Reply-To: <27161890.Zx6CiZOMr8@amdc1032>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "MyungJoo Ham" <myungjoo.ham@samsung.com>,
+        "Kukjin Kim" <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "Jonghwan Choi" <jhbird.choi@samsung.com>
+References: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
+ <27161890.Zx6CiZOMr8@amdc1032>
+Message-ID: <20131119220829.27502.62997@capellas-linux>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 4/4] PM / devfreq: Consider hibernation in pm notifier
+Date: Tue, 19 Nov 2013 14:08:29 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 2:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Commit 6d3a1741f1e648cfbd5a0cc94477a0d5004c6f5e upstream.  This is part
-> of the fix for https://bugzilla.kernel.org/show_bug.cgi?id=65211
->
-> Previously we allowed callers to access Slot Capabilities, Status, and
-> Control for Root Ports even if the Root Port did not implement a slot.
-> This seems dubious because the spec only requires these registers if a
-> slot is implemented.
->
-> It's true that even Root Ports without slots must have *space* for these
-> slot registers, because the Root Capabilities, Status, and Control
-> registers are after the slot registers in the capability.  However,
-> for a v1 PCIe Capability, the *semantics* of the slot registers are
-> undefined unless a slot is implemented.
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
-> CC: stable@vger.kernel.org      # v3.7+
-> ---
->  drivers/pci/access.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-> index 9a46fa9135d9..061da8c3ab4b 100644
-> --- a/drivers/pci/access.c
-> +++ b/drivers/pci/access.c
-> @@ -497,9 +497,9 @@ static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
->  {
->         int type = pci_pcie_type(dev);
->
-> -       return type == PCI_EXP_TYPE_ROOT_PORT ||
-> -              (type == PCI_EXP_TYPE_DOWNSTREAM &&
-> -               pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
-> +       return (type == PCI_EXP_TYPE_ROOT_PORT ||
-> +               type == PCI_EXP_TYPE_DOWNSTREAM) &&
-> +              pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT;
->  }
->
->  static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
->
+Quoting Bartlomiej Zolnierkiewicz (2013-11-19 06:50:05)
+> Hi,
+> 
+> Are you planning to add hibernation support to ARM?
+> 
+> If so then this should be stated somewhere in the patch description.
+> 
+> OTOH if you are not going to add hibernation support to ARM I see
+> a little sense in adding hibernation support to ARM-only drivers..
 
-Acked-by: Myron Stowe <myron.stowe@redhat.com>
+FYI, we at Linaro and a few others have been working on adding
+hibernation support for ARM.  I have not coordinated with Jonghwan
+however.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Apoligies for the earlier toppost.
+
+Thanks,
+
+Sebastian Capella
