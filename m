@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3KSV2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:28:04 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17134 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3KSV17 (ORCPT
+	id S1752930Ab3KSVa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:30:58 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:40354 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751421Ab3KSVa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:27:59 -0500
-Message-ID: <528BD7BC.4010205@oracle.com>
-Date: Tue, 19 Nov 2013 14:27:24 -0700
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 19 Nov 2013 16:30:56 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnkIACzYi1J5LGc//2dsb2JhbABZgweDLbdVhUmBIBd0giUBAQU6HCMQCAMYCSUPBSUDIROIAL9UFxaPQQeEMgOYEZIOgWqBUig
+Date: Wed, 20 Nov 2013 08:30:51 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
+ virtio devices
+Message-ID: <20131119213051.GP11434@dastard>
+References: <20131119080218.GJ11434@dastard>
+ <20131119103635.GA9223@infradead.org>
+ <20131119160509.GB21343@kernel.dk>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm: tail page refcounting optimization for slab and
- hugetlbfs
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com> <1384537668-10283-4-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1384537668-10283-4-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131119160509.GB21343@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 10:47 AM, Andrea Arcangeli wrote:
-> This skips the _mapcount mangling for slab and hugetlbfs pages.
->
-> The main trouble in doing this is to guarantee that PageSlab and
-> PageHeadHuge remains constant for all get_page/put_page run on the
-> tail of slab or hugetlbfs compound pages. Otherwise if they're set
-> during get_page but not set during put_page, the _mapcount of the tail
-> page would underflow.
->
-> PageHeadHuge will remain true until the compound page is released and
-> enters the buddy allocator so it won't risk to change even if the tail
-> page is the last reference left on the page.
->
-> PG_slab instead is cleared before the slab frees the head page with
-> put_page, so if the tail pin is released after the slab freed the
-> page, we would have a problem. But in the slab case the tail pin
-> cannot be the last reference left on the page. This is because the
-> slab code is free to reuse the compound page after a
-> kfree/kmem_cache_free without having to check if there's any tail pin
-> left. In turn all tail pins must be always released while the head is
-> still pinned by the slab code and so we know PG_slab will be still set
-> too.
->
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+On Tue, Nov 19, 2013 at 09:05:09AM -0700, Jens Axboe wrote:
+> On Tue, Nov 19 2013, Christoph Hellwig wrote:
+> > On Tue, Nov 19, 2013 at 07:02:18PM +1100, Dave Chinner wrote:
+> > > I have no idea if it's related to the above hang, but either way
+> > > breaking iostat is a major regression....
+> > 
+> > Both of them are most likely due to the conversion of virtio_blk
+> > to the blk-mq code.
+> > 
+> > I've not seen the hang in my heavy xfstests testing, but that was a
+> > slightly different codebase than what finally got in, so I'll try
+> > to reproduce it once I get some spare QA cycles.
+> 
+> Thanks! Dave, if you still have it in that state, can you dump the
+> contents of /sys/block/<devs>/mq/ for the device/devices that are hung?
 
-Reviewed-by: Khalid Aziz <khalid.aziz@oracle.com>
+# find /sys/block/vdb/mq -type f -print -exec cat {} \;
+/sys/block/vdb/mq/0/run
+1313835
+/sys/block/vdb/mq/0/cpu0/completed
+546857 207203
+/sys/block/vdb/mq/0/cpu0/rq_list
+CTX pending:
+/sys/block/vdb/mq/0/cpu0/merged
+0
+/sys/block/vdb/mq/0/cpu0/dispatched
+257733 496352
+/sys/block/vdb/mq/0/cpu1/completed
+547714 200741
+/sys/block/vdb/mq/0/cpu1/rq_list
+CTX pending:
+/sys/block/vdb/mq/0/cpu1/merged
+0
+/sys/block/vdb/mq/0/cpu1/dispatched
+262114 486381
+/sys/block/vdb/mq/0/tags
+nr_tags=66, reserved_tags=2, batch_move=16, max_cache=32
+nr_free=0, nr_reserved=1
+  cpu00: nr_free=0
+  cpu01: nr_free=0
+/sys/block/vdb/mq/0/ipi_redirect
+0
+/sys/block/vdb/mq/0/queued
+1384795
+/sys/block/vdb/mq/0/dispatched
+       0        194596
+       1        1022691
+       2        68540
+       4        10138
+       8        7686
+      16        10234
+      32        0
+      64        0
+     128        0
+     256        0
+/sys/block/vdb/mq/0/pending
+HCTX pending:
+#
 
---
-Khalid
+It looks like it's hung because of this:
+
+/sys/block/vdb/mq/0/tags
+nr_tags=66, reserved_tags=2, batch_move=16, max_cache=32
+nr_free=0, nr_reserved=1
+  cpu00: nr_free=0
+  cpu01: nr_free=0
+
+No free tags in teh pool, nor any free tags in the per-cpu
+magazines. Perhaps there is a leak somewhere?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
