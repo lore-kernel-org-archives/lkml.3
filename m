@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3KSRLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:11:32 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:62969 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753478Ab3KSRLa (ORCPT
+	id S1753304Ab3KSRQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:16:16 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:29802 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab3KSRQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:11:30 -0500
-Message-ID: <528B9BC1.7090402@akamai.com>
-Date: Tue, 19 Nov 2013 12:11:29 -0500
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: "mingo@kernel.org" <mingo@kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Shinya Kuribayashi <skuribay@ruby.dti.ne.jp>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Ganesan Ramalingam <ganesanr@broadcom.com>
-Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
-References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com> <20131119090211.GN10382@linux-mips.org>
-In-Reply-To: <20131119090211.GN10382@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 12:16:10 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-a9-528b9cd89205
+From: Tomasz Figa <t.figa@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH] pinctrl: samsung: Allow pin value to be initialized using
+ pinfunc.
+Date: Tue, 19 Nov 2013 18:15:51 +0100
+Message-id: <1384881351-10782-1-git-send-email-t.figa@samsung.com>
+X-Mailer: git-send-email 1.8.4.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4Vd0bc7qDDNYuFreYf+Qcq8XZZQfZ
+	LP4/es1q0bvgKpvF2aY37BZT/ixnstj0+BqrxeVdc9gsZpzfx2Sx9shddotXB9tYLNbPeM1i
+	cWzGEkYHXo/ZDRdZPO5c28PmsXlJvUffllWMHtuvzWP2+LxJzmPj3NAA9igum5TUnMyy1CJ9
+	uwSujJmz17MX/OKp6Gxewd7A+Jeri5GDQ0LARGLh37guRk4gU0ziwr31bF2MXBxCAksZJZ6f
+	3AXl9DFJdO25yghSxSagJvG54REbiC0ioCExpesxO0gRs8ATZom1G14xgySEBUIlPj16xg5i
+	swioSvxb384EYvMKOEnM/trLArFOQWLzpEvMExi5FzAyrGIUTS1NLihOSs810itOzC0uzUvX
+	S87P3cQICbmvOxiXHrM6xCjAwajEwzvRvStIiDWxrLgy9xCjBAezkghvTX13kBBvSmJlVWpR
+	fnxRaU5q8SFGJg5OqQbGswHHQxbtVV2x3cpv65//a3Q7ZkiyevhdPLb8+uXi+wbVXavKRd3S
+	jqzlebFVPjdK2fmFgbvMP9WNJT1BmVEdUcGi6RfeMfusWt2S/+ZS8wq3+nJFHUH5bN1r9sfT
+	921ZJG65dE/nhf9sb2qbdLnfruR/tcq9rt+P79lsprKegk2KC04cndCvxFKckWioxVxUnAgA
+	vhizFBcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 04:02 AM, Ralf Baechle wrote:
-> On Mon, Nov 18, 2013 at 09:04:36PM +0000, Jason Baron wrote:
-> 
->> The panic_timeout value can be set via the command line option 'panic=x', or via
->> /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
->> before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
->> so that we can set the desired value from the .config.
->>
->> The default panic_timeout value continues to be 0 - wait forever, except for
->> powerpc and mips, which have been defaulted to 180 and 5 respectively. This
->> is in keeping with the fact that these arches already set panic_timeout in
->> their arch init code. However, I found three exceptions- two in mips and one in
->> powerpc where the settings didn't match these default values. In those cases, I
->> left the arch code so it continues to override, in case the user has not changed
->> from the default. It would nice if these arches had one default value, or if we
->> could determine the correct setting at compile-time.
-> 
-> It's more complicated - MIPS was using the global default with five MIPS
-> platforms overriding the default.
-> 
-> I propose to kill these overrides for sanity unless somebody comes up
-> with a good argument.  Patch below.
-> 
+This patch extends the range of settings configurable via pinfunc API
+to cover pin value as well. This allows configuration of default values
+of pins.
 
-And so have the mips default be 0? IE drop the arch/mips/Kconfig bits from
-the patch I posted? (Which could of course be configured to a non-zero value
-by the user, if desired.)
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt | 1 +
+ drivers/pinctrl/pinctrl-samsung.c                             | 1 +
+ 2 files changed, 2 insertions(+)
 
-Thanks,
-
--Jason
+diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+index fe34cbb..ed4cc9c 100644
+--- a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+@@ -74,6 +74,7 @@ Required Properties:
+   "samsung,pins" property of the child node. The following pin configuration
+   properties are supported.
+ 
++  - samsung,pin-val: Initial value of pin output buffer.
+   - samsung,pin-pud: Pull up/down configuration.
+   - samsung,pin-drv: Drive strength configuration.
+   - samsung,pin-pud-pdn: Pull up/down configuration in power down mode.
+diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+index c752de4..6b2194a 100644
+--- a/drivers/pinctrl/pinctrl-samsung.c
++++ b/drivers/pinctrl/pinctrl-samsung.c
+@@ -47,6 +47,7 @@ static struct pin_config {
+ 	{ "samsung,pin-drv", PINCFG_TYPE_DRV },
+ 	{ "samsung,pin-con-pdn", PINCFG_TYPE_CON_PDN },
+ 	{ "samsung,pin-pud-pdn", PINCFG_TYPE_PUD_PDN },
++	{ "samsung,pin-val", PINCFG_TYPE_DAT },
+ };
+ 
+ /* Global list of devices (struct samsung_pinctrl_drv_data) */
+-- 
+1.8.4.2
 
