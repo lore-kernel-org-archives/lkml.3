@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3KSPzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:55:11 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:35388 "EHLO SMTP.CITRIX.COM"
+	id S1753006Ab3KSP44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:56:56 -0500
+Received: from sauhun.de ([89.238.76.85]:52913 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab3KSPzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:55:10 -0500
-X-IronPort-AV: E=Sophos;i="4.93,729,1378857600"; 
-   d="scan'208";a="75990518"
-Message-ID: <528B89DA.2080504@citrix.com>
-Date: Tue, 19 Nov 2013 15:55:06 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1751379Ab3KSP4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 10:56:55 -0500
+Date: Tue, 19 Nov 2013 16:56:46 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL REQUEST] i2c for 3.13
+Message-ID: <20131119155646.GA2569@katana>
+References: <20131118193802.GA14925@katana>
+ <CA+55aFxZaC=beR+dN36Sv==6fjY7SdOdwXaSHU+wnk+-oDJp4g@mail.gmail.com>
+ <3690707.5664qBQcL8@vostro.rjw.lan>
+ <20131119150001.GM2281@intel.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Elena Ufimtseva <ufimtseva@gmail.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <x86@kernel.org>, <akpm@linux-foundation.org>,
-        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
-References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com> <1384811922-14642-3-git-send-email-ufimtseva@gmail.com> <528B5160.5010902@citrix.com> <20131119141620.GD5332@phenom.dumpdata.com> <528B774F.7090902@citrix.com> <20131119144630.GA5780@phenom.dumpdata.com> <528B7C29.3050103@citrix.com> <20131119151924.GC5790@phenom.dumpdata.com>
-In-Reply-To: <20131119151924.GC5790@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+In-Reply-To: <20131119150001.GM2281@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/11/13 15:19, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 19, 2013 at 02:56:41PM +0000, David Vrabel wrote:
->> The relevant bits in dummy_numa_init are in the error path of
->> xen_numa_init().
-> 
-> That seems the wrong place to do it. The top layer calls 
-> in each of the numa implementations and then falls back to
-> the dummy.
 
-Think of it as not the dummy, but Xen setting the NUMA configuration up
-with only a single node.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The useful bits in dummy_numa_init() are two calls to standard functions
-for use by *_numa_init() calls so it just seems easier all round to just
-call then directly than add a dependancy on dummy_numa_init().
 
-> Calling from within the implementation on something that is eventually
-> done on the upper level already is not right.
+> Actually, can we remove the whole clientdata setting there?
+>=20
+> Commit 0998d0631001 (device-core: Ensure drvdata =3D NULL when no driver =
+is
+> bound) modified the driver core to always clear out that field. Same seems
+> to apply if driver probe fails.
 
->From the point of view of the caller, it does the right thing.  NUMA is
-setup.
+Oh, nice, missed that commit. That indeed should help cleaning up the i2c
+core a little. I will prepare something.
 
->> I do think this approach (using the provided API to setup the single
->> (dummy) node), is preferable to calling dummy_numa_init().
-> 
-> Doesn't it do the same thing? And also what about if you the user
-> provides fakenuma?
 
-I don't know what "fakenuma" is refering to.
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->> If I thought the hypervisor ABI was finalized, I'd be happy with this
->> series as-is -- the remaining issues are superficial.
-> 
-> That reads to me as an Ack, but I know you like to have it stated
-> explicitly - so could you state the proper tag please?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-"If I thought the hypervisor ABI was finalized..." is a pretty big "if"
-so I have deliberately /not/ given an ack or a reviewed tag but I've
-tried to be clear than I think the Linux side is now good enough (except
-for any changes for any updates to the hypervisor ABI).
+iQIcBAEBAgAGBQJSi4o+AAoJEBQN5MwUoCm2dDIQAJJAuFfAzmhcYrK1Ns8Y/K3y
+BhiBkbqdOKoyAVbdSCiqO7kNDGO+nVp+V9TiELLuJg3d74D4Sq7Ml9qRbIhWiH6E
+APoRjmgYC+c4XZ9/o57SGPmcBoFckx1KZaT9AI/W9/lL6FAnKIgrDLDcrwZOV4+V
+/F9OIbXKaDkDsIkDhPw7Yj89WGNKy+LAIlngUKLl6bYfq+Xa5Ympfr13z25qbh+y
+zZ9A5bM3ruImEAkdqtSH/d7Yop5LlRLDmwrGOZt620r/OYjJzfYbsvESCagetxrX
+uA0wrufem5shuON4zem8FgEHitnCzX8StkxZvGLWtUBOxNsnny+EV1uYWWpLCYdH
+pTaDCRdH0C7jVlAy9sLP96KAQDVCcTW3M5QKBevEs5NVom71P2oIufAwcuef5JTK
+t+oPuco1W2E0UNmaDh8CZmrXmtrS9WadUd1ubuTpkRrJhB4ec0cq/N03WCADapsg
+CjUZsm6+ve4osvVMmdPrkdcKBm2mjDSaY3V4m2LhgYSfijwzweklSMJgtejx2B7I
+7thHRh54xJ4btmq+HEDRck3t4ZKcMn77zp/ofdwqPIjuO29ub6VtM25M/8MCqLmc
+pZ0mwDXTiwjpIzSXEm0unpWrXzYuB3vWBfkwC5t2Iqmeegu6sBhmheTJ99xpxgXf
+0iMZf+Wis0ru1uhypHRh
+=aeJ0
+-----END PGP SIGNATURE-----
 
-David
+--vkogqOf2sHV7VnPd--
