@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab3KSSnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:43:09 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43168 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3KSSnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:43:06 -0500
-Date: Tue, 19 Nov 2013 18:42:48 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        voice.shen@atmel.com, sboyd@codeaurora.org, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/urgent] sched_clock: Document 4Mhz vs 1Mhz decision
-Message-ID: <20131119184248.GA27599@flint.arm.linux.org.uk>
-References: <tip-ce5dae03973461e2a42098c53d62946b98baab42@git.kernel.org>
+	id S1753205Ab3KSSpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:45:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51320 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab3KSSpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:45:33 -0500
+Message-ID: <528BB1AC.7060708@zytor.com>
+Date: Tue, 19 Nov 2013 10:45:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-ce5dae03973461e2a42098c53d62946b98baab42@git.kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Joe Perches <joe@perches.com>
+CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        =?ISO-8859-1?Q?Johannes_L=F6thberg?= <johannes@kyriasis.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
+References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>	 <528ACB6A.1040809@zytor.com> <20131119072241.GB32478@gmail.com>	 <20131119103408.GA3640@pd.tnic> <1384883323.17783.35.camel@joe-AO722>	 <20131119182306.GD3515@pd.tnic> <528BACCB.1090604@zytor.com> <1384885733.17783.37.camel@joe-AO722>
+In-Reply-To: <1384885733.17783.37.camel@joe-AO722>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 10:12:23AM -0800, tip-bot for Stephen Boyd wrote:
-> +	/*
-> +	 * Use 4MHz instead of 1MHz so that things like 1.832Mhz show as
-> +	 * 1832Khz
+On 11/19/2013 10:28 AM, Joe Perches wrote:
+> On Tue, 2013-11-19 at 10:24 -0800, H. Peter Anvin wrote:
+>> I'll take a proper cleanup,
+>> but just whitespace... just pointless churn.
+> 
+> What in your view would be "a proper cleanup" for a20.c?
+> 
 
-How about getting proper SI units.
+I don't know (or even if it needs one, although Ingo seems to think so.)
+ I haven't really bothered with spending any mental energy on what seems
+to be largely a non-problem.
 
-Hertz is Hz - that's capital H and lower case z.  It's also the surname
-of an engineer.
+It was more of a general statement.
 
-Kilo is always lower case k.  Therefore, the unit of 1000 cycles per
-second is kHz and not KHZ, khz, Khz, khZ or any other stupid mixture
-of cases.
+	-hpa
 
-Given that we are programmers, and programming computers requires an
-attention to detail, completely ignoring such detail when it comes to
-SI units is extremely poor - and suggests that we are illerate.
-
-May I suggest more care is taken in the future?
-
--- 
-Russell King
-ARM architecture Linux Kernel maintainer
