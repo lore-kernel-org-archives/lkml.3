@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab3KSUNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:13:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12092 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab3KSUNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:13:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="411355392"
-Date: Tue, 19 Nov 2013 12:13:33 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Expose sysctls for enabling slab/file_cache interleaving
-Message-ID: <20131119201333.GD19762@tassilo.jf.intel.com>
-References: <1384822222-28795-1-git-send-email-andi@firstfloor.org>
- <20131119104203.GB18872@dhcp22.suse.cz>
- <20131119184200.GD29695@two.firstfloor.org>
- <20131119191135.GA8634@dhcp22.suse.cz>
+	id S1752682Ab3KSUPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:15:19 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:50943 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3KSUPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 15:15:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119191135.GA8634@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1384864362-21018-1-git-send-email-manishv.b@ti.com>
+References: <1384864362-21018-1-git-send-email-manishv.b@ti.com>
+Date: Tue, 19 Nov 2013 21:15:15 +0100
+Message-ID: <CACRpkdb=NDnYDJe8y1CrkRsVpZCUiMQkf+u58MSp20uzjOa=BQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Remove duplicate include of errno.h
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 08:11:35PM +0100, Michal Hocko wrote:
-> On Tue 19-11-13 19:42:00, Andi Kleen wrote:
-> > On Tue, Nov 19, 2013 at 11:42:03AM +0100, Michal Hocko wrote:
-> > > On Mon 18-11-13 16:50:22, Andi Kleen wrote:
-> > > [...]
-> > > > diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> > > > index cc1b01c..10966f5 100644
-> > > > --- a/include/linux/cpuset.h
-> > > > +++ b/include/linux/cpuset.h
-> > > > @@ -72,12 +72,14 @@ extern int cpuset_slab_spread_node(void);
-> > > >  
-> > > >  static inline int cpuset_do_page_mem_spread(void)
-> > > >  {
-> > > > -	return current->flags & PF_SPREAD_PAGE;
-> > > > +	return (current->flags & PF_SPREAD_PAGE) ||
-> > > > +		sysctl_spread_file_cache;
-> > > >  }
-> > > 
-> > > But this might break applications that explicitly opt out from
-> > > spreading.
-> > 
-> > What do you mean? There's no such setting at the moment.
-> > 
-> > They can only enable it.
-> 
-> cpuset_update_task_spread_flag allows disabling both flags. You can do
-> so for example via cpuset cgroup controller.
+On Tue, Nov 19, 2013 at 1:32 PM, Vishwanathrao Badarkhe, Manish
+<manishv.b@ti.com> wrote:
 
-Ok.
+> From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+>
+> Currently, code include errno.h twice. Remove one inclusion
+> of errno.h
+>
+> Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
 
-So you're saying it should look up the cpuset. I'm reluctant do 
-that. It would make this path quite a bit more expensive.
+Patch applied, thanks!
 
-Is it really a big problem to override that setting with
-the global sysctl. Seems like sensible semantics for me.
-
--Andi
+Yours,
+Linus Walleij
