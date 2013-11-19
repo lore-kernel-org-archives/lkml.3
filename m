@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab3KSUeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:34:15 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:54004 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab3KSUeM (ORCPT
+	id S1752563Ab3KSUgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:36:32 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43927 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3KSUg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:34:12 -0500
+	Tue, 19 Nov 2013 15:36:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <528B905E.6000206@ti.com>
-References: <1383905510-31760-1-git-send-email-prabhakar.csengg@gmail.com>
-	<1383905510-31760-4-git-send-email-prabhakar.csengg@gmail.com>
-	<CACRpkdaJg4wqtD5xhPVrHJHxFoVwau6jidbOuQ9xFSK_6drxPQ@mail.gmail.com>
-	<528A2565.4000802@ti.com>
-	<CACRpkda7h4hsMYv_2gdrY+JB80kHu3BkS5OOGyGhEZFc_UkCig@mail.gmail.com>
-	<528B905E.6000206@ti.com>
-Date: Tue, 19 Nov 2013 21:34:09 +0100
-Message-ID: <CACRpkdYaWuepKCie82uRx4PMfb7xTLtU43WzsLzW7Bpor7wVgw@mail.gmail.com>
-Subject: Re: [PATCH v5 3/7] gpio: davinci: use irqdomain
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>, Sekhar Nori <nsekhar@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201311191335.40506.arnd@arndb.de>
+References: <1376996476-12027-2-git-send-email-geert@linux-m68k.org>
+	<1384859955-27837-1-git-send-email-geert@linux-m68k.org>
+	<201311191335.40506.arnd@arndb.de>
+Date: Tue, 19 Nov 2013 21:36:28 +0100
+X-Google-Sender-Auth: d9WqMlyUquwe9vYd68e92JZ4Ox0
+Message-ID: <CAMuHMdXvn2GigpnH020XA1JvtF=4ZxwrOF4T=ocGgjhrcbWkgg@mail.gmail.com>
+Subject: Re: [PATCH RESEND] asm/types.h: Remove include/asm-generic/int-l64.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 5:22 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> On 11/19/2013 01:06 AM, Linus Walleij wrote:
+Hi Arnd,
 
->> The problem that appear is if someone is using platform data-provided
->> IRQs off the irq_chip without calling gpio_to_irq() on the GPIO line
->> first. This has been determined to be legal to do, so preferably
->> create the map when registering the lines.
->
-> Ok, I understand. It may fail in case if someone will define/calculate
->  IRQ number for device manually in board code, like:
->  dev_irq = (DA850_N_CP_INTC_IRQ + gpioN)
-
-Usually people just hardcode the IRQ value or use some
-#define, like they have often also done with GPIO numbers ...
-
-> Also, looks like It is possible to fail if Main/arch IRQ controller
-> code doesn't make call of irq_alloc_descs() during init, so
-> allocated_irqs will be empty.
-
-If you use irq_domain_add_simple() the irqdomain core
-will actually attempt to do this.
-
-But if you use a linear domain, you have to create these
-irqdescs as you go. The simplest way to do this is to call
-irq_create_mapping() on all IRQs, because that call will
-also allocate some descriptor.
-
-> Before recommending that, I've checked Davinci platform code and didn't
-> find any risk places - BUT, Seems my findings need to be confirmed by
-> Sekhar.
-
-It's no big deal, but I just want you to be aware that this
-may cause a problem at some point.
-
->> I think you should try to keep the 5 irqdomains, but whatever
->> gives the simplest code is usually the right answer, and
->> divide-and-conquer (split down the problem) is usually a good
->> idea.
+On Tue, Nov 19, 2013 at 1:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 19 November 2013, Geert Uytterhoeven wrote:
+>> Now all 64-bit architectures have been converted to int-ll64.h, we can
+>> remove int-l64.h in kernelspace.
 >>
->> How the GPIO block(s) are represented in the device tree is
->> another totally separate issue about hardware description,
->> do not let the device tree model your driver structure.
+>> For backwards compatibility, alpha, ia64, mips64, and powerpc64 still use
+>> int-l64.h in userspace.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 >
->
-> Thanks for you comments, but looks like I have to be more specific :)
->
-> How irq_find_host() will look for proper IRQ domain in our case?
-> And will it work at all, taking into account that all (5) IRQ domains
-> will have the same value of "of_node" property?
-> of_irq_to_resource()
-> |-irq_of_parse_and_map()
->   |-irq_create_of_mapping()
->     |-irq_find_host(irq_data->np)
->  where np will point on GPIO node.
->
-> As result my question is about what do DT core frameworks allow or not
-> allow to do? And according to that implementation of driver can be
-> changed.
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Hm, I'm not like a super-expert on the interrupt core, but maybe
-you need to create subnodes inside the top node to represent this,
-then use of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-to populate them from the main node.
+Thanks!
 
-Yours,
-Linus Walleij
+>> Since <asm/types.h> (from include/uapi/asm-generic/types.h) is used for
+>> both kernel and user space, include/asm-generic/int-ll64.h cannot just
+>> become include/asm-generic/types.h, as Arnd suggested.
+>
+> I'm pretty sure you are right with this, but I don't remember at all
+> what I suggested and don't understand what the problem (if any) is.
+> Can you remind me?
+
+Me neither :-(
+You said https://lkml.org/lkml/2011/8/13/109, and Al's umode_t
+consolidation has been completed.
+
+I think it had to do with include/uapi/asm-generic/types.h including
+<asm-generic/int-ll64.h>. Let's try...
+
+In userspace, it will include <asm-generic/int-ll64.h> from uapi to get
+e.g. __u32.
+In kernelspace, it will include plain <asm-generic/int-ll64.h> (to get e.g.
+u32), which will in turn include <uapi/asm-generic/int-ll64.h> (to also
+get e.g. __u32).
+
+As there's only include/uapi/asm-generic/types.h, but not
+include/asm-generic/types.h (the individual architectures still have their
+own asm/types.h), you cannot easily move (the contents of) int-ll64.h
+to asm-generic/types.h for both the normal and uapi headers.
+
+Does this make sense?
+
+Note that this discussion is about what to do with the remaining int-ll64.h,
+not about removing int-l64.h, which is what this patch is really about.
+So _this_ patch can just go in.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
