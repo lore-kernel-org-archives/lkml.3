@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab3KSABl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 19:01:41 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60441 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3KSABk (ORCPT
+	id S1751624Ab3KSAEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 19:04:16 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:41800 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3KSAEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 19:01:40 -0500
-Date: Tue, 19 Nov 2013 11:01:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anna Schumaker <bjschuma@netapp.com>
-Subject: linux-next: build failure after merge of the nfs tree
-Message-Id: <20131119110127.7cad0aa4d64f4641f76b761d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__19_Nov_2013_11_01_27_+1100__9_axXg1MyPflY5y"
+	Mon, 18 Nov 2013 19:04:13 -0500
+Date: Tue, 19 Nov 2013 01:03:41 +0100
+From: Henrik Austad <henrik@austad.us>
+To: Rob Landley <rob@landley.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Updating 00-INDEX in Documentation/*
+Message-ID: <20131119000341.GA1218@austad.us>
+References: <20131028130511.GA6992@austad.us>
+ <1384492143.1974.272@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384492143.1974.272@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__19_Nov_2013_11_01_27_+1100__9_axXg1MyPflY5y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 14, 2013 at 11:09:03PM -0600, Rob Landley wrote:
+> On 10/28/2013 08:05:11 AM, Henrik Austad wrote:
+> >Hi Rob, Jiri
+> >Hacking away at python shows me that of the 254 subfolders 57 has
+> >outdated
+> >00-INDEX, either with missing files, or files that has been
+> >removed. (see
+> >list below)
+> 
+> I'm a bit behind on my email just now. (Started a new job last
+> month, everything else got derailed for a bit.)
+> 
+> >Now, I'm quite happy to start fixing this, but what I would like
+> >to know
+> >before I start:
+> >
+> >- is it considered a waste of time? i.e. will it be worth the time
+> >- what is best, a single, big patch, or a series of one patch per
+> >  directory?
+> >- or should someone(tm) kick whoever caused 00-INDEX to be
+> >outdated, to fix
+> >  it?
+> 
+> Go for it.
 
-Hi Trond,
+Ok, I'll work my way through the list then.
 
-After merging the nfs tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> I've had a script that does this since 2007, but it's in the context of 
+> creating html indexes for the kernel.org/doc/Documentation directory
 
-In file included from fs/nfs/dns_resolve.c:52:0:
-fs/nfs/netns.h:28:15: error: 'NFS4_MAX_MINOR_VERSION' undeclared here (not =
-in a function)
-  int cb_users[NFS4_MAX_MINOR_VERSION + 1];
+Hmm, ok, I was just planning to get the 00-INDEX files up to speed, 
+anything beyond that was not on my plan.
 
-Presumably caused by commit 1a29448203ea ("NFS: Enabling v4.2 should not
-recompile nfsd and lockd").  This commit is not doing well :-(
+> , and after the kernel.org breakin they never gave me rsync access back 
+> (because it's not built into git and all any server ever does is run git, 
+> right?) so I couldn't update it anymore. Then they decided that the 
+> Documentation directory should just be a raw checkout from git with no 
+> html indexes (because git), and presumably they'll be doing the same for 
+> http://kernel.org/doc/menuconfig any day now (how, I couldn't tell you, 
+> but it's apparently no longer my problem)...
+> 
+> So it's kinda hard to get enthused about it these days. I wanted to
+> revive my old push to reorganize the documentation directory
+> (https://lkml.org/lkml/2007/5/22/473 and such) but if the word from
+> on high is that a giant raw pile of unsorted files is the optimal
+> way to organize things, who am I to argue?
+> 
+> Same problem for kernel.org/doc/htmldocs: the ones I did way back when 
+> (https://web.archive.org/web/20090327025639/http://www.kernel.org/doc/htmldocs/) 
+> had both the "one big html file" version and the lots of little files 
+> version and I'd watch the build logs and send patches to get the warnings 
+> down, but they took that away and replaced it without even letting me 
+> know they were doing that, so I've fallen out of the habit. (My 
+> understanding was that the kernel.org guys officially don't care about 
+> any data that isn't accessed through git, and a web browser isn't git, 
+> so...)
+> 
+> *shrug* I suppose all it's still on the todo list somewhere. Maybe
+> somewhere after reviving http://landley.net/qemu and catching that
+> up to current, but it's in there...
+> 
+> Rob
 
-I have reverted that commit again for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__19_Nov_2013_11_01_27_+1100__9_axXg1MyPflY5y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSiqpbAAoJEMDTa8Ir7ZwVxk0P/idqqU0xJiDTGAJnzab5UnQZ
-xQZ+fl5s/uHd+DwfZQ02gxKmDIlIfimkyKd5gGKe+yNpkKUPbLQRvV2NfrNLT5pX
-aOVb7ZReQjV7jTYa3tEbEG8igYPS5+7DOu0xKHyC+IyCLATwn9AcY2INwRp9MTg3
-nJHkafq1hD/vOs3E6v3NW1Xeebh7GkUrAuFK5r98zPs0vOYm+j8uAbFeE8st8RLC
-UzPyMlbuIeJskM/+WIvbKbtGBa6v+EzCC5BUrLcOKPpT0sso4HUkRZs8j+LF9n6q
-D2U+xRsvDbUjWNNxjVGAsUZRMHOWtZY1s1nVt2Knz3028fUWwDmioa1yrgW7oD3K
-EJVL2bDFePflJeXX5jX9RE9SgoL+TYBFIBESK7IiedaqRuHpR3QMY8J4rg46izgZ
-eD135+Ncfvg2FEds/+t+HjCxnwgXSw1RdwhCl+dBhpbxQyebbRmrzcOVDYp4GBHK
-Efw8goFN+kdRbt4lyaHtSocyzZGK47ofh6HL5MCQlbgMiY/6dQ58ZIoYN/7tFk6v
-7JLnwgw0AMXtj56PJ1tiqlUtCrTh6L9gPk17J+QlFbk1lwt1CDyc8C2CsLuYYTIL
-3N1OvgzdWEl8a9+vZbbWiAh6RWt2NXu+ZM3Yl1IREdGdKj6L4MYod7G0+pIjhauG
-nbqadTTDKI1Zl5XSrTI0
-=cIap
------END PGP SIGNATURE-----
-
---Signature=_Tue__19_Nov_2013_11_01_27_+1100__9_axXg1MyPflY5y--
+-- 
+Henrik Austad
