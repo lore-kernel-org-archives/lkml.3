@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab3KSSmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:42:07 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:54689 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab3KSSmE (ORCPT
+	id S1753142Ab3KSSnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:43:09 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43168 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KSSnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:42:04 -0500
-Date: Tue, 19 Nov 2013 19:42:00 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Expose sysctls for enabling slab/file_cache
- interleaving
-Message-ID: <20131119184200.GD29695@two.firstfloor.org>
-References: <1384822222-28795-1-git-send-email-andi@firstfloor.org>
- <20131119104203.GB18872@dhcp22.suse.cz>
+	Tue, 19 Nov 2013 13:43:06 -0500
+Date: Tue, 19 Nov 2013 18:42:48 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        voice.shen@atmel.com, sboyd@codeaurora.org, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/urgent] sched_clock: Document 4Mhz vs 1Mhz decision
+Message-ID: <20131119184248.GA27599@flint.arm.linux.org.uk>
+References: <tip-ce5dae03973461e2a42098c53d62946b98baab42@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131119104203.GB18872@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <tip-ce5dae03973461e2a42098c53d62946b98baab42@git.kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 11:42:03AM +0100, Michal Hocko wrote:
-> On Mon 18-11-13 16:50:22, Andi Kleen wrote:
-> [...]
-> > diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> > index cc1b01c..10966f5 100644
-> > --- a/include/linux/cpuset.h
-> > +++ b/include/linux/cpuset.h
-> > @@ -72,12 +72,14 @@ extern int cpuset_slab_spread_node(void);
-> >  
-> >  static inline int cpuset_do_page_mem_spread(void)
-> >  {
-> > -	return current->flags & PF_SPREAD_PAGE;
-> > +	return (current->flags & PF_SPREAD_PAGE) ||
-> > +		sysctl_spread_file_cache;
-> >  }
-> 
-> But this might break applications that explicitly opt out from
-> spreading.
+On Tue, Nov 19, 2013 at 10:12:23AM -0800, tip-bot for Stephen Boyd wrote:
+> +	/*
+> +	 * Use 4MHz instead of 1MHz so that things like 1.832Mhz show as
+> +	 * 1832Khz
 
-What do you mean? There's no such setting at the moment.
+How about getting proper SI units.
 
-They can only enable it.
+Hertz is Hz - that's capital H and lower case z.  It's also the surname
+of an engineer.
 
--Andi
+Kilo is always lower case k.  Therefore, the unit of 1000 cycles per
+second is kHz and not KHZ, khz, Khz, khZ or any other stupid mixture
+of cases.
+
+Given that we are programmers, and programming computers requires an
+attention to detail, completely ignoring such detail when it comes to
+SI units is extremely poor - and suggests that we are illerate.
+
+May I suggest more care is taken in the future?
+
+-- 
+Russell King
+ARM architecture Linux Kernel maintainer
