@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3KSOy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:54:27 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:39496 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354Ab3KSOyI (ORCPT
+	id S1753010Ab3KSO5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:57:10 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:18104 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3KSO5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:54:08 -0500
-From: Dan Aloni <alonid@stratoscale.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
-        gleb@redhat.com, pbonzini@redhat.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com,
-        Muli Ben-Yehuda <muli@stratoscale.com>
-Subject: [PATCH linux-next 2/2] kvm-x86: emulator: disable kgdb-x86 on fastop and fpe flush
-Date: Tue, 19 Nov 2013 16:53:30 +0200
-Message-Id: <1384872810-29492-3-git-send-email-alonid@stratoscale.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1384872810-29492-1-git-send-email-alonid@stratoscale.com>
-References: <1384872810-29492-1-git-send-email-alonid@stratoscale.com>
+	Tue, 19 Nov 2013 09:57:07 -0500
+X-IronPort-AV: E=Sophos;i="4.93,729,1378857600"; 
+   d="scan'208";a="73479759"
+Message-ID: <528B7C29.3050103@citrix.com>
+Date: Tue, 19 Nov 2013 14:56:41 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Elena Ufimtseva <ufimtseva@gmail.com>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <x86@kernel.org>, <akpm@linux-foundation.org>,
+        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
+        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
+References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com> <1384811922-14642-3-git-send-email-ufimtseva@gmail.com> <528B5160.5010902@citrix.com> <20131119141620.GD5332@phenom.dumpdata.com> <528B774F.7090902@citrix.com> <20131119144630.GA5780@phenom.dumpdata.com>
+In-Reply-To: <20131119144630.GA5780@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have seen that when kvm-unit-tests runs with kgdb enabled, the
-kernel halts on the debugger during the KVM x86 instruction emulation
-that performs a test of a division by zero, and also during fwait.
+On 19/11/13 14:46, Konrad Rzeszutek Wilk wrote:
+> On Tue, Nov 19, 2013 at 02:35:59PM +0000, David Vrabel wrote:
+>> On 19/11/13 14:16, Konrad Rzeszutek Wilk wrote:
+>>> On Tue, Nov 19, 2013 at 11:54:08AM +0000, David Vrabel wrote:
+>>>> On 18/11/13 21:58, Elena Ufimtseva wrote:
+>>>>> Enables numa if vnuma topology hypercall is supported and it is domU.
+>>>> [...]
+>>>>> --- a/arch/x86/xen/setup.c
+>>>>> +++ b/arch/x86/xen/setup.c
+>>>>> @@ -20,6 +20,7 @@
+>>>>>  #include <asm/numa.h>
+>>>>>  #include <asm/xen/hypervisor.h>
+>>>>>  #include <asm/xen/hypercall.h>
+>>>>> +#include <asm/xen/vnuma.h>
+>>>>>  
+>>>>>  #include <xen/xen.h>
+>>>>>  #include <xen/page.h>
+>>>>> @@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
+>>>>>  	WARN_ON(xen_set_default_idle());
+>>>>>  	fiddle_vdso();
+>>>>>  #ifdef CONFIG_NUMA
+>>>>> -	numa_off = 1;
+>>>>> +	if (!xen_initial_domain() && xen_vnuma_supported())
+>>>>> +		numa_off = 0;
+>>>>> +	else
+>>>>> +		numa_off = 1;
+>>>>>  #endif
+>>>>>  }
+>>>>
+>>>> I think this whole #ifdef CONFIG_NUMA can be removed and hence
+>>>> xen_vnuma_supported() can be removed as well.
+>>>>
+>>>> For any PV guest we can call the xen_numa_init() and it will do the
+>>>> right thing.
+>>>>
+>>>> For dom0, the hypercall will either: return something sensible (if in
+>>>> the future Xen sets something up), or it will error.
+>>>>
+>>>> If Xen does not have vnuma support, the hypercall will error.
+>>>>
+>>>> In both error cases, the dummy numa node is setup as required.
+>>>
+>>> Incorrect. It will end up calling:
+>>>
+>>>                  if (!numa_init(amd_numa_init))                                  
+>>>
+>>> which will crash dom0 (see 8d54db795 "xen/boot: Disable NUMA for PV guests.")
+>>> as that amd_numa_init is called before the dummy node init.
+>>
+>> No it won't.  Any error path after the check for a PV guest will add the
+>> dummy node and return success, skipping any of the hardware-specific setup.
+> 
+> Duh! I totally missed 'return' at the end of the check!
+> 
+> However, even with that (so the return), that means
+> this part won't be called:
+> 
+> 649         numa_init(dummy_numa_init);                                             
+> 
+> Which means there won't be any dummy numa setup?
 
-This patch adds calls that temporarily disable the debugger trap.
+The relevant bits in dummy_numa_init are in the error path of
+xen_numa_init().
 
-Signed-off-by: Dan Aloni <alonid@stratoscale.com>
-Signed-off-by: Muli Ben-Yehuda <muli@stratoscale.com>
----
- arch/x86/kvm/emulate.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+I do think this approach (using the provided API to setup the single
+(dummy) node), is preferable to calling dummy_numa_init().
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 07ffca0..05e8509 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -24,6 +24,7 @@
- #include "kvm_cache_regs.h"
- #include <linux/module.h>
- #include <asm/kvm_emulate.h>
-+#include <asm/kgdb.h>
- #include <linux/stringify.h>
- 
- #include "x86.h"
-@@ -4438,6 +4439,7 @@ static int flush_pending_x87_faults(struct x86_emulate_ctxt *ctxt)
- {
- 	bool fault = false;
- 
-+	kgdb_ll_local_disable();
- 	ctxt->ops->get_fpu(ctxt);
- 	asm volatile("1: fwait \n\t"
- 		     "2: \n\t"
-@@ -4449,6 +4451,7 @@ static int flush_pending_x87_faults(struct x86_emulate_ctxt *ctxt)
- 		     _ASM_EXTABLE(1b, 3b)
- 		     : [fault]"+qm"(fault));
- 	ctxt->ops->put_fpu(ctxt);
-+	kgdb_ll_local_enable();
- 
- 	if (unlikely(fault))
- 		return emulate_exception(ctxt, MF_VECTOR, 0, false);
-@@ -4468,10 +4471,14 @@ static int fastop(struct x86_emulate_ctxt *ctxt, void (*fop)(struct fastop *))
- 	ulong flags = (ctxt->eflags & EFLAGS_MASK) | X86_EFLAGS_IF;
- 	if (!(ctxt->d & ByteOp))
- 		fop += __ffs(ctxt->dst.bytes) * FASTOP_SIZE;
-+
-+	kgdb_ll_local_disable();
- 	asm("push %[flags]; popf; call *%[fastop]; pushf; pop %[flags]\n"
- 	    : "+a"(ctxt->dst.val), "+d"(ctxt->src.val), [flags]"+D"(flags),
- 	      [fastop]"+S"(fop)
- 	    : "c"(ctxt->src2.val));
-+	kgdb_ll_local_enable();
-+
- 	ctxt->eflags = (ctxt->eflags & ~EFLAGS_MASK) | (flags & EFLAGS_MASK);
- 	if (!fop) /* exception is returned in fop variable */
- 		return emulate_de(ctxt);
--- 
-1.8.3.1
+If I thought the hypervisor ABI was finalized, I'd be happy with this
+series as-is -- the remaining issues are superficial.
 
+David
