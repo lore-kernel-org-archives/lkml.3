@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3KSNTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:19:30 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:47408 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3KSNT2 convert rfc822-to-8bit (ORCPT
+	id S1752538Ab3KSNUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:20:17 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:61145 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3KSNUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:19:28 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 1/3] power_supply: Add power_supply notifier
-Date: Tue, 19 Nov 2013 14:19:19 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi,
-        Jenny TC <jenny.tc@intel.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <1384856285-19593-2-git-send-email-pali.rohar@gmail.com> <20131119131006.GD14587@amd.pavel.ucw.cz>
-In-Reply-To: <20131119131006.GD14587@amd.pavel.ucw.cz>
+	Tue, 19 Nov 2013 08:20:15 -0500
+Date: Tue, 19 Nov 2013 14:20:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: akpm@linux-foundation.org, mingo@elte.hu, hpa@zytor.com,
+        tglx@linutronix.de, dave.hansen@intel.com, mingo@redhat.com,
+        n-horiguchi@ah.jp.nec.com, willy@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] x86, mm: get ASLR work for hugetlb mappings
+Message-ID: <20131119132011.GD7263@gmail.com>
+References: <20131115221406.1692E1E418F@corp2gmr1-2.eem.corp.google.com>
+ <20131119083053.GB1243@gmail.com>
+ <20131119131750.EA45CE0090@blue.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201311191419.25036@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131119131750.EA45CE0090@blue.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 November 2013 14:10:06 Pavel Machek wrote:
-> On Tue 2013-11-19 11:18:03, Pali Rohár wrote:
-> > This patch adds a notifier chain to the power_supply.
-> > This notifier helps drivers in other subsystem to listen to
-> > changes in power supply subsystem. This would help to take
-> > some actions in those drivers on changing the power supply
-> > properties. One such scenario is to increase/decrease
-> > system performance based on the battery capacity/voltage.
-> > Another scenario is to adjust the h/w peak current
-> > detection voltage/current thresholds based on battery
-> > voltage/capacity. The notifier helps drivers to listen to
-> > changes in power_suppy susbystem without polling the
-> > power_supply properties
+
+* Kirill A. Shutemov <kirill.shutemov@linux.intel.com> wrote:
+
+> Ingo Molnar wrote:
 > > 
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > * akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
+> > 
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > Subject: x86, mm: get ASLR work for hugetlb mappings
+> > > 
+> > > Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.  The
+> > > reason is genereic hugetlb_get_unmapped_area() which is used on x86-64. 
+> > > It doesn't support randomization and use bottom-up unmapped area lookup,
+> > > instead of usual top-down on x86-64.
+> > > 
+> > > x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+> > > x86-32.
+> > > 
+> > > Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.  It
+> > > fixes the issue and make hugetlb use top-down unmapped area lookup.
+> > 
+> > So the title and the changelog has typos (I counted three), which 
+> > makes me wonder how well this was tested.
+> > 
+> > To show/document the testing effort a before/after /proc/PID/maps 
+> > output showing hugetlb vma addresses would be nice, showing that ASLR 
+> > didn't work before and that it works adequately after the patch.
+> > 
+> > A word about the range and granularity of randomization in the typical 
+> > case would be nice as well.
 > 
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> What about this:
 > 
-> > +extern struct atomic_notifier_head   
-> > power_supply_notifier;
+> From 440f2cd4a7e6918b9238680e4eacd75dc30291b6 Mon Sep 17 00:00:00 2001
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Date: Fri, 15 Nov 2013 14:14:05 -0800
+> Subject: [PATCH] x86, mm: get ASLR works for hugetlb mappings
 > 
-> You may want to delete some spaces here.
+> Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.
 > 
-> Thanks,
-> 								Pavel
+> %  for i in `seq 3`; do
+> > tools/testing/selftests/vm/map_hugetlb | grep address
+> > done
+> Returned address is 0x2aaaaac00000
+> Returned address is 0x2aaaaac00000
+> Returned address is 0x2aaaaac00000
+> 
+> /proc/PID/maps entries for the mapping are always the same (except inode
+> number):
+> 
+> 2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 8200                       /anon_hugepage (deleted)
+> 2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 256                        /anon_hugepage (deleted)
+> 2aaaaac00000-2aaabac00000 rw-p 00000000 00:0c 7180                       /anon_hugepage (deleted)
+> 
+> The reason is generic hugetlb_get_unmapped_area() which is used on
+> x86-64.  It doesn't support randomization and use bottom-up unmapped
+> area lookup, instead of usual top-down on x86-64.
+> 
+> x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+> x86-32.
+> 
+> Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.
+> It fixes the issue and switch hugetlb to use top-down unmapped area
+> lookup.
+> 
+> %  for i in `seq 3`; do
+> > tools/testing/selftests/vm/map_hugetlb | grep address
+> > done
+> Returned address is 0x7f4f08a00000
+> Returned address is 0x7fdda4200000
+> Returned address is 0x7febe0000000
+> 
+> /proc/PID/maps entries:
+> 
+> 7f4f08a00000-7f4f18a00000 rw-p 00000000 00:0c 1168                       /anon_hugepage (deleted)
+> 7fdda4200000-7fddb4200000 rw-p 00000000 00:0c 7092                       /anon_hugepage (deleted)
+> 7febe0000000-7febf0000000 rw-p 00000000 00:0c 7183                       /anon_hugepage (deleted)
+>
+> Unmapped area lookup policy for hugetlb mappings is consistent with
+> normal mappings now -- the only difference is alignment requirements for
+> huge pages.
+> 
+> libhugetlbfs test-suite didn't detect any regressions with the patch
+> applied (although it shows few failures on my machine regardless the
+> patch).
 
-Ok, note that this patch I copied from: 
-https://lkml.org/lkml/2013/9/23/181
+Perfect!
 
--- 
-Pali Rohár
-pali.rohar@gmail.com
+(I'll apply this to tip:x86/mm unless someone objects.)
+
+Thanks,
+
+	Ingo
