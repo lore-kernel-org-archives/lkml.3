@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3KSB7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:59:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16709 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751341Ab3KSB7M convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:59:12 -0500
-Date: Mon, 18 Nov 2013 20:59:09 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Cedric Le Goater <clg@fr.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Clark Williams <williams@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] nsproxy: Check to make sure count is truly zero before
- freeing
-Message-ID: <20131118205909.6bc27f0e@gandalf.local.home>
-In-Reply-To: <528ABD6E.8020004@cn.fujitsu.com>
-References: <20131113160339.7e0726fb@gandalf.local.home>
-	<877gc5l3hq.fsf@xmission.com>
-	<20131118190457.7ad4e0a0@gandalf.local.home>
-	<528ABD6E.8020004@cn.fujitsu.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1751771Ab3KSCCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 21:02:21 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64930 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab3KSCCU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 21:02:20 -0500
+X-AuditID: 9c930197-b7caaae000001cef-24-528ac6aa27a5
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+References: <1384267617-3446-1-git-send-email-dsahern@gmail.com>
+	<1384267617-3446-5-git-send-email-dsahern@gmail.com>
+	<20131112145707.GV5056@laptop.programming.kicks-ass.net>
+	<20131112150751.GA19321@ghostprotocols.net>
+	<20131112151944.GX5056@laptop.programming.kicks-ass.net>
+	<52824AE3.4050207@gmail.com> <20131112211121.GC25913@gmail.com>
+	<20131113113439.GI21461@twins.programming.kicks-ass.net>
+	<52864ED1.1080607@gmail.com>
+	<20131118090117.GE3866@twins.programming.kicks-ass.net>
+	<20131118094036.GA26251@gmail.com> <877gc5utkf.fsf@sejong.aot.lge.com>
+	<528AB229.6030603@gmail.com>
+Date: Tue, 19 Nov 2013 11:02:18 +0900
+In-Reply-To: <528AB229.6030603@gmail.com> (David Ahern's message of "Mon, 18
+	Nov 2013 17:34:49 -0700")
+Message-ID: <871u2dup1x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Nov 2013 09:22:54 +0800
-Gao feng <gaofeng@cn.fujitsu.com> wrote:
+On Mon, 18 Nov 2013 17:34:49 -0700, David Ahern wrote:
+> On 11/18/13, 5:24 PM, Namhyung Kim wrote:
+>>>>> What now? Can we add the mmap path as an option?
+>>>>
+>>>> I'd say an option is always a possibility, but someone please try
+>>>> what happens if you use stupid large events (dwarf stack copies) on
+>>>> PERF_COUNT_SW_PAGE_FAULTS (.period=1) while recording with mmap().
+>>>>
+>>>> The other option is to simply disallow PERF_SAMPLE_STACK_USER for
+>>>> that event.
+>>>>
+>>>> Personally I think 8k copies for every event are way stupid anyway,
+>>>> that's a metric ton of data at a huge cost.
+>>>
+>>> Well, with 1 khz sampling of a single threaded workload it's 8MB per
+>>> second - that's 80 MB for 10 seconds profiling - not the end of the
+>>> world.
+>>
+>> We now use 4 khz sampling frequency by default, just FYI. :)
+>
+> I think Peter is asking about:
+>     perf record -e faults -c 1 --call-graph dwarf,8192 -a -- sleep 1
+>
+> And as expected it is a massive feedback spiraling out of control.
 
-> On 11/19/2013 08:04 AM, Steven Rostedt wrote:
-> > 
-> > I'll start out saying that this email was a complete oops. I only kept
-> > it around for reference, as this didn't fix the bug we were seeing, and
-> > I used this email to just document what I initially thought.
-> > 
-> 
-> Can you describe the panic situation and the way to reproduce?
-> it's useful for us to find out the real problem.
-> 
+How about adding an option to exclude the perf tools from recording for
+system-wide (or cpu-wide) session?
 
-I need to talk with more people to get more information as it happened
-in our test labs. From what I remember, it was caused on 3.10-rt (even
-with PREEMPT_RT disabled). We are currently testing 3.10 vanilla, to
-make sure that it really does occur on mainline.
+This way, we can prevent the feedback loops for page-fault or syscall
+events you mentioned IMHO.
 
->From what I understand, it was ltp-lite that caused the panic and it
-happened on a box with 16 CPUs.
-
-I'll keep you posted when we get more data that is relevant to mainline.
-
-This is another reason that the email went out prematurely.
-
--- Steve
+Thanks,
+Namhyung
