@@ -1,134 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab3KSX3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:29:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61087 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753448Ab3KSX3u (ORCPT
+	id S1753317Ab3KSXch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:32:37 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:41618 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab3KSXcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:29:50 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
-Date: Wed, 20 Nov 2013 00:42:28 +0100
-Message-ID: <3445730.IkUyvGUQQp@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1384898320.1791.48.camel@misato.fc.hp.com>
-References: <2434673.zhjYZOTQ4A@vostro.rjw.lan> <4037930.5v7ysfShLb@vostro.rjw.lan> <1384898320.1791.48.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 19 Nov 2013 18:32:35 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH] x86: enable DMA CMA with swiotlb
+Date: Wed, 20 Nov 2013 08:32:19 +0900
+Message-Id: <1384903939-3371-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 19, 2013 02:58:40 PM Toshi Kani wrote:
-> On Tue, 2013-11-19 at 22:10 +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, November 19, 2013 10:48:51 AM Toshi Kani wrote:
-> > > > On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
-> > > > > On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
-> > > > > > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
-> > > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > > > 
-> > > > > > > Since the PCI host bridge scan handler does not set hotplug.enabled,
-> > > > > > > the check of it in acpi_bus_device_eject() effectively prevents the
-> > > > > > > root bridge hot removal from working after commit a3b1b1ef78cd
-> > > > > > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
-> > > > > > > check is not necessary, because the other acpi_bus_device_eject()
-> > > > > > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
-> > > > > > > check by themselves before executing that function.
-> > > > > > > 
-> > > > > > > For this reason, remove the scan handler check from
-> > > > > > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
-> > > > > > > again.
-> > > > > > 
-> > > > > > I am curious why the PCI host bridge scan handler does not set
-> > > > > > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
-> > > > > > enables via ACPI notification?
-> > > > > 
-> > > > > It just doesn't register for hotplug at all.  I guess it could set that
-> > > > > bit alone, but then it would be quite confusing and the check is not
-> > > > > necessary anyway.
-> > > > 
-> > > > I see.  Given how the PCI host bridge scan handler is integrated today,
-> > > > the change looks reasonable to me.
-> > > 
-> > > Looking further, I noticed that there is one more issue to address.  The
-> > > patch below applies on top of your patchset.
-> > >
-> > > From: Toshi Kani <toshi.kani@hp.com>
-> > > Subject: [PATCH] ACPI / hotplug: Fix conflicted PCI bridge notify
-> > > handlers
-> > > 
-> > > The PCI host bridge scan handler installs its own notify handler,
-> > > handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
-> > > hotplug framework also installs the common notify handler,
-> > > acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
-> > > acpi_hotplug_notify_cb() to call _OST method with unsupported
-> > > error as hotplug.enabled is not set.
-> > > 
-> > > To address this issue, introduce hotplug.self_install flag, which
-> > > indicates that the scan handler installs its own notify handler by
-> > > itself.  The ACPI hotplug framework does not install the common
-> > > notify handler when this flag is set.
-> > 
-> > Good catch!
-> > 
-> > Still, I don't think we need a new flag, because we know that that
-> > scan handler doesn't support hotplug, because its hotplug profile
-> > hasn't been registered (that actually applies to all scan handlers
-> > without hotplug support, not only the root host bridge).  
-> 
-> When a scan handler does not support hotplug at all, the common notify
-> handler should be installed so that it can call _OST with an appropriate
-> response.
+The DMA Contiguous Memory Allocator support on x86 is disabled when
+swiotlb config option is enabled.  So DMA CMA is always disabled on
+x86_64 because swiotlb is always enabled.  This attempts to support
+for DMA CMA with enabling swiotlb config option.
 
-That creates an arbitrary difference between devices that have scan handlers
-and devices that don't have them (PCI, USB, SATA etc).  So if we want _OST
-to be called for all devices for which hotplug is not supported, that
-should be implemented in a different way and not necessarily in 3.13.
+The contiguous memory allocator on x86 is integrated in the function
+dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
+for dma_alloc_coherent().
 
-> > Moreover,
-> > if it does support hotplug, but the hotplug profile hasn't been
-> > registered due to an error, we still should not install the notify
-> > handler I think.  
-> 
-> This case, I think the common notify handler should be installed so that
-> it can call _OST for error response as well.  The question is what to do
-> when a scan handler has its own notify handler.
+x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
+tries to allocate with dma_generic_alloc_coherent() firstly and then
+swiotlb_alloc_coherent() is called as a fallback.
 
-Well, to be precise, in the case of the PCI host bridge the notify handler is
-installed via a separate init routine that doesn't belong to the scan handler.
+The main part of supporting DMA CMA with swiotlb is that changing
+x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
+for dma_free_coherent() so that it can distinguish memory allocated by
+dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
+and release it with dma_generic_free_coherent() which can handle contiguous
+memory.  This change requires making is_swiotlb_buffer() global function.
 
-Semantics aside, my original intention was not to install notify handlers for
-all devices with scan handlers, but only for those whose scan handlers support
-hotplug, because the default for all devices without hotplug support is to
-avoid installing any notify handlers at all.
+This also needs to change .free callback in the dma_map_ops for amd_gart
+and sta2x11, because these dma_ops are also using
+dma_generic_alloc_coherent().
 
-> > So, I prefer the patch below.
-> >
-> > And this fix will remain useful after my recent series at
-> > http://marc.info/?l=linux-pci&m=138470560909690&w=4
-> 
-> I agree that the PCI host bridge scan handler should use the common
-> notify handler, and your change is on the right direction.  But as I
-> understand, this patchset is for 3.14.  For 3.13, I thought we have to
-> live with the separate PCI root notify handler, and this patch avoids
-> the conflict for the time being.  If necessary, the new flag can be
-> removed in 3.14.
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+---
+ arch/x86/Kconfig               | 2 +-
+ arch/x86/include/asm/swiotlb.h | 7 +++++++
+ arch/x86/kernel/amd_gart_64.c  | 2 +-
+ arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
+ arch/x86/pci/sta2x11-fixup.c   | 6 ++----
+ include/linux/swiotlb.h        | 2 ++
+ lib/swiotlb.c                  | 2 +-
+ 7 files changed, 20 insertions(+), 10 deletions(-)
 
-Well, it could, but then the current behavior is not intentional as I
-said and obviously buggy for PCI host bridges.  So in my opinion we
-should bring things back to the way they were *intended* to behave in the
-first place.  If that causes problems to happen for someone, we can still
-special case the PCI host bridge, but I'd prefer to avoid that if possible.
-
-Thanks!
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e903c71..b15df8b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -39,7 +39,7 @@ config X86
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select HAVE_DMA_ATTRS
+-	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
++	select HAVE_DMA_CONTIGUOUS
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_KPROBES_ON_FTRACE
+diff --git a/arch/x86/include/asm/swiotlb.h b/arch/x86/include/asm/swiotlb.h
+index 977f176..ab05d73 100644
+--- a/arch/x86/include/asm/swiotlb.h
++++ b/arch/x86/include/asm/swiotlb.h
+@@ -29,4 +29,11 @@ static inline void pci_swiotlb_late_init(void)
+ 
+ static inline void dma_mark_clean(void *addr, size_t size) {}
+ 
++extern void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
++					dma_addr_t *dma_handle, gfp_t flags,
++					struct dma_attrs *attrs);
++extern void x86_swiotlb_free_coherent(struct device *dev, size_t size,
++					void *vaddr, dma_addr_t dma_addr,
++					struct dma_attrs *attrs);
++
+ #endif /* _ASM_X86_SWIOTLB_H */
+diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
+index b574b29..8e3842f 100644
+--- a/arch/x86/kernel/amd_gart_64.c
++++ b/arch/x86/kernel/amd_gart_64.c
+@@ -512,7 +512,7 @@ gart_free_coherent(struct device *dev, size_t size, void *vaddr,
+ 		   dma_addr_t dma_addr, struct dma_attrs *attrs)
+ {
+ 	gart_unmap_page(dev, dma_addr, size, DMA_BIDIRECTIONAL, NULL);
+-	free_pages((unsigned long)vaddr, get_order(size));
++	dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
+ }
+ 
+ static int gart_mapping_error(struct device *dev, dma_addr_t dma_addr)
+diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+index 6c483ba..77dd0ad 100644
+--- a/arch/x86/kernel/pci-swiotlb.c
++++ b/arch/x86/kernel/pci-swiotlb.c
+@@ -14,7 +14,7 @@
+ #include <asm/iommu_table.h>
+ int swiotlb __read_mostly;
+ 
+-static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
++void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 					dma_addr_t *dma_handle, gfp_t flags,
+ 					struct dma_attrs *attrs)
+ {
+@@ -28,11 +28,14 @@ static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 	return swiotlb_alloc_coherent(hwdev, size, dma_handle, flags);
+ }
+ 
+-static void x86_swiotlb_free_coherent(struct device *dev, size_t size,
++void x86_swiotlb_free_coherent(struct device *dev, size_t size,
+ 				      void *vaddr, dma_addr_t dma_addr,
+ 				      struct dma_attrs *attrs)
+ {
+-	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
++	if (is_swiotlb_buffer(dma_to_phys(dev, dma_addr)))
++		swiotlb_free_coherent(dev, size, vaddr, dma_addr);
++	else
++		dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
+ }
+ 
+ static struct dma_map_ops swiotlb_dma_ops = {
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+index 9d8a509..5ceda85 100644
+--- a/arch/x86/pci/sta2x11-fixup.c
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -173,9 +173,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
+ {
+ 	void *vaddr;
+ 
+-	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags, attrs);
+-	if (!vaddr)
+-		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
++	vaddr = x86_swiotlb_alloc_coherent(dev, size, dma_handle, flags, attrs);
+ 	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
+ 	return vaddr;
+ }
+@@ -183,7 +181,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
+ /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
+ static struct dma_map_ops sta2x11_dma_ops = {
+ 	.alloc = sta2x11_swiotlb_alloc_coherent,
+-	.free = swiotlb_free_coherent,
++	.free = x86_swiotlb_free_coherent,
+ 	.map_page = swiotlb_map_page,
+ 	.unmap_page = swiotlb_unmap_page,
+ 	.map_sg = swiotlb_map_sg_attrs,
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index a5ffd32..e7a018e 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -116,4 +116,6 @@ static inline void swiotlb_free(void) { }
+ #endif
+ 
+ extern void swiotlb_print_info(void);
++extern int is_swiotlb_buffer(phys_addr_t paddr);
++
+ #endif /* __LINUX_SWIOTLB_H */
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index fe978e0..6e4a798 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -369,7 +369,7 @@ void __init swiotlb_free(void)
+ 	io_tlb_nslabs = 0;
+ }
+ 
+-static int is_swiotlb_buffer(phys_addr_t paddr)
++int is_swiotlb_buffer(phys_addr_t paddr)
+ {
+ 	return paddr >= io_tlb_start && paddr < io_tlb_end;
+ }
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.2
+
