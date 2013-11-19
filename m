@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab3KSJfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:35:45 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5110 "EHLO
+	id S1752411Ab3KSJfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:35:42 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5118 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab3KSJeJ (ORCPT
+	with ESMTP id S1751818Ab3KSJeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Nov 2013 04:34:09 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 19 Nov 2013 01:28:12 -0800
+	by hqnvupgp07.nvidia.com on Tue, 19 Nov 2013 01:32:13 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
         <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
@@ -17,9 +17,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
         <devicetree@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lorenzo.pieralisi@arm.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv5 8/9] iommu/tegra: smmu: Rename hwgrp -> swgroups
-Date: Tue, 19 Nov 2013 11:33:12 +0200
-Message-ID: <1384853593-32202-9-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCHv5 3/9] ARM: tegra: create a DT header defining SWGROUP ID
+Date: Tue, 19 Nov 2013 11:33:07 +0200
+Message-ID: <1384853593-32202-4-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com>
 References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com>
@@ -29,156 +29,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the correct term for SWGROUP related variables and macros.
-
-The term "swgroup" is the collection of "memory client". A "memory
-client" usually represents a HardWare Accelerator(HWA) like
-GPU. Sometimes a strut device can belong to multiple "swgroup" so that
-"swgroup's'" is used here. This "swgroups" is the term used in Tegra
-TRM. Rename along with TRM.
+Create a header file to define the swgroup IDs used by the IOMMU(SMMU)
+binding. "swgroup" is a group of H/W clients which a Tegra SoC
+supports. This unique ID can be used to calculate MC_SMMU_<swgroup
+name>_ASID_0 register offset and MC_<swgroup name>_HOTRESET_*_0
+register bit. This will allow the same header to be used by both
+device tree files, and drivers implementing this binding, which
+guarantees that the two stay in sync. This also makes device trees
+more readable by using names instead of magic numbers. For HOTRESET
+bit shifting we need another conversion table, which will come later.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
-v4:
-New for v4
----
- drivers/iommu/tegra-smmu.c | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+v5:
+Added new macro TEGRA_SWGROUP_CELLS() and WO_U32_OF_U64().
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index c2ed075..003a491 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -179,12 +179,12 @@ enum {
- 
- #define NUM_SMMU_REG_BANKS	3
- 
--#define smmu_client_enable_hwgrp(c, m)	smmu_client_set_hwgrp(c, m, 1)
--#define smmu_client_disable_hwgrp(c)	smmu_client_set_hwgrp(c, 0, 0)
--#define __smmu_client_enable_hwgrp(c, m) __smmu_client_set_hwgrp(c, m, 1)
--#define __smmu_client_disable_hwgrp(c)	__smmu_client_set_hwgrp(c, 0, 0)
-+#define smmu_client_enable_swgroups(c, m) smmu_client_set_swgroups(c, m, 1)
-+#define smmu_client_disable_swgroups(c) smmu_client_set_swgroups(c, 0, 0)
-+#define __smmu_client_enable_swgroups(c, m) __smmu_client_set_swgroups(c, m, 1)
-+#define __smmu_client_disable_swgroups(c) __smmu_client_set_swgroups(c, 0, 0)
- 
--#define HWGRP_ASID_REG(x) ((x) * sizeof(u32) + SMMU_ASID_BASE)
-+#define SWGROUPS_ASID_REG(x) ((x) * sizeof(u32) + SMMU_ASID_BASE)
- 
- /*
-  * Per client for address space
-@@ -195,7 +195,7 @@ struct smmu_client {
- 	struct device		*dev;
- 	struct list_head	list;
- 	struct smmu_as		*as;
--	unsigned long		hwgrp[2];
-+	unsigned long		swgroups[2];
- };
- 
- /*
-@@ -377,7 +377,7 @@ static int register_smmu_client(struct smmu_device *smmu,
- 
- 	client->dev = dev;
- 	client->of_node = dev->of_node;
--	memcpy(client->hwgrp, swgroups, sizeof(u64));
-+	memcpy(client->swgroups, swgroups, sizeof(u64));
- 	return insert_smmu_client(smmu, client);
- }
- 
-@@ -403,7 +403,7 @@ static int smmu_of_get_swgroups(struct device *dev, unsigned long *swgroups)
- 	return -ENODEV;
- }
- 
--static int __smmu_client_set_hwgrp(struct smmu_client *c,
-+static int __smmu_client_set_swgroups(struct smmu_client *c,
- 				   unsigned long *map, int on)
- {
- 	int i;
-@@ -412,10 +412,10 @@ static int __smmu_client_set_hwgrp(struct smmu_client *c,
- 	struct smmu_device *smmu = as->smmu;
- 
- 	if (!on)
--		map = c->hwgrp;
-+		map = c->swgroups;
- 
- 	for_each_set_bit(i, map, TEGRA_SWGROUP_MAX) {
--		offs = HWGRP_ASID_REG(i);
-+		offs = SWGROUPS_ASID_REG(i);
- 		val = smmu_read(smmu, offs);
- 		if (on) {
- 			if (val) {
-@@ -425,7 +425,7 @@ static int __smmu_client_set_hwgrp(struct smmu_client *c,
- 			}
- 
- 			val = mask;
--			memcpy(c->hwgrp, map, sizeof(u64));
-+			memcpy(c->swgroups, map, sizeof(u64));
- 		} else {
- 			WARN_ON((val & mask) == mask);
- 			val &= ~mask;
-@@ -438,7 +438,7 @@ skip:
- 	return 0;
- }
- 
--static int smmu_client_set_hwgrp(struct smmu_client *c,
-+static int smmu_client_set_swgroups(struct smmu_client *c,
- 				 unsigned long *map, int on)
- {
- 	int err;
-@@ -447,7 +447,7 @@ static int smmu_client_set_hwgrp(struct smmu_client *c,
- 	struct smmu_device *smmu = as->smmu;
- 
- 	spin_lock_irqsave(&smmu->lock, flags);
--	err = __smmu_client_set_hwgrp(c, map, on);
-+	err = __smmu_client_set_swgroups(c, map, on);
- 	spin_unlock_irqrestore(&smmu->lock, flags);
- 	return err;
- }
-@@ -487,7 +487,7 @@ static int smmu_setup_regs(struct smmu_device *smmu)
- 		smmu_write(smmu, val, SMMU_PTB_DATA);
- 
- 		list_for_each_entry(c, &as->client, list)
--			__smmu_client_set_hwgrp(c, c->hwgrp, 1);
-+			__smmu_client_set_swgroups(c, c->swgroups, 1);
- 	}
- 
- 	smmu_write(smmu, smmu->translation_enable_0, SMMU_TRANSLATION_ENABLE_0);
-@@ -815,7 +815,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
- 		return -ENOMEM;
- 
- 	client->as = as;
--	err = smmu_client_enable_hwgrp(client, client->hwgrp);
-+	err = smmu_client_enable_swgroups(client, client->swgroups);
- 	if (err)
- 		return -EINVAL;
- 
-@@ -835,7 +835,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
- 	 * Reserve "page zero" for AVP vectors using a common dummy
- 	 * page.
- 	 */
--	if (test_bit(TEGRA_SWGROUP_AVPC, client->hwgrp)) {
-+	if (test_bit(TEGRA_SWGROUP_AVPC, client->swgroups)) {
- 		struct page *page;
- 
- 		page = as->smmu->avp_vector_page;
-@@ -848,7 +848,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
- 	return 0;
- 
- err_client:
--	smmu_client_disable_hwgrp(client);
-+	smmu_client_disable_swgroups(client);
- 	spin_unlock(&as->client_lock);
- 	return err;
- }
-@@ -864,7 +864,7 @@ static void smmu_iommu_detach_dev(struct iommu_domain *domain,
- 
- 	list_for_each_entry(c, &as->client, list) {
- 		if (c->dev == dev) {
--			smmu_client_disable_hwgrp(c);
-+			smmu_client_disable_swgroups(c);
- 			list_del(&c->list);
- 			c->as = NULL;
- 			dev_dbg(smmu->dev,
+v4:
+This is almost same as the previous v3. Just TEGRA_SWGROUP_MAX is
+added.
+  [PATCHv3 15/19] ARM: tegra: Create a DT header defining SWGROUP ID
+---
+ include/dt-bindings/memory/tegra-swgroup.h | 50 ++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 include/dt-bindings/memory/tegra-swgroup.h
+
+diff --git a/include/dt-bindings/memory/tegra-swgroup.h b/include/dt-bindings/memory/tegra-swgroup.h
+new file mode 100644
+index 0000000..73079ad
+--- /dev/null
++++ b/include/dt-bindings/memory/tegra-swgroup.h
+@@ -0,0 +1,50 @@
++/*
++ * This header provides constants for binding nvidia,swgroup ID
++ */
++
++#ifndef _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H
++#define _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H
++
++#define TEGRA_SWGROUP_AFI	0	/* 0x238 */
++#define TEGRA_SWGROUP_AVPC	1	/* 0x23c */
++#define TEGRA_SWGROUP_DC	2	/* 0x240 */
++#define TEGRA_SWGROUP_DCB	3	/* 0x244 */
++#define TEGRA_SWGROUP_EPP	4	/* 0x248 */
++#define TEGRA_SWGROUP_G2	5	/* 0x24c */
++#define TEGRA_SWGROUP_HC	6	/* 0x250 */
++#define TEGRA_SWGROUP_HDA	7	/* 0x254 */
++#define TEGRA_SWGROUP_ISP	8	/* 0x258 */
++#define TEGRA_SWGROUP_ISP2	SWGROUP_ISP
++#define TEGRA_SWGROUP_DC14	9	/* 0x490 *//* Exceptional non-linear */
++#define TEGRA_SWGROUP_DC12	10	/* 0xa88 *//* Exceptional non-linear */
++#define TEGRA_SWGROUP_MPE	11	/* 0x264 */
++#define TEGRA_SWGROUP_MSENC	SWGROUP_MPE
++#define TEGRA_SWGROUP_NV	12	/* 0x268 */
++#define TEGRA_SWGROUP_NV2	13	/* 0x26c */
++#define TEGRA_SWGROUP_PPCS	14	/* 0x270 */
++#define TEGRA_SWGROUP_SATA2	15	/* 0x274 */
++#define TEGRA_SWGROUP_SATA	16	/* 0x278 */
++#define TEGRA_SWGROUP_VDE	17	/* 0x27c */
++#define TEGRA_SWGROUP_VI	18	/* 0x280 */
++#define TEGRA_SWGROUP_VIC	19	/* 0x284 */
++#define TEGRA_SWGROUP_XUSB_HOST	20	/* 0x288 */
++#define TEGRA_SWGROUP_XUSB_DEV	21	/* 0x28c */
++#define TEGRA_SWGROUP_A9AVP	22	/* 0x290 */
++#define TEGRA_SWGROUP_TSEC	23	/* 0x294 */
++#define TEGRA_SWGROUP_PPCS1	24	/* 0x298 */
++#define TEGRA_SWGROUP_SDMMC1A	25	/* 0xa94 *//* Linear shift again */
++#define TEGRA_SWGROUP_SDMMC2A	26	/* 0xa98 */
++#define TEGRA_SWGROUP_SDMMC3A	27	/* 0xa9c */
++#define TEGRA_SWGROUP_SDMMC4A	28	/* 0xaa0 */
++#define TEGRA_SWGROUP_ISP2B	29	/* 0xaa4 */
++#define TEGRA_SWGROUP_GPU	30	/* 0xaa8 */
++#define TEGRA_SWGROUP_GPUB	31	/* 0xaac */
++#define TEGRA_SWGROUP_PPCS2	32	/* 0xab0 */
++
++#define TWO_U32_OF_U64(x)	((x) & ~0UL) ((x) >> 32)
++#define TEGRA_SWGROUP_BIT(x)	(1ULL << TEGRA_SWGROUP_##x)
++#define TEGRA_SWGROUP_CELLS(x)	TWO_U32_OF_U64(TEGRA_SWGROUP_BIT(x))
++
++#define TEGRA_SWGROUP_MAX	64
++
++#endif /* _DT_BINDINGS_MEMORY_TEGRA_SWGROUP_H */
 -- 
 1.8.1.5
 
