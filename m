@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab3KSC5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 21:57:40 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15525 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KSC5i (ORCPT
+	id S1751585Ab3KSDCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 22:02:32 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:57457 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3KSDCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 21:57:38 -0500
-Message-ID: <528AD316.10001@huawei.com>
-Date: Tue, 19 Nov 2013 10:55:18 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 18 Nov 2013 22:02:30 -0500
 MIME-Version: 1.0
-To: Shawn Bohrer <shawn.bohrer@gmail.com>
-CC: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com> <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz> <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com> <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com> <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org> <alpine.LNX.2.00.1311171746160.15789@eggly.anvils> <20131118201025.GA2747@sbohrermbp13-local.rgmadvisors.com>
-In-Reply-To: <20131118201025.GA2747@sbohrermbp13-local.rgmadvisors.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <528ABFA3.6060905@zytor.com>
+References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
+	<20131114180455.GA32212@anatevka.fc.hp.com>
+	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
+	<20131115005049.GJ5116@anatevka.fc.hp.com>
+	<20131115062417.GB9237@gmail.com>
+	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
+	<5285C639.5040203@zytor.com>
+	<20131115140738.GB6637@redhat.com>
+	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
+	<52865CA1.5020309@zytor.com>
+	<20131115183002.GE6637@redhat.com>
+	<528ABFA3.6060905@zytor.com>
+Date: Mon, 18 Nov 2013 19:02:29 -0800
+X-Google-Sender-Auth: tml-EH_5BqpSzYwjfRa5J_zK2hw
+Message-ID: <CAE9FiQW+kbq5Eu-ivu897ogQUGjwKy6jYO9hnxbKyuWqoaQgJQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Early use of boot service memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks Tejun and Hugh.  Sorry for my late entry in getting around to
-> testing this fix. On the surface it sounds correct however I'd like to
-> test this on top of 3.10.* since that is what we'll likely be running.
-> I've tried to apply Hugh's patch above on top of 3.10.19 but it
-> appears there are a number of conflicts.  Looking over the changes and
-> my understanding of the problem I believe on 3.10 only the
-> cgroup_free_fn needs to be run in a separate workqueue.  Below is the
-> patch I've applied on top of 3.10.19, which I'm about to start
-> testing.  If it looks like I botched the backport in any way please
-> let me know so I can test a propper fix on top of 3.10.19.
-> 
+On Mon, Nov 18, 2013 at 5:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/15/2013 10:30 AM, Vivek Goyal wrote:
+>>
+>> And IOMMU support is very flaky with kdump. And IOMMU's can be turned
+>> off at command line. And that would force one to remove crahkernel_low=0.
+>> So change of one command line option forces change of another. It is
+>> complicated.
+>>
+>> Also there are very few systems which work with IOMMU on. A lot more
+>> which work without IOMMU. We have all these DMAR issues and still nobody
+>> has been able to address IOMMU issues properly.
+>>
+>
+> Why do we need such a big bounce buffer for kdump swiotlb anyway?
+> Surely the vast majority of all dump devices don't need it, so it is
+> there for completeness, no?
 
-You didn't move css free_work to the dedicate wq as Tejun's patch does.
-css free_work won't acquire cgroup_mutex, but when destroying a lot of
-cgroups, we can have a lot of css free_work in the workqueue, so I'd
-suggest you also use cgroup_destroy_wq for it.
+Yes, because normal path will need that 64M+32k default.
 
+We may reduce that amount to 16M or 18M and in second kernel let
+allocate less for swiotlb.
 
+Thanks
+
+Yinghai
