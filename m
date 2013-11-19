@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3KSOxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:53:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:28113 "EHLO mga01.intel.com"
+	id S1753246Ab3KSOxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:53:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58352 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219Ab3KSOx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:53:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,729,1378882800"; 
-   d="scan'208";a="430258300"
-Date: Tue, 19 Nov 2013 17:00:01 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PULL REQUEST] i2c for 3.13
-Message-ID: <20131119150001.GM2281@intel.com>
-References: <20131118193802.GA14925@katana>
- <CA+55aFxZaC=beR+dN36Sv==6fjY7SdOdwXaSHU+wnk+-oDJp4g@mail.gmail.com>
- <3690707.5664qBQcL8@vostro.rjw.lan>
+	id S1752947Ab3KSOx3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:53:29 -0500
+From: "Cortes, Alexis" <alexis.cortes@ti.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: RE: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
+ that are NOTATTACHED
+Thread-Topic: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
+ that are NOTATTACHED
+Thread-Index: AQHO4ZGWIwMPqdqwwU67UO/vDDw2rJom0hOQ
+Date: Tue, 19 Nov 2013 14:53:22 +0000
+Message-ID: <31F406F20B26204E8066CA524505279A269C6840@DFLE12.ent.ti.com>
+References: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
+ <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+ <20131114233055.GR10371@xanatos>
+In-Reply-To: <20131114233055.GR10371@xanatos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3690707.5664qBQcL8@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 01:11:25AM +0100, Rafael J. Wysocki wrote:
-> On Monday, November 18, 2013 03:46:34 PM Linus Torvalds wrote:
-> > On Mon, Nov 18, 2013 at 11:38 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> > >
-> > > here is the pull request from the i2c subsystem for 3.13:
-> > 
-> > So while resolving some fairly trivial conflicts here, I noticed that
-> > commit a76e9bd89ae7 ("i2c: attach/detach I2C client device to the ACPI
-> > power domain") that I got earlier through the ACPI/PM tree calls
-> > acpi_dev_pm_detach() even when the device "->remove()" function fails.
-> > But it only sets clientdata to NULL if it succeeds.
-> > 
-> > That looks a bit odd.
-> > 
-> > I didn't try to fix it, though. I just thought I'd point out the oddity.
+Hi Sarah,
+
+Sorry for my delayed response, I just saw your e-mail (it got filtered somehow). About your question: actually I'm not sure, I'll have to check that to confirm it. I'll get back to you with an answer as soon as I have it.
+
+Best Regards,
+Alexis Cortes.
+
+-----Original Message-----
+From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com] 
+Sent: Thursday, November 14, 2013 5:31 PM
+To: Alan Stern
+Cc: Julius Werner; Greg Kroah-Hartman; LKML; linux-usb@vger.kernel.org; Benson Leung; Vincent Palatin; Cortes, Alexis
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
+
+On Thu, Nov 07, 2013 at 10:32:33AM -0500, Alan Stern wrote:
+> On Wed, 6 Nov 2013, Julius Werner wrote:
 > 
-> Well, given that the driver core doesn't even check the return value of
-> dev->bus->remove(dev), I think doing the unconditional acpi_dev_pm_detach()
-> is actually correct and clientdata should be cleared unconditionally too.
+> > > What if the device is in USB_STATE_SUSPENDED?
+> > 
+> > I'm not sure that is possible at that point in hub_events(), I don't 
+> > know of a way that could lead to this situation. I could still add 
+> > the check just to be sure if you want it, though.
+> 
+> I don't know either.  But Sarah has said that ports can spontaneously 
+> go into Compliance Mode for no apparent reason.  If that can happen, 
+> maybe it can happen while the port is in U3 and the device is 
+> suspended.  In such cases, though, you'd need to do a reset-resume 
+> rather than a simple reset.
 
-Actually, can we remove the whole clientdata setting there?
+Looking at commits c3897aa5386faba77e5bbdf94902a1658d3a5b11 and 71c731a296f1b08a3724bd1b514b64f1bda87a23, it seems that the TI host controllers' ports can go into compliance mode only when a device is inserted.  Once the device is link trained by the redriver, the port shouldn't go into compliance mode.  So we should never see compliance mode on a port with an attached USB device in suspend.
 
-Commit 0998d0631001 (device-core: Ensure drvdata = NULL when no driver is
-bound) modified the driver core to always clear out that field. Same seems
-to apply if driver probe fails.
+Alex, can you confirm that the TI host's port won't go into compliance mode while a connected device is suspended?
+
+> > > Not at all.  If a device is unplugged, its state changes to 
+> > > NOTATTACHED before the driver is unbound.  During that time, the 
+> > > driver will see all its URBs failing, so it may very well try to reset the device.
+> > > (For example, usbhid behaves like this.)  That isn't a bug.
+> > 
+> > Oh, okay, I wasn't quite sure how that plays together. Would you 
+> > think it's still valuable to print it out (maybe as dev_info() 
+> > instead of
+> > dev_warn()) instead of just silently ignoring the reset request? It 
+> > would have certainly been useful for me to find this problem faster, 
+> > but I can take it out again if you think it would result in too much 
+> > noise.
+> 
+> I think keeping dev_dbg() is best.  If you're searching for the 
+> solution to a problem, you should have debugging enabled and so you 
+> ought to see the message.
+> 
+> Alan Stern
+> 
