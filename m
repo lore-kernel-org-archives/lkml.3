@@ -1,405 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3KSOJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:09:19 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:45665 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3KSOJS (ORCPT
+	id S1752667Ab3KSOLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:11:45 -0500
+Received: from gw1.transmode.se ([195.58.98.146]:53484 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114Ab3KSOLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:09:18 -0500
-Message-ID: <528B710E.2050505@linaro.org>
-Date: Tue, 19 Nov 2013 15:09:18 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 19 Nov 2013 09:11:43 -0500
+In-Reply-To: <20131118070423.E47181A4D3D@localhost.localdomain>
+References: <20131118070423.E47181A4D3D@localhost.localdomain>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Marcelo Tosatti <marcelo@kvack.org>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Vitaly Bordug <vitb@kernel.crashing.org>
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, shaojie.sun@linaro.org,
-        broonie@linaro.org
-Subject: Re: [PATCH V3] ARM: trace: Add tracepoint for the Inter Processor
- Interrupt
-References: <1383814887-15415-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1383814887-15415-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] lib/crc32: slice by 4 is more efficient than the default slice
+ by 8 on Powerpc 8xx.
+X-KeepSent: 5004EA63:AA9B7989-C1257C28:004D6C13;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Message-ID: <OF5004EA63.AA9B7989-ONC1257C28.004D6C13-C1257C28.004DF922@transmode.se>
+Date: Tue, 19 Nov 2013 15:11:40 +0100
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 19/11/2013 15:11:40,
+	Serialize complete at 19/11/2013 15:11:40
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 10:01 AM, Daniel Lezcano wrote:
-> The Inter Processor Interrupt is used on ARM to tell another processor to do
-> a specific action. This is mainly used to emulate a timer interrupt on an idle
-> cpu, force a cpu to reschedule or run a function on another processor context.
->
-> Add a tracepoint when raising an IPI and in the entry/exit handler functions.
->
-> When a cpu raises an IPI, the targeted cpus is an interesting information, the
-> cpumask conversion in hexa is added in the trace using the cpumask_scnprintf
-> function.
->
-> Tested-on Vexpress TC2 (5 processors).
-> Tested-on u8500 (2 processors).
->
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+I found the same on MPC8321 long time ago(when 64 bits change went in), 
+the 32 bits were much faster. I guess the "smaller"
+CPUs cannot handle the cache trashing these big tables impose, I didn't 
+look into the details though.
+So I think this is a good change for 8xx.
 
-Hi guys,
+Acked-by: Joakim Tjernlund <joakim.tjernlund@transmode.se>
 
-did you have time to look at this patch ?
+Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2013/11/18 08:04:23:
 
-We are writing a tool [1] to do some statistics about the cpu's idle 
-times and giving the source of the wakeup. We hope it could be useful 
-for the community to do some measurements but we need the IPI 
-tracepoints to be more accurate.
-
-Thanks in advance
-   -- Daniel
-
-[1] https://git.linaro.org/gitweb?p=tools/idlestat.git;a=summary
-
-> ---
->   arch/arm/include/asm/smp.h   |    9 ++++
->   arch/arm/kernel/smp.c        |   34 +++++++------
->   arch/arm64/include/asm/smp.h |    7 +++
->   arch/arm64/kernel/smp.c      |   21 ++++++--
->   include/trace/events/ipi.h   |  112 ++++++++++++++++++++++++++++++++++++++++++
->   5 files changed, 164 insertions(+), 19 deletions(-)
->   create mode 100644 include/trace/events/ipi.h
->
-> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-> index a8cae71c..788706c 100644
-> --- a/arch/arm/include/asm/smp.h
-> +++ b/arch/arm/include/asm/smp.h
-> @@ -18,6 +18,15 @@
->   # error "<asm/smp.h> included in non-SMP build"
->   #endif
->
-> +enum ipi_msg_type {
-> +	IPI_WAKEUP,
-> +	IPI_TIMER,
-> +	IPI_RESCHEDULE,
-> +	IPI_CALL_FUNC,
-> +	IPI_CALL_FUNC_SINGLE,
-> +	IPI_CPU_STOP,
-> +};
-> +
->   #define raw_smp_processor_id() (current_thread_info()->cpu)
->
->   struct seq_file;
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 72024ea..9ca8ce8 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -46,6 +46,9 @@
->   #include <asm/mach/arch.h>
->   #include <asm/mpu.h>
->
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/ipi.h>
-> +
->   /*
->    * as from 2.5, kernels no longer have an init_tasks structure
->    * so we need some other way of telling a new secondary core
-> @@ -59,15 +62,6 @@ struct secondary_data secondary_data;
->    */
->   volatile int pen_release = -1;
->
-> -enum ipi_msg_type {
-> -	IPI_WAKEUP,
-> -	IPI_TIMER,
-> -	IPI_RESCHEDULE,
-> -	IPI_CALL_FUNC,
-> -	IPI_CALL_FUNC_SINGLE,
-> -	IPI_CPU_STOP,
-> -};
-> -
->   static DECLARE_COMPLETION(cpu_running);
->
->   static struct smp_operations smp_ops;
-> @@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
->   		smp_cross_call = fn;
->   }
->
-> +static void ipi_raise(const struct cpumask *mask, int ipinr)
-> +{
-> +	trace_ipi_raise(mask, ipinr);
-> +	smp_cross_call(mask, ipinr);
-> +}
-> +
->   void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->   {
-> -	smp_cross_call(mask, IPI_CALL_FUNC);
-> +	ipi_raise(mask, IPI_CALL_FUNC);
->   }
->
->   void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
->   {
-> -	smp_cross_call(mask, IPI_WAKEUP);
-> +	ipi_raise(mask, IPI_WAKEUP);
->   }
->
->   void arch_send_call_function_single_ipi(int cpu)
->   {
-> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
->   }
->
->   static const char *ipi_types[NR_IPI] = {
-> @@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
->   #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
->   void tick_broadcast(const struct cpumask *mask)
->   {
-> -	smp_cross_call(mask, IPI_TIMER);
-> +	ipi_raise(mask, IPI_TIMER);
->   }
->   #endif
->
-> @@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->   	unsigned int cpu = smp_processor_id();
->   	struct pt_regs *old_regs = set_irq_regs(regs);
->
-> +	trace_ipi_handler_entry(ipinr);
-> +
->   	if (ipinr < NR_IPI)
->   		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
->
-> @@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->   		break;
->   	}
->   	set_irq_regs(old_regs);
-> +
-> +	trace_ipi_handler_exit(ipinr);
->   }
->
->   void smp_send_reschedule(int cpu)
->   {
-> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
->   }
->
->   void smp_send_stop(void)
-> @@ -586,7 +590,7 @@ void smp_send_stop(void)
->   	cpumask_copy(&mask, cpu_online_mask);
->   	cpumask_clear_cpu(smp_processor_id(), &mask);
->   	if (!cpumask_empty(&mask))
-> -		smp_cross_call(&mask, IPI_CPU_STOP);
-> +		ipi_raise(&mask, IPI_CPU_STOP);
->
->   	/* Wait up to one second for other CPUs to stop */
->   	timeout = USEC_PER_SEC;
-> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
-> index 4b8023c..7ebaa3a 100644
-> --- a/arch/arm64/include/asm/smp.h
-> +++ b/arch/arm64/include/asm/smp.h
-> @@ -24,6 +24,13 @@
->   # error "<asm/smp.h> included in non-SMP build"
->   #endif
->
-> +enum ipi_msg_type {
-> +	IPI_RESCHEDULE,
-> +	IPI_CALL_FUNC,
-> +	IPI_CALL_FUNC_SINGLE,
-> +	IPI_CPU_STOP,
-> +};
-> +
->   #define raw_smp_processor_id() (current_thread_info()->cpu)
->
->   struct seq_file;
-> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> index 78db90d..c987b9f 100644
-> --- a/arch/arm64/kernel/smp.c
-> +++ b/arch/arm64/kernel/smp.c
-> @@ -48,6 +48,9 @@
->   #include <asm/tlbflush.h>
->   #include <asm/ptrace.h>
->
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/ipi.h>
-> +
->   /*
->    * as from 2.5, kernels no longer have an init_tasks structure
->    * so we need some other way of telling a new secondary core
-> @@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
->   	smp_cross_call = fn;
->   }
->
-> +static void ipi_raise(const struct cpumask *mask, int ipinr)
-> +{
-> +	trace_ipi_raise(mask, ipinr);
-> +	smp_cross_call(mask, ipinr);
-> +}
-> +
->   void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->   {
-> -	smp_cross_call(mask, IPI_CALL_FUNC);
-> +	ipi_raise(mask, IPI_CALL_FUNC);
->   }
->
->   void arch_send_call_function_single_ipi(int cpu)
->   {
-> -	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> +	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
->   }
->
->   static const char *ipi_types[NR_IPI] = {
-> @@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->   	unsigned int cpu = smp_processor_id();
->   	struct pt_regs *old_regs = set_irq_regs(regs);
->
-> +	trace_ipi_handler_entry(ipinr);
-> +
->   	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
->   		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
->
-> @@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
->   		break;
->   	}
->   	set_irq_regs(old_regs);
-> +
-> +	trace_ipi_handler_exit(ipinr);
->   }
->
->   void smp_send_reschedule(int cpu)
->   {
-> -	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> +	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
->   }
->
->   void smp_send_stop(void)
-> @@ -549,7 +562,7 @@ void smp_send_stop(void)
->   		cpumask_copy(&mask, cpu_online_mask);
->   		cpu_clear(smp_processor_id(), mask);
->
-> -		smp_cross_call(&mask, IPI_CPU_STOP);
-> +		ipi_raise(&mask, IPI_CPU_STOP);
->   	}
->
->   	/* Wait up to one second for other CPUs to stop */
-> diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
-> new file mode 100644
-> index 0000000..fa22d4f
-> --- /dev/null
-> +++ b/include/trace/events/ipi.h
-> @@ -0,0 +1,112 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM ipi
-> +
-> +#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_IPI_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
-> +#define show_ipi_name(val)				\
-> +	__print_symbolic(val,				\
-> +			 ipi_name(WAKEUP),		\
-> +			 ipi_name(TIMER),		\
-> +			 ipi_name(RESCHEDULE),		\
-> +			 ipi_name(CALL_FUNC),		\
-> +			 ipi_name(CALL_FUNC_SINGLE),	\
-> +			 ipi_name(CPU_STOP))
-> +
-> +#define show_cpumask(srcp)				\
-> +	({						\
-> +		char *buf = __get_dynamic_array(buf);	\
-> +		cpumask_scnprintf(buf, NR_CPUS, srcp);	\
-> +		buf;					\
-> +	})
-> +
-> +DECLARE_EVENT_CLASS(ipi,
-> +
-> +    TP_PROTO(int ipinr),
-> +
-> +    TP_ARGS(ipinr),
-> +
-> +    TP_STRUCT__entry(
-> +	    __field(int, ipinr)
-> +    ),
-> +
-> +    TP_fast_assign(
-> +	    __entry->ipinr = ipinr;
-> +    ),
-> +
-> +    TP_printk("ipi=%d, name=%s", __entry->ipinr,
-> +	      show_ipi_name(__entry->ipinr))
-> +);
-> +
-> +/**
-> + * ipi_handle_entry - called right before the IPI handler
-> + * @ipinr: the IPI number
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace.
-> + */
-> +DEFINE_EVENT_CONDITION(ipi, ipi_handler_entry,
-> +
-> +    TP_PROTO(int ipinr),
-> +
-> +    TP_ARGS(ipinr),
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-> +);
-> +
-> +/**
-> + * ipi_handle_exit - called right after the IPI handler
-> + * @ipinr: the IPI number
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace.
-> + */
-> +DEFINE_EVENT_CONDITION(ipi, ipi_handler_exit,
-> +
-> +    TP_PROTO(int ipinr),
-> +
-> +    TP_ARGS(ipinr),
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-> +);
-> +
-> +/**
-> + * ipi_raise - called when a smp cross call is made
-> + * @ipinr: the IPI number
-> + * @cpumask: the recipients for the IPI
-> + *
-> + * The @ipinr value must be valid and the action name associated with
-> + * the IPI value is given in the trace as well as the cpumask of the
-> + * targeted cpus.
-> + */
-> +TRACE_EVENT_CONDITION(ipi_raise,
-> +
-> +    TP_PROTO(const struct cpumask *cpumask, int ipinr),
-> +
-> +    TP_ARGS(cpumask, ipinr),
-> +
-> +    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-> +
-> +    TP_STRUCT__entry(
-> +	    __field(int, ipinr)
-> +	    __field(const struct cpumask *, cpumask)
-> +	    __dynamic_array(char, buf, NR_CPUS)
-> +    ),
-> +
-> +    TP_fast_assign(
-> +	    __entry->ipinr = ipinr;
-> +	    __entry->cpumask = cpumask;
-> +    ),
-> +
-> +    TP_printk("ipi=%d, cpumask=0x%s, name=%s", __entry->ipinr,
-> +	      show_cpumask(__entry->cpumask),
-> +	      show_ipi_name(__entry->ipinr))
-> +);
-> +
-> +#endif /* _TRACE_IPI_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> From: Christophe Leroy <christophe.leroy@c-s.fr>
+> To: Vitaly Bordug <vitb@kernel.crashing.org>, Marcelo Tosatti 
+<marcelo@kvack.org>, Joakim Tjernlund <joakim.tjernlund@transmode.se>, Bob 
+Pearson <rpearson@systemfabricworks.com>, 
+> Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+> Date: 2013/11/19 13:05
+> Subject: [PATCH] lib/crc32: slice by 4 is more efficient than the 
+default slice by 8 on Powerpc 8xx.
+> 
+> On PPC_8xx, CRC32_SLICEBY4 is more efficient (almost twice) than 
+CRC32_SLICEBY8,
+> as shown below:
+> 
+> With CRC32_SLICEBY8:
+> [    1.109204] crc32: CRC_LE_BITS = 64, CRC_BE BITS = 64
+> [    1.114401] crc32: self tests passed, processed 225944 bytes in 
+15118910 nsec
+> [    1.130655] crc32c: CRC_LE_BITS = 64
+> [    1.134235] crc32c: self tests passed, processed 225944 bytes in 
+4479879 nsec
+> 
+> With CRC32_SLICEBY4:
+> [    1.097129] crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
+> [    1.101878] crc32: self tests passed, processed 225944 bytes in 
+8616242 nsec
+> [    1.116298] crc32c: CRC_LE_BITS = 32
+> [    1.119607] crc32c: self tests passed, processed 225944 bytes in 
+3289576 nsec
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> Index: a/lib/Kconfig
+> ===================================================================
+> --- a/lib/Kconfig   (révision 5325)
+> +++ b/lib/Kconfig   (copie de travail)
+> @@ -102,6 +102,7 @@
+>  choice
+>     prompt "CRC32 implementation"
+>     depends on CRC32
+> +   default CRC32_SLICEBY4 if PPC_8xx
+>     default CRC32_SLICEBY8
+>     help
+>       This option allows a kernel builder to override the default choice
 
