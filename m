@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab3KSNPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:15:09 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:19905
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752021Ab3KSNPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:15:08 -0500
-X-IronPort-AV: E=Sophos;i="4.93,729,1378850400"; 
-   d="scan'208";a="36461949"
-Date: Tue, 19 Nov 2013 14:15:06 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: linux-kernel@vger.kernel.org
-Subject: Hardware locality (hwloc) v1.8 released
-Message-ID: <20131119131506.GB24580@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	linux-kernel@vger.kernel.org
+	id S1752660Ab3KSNPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:15:55 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:47548 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752611Ab3KSNPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 08:15:53 -0500
+Message-ID: <528B643F.1020904@imgtec.com>
+Date: Tue, 19 Nov 2013 13:14:39 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Rob Herring <rob.herring@calxeda.com>, <devicetree@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH 4/9] metag: Remove duplicate DT selection logic
+References: <5283A000.8090007@gmail.com> <1384859554-27268-1-git-send-email-geert@linux-m68k.org> <1384859554-27268-4-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1384859554-27268-4-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_19_13_15_52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hardware Locality (hwloc) team is pleased to announce the release
-of v1.8:
+On 19/11/13 11:12, Geert Uytterhoeven wrote:
+> early_init_dt_scan() now takes care of falling back to the built-in DTB.
+> Note that we now have to check ourselves whether original_cmd_line is
+> a DTB or a command line, to keep command line append working.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: linux-metag@vger.kernel.org
 
-   http://www.open-mpi.org/projects/hwloc/
+Looks good and seems to work fine.
+Acked-by: James Hogan <james.hogan@imgtec.com>
 
-v1.8 is a major new release series.
-It adds PCI discovery on Linux without dependencies on external libs,
-a new API to manipulate differences between very similar topologies,
-multiple improvements to command-line tools, and more.
+Thanks
+James
 
-* New components
-  + Add the "linuxpci" component that always works on Linux even when
-    libpciaccess and libpci aren't available (and even with a modified
-    file-system root). By default the old "pci" component runs first
-    because "linuxpci" lacks device names (obj->name is always NULL).
-* API
-  + Add the topology difference API in hwloc/diff.h for manipulating
-    many similar topologies.
-  + Add hwloc_topology_dup() for duplicating an entire topology.
-  + hwloc.h and hwloc/helper.h have been reorganized to clarify the
-    documentation sections. The actual inline code has moved out of hwloc.h
-    into the new hwloc/inlines.h.
-  + Deprecated functions are now in hwloc/deprecated.h, and not in the
-    official documentation anymore.
-* Tools
-  + Add hwloc-diff and hwloc-patch tools together with the new diff API.
-  + Add hwloc-compress-dir to (de)compress an entire directory of XML files
-    using hwloc-diff and hwloc-patch.
-  + Object colors in the graphical output of lstopo may be changed by adding
-    a "lstopoStyle" info attribute. See CUSTOM COLORS in the lstopo(1) manpage
-    for details. Thanks to Jirka Hladky for discussing the idea.
-  + hwloc-gather-topology may now gather I/O-related files on Linux when
-    --io is given. Only the linuxpci component supports discovering I/O
-    objects from these extended tarballs.
-  + hwloc-annotate now supports --ri to remove/replace info attributes with
-    a given name.
-  + hwloc-info supports "root" and "all" special locations for dumping
-    information about the root object.
-  + lstopo now supports --append-legend to append custom lines of text
-    to the legend in the graphical output. Thanks to Jirka Hladky for
-    discussing the idea.
-  + hwloc-calc and friends have a more robust parsing of locations given
-    on the command-line and they report useful error messages about it.
-  + Add --whole-system to hwloc-bind, hwloc-calc, hwloc-distances and
-    hwloc-distrib, and add --restrict to hwloc-bind for uniformity among
-    tools.
-* Misc
-  + Calling hwloc_topology_load() or hwloc_topology_set_*() on an already
-    loaded topology now returns an error (deprecated since release 1.6.1).
-  + Fix the initialisation of cpusets and nodesets in Group objects added
-    when inserting PCI hostbridges.
-  + Never merge Group objects that were added explicitly by the user with
-    hwloc_custom_insert_group_object_by_parent().
-  + Add a sanity check during dynamic plugin loading to prevent some
-    crashes when hwloc is dynamically loaded by another plugin mechanisms.
-  + Add --with-hwloc-plugins-path to specify the install/load directories
-    of plugins.
-  + Add the MICSerialNumber info attribute to the root object when running
-    hwloc inside a Xeon Phi to match the same attribute in the MIC OS device
-    when running in the host.
-
-
-Changes since v1.8rc1 only consists in minor documentation updates,
-test improvements and warning fixes.
