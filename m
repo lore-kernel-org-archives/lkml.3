@@ -1,107 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab3KSS3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:29:45 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:16305
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750823Ab3KSS3m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:29:42 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dIc89bh936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097h186068hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh1155h)
-Message-ID: <1384885766.1403.366.camel@snotra.buserror.net>
-Subject: Re: [PATCH] lib/crc32: slice by 4 is more efficient than the
- default slice by 8 on Powerpc 8xx.
-From: Scott Wood <scottwood@freescale.com>
-To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-CC: Christophe Leroy <christophe.leroy@c-s.fr>,
-        Marcelo Tosatti <marcelo@kvack.org>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Nov 2013 12:29:26 -0600
-In-Reply-To: <OF5004EA63.AA9B7989-ONC1257C28.004D6C13-C1257C28.004DF922@transmode.se>
-References: <20131118070423.E47181A4D3D@localhost.localdomain>
-	 <OF5004EA63.AA9B7989-ONC1257C28.004D6C13-C1257C28.004DF922@transmode.se>
+	id S1752611Ab3KSS3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:29:50 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:62630 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3KSS3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:29:46 -0500
+Message-ID: <1384885780.8604.109.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] tcp: don't update snd_nxt, when a socket is switched
+ from repair mode
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Date: Tue, 19 Nov 2013 10:29:40 -0800
+In-Reply-To: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+References: <1384884606-9978-1-git-send-email-avagin@openvz.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think we should go littering the Kconfig with defaults for
-various bits of hardware -- especially since you've already pointed out
-non-8xx hardware that would also want this.  Put it in defconfig
-instead, unless you can identify very broad classes of machines for
-which SLICEBY4 is faster.
+On Tue, 2013-11-19 at 22:10 +0400, Andrey Vagin wrote:
+> snd_nxt must be updated synchronously with sk_send_head.  Otherwise
+> tp->packets_out may be updated incorrectly, what may bring a kernel panic.
+> 
+> Here is a kernel panic from my host.
+> [  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+> [  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
+> ...
+> [  146.301158] Call Trace:
+> [  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
+> 
+> Before this panic a tcp socket was restored. This socket had sent and
+> unsent data in the write queue. Sent data was restored in repair mode,
+> then the socket was switched from reapair mode and unsent data was
+> restored. After that the socket was switched back into repair mode.
+> 
+> In that moment we had a socket where write queue looks like this:
+> snd_una    snd_nxt   write_seq
+>    |_________|________|
+>              |
+> 	  sk_send_head
+> 
+> After a second switching from repair mode the state of socket was
+> changed:
+> 
+> snd_una          snd_nxt, write_seq
+>    |_________ ________|
+>              |
+> 	  sk_send_head
+> 
+> This state is inconsistent, because snd_nxt and sk_send_head are not
+> synchronized.
+> 
+> Bellow you can find a call trace, how packets_out can be incremented
+> twice for one skb, if snd_nxt and sk_send_head are not synchronized.
+> In this case packets_out will be always positive, even when
+> sk_write_queue is empty.
+> 
+> tcp_write_wakeup
+> 	skb = tcp_send_head(sk);
+> 	tcp_fragment
+> 		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
+> 			tcp_adjust_pcount(sk, skb, diff);
+> 	tcp_event_new_data_sent
+> 		tp->packets_out += tcp_skb_pcount(skb);
+> 
+> I think update of snd_nxt isn't required, when a socket is switched from
+> repair mode.  Because it's initialized in tcp_connect_init. Then when a
+> write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
+> so it's always is in consistent state.
+> 
+> I have checked, that the bug is not reproduced with this patch and
+> all tests about restoring tcp connections work fine.
+> 
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  net/ipv4/tcp_output.c | 1 -
+>  1 file changed, 1 deletion(-)
 
--Scott
-
-On Tue, 2013-11-19 at 15:11 +0100, Joakim Tjernlund wrote:
-> I found the same on MPC8321 long time ago(when 64 bits change went in), 
-> the 32 bits were much faster. I guess the "smaller"
-> CPUs cannot handle the cache trashing these big tables impose, I didn't 
-> look into the details though.
-> So I think this is a good change for 8xx.
-> 
-> Acked-by: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-> 
-> Christophe Leroy <christophe.leroy@c-s.fr> wrote on 2013/11/18 08:04:23:
-> 
-> > From: Christophe Leroy <christophe.leroy@c-s.fr>
-> > To: Vitaly Bordug <vitb@kernel.crashing.org>, Marcelo Tosatti 
-> <marcelo@kvack.org>, Joakim Tjernlund <joakim.tjernlund@transmode.se>, Bob 
-> Pearson <rpearson@systemfabricworks.com>, 
-> > Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-> > Date: 2013/11/19 13:05
-> > Subject: [PATCH] lib/crc32: slice by 4 is more efficient than the 
-> default slice by 8 on Powerpc 8xx.
-> > 
-> > On PPC_8xx, CRC32_SLICEBY4 is more efficient (almost twice) than 
-> CRC32_SLICEBY8,
-> > as shown below:
-> > 
-> > With CRC32_SLICEBY8:
-> > [    1.109204] crc32: CRC_LE_BITS = 64, CRC_BE BITS = 64
-> > [    1.114401] crc32: self tests passed, processed 225944 bytes in 
-> 15118910 nsec
-> > [    1.130655] crc32c: CRC_LE_BITS = 64
-> > [    1.134235] crc32c: self tests passed, processed 225944 bytes in 
-> 4479879 nsec
-> > 
-> > With CRC32_SLICEBY4:
-> > [    1.097129] crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
-> > [    1.101878] crc32: self tests passed, processed 225944 bytes in 
-> 8616242 nsec
-> > [    1.116298] crc32c: CRC_LE_BITS = 32
-> > [    1.119607] crc32c: self tests passed, processed 225944 bytes in 
-> 3289576 nsec
-> > 
-> > Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> > 
-> > Index: a/lib/Kconfig
-> > ===================================================================
-> > --- a/lib/Kconfig   (rÃ©vision 5325)
-> > +++ b/lib/Kconfig   (copie de travail)
-> > @@ -102,6 +102,7 @@
-> >  choice
-> >     prompt "CRC32 implementation"
-> >     depends on CRC32
-> > +   default CRC32_SLICEBY4 if PPC_8xx
-> >     default CRC32_SLICEBY8
-> >     help
-> >       This option allows a kernel builder to override the default choice
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-> 
+Fixes: c0e88ff0f256 ("tcp: Repair socket queues")
+Acked-by: Eric Dumazet <edumazet@google.com>
 
 
 
