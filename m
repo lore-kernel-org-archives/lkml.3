@@ -1,105 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3KSO5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:57:10 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:18104 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab3KSO5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:57:07 -0500
-X-IronPort-AV: E=Sophos;i="4.93,729,1378857600"; 
-   d="scan'208";a="73479759"
-Message-ID: <528B7C29.3050103@citrix.com>
-Date: Tue, 19 Nov 2013 14:56:41 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752786Ab3KSO7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:59:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55549 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab3KSO7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:59:54 -0500
+Message-ID: <528B7CE5.5040502@ti.com>
+Date: Tue, 19 Nov 2013 08:59:49 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Elena Ufimtseva <ufimtseva@gmail.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <x86@kernel.org>, <akpm@linux-foundation.org>,
-        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
-References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com> <1384811922-14642-3-git-send-email-ufimtseva@gmail.com> <528B5160.5010902@citrix.com> <20131119141620.GD5332@phenom.dumpdata.com> <528B774F.7090902@citrix.com> <20131119144630.GA5780@phenom.dumpdata.com>
-In-Reply-To: <20131119144630.GA5780@phenom.dumpdata.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net>	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>	<528A27F8.3070402@ti.com>	<20131118155753.GU11014@S2101-09.ap.freescale.net>	<528A4340.3020508@ti.com>	<20131119022133.GB18434@S2101-09.ap.freescale.net>	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>	<528B72C1.5060006@ti.com> <CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
+In-Reply-To: <CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/11/13 14:46, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 19, 2013 at 02:35:59PM +0000, David Vrabel wrote:
->> On 19/11/13 14:16, Konrad Rzeszutek Wilk wrote:
->>> On Tue, Nov 19, 2013 at 11:54:08AM +0000, David Vrabel wrote:
->>>> On 18/11/13 21:58, Elena Ufimtseva wrote:
->>>>> Enables numa if vnuma topology hypercall is supported and it is domU.
->>>> [...]
->>>>> --- a/arch/x86/xen/setup.c
->>>>> +++ b/arch/x86/xen/setup.c
->>>>> @@ -20,6 +20,7 @@
->>>>>  #include <asm/numa.h>
->>>>>  #include <asm/xen/hypervisor.h>
->>>>>  #include <asm/xen/hypercall.h>
->>>>> +#include <asm/xen/vnuma.h>
->>>>>  
->>>>>  #include <xen/xen.h>
->>>>>  #include <xen/page.h>
->>>>> @@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
->>>>>  	WARN_ON(xen_set_default_idle());
->>>>>  	fiddle_vdso();
->>>>>  #ifdef CONFIG_NUMA
->>>>> -	numa_off = 1;
->>>>> +	if (!xen_initial_domain() && xen_vnuma_supported())
->>>>> +		numa_off = 0;
->>>>> +	else
->>>>> +		numa_off = 1;
->>>>>  #endif
->>>>>  }
->>>>
->>>> I think this whole #ifdef CONFIG_NUMA can be removed and hence
->>>> xen_vnuma_supported() can be removed as well.
->>>>
->>>> For any PV guest we can call the xen_numa_init() and it will do the
->>>> right thing.
->>>>
->>>> For dom0, the hypercall will either: return something sensible (if in
->>>> the future Xen sets something up), or it will error.
->>>>
->>>> If Xen does not have vnuma support, the hypercall will error.
->>>>
->>>> In both error cases, the dummy numa node is setup as required.
->>>
->>> Incorrect. It will end up calling:
->>>
->>>                  if (!numa_init(amd_numa_init))                                  
->>>
->>> which will crash dom0 (see 8d54db795 "xen/boot: Disable NUMA for PV guests.")
->>> as that amd_numa_init is called before the dummy node init.
+On 11/19/2013 08:26 AM, Viresh Kumar wrote:
+> On 19 November 2013 19:46, Nishanth Menon <nm@ti.com> wrote:
+>> Consider something like userspace governor selection -> the device at
+>> boot will probably remain in an unknown/"invalid" configuration till
+>> the very first transition attempt. I am less worried about the stats
+>> than not following what the hardware description is (as stated by
+>> device tree/other forms).
 >>
->> No it won't.  Any error path after the check for a PV guest will add the
->> dummy node and return success, skipping any of the hardware-specific setup.
+>> I staunchly disagree that at a point of mismatch detection, we just
+>> refuse to load up cpufreq governor -even though we know from device
+>> tree/other alternative entries what the hardware behavior is supposed
+>> to be. To refuse to loadup to a known configuration is considering the
+>> "valid configuration" data provided to the driver is wrong - an
+>> equivalent(considering the i2c example) is that if i2c driver sees bus
+>> configured for 3.4MHz and was asked to use 100KHz, it just refuses to
+>> load up!
 > 
-> Duh! I totally missed 'return' at the end of the check!
+> CPU looks to be a bit different in that aspect as compared to I2C. We
+> aren't really sure if I2C will work at the existing freq but we are 100%
+> sure that current freq of CPU is valid enough, otherwise we wouldn't
+> have reached to this point.. :)
 > 
-> However, even with that (so the return), that means
-> this part won't be called:
+Not completely true - reaching probe after boot in a few seconds may
+not mean that system will remain stable at that frequency for longer
+duration. From a silicon vendor perspective, I do know that we
+gaurentee the discrete frequencies in the data manual (and that gets
+populated in devicetree and hence in freq_table), but we will not
+guarentee any other frequency to be functional for any length of time.
+in short, if a actual product is manufactured and operational at a
+frequency we do not "officially support", there is a risk associated
+with that. just a boot on a few development systems do not ever
+guarentee productization capability.
+
+>> The above two are fair comments -> but that implies that policy->cur
+>> population should no longer be the responsibility of cpufreq drivers
+>> and be the responsibility of cpufreq core. are we stating we want to
+>> move that to cpufreq core?
 > 
-> 649         numa_init(dummy_numa_init);                                             
+> I am sure you want to have a look at this:
+
+my bad. I missed this one.
+
+So, to summarize: what is our overall strategy here? to move to a
+frequency matched in freq_table OR just giveup? I can try and respin
+accordingly.
+
 > 
-> Which means there won't be any dummy numa setup?
+> commit da60ce9f2faca87013fd3cab1c3bed5183608c3d
+> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> Date:   Thu Oct 3 20:28:30 2013 +0530
+> 
+>     cpufreq: call cpufreq_driver->get() after calling ->init()
+> 
+>     Almost all drivers set policy->cur with current CPU frequency in
+> their ->init()
+>     part. This can be done for all of them at core level and so they
+> wouldn't need
+>     to do it.
+> 
+>     This patch adds supporting code in cpufreq core for calling get()
+> after we have
+>     called init() for a policy.
+> 
+>     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
 
-The relevant bits in dummy_numa_init are in the error path of
-xen_numa_init().
 
-I do think this approach (using the provided API to setup the single
-(dummy) node), is preferable to calling dummy_numa_init().
-
-If I thought the hypervisor ABI was finalized, I'd be happy with this
-series as-is -- the remaining issues are superficial.
-
-David
+-- 
+Regards,
+Nishanth Menon
