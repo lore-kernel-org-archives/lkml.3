@@ -1,64 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3KSVt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:49:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48232 "EHLO mga02.intel.com"
+	id S1752993Ab3KSVuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:50:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11075 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab3KSVt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:49:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438080597"
-From: Andi Kleen <andi@firstfloor.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Expose sysctls for enabling slab/file_cache interleaving
-References: <1384822222-28795-1-git-send-email-andi@firstfloor.org>
-	<20131119104203.GB18872@dhcp22.suse.cz>
-	<20131119184200.GD29695@two.firstfloor.org>
-	<20131119191135.GA8634@dhcp22.suse.cz>
-	<20131119201333.GD19762@tassilo.jf.intel.com>
-	<20131119212123.GA9339@dhcp22.suse.cz>
-Date: Tue, 19 Nov 2013 13:49:28 -0800
-In-Reply-To: <20131119212123.GA9339@dhcp22.suse.cz> (Michal Hocko's message of
-	"Tue, 19 Nov 2013 22:21:23 +0100")
-Message-ID: <87y54kvz87.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751821Ab3KSVuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 16:50:11 -0500
+Date: Tue, 19 Nov 2013 23:53:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
+ allocate frag skb
+Message-ID: <20131119215312.GE15004@redhat.com>
+References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
+ <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131119204909.GA15004@redhat.com>
+ <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+On Tue, Nov 19, 2013 at 01:36:36PM -0800, Eric Dumazet wrote:
+> On Tue, 2013-11-19 at 22:49 +0200, Michael S. Tsirkin wrote:
+> > On Tue, Nov 19, 2013 at 06:03:48AM -0800, Eric Dumazet wrote:
+> > > On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
+> > > > We need to drop the refcnt of page when we fail to allocate an skb for frag
+> > > > list, otherwise it will be leaked. The bug was introduced by commit
+> > > > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
+> > > > buffers to page frag allocators").
+> > > > 
+> > > > Cc: Michael Dalton <mwdalton@google.com>
+> > > > Cc: Eric Dumazet <edumazet@google.com>
+> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > > > ---
+> > > > The patch was needed for 3.12 stable.
+> > > 
+> > > Good catch, but if we return from receive_mergeable() in the 'middle'
+> > > of the frags we would need for the current skb, who will
+> > > call the virtqueue_get_buf() to flush the remaining frags ?
+> > > 
+> > > Don't we also need to call virtqueue_get_buf() like 
+> > > 
+> > > while (--num_buf) {
+> > >     buf = virtqueue_get_buf(rq->vq, &len);
+> > >     if (!buf)
+> > >         break;
+> > >     put_page(virt_to_head_page(buf));
+> > > }
+> > > 
+> > > ?
+> > > 
+> > > 
+> > 
+> > 
+> > Let me explain what worries me in your suggestion:
+> > 
+> >                         struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
+> >                         if (unlikely(!nskb)) {
+> >                                 head_skb->dev->stats.rx_dropped++;
+> >                                 return -ENOMEM;
+> >                         }
+> > 
+> > is this the failure case we are talking about?
+> 
+> I thought Jason patch was about this, no ?
+> 
+> > 
+> > I think this is a symprom of a larger problem
+> > introduced by 2613af0ed18a11d5c566a81f9a6510b73180660a,
+> > namely that we now need to allocate memory in the
+> > middle of processing a packet.
+> > 
+> > 
+> > I think discarding a completely valid and well-formed
+> > packet from the receive queue because we are unable
+> > to allocate new memory with GFP_ATOMIC
+> > for future packets is not a good idea.
+> 
+> How is it different with NIC processing in RX path ?
+
+
+Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
+it didn't drop packets received from host as far as I can tell.
+virtio is more like a pipe than a real NIC in this respect.
+
+> > 
+> > It certainly violates the principle of least surprize:
+> > when one sees host pass packet to guest, one expects
+> > the packet to get into the networking stack, not get
+> > dropped by the driver internally.
+> > Guest stack can do with the packet what it sees fit.
+> > 
+> > We actually wake up a thread if we can't fill up the queue,
+> > that will fill it up in GFP_KERNEL context.
+> > 
+> > So I think we should find a way to pre-allocate if necessary and avoid
+> > error paths where allocating new memory is a required to avoid drops.
+> > 
+> 
+> Really, under ATOMIC context, there is no way you can avoid dropping
+> packets if you cannot allocate memory. If you cannot allocate sk_buff
+> (256 bytes !!), you wont be able to allocate the 1500+ bytes to hold the
+> payload of next packets anyway. 
+
+that's why we do:
+
+                if (!try_fill_recv(rq, GFP_ATOMIC))
+                        schedule_delayed_work(&vi->refill, 0);
+
+
+the queues are large enough for a single failure not to be
+an immediate problem.
+
+
+> Same problem on a real NIC.
+> 
+> Under memory pressure we _do_ packet drops.
+> Nobody really complained.
 >
-> Another option would be to use sysctl values for the top cpuset as a
-> default. But then why not just do it manually without sysctl?
+> Sure, you can add yet another cache of pre-allocated skbs and pay the
+> price of managing yet another cache layer, but still need to trop
+> packets under stress.
 
-I want to provide an alternative to having to use cpusets to use this,
-that is actually usable for normal people.
+We don't need a cache even. Just enough to avoid dropping packets
+if allocation failed in the middle so we don't dequeue a buffer and then
+drop it.
 
-Also this is really a global setting in my mind.
+Once we use this reserved skb, we stop processing the queue until
+refill gives it back.
 
-> If you create a cpuset and explicitly disable spreading then you would
-> be quite surprised that your process gets pages from all nodes, no?
+> Pre-allocating skb on real NIC has a performance cost, because we clear
+> sk_buff way ahead of time. By the time skb is finally received, cpu has
+> to bring back into its cache memory cache lines.
+> 
 
-If I enable it globally using a sysctl I would be quite surprised 
-if some cpuset can override it.
-
-That argument is equally valid :-)
-
-The user configured an inconsistent configuration, and the kernel
-has to make a decision somehow.
-
-In the end it is arbitary, but not having to check the cpuset
-here is a lot cheaper, so I prefer the "sysctl has priority" 
-option.
-
-Could EINVAL the cpuset setting when the sysctl is set
-though (but it's difficult to do the other way round).
-
--Andi
+Alternatively we can pre-allocate the memory but avoid clearing it maybe?
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+MST
