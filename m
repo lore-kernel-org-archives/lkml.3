@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab3KSBoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:44:13 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48892 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3KSBoJ (ORCPT
+	id S1751887Ab3KSBo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:44:28 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:13288 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab3KSBo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:44:09 -0500
-Date: Tue, 19 Nov 2013 12:43:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: linux-next: manual merge of the gpio tree with the pm tree
-Message-Id: <20131119124357.a6191743b0f568d40c8291d5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0"
+	Mon, 18 Nov 2013 20:44:26 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-01-528ac279b2bf
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: split sbi->write_mutex for DATA/NODE/META to
+ avoid unnecessary race
+Date: Tue, 19 Nov 2013 09:43:20 +0800
+Message-id: <001201cee4c8$de450360$9acf0a20$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7kyKyCLZIB59lrRy2kSKzN34Uwwg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd3KQ11BBldemVhc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvYXK5kL
+	/gtXbL1wh7WB8aFAFyMHh4SAiUTzqqIuRk4gU0ziwr31bF2MXBxCAosYJRbcmMQK4fxglGhc
+	+ZwRpIpNQEViecd/JhBbREBRYsP7DewgRcwCMxglDs/9xwqSEBZIl1h+9g0biM0ioCpxu+sw
+	mM0rYCnRc7qfEcIWlPgx+R4LiM0soCHRv2gDG4QtL7F5zVtmiJMUJHacfc0IsUxPYsPc1awQ
+	NeISG4/cYpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGC
+	g/qZ1A7GlQ0WhxgFOBiVeHgnuHcFCbEmlhVX5h5ilOBgVhLh3b8HKMSbklhZlVqUH19UmpNa
+	fIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoExbUrkMpVbliJWsyZuOh13sO/fnp3V
+	Qn0b/pj8XSGVHNmcfOzdkv9esazRhj/2xZlEvjWUL7CtmcTauztlW92Nt48qHVcwvfJ30C+R
+	KzE591Uxy9S+5WLd7vNHZ63zzN/zma3VvLOq9LHoo698V08xXKmacL7Wp/Nu86qqpCPTOCPe
+	XlEWUJyvxFKckWioxVxUnAgANP7cCGYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+All DATA/NODE/META bio buffers in superblock is protected by 
+'sbi->write_mutex', but each bio buffer area is independent, So we 
+should split write_mutex to three for DATA/NODE/META.
 
-Hi Linus,
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/f2fs.h    |    2 +-
+ fs/f2fs/segment.c |    8 ++++----
+ fs/f2fs/super.c   |    4 +++-
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
-Today's linux-next merge of the gpio tree got a conflict in
-drivers/gpio/gpiolib.c between commit 7b1998116bbb ("ACPI / driver core:
-Store an ACPI device pointer in struct acpi_dev_node") from the pm tree
-and commit f760f1967ee8 ("gpiolib: use dedicated flags for GPIO
-properties") from the gpio tree.
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 2df1e61..1c67521 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -362,7 +362,7 @@ struct f2fs_sb_info {
+ 	struct f2fs_sm_info *sm_info;		/* segment manager */
+ 	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
+ 	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
+-	struct mutex write_mutex;		/* mutex for writing IOs */
++	struct mutex write_mutex[NR_PAGE_TYPE];	/* mutex for writing IOs */
+ 
+ 	/* for checkpoint */
+ 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 556965f..a36713ae 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -661,9 +661,9 @@ void f2fs_submit_bio(struct f2fs_sb_info *sbi, enum
+page_type type, bool sync)
+ 	if (!sbi->bio[btype])
+ 		return;
+ 
+-	mutex_lock(&sbi->write_mutex);
++	mutex_lock(&sbi->write_mutex[type]);
+ 	do_submit_bio(sbi, type, sync);
+-	mutex_unlock(&sbi->write_mutex);
++	mutex_unlock(&sbi->write_mutex[type]);
+ }
+ 
+ static void submit_write_page(struct f2fs_sb_info *sbi, struct page *page,
+@@ -674,7 +674,7 @@ static void submit_write_page(struct f2fs_sb_info *sbi,
+struct page *page,
+ 
+ 	verify_block_addr(sbi, blk_addr);
+ 
+-	mutex_lock(&sbi->write_mutex);
++	mutex_lock(&sbi->write_mutex[type]);
+ 
+ 	inc_page_count(sbi, F2FS_WRITEBACK);
+ 
+@@ -709,7 +709,7 @@ retry:
+ 
+ 	sbi->last_block_in_bio[type] = blk_addr;
+ 
+-	mutex_unlock(&sbi->write_mutex);
++	mutex_unlock(&sbi->write_mutex[type]);
+ 	trace_f2fs_submit_write_page(page, blk_addr, type);
+ }
+ 
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index f56941c..6928c0a 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -874,7 +874,9 @@ static int f2fs_fill_super(struct super_block *sb, void
+*data, int silent)
+ 	mutex_init(&sbi->node_write);
+ 	sbi->por_doing = false;
+ 	spin_lock_init(&sbi->stat_lock);
+-	mutex_init(&sbi->write_mutex);
++	mutex_init(&sbi->write_mutex[DATA]);
++	mutex_init(&sbi->write_mutex[NODE]);
++	mutex_init(&sbi->write_mutex[META]);
+ 	init_rwsem(&sbi->cp_rwsem);
+ 	init_waitqueue_head(&sbi->cp_wait);
+ 	init_sb_info(sbi);
+-- 
+1.7.9.5
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpio/gpiolib.c
-index 4e10b10d3ddd,48d1a67ed488..000000000000
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@@ -13,7 -13,7 +13,8 @@@
-  #include <linux/acpi_gpio.h>
-  #include <linux/idr.h>
-  #include <linux/slab.h>
- +#include <linux/acpi.h>
-+ #include <linux/gpio/driver.h>
- =20
-  #define CREATE_TRACE_POINTS
-  #include <trace/events/gpio.h>
-
---Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSisJhAAoJEMDTa8Ir7ZwVK6cP/3FoZjxUJgXaeH0rwJZJqOCP
-CcreoXBl9xBvX1f/pSaG8XZ+qdJ++ms/hR0zXVjMDrznucc/3DxI2y1hpAr2oMXf
-ceQPRzFv4ZIShKpeJGIHvZCuUENa16MiY+EMJbNfb1cM4h3DDZz5bzoclr/uIoTv
-MuIIEeI/mpi96HdOFaXxCHpYdIfoRcd1efbHWZ0IXVcTIffEIbtMnfK7S9SFhy3O
-yC+dWy2AZ3Gll5H565yG9CzKaSulO8O+ZpO9qsU59QS3scWSEcT7KvgfQK4vcCSw
-twDOhtFYBsiklNbBnmRP4L5PyzP0csTsf/HtHgmIzLGzvRV6TPCDeTM3gH3U84+u
-Oty2Orlh7DE38xITOqn1INrBSgkrVlVh4aG7BBsRiw+dIQlQif2NXmJVv1pLcywN
-TTDRqBqYsSokZ6x0EOWTxGDzu0yOfb+XplsUqymg121jczxsWMCkA3tkg5wMZwwe
-lBffsCKXZK65O4OTlv36Kwcq3JJQhBdcoPj33a8T1NOzcXZDACip5svXb7y2s6LX
-c7o9x9koiKYegeUODmX1KsyOdg+eibHpFZCXwPmxYygp0GZG82fBSonElbv3ei0x
-O8UXwSt9W7KlAo4Qib//RTGj4hmf7vQzBAfbn5RD5I1Cbm+N3NZqfgb03cRCXXeM
-hOFGmfGveXTQyrsMzisC
-=Zx0D
------END PGP SIGNATURE-----
-
---Signature=_Tue__19_Nov_2013_12_43_57_+1100_=kZeRQy5826sBfi0--
