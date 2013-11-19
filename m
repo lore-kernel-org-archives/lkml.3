@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab3KSKcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:32:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49023 "EHLO mx2.suse.de"
+	id S1752001Ab3KSKeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:34:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55991 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab3KSKcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:32:31 -0500
-Date: Tue, 19 Nov 2013 11:32:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Adam Cozzette <acozzette@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usbkbd.c: trivial typo ('released' -> 'pressed')
-In-Reply-To: <1384725083-3963-1-git-send-email-acozzette@gmail.com>
-Message-ID: <alpine.LNX.2.00.1311191132200.6657@pobox.suse.cz>
-References: <1384725083-3963-1-git-send-email-acozzette@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751803Ab3KSKeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 05:34:12 -0500
+Date: Tue, 19 Nov 2013 11:34:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Johannes =?utf-8?B?TMO2dGhiZXJn?= <johannes@kyriasis.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
+Message-ID: <20131119103408.GA3640@pd.tnic>
+References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>
+ <528ACB6A.1040809@zytor.com>
+ <20131119072241.GB32478@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131119072241.GB32478@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Nov 2013, Adam Cozzette wrote:
-
-> It looks like this typo was introduced by a mistake in a copy-and-paste in
-> commit ddbe32491951.
+On Tue, Nov 19, 2013 at 08:22:41AM +0100, Ingo Molnar wrote:
 > 
-> Signed-off-by: Adam Cozzette <acozzette@gmail.com>
-> ---
->  drivers/hid/usbhid/usbkbd.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> * H. Peter Anvin <hpa@zytor.com> wrote:
 > 
-> diff --git a/drivers/hid/usbhid/usbkbd.c b/drivers/hid/usbhid/usbkbd.c
-> index 7960869..9a332e6 100644
-> --- a/drivers/hid/usbhid/usbkbd.c
-> +++ b/drivers/hid/usbhid/usbkbd.c
-> @@ -146,7 +146,7 @@ static void usb_kbd_irq(struct urb *urb)
->  				input_report_key(kbd->dev, usb_kbd_keycode[kbd->new[i]], 1);
->  			else
->  				hid_info(urb->dev,
-> -					 "Unknown key (scancode %#x) released.\n",
-> +					 "Unknown key (scancode %#x) pressed.\n",
->  					 kbd->new[i]);
->  		}
->  	}
+> > On 11/18/2013 09:50 AM, Johannes Löthberg wrote:
+> > > Replace all mixed indentation with tabs
+> > > 
+> > > Signed-off-by: Johannes Löthberg <johannes@kyriasis.com>
+> > 
+> > NAK.  Not worth the churn in the absence of other changes.
+> 
+> Yes.
+> 
+> If a20.c was cleaned up altogether, that might be a more tempting 
+> change, it has a good number of inconsistencies and improving it all 
+> would make it more readable.
+>  
+> But it makes little sense to do an incomplete cleanup.
 
-Applied to hid.git, thanks.
+Yeah, senseless cleanup without any benefit whatsoever (yeah, fuck
+readability! :-)) should be forbidden, if you ask me. Especially
+since it dilutes and muds up git history and finding the patch which
+introduced a change turns into a serious undertaking.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
