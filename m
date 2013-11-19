@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab3KSUqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:46:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab3KSUqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:46:04 -0500
-Date: Tue, 19 Nov 2013 22:49:09 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-Message-ID: <20131119204909.GA15004@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1752753Ab3KSUsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:48:03 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.99]:42215
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751788Ab3KSUsB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 15:48:01 -0500
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: WIN YOUR LOVE
+To: Recipients <Duva6673@jimx.onmicrosoft.com>
+From: MICRO FINANCE <Duva6673@jimx.onmicrosoft.com>
+Date: Wed, 20 Nov 2013 02:17:49 +0530
+Reply-To: <finnmicro@gmail.com>
+Message-ID: <ead35207-a191-4fd7-8208-6de249df5b3f@HKXPR02MB247.apcprd02.prod.outlook.com>
+X-Originating-IP: [110.232.252.211]
+X-ClientProxiedBy: HKNPR02CA023.apcprd02.prod.outlook.com (10.141.16.18) To
+ HKXPR02MB247.apcprd02.prod.outlook.com (10.141.131.20)
+X-Forefront-PRVS: 0035B15214
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(74706001)(4396001)(74876001)(47776003)(63696002)(79102001)(53256004)(77982001)(59766001)(50466002)(83322001)(80022001)(66066001)(65816001)(81686001)(54316002)(76576001)(31686002)(76786001)(56776001)(80976001)(83072001)(47976001)(74316001)(64872005)(49866001)(74662001)(47736001)(69226001)(77096001)(23756003)(74502001)(47446002)(76796001)(87266001)(43066001)(51856001)(74366001)(76176001)(56816003)(81816001)(42186004)(76482001)(87976001)(50986001)(81542001)(33646001)(54356001)(46102001)(85306002)(81342001)(449874003);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR02MB247;H:[192.168.0.103];CLIP:110.232.252.211;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: jimx.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 06:03:48AM -0800, Eric Dumazet wrote:
-> On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
-> > We need to drop the refcnt of page when we fail to allocate an skb for frag
-> > list, otherwise it will be leaked. The bug was introduced by commit
-> > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
-> > buffers to page frag allocators").
-> > 
-> > Cc: Michael Dalton <mwdalton@google.com>
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> > The patch was needed for 3.12 stable.
-> 
-> Good catch, but if we return from receive_mergeable() in the 'middle'
-> of the frags we would need for the current skb, who will
-> call the virtqueue_get_buf() to flush the remaining frags ?
-> 
-> Don't we also need to call virtqueue_get_buf() like 
-> 
-> while (--num_buf) {
->     buf = virtqueue_get_buf(rq->vq, &len);
->     if (!buf)
->         break;
->     put_page(virt_to_head_page(buf));
-> }
-> 
-> ?
-> 
-> 
+In general we offer Personal Loans, home loans, car loans, hotel loans, commercial loans, construction loans, start working capital loans, business loans and bad credit loans, e.t.c, at lower interest rate.
 
+We offer the right solution to your financial needs. We stand apart from other lenders because we believe in customer service and we stay with you until you get the results you want.
 
-Let me explain what worries me in your suggestion:
+Your Full Name:
+Country:
+Occupation:
+City:
+Age:
+Purpose of the Loan:
+Phone Number:
+Amount Needed:
+Loan Duration:
+Monthly Income:
 
-                        struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
-                        if (unlikely(!nskb)) {
-                                head_skb->dev->stats.rx_dropped++;
-                                return -ENOMEM;
-                        }
-
-is this the failure case we are talking about?
-
-I think this is a symprom of a larger problem
-introduced by 2613af0ed18a11d5c566a81f9a6510b73180660a,
-namely that we now need to allocate memory in the
-middle of processing a packet.
-
-
-I think discarding a completely valid and well-formed
-packet from the receive queue because we are unable
-to allocate new memory with GFP_ATOMIC
-for future packets is not a good idea.
-
-It certainly violates the principle of least surprize:
-when one sees host pass packet to guest, one expects
-the packet to get into the networking stack, not get
-dropped by the driver internally.
-Guest stack can do with the packet what it sees fit.
-
-We actually wake up a thread if we can't fill up the queue,
-that will fill it up in GFP_KERNEL context.
-
-So I think we should find a way to pre-allocate if necessary and avoid
-error paths where allocating new memory is a required to avoid drops.
-
--- 
-MST
+Regards,
+Micro Finance
+Loan Officer
