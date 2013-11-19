@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab3KSHPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 02:15:42 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:9919 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab3KSHPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 02:15:37 -0500
-X-IronPort-AV: E=Sophos;i="4.93,727,1378857600"; 
-   d="asc'?scan'208";a="75832039"
-Message-ID: <1384845330.19880.11.camel@Abyss>
-Subject: Re: [Xen-devel] [PATCH v2 1/2] xen: vnuma support for PV guests
- running as domU
-From: Dario Faggioli <dario.faggioli@citrix.com>
-To: Elena Ufimtseva <ufimtseva@gmail.com>
-CC: <xen-devel@lists.xenproject.org>, <akpm@linux-foundation.org>,
-        <wency@cn.fujitsu.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
-        <mingo@redhat.com>, <david.vrabel@citrix.com>, <hpa@zytor.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>
-Date: Tue, 19 Nov 2013 08:15:30 +0100
-In-Reply-To: <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
-References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
-	 <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
-Organization: Citrix Ltd
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-fkLng1eV+LX6+YtZMNDH"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	id S1751774Ab3KSHSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 02:18:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61041 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab3KSHSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 02:18:07 -0500
+Date: Tue, 19 Nov 2013 08:17:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, pjt@google.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com,
+        lwoodman@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/urgent] sched: Optimize task_sched_runtime()
+Message-ID: <20131119071757.GA32478@gmail.com>
+References: <20131111172925.GG26898@twins.programming.kicks-ass.net>
+ <tip-911b2898b3c9fe0048e9485ad1629ed4fce330fd@git.kernel.org>
+ <1384831002.2459.3.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384831002.2459.3.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-fkLng1eV+LX6+YtZMNDH
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On lun, 2013-11-18 at 15:25 -0500, Elena Ufimtseva wrote:
-> Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+* Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-> index 96ab2c0..de9deab 100644
-> --- a/arch/x86/xen/Makefile
-> +++ b/arch/x86/xen/Makefile
-> @@ -13,7 +13,7 @@ CFLAGS_mmu.o			:=3D $(nostackp)
->  obj-y		:=3D enlighten.o setup.o multicalls.o mmu.o irq.o \
->  			time.o xen-asm.o xen-asm_$(BITS).o \
->  			grant-table.o suspend.o platform-pci-unplug.o \
-> -			p2m.o
-> +			p2m.o vnuma.o
-> =20
->  obj-$(CONFIG_EVENT_TRACING) +=3D trace.o
+> On Wed, 2013-11-13 at 09:25 -0800, tip-bot for Peter Zijlstra wrote:
+> > Commit-ID:  911b2898b3c9fe0048e9485ad1629ed4fce330fd
+> > Gitweb:     http://git.kernel.org/tip/911b2898b3c9fe0048e9485ad1629ed4fce330fd
+> > Author:     Peter Zijlstra <peterz@infradead.org>
+> > AuthorDate: Mon, 11 Nov 2013 18:21:56 +0100
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Wed, 13 Nov 2013 13:33:54 +0100
+> > 
+> > sched: Optimize task_sched_runtime()
+> > 
+> > Large multi-threaded apps like to hit this using do_sys_times() and
+> > then queue up on the rq->lock.
+> > 
+> > Avoid when possible.
+> > 
+> > Larry reported ~20% performance increase his test case.
+> > 
+> > Reported-by: Larry Woodman <lwoodman@redhat.com>
+> > Suggested-by: Paul Turner <pjt@google.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Link: http://lkml.kernel.org/r/20131111172925.GG26898@twins.programming.kicks-ass.net
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> For what it's worth:
+> 
+> Tested-by: Davidlohr Bueso <davidlohr@hp.com>
 
-I think David said something about this during last round (going
-fetchin'-cuttin'-pastin' it):
+Thanks for the testing - the change is upstream already and unless it 
+causes regressions it will be part of the v3.13 kernel.
 
-"
-    obj-$(CONFIG_NUMA) +=3D vnuma.o
+Thanks,
 
-    Then you can remove the #ifdef CONFIG_NUMA from xen/vnuma.c
-"
-=20
-> diff --git a/arch/x86/xen/vnuma.c b/arch/x86/xen/vnuma.c
-
-> +/*=20
-> + * Called from numa_init if numa_off =3D 0;
-                            ^ if numa_off =3D 1 ?
-
-> + * we set numa_off =3D 0 if xen_vnuma_supported()
-> + * returns true and its a domU;
-> + */
-> +int __init xen_numa_init(void)
-> +{
-
-> +	if (nr_nodes > num_possible_cpus()) {
-> +		pr_debug("vNUMA: Node without cpu is not supported in this version.\n"=
-);
-> +		goto out;
-> +	}
-> +
-This is a super-minor thing, but I wouldn't say "in this version". It
-makes people think that there will be a later version where that will be
-supported, which we don't know. :-)
-
-> +	/*
-> +	 * Set a dummy node and return success.  This prevents calling any
-> +	 * hardware-specific initializers which do not work in a PV guest.
-> +	 * Taken from dummy_numa_init code.
-> +	 */
->
-This is a lot better... Thanks! :-)
-
-Regards,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
------------------------------------------------------------------
-Dario Faggioli, Ph.D, http://about.me/dario.faggioli
-Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
-
-
---=-fkLng1eV+LX6+YtZMNDH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iEYEABECAAYFAlKLEBIACgkQk4XaBE3IOsTEVQCZAd4GRhGj+38k5jQbmcrc8ScD
-LPQAnRfAxdldrFgb67DtlGBhotTN3ZsZ
-=e5Kr
------END PGP SIGNATURE-----
-
---=-fkLng1eV+LX6+YtZMNDH--
+	Ingo
