@@ -1,46 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3KSNYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:24:19 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57143 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab3KSNYS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:24:18 -0500
-Date: Tue, 19 Nov 2013 14:24:16 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131119132416.GE14587@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-1-git-send-email-pali.rohar@gmail.com>
- <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
+	id S1752701Ab3KSNYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:24:38 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:47607 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752161Ab3KSNYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 08:24:36 -0500
+Message-ID: <528B6673.3080309@imgtec.com>
+Date: Tue, 19 Nov 2013 13:24:03 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Vineet Gupta <vgupta@synopsys.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>, Jonas Bonn <jonas@southpole.se>,
+        Chris Zankel <chris@zankel.net>, Rob Herring <rob.herring@calxeda.com>,
+        <devicetree@vger.kernel.org>,
+        linux-metag <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH 14/17] dt: Consolidate __dtb_start declarations in <linux/of_fdt.h>
+References: <1384285347-13506-1-git-send-email-geert@linux-m68k.org> <1384285347-13506-15-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1384285347-13506-15-git-send-email-geert@linux-m68k.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_11_19_13_24_04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-11-19 11:18:04, Pali Rohár wrote:
-> This patch removing set_mode_hook function from board data and replacing it with
-> new string variable of notifier power supply device. After this change it is
-> possible to add DT support because driver does not need specific board function
-> anymore. Only static data and name of power supply device is required.
+On 12/11/13 19:42, Geert Uytterhoeven wrote:
+> The different architectures used their own (and different) declarations:
 > 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>     extern struct boot_param_header __dtb_start;
+>     extern u32 __dtb_start[];
+>     extern char __dtb_start[];
+> 
+> Consolidate them using the first variant in <linux/of_fdt.h>.
+> This requires adding a few "address of" operators on architectures where
+> __dtb_start was an array before.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: James Hogan <james.hogan@imgtec.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> CC: Chris Zankel <chris@zankel.net>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: devicetree@vger.kernel.org
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-									Pavel
+Acked-by: James Hogan <james.hogan@imgtec.com>
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks
+James
+
+> ---
+>  arch/arc/include/asm/sections.h             |    1 -
+>  arch/arc/kernel/setup.c                     |    2 +-
+>  arch/metag/kernel/setup.c                   |    6 +-----
+>  arch/mips/include/asm/mips-boards/generic.h |    4 ----
+>  arch/mips/lantiq/prom.h                     |    2 --
+>  arch/mips/netlogic/xlp/dt.c                 |    4 ++--
+>  arch/mips/ralink/of.c                       |    2 --
+>  arch/openrisc/kernel/setup.c                |    2 +-
+>  arch/openrisc/kernel/vmlinux.h              |    2 --
+>  arch/xtensa/kernel/setup.c                  |    3 +--
+>  include/linux/of_fdt.h                      |    3 +++
+>  11 files changed, 9 insertions(+), 22 deletions(-)
+> 
+> diff --git a/arch/arc/include/asm/sections.h b/arch/arc/include/asm/sections.h
+> index 764f1e3ba752..09db952e14bd 100644
+> --- a/arch/arc/include/asm/sections.h
+> +++ b/arch/arc/include/asm/sections.h
+> @@ -12,6 +12,5 @@
+>  #include <asm-generic/sections.h>
+>  
+>  extern char __arc_dccm_base[];
+> -extern char __dtb_start[];
+>  
+>  #endif
+> diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+> index 643eae4436e0..ef705d0f50f5 100644
+> --- a/arch/arc/kernel/setup.c
+> +++ b/arch/arc/kernel/setup.c
+> @@ -314,7 +314,7 @@ void setup_processor(void)
+>  void __init setup_arch(char **cmdline_p)
+>  {
+>  	/* This also populates @boot_command_line from /bootargs */
+> -	machine_desc = setup_machine_fdt(__dtb_start);
+> +	machine_desc = setup_machine_fdt(&__dtb_start);
+>  	if (!machine_desc)
+>  		panic("Embedded DT invalid\n");
+>  
+> diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
+> index 129c7cdda1ce..919c782f5479 100644
+> --- a/arch/metag/kernel/setup.c
+> +++ b/arch/metag/kernel/setup.c
+> @@ -105,10 +105,6 @@
+>  
+>  extern char _heap_start[];
+>  
+> -#ifdef CONFIG_METAG_BUILTIN_DTB
+> -extern u32 __dtb_start[];
+> -#endif
+> -
+>  #ifdef CONFIG_DA_CONSOLE
+>  /* Our early channel based console driver */
+>  extern struct console dash_console;
+> @@ -251,7 +247,7 @@ void __init setup_arch(char **cmdline_p)
+>  	if (!machine_desc) {
+>  #ifdef CONFIG_METAG_BUILTIN_DTB
+>  		/* try the embedded device tree */
+> -		machine_desc = setup_machine_fdt(__dtb_start);
+> +		machine_desc = setup_machine_fdt(&__dtb_start);
+>  		if (!machine_desc)
+>  			panic("Invalid embedded device tree.");
+>  #else
+> diff --git a/arch/mips/include/asm/mips-boards/generic.h b/arch/mips/include/asm/mips-boards/generic.h
+> index 48616816bcbc..c904c24550f6 100644
+> --- a/arch/mips/include/asm/mips-boards/generic.h
+> +++ b/arch/mips/include/asm/mips-boards/generic.h
+> @@ -67,10 +67,6 @@
+>  
+>  extern int mips_revision_sconid;
+>  
+> -#ifdef CONFIG_OF
+> -extern struct boot_param_header __dtb_start;
+> -#endif
+> -
+>  #ifdef CONFIG_PCI
+>  extern void mips_pcibios_init(void);
+>  #else
+> diff --git a/arch/mips/lantiq/prom.h b/arch/mips/lantiq/prom.h
+> index 8e07b5f28ef1..bfd2d58c1d69 100644
+> --- a/arch/mips/lantiq/prom.h
+> +++ b/arch/mips/lantiq/prom.h
+> @@ -26,6 +26,4 @@ struct ltq_soc_info {
+>  extern void ltq_soc_detect(struct ltq_soc_info *i);
+>  extern void ltq_soc_init(void);
+>  
+> -extern struct boot_param_header __dtb_start;
+> -
+>  #endif
+> diff --git a/arch/mips/netlogic/xlp/dt.c b/arch/mips/netlogic/xlp/dt.c
+> index 8316d5454b17..87250f378386 100644
+> --- a/arch/mips/netlogic/xlp/dt.c
+> +++ b/arch/mips/netlogic/xlp/dt.c
+> @@ -42,7 +42,7 @@
+>  #include <asm/prom.h>
+>  
+>  extern u32 __dtb_xlp_evp_begin[], __dtb_xlp_svp_begin[],
+> -	__dtb_xlp_fvp_begin[], __dtb_start[];
+> +	__dtb_xlp_fvp_begin[];
+>  static void *xlp_fdt_blob;
+>  
+>  void __init *xlp_dt_init(void *fdtp)
+> @@ -66,7 +66,7 @@ void __init *xlp_dt_init(void *fdtp)
+>  #endif
+>  		default:
+>  			/* Pick a built-in if any, and hope for the best */
+> -			fdtp = __dtb_start;
+> +			fdtp = &__dtb_start;
+>  			break;
+>  		}
+>  	}
+> diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
+> index eccc5526155e..615603bd8063 100644
+> --- a/arch/mips/ralink/of.c
+> +++ b/arch/mips/ralink/of.c
+> @@ -28,8 +28,6 @@
+>  __iomem void *rt_sysc_membase;
+>  __iomem void *rt_memc_membase;
+>  
+> -extern struct boot_param_header __dtb_start;
+> -
+>  __iomem void *plat_of_remap_node(const char *node)
+>  {
+>  	struct resource res;
+> diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
+> index 4fc7ccc0a2cf..c9b880d64bb8 100644
+> --- a/arch/openrisc/kernel/setup.c
+> +++ b/arch/openrisc/kernel/setup.c
+> @@ -213,7 +213,7 @@ void __init or32_early_setup(void *fdt)
+>  	if (fdt)
+>  		pr_info("FDT at %p\n", fdt);
+>  	else {
+> -		fdt = __dtb_start;
+> +		fdt = &__dtb_start;
+>  		pr_info("Compiled-in FDT at %p\n", fdt);
+>  	}
+>  	early_init_devtree(fdt);
+> diff --git a/arch/openrisc/kernel/vmlinux.h b/arch/openrisc/kernel/vmlinux.h
+> index 70b9ce41835c..bbcdf21b0b35 100644
+> --- a/arch/openrisc/kernel/vmlinux.h
+> +++ b/arch/openrisc/kernel/vmlinux.h
+> @@ -5,6 +5,4 @@
+>  extern char __initrd_start, __initrd_end;
+>  #endif
+>  
+> -extern u32 __dtb_start[];
+> -
+>  #endif
+> diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
+> index 6e2b6638122d..d96cf8f3fe70 100644
+> --- a/arch/xtensa/kernel/setup.c
+> +++ b/arch/xtensa/kernel/setup.c
+> @@ -68,8 +68,7 @@ extern int initrd_below_start_ok;
+>  #endif
+>  
+>  #ifdef CONFIG_OF
+> -extern u32 __dtb_start[];
+> -void *dtb_start = __dtb_start;
+> +void *dtb_start = &__dtb_start;
+>  #endif
+>  
+>  unsigned char aux_device_present;
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index 0beaee9dac1f..aabc49f3e403 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -57,6 +57,9 @@ struct boot_param_header {
+>  	__be32	dt_struct_size;		/* size of the DT structure block */
+>  };
+>  
+> +/* For kernels with a built-in device tree */
+> +extern struct boot_param_header __dtb_start;
+> +
+>  #if defined(CONFIG_OF_FLATTREE)
+>  
+>  struct device_node;
+> 
+
