@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3KSQwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:52:16 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:34462 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KSQwP (ORCPT
+	id S1753295Ab3KSQym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:54:42 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53387 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab3KSQyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:52:15 -0500
-Message-ID: <528B9706.1070805@collabora.co.uk>
-Date: Tue, 19 Nov 2013 17:51:18 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	Tue, 19 Nov 2013 11:54:40 -0500
+Date: Tue, 19 Nov 2013 08:54:38 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (max6650) Add support for gpiodef
+Message-ID: <20131119165438.GD30481@roeck-us.net>
+References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
+ <20131114172427.GA11062@roeck-us.net>
+ <CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
+ <20131114181845.GA13727@roeck-us.net>
+ <CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
+ <20131114190044.GE13727@roeck-us.net>
+ <CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
+ <CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
+ <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Linux-OMAP <linux-omap@vger.kernel.org>, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 01/23] gpio/omap: raw read and write endian fix
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org> <1384560086-11994-2-git-send-email-taras.kondratiuk@linaro.org> <CACRpkdYD-Yw+RFnX0GshyQn2oHYNnXXRF4RXTzCox=2Z0_gKqg@mail.gmail.com>
-In-Reply-To: <CACRpkdYD-Yw+RFnX0GshyQn2oHYNnXXRF4RXTzCox=2Z0_gKqg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 10:29 AM, Linus Walleij wrote:
-> On Sat, Nov 16, 2013 at 1:01 AM, Taras Kondratiuk
-> <taras.kondratiuk@linaro.org> wrote:
+On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
+> On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
+> <marcus.folkesson@gmail.com> wrote:
+> >
+> >> This is just one use case of those, you could also use it for
+> >> non-generic gpio functionality, like alarm, "full-on", internal clock,
+> >> external clock, etc. I believe it is always a bit tricky with MFD. I
+> >> personally prefer to put it into the chip driver because this is not
+> >> clearly a generic gpio interface here, and I need to drive it
+> >> dynamically.
+> >
+> > I agree.
+> >
+> > I think the solution with expose the "GPIOs" in sysfs is the right way to
+> > go.
+> > The chip-function is of a dynamic nature and should therefor not be set in
+> > platform data / devicetree.
+> >
+> > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
+> > but the the gpio-functionality is just a subset of
+> > functions these pins may be set to.
+> >
+> > Also, the I think the *real* reason why the entries is called "gpio" is that
+> > it is so the registers are are mentioned in the datasheet.
+> > Everyone that is working with the device will know what it is all about.
+> > I see it more as an register expose than a gpio interface...
+> >
+> > I agree that the entries does not really fit here. But they does not fit
+> > better elsewhere either.
+> > And I don't think they fit worse than the alarm-entries that is already in
+> > mainline.
+> >
+> > Anyway, I think the documentation file should mention what function each
+> > valid value represent.
 > 
->> From: Victor Kamensky <victor.kamensky@linaro.org>
->>
->> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
->> Need to use endian neutral functions to read/write h/w registers.
->> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
->> need to use read[lw]_relaxed and write[lw]_relaxed functions.
->> If the first simply reads/writes register, the second will byteswap
->> it if host operates in BE mode.
->>
->> Changes are trivial sed like replacement of __raw_xxx functions
->> with xxx_relaxed variant.
->>
->> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> Yes, makes sense to make the documentation more comprehensive. Thanks.
 > 
-> Since I generally just dislike __raw accessors I went and applied
-> this. If it collides with any of Tony's fixup work I might need to
-> take the patch out again, no big deal.
+> Any other issues from anyone before submitting a polished version?
 > 
-> Some ACKs would be nice, but unless there are major objections
-> this stays merged.
+You'll have to get feedback from Jean. I won't accept the patch.
 
-Looks good to me and also I've tested this patch on a TI DM3730 (Cortex A-8)
-board in LE mode and found no regressions on devices using a GPIO.
-
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-
-> 
-> Yours,
-> Linus Walleij
-> 
-
-Thanks a lot and best regards,
-Javier
+Guenter
