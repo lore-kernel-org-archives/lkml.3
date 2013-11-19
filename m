@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab3KSJY0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:24:26 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60083 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3KSJYX (ORCPT
+	id S1751850Ab3KSJYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:24:54 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:57566 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3KSJYu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:24:23 -0500
+	Tue, 19 Nov 2013 04:24:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 19 Nov 2013 10:24:22 +0100
-Message-ID: <CACRpkdaP+tkJn8jcR_RaCz_c6hk66F8qde2KRiCzNyyLWUkgjw@mail.gmail.com>
-Subject: Re: [PATCH v1.2] gpiolib: append SFI helpers for GPIO API
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        David Cohen <david.a.cohen@intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Cc: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
-        Len Brown <lenb@kernel.org>,
+In-Reply-To: <20131118125945.GA3669@ghostprotocols.net>
+References: <1384487490-6865-1-git-send-email-dsahern@gmail.com>
+	<20131115054609.GB4514@gmail.com>
+	<20131118125945.GA3669@ghostprotocols.net>
+Date: Tue, 19 Nov 2013 10:24:49 +0100
+Message-ID: <CAFrcx1nqm5G0ASnuh9peMtaUE-cpAYY8xtvsRORHhXwSRod9YQ@mail.gmail.com>
+Subject: Re: [PATCH] perf top: Make -g refer to callchains
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, David Ahern <dsahern@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 5, 2013 at 3:58 PM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
+Hi,
 
-> To support some (legacy) firmwares and platforms let's make life easier for
-> their customers.
+On 18 November 2013 13:59, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Fri, Nov 15, 2013 at 06:46:09AM +0100, Ingo Molnar escreveu:
+>> btw., here's some 'perf top' call graph performance and profiling
+>> quality feedback, with the latest perf code:
+>>
+>> 'perf top --call-graph fp' now works very well, using just 0.2%
+>> of CPU time on a fast system:
+>>
+>>  4676 mingo     20   0  612m  56m 9948 S     1  0.2   0:00.68 perf
+>>
+>> 'perf top --call-graph dwarf' on the other hand is horrendously
+>> slow, using 20% of CPU time on a 4 GHz CPU:
+>>
+>>   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
+>>  4646 mingo     20   0  658m  81m  12m R    19  0.3   0:18.17 perf
+>>
+>> On another system with a 2.4GHz CPU it's taking up 100% of CPU
+>> time (!):
+>>
+>>   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+>>  8018 mingo     20   0  290320  45220   8520 R  99.5  0.3   0:58.81 perf
+>>
+>> Profiling 'perf top' shows all sorts of very high dwarf
+>> processing overhead:
 >
-> This patch extracts SFI GPIO API from arch/x86/platform/mrst/mrst.c.
+> Yeah, top dwarf callchain has been so far a proof of concept, it
+> exacerbates problems that can be seen on 'report', but since its live,
+> we can see it more clearly.
+Indeed. Because of the poor performance of the dwarf unwinding code,
+the only practical use is to record the data (perf record) and then
+later parse it (perf report). perf top does all that at once.
+
+> The work on improving callchain processing, (rb_tree'ing, new comm
+> infrastructure) alleviated the problem a bit.
 >
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Tuning the stack size requested from the kernel and using --max-stack
+> can help when it is really needed, but yes, work on it is *badly* needed.
+The problem is that the whole user stack is dumped for every sample
+while frame pointer unwinding only dumps the useful part of the
+callchain.
 
-So since this patch was ACKed the world has changed a bit and now
-I want new changes (or maybe I was tired and not paying enough
-attention at the time).
+Also an important point is the robustness of libunwind wrt async
+signal, cf. http://lists.nongnu.org/archive/html/libunwind-devel/2013-09/msg00005.html.
 
-(...)
-> +int sfi_get_gpio_by_name(const char *name)
-> +{
-> +       struct sfi_gpio_table_entry *pentry = sfi_gpio_table;
-> +       int i;
-> +
-> +       if (!pentry)
-> +               return -EINVAL;
-> +
-> +       for (i = 0; i < sfi_gpio_num_entry; i++, pentry++) {
-> +               if (!strncmp(name, pentry->pin_name, SFI_NAME_LEN))
-> +                       return pentry->pin_no;
-> +       }
-> +
-> +       return -ENODEV;
-> +}
-> +EXPORT_SYMBOL_GPL(sfi_get_gpio_by_name);
+So yes some work is °badly* needed on:
+- the data size being dumped,
+- the data parsing optimization,
+- the choice of an implementation of dwarf unwinding (libunwind, libdw etc.),
+- the compatibility with 32 bit binaries on AARCH64, which I am now
+busy with in libunwind.
 
-Last merge window we merged the GPIO descriptor API and this
-is now the recommended way to handle GPIOs and it is also
-deployed into the ACPI and DT implementations.
+Jean
 
-So I'd like the signature of this function changed to return
-a GPIO descriptor rather than an int so we don't stockpile more
-stuff to refactor.
-
-i.e.:
-struct gpio_desc *sfi_get_gpio_by_name(const char *name);
-
- --- /dev/null
-> +++ b/include/linux/sfi_gpio.h
-
-Maybe that header could move to <linux/gpio/sfi.h> instead.
-Alexandre what do you think?
-
-Yours,
-Linus Walleij
+>
+> - Arnaldo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
