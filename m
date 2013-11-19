@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3KSKgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:36:39 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:41419 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3KSKgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:36:38 -0500
-Date: Tue, 19 Nov 2013 02:36:35 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
- virtio devices
-Message-ID: <20131119103635.GA9223@infradead.org>
-References: <20131119080218.GJ11434@dastard>
+	id S1752126Ab3KSKgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:36:50 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34107 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650Ab3KSKgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 05:36:47 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>, Borislav Petkov <bp@suse.de>,
+        Arend van Spriel <arend@broadcom.com>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        <linux-wireless@vger.kernel.org>
+Subject: [PATCH] brcmsmac: Fix build dep on LEDS_CLASS
+Date: Tue, 19 Nov 2013 11:36:42 +0100
+Message-Id: <1384857402-4138-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <528B2B2A.2030504@broadcom.com>
+References: <528B2B2A.2030504@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119080218.GJ11434@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 07:02:18PM +1100, Dave Chinner wrote:
-> I have no idea if it's related to the above hang, but either way
-> breaking iostat is a major regression....
+From: Borislav Petkov <bp@suse.de>
 
-Both of them are most likely due to the conversion of virtio_blk
-to the blk-mq code.
+When building randconfigs with CONFIG_BCMA_DRIVER_GPIO=y, I get
 
-I've not seen the hang in my heavy xfstests testing, but that was a
-slightly different codebase than what finally got in, so I'll try
-to reproduce it once I get some spare QA cycles.
+drivers/built-in.o: In function `brcms_led_unregister':
+(.text+0x351aca): undefined reference to `led_classdev_unregister'
+drivers/built-in.o: In function `brcms_led_register':
+(.text+0x351c65): undefined reference to `led_classdev_register'
 
-The missing stats should be solved by something like the patch below
-(untested so far):
+during final linking stage because brcmsmac/led.c needs LEDS_CLASS for
+registering/deregistering the led device. Select the required symbols.
 
+Cc: Arend van Spriel <arend@broadcom.com>
+Cc: "Rafał Miłecki" <zajec5@gmail.com>
+Cc: <linux-wireless@vger.kernel.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/net/wireless/brcm80211/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 862f458..41e3b85 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -175,7 +175,7 @@ static void blk_mq_rq_ctx_init(struct blk_mq_ctx *ctx, struct request *rq,
- 			       unsigned int rw_flags)
- {
- 	rq->mq_ctx = ctx;
--	rq->cmd_flags = rw_flags;
-+	rq->cmd_flags = rw_flags | REQ_IO_STAT;
- 	ctx->rq_dispatched[rw_is_sync(rw_flags)]++;
- }
- 
+diff --git a/drivers/net/wireless/brcm80211/Kconfig b/drivers/net/wireless/brcm80211/Kconfig
+index b00a7e92225f..54e36fcb3954 100644
+--- a/drivers/net/wireless/brcm80211/Kconfig
++++ b/drivers/net/wireless/brcm80211/Kconfig
+@@ -5,6 +5,8 @@ config BRCMSMAC
+ 	tristate "Broadcom IEEE802.11n PCIe SoftMAC WLAN driver"
+ 	depends on MAC80211
+ 	depends on BCMA
++	select NEW_LEDS if BCMA_DRIVER_GPIO
++	select LEDS_CLASS if BCMA_DRIVER_GPIO
+ 	select BRCMUTIL
+ 	select FW_LOADER
+ 	select CRC_CCITT
+-- 
+1.8.4
+
