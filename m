@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab3KSVxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:53:33 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:20623 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750812Ab3KSVxc (ORCPT
+	id S1752752Ab3KSWAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:00:19 -0500
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:53994 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3KSWAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:53:32 -0500
-Date: Tue, 19 Nov 2013 16:53:27 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.19-rt16
-Message-ID: <20131119165327.6c828f8a@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 19 Nov 2013 17:00:17 -0500
+Message-ID: <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
+ allocate frag skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Date: Tue, 19 Nov 2013 14:00:11 -0800
+In-Reply-To: <20131119215312.GE15004@redhat.com>
+References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
+	 <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20131119204909.GA15004@redhat.com>
+	 <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20131119215312.GE15004@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-11-19 at 23:53 +0200, Michael S. Tsirkin wrote:
 
-Dear RT Folks,
+> Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
+> it didn't drop packets received from host as far as I can tell.
+> virtio is more like a pipe than a real NIC in this respect.
 
-I'm pleased to announce the 3.10.19-rt16 stable release.
+Prior/after to this patch, you were not posting buffers, so if packets
+were received on a physical NIC, you were dropping the packets anyway.
 
+It makes no difference at all, adding a cushion might make you feel
+better, but its really not worth it.
 
-This release is just an update to the new stable 3.10.19 version
-and no RT specific changes have been made.
+Under memory stress, it makes better sense to drop a super big GRO
+packet (The one needing frag_list extension ...)
 
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.10-rt
-  Head SHA1: 43e96656ef2011da4e692b909ab30a0f3be8a5f5
-
-
-Or to build 3.10.19-rt16 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.19.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.19-rt16.patch.xz
+It gives a better signal to the sender to reduce its pressure, and gives
+opportunity to free more of your memory.
 
 
-
-
-Enjoy,
-
--- Steve
 
