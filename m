@@ -1,201 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab3KSXBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:01:52 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:45708 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab3KSXBt (ORCPT
+	id S1753281Ab3KSXFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:05:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42378 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab3KSXFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:01:49 -0500
-Message-ID: <528BEDD7.6000308@gmail.com>
-Date: Tue, 19 Nov 2013 15:01:43 -0800
-From: Rajat Jain <rajatjain.linux@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 19 Nov 2013 18:05:18 -0500
+Date: Tue, 19 Nov 2013 15:05:36 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Heorhi Valakhanovich <valahanovich@tut.by>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: Only hangup once
+Message-ID: <20131119230536.GA13504@kroah.com>
+References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
+ <20131117203850.46df2124@tormoz-pc>
+ <20131118134211.17861db3@alan.etchedpixels.co.uk>
+ <528A5043.6030901@hurleysoftware.com>
+ <528A797B.6020807@hurleysoftware.com>
+ <20131119000923.5ca40e51@tormoz-pc>
+ <528B6BB3.7020303@hurleysoftware.com>
+ <20131119201952.2d63b8ce@tormoz-pc>
+ <20131119174032.GB22604@kroah.com>
+ <528BD95B.3070400@hurleysoftware.com>
 MIME-Version: 1.0
-To: Linux-PCI <linux-pci@vger.kernel.org>,
-        Linux-hotplug <linux-hotplug@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-CC: Bjorn Helgaas <bhelgaas@google.com>, Guenter Roeck <linux@roeck-us.net>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Rajat Jain <rajatjain.linux@gmail.com>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Subject: [RFC PATCH 3/4] pciehp: Ensure very fast hotplug events are also
- processed.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528BD95B.3070400@hurleysoftware.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 19, 2013 at 04:34:19PM -0500, Peter Hurley wrote:
+> On 11/19/2013 12:40 PM, Greg KH wrote:
+> > It should be backported to 3.12, and any other kernels?
+> 
+> Greg,
+> 
+> This patch should apply cleanly to 3.12.
+> 
+> The first commit to rely on the correct TTY_HUPPED state was
+> commit 36697529b5bbe36911e39a6309e7a7c9250d280a,
+>     'tty: Replace ldisc locking with ldisc_sem'
+> which was introduced in the 3.12 cycle.
+> 
+> Regards,
+> Peter Hurley
+> 
+> PS - Did you receive 'n_tty: Fix echo overrun tail computation'?
+> I saw it didn't make 3.12.1.
 
-Today, this is how all the hotplug and unplug events work:
+Yes, I got it, I can't apply anything to my trees until 3.13-rc1 is out,
+and because it's not in Linus's tree yet, I can't apply it to a stable
+tree.  So give us a few weeks, don't worry, it's not lost.
 
-Hotplug / Removal needs to be done
-  => Set slot->state (protected by slot->lock) to either
-    POWERON_STATE (for enabling) or POWEROFF_STATE (for disabling).
-  => Submit the work item for pciehp_power_thread() to slot->wq.
-
-Problem:
-  There is a problem if the hotplug events can happen fast enough that
-  they do not give SW enough time to add or remove the new devices.
-
-  => Assume: Event for unplug comes (e.g. surprise removal). But
-     before the pciehp_power_thread() work item was executed, the
-     card was replaced by another card, causing surprise hotplug event.
-
-  => What goes wrong:
-    => The hot-removal event sets slot->state to POWEROFF_STATE, and
-       schedules the pciehp_power_thread().
-    => The hot-add event sets slot->state to POWERON_STATE, and
-       schedules the pciehp_power_thread().
-    => Now the pciehp_power_thread() is scheduled twice, and on both
-       occasions it will find POWERON_STATE and will try to add the
-       devices on the slot, and will fail complaining that the devices
-       already exist.
-
-  => Why this is a problem: If the device was replaced between the hot
-     removal and hot-add, then we should unload the old driver and
-     reload the new one. This does not happen today. The kernel or the
-     driver is not even aware that the device was replaced.
-
-     The problem is that the pciehp_power_thread() only looks at the
-     slot->state which would only contain the *latest* state - not
-     the actual event (add / remove) that was the intent of the IRQ
-     handler who submitted the work.
-
-What this patch does:
-
-  => Hotplug events pass on an actual request (for addition or removal)
-     to pciehp_power_thread() which is local to that work item
-     submission.
-
-  => pciehp_power_thread() does not need to look at slote->state and
-     hence no locks needed in that.
-
-  => Essentially this results in all the hotplug and unplug events
-     "replayed" by pciehp_power_thread().
-
-Signed-off-by: Rajat Jain <rajatjain@juniper.net>
----
- drivers/pci/hotplug/pciehp_ctrl.c |   32 +++++++++++++++++++++++---------
- 1 file changed, 23 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
-index 3899b52..83dbe08 100644
---- a/drivers/pci/hotplug/pciehp_ctrl.c
-+++ b/drivers/pci/hotplug/pciehp_ctrl.c
-@@ -299,6 +299,9 @@ static int remove_board(struct slot *p_slot)
- struct power_work_info {
- 	struct slot *p_slot;
- 	struct work_struct work;
-+	unsigned int req;
-+#define DISABLE_REQ 0
-+#define ENABLE_REQ  1
- };
- 
- /**
-@@ -314,10 +317,8 @@ static void pciehp_power_thread(struct work_struct *work)
- 		container_of(work, struct power_work_info, work);
- 	struct slot *p_slot = info->p_slot;
- 
--	mutex_lock(&p_slot->lock);
--	switch (p_slot->state) {
--	case POWEROFF_STATE:
--		mutex_unlock(&p_slot->lock);
-+	switch (info->req) {
-+	case DISABLE_REQ:
- 		ctrl_dbg(p_slot->ctrl,
- 			 "Disabling domain:bus:device=%04x:%02x:00\n",
- 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
-@@ -325,18 +326,22 @@ static void pciehp_power_thread(struct work_struct *work)
- 		pciehp_disable_slot(p_slot);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
--		break;
--	case POWERON_STATE:
- 		mutex_unlock(&p_slot->lock);
-+		break;
-+	case ENABLE_REQ:
-+		ctrl_dbg(p_slot->ctrl,
-+			 "Enabling domain:bus:device=%04x:%02x:00\n",
-+			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
-+			 p_slot->ctrl->pcie->port->subordinate->number);
- 		if (pciehp_enable_slot(p_slot) && PWR_LED(p_slot->ctrl))
- 			pciehp_green_led_off(p_slot);
- 		mutex_lock(&p_slot->lock);
- 		p_slot->state = STATIC_STATE;
-+		mutex_unlock(&p_slot->lock);
- 		break;
- 	default:
- 		break;
- 	}
--	mutex_unlock(&p_slot->lock);
- 
- 	kfree(info);
- }
-@@ -359,9 +364,11 @@ void pciehp_queue_pushbutton_work(struct work_struct *work)
- 	switch (p_slot->state) {
- 	case BLINKINGOFF_STATE:
- 		p_slot->state = POWEROFF_STATE;
-+		info->req = DISABLE_REQ;
- 		break;
- 	case BLINKINGON_STATE:
- 		p_slot->state = POWERON_STATE;
-+		info->req = ENABLE_REQ;
- 		break;
- 	default:
- 		kfree(info);
-@@ -457,10 +464,13 @@ static void handle_surprise_event(struct slot *p_slot)
- 	INIT_WORK(&info->work, pciehp_power_thread);
- 
- 	pciehp_get_adapter_status(p_slot, &getstatus);
--	if (!getstatus)
-+	if (!getstatus) {
- 		p_slot->state = POWEROFF_STATE;
--	else
-+		info->req = DISABLE_REQ;
-+	} else {
- 		p_slot->state = POWERON_STATE;
-+		info->req = ENABLE_REQ;
-+	}
- 
- 	queue_work(p_slot->wq, &info->work);
- }
-@@ -489,6 +499,7 @@ static void handle_link_up_event(struct slot *p_slot)
- 		/* Fall through */
- 	case STATIC_STATE:
- 		p_slot->state = POWERON_STATE;
-+		info->req = ENABLE_REQ;
- 		queue_work(p_slot->wq, &info->work);
- 		break;
- 	case POWERON_STATE:
-@@ -502,6 +513,7 @@ static void handle_link_up_event(struct slot *p_slot)
- 			  "Link Up event queued on slot(%s): currently getting powered off\n",
- 			  slot_name(p_slot));
- 		p_slot->state = POWERON_STATE;
-+		info->req = ENABLE_REQ;
- 		queue_work(p_slot->wq, &info->work);
- 		break;
- 	default:
-@@ -536,6 +548,7 @@ static void handle_link_down_event(struct slot *p_slot)
- 		/* Fall through */
- 	case STATIC_STATE:
- 		p_slot->state = POWEROFF_STATE;
-+		info->req = DISABLE_REQ;
- 		queue_work(p_slot->wq, &info->work);
- 		break;
- 	case POWEROFF_STATE:
-@@ -549,6 +562,7 @@ static void handle_link_down_event(struct slot *p_slot)
- 			  "Link Down event queued on slot(%s): currently getting powered on\n",
- 			  slot_name(p_slot));
- 		p_slot->state = POWEROFF_STATE;
-+		info->req = DISABLE_REQ;
- 		queue_work(p_slot->wq, &info->work);
- 		break;
- 	default:
--- 
-1.7.9.5
-
+greg k-h
