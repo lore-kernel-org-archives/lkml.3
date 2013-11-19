@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab3KSNkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:40:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35231 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119Ab3KSNkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:40:09 -0500
-Date: Tue, 19 Nov 2013 14:40:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Joern Engel <joern@logfs.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-Message-ID: <20131119134007.GD20655@dhcp22.suse.cz>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
+	id S1752510Ab3KSNpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:45:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38343 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3KSNpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 08:45:23 -0500
+Date: Tue, 19 Nov 2013 14:45:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
+Message-ID: <20131119134508.GN3866@twins.programming.kicks-ass.net>
+References: <877gc5utkf.fsf@sejong.aot.lge.com>
+ <528AB229.6030603@gmail.com>
+ <87wqk5t9yd.fsf@sejong.aot.lge.com>
+ <528ACA41.4030202@gmail.com>
+ <87ob5ht962.fsf@sejong.aot.lge.com>
+ <528ACDE7.3050107@gmail.com>
+ <20131119065835.GB32367@gmail.com>
+ <20131119114810.GK3866@twins.programming.kicks-ass.net>
+ <20131119114959.GE3694@twins.programming.kicks-ass.net>
+ <20131119131304.GC7263@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131119131400.GC20655@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131119131304.GC7263@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-11-13 14:14:00, Michal Hocko wrote:
-[...]
-> We have basically ended up with 3 options AFAIR:
-> 	1) allow memcg approach (memcg.oom_control) on the root level
->            for both OOM notification and blocking OOM killer and handle
->            the situation from the userspace same as we can for other
-> 	   memcgs.
+On Tue, Nov 19, 2013 at 02:13:04PM +0100, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Tue, Nov 19, 2013 at 12:48:10PM +0100, Peter Zijlstra wrote:
+> > > And that does indeed seem to side-step the perf sw pagefault event, but
+> > > that is arguably a perf bug.
+> > 
+> > To clarify; mm/memory.c:handle_mm_fault() is where the VM counts its 
+> > generic PGFAULT event, but our perf sw event is in the arch fault 
+> > handler.
+> > 
+> > So they count different but related things.
+> 
+> I think that assymetry was intended: we didn't want to count 
+> 'synchronous' pagefaults like get_user_pages() or mlock() bringing in 
+> pages, only asynchronous/real ones, or so.
 
-This looks like a straightforward approach as the similar thing is done
-on the local (memcg) level. There are several problems though.
-Running userspace from within OOM context is terribly hard to do
-right. This is true even in the memcg case and we strongly discurage
-users from doing that. The global case has nothing like outside of OOM
-context though. So any hang would blocking the whole machine. Even
-if the oom killer is careful and locks in all the resources it would
-have hard time to query the current system state (existing processes
-and their states) without any allocation.  There are certain ways to
-workaround these issues - e.g. give the killer access to memory reserves
-- but this all looks scary and fragile.
+OK, I couldn't remember.
 
-> 	2) allow modules to hook into OOM killer path and take the
-> 	   appropriate action.
+Anyway, I don't want to hold up this patch set, and the speedup in the
+'normal' case is nice.
 
-This already exists actually. There is oom_notify_list callchain and
-{un}register_oom_notifier that allow modules to hook into oom and
-skip the global OOM if some memory is freed. There are currently only
-s390 and powerpc which seem to abuse it for something that looks like a
-shrinker except it is done in OOM path...
+The only reason I reacted was because the changelog mentioned avoiding a
+feedback loop -- so I obviously had to point out that it didn't do such
+a thing, it only changed the details of the loop.
 
-I think the interface should be changed if something like this would be
-used in practice. There is a lot of information lost on the way. I would
-basically expect to get everything that out_of_memory gets.
+I'm fairly certain this particular problem is unavoidable, no matter
+what the mechanism used, you can always create feedback.
 
-> 	3) create a generic filtering mechanism which could be
-> 	   controlled from the userspace by a set of rules (e.g.
-> 	   something analogous to packet filtering).
-
-This looks generic enough but I have no idea about the complexity.
--- 
-Michal Hocko
-SUSE Labs
+At some point people will just have to know wtf they're doing. Also, I
+don't think anything really bad happens, at worst we'll just drop a
+bunch of events because the output cannot keep up for obvious reasons.
