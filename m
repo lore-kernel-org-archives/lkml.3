@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3KSJeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:34:13 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5083 "EHLO
+	id S1752341Ab3KSJeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:34:37 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5140 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab3KSJeH (ORCPT
+	with ESMTP id S1751571Ab3KSJeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:34:07 -0500
+	Tue, 19 Nov 2013 04:34:11 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 19 Nov 2013 01:28:03 -0800
+	by hqnvupgp07.nvidia.com on Tue, 19 Nov 2013 01:32:15 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
         <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
@@ -17,9 +17,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
         <devicetree@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lorenzo.pieralisi@arm.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-Date: Tue, 19 Nov 2013 11:33:06 +0200
-Message-ID: <1384853593-32202-3-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCHv5 9/9] [FOR TEST] ARM: dt: tegra30: add "iommus" binding
+Date: Tue, 19 Nov 2013 11:33:13 +0200
+Message-ID: <1384853593-32202-10-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com>
 References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com>
@@ -29,118 +29,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IOMMU devices on the bus need to be poplulated first, then iommu
-master devices are done later.
+"iommus" binding implies that a device can be attached to IOMMU
+devices. An iommu device needs to set #iommus-cells in it. "iommus"
+can have multiple iommu device phandles as below if needed.
 
-With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
-whether a device can be an iommu msater or not. If a device can, we'll
-defer to populate that device till an iommu device is populated. Once
-an iommu device is populated, "dev->bus->iommu_ops" is set in the
-bus. Then, those defered iommu master devices are populated and
-configured for IOMMU with help of the already populated iommu device
-via iommu_ops->add_device(). Multiple IOMMUs can be listed on this
-"iommus" binding so that a device can have multiple IOMMUs attached.
+  iommus = <&smmu arg1 arg2>,
+  	   <&gart arg1 arg2>;
+
+Not yet ready for merge. Need to add iommus for other devices.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
 v5:
-Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
-
-v4:
-This is newly added, and the successor of the following RFC:
-  [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
-  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+Use "iommus=" instead of "mmu-masters".
 ---
- drivers/base/dd.c        |  5 +++++
- drivers/iommu/of_iommu.c | 22 ++++++++++++++++++++++
- include/linux/of_iommu.h |  7 +++++++
- 3 files changed, 34 insertions(+)
+ arch/arm/boot/dts/tegra30.dtsi | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 35fa368..6e892d4 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -25,6 +25,7 @@
- #include <linux/async.h>
- #include <linux/pm_runtime.h>
- #include <linux/pinctrl/devinfo.h>
-+#include <linux/of_iommu.h>
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 2bd55cf..03b7887 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -1,6 +1,7 @@
+ #include <dt-bindings/clock/tegra30-car.h>
+ #include <dt-bindings/gpio/tegra-gpio.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/memory/tegra-swgroup.h>
  
- #include "base.h"
- #include "power/power.h"
-@@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ #include "skeleton.dtsi"
  
- 	dev->driver = drv;
+@@ -92,6 +93,7 @@
+ 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>, /* syncpt */
+ 			     <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>; /* general */
+ 		clocks = <&tegra_car TEGRA30_CLK_HOST1X>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(HC)>;
  
-+	ret = of_iommu_attach(dev);
-+	if (ret)
-+		goto probe_failed;
-+
- 	/* If using pinctrl, bind pins now before probing */
- 	ret = pinctrl_bind_pins(dev);
- 	if (ret)
-diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-index ee249bc..4aef2b2 100644
---- a/drivers/iommu/of_iommu.c
-+++ b/drivers/iommu/of_iommu.c
-@@ -20,6 +20,8 @@
- #include <linux/export.h>
- #include <linux/limits.h>
- #include <linux/of.h>
-+#include <linux/device.h>
-+#include <linux/iommu.h>
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+@@ -103,6 +105,7 @@
+ 			reg = <0x54040000 0x00040000>;
+ 			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_MPE>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(MPE)>;
+ 		};
  
- /**
-  * of_get_dma_window - Parse *dma-window property and returns 0 if found.
-@@ -88,3 +90,23 @@ int of_get_dma_window(struct device_node *dn, const char *prefix, int index,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(of_get_dma_window);
-+
-+int of_iommu_attach(struct device *dev)
-+{
-+	int i;
-+	struct of_phandle_args args;
-+	struct iommu_ops *ops = dev->bus->iommu_ops;
-+
-+	of_property_for_each_phandle_with_args(dev->of_node, "iommus",
-+					       "#iommu-cells", i, &args) {
-+		pr_debug("%s(i=%d) ops=%p %s\n",
-+			 __func__, i, ops, dev_name(dev));
-+
-+		if (!ops)
-+			return -EPROBE_DEFER;
-+	}
-+
-+	if (i && ops->add_device)
-+		return ops->add_device(dev);
-+	return 0;
-+}
-diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
-index 51a560f..3457489 100644
---- a/include/linux/of_iommu.h
-+++ b/include/linux/of_iommu.h
-@@ -7,6 +7,8 @@ extern int of_get_dma_window(struct device_node *dn, const char *prefix,
- 			     int index, unsigned long *busno, dma_addr_t *addr,
- 			     size_t *size);
+ 		vi {
+@@ -110,6 +113,7 @@
+ 			reg = <0x54080000 0x00040000>;
+ 			interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_VI>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(VI)>;
+ 		};
  
-+extern int of_iommu_attach(struct device *dev);
-+
- #else
+ 		epp {
+@@ -117,6 +121,7 @@
+ 			reg = <0x540c0000 0x00040000>;
+ 			interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_EPP>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(EPP)>;
+ 		};
  
- static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
-@@ -16,6 +18,11 @@ static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
- 	return -EINVAL;
- }
+ 		isp {
+@@ -124,6 +129,7 @@
+ 			reg = <0x54100000 0x00040000>;
+ 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_ISP>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(ISP)>;
+ 		};
  
-+static inline int of_iommu_attach(struct device *dev)
-+{
-+	return 0;
-+}
-+
- #endif	/* CONFIG_OF_IOMMU */
+ 		gr2d {
+@@ -131,6 +137,7 @@
+ 			reg = <0x54140000 0x00040000>;
+ 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_GR2D>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(G2)>;
+ 		};
  
- #endif /* __OF_IOMMU_H */
+ 		gr3d {
+@@ -139,6 +146,8 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_GR3D
+ 				  &tegra_car TEGRA30_CLK_GR3D2>;
+ 			clock-names = "3d", "3d2";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(NV)
++						TEGRA_SWGROUP_CELLS(NV2)>;
+ 		};
+ 
+ 		dc@54200000 {
+@@ -148,6 +157,7 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_DISP1>,
+ 				 <&tegra_car TEGRA30_CLK_PLL_P>;
+ 			clock-names = "disp1", "parent";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(DC)>;
+ 
+ 			rgb {
+ 				status = "disabled";
+@@ -161,6 +171,7 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_DISP2>,
+ 				 <&tegra_car TEGRA30_CLK_PLL_P>;
+ 			clock-names = "disp2", "parent";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(DCB)>;
+ 
+ 			rgb {
+ 				status = "disabled";
+@@ -317,6 +328,7 @@
+ 		interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 8>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTA>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -327,6 +339,7 @@
+ 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 9>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTB>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -337,6 +350,7 @@
+ 		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 10>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTC>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -347,6 +361,7 @@
+ 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 19>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTD>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -357,6 +372,7 @@
+ 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 20>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTE>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -525,7 +541,7 @@
+ 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+ 	};
+ 
+-	iommu {
++	smmu: iommu {
+ 		compatible = "nvidia,tegra30-smmu";
+ 		reg = <0x7000f010 0x02c
+ 		       0x7000f1f0 0x010
+@@ -533,6 +549,7 @@
+ 		nvidia,#asids = <4>;		/* # of ASIDs */
+ 		dma-window = <0 0x40000000>;	/* IOVA start & length */
+ 		nvidia,ahb = <&ahb>;
++		#iommu-cells = <2>;
+ 	};
+ 
+ 	ahub {
+@@ -605,6 +622,7 @@
+ 		reg = <0x78000000 0x200>;
+ 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC1>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -613,6 +631,7 @@
+ 		reg = <0x78000200 0x200>;
+ 		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC2>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -621,6 +640,7 @@
+ 		reg = <0x78000400 0x200>;
+ 		interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC3>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -629,6 +649,7 @@
+ 		reg = <0x78000600 0x200>;
+ 		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC4>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
+ 
 -- 
 1.8.1.5
 
