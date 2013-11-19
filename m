@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3KSUjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:39:12 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:55279 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab3KSUjK (ORCPT
+	id S1752917Ab3KSUjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:39:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55847 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752376Ab3KSUji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:39:10 -0500
+	Tue, 19 Nov 2013 15:39:38 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI / hotplug / ACPI: Drop unused acpiphp_debug declaration
+Date: Tue, 19 Nov 2013 21:52:17 +0100
+Message-ID: <5115264.27yxWCajFa@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAErSpo56wWzNpkcEmkRnaGR4uk=eHrDzt2k-4PiHk9Rb=qRr-w@mail.gmail.com>
+References: <1384870535-20532-1-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo56wWzNpkcEmkRnaGR4uk=eHrDzt2k-4PiHk9Rb=qRr-w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52840E8F.3060803@broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
-	<CACRpkdYSLxp2M4HghcUdjEYGh-UQ+DaiCGp6yee+Qds6DR9poA@mail.gmail.com>
-	<201311050026.56321.heiko@sntech.de>
-	<527835FE.2030102@wwwdotorg.org>
-	<5279A319.5060701@broadcom.com>
-	<CACRpkdaxPv6CLMjab_4umyUvbBVYcazjmwx_LGRK76vxT4VUqA@mail.gmail.com>
-	<527C3080.5050202@broadcom.com>
-	<CACRpkdaf9dVqpE5uFQ5L64n+wXO0AYr5-e1WvYc4rWjVTsTg1w@mail.gmail.com>
-	<52840E8F.3060803@broadcom.com>
-Date: Tue, 19 Nov 2013 21:39:09 +0100
-Message-ID: <CACRpkdYFOUoXwensdfQL=K7OEV=GioXj8AFxTSGukQH2A268BQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 12:43 AM, Sherman Yin <syin@broadcom.com> wrote:
-> On 13-11-11 02:01 AM, Linus Walleij wrote:
->>>
->>> I would imagine that the platform-specific device tree bindings would
->>> need
->>> to clearly explain what the valid values are, as they should.
->>
->> But this is not a platform-specific binding. These are the
->> generic pin configuration bindings we're talking about.
->
-> Yes, the properties are generic, but I was under the impression that the
-> values can be "custom", such as these:
+On Tuesday, November 19, 2013 10:23:57 AM Bjorn Helgaas wrote:
+> On Tue, Nov 19, 2013 at 7:15 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > Commit bd950799d951 (PCI: acpiphp: Convert to dynamic debug) removed users
+> > of acpiphp_debug variable and the variable itself but the declaration was
+> > left in the header file. Drop this unused declaration.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Rafael, if it makes sense for you to apply this, you can add my:
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Otherwise I can pick it up.
 
-Well if it makes sense, we should try to make them non-custom.
+Applied, thanks!
 
-And drivers should still try to be similar, if possible.
+I'm going to send my next pull request tomorrow.
 
->> If you want arrays of booleans that is a matter for the OF core
->> parser I think.
->
-> I was thinking of just using integers and accepting only 1 and 0, everything
-> else is error.
-
-Hm OK maybe. You need to talk to the OF people about that.
-
-Yours,
-Linus Walleij
+> > ---
+> >  drivers/pci/hotplug/acpiphp.h | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+> > index 26100f510b10..1592dbe4f904 100644
+> > --- a/drivers/pci/hotplug/acpiphp.h
+> > +++ b/drivers/pci/hotplug/acpiphp.h
+> > @@ -176,7 +176,6 @@ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot);
+> >  u8 acpiphp_get_adapter_status(struct acpiphp_slot *slot);
+> >
+> >  /* variables */
+> > -extern bool acpiphp_debug;
+> >  extern bool acpiphp_disabled;
+> >
+> >  #endif /* _ACPIPHP_H */
+> > --
+> > 1.8.4.3
+> >
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
