@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab3KSOmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:42:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab3KSOmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:42:12 -0500
-Date: Tue, 19 Nov 2013 15:43:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Kelly <alex.page.kelly@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Kees Cook <keescook@chromium.org>, Petr Matousek <pmatouse@redhat.com>,
-        Vasily Kulikov <segoon@openwall.com>, linux-arch@vger.kernel.org,
+	id S1753579Ab3KSOsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:48:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26983 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3KSOsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:48:10 -0500
+Date: Tue, 19 Nov 2013 09:46:30 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Elena Ufimtseva <ufimtseva@gmail.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] set_dumpable: fix the theoretical race with itself
-Message-ID: <20131119144315.GA28862@redhat.com>
+Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
+Message-ID: <20131119144630.GA5780@phenom.dumpdata.com>
+References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
+ <1384811922-14642-3-git-send-email-ufimtseva@gmail.com>
+ <528B5160.5010902@citrix.com>
+ <20131119141620.GD5332@phenom.dumpdata.com>
+ <528B774F.7090902@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131119144300.GA28842@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <528B774F.7090902@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_dumpable() updates MMF_DUMPABLE_MASK in a non-trivial way to
-ensure that get_dumpable() can't observe the intermediate state,
-but this all can't help if multiple threads call set_dumpable()
-at the same time.
+On Tue, Nov 19, 2013 at 02:35:59PM +0000, David Vrabel wrote:
+> On 19/11/13 14:16, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Nov 19, 2013 at 11:54:08AM +0000, David Vrabel wrote:
+> >> On 18/11/13 21:58, Elena Ufimtseva wrote:
+> >>> Enables numa if vnuma topology hypercall is supported and it is domU.
+> >> [...]
+> >>> --- a/arch/x86/xen/setup.c
+> >>> +++ b/arch/x86/xen/setup.c
+> >>> @@ -20,6 +20,7 @@
+> >>>  #include <asm/numa.h>
+> >>>  #include <asm/xen/hypervisor.h>
+> >>>  #include <asm/xen/hypercall.h>
+> >>> +#include <asm/xen/vnuma.h>
+> >>>  
+> >>>  #include <xen/xen.h>
+> >>>  #include <xen/page.h>
+> >>> @@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
+> >>>  	WARN_ON(xen_set_default_idle());
+> >>>  	fiddle_vdso();
+> >>>  #ifdef CONFIG_NUMA
+> >>> -	numa_off = 1;
+> >>> +	if (!xen_initial_domain() && xen_vnuma_supported())
+> >>> +		numa_off = 0;
+> >>> +	else
+> >>> +		numa_off = 1;
+> >>>  #endif
+> >>>  }
+> >>
+> >> I think this whole #ifdef CONFIG_NUMA can be removed and hence
+> >> xen_vnuma_supported() can be removed as well.
+> >>
+> >> For any PV guest we can call the xen_numa_init() and it will do the
+> >> right thing.
+> >>
+> >> For dom0, the hypercall will either: return something sensible (if in
+> >> the future Xen sets something up), or it will error.
+> >>
+> >> If Xen does not have vnuma support, the hypercall will error.
+> >>
+> >> In both error cases, the dummy numa node is setup as required.
+> > 
+> > Incorrect. It will end up calling:
+> > 
+> >                  if (!numa_init(amd_numa_init))                                  
+> > 
+> > which will crash dom0 (see 8d54db795 "xen/boot: Disable NUMA for PV guests.")
+> > as that amd_numa_init is called before the dummy node init.
+> 
+> No it won't.  Any error path after the check for a PV guest will add the
+> dummy node and return success, skipping any of the hardware-specific setup.
 
-And in theory commit_creds()->set_dumpable(SUID_DUMP_ROOT) racing
-with sys_prctl()->set_dumpable(SUID_DUMP_DISABLE) can result in
-SUID_DUMP_USER.
+Duh! I totally missed 'return' at the end of the check!
 
-Change this code to update both bits atomically via cmpxchg().
+However, even with that (so the return), that means
+this part won't be called:
 
-Note: this assumes that it is safe to mix bitops and cmpxchg. IOW,
-if, say, an architecture implements cmpxchg() using the locking
-(like arch/parisc/lib/bitops.c does), then it should use the same
-locks for set_bit/etc.
+649         numa_init(dummy_numa_init);                                             
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Kees Cook <keescook@chromium.org>
----
- fs/exec.c |   49 +++++++++++++++----------------------------------
- 1 files changed, 15 insertions(+), 34 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index bb8afc1..613c9dc 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1621,43 +1621,24 @@ EXPORT_SYMBOL(set_binfmt);
- 
- /*
-  * set_dumpable converts traditional three-value dumpable to two flags and
-- * stores them into mm->flags.  It modifies lower two bits of mm->flags, but
-- * these bits are not changed atomically.  So get_dumpable can observe the
-- * intermediate state.  To avoid doing unexpected behavior, get get_dumpable
-- * return either old dumpable or new one by paying attention to the order of
-- * modifying the bits.
-- *
-- * dumpable |   mm->flags (binary)
-- * old  new | initial interim  final
-- * ---------+-----------------------
-- *  0    1  |   00      01      01
-- *  0    2  |   00      10(*)   11
-- *  1    0  |   01      00      00
-- *  1    2  |   01      11      11
-- *  2    0  |   11      10(*)   00
-- *  2    1  |   11      11      01
-- *
-- * (*) get_dumpable regards interim value of 10 as 11.
-+ * stores them into mm->flags.
-  */
- void set_dumpable(struct mm_struct *mm, int value)
- {
--	switch (value) {
--	case SUID_DUMP_DISABLE:
--		clear_bit(MMF_DUMPABLE, &mm->flags);
--		smp_wmb();
--		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
--		break;
--	case SUID_DUMP_USER:
--		set_bit(MMF_DUMPABLE, &mm->flags);
--		smp_wmb();
--		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
--		break;
--	case SUID_DUMP_ROOT:
--		set_bit(MMF_DUMP_SECURELY, &mm->flags);
--		smp_wmb();
--		set_bit(MMF_DUMPABLE, &mm->flags);
--		break;
--	}
-+	unsigned long old, new;
-+
-+	do {
-+		old = ACCESS_ONCE(mm->flags);
-+		new = old & ~MMF_DUMPABLE_MASK;
-+
-+		switch (value) {
-+		case SUID_DUMP_ROOT:
-+			new |= (1 << MMF_DUMP_SECURELY);
-+		case SUID_DUMP_USER:
-+			new |= (1<< MMF_DUMPABLE);
-+		}
-+
-+	} while (cmpxchg(&mm->flags, old, new) != old);
- }
- 
- int __get_dumpable(unsigned long mm_flags)
--- 
-1.5.5.1
+Which means there won't be any dummy numa setup?
 
