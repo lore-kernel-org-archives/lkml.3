@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3KSVik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 16:38:40 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:62442 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab3KSVih (ORCPT
+	id S1753452Ab3KSViy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 16:38:54 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:42703 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3KSVii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 16:38:37 -0500
+	Tue, 19 Nov 2013 16:38:38 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Subject: Re: [PATCH v2 0/3] Add support for charging battery in Nokia RX-51
+Date: Tue, 19 Nov 2013 22:38:34 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
+Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi,
+        pavel@ucw.cz
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <1384856285-19593-1-git-send-email-pali.rohar@gmail.com> <20131119144407.GB28455@earth.universe>
+In-Reply-To: <20131119144407.GB28455@earth.universe>
 MIME-Version: 1.0
-In-Reply-To: <20131119204909.GA15004@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com> <20131119204909.GA15004@redhat.com>
-From: Michael Dalton <mwdalton@google.com>
-Date: Tue, 19 Nov 2013 13:38:16 -0800
-Message-ID: <CANJ5vPKmP6rFsBgMGFM8DcuGww7B9PxJMSBkUMHNZOa7LJOA2g@mail.gmail.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jason Wang <jasowang@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1481251.M8gYiG9GiM";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311192238.34764@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great catch Jason. I agree this now raises the larger issue of how to
-handle a memory alloc failure in the middle of receive. As Eric mentioned,
-we can drop the packet and free the remaining (num_buf) frags.
+--nextPart1481251.M8gYiG9GiM
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Michael, perhaps I'm missing something, but why would you prefer
-pre-allocating buffers in this case? If the guest kernel is OOM'ing,
-dropping packets should provide backpressure.
+On Tuesday 19 November 2013 15:44:09 Sebastian Reichel wrote:
+> Hi Pali,
+>=20
+> On Tue, Nov 19, 2013 at 11:18:02AM +0100, Pali Roh=C3=A1r wrote:
+> > This patch series finally bringing support for charging
+> > battery on Nokia N900 (RX-51) without any proprietary Nokia
+> > bits in userspace.
+>=20
+> YAY! :)
+>=20
+> > I removed hook function from bq2415x_charger driver and
+> > replaced it by Jenny TC power_supply notifier code. This
+> > simplify usage of bq2415x driver and also allow adding DT
+> > support in future because driver does not need board
+> > specific function anymore (only static data).
+> >=20
+> > I tested this series with linux 3.12-rc5 on Nokia N900.
+>=20
+> cool :)
+>=20
+> Do you want me to take this up and add DT support?
+>=20
+> -- Sebastian
 
-Also, we could just as easily fail the initial skb alloc in page_to_skb,
-and I think that case also needs to be handled now in the same fashion as
-a memory allocation failure in receive_mergeable.
+Hello, if you have time, can you add DT support code?
 
-Best,
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Mike
+--nextPart1481251.M8gYiG9GiM
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKL2loACgkQi/DJPQPkQ1KIZgCfYqrsQGgu1GMAF8/MlppAoRzD
+CTQAn2YnouSDDB6lMSdAr2b9cxAUbzt2
+=dgeJ
+-----END PGP SIGNATURE-----
+
+--nextPart1481251.M8gYiG9GiM--
