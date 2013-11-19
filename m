@@ -1,418 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3KSA1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 19:27:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45360 "EHLO mga09.intel.com"
+	id S1751652Ab3KSAab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 19:30:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54577 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab3KSA1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 19:27:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="410867014"
-From: Andi Kleen <andi@firstfloor.org>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] Add a text_poke syscall
-Date: Mon, 18 Nov 2013 16:27:35 -0800
-Message-Id: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751236Ab3KSAa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 19:30:28 -0500
+Date: Tue, 19 Nov 2013 11:30:13 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>, Grant Likely <grant.likely@linaro.org>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org
+Subject: [PATCH v2] itg3200: add dt support.
+Message-ID: <20131119113013.39dae3cd@notabene.brown>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/cPIpWNvpMxBh2XGpcbknpf0"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+--Sig_/cPIpWNvpMxBh2XGpcbknpf0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Properly patching running code ("cross modification")
-is a quite complicated business on x86.
 
-The CPU has specific rules that need to be followed, including
-multiple global barriers.
 
-Self modifying code is getting more popular, so it's important
-to make it easy to follow the rules.
+No new configuration, just a 'compatible' string and documentation.
 
-The kernel does it properly with text_poke_bp(). But the same
-method is hard to do for user programs.
+Signed-off-by: NeilBrown <neilb@suse.de>
 
-This patch adds a (x86 specific) text_poke() syscall that exposes
-the text_poke_bp() machinery to user programs.
-
-The interface is practically the same as text_poke_bp, just as
-a syscall. I added an extra timeout parameter, that
-will potentially allow batching the global barriers in
-the future. Right now it is enforced to be 0.
-
-The call also still has a global lock, so it has some scaling
-limitations. If it was commonly used this could be fixed
-by setting up a list of break point locations. Then
-a lock would only be hold to modify the list.
-
-Right now the implementation is just as simple as possible.
-
-Proposed man page:
-
-NAME
-	text_poke - Safely modify running instructions (x86)
-
-SYNOPSYS
-	int text_poke(void *addr, const void *opcode, size_t len,
-	              void (*handler)(void), int timeout);
-
-DESCRIPTION
-	The text_poke system allows to safely modify code that may
-	be currently executing in parallel on other threads.
-	Patch the instruction at addr with the new instructions
-	at opcode of length len. The target instruction will temporarily
-	be patched with a break point, before it is replaced
-	with the final replacement instruction. When the break point
-	hits the code handler will be called in the context
-	of the thread. The handler does not save any registers
-	and cannot return. Typically it would consist of the
-	original instruction and then a jump to after the original
-	instruction. The handler is only needed during the
-	patching process and can be overwritten once the syscall
-	returns. timeout defines an optional timout to indicate
-	to the kernel how long the patching could be delayed.
-	Right now it has to be 0.
-
-EXAMPLE
-
-volatile int finished;
-
-extern char patch[], recovery[], repl[];
-
-struct res {
-        long total;
-        long val1, val2, handler;
-};
-
-int text_poke(void *insn, void *repl, int len, void *handler, int to)
-{
-        return syscall(314, insn, repl, len, handler, to);
-}
-
-void *tfunc(void *arg)
-{
-        struct res *res = (struct res *)arg;
-
-        while (!finished) {
-                int val;
-                asm volatile(   ".globl patch\n"
-                                ".globl recovery\n"
-                                ".global repl\n"
-				/* original code to be patched */
-                                "patch: mov $1,%0\n"
-                                "1:\n"
-                                ".section \".text.patchup\",\"x\"\n"
-				/* Called when a race happens during patching.
-				   Just execute the original code and jump back. */
-                                "recovery:\n"
-                                " mov $3,%0\n"
-                                " jmp 1b\n"
-				/* replacement code that gets patched in: */
-                                "repl:\n"
-                                " mov $2,%0\n"
-                                ".previous" : "=a" (val));
-                        if (val == 1)
-                                res->val1++;
-                        else if (val == 3)
-                                res->handler++;
-                        else
-                                res->val2++;
-                        res->total++;
-        }
-        return NULL;
-}
-
-int main(int ac, char **av)
-{
-        int ncpus = sysconf(_SC_NPROCESSORS_ONLN);
-        int ps = sysconf(_SC_PAGESIZE);
-        pthread_t pthr[ncpus];
-        struct res res[ncpus];
-        int i;
-
-        srand(1);
-        memset(&res, 0, sizeof(struct res) * ncpus);
-        mprotect(patch - (unsigned long)patch % ps, ps,
-		 PROT_READ|PROT_WRITE|PROT_EXEC);
-        for (i = 0; i < ncpus - 1; i++)
-                pthread_create(&pthr[i], NULL, tfunc, &res[i]);
-        for (i = 0; i < 500000; i++) {
-                text_poke(patch, repl, 5, recovery, 0);
-                nanosleep(&((struct timespec) { 0, rand() % 100 }), NULL);
-                text_poke(repl, patch, 5, recovery, 0);
-        }
-        finished = 1;
-        for (i = 0; i < ncpus - 1; i++) {
-                pthread_join(pthr[i], NULL);
-                printf("%d: val1 %lu val2 %lu handler %lu to %lu\n",
-                                i, res[i].val1, res[i].val2, res[i].handler,
-				res[i].total);
-                assert(res[i].val1 + res[i].val2 + res[i].handler
-				== res[i].total);
-        }
-        return 0;
-}
-
-RETURN VALUE
-	On success, text_poke returns 0, otherwise -1 is returned
-	and errno is set appropiately.
-
-ERRORS
-	EINVAL		len was too long
-			timeout was an invalid value
-	EFAULT		An error happened while accessing opcode
-
-VERSIONS
-	text_poke has been added with the Linux XXX kernel.
-
-CONFORMING TO
-	The call is Linux and x86 specific and should not be used
-	in programs intended to be portable.
----
- arch/x86/kernel/alternative.c    | 121 ++++++++++++++++++++++++++++++++-------
- arch/x86/syscalls/syscall_32.tbl |   1 +
- arch/x86/syscalls/syscall_64.tbl |   1 +
- 3 files changed, 102 insertions(+), 21 deletions(-)
-
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index df94598..c143ff5 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -12,6 +12,7 @@
- #include <linux/stop_machine.h>
- #include <linux/slab.h>
- #include <linux/kdebug.h>
-+#include <linux/syscalls.h>
- #include <asm/alternative.h>
- #include <asm/sections.h>
- #include <asm/pgtable.h>
-@@ -538,6 +539,23 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
- 	return addr;
- }
- 
-+static void __kprobes __text_poke(struct page **pages, 
-+				  int offset,
-+				  const void *opcode, size_t len);
+diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
+b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt new file mode 1006=
+44
+index 000000000000..4581620632df
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
+@@ -0,0 +1,20 @@
++* InvenSense ITG3200 3-axis gyroscope
 +
-+static void resolve_pages(struct page **pages, void *addr)
-+{
-+	if (!core_kernel_text((unsigned long)addr)) {
-+		pages[0] = vmalloc_to_page(addr);
-+		pages[1] = vmalloc_to_page(addr + PAGE_SIZE);
-+	} else {
-+		pages[0] = virt_to_page(addr);
-+		WARN_ON(!PageReserved(pages[0]));
-+		pages[1] = virt_to_page(addr + PAGE_SIZE);
-+	}
-+	BUG_ON(!pages[0]);
-+}
++Required properties:
 +
- /**
-  * text_poke - Update instructions on a live kernel
-  * @addr: address to modify
-@@ -553,26 +571,27 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
-  */
- void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
- {
-+	struct page *pages[2];
++  - compatible : "invensense,itg3200"
++  - reg : I2C address, typically 0x68
 +
-+	resolve_pages(pages, addr);
-+	__text_poke(pages, (unsigned long)addr & ~PAGE_MASK,
-+		    opcode, len);
-+	return addr;
-+}
++Optional properties:
 +
-+static void __kprobes __text_poke(struct page **pages,
-+				   int offset,
-+				   const void *opcode, size_t len)
-+{
- 	unsigned long flags;
- 	char *vaddr;
--	struct page *pages[2];
--	int i;
- 
--	if (!core_kernel_text((unsigned long)addr)) {
--		pages[0] = vmalloc_to_page(addr);
--		pages[1] = vmalloc_to_page(addr + PAGE_SIZE);
--	} else {
--		pages[0] = virt_to_page(addr);
--		WARN_ON(!PageReserved(pages[0]));
--		pages[1] = virt_to_page(addr + PAGE_SIZE);
--	}
--	BUG_ON(!pages[0]);
- 	local_irq_save(flags);
- 	set_fixmap(FIX_TEXT_POKE0, page_to_phys(pages[0]));
- 	if (pages[1])
- 		set_fixmap(FIX_TEXT_POKE1, page_to_phys(pages[1]));
- 	vaddr = (char *)fix_to_virt(FIX_TEXT_POKE0);
--	memcpy(&vaddr[(unsigned long)addr & ~PAGE_MASK], opcode, len);
-+	memcpy(&vaddr[offset], opcode, len);
- 	clear_fixmap(FIX_TEXT_POKE0);
- 	if (pages[1])
- 		clear_fixmap(FIX_TEXT_POKE1);
-@@ -580,10 +599,7 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
- 	sync_core();
- 	/* Could also do a CLFLUSH here to speed up CPU recovery; but
- 	   that causes hangs on some VIA CPUs. */
--	for (i = 0; i < len; i++)
--		BUG_ON(((char *)addr)[i] != ((char *)opcode)[i]);
- 	local_irq_restore(flags);
--	return addr;
- }
- 
- static void do_sync_core(void *info)
-@@ -593,6 +609,7 @@ static void do_sync_core(void *info)
- 
- static bool bp_patching_in_progress;
- static void *bp_int3_handler, *bp_int3_addr;
-+static struct mm_struct *bp_target_mm;
- 
- int poke_int3_handler(struct pt_regs *regs)
- {
-@@ -602,6 +619,14 @@ int poke_int3_handler(struct pt_regs *regs)
- 	if (likely(!bp_patching_in_progress))
- 		return 0;
- 
-+	if (user_mode_vm(regs) &&
-+		bp_target_mm &&
-+		current->mm == bp_target_mm &&
-+		regs->ip == (unsigned long)bp_int3_addr) {
-+		regs->ip = (unsigned long) bp_int3_handler;
-+		return 1;
-+	}
++  - interrupt-parent : should be the phandle for the interrupt controller
++  - interrupts : interrupt mapping for IRQ
 +
- 	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
- 		return 0;
- 
-@@ -612,6 +637,9 @@ int poke_int3_handler(struct pt_regs *regs)
- 
- }
- 
-+static void __text_poke_bp(struct page **pages, int offset,
-+			   const void *opcode, size_t len, void *handler);
++Example:
 +
- /**
-  * text_poke_bp() -- update instructions on live kernel on SMP
-  * @addr:	address to patch
-@@ -636,10 +664,22 @@ int poke_int3_handler(struct pt_regs *regs)
-  */
- void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
- {
-+	struct page *pages[2];
++itg3200@68 {
++	compatible =3D "invensense,itg3200";
++	reg =3D <0x68>;
++	interrupt-parent =3D <&gpio2>;
++	interrupts =3D <24 IRQ_TYPE_EDGE_RISING>;
++};
+diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_cor=
+e.c
+index 4d3f3b92b361..1ed3003ef41a 100644
+--- a/drivers/iio/gyro/itg3200_core.c
++++ b/drivers/iio/gyro/itg3200_core.c
+@@ -374,10 +374,17 @@ static const struct i2c_device_id itg3200_id[] =3D {
+ };
+ MODULE_DEVICE_TABLE(i2c, itg3200_id);
+=20
++static const struct of_device_id itg3200_of_match[] =3D {
++	{ .compatible =3D "invensense,itg3200", },
++	{}
++};
++MODULE_DEVICE_TABLE(of, itg3200_of_match);
 +
-+	resolve_pages(pages, addr);
-+	bp_int3_addr = (u8 *)addr + 1;
-+	__text_poke_bp(pages, (unsigned long)addr & ~PAGE_MASK,
-+		       opcode, len, handler);
-+	return addr;
-+}
-+
-+/* Caller must set up bp_int3_addr and hold text_mutex */
-+static void __text_poke_bp(struct page **pages, int offset,
-+		     const void *opcode, size_t len, void *handler)
-+{
- 	unsigned char int3 = 0xcc;
- 
- 	bp_int3_handler = handler;
--	bp_int3_addr = (u8 *)addr + sizeof(int3);
- 	bp_patching_in_progress = true;
- 	/*
- 	 * Corresponding read barrier in int3 notifier for
-@@ -648,13 +688,14 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
- 	 */
- 	smp_wmb();
- 
--	text_poke(addr, &int3, sizeof(int3));
-+	__text_poke(pages, offset, &int3, sizeof(int3));
- 
- 	on_each_cpu(do_sync_core, NULL, 1);
- 
- 	if (len - sizeof(int3) > 0) {
- 		/* patch all but the first byte */
--		text_poke((char *)addr + sizeof(int3),
-+		__text_poke(pages, 
-+			  offset + sizeof(int3),
- 			  (const char *) opcode + sizeof(int3),
- 			  len - sizeof(int3));
- 		/*
-@@ -666,13 +707,51 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
- 	}
- 
- 	/* patch the first byte */
--	text_poke(addr, opcode, sizeof(int3));
-+	__text_poke(pages, offset, opcode, sizeof(int3));
- 
- 	on_each_cpu(do_sync_core, NULL, 1);
- 
- 	bp_patching_in_progress = false;
- 	smp_wmb();
--
--	return addr;
- }
- 
-+#define MAX_INSN_LEN 32
-+
-+SYSCALL_DEFINE5(text_poke,
-+		__user void *, addr,
-+		const void *, opcode, 
-+		size_t, len,
-+		void *, handler,
-+		int, timeout)
-+{
-+	struct page *pages[2];
-+	char insn[MAX_INSN_LEN];
-+	int err, npages;
-+
-+	if ((unsigned long)len > MAX_INSN_LEN || len == 0)
-+		return -EINVAL;
-+	/* For future extension */
-+	if (timeout != 0)
-+		return -EINVAL;
-+	if (copy_from_user(insn, opcode, len))
-+		return -EFAULT;
-+	pages[1] = NULL;
-+	npages = ((unsigned long)addr & PAGE_MASK) == 
-+		(((unsigned long)addr + len) & PAGE_MASK) ? 1 : 2;
-+	err = get_user_pages_fast((unsigned long)addr, npages, 1, pages);
-+	if (err < 0)
-+		return err;
-+	err = 0;
-+	mutex_lock(&text_mutex);
-+	bp_target_mm = current->mm;
-+	bp_int3_addr = (u8 *)addr + 1;
-+	__text_poke_bp(pages, 
-+		       (unsigned long)addr & ~PAGE_MASK,
-+		       insn, len, handler);
-+	bp_target_mm = NULL;
-+	mutex_unlock(&text_mutex);
-+	put_page(pages[0]);
-+	if (pages[1])
-+		put_page(pages[1]);
-+	return err;
-+}
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index aabfb83..5d3cb72 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -357,3 +357,4 @@
- 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
- 349	i386	kcmp			sys_kcmp
- 350	i386	finit_module		sys_finit_module
-+351	i386	text_poke		sys_text_poke
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65d..77e60f9 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -320,6 +320,7 @@
- 311	64	process_vm_writev	sys_process_vm_writev
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
-+314	common	text_poke		sys_text_poke
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
--- 
-1.8.3.1
+ static struct i2c_driver itg3200_driver =3D {
+ 	.driver =3D {
+ 		.owner  =3D THIS_MODULE,
+ 		.name	=3D "itg3200",
++		.of_match_table =3D of_match_ptr(itg3200_of_match),
+ 	},
+ 	.id_table	=3D itg3200_id,
+ 	.probe		=3D itg3200_probe,
 
+--Sig_/cPIpWNvpMxBh2XGpcbknpf0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUoqxFTnsnt1WYoG5AQKdPBAAoP05W/2BJzs++/WDOwUXBSUW+wziobx2
+FdX3pW4pQ4iC0OKzxW9GqJYPLp6G2pqMP3yp6J5NYvxkLUf2sxPEDD4Fi6ZMyNLJ
+cdFdt2+GBdFMyKnw2SH9zaQTydgT8t5DPumBuWcQTONljYnJOmtxwYRdMxzdE9Gn
+QBa7yn4epf3u3BTqfexuuefoho2jWsQUSRntqXXb769GsRA14kVRyBz8MKZmnIpa
+Vdpw0uOTn+7ozmg6gUQkny/OWGPwtvaAYhifORlLqHQ6sE8hmZoCqIrmwId4vfA5
+wCbtAbMRc9nUcmpNtjFEzXwPtF1LQavbLKMFLa0obNQqQF4gSoliF7TOcKm8hEke
+6hQW2Bx/wzhLtqCD8unWmPMwsWAXFgC6aHkUdfXOMdiOw9KW0mdKTe1HoB56o2ke
+Vcm/qpUv+J1tToHZ0RA51wFvyF1ct6tQB7bkrxM7h91VfHkLNxLFjx5cFH9tLIQ4
+aK8T2sV3HcsDRDwTmuc9srm8hnh5/VkHZ/GnEQ7ocQXi84QRo+r2iMp5oAIED90u
+LAd7mMo6WWMf1aX7Uc/HSsflf5os+azbnTQIzdgZztW0L1AoNT6zqJKtdAuhDEqX
+knM6Iq4Td9EkAspqvzQaw5atHBkdamj95b6ZTmFmdJuSxE+rYs8mqkwlat0nGl7Z
+jH1PtXUPhg4=
+=RZI0
+-----END PGP SIGNATURE-----
+
+--Sig_/cPIpWNvpMxBh2XGpcbknpf0--
