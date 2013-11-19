@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab3KSSvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:51:38 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53112 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab3KSSvd (ORCPT
+	id S1752823Ab3KSSxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:53:32 -0500
+Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:41315 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751307Ab3KSSx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:51:33 -0500
-Date: Tue, 19 Nov 2013 18:51:30 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, alsa-devel@alsa-project.org
-Message-ID: <20131119185130.GJ2674@sirena.org.uk>
-References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
- <1384859269-19801-10-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mjUDp/cLGeqUhYyE"
-Content-Disposition: inline
-In-Reply-To: <1384859269-19801-10-git-send-email-lee.jones@linaro.org>
-X-Cookie: Drive defensively.  Buy a tank.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 09/10] ASoC: ux500_pcm: Take out pointless dev_dbg() call
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 19 Nov 2013 13:53:29 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:2898:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3873:4321:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13163:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rub58_1e09b3cdd1e63
+X-Filterd-Recvd-Size: 1837
+Message-ID: <1384887205.17783.40.camel@joe-AO722>
+Subject: Re: [PATCH v2] power: Replace printks with dev_* and pr_* routines
+From: Joe Perches <joe@perches.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: len.brown@intel.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
+        rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Date: Tue, 19 Nov 2013 10:53:25 -0800
+In-Reply-To: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
+References: <1384886818-11861-1-git-send-email-shuah.kh@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-11-19 at 11:46 -0700, Shuah Khan wrote:
+> Replaced printks with dev_* and pr_* routines. Replacing printk in
+> __suspend_report_result() will require passing in struct device *
+> pointer from calling routines and this will require changes to
+> external interface suspend_report_result() which is used by several
+> drivers. Hence, this one instance is replaced by pr_err().
+[]
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+[]
+> @@ -1308,9 +1308,8 @@ int dpm_prepare(pm_message_t state)
+>  				error = 0;
+>  				continue;
+>  			}
+> -			printk(KERN_INFO "PM: Device %s not prepared "
+> -				"for power transition: code %d\n",
+> -				dev_name(dev), error);
+> +			dev_info("PM: not prepared for power transition: ",
+> +				 "code %d\n", error);
 
---mjUDp/cLGeqUhYyE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Shuah, you have to make sure the files modified by
+your patches compile successfully before sending
+patches like this.
 
-On Tue, Nov 19, 2013 at 11:07:48AM +0000, Lee Jones wrote:
-> Cc: alsa-devel@alsa-project.org
-> Cc: Mark Brown <broonie@kernel.org>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Applied, thanks.
-
---mjUDp/cLGeqUhYyE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSi7MvAAoJELSic+t+oim9yZYQAJwh40DRLyqMf9m3klSEVzMa
-Qi3cQS+zQCABaqJbI5ArMkfyc4ipKEPLwa4o3LtTwtEkgXlG1PY1XJej+nCwVKwO
-8LUxisrdUDscKjLk3i7t7qF9TjDHkNxxoXS0+jcLITzj9MW+Q+LJrSYsWH+1hVfH
-T2DPSDaorAbl26Dsd/HDAzUKKX0q+rm5c2xw3uoa6AnhoAMks/5vfayEkzy4cOZp
-/pQLjWx+UY5p5Gmn2wmpuO1NZMs1k3J4sr/O3PaS99Ii4KNu6zw0LUT4gWbep/we
-q2OxxOqNEm092pqvVix5HwvKTVfkjdnIuJ+t/QYNIWFz1MWUter4oxvebs46Zhu4
-d1tuYXJI/hnLMoEQFvtCgBYfPq4HUH7561MVwpK9wM7gI05N2i4qaRB5hQvFzjGg
-ELXCPO75h/xauwQk7KMKxRlpvplw1QyJkzkLguD0JUtZPMfSC/++jq/6DdbyPciK
-diMAhEzDUe6IcSmwcOlUqXWLoywimCxvEy2LSoAbKz4NYlAhzHuKquin9WzrdoAW
-qAg3GrQUYj7VvTMLJjV81ksFIHnFhWRV88iyO9uLWErX1x9DkCM7L4U1qwCF1K4b
-Ume3peOgptmofky9D2+c7CBzMAxE1BROC/CiOrC8APT82QVl63m5am7ktj5IiWAw
-07sH7mnP7HxhIWZcR7wy
-=CvO1
------END PGP SIGNATURE-----
-
---mjUDp/cLGeqUhYyE--
