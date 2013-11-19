@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab3KSPcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:32:23 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:35967 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab3KSPcV (ORCPT
+	id S1752493Ab3KSPhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:37:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38498 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751379Ab3KSPhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:32:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <528B7CE5.5040502@ti.com>
-References: <1384568535-26611-1-git-send-email-nm@ti.com>
-	<20131116134445.GI11014@S2101-09.ap.freescale.net>
-	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
-	<528A27F8.3070402@ti.com>
-	<20131118155753.GU11014@S2101-09.ap.freescale.net>
-	<528A4340.3020508@ti.com>
-	<20131119022133.GB18434@S2101-09.ap.freescale.net>
-	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
-	<528B72C1.5060006@ti.com>
-	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
-	<528B7CE5.5040502@ti.com>
-Date: Tue, 19 Nov 2013 21:02:20 +0530
-Message-ID: <CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Nov 2013 10:37:21 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mfd: wm5110: Add register patch for rev D chip
+Date: Tue, 19 Nov 2013 15:36:06 +0000
+Message-Id: <1384875366-2527-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2013 20:29, Nishanth Menon <nm@ti.com> wrote:
-> Not completely true - reaching probe after boot in a few seconds may
-> not mean that system will remain stable at that frequency for longer
-> duration. From a silicon vendor perspective, I do know that we
-> gaurentee the discrete frequencies in the data manual (and that gets
-> populated in devicetree and hence in freq_table), but we will not
-> guarentee any other frequency to be functional for any length of time.
-> in short, if a actual product is manufactured and operational at a
-> frequency we do not "officially support", there is a risk associated
-> with that. just a boot on a few development systems do not ever
-> guarentee productization capability.
+Evaluation of revision D of WM5110 suggests updates to the register
+patch for optimal performance. For the sake of clarity rev C of the chip
+does not require a register patch.
 
-Maybe for a long duration system isn't stable enough but should be
-stable for few seconds Atleast?
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
 
-As soon as ->init() of driver is called we will get a call to:
-cpufreq_set_policy() from cpufreq_init_policy(). And we will execute
-this for sure:
+Updated the commit message to give a little more info on
+what the register patch is for.
 
-ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+As regards add #defines for the silicon revisions I am not
+sure it adds a significant amount of extra clarity, is "case
+A: case B:" really a lot clearer than "case 0: case 1:"
+but that said I am happy to do a patch for this if we feel
+strongly about it? Although I would suggest it should be
+seperate from this patch.
 
-On this call if the current freq is lesser or greater than policy limits,
-then we will fix it straight away.. Otherwise whichever the governor
-is, we will change the freq to any from freq-table very soon..
+Thanks,
+Charles
 
-So, we need a real example of unstable system which really
-requires your patch. Otherwise I feel that we will not face any problems
-at all..
+ drivers/mfd/wm5110-tables.c |   30 +++++++++++++++++++++++++++++-
+ 1 files changed, 29 insertions(+), 1 deletions(-)
 
-> So, to summarize: what is our overall strategy here? to move to a
-> frequency matched in freq_table OR just giveup? I can try and respin
-> accordingly.
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index daf2fe8..bd9c3c9 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -223,6 +223,31 @@ static const struct reg_default wm5110_revb_patch[] = {
+ 	{ 0x80, 0x0 },
+ };
+ 
++static const struct reg_default wm5110_revd_patch[] = {
++	{ 0x80, 0x3 },
++	{ 0x80, 0x3 },
++	{ 0x393, 0x27 },
++	{ 0x394, 0x27 },
++	{ 0x395, 0x27 },
++	{ 0x396, 0x27 },
++	{ 0x397, 0x27 },
++	{ 0x398, 0x26 },
++	{ 0x221, 0x90 },
++	{ 0x211, 0x8 },
++	{ 0x36c, 0x1fb },
++	{ 0x26e, 0x64 },
++	{ 0x26f, 0xea },
++	{ 0x270, 0x1f16 },
++	{ 0x51b, 0x1 },
++	{ 0x55b, 0x1 },
++	{ 0x59b, 0x1 },
++	{ 0x4f0, 0x633 },
++	{ 0x441, 0xc059 },
++	{ 0x209, 0x27 },
++	{ 0x80, 0x0 },
++	{ 0x80, 0x0 },
++};
++
+ /* We use a function so we can use ARRAY_SIZE() */
+ int wm5110_patch(struct arizona *arizona)
+ {
+@@ -235,7 +260,10 @@ int wm5110_patch(struct arizona *arizona)
+ 		return regmap_register_patch(arizona->regmap,
+ 					     wm5110_revb_patch,
+ 					     ARRAY_SIZE(wm5110_revb_patch));
+-
++	case 3:
++		return regmap_register_patch(arizona->regmap,
++					     wm5110_revd_patch,
++					     ARRAY_SIZE(wm5110_revd_patch));
+ 	default:
+ 		return 0;
+ 	}
+-- 
+1.7.2.5
 
-I want cpufreq-stats to be fixed with something else, might be something
-similar to the patch I have sent..
-
-But this stuff can be left as is..
