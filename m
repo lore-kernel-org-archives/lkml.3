@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab3KSI1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 03:27:11 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:64125 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3KSI1I (ORCPT
+	id S1751719Ab3KSI3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 03:29:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59947 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3KSI3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 03:27:08 -0500
-Date: Tue, 19 Nov 2013 09:27:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: akpm@linux-foundation.org
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, wujianguo@huawei.com,
-        mingo@redhat.com, rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] x86/srat: use NUMA_NO_NODE
-Message-ID: <20131119082704.GA1243@gmail.com>
-References: <20131115221403.74AF31CA2E5@corp2gmr1-1.eem.corp.google.com>
+	Tue, 19 Nov 2013 03:29:20 -0500
+Date: Tue, 19 Nov 2013 09:29:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Marek Belisko <marek@goldelico.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH/RFC] wait_for_completion_timeout() considered harmful.
+Message-ID: <20131119082913.GE10022@twins.programming.kicks-ass.net>
+References: <20131117080603.2a0d3b6d@notabene.brown>
+ <20131118152746.937b2b7971d7a4bba4ef996d@linux-foundation.org>
+ <20131118234209.GO16796@laptop.programming.kicks-ass.net>
+ <20131118174902.312d8fa6@lwn.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131115221403.74AF31CA2E5@corp2gmr1-1.eem.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131118174902.312d8fa6@lwn.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
-
-> From: Jianguo Wu <wujianguo@huawei.com>
-> Subject: x86/srat: use NUMA_NO_NODE
+On Mon, Nov 18, 2013 at 05:49:02PM -0700, Jonathan Corbet wrote:
+> On Tue, 19 Nov 2013 00:42:09 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> setup_node() return NUMA_NO_NODE or valid node id(>=0), So use more
-> appropriate "if (node == NUMA_NO_NODE)" instead of "if (node < 0)"
+> > I briefly talked to Thomas about this earlier today and we need to fix
+> > this at a lower level -- the quick 'n dirty solution is to add 1 jiffy
+> > down in the timer-wheel when we enqueue these things.
 > 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  arch/x86/mm/srat.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff -puN arch/x86/mm/srat.c~x86-srat-use-numa_no_node arch/x86/mm/srat.c
-> --- a/arch/x86/mm/srat.c~x86-srat-use-numa_no_node
-> +++ a/arch/x86/mm/srat.c
-> @@ -76,7 +76,7 @@ acpi_numa_x2apic_affinity_init(struct ac
->  		return;
->  	}
->  	node = setup_node(pxm);
-> -	if (node < 0) {
-> +	if (node == NUMA_NO_NODE) {
->  		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
->  		bad_srat();
->  		return;
-> @@ -112,7 +112,7 @@ acpi_numa_processor_affinity_init(struct
->  	if (acpi_srat_revision >= 2)
->  		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
->  	node = setup_node(pxm);
-> -	if (node < 0) {
-> +	if (node == NUMA_NO_NODE) {
->  		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
->  		bad_srat();
->  		return;
-> @@ -166,7 +166,7 @@ acpi_numa_memory_affinity_init(struct ac
->  		pxm &= 0xff;
->  
->  	node = setup_node(pxm);
-> -	if (node < 0) {
-> +	if (node == NUMA_NO_NODE) {
->  		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
->  		goto out_err_bad_srat;
->  	}
+> That can lead to situations like the one I encountered years ago where
+> msleep(1) would snooze for 20ms. 
 
-Dunno, I think the 'node < 0' pattern is more readable and is in 
-general more robust than explicit NUMA_NO_NODE use - as it would 
-handle other errors as well, not just -1.
+No, for up to 20ms, since you get part of the first jiffy, which was the
+whole problem (assuming we're talking HZ=100 here).
 
-Thanks,
+> I didn't get much love for my idea of
+> switching msleep() to hrtimers back then, but I still think it might be be
+> better to provide the resolution that the interface appears to promise.
 
-	Ingo
+It would actually make more sense to use hrtimers here than it does to
+use the old timers since hrtimers has much better gurantees but also
+because the timer is guaranteed to fire.
+
+The use case where the old timers really beat hrtimers hands down is
+for timeout timers that never actually fire.
