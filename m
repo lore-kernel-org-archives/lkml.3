@@ -1,191 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab3KSTTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:19:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51785 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab3KSTTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:19:48 -0500
-Date: Tue, 19 Nov 2013 11:19:15 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-dgwc5cdksbn0jk09vbmcc9sa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        fweisbec@gmail.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        bigeasy@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        fweisbec@gmail.com, akpm@linux-foundation.org, bigeasy@linutronix.de,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] lockdep:
-  Correctly annotate hardirq context in irq_exit()
-Git-Commit-ID: f1a83e652bedef88d6d77d3dc58250e08e7062bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753853Ab3KSTUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:20:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab3KSTU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 14:20:29 -0500
+Date: Tue, 19 Nov 2013 20:21:45 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: make DR6_RESERVED/DR_CONTROL_RESERVED unsigned long
+Message-ID: <20131119192145.GA8604@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 19 Nov 2013 11:19:22 -0800 (PST)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f1a83e652bedef88d6d77d3dc58250e08e7062bd
-Gitweb:     http://git.kernel.org/tip/f1a83e652bedef88d6d77d3dc58250e08e7062bd
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 19 Nov 2013 16:42:47 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Nov 2013 17:07:00 +0100
+DR6_RESERVED and DR_CONTROL_RESERVED are used to clear the unwanted
+bits in the "unsigned long" data, but "ulong &= ~int" also clears the
+upper bits that are not specified in mask.
 
-lockdep: Correctly annotate hardirq context in irq_exit()
+This is actually fine, dr6[32:63] are reserved, but this is not clear
+so it would be better to make them "unsigned long" to cleanup the code.
 
-There was a reported deadlock on -rt which lockdep didn't report.
+However, depending on sizeof(long), DR6_RESERVED should be either
+0xFFFF0FF0 or 0xFFFFFFFF_FFFF0FF0, so this patch redefines them as
+(~ 32_bit_mask UL) to avoid ifdef's.
 
-It turns out that in irq_exit() we tell lockdep that the hardirq
-context ends and then do all kinds of locking afterwards.
-
-To fix it, move trace_hardirq_exit() to the very end of irq_exit(), this
-ensures all locking in tick_irq_exit() and rcu_irq_exit() are properly
-recorded as happening from hardirq context.
-
-This however leads to the 'fun' little problem of running softirqs
-while in hardirq context. To cure this make the softirq code a little
-more complex (in the CONFIG_TRACE_IRQFLAGS case).
-
-Due to stack swizzling arch dependent trickery we cannot pass an
-argument to __do_softirq() to tell it if it was done from hardirq
-context or not; so use a side-band argument.
-
-When we do __do_softirq() from hardirq context, 'atomically' flip to
-softirq context and back, so that no locking goes without being in
-either hard- or soft-irq context.
-
-I didn't find any new problems in mainline using this patch, but it
-did show the -rt problem.
-
-Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-dgwc5cdksbn0jk09vbmcc9sa@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Suggested-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/softirq.c | 54 +++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 45 insertions(+), 9 deletions(-)
+ arch/x86/include/uapi/asm/debugreg.h |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index b249883..eb0acf4 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -213,14 +213,52 @@ EXPORT_SYMBOL(local_bh_enable_ip);
- #define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
- #define MAX_SOFTIRQ_RESTART 10
+diff --git a/arch/x86/include/uapi/asm/debugreg.h b/arch/x86/include/uapi/asm/debugreg.h
+index 3c0874d..4ff5d05 100644
+--- a/arch/x86/include/uapi/asm/debugreg.h
++++ b/arch/x86/include/uapi/asm/debugreg.h
+@@ -15,7 +15,7 @@
+    are either reserved or not of interest to us. */
  
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+/*
-+ * Convoluted means of passing __do_softirq() a message through the various
-+ * architecture execute_on_stack() bits.
-+ *
-+ * When we run softirqs from irq_exit() and thus on the hardirq stack we need
-+ * to keep the lockdep irq context tracking as tight as possible in order to
-+ * not miss-qualify lock contexts and miss possible deadlocks.
-+ */
-+static DEFINE_PER_CPU(int, softirq_from_hardirq);
-+
-+static inline void lockdep_softirq_from_hardirq(void)
-+{
-+	this_cpu_write(softirq_from_hardirq, 1);
-+}
-+
-+static inline void lockdep_softirq_start(void)
-+{
-+	if (this_cpu_read(softirq_from_hardirq))
-+		trace_hardirq_exit();
-+	lockdep_softirq_enter();
-+}
-+
-+static inline void lockdep_softirq_end(void)
-+{
-+	lockdep_softirq_exit();
-+	if (this_cpu_read(softirq_from_hardirq)) {
-+		this_cpu_write(softirq_from_hardirq, 0);
-+		trace_hardirq_enter();
-+	}
-+}
-+
-+#else
-+static inline void lockdep_softirq_from_hardirq(void) { }
-+static inline void lockdep_softirq_start(void) { }
-+static inline void lockdep_softirq_end(void) { }
-+#endif
-+
- asmlinkage void __do_softirq(void)
- {
--	struct softirq_action *h;
--	__u32 pending;
- 	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
--	int cpu;
- 	unsigned long old_flags = current->flags;
- 	int max_restart = MAX_SOFTIRQ_RESTART;
-+	struct softirq_action *h;
-+	__u32 pending;
-+	int cpu;
+ /* Define reserved bits in DR6 which are always set to 1 */
+-#define DR6_RESERVED	(0xFFFF0FF0)
++#define DR6_RESERVED	(~0xF00FUL)
  
- 	/*
- 	 * Mask out PF_MEMALLOC s current task context is borrowed for the
-@@ -233,7 +271,7 @@ asmlinkage void __do_softirq(void)
- 	account_irq_enter_time(current);
+ #define DR_TRAP0	(0x1)		/* db0 */
+ #define DR_TRAP1	(0x2)		/* db1 */
+@@ -64,11 +64,7 @@
+    We can slow the instruction pipeline for instructions coming via the
+    gdt or the ldt if we want to.  I am not sure why this is an advantage */
  
- 	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
--	lockdep_softirq_enter();
-+	lockdep_softirq_start();
+-#ifdef __i386__
+-#define DR_CONTROL_RESERVED (0xFC00) /* Reserved by Intel */
+-#else
+-#define DR_CONTROL_RESERVED (0xFFFFFFFF0000FC00UL) /* Reserved */
+-#endif
++#define DR_CONTROL_RESERVED (~0xFFFF03FFUL) /* Reserved by Intel */
  
- 	cpu = smp_processor_id();
- restart:
-@@ -280,16 +318,13 @@ restart:
- 		wakeup_softirqd();
- 	}
- 
--	lockdep_softirq_exit();
--
-+	lockdep_softirq_end();
- 	account_irq_exit_time(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
- 	WARN_ON_ONCE(in_interrupt());
- 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
- }
- 
--
--
- asmlinkage void do_softirq(void)
- {
- 	__u32 pending;
-@@ -332,6 +367,7 @@ void irq_enter(void)
- static inline void invoke_softirq(void)
- {
- 	if (!force_irqthreads) {
-+		lockdep_softirq_from_hardirq();
- #ifdef CONFIG_HAVE_IRQ_EXIT_ON_IRQ_STACK
- 		/*
- 		 * We can safely execute softirq on the current stack if
-@@ -377,13 +413,13 @@ void irq_exit(void)
- #endif
- 
- 	account_irq_exit_time(current);
--	trace_hardirq_exit();
- 	preempt_count_sub(HARDIRQ_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
- 
- 	tick_irq_exit();
- 	rcu_irq_exit();
-+	trace_hardirq_exit(); /* must be last! */
- }
- 
- /*
+ #define DR_LOCAL_SLOWDOWN (0x100)   /* Local slow the pipeline */
+ #define DR_GLOBAL_SLOWDOWN (0x200)  /* Global slow the pipeline */
+-- 
+1.5.5.1
+
+
