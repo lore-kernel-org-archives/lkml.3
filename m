@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab3KSW77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:59:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64872 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753391Ab3KSW7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:59:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="411438412"
-Subject: Re: [PATCH v5 2/4] MCS Lock: optimizations and extra comments
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <20131119191310.GO4138@linux.vnet.ibm.com>
-References: <cover.1383935697.git.tim.c.chen@linux.intel.com>
-	 <1383940325.11046.415.camel@schen9-DESK>
-	 <20131119191310.GO4138@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Nov 2013 14:57:41 -0800
-Message-ID: <1384901861.11046.449.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753597Ab3KSXBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:01:19 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:34254 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3KSXBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 18:01:18 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>
+Subject: Re: [PATCH linux-next] SELinux: security_load_policy: Silence frame-larger-than warning
+Date: Tue, 19 Nov 2013 18:01:11 -0500
+Message-ID: <2654507.D28U1bHoel@sifl>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <528BEA34.9060907@canonical.com>
+References: <1384466691-42392-1-git-send-email-tim.gardner@canonical.com> <2344755.pvM4VQSB59@sifl> <528BEA34.9060907@canonical.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:13 -0800, Paul E. McKenney wrote:
-> On Fri, Nov 08, 2013 at 11:52:05AM -0800, Tim Chen wrote:
+On Tuesday, November 19, 2013 02:46:12 PM Tim Gardner wrote:
+> On 11/19/2013 02:38 PM, Paul Moore wrote:
+> > On Thursday, November 14, 2013 03:04:51 PM Tim Gardner wrote:
+> >> Dynamically allocate a couple of the larger stack variables in order to
+> >> reduce the stack footprint below 1024. gcc-4.8
+> >> 
+> >> security/selinux/ss/services.c: In function 'security_load_policy':
+> >> security/selinux/ss/services.c:1964:1: warning: the frame size of 1104
+> >> bytes is larger than 1024 bytes [-Wframe-larger-than=] }
+> >> 
+> >> Also silence a couple of checkpatch warnings at the same time.
+> >> 
+> >> WARNING: sizeof policydb should be sizeof(policydb)
+> >> +	memcpy(oldpolicydb, &policydb, sizeof policydb);
+> >> 
+> >> WARNING: sizeof policydb should be sizeof(policydb)
+> >> +	memcpy(&policydb, newpolicydb, sizeof policydb);
+> >> 
+> >> Cc: Stephen Smalley <sds@tycho.nsa.gov>
+> >> Cc: James Morris <james.l.morris@oracle.com>
+> >> Cc: Eric Paris <eparis@parisplace.org>
+> >> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> >> ---
+> >> 
+> >>  security/selinux/ss/services.c |   54
+> >>  ++++++++++++++++++++++--------------
+> >>  1 file changed, 32 insertions(+), 22 deletions(-)
 > > 
-> > +/*
-> > + * Releases the lock. The caller should pass in the corresponding node that
-> > + * was used to acquire the lock.
-> > + */
-> >  static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> >  {
-> >  	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-> > @@ -51,7 +60,7 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
-> >  		/*
-> >  		 * Release the lock by setting it to NULL
-> >  		 */
-> > -		if (cmpxchg(lock, node, NULL) == node)
-> > +		if (likely(cmpxchg(lock, node, NULL) == node))
+> > Applied, thanks.  It will be pushed to my next tree once -rc1 is released.
+> > 
+> > In the future, please send SELinux patches to the SELinux mailing list.
 > 
-> Agreed here as well.  Takes a narrow race to hit this.
+> It is difficult to know where to send a patch for every subsystem. I've
+> been using the get_maintainer.pl script, so perhaps the info in
+> MAINTAINERS is stale ? I'm open to suggestions.
+
+The SELinux mailing list information in the MAINTAINERS file isn't stale, 
+although we have just recently changed the tree location and that patch hasn't 
+hit Linus' tree yet.  Here is the most current snippet:
+
+ SELINUX SECURITY MODULE
+ M:      Stephen Smalley <sds@tycho.nsa.gov>
+ M:      James Morris <james.l.morris@oracle.com>
+ M:      Eric Paris <eparis@parisplace.org>
+ M:      Paul Moore <paul@paul-moore.com>
+ L:      selinux@tycho.nsa.gov (subscribers-only, general discussion)
+ W:      http://selinuxproject.org
+ T:      git git://git.infradead.org/users/pcmoore/selinux
+ S:      Supported
+ F:      include/linux/selinux*
+ F:      security/selinux/
+ F:      scripts/selinux/
+
+My Perl is a bit rusty/non-existent so I'm not sure why the get_maintainer 
+script isn't showing the mailing list information, so in the meantime I would 
+suggest just looking through the file by hand.
+ 
+> $: scripts/get_maintainer.pl -f security/selinux/ss/services.c
+> Stephen Smalley <sds@tycho.nsa.gov> (supporter:SELINUX SECURITY...)
+> James Morris <james.l.morris@oracle.com> (supporter:SELINUX SECURITY...)
+> Eric Paris <eparis@parisplace.org> (supporter:SELINUX SECURITY...)
+> linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+> linux-kernel@vger.kernel.org (open list)
 > 
-> So, did your testing exercise this path?  If the answer is "yes", 
+> rtg
 
-
-Paul,
-
-I did some instrumentation and confirmed that the path in question has 
-been exercised.  So this patch should be okay.
-
-Tim
-
-> and if the issues that I called out in patch #1 are resolved:
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> >  			return;
-> >  		/* Wait until the next pointer is set */
-> >  		while (!(next = ACCESS_ONCE(node->next)))
-> >
+-- 
+paul moore
+www.paul-moore.com
 
