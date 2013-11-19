@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3KSBRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 20:17:39 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:58833 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3KSBRf (ORCPT
+	id S1751821Ab3KSBTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 20:19:06 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:62852 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab3KSBTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 20:17:35 -0500
-Date: Mon, 18 Nov 2013 17:17:31 -0800 (PST)
+	Mon, 18 Nov 2013 20:19:03 -0500
+Date: Mon, 18 Nov 2013 17:19:00 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom
- killed
-In-Reply-To: <20131118164107.GC3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com> <20131113152412.GH707@cmpxchg.org> <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com> <20131114000043.GK707@cmpxchg.org> <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
- <20131118164107.GC3556@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20131118125507.GD32623@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1311181717500.4292@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com> <20131031054942.GA26301@cmpxchg.org> <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com> <20131113233419.GJ707@cmpxchg.org> <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+ <20131114032508.GL707@cmpxchg.org> <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com> <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com> <20131118125240.GC32623@dhcp22.suse.cz> <20131118125507.GD32623@dhcp22.suse.cz>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,24 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Johannes Weiner wrote:
+On Mon, 18 Nov 2013, Michal Hocko wrote:
 
-> > Um, no, those processes are going through a repeated loop of direct 
-> > reclaim, calling the oom killer, iterating the tasklist, finding an 
-> > existing oom killed process that has yet to exit, and looping.  They 
-> > wouldn't loop for too long if we can reduce the amount of time that it 
-> > takes for that oom killed process to exit.
+> > > When current has a pending SIGKILL or is already in the exit path, it
+> > > only needs access to memory reserves to fully exit.  In that sense, the
+> > > memcg is not actually oom for current, it simply needs to bypass memory
+> > > charges to exit and free its memory, which is guarantee itself that
+> > > memory will be freed.
+> > > 
+> > > We only want to notify userspace for actionable oom conditions where
+> > > something needs to be done (and all oom handling can already be deferred
+> > > to userspace through this method by disabling the memcg oom killer with
+> > > memory.oom_control), not simply when a memcg has reached its limit, which
+> > > would actually have to happen before memcg reclaim actually frees memory
+> > > for charges.
+> > 
+> > I believe this also fixes the issue reported by Eric
+> > (https://lkml.org/lkml/2013/7/28/74). I had a patch for this
+> > https://lkml.org/lkml/2013/7/31/94 but the code changed since then and
+> > this should be equivalent.
+> >  
+> > > Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > Signed-off-by: David Rientjes <rientjes@google.com>
 > 
-> I'm not talking about the big loop in the page allocator.  The victim
-> is going through the same loop.  This patch is about the victim being
-> in a pointless direct reclaim cycle when it could be exiting, all I'm
-> saying is that the other tasks doing direct reclaim at that moment
-> should also be quitting and retrying the allocation.
+> Anyway, the patch looks good to me but please mention the above bug in
+> the changelog.
 > 
 
-"All other tasks" would be defined as though sharing the same mempolicy 
-context as the oom kill victim or the same set of cpuset mems, I'm not 
-sure what type of method for determining reclaim eligiblity you're 
-proposing to avoid pointlessly spinning without making progress.  Until an 
-alternative exists, my patch avoids the needless spinning and expedites 
-the exit, so I'll ask that it be merged.
+The patch is in -mm, so perhaps we can change the changelog if/when Eric 
+confirms it fixes his issue.
+
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+
+Thanks!
