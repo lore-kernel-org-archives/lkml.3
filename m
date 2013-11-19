@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3KSFXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 00:23:54 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:24297
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751529Ab3KSFXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 00:23:44 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h20cfi1155h)
-From: Bharat Bhushan <r65777@freescale.com>
-To: <alex.williamson@redhat.com>, <joro@8bytes.org>, <bhelgaas@google.com>,
-        <agraf@suse.de>, <scottwood@freescale.com>,
-        <stuart.yoder@freescale.com>, <iommu@lists.linux-foundation.org>,
-        <linux-pci@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
-        Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: [PATCH 3/9 v2] powerpc: pci: Add arch specific msi region interface
-Date: Tue, 19 Nov 2013 10:47:07 +0530
-Message-ID: <1384838233-24847-4-git-send-email-Bharat.Bhushan@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	id S1751961Ab3KSFYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:24:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43007 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab3KSFYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 00:24:01 -0500
+Message-ID: <528AF5D7.7000308@zytor.com>
+Date: Mon, 18 Nov 2013 21:23:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
+CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall
+References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the interface to get the msi region information from arch
-specific code. The machine spicific code is not yet defined.
+On 11/18/2013 04:27 PM, Andi Kleen wrote:
+> 
+> Proposed man page:
+> 
+> NAME
+> 	text_poke - Safely modify running instructions (x86)
+> 
+> SYNOPSYS
+> 	int text_poke(void *addr, const void *opcode, size_t len,
+> 	              void (*handler)(void), int timeout);
+> 
+> DESCRIPTION
+> 	The text_poke system allows to safely modify code that may
+> 	be currently executing in parallel on other threads.
+> 	Patch the instruction at addr with the new instructions
+> 	at opcode of length len. The target instruction will temporarily
+> 	be patched with a break point, before it is replaced
+> 	with the final replacement instruction. When the break point
+> 	hits the code handler will be called in the context
+> 	of the thread. The handler does not save any registers
+> 	and cannot return. Typically it would consist of the
+> 	original instruction and then a jump to after the original
+> 	instruction. The handler is only needed during the
+> 	patching process and can be overwritten once the syscall
+> 	returns. timeout defines an optional timout to indicate
+> 	to the kernel how long the patching could be delayed.
+> 	Right now it has to be 0.
+> 
 
-Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
----
-v1->v2
- - None
+I think I would prefer an interface which took a list of patch points,
+or implemented only the aspects which are impossible to do in user space.
 
- arch/powerpc/include/asm/machdep.h |    8 ++++++++
- arch/powerpc/kernel/msi.c          |   18 ++++++++++++++++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+All we really need in the kernel is the IPI broadcasts - the rest can be
+done in user space, including intercepting SIGTRAP.  For userspace it is
+probably the best to just put a thread to sleep until the patching is
+done, which can be done with a futex.
 
-diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
-index 8b48090..8d1b787 100644
---- a/arch/powerpc/include/asm/machdep.h
-+++ b/arch/powerpc/include/asm/machdep.h
-@@ -30,6 +30,7 @@ struct file;
- struct pci_controller;
- struct kimage;
- struct pci_host_bridge;
-+struct msi_region;
- 
- struct machdep_calls {
- 	char		*name;
-@@ -124,6 +125,13 @@ struct machdep_calls {
- 	int		(*setup_msi_irqs)(struct pci_dev *dev,
- 					  int nvec, int type);
- 	void		(*teardown_msi_irqs)(struct pci_dev *dev);
-+
-+	/* Returns the number of MSI regions (banks) */
-+	int		(*msi_get_region_count)(void);
-+
-+	/* Returns the requested region's address and size */
-+	int		(*msi_get_region)(int region_num,
-+					  struct msi_region *region);
- #endif
- 
- 	void		(*restart)(char *cmd);
-diff --git a/arch/powerpc/kernel/msi.c b/arch/powerpc/kernel/msi.c
-index 8bbc12d..1a67787 100644
---- a/arch/powerpc/kernel/msi.c
-+++ b/arch/powerpc/kernel/msi.c
-@@ -13,6 +13,24 @@
- 
- #include <asm/machdep.h>
- 
-+int arch_msi_get_region_count(void)
-+{
-+	if (ppc_md.msi_get_region_count) {
-+		pr_debug("msi: Using platform get_region_count routine.\n");
-+		return ppc_md.msi_get_region_count();
-+	}
-+	return 0;
-+}
-+
-+int arch_msi_get_region(int region_num, struct msi_region *region)
-+{
-+	if (ppc_md.msi_get_region) {
-+		pr_debug("msi: Using platform get_region routine.\n");
-+		return ppc_md.msi_get_region(region_num, region);
-+	}
-+	return 0;
-+}
-+
- int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
- {
- 	if (!ppc_md.setup_msi_irqs || !ppc_md.teardown_msi_irqs) {
--- 
-1.7.0.4
+One advantage with doing this in userspace is that the kernel doesn't
+have to be responsible avoiding holding a thread due to a slightly
+different SIGTRAP -- it will all come out after the signal handler is
+restored, anyway.
 
+That being said, the user space code would really need to be librarized.
+
+	-hpa
 
