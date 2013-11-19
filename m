@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab3KSQVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 11:21:34 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34221 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753249Ab3KSQVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 11:21:32 -0500
-Message-ID: <528B8F1C.3090506@ti.com>
-Date: Tue, 19 Nov 2013 18:17:32 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753356Ab3KSQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 11:22:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23874 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab3KSQWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 11:22:07 -0500
+Date: Tue, 19 Nov 2013 11:20:39 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Elena Ufimtseva <ufimtseva@gmail.com>, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, akpm@linux-foundation.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
+Message-ID: <20131119162039.GB6030@phenom.dumpdata.com>
+References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
+ <1384811922-14642-3-git-send-email-ufimtseva@gmail.com>
+ <528B5160.5010902@citrix.com>
+ <20131119141620.GD5332@phenom.dumpdata.com>
+ <528B774F.7090902@citrix.com>
+ <20131119144630.GA5780@phenom.dumpdata.com>
+ <528B7C29.3050103@citrix.com>
+ <20131119151924.GC5790@phenom.dumpdata.com>
+ <528B89DA.2080504@citrix.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/6] watchdog: davinci: change driver to use WDT core
-References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <1384795139-19466-2-git-send-email-ivan.khoronzhuk@ti.com> <528AF349.9070902@roeck-us.net>
-In-Reply-To: <528AF349.9070902@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528B89DA.2080504@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 07:12 AM, Guenter Roeck wrote:
-> On 11/18/2013 09:18 AM, Ivan Khoronzhuk wrote:
->> To reduce code duplicate and increase code readability use WDT core
->> code to handle WDT interface.
->>
->> Remove io_lock as the WDT core uses mutex to lock each wdt device.
->> Remove wdt_state as the WDT core track state with its own variable.
->>
->> The watchdog_init_timeout() can read timeout value from timeout-sec
->> property if the passed value is out of bounds. The heartbeat is
->> initialized in next way. If heartbeat is not set thought module
->> parameter, try to read it's value from WDT node timeout-sec property.
->> If node has no one, use default value.
->>
->> The heartbeat is hold in wdd->timeout by WDT core, so use it in
->> order to set timeout period.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>   drivers/watchdog/Kconfig       |    2 +
->>   drivers/watchdog/davinci_wdt.c |  152
->> ++++++++++------------------------------
->>   2 files changed, 39 insertions(+), 115 deletions(-)
->>
->> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->> index d1d53f3..d7db13d 100644
->> --- a/drivers/watchdog/Kconfig
->> +++ b/drivers/watchdog/Kconfig
->> @@ -271,6 +271,8 @@ config IOP_WATCHDOG
->>   config DAVINCI_WATCHDOG
->>       tristate "DaVinci watchdog"
->>       depends on ARCH_DAVINCI
->> +    select WATCHDOG_CORE
->> +    select WATCHDOG_NOWAYOUT
->
-> Is this mandatory, ie is it correct that the watchdog can not be stopped
-> once started ?
->
-> Assuming it is,
+On Tue, Nov 19, 2013 at 03:55:06PM +0000, David Vrabel wrote:
+> On 19/11/13 15:19, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Nov 19, 2013 at 02:56:41PM +0000, David Vrabel wrote:
+> >> The relevant bits in dummy_numa_init are in the error path of
+> >> xen_numa_init().
+> > 
+> > That seems the wrong place to do it. The top layer calls 
+> > in each of the numa implementations and then falls back to
+> > the dummy.
+> 
+> Think of it as not the dummy, but Xen setting the NUMA configuration up
+> with only a single node.
 
-Yes, it is. Davinci WDT can't be stopped and once it's expired - it can 
-be rearmed only after hardware reset.
+Or with multiple nodes if numa=fake is used.
 
->
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->
+> 
+> The useful bits in dummy_numa_init() are two calls to standard functions
+> for use by *_numa_init() calls so it just seems easier all round to just
+> call then directly than add a dependancy on dummy_numa_init().
 
-Thanks a lot for your review.
+My worry is more of the numa_init not being completly executed.
 
-Regards,
--grygorii
+> 
+> > Calling from within the implementation on something that is eventually
+> > done on the upper level already is not right.
+> 
+> >From the point of view of the caller, it does the right thing.  NUMA is
+> setup.
+> 
+> >> I do think this approach (using the provided API to setup the single
+> >> (dummy) node), is preferable to calling dummy_numa_init().
+> > 
+> > Doesn't it do the same thing? And also what about if you the user
+> > provides fakenuma?
+> 
+> I don't know what "fakenuma" is refering to.
 
+numa=fake or see arch/x86/mm/numa_emulation.c
 
+Which gets executed if you end up calling: numa_init(X) and 'X'
+returns a zero or positive value.
+
+Which it won't as the first thing it the Xen PV NUMA code does
+is to see if the hypercall is supported. If not, it bails out - so we
+never get to do the 'numa=fake' if a user wanted to.
