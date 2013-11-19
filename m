@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab3KSLJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:09:08 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:55912 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab3KSLIU (ORCPT
+	id S1752501Ab3KSLJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:09:20 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:49279 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab3KSLJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:08:20 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
-        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 08/10] ASoC: ux500_pcm: Differentiate between pdata and DT initialisation
-Date: Tue, 19 Nov 2013 11:07:47 +0000
-Message-Id: <1384859269-19801-9-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
-References: <1384859269-19801-1-git-send-email-lee.jones@linaro.org>
+	Tue, 19 Nov 2013 06:09:17 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAJB8poJ012374, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 1/2] mmc: rtsx: fix card poweroff bug
+Date: Tue, 19 Nov 2013 19:10:34 +0800
+Message-ID: <fb17a994c87352b1d82c6fb4141aa47b0c1d7e56.1384858553.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1384858553.git.micky_ching@realsil.com.cn>
+References: <cover.1384858553.git.micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If booting with full DT support (i.e. DMA too, the last piece of the
-puzzle), then we don't need to use the compatible request channel call
-back and, due to the work we laid down earlier in this patch-set, we
-can use core function calls to populate the DMA slave_config. We also
-require slightly different flags to inform the core that we 'are'
-booting with DT.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Cc: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@kernel.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+If the host driver removed while card in the slot, the host will not
+power off card power correctly. This bug is produced because host
+eject flag set before the last mmc_set_ios callback, we should set the
+eject flag after power off.
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- sound/soc/ux500/ux500_pcm.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
-index ce554de..acfec98 100644
---- a/sound/soc/ux500/ux500_pcm.c
-+++ b/sound/soc/ux500/ux500_pcm.c
-@@ -139,15 +139,33 @@ static const struct snd_dmaengine_pcm_config ux500_dmaengine_pcm_config = {
- 	.prepare_slave_config = ux500_pcm_prepare_slave_config,
- };
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 375a880e..c9a7328 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -1328,7 +1328,6 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
+ 	pcr->slots[RTSX_SD_CARD].p_dev = NULL;
+ 	pcr->slots[RTSX_SD_CARD].card_event = NULL;
+ 	mmc = host->mmc;
+-	host->eject = true;
  
-+static const struct snd_dmaengine_pcm_config ux500_dmaengine_of_pcm_config = {
-+	.pcm_hardware = &ux500_pcm_hw,
-+	.prealloc_buffer_size = 128 * 1024,
-+	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
-+};
-+
- int ux500_pcm_register_platform(struct platform_device *pdev)
- {
-+	const struct snd_dmaengine_pcm_config *pcm_config;
-+	struct device_node *np = pdev->dev.of_node;
-+	unsigned int pcm_flags;
- 	int ret;
+ 	mutex_lock(&host->host_mutex);
+ 	if (host->mrq) {
+@@ -1346,6 +1345,8 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
+ 	mutex_unlock(&host->host_mutex);
  
--	ret = snd_dmaengine_pcm_register(&pdev->dev,
--			&ux500_dmaengine_pcm_config,
--			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
--			SND_DMAENGINE_PCM_FLAG_COMPAT |
--			SND_DMAENGINE_PCM_FLAG_NO_DT);
-+	if (np) {
-+		pcm_config = &ux500_dmaengine_of_pcm_config;
+ 	mmc_remove_host(mmc);
++	host->eject = true;
 +
-+		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
-+			SND_DMAENGINE_PCM_FLAG_COMPAT;
-+	} else {
-+		pcm_config = &ux500_dmaengine_pcm_config;
-+
-+		pcm_flags = SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
-+			SND_DMAENGINE_PCM_FLAG_NO_DT |
-+			SND_DMAENGINE_PCM_FLAG_COMPAT;
-+	}
-+
-+	ret = snd_dmaengine_pcm_register(&pdev->dev, pcm_config, pcm_flags);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev,
- 			"%s: ERROR: Failed to register platform '%s' (%d)!\n",
+ 	mmc_free_host(mmc);
+ 
+ 	dev_dbg(&(pdev->dev),
 -- 
-1.8.1.2
+1.7.9.5
 
