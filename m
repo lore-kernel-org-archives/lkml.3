@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab3KSHPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 02:15:36 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:39511 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3KSHPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 02:15:34 -0500
-Date: Tue, 19 Nov 2013 08:15:31 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jason Baron <jbaron@akamai.com>, benh@kernel.crashing.org,
-        paulus@samba.org, ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
-Message-ID: <20131119071531.GA32469@gmail.com>
-References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com>
- <20131118143059.afe17d2faced16171a05eb10@linux-foundation.org>
+	id S1751866Ab3KSHPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 02:15:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:9919 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665Ab3KSHPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 02:15:37 -0500
+X-IronPort-AV: E=Sophos;i="4.93,727,1378857600"; 
+   d="asc'?scan'208";a="75832039"
+Message-ID: <1384845330.19880.11.camel@Abyss>
+Subject: Re: [Xen-devel] [PATCH v2 1/2] xen: vnuma support for PV guests
+ running as domU
+From: Dario Faggioli <dario.faggioli@citrix.com>
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+CC: <xen-devel@lists.xenproject.org>, <akpm@linux-foundation.org>,
+        <wency@cn.fujitsu.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
+        <mingo@redhat.com>, <david.vrabel@citrix.com>, <hpa@zytor.com>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
+        <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>
+Date: Tue, 19 Nov 2013 08:15:30 +0100
+In-Reply-To: <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+	 <1384806350-12651-2-git-send-email-ufimtseva@gmail.com>
+Organization: Citrix Ltd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-fkLng1eV+LX6+YtZMNDH"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118143059.afe17d2faced16171a05eb10@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--=-fkLng1eV+LX6+YtZMNDH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+On lun, 2013-11-18 at 15:25 -0500, Elena Ufimtseva wrote:
+> Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
 
-> On Mon, 18 Nov 2013 21:04:36 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
-> 
-> > The panic_timeout value can be set via the command line option 'panic=x', or via
-> > /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
-> > before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
-> > so that we can set the desired value from the .config.
-> > 
-> > The default panic_timeout value continues to be 0 - wait forever, except for
-> > powerpc and mips, which have been defaulted to 180 and 5 respectively. This
-> > is in keeping with the fact that these arches already set panic_timeout in
-> > their arch init code. However, I found three exceptions- two in mips and one in
-> > powerpc where the settings didn't match these default values. In those cases, I
-> > left the arch code so it continues to override, in case the user has not changed
-> > from the default. It would nice if these arches had one default value, or if we
-> > could determine the correct setting at compile-time.
-> 
-> Felipe is proposing a simpler patch ("panic: setup panic_timeout
-> early") which switches to early_param().  Is that sufficient for the
-> (undescribed!) failure which you are presumably observing?
+> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+> index 96ab2c0..de9deab 100644
+> --- a/arch/x86/xen/Makefile
+> +++ b/arch/x86/xen/Makefile
+> @@ -13,7 +13,7 @@ CFLAGS_mmu.o			:=3D $(nostackp)
+>  obj-y		:=3D enlighten.o setup.o multicalls.o mmu.o irq.o \
+>  			time.o xen-asm.o xen-asm_$(BITS).o \
+>  			grant-table.o suspend.o platform-pci-unplug.o \
+> -			p2m.o
+> +			p2m.o vnuma.o
+> =20
+>  obj-$(CONFIG_EVENT_TRACING) +=3D trace.o
 
-Also note that that patch is still incomplete: if panic_timeout is 
-switched to early_param() then closely related functionality such as 
-pause_on_oops should be moved early as well...
+I think David said something about this during last round (going
+fetchin'-cuttin'-pastin' it):
 
-Thanks,
+"
+    obj-$(CONFIG_NUMA) +=3D vnuma.o
 
-	Ingo
+    Then you can remove the #ifdef CONFIG_NUMA from xen/vnuma.c
+"
+=20
+> diff --git a/arch/x86/xen/vnuma.c b/arch/x86/xen/vnuma.c
+
+> +/*=20
+> + * Called from numa_init if numa_off =3D 0;
+                            ^ if numa_off =3D 1 ?
+
+> + * we set numa_off =3D 0 if xen_vnuma_supported()
+> + * returns true and its a domU;
+> + */
+> +int __init xen_numa_init(void)
+> +{
+
+> +	if (nr_nodes > num_possible_cpus()) {
+> +		pr_debug("vNUMA: Node without cpu is not supported in this version.\n"=
+);
+> +		goto out;
+> +	}
+> +
+This is a super-minor thing, but I wouldn't say "in this version". It
+makes people think that there will be a later version where that will be
+supported, which we don't know. :-)
+
+> +	/*
+> +	 * Set a dummy node and return success.  This prevents calling any
+> +	 * hardware-specific initializers which do not work in a PV guest.
+> +	 * Taken from dummy_numa_init code.
+> +	 */
+>
+This is a lot better... Thanks! :-)
+
+Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
+
+
+--=-fkLng1eV+LX6+YtZMNDH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iEYEABECAAYFAlKLEBIACgkQk4XaBE3IOsTEVQCZAd4GRhGj+38k5jQbmcrc8ScD
+LPQAnRfAxdldrFgb67DtlGBhotTN3ZsZ
+=e5Kr
+-----END PGP SIGNATURE-----
+
+--=-fkLng1eV+LX6+YtZMNDH--
