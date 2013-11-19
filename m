@@ -1,98 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3KSXBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:01:19 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:34254 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab3KSXBS (ORCPT
+	id S1753640Ab3KSXBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:01:52 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:45708 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab3KSXBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:01:18 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>
-Subject: Re: [PATCH linux-next] SELinux: security_load_policy: Silence frame-larger-than warning
-Date: Tue, 19 Nov 2013 18:01:11 -0500
-Message-ID: <2654507.D28U1bHoel@sifl>
-User-Agent: KMail/4.11.2 (Linux/3.12.0-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <528BEA34.9060907@canonical.com>
-References: <1384466691-42392-1-git-send-email-tim.gardner@canonical.com> <2344755.pvM4VQSB59@sifl> <528BEA34.9060907@canonical.com>
+	Tue, 19 Nov 2013 18:01:49 -0500
+Message-ID: <528BEDD7.6000308@gmail.com>
+Date: Tue, 19 Nov 2013 15:01:43 -0800
+From: Rajat Jain <rajatjain.linux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Linux-PCI <linux-pci@vger.kernel.org>,
+        Linux-hotplug <linux-hotplug@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+CC: Bjorn Helgaas <bhelgaas@google.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Rajat Jain <rajatjain.linux@gmail.com>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Subject: [RFC PATCH 3/4] pciehp: Ensure very fast hotplug events are also
+ processed.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 19, 2013 02:46:12 PM Tim Gardner wrote:
-> On 11/19/2013 02:38 PM, Paul Moore wrote:
-> > On Thursday, November 14, 2013 03:04:51 PM Tim Gardner wrote:
-> >> Dynamically allocate a couple of the larger stack variables in order to
-> >> reduce the stack footprint below 1024. gcc-4.8
-> >> 
-> >> security/selinux/ss/services.c: In function 'security_load_policy':
-> >> security/selinux/ss/services.c:1964:1: warning: the frame size of 1104
-> >> bytes is larger than 1024 bytes [-Wframe-larger-than=] }
-> >> 
-> >> Also silence a couple of checkpatch warnings at the same time.
-> >> 
-> >> WARNING: sizeof policydb should be sizeof(policydb)
-> >> +	memcpy(oldpolicydb, &policydb, sizeof policydb);
-> >> 
-> >> WARNING: sizeof policydb should be sizeof(policydb)
-> >> +	memcpy(&policydb, newpolicydb, sizeof policydb);
-> >> 
-> >> Cc: Stephen Smalley <sds@tycho.nsa.gov>
-> >> Cc: James Morris <james.l.morris@oracle.com>
-> >> Cc: Eric Paris <eparis@parisplace.org>
-> >> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> >> ---
-> >> 
-> >>  security/selinux/ss/services.c |   54
-> >>  ++++++++++++++++++++++--------------
-> >>  1 file changed, 32 insertions(+), 22 deletions(-)
-> > 
-> > Applied, thanks.  It will be pushed to my next tree once -rc1 is released.
-> > 
-> > In the future, please send SELinux patches to the SELinux mailing list.
-> 
-> It is difficult to know where to send a patch for every subsystem. I've
-> been using the get_maintainer.pl script, so perhaps the info in
-> MAINTAINERS is stale ? I'm open to suggestions.
 
-The SELinux mailing list information in the MAINTAINERS file isn't stale, 
-although we have just recently changed the tree location and that patch hasn't 
-hit Linus' tree yet.  Here is the most current snippet:
+Today, this is how all the hotplug and unplug events work:
 
- SELINUX SECURITY MODULE
- M:      Stephen Smalley <sds@tycho.nsa.gov>
- M:      James Morris <james.l.morris@oracle.com>
- M:      Eric Paris <eparis@parisplace.org>
- M:      Paul Moore <paul@paul-moore.com>
- L:      selinux@tycho.nsa.gov (subscribers-only, general discussion)
- W:      http://selinuxproject.org
- T:      git git://git.infradead.org/users/pcmoore/selinux
- S:      Supported
- F:      include/linux/selinux*
- F:      security/selinux/
- F:      scripts/selinux/
+Hotplug / Removal needs to be done
+  => Set slot->state (protected by slot->lock) to either
+    POWERON_STATE (for enabling) or POWEROFF_STATE (for disabling).
+  => Submit the work item for pciehp_power_thread() to slot->wq.
 
-My Perl is a bit rusty/non-existent so I'm not sure why the get_maintainer 
-script isn't showing the mailing list information, so in the meantime I would 
-suggest just looking through the file by hand.
+Problem:
+  There is a problem if the hotplug events can happen fast enough that
+  they do not give SW enough time to add or remove the new devices.
+
+  => Assume: Event for unplug comes (e.g. surprise removal). But
+     before the pciehp_power_thread() work item was executed, the
+     card was replaced by another card, causing surprise hotplug event.
+
+  => What goes wrong:
+    => The hot-removal event sets slot->state to POWEROFF_STATE, and
+       schedules the pciehp_power_thread().
+    => The hot-add event sets slot->state to POWERON_STATE, and
+       schedules the pciehp_power_thread().
+    => Now the pciehp_power_thread() is scheduled twice, and on both
+       occasions it will find POWERON_STATE and will try to add the
+       devices on the slot, and will fail complaining that the devices
+       already exist.
+
+  => Why this is a problem: If the device was replaced between the hot
+     removal and hot-add, then we should unload the old driver and
+     reload the new one. This does not happen today. The kernel or the
+     driver is not even aware that the device was replaced.
+
+     The problem is that the pciehp_power_thread() only looks at the
+     slot->state which would only contain the *latest* state - not
+     the actual event (add / remove) that was the intent of the IRQ
+     handler who submitted the work.
+
+What this patch does:
+
+  => Hotplug events pass on an actual request (for addition or removal)
+     to pciehp_power_thread() which is local to that work item
+     submission.
+
+  => pciehp_power_thread() does not need to look at slote->state and
+     hence no locks needed in that.
+
+  => Essentially this results in all the hotplug and unplug events
+     "replayed" by pciehp_power_thread().
+
+Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+---
+ drivers/pci/hotplug/pciehp_ctrl.c |   32 +++++++++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/pci/hotplug/pciehp_ctrl.c b/drivers/pci/hotplug/pciehp_ctrl.c
+index 3899b52..83dbe08 100644
+--- a/drivers/pci/hotplug/pciehp_ctrl.c
++++ b/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -299,6 +299,9 @@ static int remove_board(struct slot *p_slot)
+ struct power_work_info {
+ 	struct slot *p_slot;
+ 	struct work_struct work;
++	unsigned int req;
++#define DISABLE_REQ 0
++#define ENABLE_REQ  1
+ };
  
-> $: scripts/get_maintainer.pl -f security/selinux/ss/services.c
-> Stephen Smalley <sds@tycho.nsa.gov> (supporter:SELINUX SECURITY...)
-> James Morris <james.l.morris@oracle.com> (supporter:SELINUX SECURITY...)
-> Eric Paris <eparis@parisplace.org> (supporter:SELINUX SECURITY...)
-> linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
-> linux-kernel@vger.kernel.org (open list)
-> 
-> rtg
-
+ /**
+@@ -314,10 +317,8 @@ static void pciehp_power_thread(struct work_struct *work)
+ 		container_of(work, struct power_work_info, work);
+ 	struct slot *p_slot = info->p_slot;
+ 
+-	mutex_lock(&p_slot->lock);
+-	switch (p_slot->state) {
+-	case POWEROFF_STATE:
+-		mutex_unlock(&p_slot->lock);
++	switch (info->req) {
++	case DISABLE_REQ:
+ 		ctrl_dbg(p_slot->ctrl,
+ 			 "Disabling domain:bus:device=%04x:%02x:00\n",
+ 			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
+@@ -325,18 +326,22 @@ static void pciehp_power_thread(struct work_struct *work)
+ 		pciehp_disable_slot(p_slot);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
+-		break;
+-	case POWERON_STATE:
+ 		mutex_unlock(&p_slot->lock);
++		break;
++	case ENABLE_REQ:
++		ctrl_dbg(p_slot->ctrl,
++			 "Enabling domain:bus:device=%04x:%02x:00\n",
++			 pci_domain_nr(p_slot->ctrl->pcie->port->subordinate),
++			 p_slot->ctrl->pcie->port->subordinate->number);
+ 		if (pciehp_enable_slot(p_slot) && PWR_LED(p_slot->ctrl))
+ 			pciehp_green_led_off(p_slot);
+ 		mutex_lock(&p_slot->lock);
+ 		p_slot->state = STATIC_STATE;
++		mutex_unlock(&p_slot->lock);
+ 		break;
+ 	default:
+ 		break;
+ 	}
+-	mutex_unlock(&p_slot->lock);
+ 
+ 	kfree(info);
+ }
+@@ -359,9 +364,11 @@ void pciehp_queue_pushbutton_work(struct work_struct *work)
+ 	switch (p_slot->state) {
+ 	case BLINKINGOFF_STATE:
+ 		p_slot->state = POWEROFF_STATE;
++		info->req = DISABLE_REQ;
+ 		break;
+ 	case BLINKINGON_STATE:
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
+ 		break;
+ 	default:
+ 		kfree(info);
+@@ -457,10 +464,13 @@ static void handle_surprise_event(struct slot *p_slot)
+ 	INIT_WORK(&info->work, pciehp_power_thread);
+ 
+ 	pciehp_get_adapter_status(p_slot, &getstatus);
+-	if (!getstatus)
++	if (!getstatus) {
+ 		p_slot->state = POWEROFF_STATE;
+-	else
++		info->req = DISABLE_REQ;
++	} else {
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
++	}
+ 
+ 	queue_work(p_slot->wq, &info->work);
+ }
+@@ -489,6 +499,7 @@ static void handle_link_up_event(struct slot *p_slot)
+ 		/* Fall through */
+ 	case STATIC_STATE:
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
+ 		queue_work(p_slot->wq, &info->work);
+ 		break;
+ 	case POWERON_STATE:
+@@ -502,6 +513,7 @@ static void handle_link_up_event(struct slot *p_slot)
+ 			  "Link Up event queued on slot(%s): currently getting powered off\n",
+ 			  slot_name(p_slot));
+ 		p_slot->state = POWERON_STATE;
++		info->req = ENABLE_REQ;
+ 		queue_work(p_slot->wq, &info->work);
+ 		break;
+ 	default:
+@@ -536,6 +548,7 @@ static void handle_link_down_event(struct slot *p_slot)
+ 		/* Fall through */
+ 	case STATIC_STATE:
+ 		p_slot->state = POWEROFF_STATE;
++		info->req = DISABLE_REQ;
+ 		queue_work(p_slot->wq, &info->work);
+ 		break;
+ 	case POWEROFF_STATE:
+@@ -549,6 +562,7 @@ static void handle_link_down_event(struct slot *p_slot)
+ 			  "Link Down event queued on slot(%s): currently getting powered on\n",
+ 			  slot_name(p_slot));
+ 		p_slot->state = POWEROFF_STATE;
++		info->req = DISABLE_REQ;
+ 		queue_work(p_slot->wq, &info->work);
+ 		break;
+ 	default:
 -- 
-paul moore
-www.paul-moore.com
+1.7.9.5
 
