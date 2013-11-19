@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab3KSPbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 10:31:47 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:39659 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab3KSPbq (ORCPT
+	id S1752936Ab3KSPcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 10:32:23 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:35967 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab3KSPcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 10:31:46 -0500
-Date: Tue, 19 Nov 2013 16:31:42 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf record: mmap output file - v5
-Message-ID: <20131119153142.GA10913@gmail.com>
-References: <528AB229.6030603@gmail.com>
- <87wqk5t9yd.fsf@sejong.aot.lge.com>
- <528ACA41.4030202@gmail.com>
- <87ob5ht962.fsf@sejong.aot.lge.com>
- <528ACDE7.3050107@gmail.com>
- <20131119065835.GB32367@gmail.com>
- <20131119114810.GK3866@twins.programming.kicks-ass.net>
- <20131119114959.GE3694@twins.programming.kicks-ass.net>
- <20131119131304.GC7263@gmail.com>
- <20131119134508.GN3866@twins.programming.kicks-ass.net>
+	Tue, 19 Nov 2013 10:32:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119134508.GN3866@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528B7CE5.5040502@ti.com>
+References: <1384568535-26611-1-git-send-email-nm@ti.com>
+	<20131116134445.GI11014@S2101-09.ap.freescale.net>
+	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
+	<528A27F8.3070402@ti.com>
+	<20131118155753.GU11014@S2101-09.ap.freescale.net>
+	<528A4340.3020508@ti.com>
+	<20131119022133.GB18434@S2101-09.ap.freescale.net>
+	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
+	<528B72C1.5060006@ti.com>
+	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
+	<528B7CE5.5040502@ti.com>
+Date: Tue, 19 Nov 2013 21:02:20 +0530
+Message-ID: <CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19 November 2013 20:29, Nishanth Menon <nm@ti.com> wrote:
+> Not completely true - reaching probe after boot in a few seconds may
+> not mean that system will remain stable at that frequency for longer
+> duration. From a silicon vendor perspective, I do know that we
+> gaurentee the discrete frequencies in the data manual (and that gets
+> populated in devicetree and hence in freq_table), but we will not
+> guarentee any other frequency to be functional for any length of time.
+> in short, if a actual product is manufactured and operational at a
+> frequency we do not "officially support", there is a risk associated
+> with that. just a boot on a few development systems do not ever
+> guarentee productization capability.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Maybe for a long duration system isn't stable enough but should be
+stable for few seconds Atleast?
 
-> On Tue, Nov 19, 2013 at 02:13:04PM +0100, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Tue, Nov 19, 2013 at 12:48:10PM +0100, Peter Zijlstra wrote:
-> > > > And that does indeed seem to side-step the perf sw pagefault event, but
-> > > > that is arguably a perf bug.
-> > > 
-> > > To clarify; mm/memory.c:handle_mm_fault() is where the VM counts its 
-> > > generic PGFAULT event, but our perf sw event is in the arch fault 
-> > > handler.
-> > > 
-> > > So they count different but related things.
-> > 
-> > I think that assymetry was intended: we didn't want to count 
-> > 'synchronous' pagefaults like get_user_pages() or mlock() bringing 
-> > in pages, only asynchronous/real ones, or so.
-> 
-> OK, I couldn't remember.
-> 
-> Anyway, I don't want to hold up this patch set, and the speedup in 
-> the 'normal' case is nice.
-> 
-> The only reason I reacted was because the changelog mentioned 
-> avoiding a feedback loop -- so I obviously had to point out that it 
-> didn't do such a thing, it only changed the details of the loop.
+As soon as ->init() of driver is called we will get a call to:
+cpufreq_set_policy() from cpufreq_init_policy(). And we will execute
+this for sure:
 
-So with MAP_POPULATE the 'feedback window' is moved entirely into the 
-kernel (to within a single syscall) and is also reduced significantly, 
-compared to a write() loop.
+ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
 
-While you are right that it is not an elimination of the problem - yet 
-it is still a significant reduction of its cross section surface in 
-practice.
+On this call if the current freq is lesser or greater than policy limits,
+then we will fix it straight away.. Otherwise whichever the governor
+is, we will change the freq to any from freq-table very soon..
 
-> I'm fairly certain this particular problem is unavoidable, no matter 
-> what the mechanism used, you can always create feedback.
+So, we need a real example of unstable system which really
+requires your patch. Otherwise I feel that we will not face any problems
+at all..
 
-Well, we could exclude the profiling task itself from profiling events 
-(just like ftrace and core bits of perf does it out of necessity), but 
-I intentionally wanted to avoid that, to make sure we are honest and 
-to make sure people don't tolerate profiling overhead that disturbs 
-other workloads.
+> So, to summarize: what is our overall strategy here? to move to a
+> frequency matched in freq_table OR just giveup? I can try and respin
+> accordingly.
 
-Thanks,
+I want cpufreq-stats to be fixed with something else, might be something
+similar to the patch I have sent..
 
-	Ingo
+But this stuff can be left as is..
