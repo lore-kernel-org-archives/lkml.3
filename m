@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab3KSJVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 04:21:38 -0500
-Received: from nebula.mojo.cc ([46.4.89.19]:35500 "EHLO nebula.mojo.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab3KSJVg convert rfc822-to-8bit (ORCPT
+	id S1751798Ab3KSJWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 04:22:16 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:50515 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3KSJWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 04:21:36 -0500
-From: "MPhil. Emanoil Kotsev" <Emanoil.Kotsev@fincom.at>
-Organization: FinCom Consulting
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [Intel-gfx] kernel 3.11.6 general protection fault
-Date: Tue, 19 Nov 2013 10:21:09 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel@ffwll.ch>
-References: <201311132058.30310.Emanoil.Kotsev@fincom.at> <201311171745.19339.Emanoil.Kotsev@fincom.at> <20131117200546.GP27323@pd.tnic>
-In-Reply-To: <20131117200546.GP27323@pd.tnic>
-X-KMail-QuotePrefix: > 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201311191021.10095.Emanoil.Kotsev@fincom.at>
+	Tue, 19 Nov 2013 04:22:13 -0500
+From: Alex Shi <alex.shi@linaro.org>
+To: peterz@infradead.org, mingo@redhat.com
+Cc: Morten.Rasmussen@arm.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Alex Shi <alex.shi@linaro.org>
+Subject: [PATCH] sched: remove unused variable in sched_domain
+Date: Tue, 19 Nov 2013 17:21:52 +0800
+Message-Id: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The 'u64 last_update' variable isn't used now, remove it to save a
+bit space.
 
-On Sunday 17 November 2013 21:05:46 Borislav Petkov wrote:
-> On Sun, Nov 17, 2013 at 05:45:18PM +0100, MPhil. Emanoil Kotsev wrote:
-> > How - new libraries - more exhaustive algorythms - higher cpu usage
-> > etc. Some of the things M$ is doing on purpose to force you upgrade
-> > your hardware every 2-3years
->
-> That would be too easy and machines would be dying left and right of
-> overheating. Actually, sane hardware is much more robust than that and
-> it throttles itself in case of critical temperature levels. And, IMHO
-> your Dell Latitude D520 should be fine, in that respect. But we'll see.
->
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ include/linux/sched.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-I was thinking the same - but started to despair
-
-> :-)
-> :
-> > I wanted to first compile the kernel with the debug option you
-> > mentioned, but while compiling it went to about 75°C.
->
-> Yeah, that's still ok if we trust the output saying that 126°C is the
-> critical temp.
->
-> It would be interesting to see what this sensor says right before the
-> machine locks up.
-
-This test is outstanding for a moment where I have more free time to reproduce 
-and log everything
-
-I did something else yesterday evening before going to bed ~00:30
-I closed the  notebook cover just so that it would switch off the LCD display
-In the morning I opened up and found the notebook with blinking led lights 
-
-http://www.dell.com/support/troubleshooting/us/en/19/KCS/KcsArticles/ArticleView?c=us&l=en&s=dhs&docid=DSN_DBECF64CFEDA449398CB9E859D4944A5
-
-unfortunately I don't find the pattern in the link above
-the left one was on and the other two were blinking
-
-Arter shut down (keep power button pressed) and turning it on only the two 
-leds (middle and right) were blinking, which according the link above means 
-
-Configuring PCI bridges	Replacing the system board.
-
-After waiting for about 1-2mins notebook starts normally - another link to 
-heating issues.
-
-At the moment I have to do pretty much at all levels, so I can not test any 
-further.
-This is just an update. I'll post again when more results are available.
-I'm thinking to open up and inspect from inside - perhaps somewhere the 
-cooling system is clogged or something.
-
-regards
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6f7ffa4..ac68802 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -831,8 +831,6 @@ struct sched_domain {
+ 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
+ 
+-	u64 last_update;
+-
+ 	/* idle_balance() stats */
+ 	u64 max_newidle_lb_cost;
+ 	unsigned long next_decay_max_lb_cost;
+-- 
+1.8.1.2
 
