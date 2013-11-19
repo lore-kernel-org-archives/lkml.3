@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab3KSUgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:36:32 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43927 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab3KSUg2 (ORCPT
+	id S1752724Ab3KSUio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:38:44 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:65023 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751727Ab3KSUil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:36:28 -0500
+	Tue, 19 Nov 2013 15:38:41 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 0/10] ACPI: Device objects for all namespace nodes and PCI root hotplug integration
+Date: Tue, 19 Nov 2013 21:51:19 +0100
+Message-ID: <3736594.HRILCo6Ms2@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131119143046.GL2281@intel.com>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <20131119143046.GL2281@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <201311191335.40506.arnd@arndb.de>
-References: <1376996476-12027-2-git-send-email-geert@linux-m68k.org>
-	<1384859955-27837-1-git-send-email-geert@linux-m68k.org>
-	<201311191335.40506.arnd@arndb.de>
-Date: Tue, 19 Nov 2013 21:36:28 +0100
-X-Google-Sender-Auth: d9WqMlyUquwe9vYd68e92JZ4Ox0
-Message-ID: <CAMuHMdXvn2GigpnH020XA1JvtF=4ZxwrOF4T=ocGgjhrcbWkgg@mail.gmail.com>
-Subject: Re: [PATCH RESEND] asm/types.h: Remove include/asm-generic/int-l64.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Tuesday, November 19, 2013 04:30:46 PM Mika Westerberg wrote:
+> On Sun, Nov 17, 2013 at 05:29:41PM +0100, Rafael J. Wysocki wrote:
+> > This is 3.14 material, but I'm posting it today to let you know it is coming.
+> > Of course, if you see any immediate problems with the following patches, please
+> > let me know.
+> 
+> For what it's worth, I have tested this series on three different systems
+> that have Thunderbolt and it still works fine after the series has been
+> applied :)
 
-On Tue, Nov 19, 2013 at 1:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 19 November 2013, Geert Uytterhoeven wrote:
->> Now all 64-bit architectures have been converted to int-ll64.h, we can
->> remove int-l64.h in kernelspace.
->>
->> For backwards compatibility, alpha, ia64, mips64, and powerpc64 still use
->> int-l64.h in userspace.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Awesome, thanks!
 
-Thanks!
+I hope you won't mind if I add your Tested-by to the series. :-)
 
->> Since <asm/types.h> (from include/uapi/asm-generic/types.h) is used for
->> both kernel and user space, include/asm-generic/int-ll64.h cannot just
->> become include/asm-generic/types.h, as Arnd suggested.
->
-> I'm pretty sure you are right with this, but I don't remember at all
-> what I suggested and don't understand what the problem (if any) is.
-> Can you remind me?
-
-Me neither :-(
-You said https://lkml.org/lkml/2011/8/13/109, and Al's umode_t
-consolidation has been completed.
-
-I think it had to do with include/uapi/asm-generic/types.h including
-<asm-generic/int-ll64.h>. Let's try...
-
-In userspace, it will include <asm-generic/int-ll64.h> from uapi to get
-e.g. __u32.
-In kernelspace, it will include plain <asm-generic/int-ll64.h> (to get e.g.
-u32), which will in turn include <uapi/asm-generic/int-ll64.h> (to also
-get e.g. __u32).
-
-As there's only include/uapi/asm-generic/types.h, but not
-include/asm-generic/types.h (the individual architectures still have their
-own asm/types.h), you cannot easily move (the contents of) int-ll64.h
-to asm-generic/types.h for both the normal and uapi headers.
-
-Does this make sense?
-
-Note that this discussion is about what to do with the remaining int-ll64.h,
-not about removing int-l64.h, which is what this patch is really about.
-So _this_ patch can just go in.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
