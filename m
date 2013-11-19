@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3KSSND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:13:03 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40482 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab3KSSM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:12:59 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linux-OMAP <linux-omap@vger.kernel.org>, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-gpio\@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 01/23] gpio/omap: raw read and write endian fix
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
-	<1384560086-11994-2-git-send-email-taras.kondratiuk@linaro.org>
-	<CACRpkdYD-Yw+RFnX0GshyQn2oHYNnXXRF4RXTzCox=2Z0_gKqg@mail.gmail.com>
-Date: Tue, 19 Nov 2013 10:12:55 -0800
-In-Reply-To: <CACRpkdYD-Yw+RFnX0GshyQn2oHYNnXXRF4RXTzCox=2Z0_gKqg@mail.gmail.com>
-	(Linus Walleij's message of "Tue, 19 Nov 2013 10:29:02 +0100")
-Message-ID: <87mwl0mfa0.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752607Ab3KSSN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:13:57 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:49031 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752496Ab3KSSNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:13:54 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH] tcp: don't update snd_nxt, when a socket is switched from repair mode
+Date: Tue, 19 Nov 2013 22:10:06 +0400
+Message-Id: <1384884606-9978-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij <linus.walleij@linaro.org> writes:
+snd_nxt must be updated synchronously with sk_send_head.  Otherwise
+tp->packets_out may be updated incorrectly, what may bring a kernel panic.
 
-> On Sat, Nov 16, 2013 at 1:01 AM, Taras Kondratiuk
-> <taras.kondratiuk@linaro.org> wrote:
->
->> From: Victor Kamensky <victor.kamensky@linaro.org>
->>
->> All OMAP IP blocks expect LE data, but CPU may operate in BE mode.
->> Need to use endian neutral functions to read/write h/w registers.
->> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
->> need to use read[lw]_relaxed and write[lw]_relaxed functions.
->> If the first simply reads/writes register, the second will byteswap
->> it if host operates in BE mode.
->>
->> Changes are trivial sed like replacement of __raw_xxx functions
->> with xxx_relaxed variant.
->>
->> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->
-> Since I generally just dislike __raw accessors I went and applied
-> this. If it collides with any of Tony's fixup work I might need to
-> take the patch out again, no big deal.
->
-> Some ACKs would be nice, but unless there are major objections
-> this stays merged.
+Here is a kernel panic from my host.
+[  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+[  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
+...
+[  146.301158] Call Trace:
+[  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+Before this panic a tcp socket was restored. This socket had sent and
+unsent data in the write queue. Sent data was restored in repair mode,
+then the socket was switched from reapair mode and unsent data was
+restored. After that the socket was switched back into repair mode.
+
+In that moment we had a socket where write queue looks like this:
+snd_una    snd_nxt   write_seq
+   |_________|________|
+             |
+	  sk_send_head
+
+After a second switching from repair mode the state of socket was
+changed:
+
+snd_una          snd_nxt, write_seq
+   |_________ ________|
+             |
+	  sk_send_head
+
+This state is inconsistent, because snd_nxt and sk_send_head are not
+synchronized.
+
+Bellow you can find a call trace, how packets_out can be incremented
+twice for one skb, if snd_nxt and sk_send_head are not synchronized.
+In this case packets_out will be always positive, even when
+sk_write_queue is empty.
+
+tcp_write_wakeup
+	skb = tcp_send_head(sk);
+	tcp_fragment
+		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
+			tcp_adjust_pcount(sk, skb, diff);
+	tcp_event_new_data_sent
+		tp->packets_out += tcp_skb_pcount(skb);
+
+I think update of snd_nxt isn't required, when a socket is switched from
+repair mode.  Because it's initialized in tcp_connect_init. Then when a
+write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
+so it's always is in consistent state.
+
+I have checked, that the bug is not reproduced with this patch and
+all tests about restoring tcp connections work fine.
+
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ net/ipv4/tcp_output.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 6728546..fa9f57d 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -3093,7 +3093,6 @@ void tcp_send_window_probe(struct sock *sk)
+ {
+ 	if (sk->sk_state == TCP_ESTABLISHED) {
+ 		tcp_sk(sk)->snd_wl1 = tcp_sk(sk)->rcv_nxt - 1;
+-		tcp_sk(sk)->snd_nxt = tcp_sk(sk)->write_seq;
+ 		tcp_xmit_probe_skb(sk, 0);
+ 	}
+ }
+-- 
+1.8.3.1
+
