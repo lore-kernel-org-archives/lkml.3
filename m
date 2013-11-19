@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3KSXFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:05:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42378 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab3KSXFS (ORCPT
+	id S1753513Ab3KSXGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:06:11 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:37901 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab3KSXGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:05:18 -0500
-Date: Tue, 19 Nov 2013 15:05:36 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Heorhi Valakhanovich <valahanovich@tut.by>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: Only hangup once
-Message-ID: <20131119230536.GA13504@kroah.com>
-References: <1375293945-4087-1-git-send-email-peter@hurleysoftware.com>
- <20131117203850.46df2124@tormoz-pc>
- <20131118134211.17861db3@alan.etchedpixels.co.uk>
- <528A5043.6030901@hurleysoftware.com>
- <528A797B.6020807@hurleysoftware.com>
- <20131119000923.5ca40e51@tormoz-pc>
- <528B6BB3.7020303@hurleysoftware.com>
- <20131119201952.2d63b8ce@tormoz-pc>
- <20131119174032.GB22604@kroah.com>
- <528BD95B.3070400@hurleysoftware.com>
+	Tue, 19 Nov 2013 18:06:07 -0500
+Date: Tue, 19 Nov 2013 15:05:42 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH v5 2/4] MCS Lock: optimizations and extra comments
+Message-ID: <20131119230542.GW4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1383935697.git.tim.c.chen@linux.intel.com>
+ <1383940325.11046.415.camel@schen9-DESK>
+ <20131119191310.GO4138@linux.vnet.ibm.com>
+ <1384901861.11046.449.camel@schen9-DESK>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528BD95B.3070400@hurleysoftware.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1384901861.11046.449.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13111923-8236-0000-0000-000003F85B74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 04:34:19PM -0500, Peter Hurley wrote:
-> On 11/19/2013 12:40 PM, Greg KH wrote:
-> > It should be backported to 3.12, and any other kernels?
+On Tue, Nov 19, 2013 at 02:57:41PM -0800, Tim Chen wrote:
+> On Tue, 2013-11-19 at 11:13 -0800, Paul E. McKenney wrote:
+> > On Fri, Nov 08, 2013 at 11:52:05AM -0800, Tim Chen wrote:
+> > > 
+> > > +/*
+> > > + * Releases the lock. The caller should pass in the corresponding node that
+> > > + * was used to acquire the lock.
+> > > + */
+> > >  static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+> > >  {
+> > >  	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
+> > > @@ -51,7 +60,7 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
+> > >  		/*
+> > >  		 * Release the lock by setting it to NULL
+> > >  		 */
+> > > -		if (cmpxchg(lock, node, NULL) == node)
+> > > +		if (likely(cmpxchg(lock, node, NULL) == node))
+> > 
+> > Agreed here as well.  Takes a narrow race to hit this.
+> > 
+> > So, did your testing exercise this path?  If the answer is "yes", 
 > 
-> Greg,
 > 
-> This patch should apply cleanly to 3.12.
+> Paul,
 > 
-> The first commit to rely on the correct TTY_HUPPED state was
-> commit 36697529b5bbe36911e39a6309e7a7c9250d280a,
->     'tty: Replace ldisc locking with ldisc_sem'
-> which was introduced in the 3.12 cycle.
-> 
-> Regards,
-> Peter Hurley
-> 
-> PS - Did you receive 'n_tty: Fix echo overrun tail computation'?
-> I saw it didn't make 3.12.1.
+> I did some instrumentation and confirmed that the path in question has 
+> been exercised.  So this patch should be okay.
 
-Yes, I got it, I can't apply anything to my trees until 3.13-rc1 is out,
-and because it's not in Linus's tree yet, I can't apply it to a stable
-tree.  So give us a few weeks, don't worry, it's not lost.
+Very good!
 
-greg k-h
+							Thanx, Paul
+
