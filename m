@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3KSXdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:33:10 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36916 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab3KSXdG (ORCPT
+	id S1753619Ab3KSXdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:33:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30057 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab3KSXdO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:33:06 -0500
-Message-ID: <528BF535.1030504@linaro.org>
-Date: Wed, 20 Nov 2013 00:33:09 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 19 Nov 2013 18:33:14 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: ux500: decomission the non-DT MTU init sequence
-References: <1384896471-9384-1-git-send-email-linus.walleij@linaro.org>	<528BE8F2.3030507@linaro.org> <CACRpkdab=1xJtcAg-_oUBr_jC5DgDre-f9jxuzDnZmXGFShvLw@mail.gmail.com>
-In-Reply-To: <CACRpkdab=1xJtcAg-_oUBr_jC5DgDre-f9jxuzDnZmXGFShvLw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Message-ID: <8744a6a4-d7a8-4e6f-8934-48a4fd4da0ce@default>
+Date: Tue, 19 Nov 2013 15:33:06 -0800 (PST)
+From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+To: Honggang LI <honli@redhat.com>, Josh Hunt <joshhunt00@gmail.com>
+Cc: David Miller <davem@davemloft.net>, jjolly@suse.com,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
+References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+	<20120922.152524.1294103117346567757.davem@davemloft.net>
+	<CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>
+	<CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
+	<23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
+ <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
+ <52841F95.7040204@redhat.com> <41aa904c-6707-4c74-ae72-96e401c68e13@default>
+ <528587D0.5060105@redhat.com>
+In-Reply-To: <528587D0.5060105@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
+ 12.0.6680.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 11:55 PM, Linus Walleij wrote:
-> On Tue, Nov 19, 2013 at 11:40 PM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> On 11/19/2013 10:27 PM, Linus Walleij wrote:
->
->>> -       if (!of_have_populated_dt())
->>> -               nmdk_timer_init(mtu_timer_base, IRQ_MTU0);
->>
->> If no timer have been defined in the dt [or wrongly defined], is there a
->> message to tell the user what is wrong ?
->
-> Isn't that a question to be asked about a whole lot of such
-> clocksource drivers and ARM platforms?
+We now have lot more information than we did before.
+When sending a "congestion update" in rds_ib_xmit() we are now returning an incorrect number as bytes sent:
 
-Yes, I did the comment based on your patch but I agree it must be 
-addressed in a global manner.
+        BUG_ON(off % RDS_FRAG_SIZE);
+        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
 
-> Most DT-only ARM platforms rely on
-> arch/arm/kernel/time.c to call clocksource_of_init() if the
-> machine_desc->init_time() hook is not set and has zero
-> code to handle any such situation.
->
-> So I guess what you're asking is whether we should patch
-> clocksource_of_init() to warn if it cannot find any
-> matching clock sources, like this:
->
->  From e55cf038b238d96b28d9fb01b5b6cdf345990d53 Mon Sep 17 00:00:00 2001
-> From: Linus Walleij <linus.walleij@linaro.org>
-> Date: Tue, 19 Nov 2013 23:52:56 +0100
-> Subject: [PATCH] clksrc-of: warn if no clock sources are found
->
-> Many platforms rely on clocksource_of_init() being implicitly
-> called for registering clock sources and will get zero warnings
-> if no working clock source is available. Let's print a critical
-> error message if no clock source is found.
->
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+        /* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                scat = &rm->data.op_sg[sg];
+                ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+                ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
+                return ret;
+        }
 
-Yes, it sounds right to do this.
+It returns min(8240, 4096-0) i.e. 4096 bytes.
+The caller rds_send_xmit() is made to think a partial message (4096 out of 8240) was sent.
+It calls rds_ib_xmit() again with a data offset "off" of 4096-48 (rds header) (=4048 bytes). And we hit the BUG_ON.
 
-Thanks !
+The reason I didn't hit the panic on my test on Oracle UEK2 which is based on 2.6.39 kernel is it had it like this:
+        BUG_ON(off % RDS_FRAG_SIZE);
+        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
 
-   -- Daniel
+        /* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+        }
+(So it wasn't 100% 2.6.39 ;-). )
+It returned 8240 bytes. The caller rds_send_xmit decides the full message was sent (48 byte header + 4096 data + 4096 data).
+And it worked.
 
-> ---
->   drivers/clocksource/clksrc-of.c | 4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-> index 35639cf4e5a2..a30b42c3ac3b 100644
-> --- a/drivers/clocksource/clksrc-of.c
-> +++ b/drivers/clocksource/clksrc-of.c
-> @@ -28,6 +28,7 @@ void __init clocksource_of_init(void)
->       struct device_node *np;
->       const struct of_device_id *match;
->       clocksource_of_init_fn init_func;
-> +    unsigned clocksources = 0;
->
->       for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
->           if (!of_device_is_available(np))
-> @@ -36,5 +37,8 @@ void __init clocksource_of_init(void)
->           init_func = match->data;
->           init_func(np);
->           of_node_put(np);
-> +        clocksources++;
->       }
-> +    if (!clocksources)
-> +        pr_crit("%s: no matching clocksources found\n", __func__);
->   }
->
+Then I found this info on the change that was done upstream which now causes the panic:
+http://marc.info/?l=linux-netdev&m=129908332903057
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6094628bfd94323fc1cea05ec2c6affd98c18f7f 
 
+Will investigate more into which problem the above change addressed.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Venkat
