@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab3KSOYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:24:31 -0500
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:46629 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab3KSOY3 (ORCPT
+	id S1752686Ab3KSO0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:26:30 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:42969 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab3KSO00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:24:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=sasl; b=Q5l+6t
-	Zuwj9s3FsizvPy9BilrZ/nxLCHCzChnqh4Z4L36vhm3rMww8LqEHowXAmfubaHEI
-	6AMb3HeawM/osRTjDBzqiyXkdioVspWQEBp7p8rJkTw2J5TqE7FMId9KnVwGxtqW
-	05ETmtBGGNSZDqREYw3wlhhHPX+71wPAvtgTM=
-Message-ID: <528B749B.7050304@pobox.com>
-Date: Tue, 19 Nov 2013 09:24:27 -0500
-From: Mark Lord <mlord@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 19 Nov 2013 09:26:26 -0500
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Laight <David.Laight@ACULAB.COM>, Ming Lei <ming.lei@canonical.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: net/usb/ax88179_178a driver broken in linux-3.12
-References: <52890C7E.6000607@pobox.com> <52891178.2080509@pobox.com>	 <52891341.4020403@pobox.com>	 <AE90C24D6B3A694183C094C60CF0A2F6026B742B@saturn3.aculab.com>	 <AE90C24D6B3A694183C094C60CF0A2F6026B742F@saturn3.aculab.com>	 <528A9A36.50903@pobox.com>	 <AE90C24D6B3A694183C094C60CF0A2F6026B7431@saturn3.aculab.com>	 <528B6F73.7040801@pobox.com> <1384870550.8604.101.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1384870550.8604.101.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 4C9D6BE4-5126-11E3-B277-F66B0E5B5709-82205200!a-pb-sasl-quonix.pobox.com
+In-Reply-To: <528B72C1.5060006@ti.com>
+References: <1384568535-26611-1-git-send-email-nm@ti.com>
+	<20131116134445.GI11014@S2101-09.ap.freescale.net>
+	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
+	<528A27F8.3070402@ti.com>
+	<20131118155753.GU11014@S2101-09.ap.freescale.net>
+	<528A4340.3020508@ti.com>
+	<20131119022133.GB18434@S2101-09.ap.freescale.net>
+	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
+	<528B72C1.5060006@ti.com>
+Date: Tue, 19 Nov 2013 19:56:26 +0530
+Message-ID: <CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-11-19 09:15 AM, Eric Dumazet wrote:
-> On Tue, 2013-11-19 at 09:02 -0500, Mark Lord wrote:
->> On 13-11-19 05:04 AM, David Laight wrote:
->>>> From: Mark Lord
->> ..
->>>> except the ax88179_178a driver still does not work in linux-3.12,
->>>> whereas it works fine in all earlier kernels.
->>>>
->>>> That's a regression.
->>>> And a simple revert (earlier in this thread) fixes it.
->>>> So.. let's revert it for now, until a proper xhci compatible patch is produced.
->> ...
->>> There is a patch to xhci-ring.c that should fix the SG problem.
->>> http://www.spinics.net/lists/linux-usb/msg97176.html
->>>
->>> I think it should apply to the 3.12 sources.
->>
->> I am running with that patch here now (thanks),
->> and it too appears to prevent the lockups.
->>
->> But is this patch upstream already?
->> If yes, then it needs to get pushed out to -stable for 3.12 at least.
->>
->> If not upstream, then the revert is probably safest for -stable,
->> rather than new code that has never been upstream before.
->>
-> 
->> Both patches are attached to this email.
->> One or the other is required for the USB 3.0 network adapters to function in 3.12.
-> 
-> I do not see any error in commit f27070158d6754765f2
-> ("ax88179_178a: avoid copy of tx tcp packets")
-> Quite the contrary in fact...
-> 
-> I suspect a TSO bug, and would rather disable TSO for this nic.
+On 19 November 2013 19:46, Nishanth Menon <nm@ti.com> wrote:
+> Consider something like userspace governor selection -> the device at
+> boot will probably remain in an unknown/"invalid" configuration till
+> the very first transition attempt. I am less worried about the stats
+> than not following what the hardware description is (as stated by
+> device tree/other forms).
+>
+> I staunchly disagree that at a point of mismatch detection, we just
+> refuse to load up cpufreq governor -even though we know from device
+> tree/other alternative entries what the hardware behavior is supposed
+> to be. To refuse to loadup to a known configuration is considering the
+> "valid configuration" data provided to the driver is wrong - an
+> equivalent(considering the i2c example) is that if i2c driver sees bus
+> configured for 3.4MHz and was asked to use 100KHz, it just refuses to
+> load up!
 
-David's explanation for the XHCI issue seems to explain it nicely,
-and the patch he linked to does indeed address/fix the issue,
-without disabling TSO.
+CPU looks to be a bit different in that aspect as compared to I2C. We
+aren't really sure if I2C will work at the existing freq but we are 100%
+sure that current freq of CPU is valid enough, otherwise we wouldn't
+have reached to this point.. :)
 
-So on the evidence, probably NOT a TSO bug.
--- 
-Mark Lord
-Real-Time Remedies Inc.
-mlord@pobox.com
+> The above two are fair comments -> but that implies that policy->cur
+> population should no longer be the responsibility of cpufreq drivers
+> and be the responsibility of cpufreq core. are we stating we want to
+> move that to cpufreq core?
+
+I am sure you want to have a look at this:
+
+commit da60ce9f2faca87013fd3cab1c3bed5183608c3d
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Thu Oct 3 20:28:30 2013 +0530
+
+    cpufreq: call cpufreq_driver->get() after calling ->init()
+
+    Almost all drivers set policy->cur with current CPU frequency in
+their ->init()
+    part. This can be done for all of them at core level and so they
+wouldn't need
+    to do it.
+
+    This patch adds supporting code in cpufreq core for calling get()
+after we have
+    called init() for a policy.
+
+    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/cpufreq/cpufreq.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
