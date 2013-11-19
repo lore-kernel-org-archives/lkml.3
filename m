@@ -1,313 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab3KSKgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:36:02 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:33602 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3KSKf7 convert rfc822-to-8bit (ORCPT
+	id S1752098Ab3KSKgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:36:39 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41419 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3KSKgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:35:59 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Subject: Re: [PATCH 00/10] leds: lp5521,5523: restore device attributes for running LED patterns
-Date: Tue, 19 Nov 2013 11:35:47 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: Milo Kim <milo.kim@ti.com>, Milo Kim <woogyom.kim@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <527C7384.1040103@ti.com> <CAK5ve-KQPxc-xWs1rh6KTgGK8VdLOgHqMLT8D90+mYt8P+xaew@mail.gmail.com>
-In-Reply-To: <CAK5ve-KQPxc-xWs1rh6KTgGK8VdLOgHqMLT8D90+mYt8P+xaew@mail.gmail.com>
+	Tue, 19 Nov 2013 05:36:38 -0500
+Date: Tue, 19 Nov 2013 02:36:35 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
+ virtio devices
+Message-ID: <20131119103635.GA9223@infradead.org>
+References: <20131119080218.GJ11434@dastard>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201311191135.54553@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131119080218.GJ11434@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 19, 2013 at 07:02:18PM +1100, Dave Chinner wrote:
+> I have no idea if it's related to the above hang, but either way
+> breaking iostat is a major regression....
 
-now I tested that patch on top of 3.12-rc5 with this led example:
+Both of them are most likely due to the conversion of virtio_blk
+to the blk-mq code.
 
-    # Clearing LED-state to be sure
-    echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo "disabled" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo 0 > /sys/class/leds/lp5523:r/brightness
-    echo 0 > /sys/class/leds/lp5523:g/brightness
-    echo 0 > /sys/class/leds/lp5523:b/brightness
+I've not seen the hang in my heavy xfstests testing, but that was a
+slightly different codebase than what finally got in, so I'll try
+to reproduce it once I get some spare QA cycles.
 
-    # Setting yellow light pattern and running it
-    echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo "000001100" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds
-    echo "9d804000427f0d7f7f007f0042000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_load
-    echo "load" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo "000000000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_leds
-    echo "9d800000" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_load
-    echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-    echo "run" > /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-    echo 20 > /sys/class/leds/lp5523:r/led_current
-    echo 2 > /sys/class/leds/lp5523:g/led_current
-    echo 0 > /sys/class/leds/lp5523:b/led_current
+The missing stats should be solved by something like the patch below
+(untested so far):
 
-And now it working, led blinks :-) I also tested Maemo
-application for managing lp5523 led and now it working too.
 
-But new interface via request_firmware still not working.
-Directory /sys/class/firmware/lp5523/data not exists.
-
-I think that there can be race condition with udev which is
-responsible for firmware loading... Anyway main problem solved,
-old interface is working again and old applications too.
-
-On Tuesday 19 November 2013 02:13:49 Bryan Wu wrote:
-> Pali,
-> 
-> Could you please test Milo's patch?
-> 
-> Thanks,
-> -Bryan
-> 
-> On Thu, Nov 7, 2013 at 9:15 PM, Milo Kim <milo.kim@ti.com> wrote:
-> > Hi Pali,
-> > 
-> > Sorry for the late reply.
-> > 
-> > On 10/26/2013 03:21 AM, Pali Rohár wrote:
-> >> On Friday 25 October 2013 19:10:07 Bryan Wu wrote:
-> >>> On Fri, Oct 25, 2013 at 9:38 AM, Pali Rohár
-> >> 
-> >> <pali.rohar@gmail.com> wrote:
-> >>> On Tuesday 13 August 2013 23:04:14 Bryan Wu wrote:
-> >>>>> On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim
-> >>>> 
-> >>>> <woogyom.kim@gmail.com> wrote:
-> >>>  This patch-set resolves the application conflict by
-> >>>  
-> >>>>>> restoring sysfs files.
-> >>>>>> 
-> >>>>>> For LP5521
-> >>>>>> 
-> >>>>>>    engine1/2/3_mode
-> >>>>>>    engine1/2/3_load
-> >>>>>> 
-> >>>>>> For LP5523
-> >>>>>> 
-> >>>>>>    engine1/2/3_mode
-> >>>>>>    engine1/2/3_load
-> >>>>>>    engine1/2/3_leds
-> >>>>>> 
-> >>>>>> Those attributes are accessed when LED pattern is run
-> >>>>>> by custom application. Those were removed when LED
-> >>>>>> pattern interface was changed to generic firmware
-> >>>>>> interface. Please refer to commits below.
-> >>>>>> 
-> >>>>>>    git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
-> >>>>>>    (leds-lp5521: use generic firmware interface)
-> >>>>>>    
-> >>>>>>    git commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0
-> >>>>>>    (leds-lp5523: use generic firmware interface)
-> >>>>>> 
-> >>>>>> Necessary attributes are restored in this patch-set.
-> >>>>>> 
-> >>>>>> (Other changes)
-> >>>>>> New data structure is added for handling values from/to
-> >>>>>> an application. Few code fixes for reducing writing I2C
-> >>>>>> commands.
-> >>>>>> Add LP55xx common macros for code refactoring.
-> >>>>>> Documentation updates.
-> >>>>>> 
-> >>>>>> You can also pull from the location below
-> >>>>>> This branch is based on 'for-next' of linux-leds.
-> >>>>>> 
-> >>>>>>    https://github.com/milokim/lp55xx.git
-> >>>>>>    resolve-missing-sysfs
-> >>>>> 
-> >>>>> Thanks, I've already merged the whole patchset in my
-> >>>>> -devel branch [1].
-> >>>>> 
-> >>>>> Pali, could you please help to test it on your hardware?
-> >>>>> Just grab my -devel branch and build then run.
-> >>>>> 
-> >>>>> Thanks,
-> >>>>> -Bryan
-> >>>> 
-> >>>> Hi, I see that all your patches are part of 3.12-rc5
-> >>>> kernel.
-> >>>> 
-> >>>> Now I tested this example led program:
-> >>>>      # Clearing LED-state to be sure
-> >>>>      echo "disabled" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-> >>>>      echo "disabled" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-> >>>>      echo 0
-> >>>>      
-> >>>>      > /sys/class/leds/lp5523:r/brightness
-> >>>>      
-> >>>>      echo 0 > /sys/class/leds/lp5523:g/brightness
-> >>>>      echo 0 > /sys/class/leds/lp5523:b/brightness
-> >>>>      
-> >>>>      # Setting yellow light pattern and running it
-> >>>>      echo "load" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-> >>>>      echo "000001100" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine1_leds
-> >>>>      echo "9d804000427f0d7f7f007f0042000000" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine1_load
-> >>>>      echo "load" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-> >>>>      echo "000000000" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine2_leds
-> >>>>      echo "9d800000" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine2_load
-> >>>>      echo "run" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine2_mode
-> >>>>      echo "run" >
-> >>>>      /sys/class/i2c-adapter/i2c-2/2-0032/engine1_mode
-> >>>>      echo 20 > /sys/class/leds/lp5523:r/led_current
-> >>>>      echo 2 > /sys/class/leds/lp5523:g/led_current
-> >>>>      echo 0 > /sys/class/leds/lp5523:b/led_current
-> > 
-> > In the latest LP5523 driver, I just found wrong operation
-> > mode setting in case of multiple engine used. (please find
-> > a patch below)
-> > 
-> >>>> All sysfs entries exists and every echo returned 0.
-> >>>> 
-> >>>> But led does not start blinking that yellow ligh pattern.
-> >>>> So it not working on 3.12-rc5 kernel :-(
-> >>> 
-> >>> OK, great! Do you still remember which kernel version
-> >>> works on you system? Milo, do you have time to take a
-> >>> look? I bet it's a regression somewhere.
-> >>> 
-> >>> Thanks,
-> >>> -Bryan
-> >> 
-> >> I do not know which version. Now I tried pattern example
-> >> from Documentation/leds/leds-lp55xx.txt which using new
-> >> API.
-> >> 
-> >> echo 2 > /sys/class/i2c-adapter/i2c-2/2-0032/select_engine
-> >> echo 1 > /sys/class/firmware/lp5523/loading
-> >> echo "9d80400004ff05ff437f0000" >
-> >> /sys/class/firmware/lp5523/data echo 0 >
-> >> /sys/class/firmware/lp5523/loading
-> >> echo 1 > /sys/class/i2c-adapter/i2c-2/2-0032/run_engine
-> >> 
-> >> But it failed at second command. In directory
-> >> /sys/class/firmware/ I have only one file with name
-> >> timeout. Nothing more, no lp5523 folder.
-> > 
-> > I can't reproduce this issue but I found some duplicated
-> > mutex problem. But in my case, I could found
-> > /sys/class/firmware/lp5523 directory. Is any permission
-> > issue? Anyway, I've added fixed mutex code below.
-> > 
-> > Could you check this patch below?
-> > If it's resolved, then I'll send official patch-set.
-> > 
-> > -------------------- 8< ---------------- 8<
-> > ---------------------------
-> > 
-> > From dad27e0d834a5635232116569aaa1fa471ac46bf Mon Sep 17
-> > 00:00:00 2001 From: Milo Kim <milo.kim@ti.com>
-> > Date: Fri, 8 Nov 2013 13:43:33 +0900
-> > Subject: [PATCH] leds: lp5523: Fix multiple engine usage bug
-> > and remove
-> > 
-> >  duplicated mutex
-> > 
-> > Fix multiple engine usage bug:
-> >   Whenever the engine is loaded by the user-application, the
-> >   operation
-> > 
-> > mode is
-> > 
-> >   reset first. But it has a problem in case of multiple
-> >   engine used because previous engine settings are cleared.
-> >   The driver should update not whole 8bits but each engine
-> >   bits by masking.
-> > 
-> > Remove duplicate mutex:
-> >   It can be a problem when a pattern is loaded via the
-> >   firmware interface. LP55xx common driver has already
-> >   locked the mutex in 'lp55xx_firmware_loaded()'.
-> >   So it should be deleted.
-> > 
-> > Signed-off-by: Milo Kim <milo.kim@ti.com>
-> > ---
-> > 
-> >  drivers/leds/leds-lp5523.c |   14 +++++++++-----
-> >  1 file changed, 9 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/leds/leds-lp5523.c
-> > b/drivers/leds/leds-lp5523.c index fe3bcbb..c00f55e 100644
-> > --- a/drivers/leds/leds-lp5523.c
-> > +++ b/drivers/leds/leds-lp5523.c
-> > @@ -188,7 +188,15 @@ static void
-> > lp5523_load_engine_and_select_page(struct lp55xx_chip
-> > *chip)
-> > 
-> >  static void lp5523_stop_engine(struct lp55xx_chip *chip)
-> >  {
-> > 
-> > -       lp55xx_write(chip, LP5523_REG_OP_MODE, 0);
-> > +       enum lp55xx_engine_index idx = chip->engine_idx;
-> > +       u8 mask[] = {
-> > +               [LP55XX_ENGINE_1] = LP5523_MODE_ENG1_M,
-> > +               [LP55XX_ENGINE_2] = LP5523_MODE_ENG2_M,
-> > +               [LP55XX_ENGINE_3] = LP5523_MODE_ENG3_M,
-> > +       };
-> > +
-> > +       lp55xx_update_bits(chip, LP5523_REG_OP_MODE,
-> > mask[idx], 0); +
-> > 
-> >         lp5523_wait_opmode_done();
-> >  
-> >  }
-> > 
-> > @@ -336,8 +344,6 @@ static int
-> > lp5523_update_program_memory(struct lp55xx_chip *chip,
-> > 
-> >         if (i % 2)
-> >         
-> >                 goto err;
-> > 
-> > -       mutex_lock(&chip->lock);
-> > -
-> > 
-> >         for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
-> >         
-> >                 ret = lp55xx_write(chip, LP5523_REG_PROG_MEM
-> >                 + i,
-> > 
-> > pattern[i]);
-> > 
-> >                 if (ret) {
-> > 
-> > @@ -346,8 +352,6 @@ static int
-> > lp5523_update_program_memory(struct lp55xx_chip *chip,
-> > 
-> >                 }
-> >         
-> >         }
-> > 
-> > -       mutex_unlock(&chip->lock);
-> > -
-> > 
-> >         return size;
-> >  
-> >  err:
-> > --
-> > 1.7.9.5
-> > -------------------- 8< ---------------- 8<
-> > ---------------------------
-> > 
-> > Best regards,
-> > Milo
-
--- 
-Pali Rohár
-pali.rohar@gmail.com
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 862f458..41e3b85 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -175,7 +175,7 @@ static void blk_mq_rq_ctx_init(struct blk_mq_ctx *ctx, struct request *rq,
+ 			       unsigned int rw_flags)
+ {
+ 	rq->mq_ctx = ctx;
+-	rq->cmd_flags = rw_flags;
++	rq->cmd_flags = rw_flags | REQ_IO_STAT;
+ 	ctx->rq_dispatched[rw_is_sync(rw_flags)]++;
+ }
+ 
