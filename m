@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab3KSWFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:05:05 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35119 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab3KSWFA (ORCPT
+	id S1753419Ab3KSWFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:05:45 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:51796 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab3KSWFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:05:00 -0500
+	Tue, 19 Nov 2013 17:05:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131119213550.3839.2581.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20131119213557.3839.56953.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20131119212714.3839.52182.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20131119213550.3839.2581.stgit@bhelgaas-glaptop.roam.corp.google.com>
-Date: Tue, 19 Nov 2013 15:04:59 -0700
-Message-ID: <CAL-B5D27tOXNi1FUugdicEmUHCX0PMxP_2BVVpZJyAiq-b7Psw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] PCI: Remove PCIe Capability version checks
+	<20131119213557.3839.56953.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Tue, 19 Nov 2013 15:05:42 -0700
+Message-ID: <CAL-B5D3id0nh_Mt-ZZahWf5Z7WPjgV8-Eu=keXU0mDdgLPXmBQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] PCI: Support PCIe Capability Slot registers only
+ for ports with slots
 From: Myron Stowe <myron.stowe@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: stable@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>,
@@ -28,64 +29,50 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Nov 19, 2013 at 2:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Commit c8b303d0206b28c4ff3aecada47108d1655ae00f upstream.  This is part
+> Commit 6d3a1741f1e648cfbd5a0cc94477a0d5004c6f5e upstream.  This is part
 > of the fix for https://bugzilla.kernel.org/show_bug.cgi?id=65211
 >
-> Previously we relied on the PCIe r3.0, sec 7.8, spec language that says
-> "For Functions that do not implement the [Link, Slot, Root] registers,
-> these spaces must be hardwired to 0b," which means that for v2 PCIe
-> capabilities, we don't need to check the device type at all.
+> Previously we allowed callers to access Slot Capabilities, Status, and
+> Control for Root Ports even if the Root Port did not implement a slot.
+> This seems dubious because the spec only requires these registers if a
+> slot is implemented.
 >
-> But it's simpler if we don't need to check the capability version at all,
-> and I think the spec is explicit enough about which registers are required
-> for which types that we can remove the version checks.
+> It's true that even Root Ports without slots must have *space* for these
+> slot registers, because the Root Capabilities, Status, and Control
+> registers are after the slot registers in the capability.  However,
+> for a v1 PCIe Capability, the *semantics* of the slot registers are
+> undefined unless a slot is implemented.
 >
 > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 > Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
 > CC: stable@vger.kernel.org      # v3.7+
 > ---
->  drivers/pci/access.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
+>  drivers/pci/access.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 >
 > diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-> index e26c3bd9aca4..9a46fa9135d9 100644
+> index 9a46fa9135d9..061da8c3ab4b 100644
 > --- a/drivers/pci/access.c
 > +++ b/drivers/pci/access.c
-> @@ -484,8 +484,7 @@ static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+> @@ -497,9 +497,9 @@ static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
 >  {
 >         int type = pci_pcie_type(dev);
 >
-> -       return pcie_cap_version(dev) > 1 ||
-> -              type == PCI_EXP_TYPE_ENDPOINT ||
-> +       return type == PCI_EXP_TYPE_ENDPOINT ||
->                type == PCI_EXP_TYPE_LEG_END ||
->                type == PCI_EXP_TYPE_ROOT_PORT ||
->                type == PCI_EXP_TYPE_UPSTREAM ||
-> @@ -498,8 +497,7 @@ static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
->  {
->         int type = pci_pcie_type(dev);
->
-> -       return pcie_cap_version(dev) > 1 ||
-> -              type == PCI_EXP_TYPE_ROOT_PORT ||
-> +       return type == PCI_EXP_TYPE_ROOT_PORT ||
->                (type == PCI_EXP_TYPE_DOWNSTREAM &&
->                 pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
->  }
-> @@ -508,8 +506,7 @@ static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
->  {
->         int type = pci_pcie_type(dev);
->
-> -       return pcie_cap_version(dev) > 1 ||
-> -              type == PCI_EXP_TYPE_ROOT_PORT ||
-> +       return type == PCI_EXP_TYPE_ROOT_PORT ||
->                type == PCI_EXP_TYPE_RC_EC;
+> -       return type == PCI_EXP_TYPE_ROOT_PORT ||
+> -              (type == PCI_EXP_TYPE_DOWNSTREAM &&
+> -               pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
+> +       return (type == PCI_EXP_TYPE_ROOT_PORT ||
+> +               type == PCI_EXP_TYPE_DOWNSTREAM) &&
+> +              pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT;
 >  }
 >
+>  static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
 >
-> --
 
 Acked-by: Myron Stowe <myron.stowe@redhat.com>
 
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
