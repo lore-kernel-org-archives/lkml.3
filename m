@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652Ab3KSAab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 19:30:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54577 "EHLO mx2.suse.de"
+	id S1751743Ab3KSAeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 19:34:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab3KSAa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 19:30:28 -0500
-Date: Tue, 19 Nov 2013 11:30:13 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jonathan Cameron <jic23@cam.ac.uk>, Grant Likely <grant.likely@linaro.org>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org
-Subject: [PATCH v2] itg3200: add dt support.
-Message-ID: <20131119113013.39dae3cd@notabene.brown>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	id S1751606Ab3KSAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Nov 2013 19:34:35 -0500
+Date: Mon, 18 Nov 2013 19:34:22 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.jiang@intel.com,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Mel Gorman <mgorman@suse.de>
+Message-ID: <1384821262-c0ms59jr-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <528A94C4.80101@sr71.net>
+References: <20131115225550.737E5C33@viggo.jf.intel.com>
+ <20131115225553.B0E9DFFB@viggo.jf.intel.com>
+ <1384800714-y653r3ch-mutt-n-horiguchi@ah.jp.nec.com>
+ <1384800841-314l1f3e-mutt-n-horiguchi@ah.jp.nec.com>
+ <528A6448.3080907@sr71.net>
+ <1384806022-4718p9lh-mutt-n-horiguchi@ah.jp.nec.com>
+ <528A7D36.5020500@sr71.net>
+ <1384811778-7euptzgp-mutt-n-horiguchi@ah.jp.nec.com>
+ <528A94C4.80101@sr71.net>
+Subject: Re: [PATCH] mm: call cond_resched() per MAX_ORDER_NR_PAGES pages copy
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/cPIpWNvpMxBh2XGpcbknpf0"; protocol="application/pgp-signature"
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <528A94C4.80101@sr71.net>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cPIpWNvpMxBh2XGpcbknpf0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 18, 2013 at 02:29:24PM -0800, Dave Hansen wrote:
+> On 11/18/2013 01:56 PM, Naoya Horiguchi wrote:
+> >> > Why bother trying to "optimize" it?
+> > I thought that if we call cond_resched() too often, the copying thread can
+> > take too long in a heavy load system, because the copying thread always
+> > yields the CPU in every loop.
+> 
+> I think you're confusing cond_resched() and yield().  The way I look at it:
+> 
+> yield() means: "Hey scheduler, go right now and run something else I'm
+> done running"
+> 
+> cond_resched() means: "Schedule me off if the scheduler has already
+> decided something else _should_ be running"
+> 
+> I'm sure I'm missing some of the subtleties, but as I see it, yield()
+> actively goes off and finds something else to run.  cond_resched() only
+> schedules you off if you've *already* run too long.
 
+I see.
+Thanks for the explanation!
 
-
-No new configuration, just a 'compatible' string and documentation.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt new file mode 1006=
-44
-index 000000000000..4581620632df
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-@@ -0,0 +1,20 @@
-+* InvenSense ITG3200 3-axis gyroscope
-+
-+Required properties:
-+
-+  - compatible : "invensense,itg3200"
-+  - reg : I2C address, typically 0x68
-+
-+Optional properties:
-+
-+  - interrupt-parent : should be the phandle for the interrupt controller
-+  - interrupts : interrupt mapping for IRQ
-+
-+Example:
-+
-+itg3200@68 {
-+	compatible =3D "invensense,itg3200";
-+	reg =3D <0x68>;
-+	interrupt-parent =3D <&gpio2>;
-+	interrupts =3D <24 IRQ_TYPE_EDGE_RISING>;
-+};
-diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_cor=
-e.c
-index 4d3f3b92b361..1ed3003ef41a 100644
---- a/drivers/iio/gyro/itg3200_core.c
-+++ b/drivers/iio/gyro/itg3200_core.c
-@@ -374,10 +374,17 @@ static const struct i2c_device_id itg3200_id[] =3D {
- };
- MODULE_DEVICE_TABLE(i2c, itg3200_id);
-=20
-+static const struct of_device_id itg3200_of_match[] =3D {
-+	{ .compatible =3D "invensense,itg3200", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, itg3200_of_match);
-+
- static struct i2c_driver itg3200_driver =3D {
- 	.driver =3D {
- 		.owner  =3D THIS_MODULE,
- 		.name	=3D "itg3200",
-+		.of_match_table =3D of_match_ptr(itg3200_of_match),
- 	},
- 	.id_table	=3D itg3200_id,
- 	.probe		=3D itg3200_probe,
-
---Sig_/cPIpWNvpMxBh2XGpcbknpf0
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUoqxFTnsnt1WYoG5AQKdPBAAoP05W/2BJzs++/WDOwUXBSUW+wziobx2
-FdX3pW4pQ4iC0OKzxW9GqJYPLp6G2pqMP3yp6J5NYvxkLUf2sxPEDD4Fi6ZMyNLJ
-cdFdt2+GBdFMyKnw2SH9zaQTydgT8t5DPumBuWcQTONljYnJOmtxwYRdMxzdE9Gn
-QBa7yn4epf3u3BTqfexuuefoho2jWsQUSRntqXXb769GsRA14kVRyBz8MKZmnIpa
-Vdpw0uOTn+7ozmg6gUQkny/OWGPwtvaAYhifORlLqHQ6sE8hmZoCqIrmwId4vfA5
-wCbtAbMRc9nUcmpNtjFEzXwPtF1LQavbLKMFLa0obNQqQF4gSoliF7TOcKm8hEke
-6hQW2Bx/wzhLtqCD8unWmPMwsWAXFgC6aHkUdfXOMdiOw9KW0mdKTe1HoB56o2ke
-Vcm/qpUv+J1tToHZ0RA51wFvyF1ct6tQB7bkrxM7h91VfHkLNxLFjx5cFH9tLIQ4
-aK8T2sV3HcsDRDwTmuc9srm8hnh5/VkHZ/GnEQ7ocQXi84QRo+r2iMp5oAIED90u
-LAd7mMo6WWMf1aX7Uc/HSsflf5os+azbnTQIzdgZztW0L1AoNT6zqJKtdAuhDEqX
-knM6Iq4Td9EkAspqvzQaw5atHBkdamj95b6ZTmFmdJuSxE+rYs8mqkwlat0nGl7Z
-jH1PtXUPhg4=
-=RZI0
------END PGP SIGNATURE-----
-
---Sig_/cPIpWNvpMxBh2XGpcbknpf0--
+Naoya
