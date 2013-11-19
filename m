@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3KSKvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:51:36 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34469 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751592Ab3KSKvf (ORCPT
+	id S1751818Ab3KSK60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:58:26 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:49028 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3KSK6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:51:35 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5110: Add register patch for rev D chip
-Date: Tue, 19 Nov 2013 10:50:19 +0000
-Message-Id: <1384858219-25347-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 19 Nov 2013 05:58:25 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
+        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 1/2] ASoC: ab8500: Revert "ASoC: ab8500: Explicitly set I/O up"
+Date: Tue, 19 Nov 2013 10:58:17 +0000
+Message-Id: <1384858698-19027-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5110-tables.c |   30 +++++++++++++++++++++++++++++-
- 1 files changed, 29 insertions(+), 1 deletions(-)
+This reverts commit 2245e3c31c15c2d2a26926c4b734f4d3a37ae252, as it
+is one of two patches which stop audio from working on Snowball.
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index daf2fe8..bd9c3c9 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -223,6 +223,31 @@ static const struct reg_default wm5110_revb_patch[] = {
- 	{ 0x80, 0x0 },
- };
+Cc: alsa-devel@alsa-project.org
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ sound/soc/codecs/ab8500-codec.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
+index a0394a8..ca500fd 100644
+--- a/sound/soc/codecs/ab8500-codec.c
++++ b/sound/soc/codecs/ab8500-codec.c
+@@ -2473,8 +2473,6 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
  
-+static const struct reg_default wm5110_revd_patch[] = {
-+	{ 0x80, 0x3 },
-+	{ 0x80, 0x3 },
-+	{ 0x393, 0x27 },
-+	{ 0x394, 0x27 },
-+	{ 0x395, 0x27 },
-+	{ 0x396, 0x27 },
-+	{ 0x397, 0x27 },
-+	{ 0x398, 0x26 },
-+	{ 0x221, 0x90 },
-+	{ 0x211, 0x8 },
-+	{ 0x36c, 0x1fb },
-+	{ 0x26e, 0x64 },
-+	{ 0x26f, 0xea },
-+	{ 0x270, 0x1f16 },
-+	{ 0x51b, 0x1 },
-+	{ 0x55b, 0x1 },
-+	{ 0x59b, 0x1 },
-+	{ 0x4f0, 0x633 },
-+	{ 0x441, 0xc059 },
-+	{ 0x209, 0x27 },
-+	{ 0x80, 0x0 },
-+	{ 0x80, 0x0 },
-+};
-+
- /* We use a function so we can use ARRAY_SIZE() */
- int wm5110_patch(struct arizona *arizona)
- {
-@@ -235,7 +260,10 @@ int wm5110_patch(struct arizona *arizona)
- 		return regmap_register_patch(arizona->regmap,
- 					     wm5110_revb_patch,
- 					     ARRAY_SIZE(wm5110_revb_patch));
+ 	dev_dbg(dev, "%s: Enter.\n", __func__);
+ 
+-	snd_soc_codec_set_cache_io(codec, 0, 0, SND_SOC_REGMAP);
 -
-+	case 3:
-+		return regmap_register_patch(arizona->regmap,
-+					     wm5110_revd_patch,
-+					     ARRAY_SIZE(wm5110_revd_patch));
- 	default:
- 		return 0;
- 	}
+ 	/* Setup AB8500 according to board-settings */
+ 	pdata = dev_get_platdata(dev->parent);
+ 
 -- 
-1.7.2.5
+1.8.1.2
 
