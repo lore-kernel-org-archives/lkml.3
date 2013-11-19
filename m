@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3KSLJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:09:20 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49279 "EHLO
+	id S1752533Ab3KSLJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:09:27 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:49285 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3KSLJR (ORCPT
+	with ESMTP id S1751480Ab3KSLJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:09:17 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAJB8poJ012374, This message is accepted by code: ctloc85258
+	Tue, 19 Nov 2013 06:09:24 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAJB8q50012381, This message is accepted by code: ctloc85258
 From: <micky_ching@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 1/2] mmc: rtsx: fix card poweroff bug
-Date: Tue, 19 Nov 2013 19:10:34 +0800
-Message-ID: <fb17a994c87352b1d82c6fb4141aa47b0c1d7e56.1384858553.git.micky_ching@realsil.com.cn>
+Subject: [PATCH 2/2] mmc: rtsx: modify phase searching method for tunning
+Date: Tue, 19 Nov 2013 19:10:35 +0800
+Message-ID: <38cd1d9d7f10f6a65b4dc608f310ac3818da827f.1384858553.git.micky_ching@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1384858553.git.micky_ching@realsil.com.cn>
 References: <cover.1384858553.git.micky_ching@realsil.com.cn>
@@ -28,37 +28,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Micky Ching <micky_ching@realsil.com.cn>
 
-If the host driver removed while card in the slot, the host will not
-power off card power correctly. This bug is produced because host
-eject flag set before the last mmc_set_ios callback, we should set the
-eject flag after power off.
+The new phase searching method is more concise and easier to
+understand.
 
 Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |  108 +++++++++++--------------------------
+ 1 file changed, 30 insertions(+), 78 deletions(-)
 
 diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 375a880e..c9a7328 100644
+index c9a7328..fb2f159 100644
 --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
 +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -1328,7 +1328,6 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
- 	pcr->slots[RTSX_SD_CARD].p_dev = NULL;
- 	pcr->slots[RTSX_SD_CARD].card_event = NULL;
- 	mmc = host->mmc;
--	host->eject = true;
+@@ -31,16 +31,6 @@
+ #include <linux/mfd/rtsx_pci.h>
+ #include <asm/unaligned.h>
  
- 	mutex_lock(&host->host_mutex);
- 	if (host->mrq) {
-@@ -1346,6 +1345,8 @@ static int rtsx_pci_sdmmc_drv_remove(struct platform_device *pdev)
- 	mutex_unlock(&host->host_mutex);
+-/* SD Tuning Data Structure
+- * Record continuous timing phase path
+- */
+-struct timing_phase_path {
+-	int start;
+-	int end;
+-	int mid;
+-	int len;
+-};
+-
+ struct realtek_pci_sdmmc {
+ 	struct platform_device	*pdev;
+ 	struct rtsx_pcr		*pcr;
+@@ -511,85 +501,47 @@ static int sd_change_phase(struct realtek_pci_sdmmc *host,
+ 	return 0;
+ }
  
- 	mmc_remove_host(mmc);
-+	host->eject = true;
+-static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
++static inline u32 sd_get_phase_point(u32 phase_map, unsigned int idx)
+ {
+-	struct timing_phase_path path[MAX_PHASE + 1];
+-	int i, j, cont_path_cnt;
+-	int new_block, max_len, final_path_idx;
+-	u8 final_phase = 0xFF;
++	idx &= MAX_PHASE;
++	return phase_map & (1 << idx);
++}
 +
- 	mmc_free_host(mmc);
++static int sd_get_phase_len(u32 phase_map, unsigned int idx)
++{
++	int i;
  
- 	dev_dbg(&(pdev->dev),
+-	/* Parse phase_map, take it as a bit-ring */
+-	cont_path_cnt = 0;
+-	new_block = 1;
+-	j = 0;
+ 	for (i = 0; i < MAX_PHASE + 1; i++) {
+-		if (phase_map & (1 << i)) {
+-			if (new_block) {
+-				new_block = 0;
+-				j = cont_path_cnt++;
+-				path[j].start = i;
+-				path[j].end = i;
+-			} else {
+-				path[j].end = i;
+-			}
+-		} else {
+-			new_block = 1;
+-			if (cont_path_cnt) {
+-				/* Calculate path length and middle point */
+-				int idx = cont_path_cnt - 1;
+-				path[idx].len =
+-					path[idx].end - path[idx].start + 1;
+-				path[idx].mid =
+-					path[idx].start + path[idx].len / 2;
+-			}
+-		}
++		if (sd_get_phase_point(phase_map, idx + i) == 0)
++			return i;
+ 	}
++	return MAX_PHASE + 1;
++}
+ 
+-	if (cont_path_cnt == 0) {
+-		dev_dbg(sdmmc_dev(host), "No continuous phase path\n");
+-		goto finish;
+-	} else {
+-		/* Calculate last continuous path length and middle point */
+-		int idx = cont_path_cnt - 1;
+-		path[idx].len = path[idx].end - path[idx].start + 1;
+-		path[idx].mid = path[idx].start + path[idx].len / 2;
+-	}
++static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
++{
++	int start = 0, len = 0;
++	int start_final = 0, len_final = 0;
++	u8 final_phase = 0xFF;
+ 
+-	/* Connect the first and last continuous paths if they are adjacent */
+-	if (!path[0].start && (path[cont_path_cnt - 1].end == MAX_PHASE)) {
+-		/* Using negative index */
+-		path[0].start = path[cont_path_cnt - 1].start - MAX_PHASE - 1;
+-		path[0].len += path[cont_path_cnt - 1].len;
+-		path[0].mid = path[0].start + path[0].len / 2;
+-		/* Convert negative middle point index to positive one */
+-		if (path[0].mid < 0)
+-			path[0].mid += MAX_PHASE + 1;
+-		cont_path_cnt--;
++	if (phase_map == 0) {
++		dev_dbg(sdmmc_dev(host), "Phase: [map:%x]\n", phase_map);
++		return final_phase;
+ 	}
+ 
+-	/* Choose the longest continuous phase path */
+-	max_len = 0;
+-	final_phase = 0;
+-	final_path_idx = 0;
+-	for (i = 0; i < cont_path_cnt; i++) {
+-		if (path[i].len > max_len) {
+-			max_len = path[i].len;
+-			final_phase = (u8)path[i].mid;
+-			final_path_idx = i;
++	while (start < MAX_PHASE + 1) {
++		len = sd_get_phase_len(phase_map, start);
++		if (len_final < len) {
++			start_final = start;
++			len_final = len;
+ 		}
+-
+-		dev_dbg(sdmmc_dev(host), "path[%d].start = %d\n",
+-				i, path[i].start);
+-		dev_dbg(sdmmc_dev(host), "path[%d].end = %d\n",
+-				i, path[i].end);
+-		dev_dbg(sdmmc_dev(host), "path[%d].len = %d\n",
+-				i, path[i].len);
+-		dev_dbg(sdmmc_dev(host), "path[%d].mid = %d\n",
+-				i, path[i].mid);
++		start += len ? len : 1;
+ 	}
+ 
+-finish:
+-	dev_dbg(sdmmc_dev(host), "Final chosen phase: %d\n", final_phase);
++	final_phase = (start_final + len_final / 2) & MAX_PHASE;
++	dev_dbg(sdmmc_dev(host), "Phase: [map:%x] [maxlen:%d] [final:%d]\n",
++		phase_map, len_final, final_phase);
++
+ 	return final_phase;
+ }
+ 
 -- 
 1.7.9.5
 
