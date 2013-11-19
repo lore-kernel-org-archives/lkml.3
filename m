@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab3KSUQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 15:16:35 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:55077 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3KSUQe (ORCPT
+	id S1752554Ab3KSUXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 15:23:05 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18893 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3KSUW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 15:16:34 -0500
-Date: Tue, 19 Nov 2013 21:16:32 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a text_poke syscall
-Message-ID: <20131119201632.GG29695@two.firstfloor.org>
-References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
- <528ACDB2.9040806@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528ACDB2.9040806@amacapital.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 19 Nov 2013 15:22:58 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: gleb@redhat.com, pbonzini@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] kvm: mmu: delay mmu audit activation
+Date: Tue, 19 Nov 2013 15:22:47 -0500
+Message-Id: <1384892567-20134-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	pages[1] = NULL;
-> > +	npages = ((unsigned long)addr & PAGE_MASK) == 
-> > +		(((unsigned long)addr + len) & PAGE_MASK) ? 1 : 2;
-> 
-> This is off by one, I think.  That should be addr + len - 1.
+We should not be using jump labels before they were initialized. Push back
+the callback to until after jump label initialization.
 
-Thanks fixed.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ arch/x86/kvm/mmu_audit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> > +	err = get_user_pages_fast((unsigned long)addr, npages, 1, pages);
-> > +	if (err < 0)
-> > +		return err;
-> > +	err = 0;
-> > +	mutex_lock(&text_mutex);
-> > +	bp_target_mm = current->mm;
-> > +	bp_int3_addr = (u8 *)addr + 1;
-> 
-> Do you need an smp_wmb here?  (Maybe there's a strong enough barrier in
-> __text_poke_bp.)
+diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
+index daff69e..1185fe7 100644
+--- a/arch/x86/kvm/mmu_audit.c
++++ b/arch/x86/kvm/mmu_audit.c
+@@ -296,4 +296,4 @@ static struct kernel_param_ops audit_param_ops = {
+ 	.get = param_get_bool,
+ };
+ 
+-module_param_cb(mmu_audit, &audit_param_ops, &mmu_audit, 0644);
++arch_param_cb(mmu_audit, &audit_param_ops, &mmu_audit, 0644);
+-- 
+1.7.10.4
 
-__text_poke_bp already has enough barriers (although I don't
-think they are really needed in any case)
-
--Andi
