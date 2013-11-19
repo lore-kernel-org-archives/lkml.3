@@ -1,151 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab3KSF1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 00:27:34 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:31101 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3KSF1b (ORCPT
+	id S1751875Ab3KSFaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:30:23 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:49308 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750799Ab3KSFaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 00:27:31 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-83-528af6c2dcc0
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
-In-reply-to: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
-Subject: RE: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
-Date: Tue, 19 Nov 2013 13:25:57 +0800
-Message-id: <001401cee4e8$09cf01b0$1d6d0510$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHbe6Z+2xmVRaf77O6w5WUPjoMNBJoS1RTA
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t9jAd1D37qCDJYv47e4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2Py59XMBSdlKlZe
-	vMbSwNgi3sXIySEhYCLx4N5OZghbTOLCvfVsXYxcHEICixglnm/dBeX8YJSYMecWO0gVm4CK
-	xPKO/0wgtoiAtsTPua1gcWaBTIk5ryezgthCAu4Sf+9+ArM5BTwkvvSuYQGxhQU8Ja6vu8oG
-	YrMIqEosm/IALM4rYCkx+dV7VghbUOLH5HssEDO1JNbvPM4EYctLbF7zFupSBYkdZ18zQtxg
-	JPH08wM2iBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnp
-	esn5uZsYwaH/THoH46oGi0OMAhyMSjy8E9y7goRYE8uKK3MPMUpwMCuJ8EpeAQrxpiRWVqUW
-	5ccXleakFh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgbDyVVvbpn9G8C+a5O/59
-	3Wxl3d5eK1Rk1j3x3K89EhtvGQelrey5wJPkGXHc12mfTbz+JwdPiT9Xn2/fZ7Bt5R2L3OKW
-	Sh+/TaqPZYNa9ytbqrw1XcH/PfmuTNBfk2XWSb4iaf0/Hm9hfzTNc0J19NqUov///28wPZZ2
-	Zq41J9PMgnkMez1WKLEUZyQaajEXFScCAEvxppN5AgAA
+	Tue, 19 Nov 2013 00:30:19 -0500
+Message-ID: <528AF70A.7080603@st.com>
+Date: Tue, 19 Nov 2013 06:28:42 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: <srinivas.kandagatla@st.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <stephen.gallimore@st.com>,
+        <linux-kernel@vger.kernel.org>, <kernel@stlinux.com>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RFC 00/10] ARM: STi: Add dwmac glue and reset controller
+References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.236]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 11/12/2013 2:51 PM, srinivas.kandagatla@st.com wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> Hi All,
+>
+> This patch series adds Ethernet support to STi series SOCs STiH415 and STiH416.
+> STi SOC series integrates dwmac IP from synopsis, however there is a hardware
+> glue on top of this standard IP, this glue needs to configured before the
+> actual dwmac can be used.
+> To add this a new driver dwmac-sti is introduced whose responsibility is to
+> configure dwmac glue and before dwmac driver, this is achieved by making dwmac
+> device node as child to ethernet glue node. Inspired by usb/dwc3.
+> Also the glue needs to come out of softreset which is why we have added a
+> softreset controller to driver which looked perfectly neat, rather then
+> driving the softreset bit from the glue driver.
+>
+> Also as part of power management in glue driver, I found that there was no
+> function to determine if the child device is a wakeup source or not.
+> I have added a new api device_child_may_wakeup API which could be useful for
+> drivers like this. "PM / wakeup : Introduce device_child_may_wakeup" patch has
+> that new API and "net: stmmac:sti: Add STi SOC glue driver." glue driver uses
+> this new API.
+>
+> The reason for combining all these patches in a same series is because of
+> dependencies.
+>
+> This patch series is tested on B2000 and B2020 boards with STiH415, STiH416
+> SOC on ethernet 100/1000 Links.
+>
+> Comments?
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Monday, November 18, 2013 5:12 PM
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
-> Subject: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
-> 
-> This patch introduces PAGE_TYPE_OF_BIO() and cleans up do_submit_bio() with it.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/f2fs.h    |  1 +
->  fs/f2fs/segment.c | 39 +++++++++++++++++++++------------------
->  2 files changed, 22 insertions(+), 18 deletions(-)
-> 
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index fe5c2fc..1c783fd 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -351,6 +351,7 @@ enum count_type {
->   *			with waiting the bio's completion
->   * ...			Only can be used with META.
->   */
-> +#define PAGE_TYPE_OF_BIO(type)	(type) > META ? META : (type)
->  enum page_type {
->  	DATA,
->  	NODE,
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 1f83999..dad5f1a 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -837,32 +837,35 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
->  				enum page_type type, bool sync)
->  {
->  	int rw = sync ? WRITE_SYNC : WRITE;
-> -	enum page_type btype = type > META ? META : type;
-> +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+Hello Srini
+ll these patches are ok for me and, as you know, I have already started
+using them while porting other SoC. Glue logic is mandatory now!
 
-->f2fs_submit_bio()
-	: enum page_type btype = PAGE_TYPE_OF_BIO(type);
-	->do_submit_bio()
-		: enum page_type btype = PAGE_TYPE_OF_BIO(type);
+Thanks
+peppe
 
-Could we remove PAGE_TYPE_OF_BIO or use f2fs_bug_on to instead
-in do_submit_bio()? because it looks redundant , and also 
-submit_write_page() will not pass the type which is larger than META.
-
-> +	struct bio *bio = sbi->bio[btype];
-> +	struct bio_private *p;
-> +
-> +	if (!bio)
-> +		return;
-> +
-> +	sbi->bio[btype] = NULL;
-> 
->  	if (type >= META_FLUSH)
->  		rw = WRITE_FLUSH_FUA;
-> -
->  	if (btype == META)
->  		rw |= REQ_META;
-> 
-> -	if (sbi->bio[btype]) {
-> -		struct bio_private *p = sbi->bio[btype]->bi_private;
-> -		p->sbi = sbi;
-> -		sbi->bio[btype]->bi_end_io = f2fs_end_io_write;
-> +	p = bio->bi_private;
-> +	p->sbi = sbi;
-> +	bio->bi_end_io = f2fs_end_io_write;
-> 
-> -		trace_f2fs_do_submit_bio(sbi->sb, btype, sync, sbi->bio[btype]);
-> +	trace_f2fs_do_submit_bio(sbi->sb, btype, sync, bio);
-> 
-> -		if (type == META_FLUSH) {
-> -			DECLARE_COMPLETION_ONSTACK(wait);
-> -			p->is_sync = true;
-> -			p->wait = &wait;
-> -			submit_bio(rw, sbi->bio[btype]);
-> -			wait_for_completion(&wait);
-> -		} else {
-> -			p->is_sync = false;
-> -			submit_bio(rw, sbi->bio[btype]);
-> -		}
-> -		sbi->bio[btype] = NULL;
-> +	if (type == META_FLUSH) {
-> +		DECLARE_COMPLETION_ONSTACK(wait);
-> +		p->is_sync = true;
-> +		p->wait = &wait;
-> +		submit_bio(rw, bio);
-> +		wait_for_completion(&wait);
-> +	} else {
-> +		p->is_sync = false;
-> +		submit_bio(rw, bio);
->  	}
->  }
-> 
-> --
-> 1.8.4.474.g128a96c
-> 
-> 
-> ------------------------------------------------------------------------------
-> DreamFactory - Open Source REST & JSON Services for HTML5 & Native Apps
-> OAuth, Users, Roles, SQL, NoSQL, BLOB Storage and External API Access
-> Free app hosting. Or install the open source package on any LAMP server.
-> Sign up and see examples for AngularJS, jQuery, Sencha Touch and Native!
-> http://pubads.g.doubleclick.net/gampad/clk?id=63469471&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+>
+> Thanks,
+> srini
+>
+> Srinivas Kandagatla (6):
+>    drivers: reset: stih415: add softreset controller
+>    drivers: reset: stih416: add softreset controller
+>    PM / wakeup : Introduce device_child_may_wakeup
+>    net: stmmac:sti: Add STi SOC glue driver.
+>    ARM: STi: Add STiH415 ethernet support.
+>    ARM: STi: Add STiH416 ethernet support.
+>
+> Stephen Gallimore (4):
+>    drivers: reset: STi SoC system configuration reset controller support
+>    drivers: reset: Reset controller driver for STiH415
+>    drivers: reset: Reset controller driver for STiH416
+>    ARM: STi: Add reset controller support to mach-sti Kconfig
+>
+>   .../devicetree/bindings/net/sti-dwmac.txt          |   45 +++
+>   .../devicetree/bindings/reset/st,sti-powerdown.txt |   46 +++
+>   .../devicetree/bindings/reset/st,sti-softreset.txt |   45 +++
+>   arch/arm/boot/dts/stih415-clock.dtsi               |   14 +
+>   arch/arm/boot/dts/stih415-pinctrl.dtsi             |   82 ++++++
+>   arch/arm/boot/dts/stih415.dtsi                     |   67 +++++
+>   arch/arm/boot/dts/stih416-clock.dtsi               |   14 +
+>   arch/arm/boot/dts/stih416-pinctrl.dtsi             |  106 +++++++
+>   arch/arm/boot/dts/stih416.dtsi                     |   69 +++++
+>   arch/arm/boot/dts/stih41x-b2000.dtsi               |   32 +++
+>   arch/arm/boot/dts/stih41x-b2020.dtsi               |   33 +++
+>   arch/arm/mach-sti/Kconfig                          |    3 +
+>   drivers/base/power/wakeup.c                        |   23 ++
+>   drivers/net/ethernet/stmicro/stmmac/Makefile       |    1 +
+>   drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c    |  294 ++++++++++++++++++++
+>   drivers/reset/Kconfig                              |    2 +
+>   drivers/reset/Makefile                             |    3 +
+>   drivers/reset/sti/Kconfig                          |   15 +
+>   drivers/reset/sti/Makefile                         |    4 +
+>   drivers/reset/sti/reset-stih415.c                  |   99 +++++++
+>   drivers/reset/sti/reset-stih416.c                  |  101 +++++++
+>   drivers/reset/sti/reset-syscfg.c                   |  186 ++++++++++++
+>   drivers/reset/sti/reset-syscfg.h                   |   69 +++++
+>   .../dt-bindings/reset-controller/stih415-resets.h  |   23 ++
+>   .../dt-bindings/reset-controller/stih416-resets.h  |   25 ++
+>   include/linux/pm_wakeup.h                          |    1 +
+>   26 files changed, 1402 insertions(+), 0 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/net/sti-dwmac.txt
+>   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
+>   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-softreset.txt
+>   create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+>   create mode 100644 drivers/reset/sti/Kconfig
+>   create mode 100644 drivers/reset/sti/Makefile
+>   create mode 100644 drivers/reset/sti/reset-stih415.c
+>   create mode 100644 drivers/reset/sti/reset-stih416.c
+>   create mode 100644 drivers/reset/sti/reset-syscfg.c
+>   create mode 100644 drivers/reset/sti/reset-syscfg.h
+>   create mode 100644 include/dt-bindings/reset-controller/stih415-resets.h
+>   create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
+>
 
