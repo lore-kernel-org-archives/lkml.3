@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3KSWEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 17:04:20 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:45551 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab3KSWEP (ORCPT
+	id S1753404Ab3KSWFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 17:05:05 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35119 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab3KSWFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 17:04:15 -0500
-Message-ID: <528BE05E.8090501@akamai.com>
-Date: Tue, 19 Nov 2013 17:04:14 -0500
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 19 Nov 2013 17:05:00 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
-References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com> <20131118143059.afe17d2faced16171a05eb10@linux-foundation.org> <528A9F24.1000206@akamai.com> <20131119070905.GF32367@gmail.com>
-In-Reply-To: <20131119070905.GF32367@gmail.com>
+In-Reply-To: <20131119213550.3839.2581.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20131119212714.3839.52182.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20131119213550.3839.2581.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Tue, 19 Nov 2013 15:04:59 -0700
+Message-ID: <CAL-B5D27tOXNi1FUugdicEmUHCX0PMxP_2BVVpZJyAiq-b7Psw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] PCI: Remove PCIe Capability version checks
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: stable@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Amos Kong <kongjianjun@gmail.com>, Adam Lee <adam.lee@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yuval Mintz <yuvalmin@broadcom.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Thomas Renninger <trenn@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 02:09 AM, Ingo Molnar wrote:
-> 
-> * Jason Baron <jbaron@akamai.com> wrote:
-> 
->> On 11/18/2013 05:30 PM, Andrew Morton wrote:
->>> On Mon, 18 Nov 2013 21:04:36 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
->>>
->>>> The panic_timeout value can be set via the command line option 'panic=x', or via
->>>> /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
->>>> before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
->>>> so that we can set the desired value from the .config.
->>>>
->>>> The default panic_timeout value continues to be 0 - wait forever, 
->>>> except for powerpc and mips, which have been defaulted to 180 and 
->>>> 5 respectively. This is in keeping with the fact that these 
->>>> arches already set panic_timeout in their arch init code. 
->>>> However, I found three exceptions- two in mips and one in powerpc 
->>>> where the settings didn't match these default values. In those 
->>>> cases, I left the arch code so it continues to override, in case 
->>>> the user has not changed from the default. It would nice if these 
->>>> arches had one default value, or if we could determine the 
->>>> correct setting at compile-time.
->>>
->>> Felipe is proposing a simpler patch ("panic: setup panic_timeout 
->>> early") which switches to early_param().  Is that sufficient for 
->>> the (undescribed!) failure which you are presumably observing?
->>>
->>
->> No - that patch doesn't change the 'panic_timeout' value until the 
->> call to 'parse_early_param()' is made. If there is a panic before 
->> that point, the param doesn't do anything. The idea of this patch is 
->> to allow it to be configured at build-time.
->>
->> I've tested the patch by simply inserting a panic() call at the 
->> beginning of 'start_kernel()'. So, no I do not have a specific panic 
->> in mind for this.
-> 
-> Would you be interested in picking up Felipe's patch/fix on top of 
-> yours? I was unable to communicate with him efficiently, but I'd take 
-> the patch if it's signed off by you.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+On Tue, Nov 19, 2013 at 2:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Commit c8b303d0206b28c4ff3aecada47108d1655ae00f upstream.  This is part
+> of the fix for https://bugzilla.kernel.org/show_bug.cgi?id=65211
+>
+> Previously we relied on the PCIe r3.0, sec 7.8, spec language that says
+> "For Functions that do not implement the [Link, Slot, Root] registers,
+> these spaces must be hardwired to 0b," which means that for v2 PCIe
+> capabilities, we don't need to check the device type at all.
+>
+> But it's simpler if we don't need to check the capability version at all,
+> and I think the spec is explicit enough about which registers are required
+> for which types that we can remove the version checks.
+>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
+> CC: stable@vger.kernel.org      # v3.7+
+> ---
+>  drivers/pci/access.c |    9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/pci/access.c b/drivers/pci/access.c
+> index e26c3bd9aca4..9a46fa9135d9 100644
+> --- a/drivers/pci/access.c
+> +++ b/drivers/pci/access.c
+> @@ -484,8 +484,7 @@ static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+>  {
+>         int type = pci_pcie_type(dev);
+>
+> -       return pcie_cap_version(dev) > 1 ||
+> -              type == PCI_EXP_TYPE_ENDPOINT ||
+> +       return type == PCI_EXP_TYPE_ENDPOINT ||
+>                type == PCI_EXP_TYPE_LEG_END ||
+>                type == PCI_EXP_TYPE_ROOT_PORT ||
+>                type == PCI_EXP_TYPE_UPSTREAM ||
+> @@ -498,8 +497,7 @@ static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
+>  {
+>         int type = pci_pcie_type(dev);
+>
+> -       return pcie_cap_version(dev) > 1 ||
+> -              type == PCI_EXP_TYPE_ROOT_PORT ||
+> +       return type == PCI_EXP_TYPE_ROOT_PORT ||
+>                (type == PCI_EXP_TYPE_DOWNSTREAM &&
+>                 pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
+>  }
+> @@ -508,8 +506,7 @@ static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
+>  {
+>         int type = pci_pcie_type(dev);
+>
+> -       return pcie_cap_version(dev) > 1 ||
+> -              type == PCI_EXP_TYPE_ROOT_PORT ||
+> +       return type == PCI_EXP_TYPE_ROOT_PORT ||
+>                type == PCI_EXP_TYPE_RC_EC;
+>  }
+>
+>
+> --
 
-Sure, I can round up all the related patches in this area that make
-sense and re-submit as a series.
+Acked-by: Myron Stowe <myron.stowe@redhat.com>
 
-Felipe, would the CONFIG_PANIC_TIMEOUT=xx .config parameter work for your
-needs, or would you still like to see the command-line processing moved
-up?
-
-I'd also like to hear from the PowerPC folks about the arch defaults
-there. Now, that mips is ok with CONFIG_PANIC_TIMEOUT, PowerPC is the
-only arch doing specific initialization of 'panic_timeout'.
-
-Thanks,
-
--Jason
-
-
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
