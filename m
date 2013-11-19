@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3KSKAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 05:00:43 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:34728 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab3KSKAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 05:00:42 -0500
-Message-ID: <528B36EA.20301@gmail.com>
-Date: Tue, 19 Nov 2013 11:01:14 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751841Ab3KSKJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 05:09:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27597 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab3KSKJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 05:09:28 -0500
+X-IronPort-AV: E=Sophos;i="4.93,728,1378828800"; 
+   d="scan'208";a="9074455"
+Message-ID: <528B375A.9050309@cn.fujitsu.com>
+Date: Tue, 19 Nov 2013 18:03:06 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <52888F6D.6000802@gmail.com> <20131117132531.GB27696@pd.tnic> <5288E5BF.2020608@gmail.com> <20131117160126.GG27323@pd.tnic> <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com> <20131117195358.GO27323@pd.tnic> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com> <20131118133210.GG24851@pd.tnic>
-In-Reply-To: <20131118133210.GG24851@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/5]  f2fs: some minor cleanups and logic fixes
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/19 18:07:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/19 18:07:32,
+	Serialize complete at 2013/11/19 18:07:32
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 02:32 PM, Borislav Petkov wrote:
-> On Mon, Nov 18, 2013 at 01:19:28PM +0100, Francis Moreau wrote:
->> Just out of curiosity, running "objdump -D" doesn't seem to show the
->> same thing here. How did you get such dump with function names for
->> example ?
-> 
-> There's another, non-stripped vmlinux in the kernel package:
-> 
-> $ objdump -D usr/src/linux-3.12.0-1-ARCH/vmlinux | less
-> 
 
-oh I see, thks.
+Gu Zheng (5):
+  f2fs: convert remove_inode_page to void
+  f2fs: convert dev_valid_block_count to void
+  f2fs: convert inc/dec_valid_node_count to inc/dec one count
+  f2fs: simplify write_orphan_inodes for better readable
+  f2fs: move the list_head initialization into the lock protection
+    region
 
->> The thing is that I'd like to avoid to oops my kernel to avoid to
->> corrupt my filesystem.
-> 
-> Then debugging this thing would be very hard, if not impossible but it
-> is your decision at the end of the day...
-> 
+ fs/f2fs/checkpoint.c |   53 ++++++++++++++++++++++++++-----------------------
+ fs/f2fs/f2fs.h       |   37 ++++++++++++++++------------------
+ fs/f2fs/node.c       |   18 ++++++----------
+ 3 files changed, 52 insertions(+), 56 deletions(-)
 
-This issue is really annoying so I'll try to debug it.
+-- 
+1.7.7
 
-I think the easiest way to do it is to install a minimal system on a USB
-stick and try to reproduce first in order to preserve my system.
-
-Then I'll try to see if this issue exists in a previous kernel version
-and if so, I'll do a git-bisect session.
-
-I can't find a quicker way to do that although using git-bisect (which
-implies several kernel builds) is a PITA.
-
-Thanks.
