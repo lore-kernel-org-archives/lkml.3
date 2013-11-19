@@ -1,93 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3KSOxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:53:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58352 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab3KSOx3 convert rfc822-to-8bit (ORCPT
+	id S1753344Ab3KSOyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:54:04 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:41027 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3KSOyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:53:29 -0500
-From: "Cortes, Alexis" <alexis.cortes@ti.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: RE: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
- that are NOTATTACHED
-Thread-Topic: [PATCH] usb: hub: Use correct reset for wedged USB3 devices
- that are NOTATTACHED
-Thread-Index: AQHO4ZGWIwMPqdqwwU67UO/vDDw2rJom0hOQ
-Date: Tue, 19 Nov 2013 14:53:22 +0000
-Message-ID: <31F406F20B26204E8066CA524505279A269C6840@DFLE12.ent.ti.com>
-References: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
- <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
- <20131114233055.GR10371@xanatos>
-In-Reply-To: <20131114233055.GR10371@xanatos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 19 Nov 2013 09:54:01 -0500
+From: Dan Aloni <alonid@stratoscale.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net, x86@kernel.org,
+        gleb@redhat.com, pbonzini@redhat.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Subject: 
+Date: Tue, 19 Nov 2013 16:53:28 +0200
+Message-Id: <1384872810-29492-1-git-send-email-alonid@stratoscale.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+Hello,
 
-Sorry for my delayed response, I just saw your e-mail (it got filtered somehow). About your question: actually I'm not sure, I'll have to check that to confirm it. I'll get back to you with an answer as soon as I have it.
+The following two patches address an integration issue between KVM and
+KGDB. The issue described in the patches can be triggered with vanilla
+kernels that enable KGDB and KVM together on x86 (more specifically,
+we bump into this with Fedora's 3.11 kernel from FC19).
 
-Best Regards,
-Alexis Cortes.
+On a kernel enabled with KGDB, running with kvm-unit-tests should
+reproduce the issue. On VM hosts servers where an admin accidently
+left an active KGDB, and unprivilged guest might be able to bring
+the host down.
 
------Original Message-----
-From: Sarah Sharp [mailto:sarah.a.sharp@linux.intel.com] 
-Sent: Thursday, November 14, 2013 5:31 PM
-To: Alan Stern
-Cc: Julius Werner; Greg Kroah-Hartman; LKML; linux-usb@vger.kernel.org; Benson Leung; Vincent Palatin; Cortes, Alexis
-Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
+Patches apply to linux-next and earlier kernels.
 
-On Thu, Nov 07, 2013 at 10:32:33AM -0500, Alan Stern wrote:
-> On Wed, 6 Nov 2013, Julius Werner wrote:
-> 
-> > > What if the device is in USB_STATE_SUSPENDED?
-> > 
-> > I'm not sure that is possible at that point in hub_events(), I don't 
-> > know of a way that could lead to this situation. I could still add 
-> > the check just to be sure if you want it, though.
-> 
-> I don't know either.  But Sarah has said that ports can spontaneously 
-> go into Compliance Mode for no apparent reason.  If that can happen, 
-> maybe it can happen while the port is in U3 and the device is 
-> suspended.  In such cases, though, you'd need to do a reset-resume 
-> rather than a simple reset.
-
-Looking at commits c3897aa5386faba77e5bbdf94902a1658d3a5b11 and 71c731a296f1b08a3724bd1b514b64f1bda87a23, it seems that the TI host controllers' ports can go into compliance mode only when a device is inserted.  Once the device is link trained by the redriver, the port shouldn't go into compliance mode.  So we should never see compliance mode on a port with an attached USB device in suspend.
-
-Alex, can you confirm that the TI host's port won't go into compliance mode while a connected device is suspended?
-
-> > > Not at all.  If a device is unplugged, its state changes to 
-> > > NOTATTACHED before the driver is unbound.  During that time, the 
-> > > driver will see all its URBs failing, so it may very well try to reset the device.
-> > > (For example, usbhid behaves like this.)  That isn't a bug.
-> > 
-> > Oh, okay, I wasn't quite sure how that plays together. Would you 
-> > think it's still valuable to print it out (maybe as dev_info() 
-> > instead of
-> > dev_warn()) instead of just silently ignoring the reset request? It 
-> > would have certainly been useful for me to find this problem faster, 
-> > but I can take it out again if you think it would result in too much 
-> > noise.
-> 
-> I think keeping dev_dbg() is best.  If you're searching for the 
-> solution to a problem, you should have debugging enabled and so you 
-> ought to see the message.
-> 
-> Alan Stern
-> 
