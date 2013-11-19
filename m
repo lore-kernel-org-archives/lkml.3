@@ -1,185 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3KSImZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 03:42:25 -0500
-Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:45853 "EHLO
-	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750833Ab3KSImY (ORCPT
+	id S1751732Ab3KSImx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 03:42:53 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:61168 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3KSImu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 03:42:24 -0500
-Message-ID: <1384850540.3381.6.camel@linaro1.home>
-Subject: Re: [PATCH] cpufreq/stats: Add "unknown" frequency field in stats
- tables
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, nm@ti.com, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, ceh@ti.com
-Date: Tue, 19 Nov 2013 08:42:20 +0000
-In-Reply-To: <b0a2e5d26be45d1d2853940d318d50415db48f6f.1384839287.git.viresh.kumar@linaro.org>
-References: <b0a2e5d26be45d1d2853940d318d50415db48f6f.1384839287.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01d-IP: [82.69.122.217]
+	Tue, 19 Nov 2013 03:42:50 -0500
+Date: Tue, 19 Nov 2013 09:42:24 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Bernie Thompson <bhthompson@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: Re: [PATCH 1/3] mfd: cros ec: spi: Add delay for raising CS
+Message-ID: <20131119084223.GC31504@ulmo.nvidia.com>
+References: <1384770649-8593-1-git-send-email-treding@nvidia.com>
+ <20131118114810.GE30853@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kfjH4zxOES6UT95V"
+Content-Disposition: inline
+In-Reply-To: <20131118114810.GE30853@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 11:10 +0530, Viresh Kumar wrote:
-> commit 46a310b ([CPUFREQ] Don't set stat->last_index to -1 if the pol->cur has
-> incorrect value.) tries to handle case where policy->cur does not match any
-> entry in freq_table.
-> 
-> As indicated in the above commit, the exact match search of freq_table_get index
-> will return a -1 which is stored in stat->last_index. However, as a result of
-> the above commit, cpufreq_stat_notifier_trans which updates the statistics,
-> fails to update any *further* valid transitions that take place as
-> stat->last_index is -1 as the condition occurs at boot and never solved.
-> 
-> To fix this issue, lets create another entry for time_in_state and trans_table
-> that will tell the user that CPU was running on unknown frequency for some time.
-> 
-> This is how the output looks like on my thinkpad (Removed some entries to keep
-> it simple):
-> 
-> 	$ cat /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state 
-> 	2800000 46
-> 	2600000 138
-> 	1200000 65
-> 	1000000 152
-> 	800000 34803
-> 	unknown 0
 
-I'm wondering if this would break any user-side code parsing this output
-and does that matter? (E.g. powertop will end up doing strtoull on
-"unknown" and get zero as the frequency.)  Would omitting 'unknown' if
-the time is zero be safer in this repect? Possibly not, inconsistency is
-probably worse than change.
+--kfjH4zxOES6UT95V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Tixy
+On Mon, Nov 18, 2013 at 11:48:10AM +0000, Mark Rutland wrote:
+> On Mon, Nov 18, 2013 at 10:30:47AM +0000, Thierry Reding wrote:
+> > From: Rhyland Klein <rklein@nvidia.com>
+> >=20
+> > The EC has specific timing it requires. Add support for an optional del=
+ay
+> > after raising CS to fix timing issues. This is configurable based on
+> > a DT property "google,cros-ec-spi-msg-delay".
+> >=20
+> > If this property isn't set, then no delay will be added. However, if set
+> > it will cause a delay equal to the value passed to it to be inserted at
+> > the end of a transaction.
+> >=20
+> > Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> > Reviewed-by: Bernie Thompson <bhthompson@chromium.org>
+> > Reviewed-by: Andrew Bresticker <abrestic@chromium.org>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/cros-ec.txt |  4 +++
+> >  drivers/mfd/cros_ec_spi.c                         | 30 +++++++++++++++=
+++++++++
+> >  2 files changed, 34 insertions(+)
+> >=20
+> > diff --git a/Documentation/devicetree/bindings/mfd/cros-ec.txt b/Docume=
+ntation/devicetree/bindings/mfd/cros-ec.txt
+> > index 5f229c5f6da9..fb3034a87ae0 100644
+> > --- a/Documentation/devicetree/bindings/mfd/cros-ec.txt
+> > +++ b/Documentation/devicetree/bindings/mfd/cros-ec.txt
+> > @@ -17,6 +17,10 @@ Required properties (SPI):
+> >  - compatible: "google,cros-ec-spi"
+> >  - reg: SPI chip select
+> > =20
+> > +Optional properties (SPI):
+> > +- google,cros-ec-spi-msg-delay: This property is how long of a delay, =
+in usecs,
+> > +  to use on the last transfer of a message, to force time between tran=
+sactions.
+> > +
+>=20
+> Lose the "This property is", that's obvious from the structure of the
+> document.
 
-> 	$ cat /sys/devices/system/cpu/cpu0/cpufreq/stats/trans_table 
-> 	   From  :    To
-> 	         :   2801000   2800000   2600000   2400000   2200000   2000000   unknown 
-> 	  2801000:         0        15        20         9        13        17         0 
-> 	  2800000:        13         0         4         1         0         1         0 
-> 	  2600000:        26         1         0         5         1         1         0 
-> 	  2400000:        11         0         6         0         1         1         0 
-> 	  2200000:         8         1         5         3         0         0         0 
-> 	  2000000:        11         1         2         1         2         0         0 
-> 	  unknown:         0         0         0         0         0         0         0 
-> 
-> Reported-by: Carlos Hernandez <ceh@ti.com>
-> Reported-and-tested-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq_stats.c | 45 ++++++++++++++++++++++++++++-------------
->  1 file changed, 31 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index 4cf0d28..ebb21cd 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -72,9 +72,13 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
->  		return 0;
->  	cpufreq_stats_update(stat->cpu);
->  	for (i = 0; i < stat->state_num; i++) {
-> -		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
-> -			(unsigned long long)
-> -			jiffies_64_to_clock_t(stat->time_in_state[i]));
-> +		if (stat->freq_table[i] == -1)
-> +			return sprintf(buf + len, "unknown");
-> +		else
-> +			return sprintf(buf + len, "%u", stat->freq_table[i]);
-> +
-> +		len += sprintf(buf + len, " %llu\n", (unsigned long long)
-> +				jiffies_64_to_clock_t(stat->time_in_state[i]));
->  	}
->  	return len;
->  }
-> @@ -94,8 +98,12 @@ static ssize_t show_trans_table(struct cpufreq_policy *policy, char *buf)
->  	for (i = 0; i < stat->state_num; i++) {
->  		if (len >= PAGE_SIZE)
->  			break;
-> -		len += snprintf(buf + len, PAGE_SIZE - len, "%9u ",
-> -				stat->freq_table[i]);
-> +		if (stat->freq_table[i] == -1)
-> +			len += snprintf(buf + len, PAGE_SIZE - len, "%9s ",
-> +					"unknown");
-> +		else
-> +			len += snprintf(buf + len, PAGE_SIZE - len, "%9u ",
-> +					stat->freq_table[i]);
->  	}
->  	if (len >= PAGE_SIZE)
->  		return PAGE_SIZE;
-> @@ -106,8 +114,12 @@ static ssize_t show_trans_table(struct cpufreq_policy *policy, char *buf)
->  		if (len >= PAGE_SIZE)
->  			break;
->  
-> -		len += snprintf(buf + len, PAGE_SIZE - len, "%9u: ",
-> -				stat->freq_table[i]);
-> +		if (stat->freq_table[i] == -1)
-> +			len += snprintf(buf + len, PAGE_SIZE - len, "%9s: ",
-> +					"unknown");
-> +		else
-> +			len += snprintf(buf + len, PAGE_SIZE - len, "%9u: ",
-> +					stat->freq_table[i]);
->  
->  		for (j = 0; j < stat->state_num; j++) {
->  			if (len >= PAGE_SIZE)
-> @@ -145,10 +157,12 @@ static struct attribute_group stats_attr_group = {
->  static int freq_table_get_index(struct cpufreq_stats *stat, unsigned int freq)
->  {
->  	int index;
-> -	for (index = 0; index < stat->max_state; index++)
-> +	for (index = 0; index < stat->max_state - 1; index++)
->  		if (stat->freq_table[index] == freq)
->  			return index;
-> -	return -1;
-> +
-> +	/* Last state is INVALID, to mark out of table frequency */
-> +	return stat->max_state - 1;
->  }
->  
->  /* should be called late in the CPU removal sequence so that the stats
-> @@ -222,6 +236,9 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
->  		count++;
->  	}
->  
-> +	/* An extra entry for Invalid frequencies */
-> +	count++;
-> +
->  	alloc_size = count * sizeof(int) + count * sizeof(u64);
->  
->  #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-> @@ -243,9 +260,13 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
->  		unsigned int freq = table[i].frequency;
->  		if (freq == CPUFREQ_ENTRY_INVALID)
->  			continue;
-> -		if (freq_table_get_index(stat, freq) == -1)
-> +		if (freq_table_get_index(stat, freq) == stat->max_state - 1)
->  			stat->freq_table[j++] = freq;
->  	}
-> +
-> +	/* Mark Invalid freq as max value to indicate Invalid freq */
-> +	stat->freq_table[j++] = -1;
-> +
->  	stat->state_num = j;
->  	spin_lock(&cpufreq_stats_lock);
->  	stat->last_time = get_jiffies_64();
-> @@ -315,10 +336,6 @@ static int cpufreq_stat_notifier_trans(struct notifier_block *nb,
->  	old_index = stat->last_index;
->  	new_index = freq_table_get_index(stat, freq->new);
->  
-> -	/* We can't do stat->time_in_state[-1]= .. */
-> -	if (old_index == -1 || new_index == -1)
-> -		return 0;
-> -
->  	cpufreq_stats_update(freq->cpu);
->  
->  	if (old_index == new_index)
+Will do.
 
+> It would be nice to have an explanation in the binding document as to
+> _why_ you might want to do this (e.g. the HW expects the rising edge to
+> come some number of uS after the data, if it comes too early it
+> explodes).
 
+=46rom what I can tell, this might differ on the exact variant of the EC,
+but generally it seems that when the interval between two transactions
+isn't long enough the EC won't be able to respond properly in time and
+cause subsequent transactions to hang. Perhaps Rhyland, Bernie or Andrew
+are more familiar with the details and therefore can provide a better or
+more accurate explanation.
+
+> Otherwise this looks fine to me.
+
+Thanks,
+Thierry
+
+--kfjH4zxOES6UT95V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSiyRvAAoJEN0jrNd/PrOh6WMP/izwiUWLUoqH6v/krQzhJW24
+CsyHdFQxWBjVnFvPjcxPuJkA0inOC8vvxvvOZxVu/tMqZgkcz9XSzZYp+R/71wam
+lzMjp+8IS8iHROeQAEMZEA3lErUzKPP5kZXzJFlSrRb72/vUVjZKyN3iQ0Lnl8KB
+ktbH3mLdayIV5PsD4MtCRjvE/P8H/cFu5G+81+oda2nrL5PrNT22AmicPNAtPTrQ
+F1LdVPTjKiOYd5qtesoi9xfaB1o1+lTXKOpVMzwqFujVmC9tBklI0gze9HQmkGqH
+ReuGm+kY73w67sMaoKrJs6+jQW54A4Ax49qEp6QSV9xI3Iq9K1XMWvWyNxA/+c8G
+T5zfgsr6GoCBaz8pmJHoas0gk9uFR6Qqr1d4pQRc1ped2YDuwDeZ5IGkaHnhPs+C
+I9or/ZvFN5/wYqk7JB25ajuy3s3zX4hLFrqY1ZEpjt3DPHhJ1si5HdBNvlFf/D2G
+BUBcq6RSh3VwkTzkmivJmlIgZMIjbf1iM+26xTigAiH4uLf4x7LTX3cN+1eKqdGq
+hzogI5095mohvnZuG+XB8AG+ISMdIdGeMNqif/Iyl5EwP1haLSbxanyaGqjs27eN
+FUXByTD9QWCLs7NOvsfxZhA+tfIa2ONUnV5ZV4CC+VIDOU/9I83ahXCzdnjtClcP
+3Uq26ccabAUQHTQ/Fp5y
+=NMqI
+-----END PGP SIGNATURE-----
+
+--kfjH4zxOES6UT95V--
