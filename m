@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab3KSOgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:36:05 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:26309 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab3KSOgD (ORCPT
+	id S1752670Ab3KSOk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:40:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56067 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3KSOk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:36:03 -0500
-X-IronPort-AV: E=Sophos;i="4.93,729,1378857600"; 
-   d="scan'208";a="73470379"
-Message-ID: <528B774F.7090902@citrix.com>
-Date: Tue, 19 Nov 2013 14:35:59 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Tue, 19 Nov 2013 09:40:26 -0500
+Date: Tue, 19 Nov 2013 15:39:54 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: NeilBrown <neilb@suse.de>, Jonathan Corbet <corbet@lwn.net>,
+        Dean Nelson <dcn@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        Marek Belisko <marek@goldelico.com>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH/RFC] wait_for_completion_timeout() considered harmful.
+In-Reply-To: <20131119122322.GM3866@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1311191512440.30673@ionos.tec.linutronix.de>
+References: <20131117080603.2a0d3b6d@notabene.brown> <20131118152746.937b2b7971d7a4bba4ef996d@linux-foundation.org> <20131119104438.6d45828b@notabene.brown> <20131119082548.GD10022@twins.programming.kicks-ass.net> <20131119195851.26bee8e6@notabene.brown>
+ <20131119122322.GM3866@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Elena Ufimtseva <ufimtseva@gmail.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <x86@kernel.org>, <akpm@linux-foundation.org>,
-        <tangchen@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
-References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com> <1384811922-14642-3-git-send-email-ufimtseva@gmail.com> <528B5160.5010902@citrix.com> <20131119141620.GD5332@phenom.dumpdata.com>
-In-Reply-To: <20131119141620.GD5332@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/11/13 14:16, Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 19, 2013 at 11:54:08AM +0000, David Vrabel wrote:
->> On 18/11/13 21:58, Elena Ufimtseva wrote:
->>> Enables numa if vnuma topology hypercall is supported and it is domU.
->> [...]
->>> --- a/arch/x86/xen/setup.c
->>> +++ b/arch/x86/xen/setup.c
->>> @@ -20,6 +20,7 @@
->>>  #include <asm/numa.h>
->>>  #include <asm/xen/hypervisor.h>
->>>  #include <asm/xen/hypercall.h>
->>> +#include <asm/xen/vnuma.h>
->>>  
->>>  #include <xen/xen.h>
->>>  #include <xen/page.h>
->>> @@ -598,6 +599,9 @@ void __init xen_arch_setup(void)
->>>  	WARN_ON(xen_set_default_idle());
->>>  	fiddle_vdso();
->>>  #ifdef CONFIG_NUMA
->>> -	numa_off = 1;
->>> +	if (!xen_initial_domain() && xen_vnuma_supported())
->>> +		numa_off = 0;
->>> +	else
->>> +		numa_off = 1;
->>>  #endif
->>>  }
->>
->> I think this whole #ifdef CONFIG_NUMA can be removed and hence
->> xen_vnuma_supported() can be removed as well.
->>
->> For any PV guest we can call the xen_numa_init() and it will do the
->> right thing.
->>
->> For dom0, the hypercall will either: return something sensible (if in
->> the future Xen sets something up), or it will error.
->>
->> If Xen does not have vnuma support, the hypercall will error.
->>
->> In both error cases, the dummy numa node is setup as required.
+On Tue, 19 Nov 2013, Peter Zijlstra wrote:
+> On Tue, Nov 19, 2013 at 07:58:51PM +1100, NeilBrown wrote:
+> > 	/*
+> > 	 * TODO: Make sure that we wait at least required delay but why we
+> > 	 * have to extend it one tick more?
+> > 	 */
+> > 	schedule_timeout_interruptible(msecs_to_jiffies(delay) + 2);
 > 
-> Incorrect. It will end up calling:
+> What makes me sad is that clearly people knew stuff was broken but
+> somehow it never got properly fixed.
 > 
->                  if (!numa_init(amd_numa_init))                                  
-> 
-> which will crash dom0 (see 8d54db795 "xen/boot: Disable NUMA for PV guests.")
-> as that amd_numa_init is called before the dummy node init.
+> Yes, changing something like this is risky, but I prefer to fix the
+> implementation to the sane and documented behaviour and fix up whatever
+> fallout that generates. The end result is saner code in general and less
+> new bugs.
+ 
+The underlying issue of the timer wheel is that it is driven by a
+coarse grained tick.
 
-No it won't.  Any error path after the check for a PV guest will add the
-dummy node and return success, skipping any of the hardware-specific setup.
+So a schedule_timeout(1) is guaranteed to sleep until the next tick
+arrives. There is no way to figure out whether the timer was started
+right at the beginning of a tick period or right at the end.
 
-David
+This has been the case from day one of the timer wheel.
+
+The user space interfaces [clock_]nanosleep and the various posix
+timers had countermeasures based on gettimeofday() to guarantee the
+correct behaviour. glibc still has some extra checks around some
+timeout related syscalls for that reason. We killed that mess when we
+converted them over to hrtimers.
+
+So if you really want to make sure that you slept at minimum the given
+number of ticks with the timer wheel, then you have only one choice:
+
+       Add unconditionally 1 to the given number of ticks
+
+I don't think that this will cause a massive fallout as the timing of
+the timer_list timers already varies by an order of magnitude due to
+the HZ settings. So anything which relies on the timer wheel in terms
+of precision is hosed already. So adding 1 will just hose it some
+more.
+
+Thanks,
+
+	tglx
