@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3KSOuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 09:50:14 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:57031 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab3KSOuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 09:50:12 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-b6-528b7aa2efe2
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Jonghwan Choi <jhbird.choi@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH 4/4] PM / devfreq: Consider hibernation in pm notifier
-Date: Tue, 19 Nov 2013 15:50:05 +0100
-Message-id: <27161890.Zx6CiZOMr8@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
-References: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9jAd1FVd1BBhPfmlvsPbKWxWJJM7dF
-	74KrbBaXd81hs5hxfh+Txe3GFWwWZ05fYnVg99g56y67x5ar7SwefVtWMXp83iQXwBLFZZOS
-	mpNZllqkb5fAlbHu/nH2gstcFV2tW9gbGM9xdDFyckgImEjsunWSFcIWk7hwbz1bFyMXh5DA
-	IkaJn+cXsEA4LUwSy1/OZgSpYhOwkpjYvgrMFhHQlGiY1A3WwSzwglHi6ISzLCAJYQEviY9f
-	FoLZLAKqEn09K5i6GDk4eAW0JE59DAQJiwp4SuzYvpINJMwp4CEx5xMnSFhIwF1iTdsVdhCb
-	V0BQ4sfke2BTmAXkJfbtn8oKYetI7G+dxjaBUWAWkrJZSMpmISlbwMi8ilE0tSC5oDgpPddI
-	rzgxt7g0L10vOT93EyM4sJ9J72Bc1WBxiFGAg1GJh3eCe1eQEGtiWXFl7iFGCQ5mJRHexvzu
-	ICHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2MPY/6Vzk+
-	fHy2IUM96O35YzlJEv7BDWfWXJbaHSWQqMv+cc9Uj1i3CZ4x3hG71cLNPWZml+27Jau788tS
-	m79Lg1+dFrnH0SFc6/GEJy+o55myuzJjIcOxPD+uPQWcnXl5oTFPS/Jbs/hXRDTdz2wxEtgg
-	vjJcRNjvcehk95bWgtnPPrX+nKvEUpyRaKjFXFScCADpeHEVaAIAAA==
+	id S1751769Ab3KSOvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 09:51:35 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:60653 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab3KSOve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 09:51:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=xXTQop
+	qd87aA9CrlKOrUcV/BctiiryyWtPYHFCp0W4Y4vKZNFRMqqmitE8QcbIgusyGP5s
+	g5urkZ8IFHqLptnRCeFj+1ym9lHtgceSzsrbVCCPj7emx4RE+CBmiOdA09xYmIrA
+	cEFcWIKaYH4cE6nKMXslOXwKHMUPCCu6mXU/E=
+Message-ID: <528B7AEF.7020805@pobox.com>
+Date: Tue, 19 Nov 2013 23:51:27 +0900
+From: Shinya Kuribayashi <skuribay@pobox.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: ralf@linux-mips.org, jbaron@akamai.com
+CC: mingo@kernel.org, benh@kernel.crashing.org, paulus@samba.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, florian@openwrt.org, jchandra@broadcom.com,
+        ganesanr@broadcom.com
+Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
+References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com> <20131119090211.GN10382@linux-mips.org>
+In-Reply-To: <20131119090211.GN10382@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 14944822-512A-11E3-AA7F-D331802839F8-47602734!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/19/13 6:02 PM, Ralf Baechle wrote:> On Mon, Nov 18, 2013 at 09:04:36PM +0000, Jason Baron wrote:
+> It's more complicated - MIPS was using the global default with five MIPS
+> platforms overriding the default.
+>
+> I propose to kill these overrides for sanity unless somebody comes up
+> with a good argument.  Patch below.
+>
+>    Ralf
+>
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+>
+>   arch/mips/ar7/setup.c           | 1 -
+>   arch/mips/emma/markeins/setup.c | 3 ---
+>   arch/mips/netlogic/xlp/setup.c  | 1 -
+>   arch/mips/netlogic/xlr/setup.c  | 1 -
+>   arch/mips/sibyte/swarm/setup.c  | 2 --
+>   5 files changed, 8 deletions(-)
+[...]
+> diff --git a/arch/mips/emma/markeins/setup.c b/arch/mips/emma/markeins/setup.c
+> index d710058..9100122 100644
+> --- a/arch/mips/emma/markeins/setup.c
+> +++ b/arch/mips/emma/markeins/setup.c
+> @@ -111,9 +111,6 @@ void __init plat_mem_setup(void)
+>   	iomem_resource.start = EMMA2RH_IO_BASE;
+>   	iomem_resource.end = EMMA2RH_ROM_BASE - 1;
+>
+> -	/* Reboot on panic */
+> -	panic_timeout = 180;
+> -
+>   	markeins_sio_setup();
+>   }
+>
 
-Hi,
+IIRC we had set it to 180 seconds for some historical reasons, but
+I'm afraid nobody can recall the reason why it's set so in 2013...
+Anyway I was thinking it too long and reduced to a few seconds locally
+when debugging, so there shouldn't be a problem with this change.
 
-Are you planning to add hibernation support to ARM?
+FWIW, for EMMA2RH portion:
 
-If so then this should be stated somewhere in the patch description.
+Acked-by: Shinya Kuribayashi <skuribay@pobox.com>
 
-OTOH if you are not going to add hibernation support to ARM I see
-a little sense in adding hibernation support to ARM-only drivers..
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-On Tuesday, November 19, 2013 10:30:31 PM Jonghwan Choi wrote:
-> Frequency lock should be considered in suspend/hibernation.
-> 
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  drivers/devfreq/exynos/exynos5_bus.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/devfreq/exynos/exynos5_bus.c b/drivers/devfreq/exynos/exynos5_bus.c
-> index a60da3c..bd672de0 100644
-> --- a/drivers/devfreq/exynos/exynos5_bus.c
-> +++ b/drivers/devfreq/exynos/exynos5_bus.c
-> @@ -268,6 +268,7 @@ static int exynos5_busfreq_int_pm_notifier_event(struct notifier_block *this,
->  	int err = 0;
->  
->  	switch (event) {
-> +	case PM_HIBERNATION_PREPARE:
->  	case PM_SUSPEND_PREPARE:
->  		/* Set Fastest and Deactivate DVFS */
->  		mutex_lock(&data->lock);
-> @@ -300,6 +301,7 @@ unlock:
->  		if (err)
->  			return NOTIFY_BAD;
->  		return NOTIFY_OK;
-> +	case PM_POST_HIBERNATION:
->  	case PM_POST_RESTORE:
->  	case PM_POST_SUSPEND:
->  		/* Reactivate */
-
+Thank you always for your help, Ralf.
