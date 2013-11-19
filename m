@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab3KSNOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 08:14:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33860 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab3KSNOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 08:14:02 -0500
-Date: Tue, 19 Nov 2013 14:14:00 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Joern Engel <joern@logfs.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: user defined OOM policies
-Message-ID: <20131119131400.GC20655@dhcp22.suse.cz>
+	id S1752566Ab3KSNPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 08:15:09 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:19905
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752021Ab3KSNPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 08:15:08 -0500
+X-IronPort-AV: E=Sophos;i="4.93,729,1378850400"; 
+   d="scan'208";a="36461949"
+Date: Tue, 19 Nov 2013 14:15:06 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: linux-kernel@vger.kernel.org
+Subject: Hardware locality (hwloc) v1.8 released
+Message-ID: <20131119131506.GB24580@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-it's been quite some time since LSFMM 2013 when this has been
-discussed[1]. In short, it seems that there are usecases with a
-strong demand on a better user/admin policy control for the global
-OOM situations. Per process oom_{adj,score} which is used for the
-prioritizing is no longer sufficient because there are other categories
-which might be important. For example, often it doesn't make sense to
-kill just a part of the workload and killing the whole group would be a
-better fit. I am pretty sure there are many others some of them workload
-specific and thus not appropriate for the generic implementation.
+The Hardware Locality (hwloc) team is pleased to announce the release
+of v1.8:
 
-We have basically ended up with 3 options AFAIR:
-	1) allow memcg approach (memcg.oom_control) on the root level
-           for both OOM notification and blocking OOM killer and handle
-           the situation from the userspace same as we can for other
-	   memcgs.
-	2) allow modules to hook into OOM killer path and take the
-	   appropriate action.
-	3) create a generic filtering mechanism which could be
-	   controlled from the userspace by a set of rules (e.g.
-	   something analogous to packet filtering).
+   http://www.open-mpi.org/projects/hwloc/
 
-As there was no real follow up discussion after the conference I would
-like to open it here on the mailing list again and try to get to some
-outcome.
+v1.8 is a major new release series.
+It adds PCI discovery on Linux without dependencies on external libs,
+a new API to manipulate differences between very similar topologies,
+multiple improvements to command-line tools, and more.
 
-I will follow up with some of my ideas but lets keep this post clean and
-short for starter. Also if there are other ideas, please go ahead...
+* New components
+  + Add the "linuxpci" component that always works on Linux even when
+    libpciaccess and libpci aren't available (and even with a modified
+    file-system root). By default the old "pci" component runs first
+    because "linuxpci" lacks device names (obj->name is always NULL).
+* API
+  + Add the topology difference API in hwloc/diff.h for manipulating
+    many similar topologies.
+  + Add hwloc_topology_dup() for duplicating an entire topology.
+  + hwloc.h and hwloc/helper.h have been reorganized to clarify the
+    documentation sections. The actual inline code has moved out of hwloc.h
+    into the new hwloc/inlines.h.
+  + Deprecated functions are now in hwloc/deprecated.h, and not in the
+    official documentation anymore.
+* Tools
+  + Add hwloc-diff and hwloc-patch tools together with the new diff API.
+  + Add hwloc-compress-dir to (de)compress an entire directory of XML files
+    using hwloc-diff and hwloc-patch.
+  + Object colors in the graphical output of lstopo may be changed by adding
+    a "lstopoStyle" info attribute. See CUSTOM COLORS in the lstopo(1) manpage
+    for details. Thanks to Jirka Hladky for discussing the idea.
+  + hwloc-gather-topology may now gather I/O-related files on Linux when
+    --io is given. Only the linuxpci component supports discovering I/O
+    objects from these extended tarballs.
+  + hwloc-annotate now supports --ri to remove/replace info attributes with
+    a given name.
+  + hwloc-info supports "root" and "all" special locations for dumping
+    information about the root object.
+  + lstopo now supports --append-legend to append custom lines of text
+    to the legend in the graphical output. Thanks to Jirka Hladky for
+    discussing the idea.
+  + hwloc-calc and friends have a more robust parsing of locations given
+    on the command-line and they report useful error messages about it.
+  + Add --whole-system to hwloc-bind, hwloc-calc, hwloc-distances and
+    hwloc-distrib, and add --restrict to hwloc-bind for uniformity among
+    tools.
+* Misc
+  + Calling hwloc_topology_load() or hwloc_topology_set_*() on an already
+    loaded topology now returns an error (deprecated since release 1.6.1).
+  + Fix the initialisation of cpusets and nodesets in Group objects added
+    when inserting PCI hostbridges.
+  + Never merge Group objects that were added explicitly by the user with
+    hwloc_custom_insert_group_object_by_parent().
+  + Add a sanity check during dynamic plugin loading to prevent some
+    crashes when hwloc is dynamically loaded by another plugin mechanisms.
+  + Add --with-hwloc-plugins-path to specify the install/load directories
+    of plugins.
+  + Add the MICSerialNumber info attribute to the root object when running
+    hwloc inside a Xeon Phi to match the same attribute in the MIC OS device
+    when running in the host.
 
-I wasn't sure who was present in the room and interested in the
-discussion so I am putting random people I remember...
 
-Ideas?
-
-Thanks
-
----
-[1] http://lwn.net/Articles/548180/
--- 
-Michal Hocko
-SUSE Labs
+Changes since v1.8rc1 only consists in minor documentation updates,
+test improvements and warning fixes.
