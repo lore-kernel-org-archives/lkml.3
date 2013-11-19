@@ -1,180 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab3KSF0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 00:26:06 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:36700
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab3KSFXp (ORCPT
+	id S1752205Ab3KSF1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:27:34 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:31101 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab3KSF1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 00:23:45 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kd2iz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h20cfi1155h)
-From: Bharat Bhushan <r65777@freescale.com>
-To: <alex.williamson@redhat.com>, <joro@8bytes.org>, <bhelgaas@google.com>,
-        <agraf@suse.de>, <scottwood@freescale.com>,
-        <stuart.yoder@freescale.com>, <iommu@lists.linux-foundation.org>,
-        <linux-pci@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
-        Bharat Bhushan <bharat.bhushan@freescale.com>
-Subject: [PATCH 4/9 v2] powerpc: msi: Extend the msi region interface to get info from fsl_msi
-Date: Tue, 19 Nov 2013 10:47:08 +0530
-Message-ID: <1384838233-24847-5-git-send-email-Bharat.Bhushan@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Tue, 19 Nov 2013 00:27:31 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-83-528af6c2dcc0
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
+In-reply-to: <1384765922-24028-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: RE: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
+Date: Tue, 19 Nov 2013 13:25:57 +0800
+Message-id: <001401cee4e8$09cf01b0$1d6d0510$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHbe6Z+2xmVRaf77O6w5WUPjoMNBJoS1RTA
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t9jAd1D37qCDJYv47e4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2Py59XMBSdlKlZe
+	vMbSwNgi3sXIySEhYCLx4N5OZghbTOLCvfVsXYxcHEICixglnm/dBeX8YJSYMecWO0gVm4CK
+	xPKO/0wgtoiAtsTPua1gcWaBTIk5ryezgthCAu4Sf+9+ArM5BTwkvvSuYQGxhQU8Ja6vu8oG
+	YrMIqEosm/IALM4rYCkx+dV7VghbUOLH5HssEDO1JNbvPM4EYctLbF7zFupSBYkdZ18zQtxg
+	JPH08wM2iBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnp
+	esn5uZsYwaH/THoH46oGi0OMAhyMSjy8E9y7goRYE8uKK3MPMUpwMCuJ8EpeAQrxpiRWVqUW
+	5ccXleakFh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgbDyVVvbpn9G8C+a5O/59
+	3Wxl3d5eK1Rk1j3x3K89EhtvGQelrey5wJPkGXHc12mfTbz+JwdPiT9Xn2/fZ7Bt5R2L3OKW
+	Sh+/TaqPZYNa9ytbqrw1XcH/PfmuTNBfk2XWSb4iaf0/Hm9hfzTNc0J19NqUov///28wPZZ2
+	Zq41J9PMgnkMez1WKLEUZyQaajEXFScCAEvxppN5AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSL MSI will provide the interface to get:
-  - Number of MSI regions (which is number of MSI banks for powerpc)
-  - Get the region address range: Physical page which have the
-    address/addresses used for generating MSI interrupt
-    and size of the page.
+Hi
 
-These are required to create IOMMU (Freescale PAMU) mapping for
-devices which are directly assigned using VFIO.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, November 18, 2013 5:12 PM
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] [PATCH 1/2] f2fs: clean up the do_submit_bio flow
+> 
+> This patch introduces PAGE_TYPE_OF_BIO() and cleans up do_submit_bio() with it.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  fs/f2fs/f2fs.h    |  1 +
+>  fs/f2fs/segment.c | 39 +++++++++++++++++++++------------------
+>  2 files changed, 22 insertions(+), 18 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index fe5c2fc..1c783fd 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -351,6 +351,7 @@ enum count_type {
+>   *			with waiting the bio's completion
+>   * ...			Only can be used with META.
+>   */
+> +#define PAGE_TYPE_OF_BIO(type)	(type) > META ? META : (type)
+>  enum page_type {
+>  	DATA,
+>  	NODE,
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 1f83999..dad5f1a 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -837,32 +837,35 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
+>  				enum page_type type, bool sync)
+>  {
+>  	int rw = sync ? WRITE_SYNC : WRITE;
+> -	enum page_type btype = type > META ? META : type;
+> +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
 
-Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
----
-v1->v2
- - Atomic increment of bank index for parallel probe of msi node 
+->f2fs_submit_bio()
+	: enum page_type btype = PAGE_TYPE_OF_BIO(type);
+	->do_submit_bio()
+		: enum page_type btype = PAGE_TYPE_OF_BIO(type);
 
- arch/powerpc/sysdev/fsl_msi.c |   42 +++++++++++++++++++++++++++++++++++-----
- arch/powerpc/sysdev/fsl_msi.h |   11 ++++++++-
- 2 files changed, 45 insertions(+), 8 deletions(-)
+Could we remove PAGE_TYPE_OF_BIO or use f2fs_bug_on to instead
+in do_submit_bio()? because it looks redundant , and also 
+submit_write_page() will not pass the type which is larger than META.
 
-diff --git a/arch/powerpc/sysdev/fsl_msi.c b/arch/powerpc/sysdev/fsl_msi.c
-index 77efbae..eeebbf0 100644
---- a/arch/powerpc/sysdev/fsl_msi.c
-+++ b/arch/powerpc/sysdev/fsl_msi.c
-@@ -109,6 +109,34 @@ static int fsl_msi_init_allocator(struct fsl_msi *msi_data)
- 	return 0;
- }
- 
-+static int fsl_msi_get_region_count(void)
-+{
-+	int count = 0;
-+	struct fsl_msi *msi_data;
-+
-+	list_for_each_entry(msi_data, &msi_head, list)
-+		count++;
-+
-+	return count;
-+}
-+
-+static int fsl_msi_get_region(int region_num, struct msi_region *region)
-+{
-+	struct fsl_msi *msi_data;
-+
-+	list_for_each_entry(msi_data, &msi_head, list) {
-+		if (msi_data->bank_index == region_num) {
-+			region->region_num = msi_data->bank_index;
-+			/* Setting PAGE_SIZE as MSIIR is a 4 byte register */
-+			region->size = PAGE_SIZE;
-+			region->addr = msi_data->msiir & ~(region->size - 1);
-+			return 0;
-+		}
-+	}
-+
-+	return -ENODEV;
-+}
-+
- static int fsl_msi_check_device(struct pci_dev *pdev, int nvec, int type)
- {
- 	if (type == PCI_CAP_ID_MSIX)
-@@ -150,7 +178,8 @@ static void fsl_compose_msi_msg(struct pci_dev *pdev, int hwirq,
- 	if (reg && (len == sizeof(u64)))
- 		address = be64_to_cpup(reg);
- 	else
--		address = fsl_pci_immrbar_base(hose) + msi_data->msiir_offset;
-+		address = fsl_pci_immrbar_base(hose) +
-+			   (msi_data->msiir & 0xfffff);
- 
- 	msg->address_lo = lower_32_bits(address);
- 	msg->address_hi = upper_32_bits(address);
-@@ -393,6 +422,7 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 	const struct fsl_msi_feature *features;
- 	int len;
- 	u32 offset;
-+	static atomic_t bank_index = ATOMIC_INIT(-1);
- 
- 	match = of_match_device(fsl_of_msi_ids, &dev->dev);
- 	if (!match)
-@@ -436,18 +466,15 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 				dev->dev.of_node->full_name);
- 			goto error_out;
- 		}
--		msi->msiir_offset =
--			features->msiir_offset + (res.start & 0xfffff);
- 
- 		/*
- 		 * First read the MSIIR/MSIIR1 offset from dts
- 		 * On failure use the hardcode MSIIR offset
- 		 */
- 		if (of_address_to_resource(dev->dev.of_node, 1, &msiir))
--			msi->msiir_offset = features->msiir_offset +
--					    (res.start & MSIIR_OFFSET_MASK);
-+			msi->msiir = res.start + features->msiir_offset;
- 		else
--			msi->msiir_offset = msiir.start & MSIIR_OFFSET_MASK;
-+			msi->msiir = msiir.start;
- 	}
- 
- 	msi->feature = features->fsl_pic_ip;
-@@ -521,6 +548,7 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 		}
- 	}
- 
-+	msi->bank_index = atomic_inc_return(&bank_index);
- 	list_add_tail(&msi->list, &msi_head);
- 
- 	/* The multiple setting ppc_md.setup_msi_irqs will not harm things */
-@@ -528,6 +556,8 @@ static int fsl_of_msi_probe(struct platform_device *dev)
- 		ppc_md.setup_msi_irqs = fsl_setup_msi_irqs;
- 		ppc_md.teardown_msi_irqs = fsl_teardown_msi_irqs;
- 		ppc_md.msi_check_device = fsl_msi_check_device;
-+		ppc_md.msi_get_region_count = fsl_msi_get_region_count;
-+		ppc_md.msi_get_region = fsl_msi_get_region;
- 	} else if (ppc_md.setup_msi_irqs != fsl_setup_msi_irqs) {
- 		dev_err(&dev->dev, "Different MSI driver already installed!\n");
- 		err = -ENODEV;
-diff --git a/arch/powerpc/sysdev/fsl_msi.h b/arch/powerpc/sysdev/fsl_msi.h
-index df9aa9f..a2cc5a2 100644
---- a/arch/powerpc/sysdev/fsl_msi.h
-+++ b/arch/powerpc/sysdev/fsl_msi.h
-@@ -31,14 +31,21 @@ struct fsl_msi {
- 	struct irq_domain *irqhost;
- 
- 	unsigned long cascade_irq;
--
--	u32 msiir_offset; /* Offset of MSIIR, relative to start of CCSR */
-+	phys_addr_t msiir; /* MSIIR Address in CCSR */
- 	u32 ibs_shift; /* Shift of interrupt bit select */
- 	u32 srs_shift; /* Shift of the shared interrupt register select */
- 	void __iomem *msi_regs;
- 	u32 feature;
- 	int msi_virqs[NR_MSI_REG_MAX];
- 
-+	/*
-+	 * During probe each bank is assigned a index number.
-+	 * index number start from 0.
-+	 * Example  MSI bank 1 = 0
-+	 * MSI bank 2 = 1, and so on.
-+	 */
-+	int bank_index;
-+
- 	struct msi_bitmap bitmap;
- 
- 	struct list_head list;          /* support multiple MSI banks */
--- 
-1.7.0.4
-
+> +	struct bio *bio = sbi->bio[btype];
+> +	struct bio_private *p;
+> +
+> +	if (!bio)
+> +		return;
+> +
+> +	sbi->bio[btype] = NULL;
+> 
+>  	if (type >= META_FLUSH)
+>  		rw = WRITE_FLUSH_FUA;
+> -
+>  	if (btype == META)
+>  		rw |= REQ_META;
+> 
+> -	if (sbi->bio[btype]) {
+> -		struct bio_private *p = sbi->bio[btype]->bi_private;
+> -		p->sbi = sbi;
+> -		sbi->bio[btype]->bi_end_io = f2fs_end_io_write;
+> +	p = bio->bi_private;
+> +	p->sbi = sbi;
+> +	bio->bi_end_io = f2fs_end_io_write;
+> 
+> -		trace_f2fs_do_submit_bio(sbi->sb, btype, sync, sbi->bio[btype]);
+> +	trace_f2fs_do_submit_bio(sbi->sb, btype, sync, bio);
+> 
+> -		if (type == META_FLUSH) {
+> -			DECLARE_COMPLETION_ONSTACK(wait);
+> -			p->is_sync = true;
+> -			p->wait = &wait;
+> -			submit_bio(rw, sbi->bio[btype]);
+> -			wait_for_completion(&wait);
+> -		} else {
+> -			p->is_sync = false;
+> -			submit_bio(rw, sbi->bio[btype]);
+> -		}
+> -		sbi->bio[btype] = NULL;
+> +	if (type == META_FLUSH) {
+> +		DECLARE_COMPLETION_ONSTACK(wait);
+> +		p->is_sync = true;
+> +		p->wait = &wait;
+> +		submit_bio(rw, bio);
+> +		wait_for_completion(&wait);
+> +	} else {
+> +		p->is_sync = false;
+> +		submit_bio(rw, bio);
+>  	}
+>  }
+> 
+> --
+> 1.8.4.474.g128a96c
+> 
+> 
+> ------------------------------------------------------------------------------
+> DreamFactory - Open Source REST & JSON Services for HTML5 & Native Apps
+> OAuth, Users, Roles, SQL, NoSQL, BLOB Storage and External API Access
+> Free app hosting. Or install the open source package on any LAMP server.
+> Sign up and see examples for AngularJS, jQuery, Sencha Touch and Native!
+> http://pubads.g.doubleclick.net/gampad/clk?id=63469471&iu=/4140/ostg.clktrk
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
