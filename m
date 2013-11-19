@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3KSTQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:16:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51686 "EHLO
+	id S1753667Ab3KSTQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:16:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51687 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab3KSTQQ (ORCPT
+	with ESMTP id S1752234Ab3KSTQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Nov 2013 14:16:16 -0500
-Date: Tue, 19 Nov 2013 11:15:33 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-42eb088ed246a5a817bb45a8b32fe234cf1c0f8b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
-        mingo@kernel.org, preeti@linux.vnet.ibm.com, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20131118113701.GF3866@twins.programming.kicks-ass.net>
-References: <20131118113701.GF3866@twins.programming.kicks-ass.net>
+Date: Tue, 19 Nov 2013 11:15:43 -0800
+From: tip-bot for Alex Shi <tipbot@zytor.com>
+Message-ID: <tip-b972fc308c2763096b61b62169f2167ee0ca5a19@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, alex.shi@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, alex.shi@linaro.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
+References: <1384852912-24791-1-git-send-email-alex.shi@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Avoid NULL dereference on sd_busy
-Git-Commit-ID: 42eb088ed246a5a817bb45a8b32fe234cf1c0f8b
+Subject: [tip:sched/urgent] sched: Remove unused variable in '
+ struct sched_domain'
+Git-Commit-ID: b972fc308c2763096b61b62169f2167ee0ca5a19
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,45 +28,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 19 Nov 2013 11:15:39 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 19 Nov 2013 11:15:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  42eb088ed246a5a817bb45a8b32fe234cf1c0f8b
-Gitweb:     http://git.kernel.org/tip/42eb088ed246a5a817bb45a8b32fe234cf1c0f8b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 19 Nov 2013 16:41:49 +0100
+Commit-ID:  b972fc308c2763096b61b62169f2167ee0ca5a19
+Gitweb:     http://git.kernel.org/tip/b972fc308c2763096b61b62169f2167ee0ca5a19
+Author:     Alex Shi <alex.shi@linaro.org>
+AuthorDate: Tue, 19 Nov 2013 17:21:52 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Nov 2013 17:01:16 +0100
+CommitDate: Tue, 19 Nov 2013 17:01:17 +0100
 
-sched: Avoid NULL dereference on sd_busy
+sched: Remove unused variable in 'struct sched_domain'
 
-Commit 37dc6b50cee9 ("sched: Remove unnecessary iteration over sched
-domains to update nr_busy_cpus") forgot to clear 'sd_busy' under some
-conditions leading to a possible NULL deref in set_cpu_sd_state_idle().
+The 'u64 last_update' variable isn't used now, remove it to save a bit of space.
 
-Reported-by: Anton Blanchard <anton@samba.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131118113701.GF3866@twins.programming.kicks-ass.net
+Cc: Morten.Rasmussen@arm.com
+Cc: linaro-kernel@lists.linaro.org
+Link: http://lkml.kernel.org/r/1384852912-24791-1-git-send-email-alex.shi@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/sched.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c180860..a1591ca 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4910,8 +4910,9 @@ static void update_top_cache_domain(int cpu)
- 	if (sd) {
- 		id = cpumask_first(sched_domain_span(sd));
- 		size = cpumask_weight(sched_domain_span(sd));
--		rcu_assign_pointer(per_cpu(sd_busy, cpu), sd->parent);
-+		sd = sd->parent; /* sd_busy */
- 	}
-+	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f7efc86..b122395 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -823,8 +823,6 @@ struct sched_domain {
+ 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
  
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_size, cpu) = size;
+-	u64 last_update;
+-
+ 	/* idle_balance() stats */
+ 	u64 max_newidle_lb_cost;
+ 	unsigned long next_decay_max_lb_cost;
