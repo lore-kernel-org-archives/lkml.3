@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3KSDCc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 22:02:32 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:57457 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3KSDCa (ORCPT
+	id S1751834Ab3KSDEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Nov 2013 22:04:32 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55275 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab3KSDEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 22:02:30 -0500
+	Mon, 18 Nov 2013 22:04:30 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <528AD50D.6060503@jp.fujitsu.com>
+Date: Tue, 19 Nov 2013 12:03:41 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <528ABFA3.6060905@zytor.com>
-References: <CAOJsxLFkHQ6_f+=CMwfNLykh59TZH5VrWeVEDPCWPF1wiw7tjQ@mail.gmail.com>
-	<20131114180455.GA32212@anatevka.fc.hp.com>
-	<CAOJsxLFWMi8DoFp+ufri7XoFO27v+2=0oksh8+NhM6P-OdkOwg@mail.gmail.com>
-	<20131115005049.GJ5116@anatevka.fc.hp.com>
-	<20131115062417.GB9237@gmail.com>
-	<CAE9FiQWzSTtW8N=0hoUe6iCSM-k64Mv97n0whAS0_vZ+psuOsg@mail.gmail.com>
-	<5285C639.5040203@zytor.com>
-	<20131115140738.GB6637@redhat.com>
-	<CAE9FiQUnw9Ujmdtq-AgC4VctQ=fZSBkzehoTbvw=aZeARL+pwA@mail.gmail.com>
-	<52865CA1.5020309@zytor.com>
-	<20131115183002.GE6637@redhat.com>
-	<528ABFA3.6060905@zytor.com>
-Date: Mon, 18 Nov 2013 19:02:29 -0800
-X-Google-Sender-Auth: tml-EH_5BqpSzYwjfRa5J_zK2hw
-Message-ID: <CAE9FiQW+kbq5Eu-ivu897ogQUGjwKy6jYO9hnxbKyuWqoaQgJQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Early use of boot service memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        jerry.hoemann@hp.com, Pekka Enberg <penberg@kernel.org>,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86 maintainers <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "list@ebiederm.org:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "list@ebiederm.org:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
-        linux-efi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Fleming <matt@console-pimps.org>
+CC: Richard Weinberger <richard@nod.at>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
+        <matthew.garrett@nebula.com>, <jlee@suse.com>
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at> <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at> <527CBDD3.2020609@jp.fujitsu.com> <20131108143421.GB22636@console-pimps.org> <52809AEB.9080100@jp.fujitsu.com> <20131111105424.GD22636@console-pimps.org>
+In-Reply-To: <20131111105424.GD22636@console-pimps.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 5:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/15/2013 10:30 AM, Vivek Goyal wrote:
+Hi Matt,
+
+Sorry for late the reply.
+
+
+(2013/11/11 19:54), Matt Fleming wrote:
+> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+>> Hi Matt,
 >>
->> And IOMMU support is very flaky with kdump. And IOMMU's can be turned
->> off at command line. And that would force one to remove crahkernel_low=0.
->> So change of one command line option forces change of another. It is
->> complicated.
->>
->> Also there are very few systems which work with IOMMU on. A lot more
->> which work without IOMMU. We have all these DMAR issues and still nobody
->> has been able to address IOMMU issues properly.
->>
+>> I uses FUJITSU's x86 box.
+>> This does not become bricked even if I use all efi variable storage.
+>> Thus I want a way to not need to specify efi_no_storage_paranoia
+>> parameter.
 >
-> Why do we need such a big bounce buffer for kdump swiotlb anyway?
-> Surely the vast majority of all dump devices don't need it, so it is
-> there for completeness, no?
+> The efi_no_storage_paranoia parameter was introduced because some
+> machines do not initiate garbage collection of the NVRAM until you
+> allocate all space - basically it's a switch to turn off the "save 5KB
+> of stoarge at all times" workaround that is needed to avoid bricking
+> some machines.
+>
+> The intention of the switch is not to allow you to fill your NVRAM just
+> because you can. If that is something you want to do then I think it's
+> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+> I'm assuming here that you are doing something like writing lots and
+> lots of pstore entries and just want to write as many as your variable
+> storage will allow? Or are you doing something more fundamental like
+> creating BootXXXX entries?
+>
+> What are you doing to run into the 5KB reserve? How much NVRAM does your
+> machine come with?
 
-Yes, because normal path will need that 64M+32k default.
+I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
 
-We may reduce that amount to 16M or 18M and in second kernel let
-allocate less for swiotlb.
+Thanks,
+Yasuaki Ishimatsu
 
-Thanks
-
-Yinghai
