@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3KSRJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 12:09:47 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35959 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab3KSRJn (ORCPT
+	id S1753421Ab3KSRKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 12:10:33 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33124 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab3KSRKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 12:09:43 -0500
-Message-ID: <528B9B50.7020504@wwwdotorg.org>
-Date: Tue, 19 Nov 2013 10:09:36 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 19 Nov 2013 12:10:30 -0500
 MIME-Version: 1.0
-To: Alex Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH] ARM: tegra: properly use FUSE clock
-References: <1384771247-16547-1-git-send-email-acourbot@nvidia.com> <20131118114330.GD8646@ulmo.nvidia.com> <528AA750.3080201@wwwdotorg.org> <528AEEB6.4070107@nvidia.com>
-In-Reply-To: <528AEEB6.4070107@nvidia.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <528B884C.7070908@ti.com>
+References: <1384568535-26611-1-git-send-email-nm@ti.com>
+	<20131116134445.GI11014@S2101-09.ap.freescale.net>
+	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>
+	<528A27F8.3070402@ti.com>
+	<20131118155753.GU11014@S2101-09.ap.freescale.net>
+	<528A4340.3020508@ti.com>
+	<20131119022133.GB18434@S2101-09.ap.freescale.net>
+	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>
+	<528B72C1.5060006@ti.com>
+	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>
+	<528B7CE5.5040502@ti.com>
+	<CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>
+	<528B884C.7070908@ti.com>
+Date: Tue, 19 Nov 2013 22:40:29 +0530
+Message-ID: <CAKohpo=brpnLe68ExPRPg9h5ABMhg+GS85Ebn-+S5-vWaStrPQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2013 09:53 PM, Alex Courbot wrote:
-> On 11/19/2013 08:48 AM, Stephen Warren wrote:
->> On 11/18/2013 04:43 AM, Thierry Reding wrote:
->>> On Mon, Nov 18, 2013 at 07:40:47PM +0900, Alexandre Courbot wrote:
->>>> FUSE clock is enabled by most bootloaders, but we cannot expect
->>>> it to be on in all contexts (e.g. kexec).
->>>>
->>>> This patch adds a FUSE clkdev to all Tegra platforms and makes
->>>> sure it is enabled before touching FUSE registers.
->>>> tegra_init_fuse() is invoked during very early boot and thus
->>>> cannot rely on the clock framework ; therefore the FUSE clock is
->>>> forcibly enabled using a register write in that function, and
->>>> remains that way until the clock framework can be used.
->>>>
->>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com> ---
->>>> arch/arm/mach-tegra/fuse.c       | 41
->>>> +++++++++++++++++++++++++++++++++++++++-
->>>> drivers/clk/tegra/clk-tegra114.c |  1 +
->>>> drivers/clk/tegra/clk-tegra124.c |  1 +
->>>> drivers/clk/tegra/clk-tegra20.c  |  1 +
->>>
->>> Isn't this missing the clock driver changes for Tegra30? Ah...
->>> Tegra30 already has this clock defined. I wonder why only Tegra30
->>> has it. grep says that fuse-tegra isn't used by any drivers, which
->>> also indicates that perhaps we don't need the .dev_id in the first
->>> place. We should be able to get by with just the .con_id = "fuse".
->>>
->>> Also are there any reasons to keep this in one single patch? Since
->>> none of the fuse clocks are used yet, I think the clock changes
->>> could be a separate patch that can go in through the clock tree.
->>> And there isn't even a hard runtime dependency, since if the Tegra
->>> changes were to go in without the clock changes, then the fallback
->>> code in this patch should still turn the clock on properly. It just
->>> might not be turned off again, but isn't that something we can live
->>> with for a short period of time? I think perhaps that could even be
->>> improved, see further below.
->>>
->>> I've added Mike on Cc, he'll need to either take the patch in
->>> through his tree or Ack this one, so he needs to see it
->>> eventually.
->>>
->>>> 4 files changed, 43 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/mach-tegra/fuse.c
->>>> b/arch/arm/mach-tegra/fuse.c index 9a4e910c3796..3b9191b930b5
->>>> 100644 --- a/arch/arm/mach-tegra/fuse.c +++
->>>> b/arch/arm/mach-tegra/fuse.c @@ -22,6 +22,7 @@ #include
->>>> <linux/io.h> #include <linux/export.h> #include <linux/random.h>
->>>> +#include <linux/clk.h> #include <linux/tegra-soc.h>
->>>>
->>>> #include "fuse.h" @@ -54,6 +55,7 @@ int tegra_cpu_speedo_id;        /*
->>>> only exist in Tegra30 and later */ int tegra_soc_speedo_id; enum
->>>> tegra_revision tegra_revision;
->>>>
->>>> +static struct clk *fuse_clk; static int tegra_fuse_spare_bit;
->>>> static void (*tegra_init_speedo_data)(void);
->>>>
->>>> @@ -77,6 +79,22 @@ static const char
->>>> *tegra_revision_name[TEGRA_REVISION_MAX] = { [TEGRA_REVISION_A04]
->>>> = "A04", };
->>>>
->>>> +static void tegra_fuse_enable_clk(void) +{ +    if
->>>> (IS_ERR(fuse_clk)) +        fuse_clk = clk_get_sys("fuse-tegra",
->>>> "fuse"); +    if (IS_ERR(fuse_clk)) +        return;
->>>
->>> Perhaps instead of just returning here, this should actually be
->>> where the code to enable the clock should go.
->>>
->>>> +    clk_prepare_enable(fuse_clk); +} + +static void
->>>> tegra_fuse_disable_clk(void) +{ +    if (IS_ERR(fuse_clk)) +
->>>> return;
->>>
->>> And this is where we could disable it again. That way we should
->>> get equal functionality in both cases.
->>
->> That would need a shared lock with the clock code; at some point, the
->> clock will be registered, and the clock subsystem in control of the
->> enable bit. I think having a very early tegra_init_fuse() come along
->> and force the clock on, and then having the rest of the fuse code use
->> the clock object as soon as it's available, is the safest approach.
->>
->> Of course, I suppose there's still a window where the following might
->> happen:
->>
->> cpu 0:
->> - tegra_fuse_enable_clk entered
->> - fails to clk_get
->>                 cpu 1
->>                 - tegra clk driver is registered
->>                 - clk subsystem initcall disables all
->>                   unused clocks
->> - access a fuse register
->>
->> -> badness
-> 
-> It seems to me that both solutions require a shared lock with the clock
-> code in order to be theoretically safe. The situation you described
-> requires a lock to be addressed ; and unless I missed something,
-> anything that could break with Thierry's proposal could also only do so
-> if we "hold" the clock when the tegra clk driver is registered.
-> 
-> However we can consider ourselves safe for both cases if we know for
-> sure that there is no fuse function in use when this happens. Since
-> of_clk_init() is called very early during boot with SMP and preemption
-> disabled, isn't that always the case?
+On 19 November 2013 21:18, Nishanth Menon <nm@ti.com> wrote:
+> is that true for userspace governor
+> (CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE)?
+> /sys/devices/system/cpu/cpu0/cpufreq $ cat scaling_available_frequencies
+> 500000 1000000 1500000
+>
+> /sys/devices/system/cpu/cpu0/cpufreq $ cat scaling_cur_freq
+> 1100000
 
-Yes, that's true. So, I think it's safe, in practice, without the lock.
+No, but userspace governor must take care of this stuff as it want's
+to change freq from userspace..
+
+> OMAP5-UEVM will remain at this frequency for a long period of time
+> with AVS voltage(Adaptive Voltage Scaling technique used in OMAP to
+> optimize operational voltage) that was meant for 1GHz! that is
+> definitely not stable if there is no further transition to a valid
+> frequency.
+
+I understand that point, but will this stay for a long time at that freq?
+Why aren't governors coming into picture here?
+
+> An alternative might be to ensure CPUFREQ_GOV_LIMITS takes care of that?
+
+Again, I don't see if we really really need to do this at all..
