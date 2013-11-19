@@ -1,208 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3KSE5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Nov 2013 23:57:15 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:47984 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab3KSE5N convert rfc822-to-8bit (ORCPT
+	id S1750917Ab3KSFHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 00:07:17 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:64378 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab3KSFHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Nov 2013 23:57:13 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-ac-528aefa7e40e
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <001201cee4c8$de450360$9acf0a20$@samsung.com>
- <1384831096.26319.25.camel@kjgkr> <1384832174.26319.28.camel@kjgkr>
-In-reply-to: <1384832174.26319.28.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: split sbi->write_mutex for DATA/NODE/META
- to avoid unnecessary race
-Date: Tue, 19 Nov 2013 12:56:08 +0800
-Message-id: <001301cee4e3$cdd41320$697c3960$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQMFxzRd4uyonhr+q8Bjuz+MXrXa6gIF9xAkAm2MwliXmpnBEA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jQd3l77uCDGatUrK4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Nn9wW2gjkaFa9P
-	zWFvYLyt0MXIySEhYCJx8shaNghbTOLCvfVANheHkMB0RolvX35COT8YJXbe3s4OUsUmoCKx
-	vOM/E4gtIiAtMevTPBYQm1kgU2LO68msILaQQL3E1/PfwKZyCuhJrLpylLmLkYNDWCBb4uaS
-	FJAwi4CqxLQdh1lBwrwClhJbJoiDhHkFBCV+TL4HNVFdYtK8RcwQtrbEk3cXWCHuVJDYcfY1
-	I8QFThJ9zZ/ZIGrEJTYeucUygVFoFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YW
-	l+al6yXn525iBIf9M+kdjKsaLA4xCnAwKvHwTnDvChJiTSwrrsw9xCjBwawkwit5BSjEm5JY
-	WZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBMfRfu9aLtWWmUqZT
-	9r44lKW/bemyR1HC+7cxtm+fMGlvyuL/e2RWaL9UUlJg7zk446jQD7WHO15o9B+/+N779K7+
-	8Anb1ZvXrLgtm26SJ/Er+nVHZKfml6T9d48XzJm+6gznOy/t6GNNV3cKGGeWdl98v0K8XjP3
-	5mSuQ+q7RdLeLwlJL+ITrFdiKc5INNRiLipOBAAaocOfdwIAAA==
+	Tue, 19 Nov 2013 00:07:14 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <528AF200.5070204@roeck-us.net>
+Date: Mon, 18 Nov 2013 21:07:12 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Markus Mayer <markus.mayer@linaro.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Christian Daudt <bcm@fixthebug.org>
+CC: Linaro Patches <patches@linaro.org>, Matt Porter <matt.porter@linaro.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] watchdog: bcm281xx: Watchdog Driver
+References: <1384824250-16727-1-git-send-email-markus.mayer@linaro.org> <1384824250-16727-2-git-send-email-markus.mayer@linaro.org>
+In-Reply-To: <1384824250-16727-2-git-send-email-markus.mayer@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Tuesday, November 19, 2013 11:36 AM
-> To: Chao Yu
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH] f2fs: split sbi->write_mutex for DATA/NODE/META to
-> avoid unnecessary race
-> 
-> Hi,
-> 
-> I think we don't need to make two patches for this.
-> How about this?
-
-This could be reasonable,
-And I will refer to this patch.
-
-> 
-> From 71c27f78e72d680edcd7b1c0917842343044653c Mon Sep 17 00:00:00 2001
-> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Date: Mon, 18 Nov 2013 17:16:17 +0900
-> Subject: [PATCH] f2fs: use sbi->write_mutex for write bios
-> 
-> This patch removes an unnecessary semaphore (i.e., sbi->bio_sem).
-> There is no reason to use the semaphore when f2fs submits read and write
-> IOs.
-> Instead, let's use a write mutex and cover the sbi->bio[] by the lock.
-> 
-> Change log from v1:
->  o split write_mutex suggested by Chao Yu
-> 
-> Chao described,
-> "All DATA/NODE/META bio buffers in superblock is protected by
-> 'sbi->write_mutex', but each bio buffer area is independent, So we
-> should split write_mutex to three for DATA/NODE/META."
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+On 11/18/2013 05:24 PM, Markus Mayer wrote:
+> This commit adds support for the watchdog timer used on the BCM281xx
+> family of SoCs.
+>
+> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
 > ---
->  fs/f2fs/data.c    |  4 ----
->  fs/f2fs/f2fs.h    |  2 +-
->  fs/f2fs/segment.c | 13 +++++++++----
->  fs/f2fs/super.c   |  6 +++++-
->  4 files changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index 076a60c..5920639 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -383,8 +383,6 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct
-> page *page,
-> 
->  	trace_f2fs_readpage(page, blk_addr, type);
-> 
-> -	down_read(&sbi->bio_sem);
-> -
->  	/* Allocate a new bio */
->  	bio = f2fs_bio_alloc(bdev, 1);
-> 
-> @@ -394,13 +392,11 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct
-> page *page,
-> 
->  	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
->  		bio_put(bio);
-> -		up_read(&sbi->bio_sem);
->  		f2fs_put_page(page, 1);
->  		return -EFAULT;
->  	}
-> 
->  	submit_bio(type, bio);
-> -	up_read(&sbi->bio_sem);
->  	return 0;
->  }
-> 
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 6a49554..6e67f28 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -374,7 +374,7 @@ struct f2fs_sb_info {
->  	struct f2fs_sm_info *sm_info;		/* segment manager */
->  	struct bio *bio[NR_PAGE_TYPE];		/* bios to merge */
->  	sector_t last_block_in_bio[NR_PAGE_TYPE];	/* last block number */
-> -	struct rw_semaphore bio_sem;		/* IO semaphore */
-> +	struct mutex write_mutex[NR_PAGE_TYPE];	/* mutex for writing IOs */
-> 
->  	/* for checkpoint */
->  	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index dad5f1a..119af0b 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -871,9 +871,14 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
-> 
->  void f2fs_submit_bio(struct f2fs_sb_info *sbi, enum page_type type,
-> bool sync)
->  {
-> -	down_write(&sbi->bio_sem);
-> +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+>   drivers/watchdog/Kconfig        |   22 +++
+>   drivers/watchdog/Makefile       |    1 +
+>   drivers/watchdog/bcm_kona_wdt.c |  366 +++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 389 insertions(+)
+>   create mode 100644 drivers/watchdog/bcm_kona_wdt.c
+>
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index d1d53f3..fe8bd21 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1121,6 +1121,28 @@ config BCM2835_WDT
+>   	  To compile this driver as a loadable module, choose M here.
+>   	  The module will be called bcm2835_wdt.
+>
+> +config BCM_KONA_WDT
+> +	tristate "BCM Kona Watchdog"
+> +	depends on ARCH_BCM
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Support for the watchdog timer on the following Broadcom BCM281xx
+> +	  family, which includes BCM11130, BCM11140, BCM11351, BCM28145 and
+> +	  BCM28155 variants.
 > +
-> +	if (!sbi->bio[btype])
-> +		return;
+> +	  Say 'Y' or 'M' here to enable the driver. The module will be called
+> +	  bcm_kona_wdt.
 > +
-> +	mutex_lock(&sbi->write_mutex[btype]);
->  	do_submit_bio(sbi, type, sync);
-> -	up_write(&sbi->bio_sem);
-> +	mutex_unlock(&sbi->write_mutex[btype]);
->  }
-> 
->  static void submit_write_page(struct f2fs_sb_info *sbi, struct page
-> *page,
-> @@ -884,7 +889,7 @@ static void submit_write_page(struct f2fs_sb_info
-> *sbi, struct page *page,
-> 
->  	verify_block_addr(sbi, blk_addr);
-> 
-> -	down_write(&sbi->bio_sem);
-> +	mutex_lock(&sbi->write_mutex[type]);
-> 
->  	inc_page_count(sbi, F2FS_WRITEBACK);
-> 
-> @@ -919,7 +924,7 @@ retry:
-> 
->  	sbi->last_block_in_bio[type] = blk_addr;
-> 
-> -	up_write(&sbi->bio_sem);
-> +	mutex_unlock(&sbi->write_mutex[type]);
->  	trace_f2fs_submit_write_page(page, blk_addr, type);
->  }
-> 
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index a022412..e194578 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -820,6 +820,7 @@ static int f2fs_fill_super(struct super_block *sb,
-> void *data, int silent)
->  	struct buffer_head *raw_super_buf;
->  	struct inode *root;
->  	long err = -EINVAL;
-> +	int i;
-> 
->  	/* allocate memory for f2fs-specific super block info */
->  	sbi = kzalloc(sizeof(struct f2fs_sb_info), GFP_KERNEL);
-> @@ -876,7 +877,10 @@ static int f2fs_fill_super(struct super_block *sb,
-> void *data, int silent)
->  	mutex_init(&sbi->node_write);
->  	sbi->por_doing = false;
->  	spin_lock_init(&sbi->stat_lock);
-> -	init_rwsem(&sbi->bio_sem);
+> +config BCM_KONA_WDT_DEBUG
+> +	bool "DEBUGFS support for BCM Kona Watchdog"
+> +	depends on BCM_KONA_WDT
+> +	help
+> +	  If enabled, adds /sys/kernel/debug/bcm-kona-wdt/info which provides
+> +	  access to the driver's internal data structures as well as watchdog
+> +	  timer hardware registres.
 > +
-> +	for (i = 0; i < NR_PAGE_TYPE; i++)
-> +		mutex_init(&sbi->write_mutex[i]);
+> +	  If in doubt, say 'N'.
 > +
->  	init_rwsem(&sbi->cp_rwsem);
->  	init_waitqueue_head(&sbi->cp_wait);
->  	init_sb_info(sbi);
-> --
-> 1.8.4.474.g128a96c
-> 
-> 
-> 
-> --
-> Jaegeuk Kim
-> Samsung
+>   config LANTIQ_WDT
+>   	tristate "Lantiq SoC watchdog"
+>   	depends on LANTIQ
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 6c5bb27..7c860ca 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -55,6 +55,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+>   obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+>   obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+>   obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+> +obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>
+>   # AVR32 Architecture
+>   obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/bcm_kona_wdt.c b/drivers/watchdog/bcm_kona_wdt.c
+> new file mode 100644
+> index 0000000..f43687f
+> --- /dev/null
+> +++ b/drivers/watchdog/bcm_kona_wdt.c
+> @@ -0,0 +1,366 @@
+> +/*
+> + * Copyright (C) 2013 Broadcom Corporation
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation version 2.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/debugfs.h>
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/miscdevice.h>
+
+This include should no longer be needed.
+
+Otherwise,
+
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+
+
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define SECWDOG_CTRL_REG		0x00000000
+> +#define SECWDOG_COUNT_REG		0x00000004
+> +
+> +#define SECWDOG_RESERVED_MASK		0x1dffffff
+> +#define SECWDOG_WD_LOAD_FLAG		0x10000000
+> +#define SECWDOG_EN_MASK			0x08000000
+> +#define SECWDOG_SRSTEN_MASK		0x04000000
+> +#define SECWDOG_RES_MASK		0x00f00000
+> +#define SECWDOG_COUNT_MASK		0x000fffff
+> +
+> +#define SECWDOG_MAX_COUNT		SECWDOG_COUNT_MASK
+> +#define SECWDOG_CLKS_SHIFT		20
+> +#define SECWDOG_MAX_RES			15
+> +#define SECWDOG_DEFAULT_RESOLUTION	4
+> +#define SECWDOG_MAX_TRY			1000
+> +
+> +#define SECS_TO_TICKS(x, w)		((x) << (w)->resolution)
+> +#define TICKS_TO_SECS(x, w)		((x) >> (w)->resolution)
+> +
+> +#define BCM_KONA_WDT_NAME		"bcm_kona_wdt"
+> +
+> +struct bcm_kona_wdt {
+> +	void __iomem *base;
+> +	/*
+> +	 * One watchdog tick is 1/(2^resolution) seconds. Resolution can take
+> +	 * the values 0-15, meaning one tick can be 1s to 30.52us. Our default
+> +	 * resolution of 4 means one tick is 62.5ms.
+> +	 *
+> +	 * The watchdog counter is 20 bits. Depending on resolution, the maximum
+> +	 * counter value of 0xfffff expires after about 12 days (resolution 0)
+> +	 * down to only 32s (resolution 15). The default resolution of 4 gives
+> +	 * us a maximum of about 18 hours and 12 minutes before the watchdog
+> +	 * times out.
+> +	 */
+> +	int resolution;
+> +	spinlock_t lock;
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	struct dentry *debugfs;
+> +#endif
+> +};
+> +
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +static unsigned long busy_count;
+> +#endif
+> +
+> +static int secure_register_read(void __iomem *addr)
+> +{
+> +	uint32_t val;
+> +	unsigned count = 0;
+> +
+> +	/*
+> +	 * If the WD_LOAD_FLAG is set, the watchdog counter field is being
+> +	 * updated in hardware. Once the WD timer is updated in hardware, it
+> +	 * gets cleared.
+> +	 */
+> +	do {
+> +		if (unlikely(count > 1))
+> +			udelay(5);
+> +		val = readl_relaxed(addr);
+> +		count++;
+> +	} while ((val & SECWDOG_WD_LOAD_FLAG) && count < SECWDOG_MAX_TRY);
+> +
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	/* Remember the maximum number iterations due to WD_LOAD_FLAG */
+> +	if (count > busy_count)
+> +		busy_count = count;
+> +#endif
+> +
+> +	/* This is the only place we return a negative value. */
+> +	if (val & SECWDOG_WD_LOAD_FLAG)
+> +		return -ETIMEDOUT;
+> +
+> +	/* We always mask out reserved bits. */
+> +	val &= SECWDOG_RESERVED_MASK;
+> +
+> +	return val;
+> +}
+> +
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +
+> +static int bcm_kona_wdt_dbg_show(struct seq_file *s, void *data)
+> +{
+> +	int ctl_val, cur_val, ret;
+> +	unsigned long flags;
+> +	struct bcm_kona_wdt *wdt = s->private;
+> +
+> +	if (!wdt)
+> +		return seq_puts(s, "No device pointer\n");
+> +
+> +	spin_lock_irqsave(&wdt->lock, flags);
+> +	ctl_val = secure_register_read(wdt->base + SECWDOG_CTRL_REG);
+> +	cur_val = secure_register_read(wdt->base + SECWDOG_COUNT_REG);
+> +	spin_unlock_irqrestore(&wdt->lock, flags);
+> +
+> +	if (ctl_val < 0 || cur_val < 0) {
+> +		ret = seq_puts(s, "Error accessing hardware\n");
+> +	} else {
+> +		int ctl, cur, ctl_sec, cur_sec, res;
+> +
+> +		ctl = ctl_val & SECWDOG_COUNT_MASK;
+> +		res = (ctl_val & SECWDOG_RES_MASK) >> SECWDOG_CLKS_SHIFT;
+> +		cur = cur_val & SECWDOG_COUNT_MASK;
+> +		ctl_sec = TICKS_TO_SECS(ctl, wdt);
+> +		cur_sec = TICKS_TO_SECS(cur, wdt);
+> +		ret = seq_printf(s, "Resolution: %d / %d\n"
+> +				"Control: %d s / %d (%#x) ticks\n"
+> +				"Current: %d s / %d (%#x) ticks\n"
+> +				"Busy count: %lu\n", res,
+> +				wdt->resolution, ctl_sec, ctl, ctl, cur_sec,
+> +				cur, cur, busy_count);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int bcm_kona_dbg_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, bcm_kona_wdt_dbg_show, inode->i_private);
+> +}
+> +
+> +static const struct file_operations bcm_kona_dbg_operations = {
+> +	.open		= bcm_kona_dbg_open,
+> +	.read		= seq_read,
+> +	.llseek		= seq_lseek,
+> +	.release	= single_release,
+> +};
+> +
+> +static struct dentry *bcm_kona_wdt_debugfs_init(struct bcm_kona_wdt *wdt,
+> +	struct watchdog_device *wdd)
+> +{
+> +	struct dentry *dir;
+> +
+> +	dir = debugfs_create_dir(BCM_KONA_WDT_NAME, NULL);
+> +	if (IS_ERR_OR_NULL(dir))
+> +		return NULL;
+> +
+> +	if (debugfs_create_file("info", S_IFREG | S_IRUGO, dir, wdt,
+> +				&bcm_kona_dbg_operations))
+> +		return dir;
+> +
+> +	/* Clean up */
+> +	debugfs_remove_recursive(dir);
+> +	return NULL;
+> +}
+> +
+> +static void bcm_kona_debugfs_exit(struct dentry *dir)
+> +{
+> +	debugfs_remove_recursive(dir);
+> +}
+> +
+> +#endif /* CONFIG_BCM_KONA_WDT_DEBUG */
+> +
+> +static int bcm_kona_wdt_ctrl_reg_modify(struct bcm_kona_wdt *wdt,
+> +					unsigned mask, unsigned newval)
+> +{
+> +	int val;
+> +	unsigned long flags;
+> +	int ret = 0;
+> +
+> +	spin_lock_irqsave(&wdt->lock, flags);
+> +
+> +	val = secure_register_read(wdt->base + SECWDOG_CTRL_REG);
+> +	if (val < 0) {
+> +		ret = val;
+> +	} else {
+> +		val &= ~mask;
+> +		val |= newval;
+> +		writel_relaxed(val, wdt->base + SECWDOG_CTRL_REG);
+> +	}
+> +
+> +	spin_unlock_irqrestore(&wdt->lock, flags);
+> +
+> +	return ret;
+> +}
+> +
+> +static int bcm_kona_wdt_set_resolution_reg(struct bcm_kona_wdt *wdt)
+> +{
+> +	if (wdt->resolution > SECWDOG_MAX_RES)
+> +		return -EINVAL;
+> +
+> +	return bcm_kona_wdt_ctrl_reg_modify(wdt, SECWDOG_RES_MASK,
+> +					wdt->resolution << SECWDOG_CLKS_SHIFT);
+> +}
+> +
+> +static int bcm_kona_wdt_set_timeout_reg(struct watchdog_device *wdog,
+> +					unsigned watchdog_flags)
+> +{
+> +	struct bcm_kona_wdt *wdt = watchdog_get_drvdata(wdog);
+> +
+> +	return bcm_kona_wdt_ctrl_reg_modify(wdt, SECWDOG_COUNT_MASK,
+> +					SECS_TO_TICKS(wdog->timeout, wdt) |
+> +					watchdog_flags);
+> +}
+> +
+> +static int bcm_kona_wdt_set_timeout(struct watchdog_device *wdog,
+> +	unsigned int t)
+> +{
+> +	wdog->timeout = t;
+> +	return 0;
+> +}
+> +
+> +static unsigned int bcm_kona_wdt_get_timeleft(struct watchdog_device *wdog)
+> +{
+> +	struct bcm_kona_wdt *wdt = watchdog_get_drvdata(wdog);
+> +	int val;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&wdt->lock, flags);
+> +	val = secure_register_read(wdt->base + SECWDOG_COUNT_REG);
+> +	spin_unlock_irqrestore(&wdt->lock, flags);
+> +
+> +	if (val < 0)
+> +		return val;
+> +
+> +	return TICKS_TO_SECS(val & SECWDOG_COUNT_MASK, wdt);
+> +}
+> +
+> +static int bcm_kona_wdt_start(struct watchdog_device *wdog)
+> +{
+> +	return bcm_kona_wdt_set_timeout_reg(wdog,
+> +					SECWDOG_EN_MASK | SECWDOG_SRSTEN_MASK);
+> +}
+> +
+> +static int bcm_kona_wdt_stop(struct watchdog_device *wdog)
+> +{
+> +	struct bcm_kona_wdt *wdt = watchdog_get_drvdata(wdog);
+> +
+> +	return bcm_kona_wdt_ctrl_reg_modify(wdt, SECWDOG_EN_MASK |
+> +					    SECWDOG_SRSTEN_MASK, 0);
+> +}
+> +
+> +static struct watchdog_ops bcm_kona_wdt_ops = {
+> +	.owner =	THIS_MODULE,
+> +	.start =	bcm_kona_wdt_start,
+> +	.stop =		bcm_kona_wdt_stop,
+> +	.set_timeout =	bcm_kona_wdt_set_timeout,
+> +	.get_timeleft =	bcm_kona_wdt_get_timeleft,
+> +};
+> +
+> +static struct watchdog_info bcm_kona_wdt_info = {
+> +	.options =	WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
+> +			WDIOF_KEEPALIVEPING,
+> +	.identity =	"Broadcom Kona Watchdog Timer",
+> +};
+> +
+> +static struct watchdog_device bcm_kona_wdt_wdd = {
+> +	.info =		&bcm_kona_wdt_info,
+> +	.ops =		&bcm_kona_wdt_ops,
+> +	.min_timeout =	1,
+> +	.max_timeout =	SECWDOG_MAX_COUNT >> SECWDOG_DEFAULT_RESOLUTION,
+> +	.timeout =	SECWDOG_MAX_COUNT >> SECWDOG_DEFAULT_RESOLUTION,
+> +};
+> +
+> +static void bcm_kona_wdt_shutdown(struct platform_device *pdev)
+> +{
+> +	bcm_kona_wdt_stop(&bcm_kona_wdt_wdd);
+> +}
+> +
+> +static int bcm_kona_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct bcm_kona_wdt *wdt;
+> +	struct resource *res;
+> +	int ret;
+> +
+> +	wdt = devm_kzalloc(dev, sizeof(*wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	wdt->base = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(wdt->base))
+> +		return -ENODEV;
+> +
+> +	wdt->resolution = SECWDOG_DEFAULT_RESOLUTION;
+> +	ret = bcm_kona_wdt_set_resolution_reg(wdt);
+> +	if (ret) {
+> +		dev_err(dev, "Failed to set resolution (error: %d)", ret);
+> +		return ret;
+> +	}
+> +
+> +	spin_lock_init(&wdt->lock);
+> +	platform_set_drvdata(pdev, wdt);
+> +	watchdog_set_drvdata(&bcm_kona_wdt_wdd, wdt);
+> +
+> +	ret = bcm_kona_wdt_set_timeout_reg(&bcm_kona_wdt_wdd, 0);
+> +	if (ret) {
+> +		dev_err(dev, "Failed set watchdog timeout");
+> +		return ret;
+> +	}
+> +
+> +	ret = watchdog_register_device(&bcm_kona_wdt_wdd);
+> +	if (ret) {
+> +		dev_err(dev, "Failed to register watchdog device");
+> +		return ret;
+> +	}
+> +
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	wdt->debugfs = bcm_kona_wdt_debugfs_init(wdt, &bcm_kona_wdt_wdd);
+> +#endif
+> +	dev_dbg(dev, "Broadcom Kona Watchdog Timer");
+> +
+> +	return 0;
+> +}
+> +
+> +static int bcm_kona_wdt_remove(struct platform_device *pdev)
+> +{
+> +#ifdef CONFIG_BCM_KONA_WDT_DEBUG
+> +	struct bcm_kona_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	if (wdt->debugfs)
+> +		bcm_kona_debugfs_exit(wdt->debugfs);
+> +#endif /* CONFIG_BCM_KONA_WDT_DEBUG */
+> +	bcm_kona_wdt_shutdown(pdev);
+> +	watchdog_unregister_device(&bcm_kona_wdt_wdd);
+> +	dev_dbg(&pdev->dev, "Watchdog driver disabled");
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id bcm_kona_wdt_of_match[] = {
+> +	{ .compatible = "brcm,kona-wdt", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, bcm_kona_wdt_of_match);
+> +
+> +static struct platform_driver bcm_kona_wdt_driver = {
+> +	.driver = {
+> +			.name = BCM_KONA_WDT_NAME,
+> +			.owner = THIS_MODULE,
+> +			.of_match_table = bcm_kona_wdt_of_match,
+> +		  },
+> +	.probe = bcm_kona_wdt_probe,
+> +	.remove = bcm_kona_wdt_remove,
+> +	.shutdown = bcm_kona_wdt_shutdown,
+> +};
+> +
+> +module_platform_driver(bcm_kona_wdt_driver);
+> +
+> +MODULE_ALIAS("platform:" BCM_KONA_WDT_NAME);
+> +MODULE_AUTHOR("Markus Mayer <mmayer@broadcom.com>");
+> +MODULE_DESCRIPTION("Broadcom Kona Watchdog Driver");
+> +MODULE_LICENSE("GPL v2");
+>
 
