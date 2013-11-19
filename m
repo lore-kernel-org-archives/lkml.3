@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3KSTJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 14:09:11 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:64840 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab3KSTJI (ORCPT
+	id S1753260Ab3KSTKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 14:10:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57142 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab3KSTKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 14:09:08 -0500
-Date: Tue, 19 Nov 2013 20:09:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [GIT PULL] core kernel update
-Message-ID: <20131119190904.GA22076@gmail.com>
-References: <20131119154253.GA12219@gmail.com>
- <CA+55aFzyBxFi8_4C4hAz6+SAgtHCmQtpxSyJhRyWzggoRGTD5w@mail.gmail.com>
+	Tue, 19 Nov 2013 14:10:06 -0500
+Message-ID: <528BB789.5020201@wwwdotorg.org>
+Date: Tue, 19 Nov 2013 12:10:01 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzyBxFi8_4C4hAz6+SAgtHCmQtpxSyJhRyWzggoRGTD5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org
+CC: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] pinctrl: samsung: Allow grouping multiple pinmux/pinconf
+ nodes
+References: <1384881034-10520-1-git-send-email-t.figa@samsung.com>
+In-Reply-To: <1384881034-10520-1-git-send-email-t.figa@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Tue, Nov 19, 2013 at 7:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Josh Boyer (1):
-> >       smp/cpumask: Make CONFIG_CPUMASK_OFFSTACK=y usable without debug dependency
+On 11/19/2013 10:10 AM, Tomasz Figa wrote:
+> One of remaining limitations of current pinctrl-samsung driver was
+> the inability to parse multiple pinmux/pinconf group nodes grouped
+> inside a single device tree node. It made defining groups of pins for
+> single purpose, but with different parameters very inconvenient.
 > 
-> This seems to be just pure stupid.
+> This patch implements Tegra-like support for grouping multiple pinctrl
+> groups inside one device tree node, by completely changing the way
+> pin groups and functions are parsed from device tree.
+
+> The code creating
+> pinctrl maps from DT nodes has been borrowed from pinctrl-tegra,
+
+A lot of the Tegra code has been slightly generalized and put into
+pinconf-generic.c. Can the Samsung driver be converted to use that core
+code rather than adding another copy of it? Perhaps this isn't possible
+given the backwards-compatibility requirements that allow either 1- or
+2-level nodes though, although I imagine that could be added to the core
+code. One thing you'd certainly need to do is enhance the code in
+pinconf-generic.c so that you could substitute your own
+pinconf_generic_parse_dt_config() function or dt_params[] table, to
+allow for the SoC-specific property names, but I doubt that's too hard.
+Tegra could be converted then too:-)
+
+> while
+> the initial creation of groups and functions has been completely
+> rewritten with following assumptions:
+>  - each group consists of just one pin and does not depend on data
+>    from device tree,
+>  - each function is represented by a device tree child node of the
+>    pin controller, which in turn can contain multiple child nodes
+>    for pins that need to have different configuration values.
+
+OK, I think that sounds reasonable.
+
+> Device Tree bindings are fully backwards compatible. New functionality
+> can be used by defining a new pinctrl group consisting of several child
+> nodes, as on following example:
 > 
-> Why the hell should we ever ask the user whethr they want to force 
-> CPUMASK offstack?
-> 
-> Seriously, it only leaves room for mistakes and stupidities. There 
-> is no reason for any normal use-case to ask the user about this. 
-> Even the help message is pure and utter garbage ("This is a bit more 
-> expensive, but avoids stack overflow").
-> 
-> The fact is, an on-stack CPUMASK is *smaller* than a pointer to an 
-> offstack one when NR_CPU is small. The question makes no sense then. 
-> And when NR_CPU is huge, the question makes no sense _either_, since 
-> we can't have the cpumasks on stack.
+> 	sd4_bus8: sd4-bus-width8 {
+> 		part-1 {
+> 			samsung,pins = "gpk0-3", "gpk0-4",
+> 					"gpk0-5", "gpk0-6";
+> 			samsung,pin-function = <3>;
+> 			samsung,pin-pud = <3>;
+> 			samsung,pin-drv = <3>;
+> 		};
+> 		part-2 {
+> 			samsung,pins = "gpk1-3", "gpk1-4",
+> 					"gpk1-5", "gpk1-6";
+> 			samsung,pin-function = <4>;
+> 			samsung,pin-pud = <4>;
+> 			samsung,pin-drv = <3>;
+> 		};
+> 	};
 
-You are completely right. I missed that, will fix it up.
+OK, that all looks great!
 
-So we have these CPU count ranges right now:
+> diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
 
-  config NR_CPUS
-        int "Maximum number of CPUs" if SMP && !MAXSMP
-        range 2 8 if SMP && X86_32 && !X86_BIGSMP
-        range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
-        range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+The DT changes fully, and the code a little briefly,
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-As you pointed out offstack is definitely nonsensical for
-NR_CPUS <= 64. (on 64-bit CPUs) On-stack is known to crash with 
-NR_CPUS >= 1024.
+Just a minor comment below,
 
-The 128..512 CPUs range is somewhat of an unknown.
+> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
 
-So the fixed code would always use on-stack cpumasks up to a limit 
-(which limit falls into the 128...512 range) and it would always use 
-off-stack cpumasks above that limit. No user configurability in the 
-regular case. [*]
+> +static int samsung_pinctrl_create_function(struct device *dev,
+> +				struct samsung_pinctrl_drv_data *drvdata,
+> +				struct device_node *func_np,
+> +				struct samsung_pmx_func *func)
+...
+> +	for (i = 0; i < npins; ++i) {
+> +		const char *gname;
+> +		char *gname_copy;
+> +
+> +		ret = of_property_read_string_index(func_np, "samsung,pins",
+> +							i, &gname);
+> +		if (ret) {
+> +			dev_err(dev,
+> +				"failed to read pin name %d from %s node\n",
+> +				i, func_np->name);
+> +			return ret;
+>  		}
+> +
+> +		gname_copy = devm_kzalloc(dev, strlen(gname) + 1, GFP_KERNEL);
+> +		if (!gname_copy)
+> +			return -ENOMEM;
+> +		strcpy(gname_copy, gname);
 
-The actual value of the limit - here's the on-stack cpumask sizes of 
-the candidate range:
-
-	128 CPUs: 16 byte cpumasks
-	256 CPUs: 32 byte cpumasks
-	512 CPUs: 64 byte cpumasks
-
-512 definitely 'feels' dangerous, so I'd say the limit should be 
-either 128 or 256. Both are ridiculously high counts for regular 
-systems, so it doesn't really matter which one we pick.
-
-I'd guess we should pick the higher limit for the time being (256 CPUs 
-- maybe even 512 CPUs), and lower it on contrary evidence (evidence of 
-stack overflows)?
-
-Thoughts?
-
-Thanks,
-
-	Ingo
-
-[*] Plus perhaps allow offstack to be configurable arbitrarily if 
-    debugging is enabled [DEBUG_PER_CPU_MAP=y], to allow easy
-    experiments/measurements?
+Is the lifetime of the string "returned" by
+of_property_read_string_index() really so short that you must copy the
+string? I'd be tempted just to store the pointer, although perhaps you
+need to get() the node so that's safe.
