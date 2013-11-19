@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3KSS3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 13:29:50 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:62630 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab3KSS3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 13:29:46 -0500
-Message-ID: <1384885780.8604.109.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] tcp: don't update snd_nxt, when a socket is switched
- from repair mode
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, criu@openvz.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Tue, 19 Nov 2013 10:29:40 -0800
-In-Reply-To: <1384884606-9978-1-git-send-email-avagin@openvz.org>
-References: <1384884606-9978-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752873Ab3KSS35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 13:29:57 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:37643 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752721Ab3KSS3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 13:29:51 -0500
+X-IronPort-AV: E=Sophos;i="4.93,730,1378857600"; 
+   d="asc'?scan'208";a="76066701"
+Message-ID: <1384885783.15360.40.camel@Solace>
+Subject: Re: [Xen-devel] [PATCH v2 0/2] xen: vnuma introduction for pv guest
+From: Dario Faggioli <dario.faggioli@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Elena Ufimtseva <ufimtseva@gmail.com>, <akpm@linux-foundation.org>,
+        <wency@cn.fujitsu.com>, <stefano.stabellini@eu.citrix.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>, <mingo@redhat.com>,
+        <david.vrabel@citrix.com>, <hpa@zytor.com>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <tglx@linutronix.de>, <ian.campbell@citrix.com>
+Date: Tue, 19 Nov 2013 19:29:43 +0100
+In-Reply-To: <20131119153837.GA5966@phenom.dumpdata.com>
+References: <1384806350-12651-1-git-send-email-ufimtseva@gmail.com>
+	 <20131119153837.GA5966@phenom.dumpdata.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="=-uNrs0cG+WdZMPcEaml6m"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+MIME-Version: 1.0
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 22:10 +0400, Andrey Vagin wrote:
-> snd_nxt must be updated synchronously with sk_send_head.  Otherwise
-> tp->packets_out may be updated incorrectly, what may bring a kernel panic.
-> 
-> Here is a kernel panic from my host.
-> [  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
-> [  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
-> ...
-> [  146.301158] Call Trace:
-> [  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
-> 
-> Before this panic a tcp socket was restored. This socket had sent and
-> unsent data in the write queue. Sent data was restored in repair mode,
-> then the socket was switched from reapair mode and unsent data was
-> restored. After that the socket was switched back into repair mode.
-> 
-> In that moment we had a socket where write queue looks like this:
-> snd_una    snd_nxt   write_seq
->    |_________|________|
->              |
-> 	  sk_send_head
-> 
-> After a second switching from repair mode the state of socket was
-> changed:
-> 
-> snd_una          snd_nxt, write_seq
->    |_________ ________|
->              |
-> 	  sk_send_head
-> 
-> This state is inconsistent, because snd_nxt and sk_send_head are not
-> synchronized.
-> 
-> Bellow you can find a call trace, how packets_out can be incremented
-> twice for one skb, if snd_nxt and sk_send_head are not synchronized.
-> In this case packets_out will be always positive, even when
-> sk_write_queue is empty.
-> 
-> tcp_write_wakeup
-> 	skb = tcp_send_head(sk);
-> 	tcp_fragment
-> 		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
-> 			tcp_adjust_pcount(sk, skb, diff);
-> 	tcp_event_new_data_sent
-> 		tp->packets_out += tcp_skb_pcount(skb);
-> 
-> I think update of snd_nxt isn't required, when a socket is switched from
-> repair mode.  Because it's initialized in tcp_connect_init. Then when a
-> write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
-> so it's always is in consistent state.
-> 
-> I have checked, that the bug is not reproduced with this patch and
-> all tests about restoring tcp connections work fine.
-> 
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  net/ipv4/tcp_output.c | 1 -
->  1 file changed, 1 deletion(-)
+--=-uNrs0cG+WdZMPcEaml6m
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Fixes: c0e88ff0f256 ("tcp: Repair socket queues")
-Acked-by: Eric Dumazet <edumazet@google.com>
+On mar, 2013-11-19 at 10:38 -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Nov 18, 2013 at 03:25:48PM -0500, Elena Ufimtseva wrote:
+> > The patchset introduces vnuma to paravirtualized Xen guests
+> > runnning as domU.
+> > Xen subop hypercall is used to retreive vnuma topology information.
+> > Bases on the retreived topology from Xen, NUMA number of nodes,
+> > memory ranges, distance table and cpumask is being set.
+> > If initialization is incorrect, sets 'dummy' node and unsets
+> > nodemask.
+> > vNUMA topology is constructed by Xen toolstack. Xen patchset is
+> > available at https://git.gitorious.org/xenvnuma/xenvnuma.git:v3.
+>=20
+> Yeey!
+>=20
+:-)
+
+> One question - I know you had questions about the
+> PROT_GLOBAL | ~PAGE_PRESENT being set on PTEs that are going to
+> be harvested for AutoNUMA balancing.=20
+>=20
+> And that the hypercall to set such PTE entry disallows the
+> PROT_GLOBAL (it stripts it off)? That means that when the
+> Linux page system kicks in (as it has ~PAGE_PRESENT) the
+> Linux pagehandler won't see the PROT_GLOBAL (as it has
+> been filtered out). Which means that the AutoNUMA code won't
+> kick in.
+>=20
+> (see http://article.gmane.org/gmane.comp.emulators.xen.devel/174317)
+>=20
+> Was that problem ever answered?
+>=20
+I think the issue is a twofold one.
+
+If I remember correctly (Elena, please, correct me if I'm wrong) Elena
+was seeing _crashes_ with both vNUMA and AutoNUMA enabled for the guest.
+That's what pushed her to investigate the issue, and led to what you're
+summing up above.
+
+However, it appears the crash was due to something completely unrelated
+to Xen and vNUMA, was affecting baremetal too, and got fixed, which
+means the crash is now gone.
+
+It remains to be seen (I think) whether that also means that AutoNUMA
+works. In fact, chatting about this in Edinburgh, Elena managed to
+convince me pretty badly that we should --as part of the vNUMA support--
+do something about this, in order to make it work. At that time I
+thought we should be doing something to avoid the system to go ka-boom,
+but as I said, even now that it does not crash anymore, she was so
+persuasive that I now find it quite hard to believe that we really don't
+need to do anything. :-P
+
+I guess, as soon as we get the chance, we should see if this actually
+works, i.e., in addition to seeing the proper topology and not crashing,
+verify that AutoNUMA in the guest is actually doing is job.
+
+What do you think? Again, Elena, please chime in and explain how things
+are, if I got something wrong. :-)
+
+Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://about.me/dario.faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
 
 
+--=-uNrs0cG+WdZMPcEaml6m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iEYEABECAAYFAlKLrhcACgkQk4XaBE3IOsS5wQCeO8qcik1SOXMA/gSM6aX6gczM
+yJgAnRMYxQmQ9MIzyjLobg67maqtBCEz
+=/Plc
+-----END PGP SIGNATURE-----
+
+--=-uNrs0cG+WdZMPcEaml6m--
