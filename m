@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3KSLOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 06:14:22 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:34602 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3KSLMp (ORCPT
+	id S1752488Ab3KSLO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 06:14:58 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:46741 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab3KSLMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 06:12:45 -0500
+	Tue, 19 Nov 2013 06:12:43 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Rob Herring <rob.herring@calxeda.com>
 Cc: devicetree@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-Subject: [PATCH 3/9] c6x: Remove duplicate DT selection logic
-Date: Tue, 19 Nov 2013 12:12:28 +0100
-Message-Id: <1384859554-27268-3-git-send-email-geert@linux-m68k.org>
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH 7/9] mips: Use NULL as the default DTB
+Date: Tue, 19 Nov 2013 12:12:32 +0100
+Message-Id: <1384859554-27268-7-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384859554-27268-1-git-send-email-geert@linux-m68k.org>
 References: <5283A000.8090007@gmail.com>
@@ -27,43 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 early_init_dt_scan() now takes care of falling back to the built-in DTB.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: linux-c6x-dev@linux-c6x.org
----
- arch/c6x/kernel/setup.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+On Netlogic XLP, use initial_boot_params in device_tree_init(), like
+the other MIPS sub-platforms do, as xlp_fdt_blob will now be NULL when
+using the default built-in DTB.
 
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-index 414353027ba9..ad7c5d73bb3c 100644
---- a/arch/c6x/kernel/setup.c
-+++ b/arch/c6x/kernel/setup.c
-@@ -266,7 +266,6 @@ int __init c6x_add_memory(phys_addr_t start, unsigned long size)
- notrace void __init machine_init(unsigned long dt_ptr)
- {
- 	struct boot_param_header *dtb = __va(dt_ptr);
--	struct boot_param_header *fdt = &__dtb_start;
- 
- 	/* interrupts must be masked */
- 	set_creg(IER, 2);
-@@ -279,15 +278,8 @@ notrace void __init machine_init(unsigned long dt_ptr)
- 
- 	lockdep_init();
- 
--	/*
--	 * dtb is passed in from bootloader.
--	 * fdt is linked in blob.
--	 */
--	if (dtb && dtb != fdt)
--		fdt = dtb;
--
- 	/* Do some early initialization based on the flat device tree */
--	early_init_dt_scan(fdt);
-+	early_init_dt_scan(dtb);
- 
- 	parse_early_param();
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+---
+ arch/mips/lantiq/prom.c           |    2 +-
+ arch/mips/mti-sead3/sead3-setup.c |    2 +-
+ arch/mips/netlogic/xlp/dt.c       |    8 +++-----
+ arch/mips/ralink/of.c             |    2 +-
+ 4 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/arch/mips/lantiq/prom.c b/arch/mips/lantiq/prom.c
+index 19686c5bc5ed..582f6e4a5f6d 100644
+--- a/arch/mips/lantiq/prom.c
++++ b/arch/mips/lantiq/prom.c
+@@ -71,7 +71,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(NULL);
  }
+ 
+ void __init device_tree_init(void)
+diff --git a/arch/mips/mti-sead3/sead3-setup.c b/arch/mips/mti-sead3/sead3-setup.c
+index 928ba84c8a78..3afec4507ea5 100644
+--- a/arch/mips/mti-sead3/sead3-setup.c
++++ b/arch/mips/mti-sead3/sead3-setup.c
+@@ -25,7 +25,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(NULL);
+ }
+ 
+ void __init device_tree_init(void)
+diff --git a/arch/mips/netlogic/xlp/dt.c b/arch/mips/netlogic/xlp/dt.c
+index 87250f378386..e52281b9214d 100644
+--- a/arch/mips/netlogic/xlp/dt.c
++++ b/arch/mips/netlogic/xlp/dt.c
+@@ -66,7 +66,6 @@ void __init *xlp_dt_init(void *fdtp)
+ #endif
+ 		default:
+ 			/* Pick a built-in if any, and hope for the best */
+-			fdtp = &__dtb_start;
+ 			break;
+ 		}
+ 	}
+@@ -83,13 +82,12 @@ void __init xlp_early_init_devtree(void)
+ void __init device_tree_init(void)
+ {
+ 	unsigned long base, size;
+-	struct boot_param_header *fdtp = xlp_fdt_blob;
+ 
+-	if (!fdtp)
++	if (!initial_boot_params)
+ 		return;
+ 
+-	base = virt_to_phys(fdtp);
+-	size = be32_to_cpu(fdtp->totalsize);
++	base = virt_to_phys(initial_boot_params);
++	size = be32_to_cpu(initial_boot_params->totalsize);
+ 
+ 	/* Before we do anything, lets reserve the dt blob */
+ 	reserve_bootmem(base, size, BOOTMEM_DEFAULT);
+diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
+index 615603bd8063..d72a5bc1efc2 100644
+--- a/arch/mips/ralink/of.c
++++ b/arch/mips/ralink/of.c
+@@ -84,7 +84,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(NULL);
+ 
+ 	if (soc_info.mem_size)
+ 		add_memory_region(soc_info.mem_base, soc_info.mem_size * SZ_1M,
 -- 
 1.7.9.5
 
