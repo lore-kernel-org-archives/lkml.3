@@ -1,204 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab3KTF5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 00:57:12 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:34509 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3KTF5K (ORCPT
+	id S1751147Ab3KTGSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 01:18:36 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:35851 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab3KTGSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 00:57:10 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-17-528c4f2fd918
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH V2 2/2 RESEND] f2fs: read contiguous sit entry pages
- by merging for mount performance
-Date: Wed, 20 Nov 2013 13:56:23 +0800
-Message-id: <001a01cee5b5$5626aea0$02740be0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7ltIsmukEgZNsFRni7xDl/86kK2Q==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jAV19/54gg99dxhbXd/1lsri0yN1i
-	z96TLBaXd81hs2hdeJ7ZgdVj94LPTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV8eliC3PB
-	U42Kla8usTcw9it2MXJySAiYSPR1r2WHsMUkLtxbz9bFyMUhJLCIUeL/smZ2COcHo0TzhLNs
-	IFVsAioSyzv+M4HYIgKKEhvebwArYhaYwShxeO4/VpCEsECRxMYTz5hBbBYBVYkFSy8ygti8
-	ApYSi/6vhrIFJX5MvscCYjMLaEj0L9rABmHLS2xe85YZ4iQFiR1nXzNCLNOTODv3HCtEjbjE
-	xiO3WCYwCsxCMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgsH4m
-	tYNxZYPFIUYBDkYlHl6JBd1BQqyJZcWVuYcYJTiYlUR4b7n3BAnxpiRWVqUW5ccXleakFh9i
-	lOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgZLm3c15D+SmBW46TfqvlPfOTDZG1mdS4
-	ZmqH0qGkTW4Ldd+p5bj+jpJsOB+t9a7Qf/r15ymZDb+efLrlevjypVmsL0uTxFpzTrzuOfX6
-	tv2/w3sdZyysOn7NSV0ju5m9+Nu7kiSPx57v62qSbZMqlU8uKbv0VF339blIhRWbirdFy6xQ
-	erHYQImlOCPRUIu5qDgRAPmriTpnAgAA
+	Wed, 20 Nov 2013 01:18:33 -0500
+Date: Wed, 20 Nov 2013 01:18:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
+ sysfs_remove_group()
+Message-ID: <20131120061830.GA16081@mtj.dyndns.org>
+References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously we read sit entries page one by one, this method lost the chance of reading contiguous page together.
-So we read pages as contiguous as possible for better mount performance.
+(cc'ing Bjorn)
 
-v1-->v2:
- o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng suggested.
- o add mark_page_accessed () before release page to delay VM reclaiming them.
+Hello,
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/segment.c |  108 ++++++++++++++++++++++++++++++++++++++++-------------
- fs/f2fs/segment.h |    2 +
- 2 files changed, 84 insertions(+), 26 deletions(-)
+On Tue, Nov 19, 2013 at 03:09:58PM +0200, Mika Westerberg wrote:
+> Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
+> the behavior so that directory removals will be done recursively. This
+> means that the sysfs group might already be removed if its parent directory
+> has been removed.
+> 
+> The current code outputs warnings similar to following log snippet when it
+> detects that there is no group for the given kobject:
+> 
+>  WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
+>  sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
+>  Modules linked in:
+>  CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
+>  Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
+>  Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+>   0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
+>   ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
+>   ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
+>  Call Trace:
+>   [<ffffffff817daab1>] dump_stack+0x45/0x56
+>   [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
+>   [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
+>   [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
+>   [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
+>   [<ffffffff8142a0d0>] device_del+0x40/0x1b0
+>   [<ffffffff8142a24d>] device_unregister+0xd/0x20
+>   [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
+>   [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
+>   [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
+>   [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
+>   [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
+>   [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
+>   [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
+>   [<ffffffff8142a1b1>] device_del+0x121/0x1b0
+>   [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
+>   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
+>   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
+>   [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
+>   [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
+>   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
+>   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
+>   [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
+>   [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
+>   [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
+>   [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
+>   [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
+>   [<ffffffff8105db29>] worker_thread+0x119/0x390
+>   [<ffffffff81063a5d>] kthread+0xcd/0xf0
+>   [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 8149eba..52c88de 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -14,6 +14,7 @@
- #include <linux/blkdev.h>
- #include <linux/prefetch.h>
- #include <linux/vmalloc.h>
-+#include <linux/swap.h>
- 
- #include "f2fs.h"
- #include "segment.h"
-@@ -1488,41 +1489,96 @@ static int build_curseg(struct f2fs_sb_info *sbi)
- 	return restore_curseg_summaries(sbi);
- }
- 
-+static int ra_sit_pages(struct f2fs_sb_info *sbi, int start,
-+					int nrpages, bool *is_order)
-+{
-+	struct address_space *mapping = sbi->meta_inode->i_mapping;
-+	struct sit_info *sit_i = SIT_I(sbi);
-+	struct page *page;
-+	block_t blk_addr;
-+	int blkno = start, readcnt = 0;
-+	int sit_blk_cnt = SIT_BLK_CNT(sbi);
-+
-+	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
-+
-+		if ((!f2fs_test_bit(blkno, sit_i->sit_bitmap) ^ !*is_order)) {
-+			*is_order = !*is_order;
-+			break;
-+		}
-+
-+		blk_addr = sit_i->sit_base_addr + blkno;
-+		if (*is_order)
-+			blk_addr += sit_i->sit_blocks;
-+repeat:
-+		page = grab_cache_page(mapping, blk_addr);
-+		if (!page) {
-+			cond_resched();
-+			goto repeat;
-+		}
-+		if (PageUptodate(page)) {
-+			mark_page_accessed(page);
-+			f2fs_put_page(page, 1);
-+			readcnt++;
-+			continue;
-+		}
-+
-+		submit_read_page(sbi, page, blk_addr, READ_SYNC);
-+
-+		mark_page_accessed(page);
-+		f2fs_put_page(page, 0);
-+		readcnt++;
-+	}
-+
-+	f2fs_submit_read_bio(sbi, READ_SYNC);
-+	return readcnt;
-+}
-+
- static void build_sit_entries(struct f2fs_sb_info *sbi)
- {
- 	struct sit_info *sit_i = SIT_I(sbi);
- 	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_COLD_DATA);
- 	struct f2fs_summary_block *sum = curseg->sum_blk;
--	unsigned int start;
--
--	for (start = 0; start < TOTAL_SEGS(sbi); start++) {
--		struct seg_entry *se = &sit_i->sentries[start];
--		struct f2fs_sit_block *sit_blk;
--		struct f2fs_sit_entry sit;
--		struct page *page;
--		int i;
-+	bool is_order = f2fs_test_bit(0, sit_i->sit_bitmap) ? true : false;
-+	int sit_blk_cnt = SIT_BLK_CNT(sbi);
-+	unsigned int i, start, end;
-+	unsigned int readed, start_blk = 0;
- 
--		mutex_lock(&curseg->curseg_mutex);
--		for (i = 0; i < sits_in_cursum(sum); i++) {
--			if (le32_to_cpu(segno_in_journal(sum, i)) == start) {
--				sit = sit_in_journal(sum, i);
--				mutex_unlock(&curseg->curseg_mutex);
--				goto got_it;
-+	do {
-+		readed = ra_sit_pages(sbi, start_blk, sit_blk_cnt, &is_order);
-+
-+		start = start_blk * sit_i->sents_per_block;
-+		end = (start_blk + readed) * sit_i->sents_per_block;
-+
-+		for (; start < end && start < TOTAL_SEGS(sbi); start++) {
-+			struct seg_entry *se = &sit_i->sentries[start];
-+			struct f2fs_sit_block *sit_blk;
-+			struct f2fs_sit_entry sit;
-+			struct page *page;
-+
-+			mutex_lock(&curseg->curseg_mutex);
-+			for (i = 0; i < sits_in_cursum(sum); i++) {
-+				if (le32_to_cpu(segno_in_journal(sum, i)) == start) {
-+					sit = sit_in_journal(sum, i);
-+					mutex_unlock(&curseg->curseg_mutex);
-+					goto got_it;
-+				}
- 			}
--		}
--		mutex_unlock(&curseg->curseg_mutex);
--		page = get_current_sit_page(sbi, start);
--		sit_blk = (struct f2fs_sit_block *)page_address(page);
--		sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
--		f2fs_put_page(page, 1);
-+			mutex_unlock(&curseg->curseg_mutex);
-+
-+			page = get_current_sit_page(sbi, start);
-+			sit_blk = (struct f2fs_sit_block *)page_address(page);
-+			sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
-+			f2fs_put_page(page, 1);
- got_it:
--		check_block_count(sbi, start, &sit);
--		seg_info_from_raw_sit(se, &sit);
--		if (sbi->segs_per_sec > 1) {
--			struct sec_entry *e = get_sec_entry(sbi, start);
--			e->valid_blocks += se->valid_blocks;
-+			check_block_count(sbi, start, &sit);
-+			seg_info_from_raw_sit(se, &sit);
-+			if (sbi->segs_per_sec > 1) {
-+				struct sec_entry *e = get_sec_entry(sbi, start);
-+				e->valid_blocks += se->valid_blocks;
-+			}
- 		}
--	}
-+		start_blk += readed;
-+	} while (start_blk < sit_blk_cnt);
- }
- 
- static void init_free_segmap(struct f2fs_sb_info *sbi)
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 269f690..ad5b9f1 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -83,6 +83,8 @@
- 	(segno / SIT_ENTRY_PER_BLOCK)
- #define	START_SEGNO(sit_i, segno)		\
- 	(SIT_BLOCK_OFFSET(sit_i, segno) * SIT_ENTRY_PER_BLOCK)
-+#define SIT_BLK_CNT(sbi)			\
-+	((TOTAL_SEGS(sbi) + SIT_ENTRY_PER_BLOCK - 1) / SIT_ENTRY_PER_BLOCK)
- #define f2fs_bitmap_size(nr)			\
- 	(BITS_TO_LONGS(nr) * sizeof(unsigned long))
- #define TOTAL_SEGS(sbi)	(SM_I(sbi)->main_segments)
+So, we do have cases where the parent is removed before the child.  I
+suppose the parent pci bridge is removed already?  AFAICS this
+shouldn't break anything but people did seem to expect the removals to
+be ordered from child to parent.  Bjorn, is this something you expect
+to happened?
+
+> I'm not 100% sure that this is the correct solution. It seem to fix my case
+> but I might be missing something as I'm not that familiar with sysfs.
+
+Yeah, looks okay to me for now.  One nit at the end tho.
+
+I find requiring removal of each sysfs attribute when the whole node
+is going away rather weird.  It forced us to have extra code which
+does whole bunch of hash table lookups and deletion operations and the
+only thing that achieved was either triggering warning if somebody did
+it in the wrong order or spuriously, or leaking memory if somebody
+forgot some without any way to find out about them.
+
+Now, all those are harmlessly unnecessary and we're adding more logic
+to suppress warnings on specific cases.  In the longer term, we
+probably just wanna drop all the unnecessary removal logics and
+warnings.
+
+> +	/*
+> +	 * Sysfs directories are now removed recursively by
+> +	 * sysfs_remove_dir(). This means that this function can be called
+> +	 * multiple times on the same group. If the parent directory is
+> +	 * already removed we don't do anything here.
+> +	 */
+
+The function won't be called multiple times but may be called on a
+group whose kobj whose sysfs entry is already removed in which case
+all its groups are guaranteed to be already removed.
+
+Can you please update the comment to reflect the above?
+
+With that,
+
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
