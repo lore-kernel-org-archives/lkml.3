@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3KTJbW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:31:22 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:50257 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab3KTJbR (ORCPT
+	id S1753457Ab3KTJcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:32:11 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:40524 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab3KTJcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:31:17 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAK9VDW9013333, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v5 4/4] r8152: fix incorrect type in assignment
-Date: Wed, 20 Nov 2013 17:30:57 +0800
-Message-ID: <1384939857-13519-5-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1384939857-13519-1-git-send-email-hayeswang@realtek.com>
-References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
- <1384939857-13519-1-git-send-email-hayeswang@realtek.com>
+	Wed, 20 Nov 2013 04:32:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+In-Reply-To: <528C7B0E.3080401@ti.com>
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
+	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
+	<527744B2.4090303@ti.com>
+	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
+	<52779D28.9000905@ti.com>
+	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
+	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
+	<000001ceda17$f41c2030$dc546090$%han@samsung.com>
+	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>
+	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>
+	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
+	<5280BB65.5040305@ti.com>
+	<CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>
+	<528C7B0E.3080401@ti.com>
+Date: Wed, 20 Nov 2013 15:02:01 +0530
+Message-ID: <CAFp+6iF3UnV-w2pYQE2THQZBGma8xpp6pqSuwXzjUN3emJnftQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data from the hardware should be little endian. Correct the
-declaration.
+On Wed, Nov 20, 2013 at 2:34 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> On Wednesday 20 November 2013 02:27 PM, Vivek Gautam wrote:
+>> Hi Kishon,
+>>
+>>
+>> On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Hi,
+>> sorry for the delayed response.
+>>
+>>>
+>>> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
+>>>> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
+>>>>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>>>
+>>>> [.....]
+>>>>
+>>>>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
+>>>>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
+>>>>>> and 2.0 block, respectively.
+>>>>>>
+>>>>>> Conclusion:
+>>>>>>
+>>>>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
+>>>>>>                        Base address: 0x1213 0000
+>>>>>>
+>>>>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
+>>>>>>                        Base address: 0x1210 0000
+>>>>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
+>>>>>
+>>>>> And this is of course the PHY used by DWC3 controller, which works at
+>>>>> both High speed as well as Super Speed.
+>>>>> Right ?
+>>>>
+>>>> Right.
+>>>>
+>>>> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
+>>>> can be used for High speed.
+>>>
+>>> It should then come under *single IP muliple PHY* category similar to what
+>>> Sylwester has done.
+>>
+>> Do you mean that i should be including PHY IDs for UTMI+ phy and PIPE3
+>> phy present in this PHY block ?
+>> AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
+>> registers to program, and that's the reason
+>> we program the entire PHY in a shot.
+>
+> you mean you program the same set of bits for UTMI+ and PIPE3?
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+No, looking closely into PHY datasheet as well as Exynos5250 manual, i
+can see that UTMI+ and PIPE3
+phys have separate bit settings. So i think we should be able to
+segregate the two PHYs (UTMI+ and PIPE3).
+Pardon me for my earlier observations.
+Let me clarify more with our h/w team also on this and then i will
+confirm with this.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index f92e0cf..5107372 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -307,22 +307,22 @@ enum rtl8152_flags {
- #define MCU_TYPE_USB			0x0000
- 
- struct rx_desc {
--	u32 opts1;
-+	__le32 opts1;
- #define RX_LEN_MASK			0x7fff
--	u32 opts2;
--	u32 opts3;
--	u32 opts4;
--	u32 opts5;
--	u32 opts6;
-+	__le32 opts2;
-+	__le32 opts3;
-+	__le32 opts4;
-+	__le32 opts5;
-+	__le32 opts6;
- };
- 
- struct tx_desc {
--	u32 opts1;
-+	__le32 opts1;
- #define TX_FS			(1 << 31) /* First segment of a packet */
- #define TX_LS			(1 << 30) /* Final segment of a packet */
- #define TX_LEN_MASK		0x3ffff
- 
--	u32 opts2;
-+	__le32 opts2;
- #define UDP_CS			(1 << 31) /* Calculate UDP/IP checksum */
- #define TCP_CS			(1 << 30) /* Calculate TCP/IP checksum */
- #define IPV4_CS			(1 << 29) /* Calculate IPv4 checksum */
-@@ -877,7 +877,7 @@ static void write_bulk_callback(struct urb *urb)
- static void intr_callback(struct urb *urb)
- {
- 	struct r8152 *tp;
--	__u16 *d;
-+	__le16 *d;
- 	int status = urb->status;
- 	int res;
- 
+>
+> Thanks
+> Kishon
+
+
+
 -- 
-1.8.3.1
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
