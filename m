@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab3KTRZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:25:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1925 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424Ab3KTRZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:25:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438650369"
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Add a text_poke syscall
-References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
-	<528AF5D7.7000308@zytor.com>
-	<20131119184959.GE29695@two.firstfloor.org>
-	<528CE65B.6020300@zytor.com>
-Date: Wed, 20 Nov 2013 09:25:31 -0800
-In-Reply-To: <528CE65B.6020300@zytor.com> (H. Peter Anvin's message of "Wed,
-	20 Nov 2013 08:42:03 -0800")
-Message-ID: <87mwkzvvck.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754782Ab3KTRZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:25:37 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:48442 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3KTRZe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:25:34 -0500
+Date: Wed, 20 Nov 2013 18:25:16 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+Message-ID: <20131120172511.GB1848@hp530>
+References: <20131119131400.GC20655@dhcp22.suse.cz>
+ <20131119134007.GD20655@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
->
-> We're talking user space here, which has different requirement (COW,
-> memory protection, ...) which means it is not really the same code.  You
-> can't take a page fault while patching the kernel.
+Hi David
 
-The syscall pins the page, then it calls the kernel code.
-There are no page faults during patching.
+On Wed, Nov 20, 2013 at 12:02:20AM -0800, David Rientjes wrote:
+> On Tue, 19 Nov 2013, Michal Hocko wrote:
+> 
+> > > We have basically ended up with 3 options AFAIR:
+> > > 	1) allow memcg approach (memcg.oom_control) on the root level
+> > >            for both OOM notification and blocking OOM killer and handle
+> > >            the situation from the userspace same as we can for other
+> > > 	   memcgs.
+> > 
+> > This looks like a straightforward approach as the similar thing is done
+> > on the local (memcg) level. There are several problems though.
+> > Running userspace from within OOM context is terribly hard to do
+> > right.
+> 
+> Not sure it's hard if you have per-memcg memory reserves which I've 
+> brought up in the past with true and complete kmem accounting.  Even if 
+> you don't allocate slab, it guarantees that there will be at least a 
+> little excess memory available so that the userspace oom handler isn't oom 
+> itself.
+> 
+> This involves treating processes waiting on memory.oom_control to be 
+> treated as a special class so that they are allowed to allocate an 
+> additional pre-configured amount of memory.  For non-root memcgs, this 
+> would simply be a dummy usage that would be charged to the memcg when the 
+> oom notification is registered and actually accessible only by the oom 
+> handler itself while memcg->under_oom.  For root memcgs, this would simply 
+> be a PF_MEMALLOC type behavior that dips into per-zone memory reserves.
+> 
+> > This is true even in the memcg case and we strongly discurage
+> > users from doing that. The global case has nothing like outside of OOM
+> > context though. So any hang would blocking the whole machine.
+> 
+> Why would there be a hang if the userspace oom handlers aren't actually 
+> oom themselves as described above?
+> 
+> I'd suggest against the other two suggestions because hierarchical 
+> per-memcg userspace oom handlers are very powerful and can be useful 
+> without actually killing anything at all, and parent oom handlers can 
+> signal child oom handlers to free memory in oom conditions (in other 
+> words, defer a parent oom condition to a child's oom handler upon 
 
-> I'm referring to if some thread actually stumbles over INT 3, which is
-> indeed not very long for one patch site (as long as you don't end up
-> with page faults.)  However, for tracing, you may want to do tens of
-> thousands of patches, and you really want to batch them.
+Is not vmpressure notifications was designed for that purpose?
 
-For tens of thousand of patches you very likely don't want 
-live patching, but a stop everything approach.
+Vladimir
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+> notification).  I was planning on writing a liboom library that would lay 
+> the foundation for how this was supposed to work and some generic 
+> functions that make use of the per-memcg memory reserves.
+> 
+> So my plan for the complete solution was:
+> 
+>  - allow userspace notification from the root memcg on system oom 
+>    conditions,
+> 
+>  - implement a memory.oom_delay_millisecs timeout so that the kernel 
+>    eventually intervenes if userspace fails to respond, including for
+>    system oom conditions, for whatever reason which would be set to 0
+>    if no userspace oom handler is registered for the notification, and
+> 
+>  - implement per-memcg reserves as described above so that userspace oom 
+>    handlers have access to memory even in oom conditions as an upfront
+>    charge and have the ability to free memory as necessary.
+> 
+> We already have the ability to do the actual kill from userspace, both the 
+> system oom killer and the memcg oom killer grants access to memory 
+> reserves for any process needing to allocate memory if it has a pending 
+> SIGKILL which we can send from userspace.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
