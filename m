@@ -1,122 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3KTSo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:44:27 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:38603 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab3KTSoX (ORCPT
+	id S1754537Ab3KTSpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:45:17 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:35781 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab3KTSpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:44:23 -0500
+	Wed, 20 Nov 2013 13:45:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131120175807.GC5380@fieldses.org>
-References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org>
- <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com>
- <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
- <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org>
- <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com> <20131120175807.GC5380@fieldses.org>
-From: Chinmay V S <cvs268@gmail.com>
-Date: Thu, 21 Nov 2013 00:13:52 +0530
-Message-ID: <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com>
-Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [173.161.199.49]
+From: Nick Pegg <nick@nickpegg.com>
+Date: Wed, 20 Nov 2013 13:44:54 -0500
+Message-ID: <CAFi4uRvcUPvKvaeO5gZnjhMCFS+08MhEixJw-iN0AWbeBfiHvQ@mail.gmail.com>
+Subject: NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 11:28 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Wed, Nov 20, 2013 at 10:41:54PM +0530, Chinmay V S wrote:
->> On Wed, Nov 20, 2013 at 9:25 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
->> > Some SSD's are also claim the ability to flush the cache on power loss:
->> >
->> >         http://www.intel.com/content/www/us/en/solid-state-drives/ssd-320-series-power-loss-data-protection-brief.html
->> >
->> > Which should in theory let them respond immediately to flush requests,
->> > right?  Except they only seem to advertise it as a safety (rather than a
->> > performance) feature, so I probably misunderstand something.
->> >
->> > And the 520 doesn't claim this feature (look for "enhanced power loss
->> > protection" at http://ark.intel.com/products/66248), so that wouldn't
->> > explain these results anyway.
->>
->> FYI, nowhere does Intel imply that the CMD_FLUSH is instantaneous. The
->> product brief for Intel 320 SSDs (above link), explains that it is
->> implemented by a power-fail detection circuit that detects drop in
->> power-supply, following which the on-disk controller issues an internal
->> CMD_FLUSH equivalent command to ensure data is moved to the
->> non-volatile area from the disk-cache. Large secondary capacitors
->> ensure backup supply for this brief duration.
->>
->> Thus applications can always perform asynchronous I/O upon the disk,
->> taking comfort in the fact that the physical disk ensures that all
->> data in the volatile disk-cache is automatically transferred to the
->> non-volatile area even in the event of an external power-failure. Thus
->> the host never has to worry about issuing a CMD_FLUSH (which is still
->> a terribly expensive performance bottleneck, even on the Intel 320
->> SSDs).
->
-> So why is it up to the application to do this and not the drive?
-> Naively I'd've thought it would be simpler if the protocol allowed the
-> drive to respond instantly if it knows it can do so safely, and then you
-> could always issue flush requests, and save some poor admin from having
-> to read spec sheets to figure out if they can safely mount "nobarrier".
-Strictly speaking CMD_FLUSH implies that the app/driver wants to
-ensure data IS in-fact on the non-volatile area. Also the time-penalty
-associated with it on majority of disks is a known fact and hence
-CMD_FLUSHes are not issued unless absolutely necessary. During IO upon
-a raw block device, as this is the ONLY data barrier available, it is
-mapped to the SYNC command.
+Hello,
 
-The Intel 320 SSD is an exception where the disk does NOT need a
-CMD_FLUSH as it can guarantee that the cache is always flushed to the
-non-volatile area automatically in case of a power loss. However, a
-CMD_FLUSH is an explicit command to write to non-volatile area and is
-implemented accordingly. Practically though it is could have been made
-a no-op on the Intel 320 series(and other similar battery-backed
-disks, but not for all disks). Unfortunately this is not how the
-on-disk controller firmware is implemented and hence it is up to the
-app/kernel-driver to avoid issuing CMD_FLUSHes which are clearly
-unnecessary as discussed above.
+I've been seeing some servers hit a condition where they receive a
+large number of packets (over 500,000 per second, for example) which
+causes a kernel panic due to a null pointer dereference. I've included
+the tracebacks below.
 
-> Is it that you want to eliminate CMD_FLUSH entirely because the protocol
-> still has some significant overhead even if the drive responds to it
-> quickly?
+I have not been able to reproduce this in my lab, but out in the field
+I've seen this happen with kernel versions 3.7.6 through 3.9.2 (e1000e
+driver versions 2.1.4-k through 2.2.14-k), running with Intel 82574L
+NICs.
 
-1. Most drives do NOT respond to CMD_FLUSH immediately i.e. they wait
-until the data is actually moved to the non-volatile media (which is
-the right behaviour) i.e. performance drops.
+I've seen previous posts to this mailing list suggesting that this is
+a hardware issue (the mitigation being turning TSO/GSO off), however
+those tracebacks didn't show the interface getting unexpectedly reset,
+causing the null pointer dereference. Is this possibly a problem with
+the e1000e driver where it's not gracefully handling the reset?
 
-2. Some drives may implement CMD_FLUSH to return immediately i.e. no
-guarantee the data is actually on disk.
+Let me know if more information is needed. And please CC me in replies
+since I'm not subscribed to this list. Thanks!
 
-3. Anyway, CMD_FLUSH does NOT guarantee atomicity. (Consider power
-failure in the middle of an ongoing CMD_FLUSH on non battery-backed
-disks).
+-Nick
 
-4. Throughput using CMD_FLUSH is so less that an app generating large
-amount of I/O will have to buffer most of it in the app layer itself
-i.e. it is lost in case of a power-outage.
 
-Considering the above 4 facts, ASYNC IO is almost always better on raw
-block devices. This pushes the data to the disk as fast as possible
-and an occasional CMD_FLUSH will ensure it is flushed to the
-non-volatile area periodically.
-
-In case the application cannot be modified to perform ASYNC IO, there
-exists a way to disable the behaviour of issuing a CMD_FLUSH for each
-sync() within the block device driver for SATA/SCSI disks. This is
-what is described by
-https://gist.github.com/TheCodeArtist/93dddcd6a21dc81414ba
-
-Just to be clear, i am NOT recommending that this change be mainlined;
-rather it is a reference to improve performance in the rare cases(like
-in the OP Stefan's case) where both the app performing DIRECT SYNC
-block IO and the disk firmware implementing CMD_FLUSH can NOT be
-modified. In which case the standard block driver behaviour of issuing
-a CMD_FLUSH with each write is too restrictive and thus modified using
-the patch.
+--------
+Nov 16 07:03:19 rx ------------[ cut here ]------------
+Nov 16 07:03:19 rx WARNING: at net/sched/sch_generic.c:255
+dev_watchdog+0x25b/0x270()
+Nov 16 07:03:19 rx Hardware name: X8DT6
+Nov 16 07:03:19 rx NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+Nov 16 07:03:19 rx Modules linked in: xt_u32 xt_physdev
+ip6table_mangle ip6_tables ebt_comment ebt_set ebt_arp ebt_limit
+ebt_ip6 ebt_ip ip_set_hash_net ip_set ebtable_nat xen_gntdev bonding
+ebtable_filter 8021q mrp e1000e ptp pps_core
+Nov 16 07:03:19 rx Pid: 14268, comm: kworker/0:0 Not tainted 3.9.2-1 #1
+Nov 16 07:03:19 rx Call Trace:
+Nov 16 07:03:19 rx  <IRQ>  [<ffffffff8105070a>] warn_slowpath_common+0x7a/0xc0
+Nov 16 07:03:19 rx  [<ffffffff810507f1>] warn_slowpath_fmt+0x41/0x50
+Nov 16 07:03:19 rx  [<ffffffff8168e2ab>] dev_watchdog+0x25b/0x270
+Nov 16 07:03:19 rx  [<ffffffff8168e050>] ? __netdev_watchdog_up+0x80/0x80
+Nov 16 07:03:19 rx  [<ffffffff81060464>] call_timer_fn+0x44/0x120
+Nov 16 07:03:19 rx  [<ffffffff81060a71>] run_timer_softirq+0x241/0x2b0
+Nov 16 07:03:19 rx  [<ffffffff8168e050>] ? __netdev_watchdog_up+0x80/0x80
+Nov 16 07:03:19 rx  [<ffffffff8105893f>] __do_softirq+0xef/0x270
+Nov 16 07:03:19 rx  [<ffffffff81058bc5>] irq_exit+0xb5/0xc0
+Nov 16 07:03:19 rx  [<ffffffff81435a8f>] xen_evtchn_do_upcall+0x2f/0x40
+Nov 16 07:03:19 rx  [<ffffffff817a24fe>] xen_do_hypervisor_callback+0x1e/0x30
+Nov 16 07:03:19 rx  <EOI>  [<ffffffff813b3722>] ? delay_tsc+0x32/0x80
+Nov 16 07:03:19 rx  [<ffffffff813b373a>] ? delay_tsc+0x4a/0x80
+Nov 16 07:03:19 rx  [<ffffffff813b36e8>] ? __const_udelay+0x28/0x30
+Nov 16 07:03:19 rx  [<ffffffffa0025b0e>] ?
+e1000e_read_phy_reg_mdic+0xce/0x120 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0018bd0>] ?
+e1000_get_hw_semaphore_82574+0x20/0x40 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0027a75>] ?
+e1000e_read_phy_reg_bm2+0x55/0xb0 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa00330d6>] ?
+e1000e_flush_descriptors+0x96/0x270 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa00181b7>] ?
+e1000_check_phy_82574+0x27/0x60 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0034178>] ?
+e1000_watchdog_task+0x648/0x830 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffff81797877>] ? __schedule+0x3a7/0x7c0
+Nov 16 07:03:19 rx  [<ffffffff8106c74e>] ? process_one_work+0x16e/0x430
+Nov 16 07:03:19 rx  [<ffffffff8106ea3c>] ? worker_thread+0x11c/0x410
+Nov 16 07:03:19 rx  [<ffffffff8106e920>] ? manage_workers+0x360/0x360
+Nov 16 07:03:19 rx  [<ffffffff810738f6>] ? kthread+0xc6/0xd0
+Nov 16 07:03:19 rx  [<ffffffff81003869>] ? xen_end_context_switch+0x19/0x20
+Nov 16 07:03:19 rx  [<ffffffff81073830>] ?
+kthread_freezable_should_stop+0x70/0x70
+Nov 16 07:03:19 rx  [<ffffffff817a10bc>] ? ret_from_fork+0x7c/0xb0
+Nov 16 07:03:19 rx  [<ffffffff81073830>] ?
+kthread_freezable_should_stop+0x70/0x70
+Nov 16 07:03:19 rx ---[ end trace f896af6c9f44182d ]---
+Nov 16 07:03:19 rx e1000e 0000:03:00.0 eth0: Reset adapter unexpectedly
+Nov 16 07:03:19 rx BUG: unable to handle kernel NULL pointer
+dereference at 00000000000000d0
+Nov 16 07:03:19 rx IP: [<ffffffffa0031d51>]
+e1000_clean_rx_irq+0x101/0x490 [e1000e]
+Nov 16 07:03:19 rx PGD 4a6c3067 PUD 4f440067 PMD 0
+Nov 16 07:03:19 rx Oops: 0000 [#1] SMP
+Nov 16 07:03:19 rx Modules linked in: xt_u32 xt_physdev
+ip6table_mangle ip6_tables ebt_comment ebt_set ebt_arp ebt_limit
+ebt_ip6 ebt_ip ip_set_hash_net ip_set ebtable_nat xen_gntdev bonding
+ebtable_filter 8021q mrp e1000e ptp pps_core
+Nov 16 07:03:19 rx CPU 0
+Nov 16 07:03:19 rx Pid: 14268, comm: kworker/0:0 Tainted: G        W
+ 3.9.2-1 #1 Supermicro X8DT6/X8DT6
+Nov 16 07:03:19 rx RIP: e030:[<ffffffffa0031d51>]
+[<ffffffffa0031d51>] e1000_clean_rx_irq+0x101/0x490 [e1000e]
+Nov 16 07:03:19 rx RSP: e02b:ffff88008ea03d98  EFLAGS: 00010202
+Nov 16 07:03:19 rx RAX: 000000000000001a RBX: ffffc900115f9000 RCX:
+ffff88008ea03e64
+Nov 16 07:03:19 rx RDX: ffff88008ea03e64 RSI: ffff880002dc6e00 RDI:
+ffff8800844026c0
+Nov 16 07:03:19 rx RBP: ffff88008ea03e38 R08: 00000000000169e0 R09:
+ffffea00000b7180
+Nov 16 07:03:19 rx R10: 0000000000020063 R11: 0000000000000000 R12:
+0000000000000000
+Nov 16 07:03:19 rx R13: ffff880081fb6000 R14: ffff88008016c700 R15:
+ffff880081fb6000
+Nov 16 07:03:19 rx FS:  00007fde5acb8700(0000)
+GS:ffff88008ea00000(0000) knlGS:0000000000000000
+Nov 16 07:03:19 rx CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+Nov 16 07:03:19 rx CR2: 00000000000000d0 CR3: 0000000071e80000 CR4:
+0000000000002660
+Nov 16 07:03:19 rx DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+Nov 16 07:03:19 rx DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+Nov 16 07:03:19 rx Process kworker/0:0 (pid: 14268, threadinfo
+ffff880045f8a000, task ffff88005c9c0000)
+Nov 16 07:03:19 rx Stack:
+Nov 16 07:03:19 rx  ffff880080220000 ffff880002dc6a00 000001d70000003c
+0000001100020063
+Nov 16 07:03:19 rx  000000408ea03e18 ffff880083d7d000 000005dc00000019
+ffff88008016c000
+Nov 16 07:03:19 rx  ffff880083d7d098 0000000000000000 ffffc900115f9000
+ffff88008ea03e64
+Nov 16 07:03:19 rx Call Trace:
+Nov 16 07:03:19 rx  <IRQ>
+Nov 16 07:03:19 rx  [<ffffffffa003354d>] e1000e_poll+0xbd/0x2d0 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffff81673d7f>] net_rx_action+0xaf/0x220
+Nov 16 07:03:19 rx  [<ffffffff810c4e72>] ? handle_edge_irq+0x92/0x140
+Nov 16 07:03:19 rx  [<ffffffff8105893f>] __do_softirq+0xef/0x270
+Nov 16 07:03:19 rx  [<ffffffff81058bc5>] irq_exit+0xb5/0xc0
+Nov 16 07:03:19 rx  [<ffffffff81435a8f>] xen_evtchn_do_upcall+0x2f/0x40
+Nov 16 07:03:19 rx  [<ffffffff817a24fe>] xen_do_hypervisor_callback+0x1e/0x30
+Nov 16 07:03:19 rx  <EOI>
+Nov 16 07:03:19 rx  [<ffffffff81664200>] ? skb_release_data+0x80/0xf0
+Nov 16 07:03:19 rx  [<ffffffff8113291b>] ? __slab_free+0x14b/0x380
+Nov 16 07:03:19 rx  [<ffffffff810f9dcb>] ? __free_pages_ok+0x8b/0xa0
+Nov 16 07:03:19 rx  [<ffffffff810f9df6>] ? free_compound_page+0x16/0x20
+Nov 16 07:03:19 rx  [<ffffffff810fdf27>] ? __put_compound_page+0x17/0x20
+Nov 16 07:03:19 rx  [<ffffffff81132dcc>] ? kmem_cache_free+0x14c/0x170
+Nov 16 07:03:19 rx  [<ffffffff816642f2>] ? __kfree_skb+0x42/0xa0
+Nov 16 07:03:19 rx  [<ffffffff816643bc>] ? consume_skb+0x2c/0x70
+Nov 16 07:03:19 rx  [<ffffffffa00324d7>] ?
+e1000_clean_rx_ring+0xb7/0x2c0 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0034bec>] ? e1000e_down+0x10c/0x260 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0037ff4>] ?
+e1000e_reinit_locked+0x44/0x60 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffffa0038102>] ? e1000_reset_task+0x42/0x7b0 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffff8106145a>] ? mod_timer+0x11a/0x1f0
+Nov 16 07:03:19 rx  [<ffffffffa00340a6>] ?
+e1000_watchdog_task+0x576/0x830 [e1000e]
+Nov 16 07:03:19 rx  [<ffffffff81797877>] ? __schedule+0x3a7/0x7c0
+Nov 16 07:03:19 rx  [<ffffffff8106c74e>] ? process_one_work+0x16e/0x430
+Nov 16 07:03:19 rx  [<ffffffff8106ea3c>] ? worker_thread+0x11c/0x410
+Nov 16 07:03:19 rx  [<ffffffff8106e920>] ? manage_workers+0x360/0x360
+Nov 16 07:03:19 rx  [<ffffffff810738f6>] ? kthread+0xc6/0xd0
+Nov 16 07:03:19 rx  [<ffffffff81003869>] ? xen_end_context_switch+0x19/0x20
+Nov 16 07:03:19 rx  [<ffffffff81073830>] ?
+kthread_freezable_should_stop+0x70/0x70
+Nov 16 07:03:19 rx  [<ffffffff817a10bc>] ? ret_from_fork+0x7c/0xb0
+Nov 16 07:03:19 rx  [<ffffffff81073830>] ?
+kthread_freezable_should_stop+0x70/0x70
+Nov 16 07:03:19 rx Code: 3b 45 84 0f 8d f1 01 00 00 48 8b 5d b0 4d 89
+fd 48 03 5d a8 48 8b 4d b8 ff c0 89 01 0f ae e8 4c 8b 63 08 48 c7 43
+08 00 00 00 00 <49> 8b 84 24 d0 00 00 00 48 8b 75 c0 ff 45 cc 0f 18 08
+8b 45 cc
+Nov 16 07:03:19 rx RIP  [<ffffffffa0031d51>]
+e1000_clean_rx_irq+0x101/0x490 [e1000e]
+Nov 16 07:03:19 rx  RSP <ffff88008ea03d98>
+Nov 16 07:03:19 rx CR2: 00000000000000d0
+Nov 16 07:03:19 rx ---[ end trace f896af6c9f44182e ]---
+Nov 16 07:03:19 rx Kernel panic - not syncing: Fatal exception in interrupt
+--------
