@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3KTNPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:15:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60767 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753262Ab3KTNPw (ORCPT
+	id S1753663Ab3KTNQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:16:19 -0500
+Received: from smtp.sodetel.net.lb ([89.108.129.69]:56649 "EHLO
+	smtp.sodetel.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab3KTNQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:15:52 -0500
-Date: Wed, 20 Nov 2013 13:15:47 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        ckeepax@opensource.wolfsonmicro.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] ASoC: arizona: Set FLL to free-run before disabling
-Message-ID: <20131120131547.GA7357@opensource.wolfsonmicro.com>
+	Wed, 20 Nov 2013 08:16:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Nov 2013 15:16:14 +0200
+From: "Mr. smith Tiangaye" <smithtiangayesqq@gmail.com>
+To: undisclosed-recipients:;
+Subject: Private Request
+Reply-To: <tnsmth@blumail.org>
+Mail-Reply-To: <tnsmth@blumail.org>
+Message-ID: <7c50db634b6104cf2c0810ccdeca84aa@sodetel.net.lb>
+User-Agent: Roundcube Webmail/0.8.6
+X-TM-AS-Product-Ver: IMSVA-8.2.0.1391-7.0.0.1014-20306.001
+X-TM-AS-Result: No-1.995-7.0-31-10
+X-imss-scan-details: No-1.995-7.0-31-10
+X-TMASE-Version: IMSVA-8.2.0.1391-7.0.1014-20306.001
+X-TMASE-Result: 10-1.995500-5.000000
+X-TMASE-MatchedRID: hwtUKlde9zHaA1ogOA3LT/Qajs/YwumpkCM77ifYafu12g/kedeV+Vj9
+	JicB2ifuP76JZI/oDQkqVcRnIzJeuBP2tmfV1UdzsvS0AhMYRGWV8bCk1I9Wfr6qvLNjDYTwm+I
+	g5TvcoI668roUw3UgsLDSA3Huj9W0SMYfzbLwKxFQSFbL1bvQASdET58jp62SOQw6uq/VnQrw/E
+	iv0n8fldPuvc5AqmzGwL53TJN82WPnEK+Faq+jWLKVm6gHD9QxRSNjzdJaMcHK7FW4kQ31uxNfS
+	tfaFlDy+rL5VW+ofZc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/arizona.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
-index 6f05b17..fea9910 100644
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -1529,6 +1529,8 @@ static void arizona_enable_fll(struct arizona_fll *fll,
- 	try_wait_for_completion(&fll->ok);
- 
- 	regmap_update_bits(arizona->regmap, fll->base + 1,
-+			   ARIZONA_FLL1_FREERUN, 0);
-+	regmap_update_bits(arizona->regmap, fll->base + 1,
- 			   ARIZONA_FLL1_ENA, ARIZONA_FLL1_ENA);
- 	if (use_sync)
- 		regmap_update_bits(arizona->regmap, fll->base + 0x11,
-@@ -1546,6 +1548,8 @@ static void arizona_disable_fll(struct arizona_fll *fll)
- 	struct arizona *arizona = fll->arizona;
- 	bool change;
- 
-+	regmap_update_bits(arizona->regmap, fll->base + 1,
-+			   ARIZONA_FLL1_FREERUN, ARIZONA_FLL1_FREERUN);
- 	regmap_update_bits_check(arizona->regmap, fll->base + 1,
- 				 ARIZONA_FLL1_ENA, 0, &change);
- 	regmap_update_bits(arizona->regmap, fll->base + 0x11,
--- 
-1.7.2.5
 
 
+Hi,
+
+My name is Mr. smith Tiangaye from Central Africa but currently 
+residing in South Africa. I want to invest in South Africa with your 
+assistance. Contact me for more information.
+
+Best regard,
+Mr. smith Tiangaye
+084 023 9962
