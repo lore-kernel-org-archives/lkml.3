@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3KTRrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:47:05 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:44452 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab3KTRrC (ORCPT
+	id S1754229Ab3KTRrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:47:17 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41864 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3KTRrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:47:02 -0500
-Message-ID: <1384969615.2470.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] fs: partitions: efi: Fix bound check
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Antti Miettinen <amiettinen@nvidia.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "kzak@redhat.com" <kzak@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Will Drewry <wad@chromium.org>
-Date: Wed, 20 Nov 2013 09:46:55 -0800
-In-Reply-To: <528C625A.4040509@nvidia.com>
-References: <20131115.191422.1787913255098350249.apm@brigitte.kvy.fi>
-	 <20131119160438.f1cce64660ab5c545be8baa9@linux-foundation.org>
-	 <528C625A.4040509@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Nov 2013 12:47:13 -0500
+Date: Wed, 20 Nov 2013 17:47:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs.git bits and pieces
+Message-ID: <20131120174712.GG10323@ZenIV.linux.org.uk>
+References: <20131120174211.GF10323@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120174211.GF10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-20 at 08:18 +0100, Antti Miettinen wrote:
-> On 20.11.2013 02:04, Andrew Morton wrote:
-> > On Fri, 15 Nov 2013 19:14:22 +0200 (EET) Antti P Miettinen
-> > <amiettinen@nvidia.com> wrote:
-> >
-> >  > Use ARRAY_SIZE instead of sizeof to get proper max for label
-> >  > length.
-> >  >
-> >  > Signed-off-by: Antti P Miettinen <amiettinen@nvidia.com>
-> >  > Reviewed-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> >  > Tested-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> >
-> > When fixing a bug, please provide a description of the user-visible
-> > impact of that bug.  This is so that others can decide which kernel
-> > version(s) need the patch.
-> >
-> > Hiroshi Doyu tested this patch, so I assume there was some observable
-> > misbehaviour to test.  Please fully describe that.
-> 
-> Since this is just a read out of bounds it's not that bad, but the 
-> problem becomes user-visible e.g. if one tries to use 
-> CONFIG_DEBUG_PAGEALLOC and CONFIG_DEBUG_RODATA, at least with some 
-> enhancements from Hiroshi. Of course the destination array can contain 
-> garbage when we read beyond the end of source array so that would be 
-> another user-visible problem.
-> 
+On Wed, Nov 20, 2013 at 05:42:11PM +0000, Al Viro wrote:
+> [Apologies for delay; I'd spent the last day hunting down something that
+> turned out to be a VM leak completely unrelated to this stuff - it's
+> present in mainline, for starters.  Unreliable reproducers make for fun
+> bisects ;-/  Anyway, by now I'm absolutely sure that this is a VM bug and
+> not something I had somehow managed to break, so...]
 
-Cc'ing Will - this path as been untouched since it's inclusion back in
-2.6.37:
+BTW, something odd happened to mm/memory.c - either a mangled patch
+or a lost followup.  Take a look at the last commit in there:
+commit ea1e7ed33708c7a760419ff9ded0a6cb90586a50
+Author: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Date:   Thu Nov 14 14:31:53 2013 -0800
 
-commit eec7ecfede74bb996060efefd5c157acd5794e8a
-Author: Will Drewry <wad@chromium.org>
-Date:   Tue Aug 31 15:47:06 2010 -0500
-
-    genhd, efi: add efi partition metadata to hd_structs
+    mm: create a separate slab for page->ptl allocation
     
-    This change extends the partition_meta_info structure to
-    support EFI GPT-specific metadata and ensures that data
-    is copied in on partition scanning.
+    If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
+    is 72 bytes.  For page->ptl they will be allocated from kmalloc-96 slab,
+    so we loose 24 on each.  An average system can easily allocate few tens
+    thousands of page->ptl and overhead is significant.
     
-    Signed-off-by: Will Drewry <wad@chromium.org>
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+    Let's create a separate slab for page->ptl allocation to solve this.
+    
+    Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-
-> Should I send a new version with better commit message?
-> 
-> 	--Antti
-
-
+Fair enough, and yes, it does create that separate slab.  The problem is,
+it's still using kmalloc/kfree for those beasts - page_ptl_cachep isn't
+used at all...
