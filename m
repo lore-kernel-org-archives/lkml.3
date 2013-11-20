@@ -1,236 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3KTAV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:21:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab3KTAVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:21:25 -0500
-Date: Wed, 20 Nov 2013 01:20:53 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] mm: tail page refcounting optimization for slab and
- hugetlbfs
-Message-ID: <20131120002053.GE10493@redhat.com>
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
- <1384537668-10283-4-git-send-email-aarcange@redhat.com>
- <20131119151416.9f5b298960db09a21d37418b@linux-foundation.org>
+	id S1753613Ab3KTAV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:21:58 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:34677 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3KTAVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 19:21:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131119151416.9f5b298960db09a21d37418b@linux-foundation.org>
+In-Reply-To: <1383850796-24300-1-git-send-email-peter@hurleysoftware.com>
+References: <20131017211236.GA6155@kroah.com>
+	<1383850796-24300-1-git-send-email-peter@hurleysoftware.com>
+Date: Tue, 19 Nov 2013 16:21:54 -0800
+X-Google-Sender-Auth: Qp0Koh8AHFERpe6uCRvjS1FiITg
+Message-ID: <CA+55aFwYps=q14pQ04yWYThFwi3NnR__MeggU8N3M4Q0vrk+nQ@mail.gmail.com>
+Subject: Re: [PATCH] n_tty: Ensure reader restarts worker for next reader
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-serial@vger.kernel.org, "# .39.x" <stable@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew!
+Greg,
+ what happened to this patch? Is it still waiting in some random tree
+of yours, or did it get lost?
 
-On Tue, Nov 19, 2013 at 03:14:16PM -0800, Andrew Morton wrote:
-> This looks like it was attacked by Lindent.  How's this look?
+                    Linus
 
-Indeed, I didn't try to optimize as 3/3 was mostly a test patch so
-far.
-
-> +	struct page *page_head;
+On Thu, Nov 7, 2013 at 10:59 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> A departing reader must restart a flush_to_ldisc() worker _before_
+> the next reader enters the read loop; this is to avoid the new reader
+> concluding no more i/o is available and prematurely exiting, when the
+> old reader simply hasn't re-started the worker yet.
+>
+> Cc: stable@kernel.org # 3.12
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/n_tty.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 7a744b6..ce11cd5 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -2250,6 +2250,9 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>                 if (time)
+>                         timeout = time;
+>         }
+> +       n_tty_set_room(tty);
+> +       up_read(&tty->termios_rwsem);
 > +
-> +	if (likely(PageTail(page))) {
-
-!PageTail here.
-
-The current version would look like below, which is less obviously
-horrible than before :). We may also consider to keep your indent
-cleanup incremental as it's much easier to review the actual change of
-code logic the below way.
-
->From 8a7bd3b25f7ee69b53a1a9e681790333df9504a6 Mon Sep 17 00:00:00 2001
-From: Andrea Arcangeli <aarcange@redhat.com>
-Date: Thu, 14 Nov 2013 20:17:38 +0100
-Subject: [PATCH] mm: tail page refcounting optimization for slab and hugetlbfs
-
-This skips the _mapcount mangling for slab and hugetlbfs pages.
-
-The main trouble in doing this is to guarantee that PageSlab and
-PageHeadHuge remains constant for all get_page/put_page run on the
-tail of slab or hugetlbfs compound pages. Otherwise if they're set
-during get_page but not set during put_page, the _mapcount of the tail
-page would underflow.
-
-PageHeadHuge will remain true until the compound page is released and
-enters the buddy allocator so it won't risk to change even if the tail
-page is the last reference left on the page.
-
-PG_slab instead is cleared before the slab frees the head page with
-put_page, so if the tail pin is released after the slab freed the
-page, we would have a problem. But in the slab case the tail pin
-cannot be the last reference left on the page. This is because the
-slab code is free to reuse the compound page after a
-kfree/kmem_cache_free without having to check if there's any tail pin
-left. In turn all tail pins must be always released while the head is
-still pinned by the slab code and so we know PG_slab will be still set
-too.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/hugetlb.h |  6 ------
- include/linux/mm.h      | 32 +++++++++++++++++++++++++++++++-
- mm/internal.h           |  3 ++-
- mm/swap.c               | 33 +++++++++++++++++++++++++++------
- 4 files changed, 60 insertions(+), 14 deletions(-)
-
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index d4f3dbf..acd2010 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -31,7 +31,6 @@ struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
- void hugepage_put_subpool(struct hugepage_subpool *spool);
- 
- int PageHuge(struct page *page);
--int PageHeadHuge(struct page *page_head);
- 
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-@@ -105,11 +104,6 @@ static inline int PageHuge(struct page *page)
- 	return 0;
- }
- 
--static inline int PageHeadHuge(struct page *page_head)
--{
--	return 0;
--}
--
- static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- {
- }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0548eb2..6b20b34 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -414,15 +414,45 @@ static inline int page_count(struct page *page)
- 	return atomic_read(&compound_head(page)->_count);
- }
- 
-+#ifdef CONFIG_HUGETLB_PAGE
-+extern int PageHeadHuge(struct page *page_head);
-+#else /* CONFIG_HUGETLB_PAGE */
-+static inline int PageHeadHuge(struct page *page_head)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_HUGETLB_PAGE */
-+
-+static inline bool __compound_tail_refcounted(struct page *page)
-+{
-+	return !PageSlab(page) && !PageHeadHuge(page);
-+}
-+
-+/*
-+ * This takes a head page as parameter and tells if the
-+ * tail page reference counting can be skipped.
-+ *
-+ * For this to be safe, PageSlab and PageHeadHuge must remain true on
-+ * any given page where they return true here, until all tail pins
-+ * have been released.
-+ */
-+static inline bool compound_tail_refcounted(struct page *page)
-+{
-+	VM_BUG_ON(!PageHead(page));
-+	return __compound_tail_refcounted(page);
-+}
-+
- static inline void get_huge_page_tail(struct page *page)
- {
- 	/*
- 	 * __split_huge_page_refcount() cannot run
- 	 * from under us.
-+	 * In turn no need of compound_trans_head here.
- 	 */
- 	VM_BUG_ON(page_mapcount(page) < 0);
- 	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	atomic_inc(&page->_mapcount);
-+	if (compound_tail_refcounted(compound_head(page)))
-+		atomic_inc(&page->_mapcount);
- }
- 
- extern bool __get_page_tail(struct page *page);
-diff --git a/mm/internal.h b/mm/internal.h
-index 684f7aa..a85a3ab 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -51,7 +51,8 @@ static inline void __get_page_tail_foll(struct page *page,
- 	VM_BUG_ON(page_mapcount(page) < 0);
- 	if (get_page_head)
- 		atomic_inc(&page->first_page->_count);
--	atomic_inc(&page->_mapcount);
-+	if (compound_tail_refcounted(page->first_page))
-+		atomic_inc(&page->_mapcount);
- }
- 
- /*
-diff --git a/mm/swap.c b/mm/swap.c
-index dbf5427..b4c49bf 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -88,8 +88,9 @@ static void put_compound_page(struct page *page)
- 
- 		/*
- 		 * THP can not break up slab pages so avoid taking
--		 * compound_lock(). Slab performs non-atomic bit ops
--		 * on page->flags for better performance. In
-+		 * compound_lock() and skip the tail page refcounting
-+		 * (in _mapcount) too. Slab performs non-atomic bit
-+		 * ops on page->flags for better performance. In
- 		 * particular slab_unlock() in slub used to be a hot
- 		 * path. It is still hot on arches that do not support
- 		 * this_cpu_cmpxchg_double().
-@@ -102,7 +103,7 @@ static void put_compound_page(struct page *page)
- 		 * PageTail clear after smp_rmb() and we'll threat it
- 		 * as a single page.
- 		 */
--		if (PageSlab(page_head) || PageHeadHuge(page_head)) {
-+		if (!__compound_tail_refcounted(page_head)) {
- 			/*
- 			 * If "page" is a THP tail, we must read the tail page
- 			 * flags after the head page flags. The
-@@ -117,10 +118,30 @@ static void put_compound_page(struct page *page)
- 				 * cannot race here.
- 				 */
- 				VM_BUG_ON(!PageHead(page_head));
--				VM_BUG_ON(page_mapcount(page) <= 0);
--				atomic_dec(&page->_mapcount);
--				if (put_page_testzero(page_head))
-+				VM_BUG_ON(page_mapcount(page) != 0);
-+				if (put_page_testzero(page_head)) {
-+					/*
-+					 * If this is the tail of a
-+					 * slab compound page, the
-+					 * tail pin must not be the
-+					 * last reference held on the
-+					 * page, because the PG_slab
-+					 * cannot be cleared before
-+					 * all tail pins (which skips
-+					 * the _mapcount tail
-+					 * refcounting) have been
-+					 * released. For hugetlbfs the
-+					 * tail pin may be the last
-+					 * reference on the page
-+					 * instead, because
-+					 * PageHeadHuge will not go
-+					 * away until the compound
-+					 * page enters the buddy
-+					 * allocator.
-+					 */
-+					VM_BUG_ON(PageSlab(page_head));
- 					__put_compound_page(page_head);
-+				}
- 				return;
- 			} else
- 				/*
+>         mutex_unlock(&ldata->atomic_read_lock);
+>         remove_wait_queue(&tty->read_wait, &wait);
+>
+> @@ -2260,8 +2263,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+>         if (b - buf)
+>                 retval = b - buf;
+>
+> -       n_tty_set_room(tty);
+> -       up_read(&tty->termios_rwsem);
+>         return retval;
+>  }
+>
+> --
+> 1.8.1.2
+>
