@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3KTSPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:15:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50411 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab3KTSPr (ORCPT
+	id S1754773Ab3KTSQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:16:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58510 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab3KTSQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:15:47 -0500
-Date: Wed, 20 Nov 2013 19:15:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-Message-ID: <20131120181536.GW16796@laptop.programming.kicks-ass.net>
-References: <20131120160450.072555619@infradead.org>
- <20131120162736.691879744@infradead.org>
- <528CF94E.8020300@linux.intel.com>
+	Wed, 20 Nov 2013 13:16:25 -0500
+Message-ID: <528CFC77.5050200@codeaurora.org>
+Date: Wed, 20 Nov 2013 10:16:23 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528CF94E.8020300@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Vinayak Kale <vkale@apm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: patches@apm.com, tglx@linutronix.de, will.deacon@arm.com, jcm@redhat.com
+Subject: Re: [PATCH V4 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
+References: <1384946021-22100-1-git-send-email-vkale@apm.com> <1384946021-22100-2-git-send-email-vkale@apm.com>
+In-Reply-To: <1384946021-22100-2-git-send-email-vkale@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 08:02:54PM +0200, Eliezer Tamir wrote:
-> On 20/11/2013 18:04, Peter Zijlstra wrote:
-> > The only valid use of preempt_enable_no_resched() is if the very next
-> > line is schedule() or if we know preemption cannot actually be enabled
-> > by that statement due to known more preempt_count 'refs'.
-> 
-> The reason I used the no resched version is that busy_poll_end_time()
-> is almost always called with rcu read lock held, so it seemed the more
-> correct option.
-> 
-> I have no issue with you changing this.
+On 11/20/13 03:13, Vinayak Kale wrote:
+> This patch adds an accessor function for IRQ_PER_CPU flag.
+> The accessor function is useful to dertermine whether an IRQ is percpu or not.
+>
+> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> ---
 
-There are options (CONFIG_PREEMPT_RCU) that allow scheduling while
-holding rcu_read_lock().
+This looks like a copy of Chris Smith's patch. Shouldn't Chris be the
+author and the commit text be whatever Chris sent?
 
-Also, preempt_enable() only schedules when its possible to schedule, so
-calling it when you know you cannot schedule is no issue.
+>  include/linux/irqdesc.h |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+> index 56fb646..26e2661 100644
+> --- a/include/linux/irqdesc.h
+> +++ b/include/linux/irqdesc.h
+> @@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
+>  	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
+>  }
+>  
+> +static inline int irq_is_percpu(unsigned int irq)
+> +{
+> +	struct irq_desc *desc;
+> +
+> +	desc = irq_to_desc(irq);
+> +	return desc->status_use_accessors & IRQ_PER_CPU;
+> +}
+> +
+>  static inline void
+>  irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
+>  {
 
-> > As to the busy_poll mess; that looks to be completely and utterly
-> > broken, sched_clock() can return utter garbage with interrupts enabled
-> > (rare but still), it can drift unbounded between CPUs, so if you get
-> > preempted/migrated and your new CPU is years behind on the previous
-> > CPU we get to busy spin for a _very_ long time. There is a _REASON_
-> > sched_clock() warns about preemptability - papering over it with a
-> > preempt_disable()/preempt_enable_no_resched() is just terminal brain
-> > damage on so many levels.
-> 
-> IMHO This has been reviewed thoroughly.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-At the very least you completely forgot to preserve any of that. The
-changelog that introduced it is completely void of anything useful and
-the code has a distinct lack of comments.
-
-> When Ben Hutchings voiced concerns I rewrote the code to use time_after,
-> so even if you do get switched over to a CPU where the time is random
-> you will at most poll another full interval.
-> 
-> Linus asked me to remove this since it makes us use two time values
-> instead of one. see https://lkml.org/lkml/2013/7/8/345.
-
-My brain is fried for today, I'll have a look tomorrow.
-
-But note that with patch 7/7 in place modular code an no longer use
-preempt_enable_no_resched(). I'm not sure net/ipv4/tcp.c can be build
-modular -- but istr a time when it was.
