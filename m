@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3KTFk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 00:40:29 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60504 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3KTFk2 (ORCPT
+	id S1752351Ab3KTFlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 00:41:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43808 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab3KTFk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 00:40:28 -0500
-Date: Wed, 20 Nov 2013 00:40:26 -0500 (EST)
-Message-Id: <20131120.004026.2013972041095203460.davem@davemloft.net>
-To: freddy@asix.com.tw
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davemloft@davemloft.net,
-        louis@asix.com.tw, allan@asix.com.tw, grundler@google.com,
-        daniel@asix.com.tw
-Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B
- under ChromeOS
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
-References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 19 Nov 2013 21:40:27 -0800 (PST)
+	Wed, 20 Nov 2013 00:40:56 -0500
+Date: Tue, 19 Nov 2013 21:41:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: ZHAO Gang <gamerh2o@gmail.com>
+Cc: Mark Einon <mark.einon@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] staging: et131x: clean up code
+Message-ID: <20131120054119.GC367@kroah.com>
+References: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+ <CANK3SE36i0+NQdEtuO+FFebDKtrBBM=RjzB4WqSun2o1FK3xpA@mail.gmail.com>
+ <CAAb+SYbnL7bNd6+yibrp+bYRKCM+kC_X+kg+KUsZtGj2S0JaaA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAb+SYbnL7bNd6+yibrp+bYRKCM+kC_X+kg+KUsZtGj2S0JaaA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: freddy@asix.com.tw
-Date: Wed, 20 Nov 2013 10:11:36 +0800
-
-> From: Freddy Xin <freddy@asix.com.tw>
+On Wed, Nov 20, 2013 at 09:53:36AM +0800, ZHAO Gang wrote:
+> > I'm a bit confused - these patches apply to the current head of
+> > staging-next, but not on top of your previous two patches. I assume that
+> > you're aiming to have these changes on top of your last two, so can you
+> > please re-spin them to apply cleanly to the head of (staging-next + your
+> > previous patches)?
 > 
-> This patch adds a workaroud to solve Suspend/Resume issue that AX88772B turns
-> off its Ethernet PHY power in the case that REMOTE_WAKEUP feature doesn't
-> be set when system suspend. In this case, the PHY power will not be turned
-> on again when system resume, so the HW reset must be added in the resume function.
+> Hi, please revert the previous two patches if you can. This four
+> patches include previous changes, just more descriptive.
 > 
-> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
-> Tested-by: Grant Grundler <grundler@chromium.org>
+> I think previous patches' style may be not so good, and it had
+> received no response when I sent this patch set, so I just dropped
+> them and redid the work :-)
 
-Like many similar patches I've seen recently, you cannot do this.
+In the future, you need to tell me to drop the old ones from my queue.
+Normally you can do that by replying to them saying to remove them, or
+put a "v2" for "version 2" on this series.
 
-Now the the configuration that software things the PHY has is no
-longer accurate.
+Anyway, as Mark told you to redo them a bit, care to do a "v3" series
+with his recommended changes (i.e. the TODO file update)?
 
-If you absolutely must reset the chip on resume, you have to reprogram
-the PHY with whatever settings were existed at the time of the suspend.
+thanks,
+
+greg k-h
