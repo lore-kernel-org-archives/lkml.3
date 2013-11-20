@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab3KTO6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 09:58:52 -0500
-Received: from mo1.mail-out.ovh.net ([178.32.228.1]:41793 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3KTO6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 09:58:49 -0500
-Date: Wed, 20 Nov 2013 16:00:36 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/9] ARM: at91/dt: add spi0 support to at91rm9200ek board
-Message-ID: <20131120150036.GF14627@ns203013.ovh.net>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
- <1377688052-10794-1-git-send-email-b.brezillon@overkiz.com>
+	id S1753691Ab3KTO7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 09:59:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41052 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab3KTO7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 09:59:18 -0500
+Message-ID: <528CCE42.2060307@ti.com>
+Date: Wed, 20 Nov 2013 08:59:14 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377688052-10794-1-git-send-email-b.brezillon@overkiz.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 14859626971450485625
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Carlos Hernandez <ceh@ti.com>
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
+ booting with a mismatched bootloader configuration
+References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net>	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>	<528A27F8.3070402@ti.com>	<20131118155753.GU11014@S2101-09.ap.freescale.net>	<528A4340.3020508@ti.com>	<20131119022133.GB18434@S2101-09.ap.freescale.net>	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>	<528B72C1.5060006@ti.com>	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>	<528B7CE5.5040502@ti.com>	<CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>	<528B884C.7070908@ti.com> <CAKohpo=brpnLe68ExPRPg9h5ABMhg+GS85Ebn-+S5-vWaStrPQ@mail.gmail.com> <528BA355.4040008@ti.com> <528C478C.1070901@linaro.org>
+In-Reply-To: <528C478C.1070901@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:07 Wed 28 Aug     , Boris BREZILLON wrote:
-> Add spi0 cs3 switch pinctrl pin definitions: this pin is used to select
-> between mmc0 slot0 and spi dataflash connected to cs3.
+On 11/19/2013 11:24 PM, viresh kumar wrote:
+> On Tuesday 19 November 2013 11:13 PM, Nishanth Menon wrote:
+>> we depend on the first transition to take us to a sane configuration -
+>> but we cannot predict when and if it will happen.
 > 
-> Enable spi0 controller and define the mtd_dataflash connected to cs0.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  arch/arm/boot/dts/at91rm9200ek.dts |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/at91rm9200ek.dts b/arch/arm/boot/dts/at91rm9200ek.dts
-> index 2bad423..b3e7425 100644
-> --- a/arch/arm/boot/dts/at91rm9200ek.dts
-> +++ b/arch/arm/boot/dts/at91rm9200ek.dts
-> @@ -56,6 +56,13 @@
->  							<AT91_PIOB 22 AT91_PERIPH_GPIO (AT91_PINCTRL_OUTPUT | AT91_PINCTRL_OUTPUT_VAL(1))>;
->  					};
->  				};
-> +
-> +				spi0 {
-> +					pinctrl_spi0_cs3_switch: spi0_cs3_switch-0 {
-> +						atmel,pins =
-> +							<AT91_PIOB 22 AT91_PERIPH_GPIO (AT91_PINCTRL_OUTPUT | AT91_PINCTRL_OUTPUT_VAL(0))>;
-> +					};
-same as mmc nack pinctrl is not for gpio default value
+> I really believe that it happens fairly quickly, isn't it? We straight away
+> start the sampling of load and withing few milliseconds we must be fixing the freq..
 
-this is regulator
-> +				};
->  			};
->  
->  			dbgu: serial@fffff200 {
-> @@ -119,6 +126,19 @@
->  					wp-gpios = <&pioA 17 GPIO_ACTIVE_HIGH>;
->  				};
->  			};
-> +
-> +			spi0: spi@fffe0000 {
-> +				pinctrl-0 = <&pinctrl_spi0 &pinctrl_spi0_cs0>;
-> +				cs-gpios = <&pioA 3 GPIO_ACTIVE_HIGH>, <0>,
-> +					   <0>, <0>;
-> +				status = "okay";
-> +
-> +				mtd_dataflash@0 {
-> +					compatible = "atmel,at45", "atmel,dataflash";
-> +					spi-max-frequency = <15000000>;
-> +					reg = <0>;
-> +				};
-> +			};
->  		};
->  
->  		usb0: ohci@00300000 {
-> -- 
-> 1.7.9.5
+that heavily depends on the governor - and we all know the variants of
+ondemand governors that various distributions use. I cannot say
+(having not studied all governors out there) if this will take place
+in a few milliseconds or a few minutes or hours.
+
 > 
+> We aren't going to stay for the unknown, might be unstable, freq for ever..
+> 
+With the current governors that we have in upstream, the only one of
+my concern has been userspace governor, but based on your comment
+earlier in the thread, this is considered an non-issue since userspace
+must trigger transition. However, this does put the SoC at risk
+depending on distro and custom governors used.
+
+If the opinion is that we dont care about these, well.. I can end my
+complaints and depend on the stats to tell me if an unknown frequency
+was ever attempted for debug (even though I might personally not be
+too excited about it).
+
+-- 
+Regards,
+Nishanth Menon
