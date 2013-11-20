@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3KTGUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 01:20:32 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:50287 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab3KTGU3 (ORCPT
+	id S1751459Ab3KTG1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 01:27:49 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51352 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KTG1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 01:20:29 -0500
-X-AuditID: cbfee690-b7f3d6d000001c4a-0a-528c54ac5df7
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Stefan Kristiansson'" <stefan.kristiansson@saunalahti.fi>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1384920820-18740-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-In-reply-to: <1384920820-18740-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-Subject: Re: [PATCH v2] video: add OpenCores VGA/LCD framebuffer driver
-Date: Wed, 20 Nov 2013 15:20:28 +0900
-Message-id: <000701cee5b8$9b61e3b0$d225ab10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7lpwGh9XGrKhRaTyWQetxQMl8vVAAEIQLQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zfd01IT1BBrsnKVhcXniJ1eJE3wdW
-	i8u75rBZrHv4gsni7KaVTBbr599ic2DzeHXhDotH35ZVjB4Hp3SzeRy/sZ3J4/MmuQDWKC6b
-	lNSczLLUIn27BK6MR5svMxfc5K3Y3XCVrYGxn7uLkZNDQsBEYtrKJawQtpjEhXvr2UBsIYFl
-	jBIXHjh1MXKA1ayby9nFyAUUXsQocabrGxuE84tRomnWZxaQBjYBNYkvXw6zg9giArYS65Ys
-	YgYpYhY4yyixeutuFpBJQgLBEh3rQkFqOAVCJDaeO8EMYgsLuEu8O9IO1ssioCqx6tZGRhCb
-	F2jOrAUd7BC2oMSPyffAdjELaEms33mcCcKWl9i85i0zxKHqEo/+6kKcYCRx+cVndogSEYl9
-	L94xgpwjIfCSXeL1yz4WiF0CEt8mH2KB6JWV2HSAGRIOkhIHV9xgmcAoMQvJ5llINs9CsnkW
-	khULGFlWMYqmFiQXFCelF5noFSfmFpfmpesl5+duYoRE7IQdjPcOWB9iTAZaP5FZSjQ5Hxjx
-	eSXxhsZmRhamJqbGRuaWZqQJK4nzqj1KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA6BaU
-	6/REac1flc3nnl/OfP15Lc9TjfoSqYsT7HoEFsxrmHfyiMaaNhHjeULyiZ033NaliUwW3qu6
-	P4ftfur7k80mx95krszKfsOze01c9l4fLsdpbD3bX8wr/vnySPfrOdMWVpt/t1sdu1Pvufhp
-	mfi5W8PDapqUJrZcfP3Ez6mlVl8yb9JjYSWW4oxEQy3mouJEAKrmiADuAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd01IT1BBqt7ZSwuL7zEanGi7wOr
-	xeVdc9gs1j18wWRxdtNKJov182+xObB5vLpwh8Wjb8sqRo+DU7rZPI7f2M7k8XmTXABrVAOj
-	TUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QCUoKZYk5
-	pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjEebLzMX3OSt2N1wla2BsZ+7i5GD
-	Q0LARGLdXM4uRk4gU0ziwr31bF2MXBxCAosYJc50fYNyfjFKNM36zAJSxSagJvHly2F2EFtE
-	wFZi3ZJFzCBFzAJnGSVWb93NAjJVSCBYomNdKEgNp0CIxMZzJ5hBbGEBd4l3R9rBelkEVCVW
-	3drICGLzAs2ZtaCDHcIWlPgx+R7YLmYBLYn1O48zQdjyEpvXvGWGOFpd4tFfXYgTjCQuv/jM
-	DlEiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cT
-	IzghPJPewbiqweIQowAHoxIPb8Gi7iAh1sSy4srcQ4wSHMxKIry33HuChHhTEiurUovy44tK
-	c1KLDzEmAz06kVlKNDkfmKzySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBa
-	BLOFiYNTqoFx0cILfX0f59ptfFIpqSRkpny3QOg7c/ydrxv2L0/Uc9Etep2sZq8UJ7FFiHPl
-	/rVTrrsu+H3C41+WyuWLPElyP/qM9cz2fT62ouSlysV2FfdSyeX3r9Zr7ncv+3mb90XHgvk3
-	/37/Kb2SN362qnlnz7rooo17Pvza7Nn3gHP9pXuZd7xus6k/VGIpzkg01GIuKk4EAOLP0bFM	AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 20 Nov 2013 01:27:46 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <528C562B.3070008@jp.fujitsu.com>
+Date: Wed, 20 Nov 2013 15:26:51 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Madper Xie <cxie@redhat.com>
+CC: Matt Fleming <matt@console-pimps.org>, Richard Weinberger <richard@nod.at>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <matt.fleming@intel.com>, <matthew.garrett@nebula.com>,
+        <jlee@suse.com>
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia parameter
+ to efi_storage_paranoia
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at> <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at> <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at> <527CBDD3.2020609@jp.fujitsu.com> <20131108143421.GB22636@console-pimps.org> <52809AEB.9080100@jp.fujitsu.com> <20131111105424.GD22636@console-pimps.org> <528AD50D.6060503@jp.fujitsu.com> <87siutqdwv.fsf@redhat.com>
+In-Reply-To: <87siutqdwv.fsf@redhat.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 20, 2013 1:14 PM, Stefan Kristiansson wrote:
+(2013/11/19 12:16), Madper Xie wrote:
 > 
-> This adds support for the VGA/LCD core available from OpenCores:
-> http://opencores.org/project,vga_lcd
+> isimatu.yasuaki@jp.fujitsu.com writes:
 > 
-> The driver have been tested together with both OpenRISC and
-> ARM (socfpga) processors.
+>> Hi Matt,
+>>
+>> Sorry for late the reply.
+>>
+>>
+>> (2013/11/11 19:54), Matt Fleming wrote:
+>>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+>>>> Hi Matt,
+>>>>
+>>>> I uses FUJITSU's x86 box.
+>>>> This does not become bricked even if I use all efi variable storage.
+>>>> Thus I want a way to not need to specify efi_no_storage_paranoia
+>>>> parameter.
+>>>
+>>> The efi_no_storage_paranoia parameter was introduced because some
+>>> machines do not initiate garbage collection of the NVRAM until you
+>>> allocate all space - basically it's a switch to turn off the "save 5KB
+>>> of stoarge at all times" workaround that is needed to avoid bricking
+>>> some machines.
+>>>
+>>> The intention of the switch is not to allow you to fill your NVRAM just
+>>> because you can. If that is something you want to do then I think it's
+>>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+>>> I'm assuming here that you are doing something like writing lots and
+>>> lots of pstore entries and just want to write as many as your variable
+>>> storage will allow? Or are you doing something more fundamental like
+>>> creating BootXXXX entries?
+>>>
+>>> What are you doing to run into the 5KB reserve? How much NVRAM does your
+>>> machine come with?
+>>
+>> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+>> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
+>>
+> Howdy Yasuaki,
+>    If the remaining NVRAM is less than 5Kb, your writing will trigger a
+>    NVRAM storage reclamation. However you still failed creating entry. So
+>    I'm just curious what itmes occupy lots of nvram storage space.
+
+Even if we got EFI_OUT_OF_RESOURCES while running Linux, gc does not run.
+Trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS environment with
+UEFI. So on my system, if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte threshold,
+we cannot use nvram storage until EFI_OUT_OF_RESOURCES occurs on pre OS
+environment with UEFI.
+
+Thanks,
+Yasuaki Ishimatsu
+
 > 
-> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-> ---
-> Changes in v2:
-> - Add Microblaze as an example user and fix a typo in Xilinx Zynq
-> ---
->  drivers/video/Kconfig  |  17 ++
->  drivers/video/Makefile |   1 +
->  drivers/video/ocfb.c   | 479 +++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 497 insertions(+)
->  create mode 100644 drivers/video/ocfb.c
+>> Thanks,
+>> Yasuaki Ishimatsu
 > 
-
-Hi Stefan Kristiansson,
-
-I added trivial comments as below.
-
-[.....]
-
-> --- /dev/null
-> +++ b/drivers/video/ocfb.c
-
-[.....]
-
-> +static int ocfb_probe(struct platform_device *pdev)
-> +{
-> +	int ret = 0;
-> +	struct ocfb_dev *fbdev;
-> +	struct ocfb_par *par = &ocfb_par_priv;
-> +	struct resource *res;
-> +	struct resource *mmio;
-> +	int fbsize;
-> +
-> +	fbdev = kzalloc(sizeof(*fbdev), GFP_KERNEL);
-
-Please use devm_kzalloc() instead of kzalloc().
-In this case, kfree() can be removed from ocfb_probe()
-and ocfb_remove(). Thus, it will make the code smaller.
-
-[.....]
-
-> +
-> +#ifdef MODULE
-
-I don't think that '#ifdef MODULE' is necessary.
-Is there any reason?
-
-Best regards,
-Jingoo Han
-
-> +MODULE_AUTHOR("Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>");
-> +MODULE_DESCRIPTION("OpenCores VGA/LCD 2.0 frame buffer driver");
-> +MODULE_LICENSE("GPL v2");
-> +module_param(mode_option, charp, 0);
-> +MODULE_PARM_DESC(mode_option, "Video mode ('<xres>x<yres>[-<bpp>][@refresh]')");
-> +#endif
 > --
-> 1.8.3.2
+> Best,
+> Madper
+> 
+
 
