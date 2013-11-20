@@ -1,104 +1,574 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab3KTBkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 20:40:37 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:35350 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab3KTBkf (ORCPT
+	id S1753670Ab3KTBoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 20:44:44 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58184 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KTBok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 20:40:35 -0500
-Message-ID: <528C12B9.60506@huawei.com>
-Date: Wed, 20 Nov 2013 09:39:05 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 19 Nov 2013 20:44:40 -0500
+Date: Wed, 20 Nov 2013 09:44:25 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
+ virtio devices
+Message-ID: <20131120014425.GA15287@kernel.org>
+References: <20131119080218.GJ11434@dastard>
+ <20131119201531.GA4094@kernel.dk>
+ <20131119212042.GB4094@kernel.dk>
+ <20131119213429.GQ11434@dastard>
+ <528BDB97.8090608@kernel.dk>
+ <528BE967.9070506@kernel.dk>
+ <528BEB6F.8040704@kernel.dk>
+ <20131119232308.GS11434@dastard>
+ <20131119235937.GC4094@kernel.dk>
+ <20131120000858.GD4094@kernel.dk>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        "Matthew Garrett" <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-References: <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com> <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com> <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com> <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com> <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com> <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com> <20131115115235.GA2281@intel.com> <20131119013343.GA17294@google.com> <528AC4F2.40708@huawei.com> <20131119171850.GA4261@google.com> <528C0CF9.3020906@huawei.com> <CAErSpo7nKXR9NBbjs8K__T2TCONW6N76ytevTH-bxcs-NH3+Zg@mail.gmail.com>
-In-Reply-To: <CAErSpo7nKXR9NBbjs8K__T2TCONW6N76ytevTH-bxcs-NH3+Zg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120000858.GD4094@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/20 9:20, Bjorn Helgaas wrote:
-> On Tue, Nov 19, 2013 at 6:14 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->>>>> [bhelgaas: changelog, tag for stable]
->>>>> Reported-by: David Bulkow <David.Bulkow@stratus.com>
->>>>> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>>>> CC: stable@vger.kernel.org  # v2.6.32+
->>>>
->>>> Hi Bjorn,
->>>>    This issue in X86 seems to be introduced after commit 928bea9 "PCI: Delay enabling bridges until they're needed"
->>>> So this patch needs to back port to 2.6.32+ ?
->>>
->>> 928bea9 might have made it more visible, but the underlying problem is that
->>> we enable the device once in the probe path, and disable it twice in the
->>> remove path.  That problem exists in 2.6.32.61:
->>>
->>>   pcie_portdrv_probe                # .probe() method
->>>     pcie_port_device_register
->>>       pci_enable_device             <-- enable
->>>
->>>   pcie_portdrv_remove               # .remove() method
->>>     pcie_port_device_remove
->>>       pci_disable_device            <-- disable #1
->>>     pci_disable_device              <-- disable #2
->>
->> During assign unassigned resources, we also enable the port device,
->>
->> fs_initcall(pcibios_assign_resources);
->>   pci_assign_unassigned_resources;
->>     pci_enable_bridges()
->>       pci_enable_device()
->>
->>
->> So I think before the commit 928bea9 , the pci bridge device enable and disable is symmetrical.
->> After the commit 928bea9, we only enable bridge once, but still remove twice.
+On Tue, Nov 19, 2013 at 05:08:58PM -0700, Jens Axboe wrote:
+> On Tue, Nov 19 2013, Jens Axboe wrote:
+> > On Wed, Nov 20 2013, Dave Chinner wrote:
+> > > On Tue, Nov 19, 2013 at 03:51:27PM -0700, Jens Axboe wrote:
+> > > > On 11/19/2013 03:42 PM, Jens Axboe wrote:
+> > > > > On 11/19/2013 02:43 PM, Jens Axboe wrote:
+> > > > >> On 11/19/2013 02:34 PM, Dave Chinner wrote:
+> > > > >>> On Tue, Nov 19, 2013 at 02:20:42PM -0700, Jens Axboe wrote:
+> > > > >>>> On Tue, Nov 19 2013, Jens Axboe wrote:
+> > > > >>>>> On Tue, Nov 19 2013, Dave Chinner wrote:
+> > > > >>>>>> Hi Jens,
+> > > > >>>>>>
+> > > > >>>>>> I was just running xfstests on a 3.13 kernel that has had the block
+> > > > >>>>>> layer changed merged into it. generic/269 on XFS is hanging on a 2
+> > > > >>>>>> CPU VM using virtio,cache=none for the block devices under test,
+> > > > >>>>>> with many (130+) threads stuck below submit_bio() like this:
+> > > > >>>>>>
+> > > > >>>>>>  Call Trace:
+> > > > >>>>>>   [<ffffffff81adb1c9>] schedule+0x29/0x70
+> > > > >>>>>>   [<ffffffff817833ee>] percpu_ida_alloc+0x16e/0x330
+> > > > >>>>>>   [<ffffffff81759bef>] blk_mq_wait_for_tags+0x1f/0x40
+> > > > >>>>>>   [<ffffffff81758bee>] blk_mq_alloc_request_pinned+0x4e/0xf0
+> > > > >>>>>>   [<ffffffff8175931b>] blk_mq_make_request+0x3bb/0x4a0
+> > > > >>>>>>   [<ffffffff8174d2b2>] generic_make_request+0xc2/0x110
+> > > > >>>>>>   [<ffffffff8174e40c>] submit_bio+0x6c/0x120
+> > > > >>>>>>
+> > > > >>>>>> reads and writes are hung, both data (direct and buffered) and
+> > > > >>>>>> metadata.
+> > > > >>>>>>
+> > > > >>>>>> Some IOs are sitting in io_schedule, waiting for IO completion (both
+> > > > >>>>>> buffered and direct IO, both reads and writes) so it looks like IO
+> > > > >>>>>> completion has stalled in some manner, too.
+> > > > >>>>>
+> > > > >>>>> Can I get a recipe to reproduce this? I haven't had any luck so far.
+> > > > >>>>
+> > > > >>>> OK, I reproduced it. Looks weird, basically all 64 commands are in
+> > > > >>>> flight, but haven't completed. So the next one that comes in just sits
+> > > > >>>> there forever. I can't find any sysfs debug entries for virtio, would be
+> > > > >>>> nice to inspect its queue as well...
+> > > > >>>
+> > > > >>> Does it have anything to do with the fact that the request queue
+> > > > >>> depth is 128 entries and the tag pool only has 66 tags in it? i.e:
+> > > > >>>
+> > > > >>> /sys/block/vdb/queue/nr_requests
+> > > > >>> 128
+> > > > >>>
+> > > > >>> /sys/block/vdb/mq/0/tags
+> > > > >>> nr_tags=66, reserved_tags=2, batch_move=16, max_cache=32
+> > > > >>> nr_free=0, nr_reserved=1
+> > > > >>>   cpu00: nr_free=0
+> > > > >>>   cpu01: nr_free=0
+> > > > >>>
+> > > > >>> Seems to imply that if we queue up more than 66 IOs without
+> > > > >>> dispatching them, we'll run out of tags. And without another IO
+> > > > >>> coming through, the "none" scheduler that virtio uses will never
+> > > > >>> get a trigger to push out the currently queued IO?
+> > > > >>
+> > > > >> No, the nr_requests isn't actually relevant in the blk-mq context, the
+> > > > >> driver sets its own depth. For the above, it's 64 normal commands, and 2
+> > > > >> reserved. The reserved would be for a flush, for instance. If someone
+> > > > >> attempts to queue more than the allocated number of requests, it'll stop
+> > > > >> the blk-mq queue and kick things into gear on the virtio side. Then when
+> > > > >> requests complete, we start the queue again.
+> > > > >>
+> > > > >> If you look at virtio_queue_rq(), that handles a single request. This
+> > > > >> request is already tagged at this point. If we can't add it to the ring,
+> > > > >> we simply stop the queue and kick off whatever pending we might have. We
+> > > > >> return BLK_MQ_RQ_QUEUE_BUSY to blk-mq, which tells that to back off on
+> > > > >> sending us more. When we get the virtblk_done() callback from virtio, we
+> > > > >> end the requests on the blk-mq side and restart the queue.
+> > > > > 
+> > > > > I added some debug code to see if we had anything pending on the blk-mq
+> > > > > side, and it's all empty. It really just looks like we are missing
+> > > > > completions on the virtio side. Very odd.
+> > > > 
+> > > > Patching in the old rq path works however, so...
+> > > 
+> > > ... we've found a race condition ;)
+> > > 
+> > > FWIW, the thing that comes immediately to mind for me is that all
+> > > the wakeups and queue kicking is done outside of any locks, using
+> > > status gained from inside the lock context. Hence the mq stop/start
+> > > and virt queue kicking can all race - perhaps that's resulting in a
+> > > missed wakeup, restart or queue kick?
+> > 
+> > I _think_ it only happens when queue depth > device queue depth, but I
+> > don't immediately see what is wrong. That logic is pretty much tried and
+> > true. As a debug measure, I just ignored the stop bit, but it doesn't
+> > change anything. BTW, that is pretty much the same as before.
+> > 
+> > Anyway, no real news yet, will debug later tonight or tomorrow morning
+> > again.
 > 
-> The port driver should be symmetrical, regardless of what happens
-> outside it.  We have to be able to bind/unbind/bind/unbind
-> indefinitely.
+> BTW, ran a blktrace on the device, also looks like completion events
+> just stop coming in:
 > 
-> Do you think the patch is a problem for current upstream, or are you
-> just saying it doesn't need to be backported as far as 2.6.32?  I
-> frankly don't care that much if those old kernels pick it up or not.
-> All I'm saying is that the problem this fixes is present that far
-> back.
+> [...]
+> 253,16   0   321645     2.044497762  1394  P   N [fio]
+> 253,16   0   321646     2.044498812  1394  U   N [fio] 1
+> 253,16   0   321647     2.044499839  1394  D   R 5768832 + 8 [fio]
+> 253,16   1   307476     2.044504353  1396  S   R 4412024 + 8 [fio]
+> 253,16   1   307477     2.044505381  1396  P   N [fio]
+> 253,16   1   307478     2.044506799  1396  U   N [fio] 1
+> 253,16   1   307479     2.044507784  1396  D   R 4412024 + 8 [fio]
+> 253,16   0   321648     2.044509571  1394  C   R 3828264 + 8 [0]
+> 253,16   0   321649     2.044525980  1394  Q   R 13757184 + 8 [fio]
+> 253,16   0   321650     2.044526706  1394  G   R 13757184 + 8 [fio]
+> 253,16   1   307480     2.044527670  1396  C   R 16292472 + 8 [0]
+> 253,16   0   321651     2.044527830  1394  P   N [fio]
+> 253,16   0   321652     2.044528889  1394  U   N [fio] 1
+> 253,16   0   321653     2.044530006  1394  D   R 13757184 + 8 [fio]
+> 253,16   0   321654     2.044539915  1394  C   R 7557264 + 8 [0]
+> 253,16   0   321655     2.044544008  1394  C   R 4320544 + 8 [0]
+> 253,16   1   307481     2.044574922  1396  C   R 15264800 + 8 [0]
+> 253,16   1   307482     2.044579465  1396  C   R 15595656 + 8 [0]
+> 253,16   0   321656     2.044591661  1394  C   R 8071352 + 8 [0]
+> 253,16   1   307483     2.044595664  1395  P   N [fio]
+> 253,16   1   307484     2.044597335  1395  U   N [fio] 1
+> 253,16   1   307485     2.044605257  1395  C   R 15726296 + 8 [0]
+> 253,16   0   321657     2.044607859  1394  Q   R 17562168 + 8 [fio]
+> 253,16   0   321658     2.044608531  1394  G   R 17562168 + 8 [fio]
+> 253,16   0   321659     2.044609756  1394  P   N [fio]
+> 253,16   0   321660     2.044611086  1394  U   N [fio] 1
+> 253,16   0   321661     2.044612275  1394  D   R 17562168 + 8 [fio]
+> 253,16   1   307486     2.044614316  1395  D   R 4664552 + 8 [fio]
+> 253,16   0   321662     2.044621707  1394  C   R 18403168 + 8 [0]
+> 253,16   0   321663     2.044626241  1394  C   R 6357824 + 8 [0]
+> 253,16   1   307487     2.044637446  1393  Q   R 2061240 + 8 [fio]
+> 253,16   1   307488     2.044638263  1393  G   R 2061240 + 8 [fio]
+> 253,16   1   307489     2.044645914  1393  C   R 6364168 + 8 [0]
+> 253,16   0   321664     2.044650488  1394  Q   R 20380488 + 8 [fio]
+> 253,16   0   321665     2.044651199  1394  G   R 20380488 + 8 [fio]
+> 253,16   1   307490     2.044654060  1393  P   N [fio]
+> 253,16   1   307491     2.044655466  1393  U   N [fio] 1
+> 253,16   1   307492     2.044656734  1393  D   R 2061240 + 8 [fio]
+> 253,16   0   321666     2.044659910  1394  C   R 16579544 + 8 [0]
+> 253,16   0   321667     2.044663679  1394  C   R 14878944 + 8 [0]
+> 253,16   0   321668     2.044671537  1394  P   N [fio]
+> 253,16   0   321669     2.044673120  1394  U   N [fio] 1
+> 253,16   0   321670     2.044674203  1394  D   R 20380488 + 8 [fio]
+> 253,16   1   307493     2.044678596  1395  Q   R 15126872 + 8 [fio]
+> 253,16   1   307494     2.044679280  1395  G   R 15126872 + 8 [fio]
+> 253,16   1   307495     2.044682674  1395  P   N [fio]
+> 253,16   1   307496     2.044689057  1395  C   R 6251136 + 8 [0]
+> 253,16   1   307497     2.044697970  1395  U   N [fio] 1
+> 253,16   1   307498     2.044699073  1395  D   R 15126872 + 8 [fio]
+> 253,16   0   321671     2.044702366  1394  C   R 6028184 + 8 [0]
+> 253,16   0   321672     2.044710344  1394  Q   R 8698464 + 8 [fio]
+> 253,16   0   321673     2.044711072  1394  G   R 8698464 + 8 [fio]
+> 253,16   0   321674     2.044712179  1394  P   N [fio]
+> 253,16   0   321675     2.044713626  1394  U   N [fio] 1
+> 253,16   1   307499     2.044713961  1393  C   R 20851408 + 8 [0]
+> 253,16   0   321676     2.044714693  1394  D   R 8698464 + 8 [fio]
+> 253,16   0   321677     2.044724918  1394  C   R 16890840 + 8 [0]
+> 253,16   1   307500     2.044733628  1393  Q   R 20289656 + 8 [fio]
+> 253,16   1   307501     2.044739576  1393  C   R 6570816 + 8 [0]
+> 253,16   1   307502     2.044747620  1393  G   R 20289656 + 8 [fio]
+> 253,16   1   307503     2.044748710  1393  P   N [fio]
+> 253,16   1   307504     2.044750128  1393  U   N [fio] 1
+> 253,16   0   321678     2.044750392  1394  C   R 6513968 + 8 [0]
+> 253,16   1   307505     2.044751307  1393  D   R 20289656 + 8 [fio]
+> 253,16   0   321679     2.044758314  1394  Q   R 5781280 + 8 [fio]
+> 253,16   0   321680     2.044758861  1394  G   R 5781280 + 8 [fio]
+> 253,16   0   321681     2.044759973  1394  P   N [fio]
+> 253,16   0   321682     2.044761183  1394  U   N [fio] 1
+> 253,16   1   307506     2.044761883  1396  Q   R 7477904 + 8 [fio]
+> 253,16   0   321683     2.044762348  1394  D   R 5781280 + 8 [fio]
+> 253,16   1   307507     2.044762462  1396  G   R 7477904 + 8 [fio]
+> 253,16   1   307508     2.044763486  1396  P   N [fio]
+> 253,16   1   307509     2.044764604  1396  U   N [fio] 1
+> 253,16   1   307510     2.044765426  1396  D   R 7477904 + 8 [fio]
+> 253,16   0   321684     2.044776281  1394  Q   R 17552200 + 8 [fio]
+> 253,16   0   321685     2.044776867  1394  G   R 17552200 + 8 [fio]
+> 253,16   0   321686     2.044777975  1394  P   N [fio]
+> 253,16   1   307511     2.044778944  1396  C   R 16910272 + 8 [0]
+> 253,16   0   321687     2.044779060  1394  U   N [fio] 1
+> 253,16   0   321688     2.044780234  1394  D   R 17552200 + 8 [fio]
+> 253,16   0   321689     2.044792840  1394  C   R 19736656 + 8 [0]
+> 253,16   1   307512     2.044803867  1395  C   R 18088120 + 8 [0]
+> 253,16   0   321690     2.044817910  1394  C   R 19495248 + 8 [0]
+> 253,16   1   307513     2.044831267  1396  C   R 18613664 + 8 [0]
+> 253,16   0   321691     2.044835246  1394  Q   R 2662776 + 8 [fio]
+> 253,16   0   321692     2.044835878  1394  G   R 2662776 + 8 [fio]
+> 253,16   0   321693     2.044836968  1394  P   N [fio]
+> 253,16   0   321694     2.044838353  1394  U   N [fio] 1
+> 253,16   0   321695     2.044839447  1394  D   R 2662776 + 8 [fio]
+> 253,16   1   307514     2.044851246  1395  Q   R 8578768 + 8 [fio]
+> 253,16   1   307515     2.044851868  1395  G   R 8578768 + 8 [fio]
+> 253,16   1   307516     2.044853020  1395  P   N [fio]
+> 253,16   0   321696     2.044853136  1394  Q   R 12783160 + 8 [fio]
+> 253,16   0   321697     2.044853700  1394  G   R 12783160 + 8 [fio]
+> 253,16   1   307517     2.044854185  1395  U   N [fio] 1
+> 253,16   0   321698     2.044854759  1394  P   N [fio]
+> 253,16   1   307518     2.044855289  1395  D   R 8578768 + 8 [fio]
+> 253,16   0   321699     2.044855745  1394  U   N [fio] 1
+> 253,16   0   321700     2.044856691  1394  D   R 12783160 + 8 [fio]
+> 253,16   1   307519     2.044869744  1395  Q   R 1741184 + 8 [fio]
+> 253,16   0   321701     2.044869754  1394  Q   R 11982944 + 8 [fio]
+> 253,16   0   321702     2.044870388  1394  G   R 11982944 + 8 [fio]
+> 253,16   1   307520     2.044870481  1395  G   R 1741184 + 8 [fio]
+> 253,16   0   321703     2.044871564  1394  P   N [fio]
+> 253,16   1   307521     2.044871650  1395  P   N [fio]
+> 253,16   0   321704     2.044872615  1394  U   N [fio] 1
+> 253,16   1   307522     2.044872687  1395  U   N [fio] 1
+> 253,16   0   321705     2.044873938  1394  D   R 11982944 + 8 [fio]
+> 253,16   0   321706     2.044875583  1394  D   R 1741184 + 8 [fio]
+> 253,16   1   307523     2.044884491  1395  Q   R 11475600 + 8 [fio]
+> 253,16   1   307524     2.044885101  1395  G   R 11475600 + 8 [fio]
+> 253,16   1   307525     2.044886205  1395  P   N [fio]
+> 253,16   0   321707     2.044887140  1394  Q   R 6125272 + 8 [fio]
+> 253,16   1   307526     2.044887313  1395  U   N [fio] 1
+> 253,16   0   321708     2.044887737  1394  G   R 6125272 + 8 [fio]
+> 253,16   1   307527     2.044888330  1395  D   R 11475600 + 8 [fio]
+> 253,16   0   321709     2.044888832  1394  P   N [fio]
+> 253,16   0   321710     2.044889710  1394  U   N [fio] 1
+> 253,16   0   321711     2.044890577  1394  D   R 6125272 + 8 [fio]
+> 253,16   1   307528     2.044900606  1395  Q   R 634648 + 8 [fio]
+> 253,16   1   307529     2.044901228  1395  G   R 634648 + 8 [fio]
+> 253,16   0   321712     2.044901785  1394  Q   R 9187912 + 8 [fio]
+> 253,16   1   307530     2.044902443  1395  P   N [fio]
+> 253,16   0   321713     2.044902452  1394  G   R 9187912 + 8 [fio]
+> 253,16   0   321714     2.044903495  1394  P   N [fio]
+> 253,16   1   307531     2.044903547  1395  U   N [fio] 1
+> 253,16   0   321715     2.044904448  1394  U   N [fio] 1
+> 253,16   1   307532     2.044904580  1395  D   R 634648 + 8 [fio]
+> 253,16   0   321716     2.044905342  1394  D   R 9187912 + 8 [fio]
+> 253,16   1   307533     2.044917154  1395  Q   R 10607112 + 8 [fio]
+> 253,16   1   307534     2.044917842  1395  G   R 10607112 + 8 [fio]
+> 253,16   1   307535     2.044918920  1395  P   N [fio]
+> 253,16   0   321717     2.044918974  1394  C   R 20819560 + 8 [0]
+> 253,16   1   307536     2.044920027  1395  U   N [fio] 1
+> 253,16   1   307537     2.044920973  1395  D   R 10607112 + 8 [fio]
+> 253,16   1   307538     2.044932045  1395  C   R 18488736 + 8 [0]
+> 253,16   0   321718     2.044938208  1394  Q   R 3527824 + 8 [fio]
+> 253,16   0   321719     2.044938891  1394  G   R 3527824 + 8 [fio]
+> 253,16   0   321720     2.044946221  1394  C   R 1054040 + 8 [0]
+> 253,16   0   321721     2.044950233  1394  C   R 9042344 + 8 [0]
+> 253,16   0   321722     2.044957832  1394  P   N [fio]
+> 253,16   0   321723     2.044959392  1394  U   N [fio] 1
+> 253,16   1   307539     2.044959886  1393  Q   R 18613872 + 8 [fio]
+> 253,16   0   321724     2.044960611  1394  D   R 3527824 + 8 [fio]
+> 253,16   1   307540     2.044960694  1393  G   R 18613872 + 8 [fio]
+> 253,16   1   307541     2.044961852  1393  P   N [fio]
+> 253,16   1   307542     2.044970724  1393  C   R 19504408 + 8 [0]
+> 253,16   1   307543     2.044974744  1393  C   R 509080 + 8 [0]
+> 253,16   0   321725     2.044980982  1394  Q   R 599736 + 8 [fio]
+> 253,16   0   321726     2.044981594  1394  G   R 599736 + 8 [fio]
+> 253,16   1   307544     2.044982536  1393  U   N [fio] 1
+> 253,16   0   321727     2.044982690  1394  P   N [fio]
+> 253,16   0   321728     2.044983622  1394  U   N [fio] 1
+> 253,16   1   307545     2.044983687  1393  D   R 18613872 + 8 [fio]
+> 253,16   0   321729     2.044986857  1394  D   R 599736 + 8 [fio]
+> 253,16   1   307546     2.044992685  1396  Q   R 15873256 + 8 [fio]
+> 253,16   0   321730     2.044993135  1394  C   R 9258392 + 8 [0]
+> 253,16   1   307547     2.044993319  1396  G   R 15873256 + 8 [fio]
+> 253,16   1   307548     2.044994455  1396  P   N [fio]
+> 253,16   1   307549     2.044995683  1396  U   N [fio] 1
+> 253,16   1   307550     2.044996660  1396  D   R 15873256 + 8 [fio]
+> 253,16   0   321731     2.044996827  1394  C   R 12335824 + 8 [0]
+> 253,16   1   307551     2.045015913  1396  C   R 10141512 + 8 [0]
+> 253,16   1   307552     2.045019947  1396  C   R 2943808 + 8 [0]
+> 253,16   0   321732     2.045023048  1394  Q   R 15878680 + 8 [fio]
+> 253,16   0   321733     2.045023693  1394  G   R 15878680 + 8 [fio]
+> 253,16   0   321734     2.045024976  1394  P   N [fio]
+> 253,16   0   321735     2.045026157  1394  U   N [fio] 1
+> 253,16   0   321736     2.045027185  1394  D   R 15878680 + 8 [fio]
+> 253,16   0   321737     2.045039003  1394  C   R 12536088 + 8 [0]
+> 253,16   0   321738     2.045043351  1394  C   R 12728832 + 8 [0]
+> 253,16   1   307553     2.045047258  1393  Q   R 16429168 + 8 [fio]
+> 253,16   1   307554     2.045047952  1393  G   R 16429168 + 8 [fio]
+> 253,16   1   307555     2.045049191  1393  P   N [fio]
+> 253,16   1   307556     2.045050400  1393  U   N [fio] 1
+> 253,16   1   307557     2.045051596  1393  D   R 16429168 + 8 [fio]
+> 253,16   1   307558     2.045059051  1393  C   R 19676536 + 8 [0]
+> 253,16   1   307559     2.045063260  1393  C   R 3602624 + 8 [0]
+> 253,16   0   321739     2.045067833  1394  Q   R 8871496 + 8 [fio]
+> 253,16   0   321740     2.045068568  1394  G   R 8871496 + 8 [fio]
+> 253,16   0   321741     2.045069712  1394  P   N [fio]
+> 253,16   0   321742     2.045070860  1394  U   N [fio] 1
+> 253,16   0   321743     2.045071828  1394  D   R 8871496 + 8 [fio]
+> 253,16   1   307560     2.045081644  1396  Q   R 18234504 + 8 [fio]
+> 253,16   1   307561     2.045082288  1396  G   R 18234504 + 8 [fio]
+> 253,16   1   307562     2.045083331  1396  P   N [fio]
+> 253,16   0   321744     2.045083945  1394  C   R 12931496 + 8 [0]
+> 253,16   1   307563     2.045084583  1396  U   N [fio] 1
+> 253,16   1   307564     2.045085578  1396  D   R 18234504 + 8 [fio]
+> 253,16   0   321745     2.045087682  1394  C   R 8223176 + 8 [0]
+> 253,16   1   307565     2.045107378  1396  C   R 3414184 + 8 [0]
+> 253,16   0   321746     2.045109170  1394  Q   R 7639272 + 8 [fio]
+> 253,16   0   321747     2.045109940  1394  G   R 7639272 + 8 [fio]
+> 253,16   0   321748     2.045111122  1394  P   N [fio]
+> 253,16   1   307566     2.045111541  1396  C   R 1703056 + 8 [0]
+> 253,16   0   321749     2.045112293  1394  U   N [fio] 1
+> 253,16   0   321750     2.045113409  1394  D   R 7639272 + 8 [fio]
+> 253,16   0   321751     2.045129019  1394  C   R 4844912 + 8 [0]
+> 253,16   0   321752     2.045133082  1394  C   R 14433456 + 8 [0]
+> 253,16   1   307567     2.045138375  1393  Q   R 1554408 + 8 [fio]
+> 253,16   1   307568     2.045139072  1393  G   R 1554408 + 8 [fio]
+> 253,16   0   321753     2.045159160  1394  Q   R 3870352 + 8 [fio]
+> 253,16   0   321754     2.045159766  1394  G   R 3870352 + 8 [fio]
+> 253,16   0   321755     2.045160881  1394  P   N [fio]
+> 253,16   0   321756     2.045162172  1394  U   N [fio] 1
+> 253,16   0   321757     2.045163282  1394  D   R 3870352 + 8 [fio]
+> 253,16   1   307569     2.045169743  1393  C   R 2935704 + 8 [0]
+> 253,16   1   307570     2.045178563  1393  P   N [fio]
+> 253,16   1   307571     2.045180295  1393  U   N [fio] 1
+> 253,16   0   321758     2.045180768  1394  C   R 15646472 + 8 [0]
+> 253,16   1   307572     2.045181451  1393  D   R 1554408 + 8 [fio]
+> 253,16   0   321759     2.045184556  1394  C   R 14682176 + 8 [0]
+> 253,16   0   321760     2.045187371  1394  C   R 13046784 + 8 [0]
+> 253,16   0   321761     2.045196543  1394  Q   R 11609952 + 8 [fio]
+> 253,16   0   321762     2.045197289  1394  G   R 11609952 + 8 [fio]
+> 253,16   1   307573     2.045198166  1393  C   R 14489456 + 8 [0]
+> 253,16   0   321763     2.045198329  1394  P   N [fio]
+> 253,16   0   321764     2.045199520  1394  U   N [fio] 1
+> 253,16   0   321765     2.045200544  1394  D   R 11609952 + 8 [fio]
+> 253,16   0   321766     2.045208562  1394  C   R 6083512 + 8 [0]
+> 253,16   1   307574     2.045219756  1395  C   R 3340928 + 8 [0]
+> 253,16   0   321767     2.045232590  1394  C   R 6967144 + 8 [0]
+> 253,16   1   307575     2.045243177  1396  C   R 15966080 + 8 [0]
+> 253,16   1   307576     2.045250844  1396  Q   R 9139408 + 8 [fio]
+> 253,16   1   307577     2.045251499  1396  G   R 9139408 + 8 [fio]
+> 253,16   1   307578     2.045252527  1396  P   N [fio]
+> 253,16   1   307579     2.045254025  1396  U   N [fio] 1
+> 253,16   0   321768     2.045254048  1394  C   R 5681104 + 8 [0]
+> 253,16   1   307580     2.045255169  1396  D   R 9139408 + 8 [fio]
+> 253,16   0   321769     2.045262286  1394  Q   R 9056968 + 8 [fio]
+> 253,16   0   321770     2.045262923  1394  G   R 9056968 + 8 [fio]
+> 253,16   0   321771     2.045263851  1394  P   N [fio]
+> 253,16   0   321772     2.045265016  1394  U   N [fio] 1
+> 253,16   0   321773     2.045266087  1394  D   R 9056968 + 8 [fio]
+> 253,16   1   307581     2.045267796    40  C   R 14598208 + 8 [0]
+> 253,16   0   321774     2.045284312  1394  Q   R 3200080 + 8 [fio]
+> 253,16   0   321775     2.045284867  1394  G   R 3200080 + 8 [fio]
+> 253,16   0   321776     2.045285862  1394  P   N [fio]
+> 253,16   1   307582     2.045287878  1396  Q   R 18113240 + 8 [fio]
+> 253,16   1   307583     2.045288509  1396  G   R 18113240 + 8 [fio]
+> 253,16   1   307584     2.045289508  1396  P   N [fio]
+> 253,16   1   307585     2.045290565  1396  U   N [fio] 1
+> 253,16   1   307586     2.045291629  1396  D   R 18113240 + 8 [fio]
+> 253,16   0   321777     2.045294432  1394  C   R 4126280 + 8 [0]
+> 253,16   0   321778     2.045302896  1394  U   N [fio] 1
+> 253,16   0   321779     2.045303909  1394  D   R 3200080 + 8 [fio]
+> 253,16   1   307587     2.045305145  1396  Q   R 12895512 + 8 [fio]
+> 253,16   1   307588     2.045305766  1396  G   R 12895512 + 8 [fio]
+> 253,16   1   307589     2.045306887  1396  P   N [fio]
+> 253,16   1   307590     2.045308050  1396  U   N [fio] 1
+> 253,16   1   307591     2.045309139  1396  D   R 12895512 + 8 [fio]
+> 253,16   1   307592     2.045322292  1396  Q   R 14034472 + 8 [fio]
+> 253,16   0   321780     2.045322301  1394  Q   R 796184 + 8 [fio]
+> 253,16   0   321781     2.045322940  1394  G   R 796184 + 8 [fio]
+> 253,16   1   307593     2.045322958  1396  G   R 14034472 + 8 [fio]
+> 253,16   0   321782     2.045324193  1394  P   N [fio]
+> 253,16   1   307594     2.045324199  1396  P   N [fio]
+> 253,16   1   307595     2.045325295  1396  U   N [fio] 1
+> 253,16   0   321783     2.045325314  1394  U   N [fio] 1
+> 253,16   0   321784     2.045326501  1394  D   R 14034472 + 8 [fio]
+> 253,16   1   307596     2.045326516  1396  D   R 796184 + 8 [fio]
+> 253,16   1   307597     2.045339252  1396  Q   R 8827184 + 8 [fio]
+> 253,16   0   321785     2.045339262  1394  Q   R 16108264 + 8 [fio]
+> 253,16   0   321786     2.045339900  1394  G   R 16108264 + 8 [fio]
+> 253,16   1   307598     2.045339902  1396  G   R 8827184 + 8 [fio]
+> 253,16   1   307599     2.045341051  1396  P   N [fio]
+> 253,16   0   321787     2.045341126  1394  P   N [fio]
+> 253,16   1   307600     2.045342012  1396  U   N [fio] 1
+> 253,16   0   321788     2.045342086  1394  U   N [fio] 1
+> 253,16   0   321789     2.045343282  1394  D   R 16108264 + 8 [fio]
+> 253,16   0   321790     2.045344979  1394  D   R 8827184 + 8 [fio]
+> 253,16   1   307601     2.045353588  1396  Q   R 11285896 + 8 [fio]
+> 253,16   1   307602     2.045354336  1396  G   R 11285896 + 8 [fio]
+> 253,16   1   307603     2.045355348  1396  P   N [fio]
+> 253,16   0   321791     2.045356120  1394  Q   R 8593080 + 8 [fio]
+> 253,16   1   307604     2.045356402  1396  U   N [fio] 1
+> 253,16   0   321792     2.045356714  1394  G   R 8593080 + 8 [fio]
+> 253,16   1   307605     2.045357472  1396  D   R 11285896 + 8 [fio]
+> 253,16   0   321793     2.045357789  1394  P   N [fio]
+> 253,16   0   321794     2.045358691  1394  U   N [fio] 1
+> 253,16   0   321795     2.045359550  1394  D   R 8593080 + 8 [fio]
+> 253,16   1   307606     2.045369558  1396  Q   R 17509128 + 8 [fio]
+> 253,16   1   307607     2.045370220  1396  G   R 17509128 + 8 [fio]
+> 253,16   0   321796     2.045370807  1394  Q   R 7393376 + 8 [fio]
+> 253,16   1   307608     2.045371249  1396  P   N [fio]
+> 253,16   0   321797     2.045371405  1394  G   R 7393376 + 8 [fio]
+> 253,16   1   307609     2.045372368  1396  U   N [fio] 1
+> 253,16   0   321798     2.045372460  1394  P   N [fio]
+> 253,16   1   307610     2.045373379  1396  D   R 17509128 + 8 [fio]
+> 253,16   0   321799     2.045373443  1394  U   N [fio] 1
+> 253,16   0   321800     2.045374334  1394  D   R 7393376 + 8 [fio]
+> 253,16   1   307611     2.045385849  1396  Q   R 15227224 + 8 [fio]
+> 253,16   0   321801     2.045385859  1394  Q   R 4025880 + 8 [fio]
+> 253,16   0   321802     2.045386465  1394  G   R 4025880 + 8 [fio]
+> 253,16   1   307612     2.045386490  1396  G   R 15227224 + 8 [fio]
+> 253,16   0   321803     2.045387752  1394  P   N [fio]
+> 253,16   1   307613     2.045387756  1396  P   N [fio]
+> 253,16   1   307614     2.045388787  1396  U   N [fio] 1
+> 253,16   0   321804     2.045388802  1394  U   N [fio] 1
+> 253,16   0   321805     2.045390041  1394  D   R 4025880 + 8 [fio]
+> 253,16   0   321806     2.045391662  1394  D   R 15227224 + 8 [fio]
+> 253,16   1   307615     2.045400454  1396  Q   R 1524424 + 8 [fio]
+> 253,16   1   307616     2.045401113  1396  G   R 1524424 + 8 [fio]
+> 253,16   1   307617     2.045402135  1396  P   N [fio]
+> 253,16   0   321807     2.045402877  1394  Q   R 20400040 + 8 [fio]
+> 253,16   1   307618     2.045403201  1396  U   N [fio] 1
+> 253,16   0   321808     2.045403474  1394  G   R 20400040 + 8 [fio]
+> 253,16   1   307619     2.045404307  1396  D   R 1524424 + 8 [fio]
+> 253,16   0   321809     2.045404603  1394  P   N [fio]
+> 253,16   0   321810     2.045405503  1394  U   N [fio] 1
+> 253,16   0   321811     2.045406368  1394  D   R 20400040 + 8 [fio]
+> 253,16   1   307620     2.045416364  1396  Q   R 12912080 + 8 [fio]
+> 253,16   1   307621     2.045417025  1396  G   R 12912080 + 8 [fio]
+> 253,16   0   321812     2.045417239  1394  Q   R 14427880 + 8 [fio]
+> 253,16   0   321813     2.045417755  1394  G   R 14427880 + 8 [fio]
+> 253,16   1   307622     2.045418346  1396  P   N [fio]
+> 253,16   0   321814     2.045418901  1394  P   N [fio]
+> 253,16   1   307623     2.045419483  1396  U   N [fio] 1
+> 253,16   0   321815     2.045419817  1394  U   N [fio] 1
+> 253,16   1   307624     2.045420512  1396  D   R 12912080 + 8 [fio]
+> 253,16   0   321816     2.045420817  1394  D   R 14427880 + 8 [fio]
+> 253,16   0   321817     2.045433275  1394  Q   R 5098080 + 8 [fio]
+> 253,16   1   307625     2.045433281  1396  Q   R 9204032 + 8 [fio]
+> 253,16   1   307626     2.045433910  1396  G   R 9204032 + 8 [fio]
+> 253,16   0   321818     2.045433939  1394  G   R 5098080 + 8 [fio]
+> 253,16   1   307627     2.045435074  1396  P   N [fio]
+> 253,16   0   321819     2.045435151  1394  P   N [fio]
+> 253,16   1   307628     2.045436065  1396  U   N [fio] 1
+> 253,16   0   321820     2.045436134  1394  U   N [fio] 1
+> 253,16   1   307629     2.045437153  1396  D   R 5098080 + 8 [fio]
+> 253,16   0   321821     2.045437189  1394  D   R 9204032 + 8 [fio]
+> 253,16   0   321822     2.045449724  1394  Q   R 8743352 + 8 [fio]
+> 253,16   1   307630     2.045449731  1396  Q   R 3957640 + 8 [fio]
+> 253,16   1   307631     2.045450373  1396  G   R 3957640 + 8 [fio]
+> 253,16   0   321823     2.045450385  1394  G   R 8743352 + 8 [fio]
+> 253,16   1   307632     2.045451499  1396  P   N [fio]
+> 253,16   0   321824     2.045451560  1394  P   N [fio]
+> 253,16   1   307633     2.045452564  1396  U   N [fio] 1
+> 253,16   0   321825     2.045452595  1394  U   N [fio] 1
+> 253,16   1   307634     2.045453896  1396  D   R 8743352 + 8 [fio]
+> 253,16   1   307635     2.045455483  1396  D   R 3957640 + 8 [fio]
+> 253,16   0   321826     2.045464230  1394  Q   R 18141352 + 8 [fio]
+> 253,16   0   321827     2.045464809  1394  G   R 18141352 + 8 [fio]
+> 253,16   0   321828     2.045465808  1394  P   N [fio]
+> 253,16   1   307636     2.045466884  1396  Q   R 14356248 + 8 [fio]
+> 253,16   0   321829     2.045466925  1394  U   N [fio] 1
+> 253,16   1   307637     2.045467445  1396  G   R 14356248 + 8 [fio]
+> 253,16   0   321830     2.045467911  1394  D   R 18141352 + 8 [fio]
+> 253,16   1   307638     2.045469917  1396  P   N [fio]
+> 253,16   1   307639     2.045470841  1396  U   N [fio] 1
+> 253,16   1   307640     2.045471757  1396  D   R 14356248 + 8 [fio]
+> 253,16   0   321831     2.045480371  1394  Q   R 3678872 + 8 [fio]
+> 253,16   0   321832     2.045480944  1394  G   R 3678872 + 8 [fio]
+> 253,16   0   321833     2.045482626  1394  S   R 3678872 + 8 [fio]
+> 253,16   1   307641     2.045483448  1396  Q   R 14080120 + 8 [fio]
+> 253,16   1   307642     2.045483952  1396  G   R 14080120 + 8 [fio]
+> 253,16   1   307643     2.045484932  1396  P   N [fio]
+> 253,16   1   307644     2.045485963  1396  U   N [fio] 1
+> 253,16   1   307645     2.045486944  1396  D   R 14080120 + 8 [fio]
+> 253,16   1   307646     2.045500301  1396  Q   R 7780032 + 8 [fio]
+> 253,16   1   307647     2.045500913  1396  G   R 7780032 + 8 [fio]
+> 253,16   1   307648     2.045502001  1396  P   N [fio]
+> 253,16   1   307649     2.045503033  1396  U   N [fio] 1
+> 253,16   1   307650     2.045504023  1396  D   R 7780032 + 8 [fio]
+> 253,16   1   307651     2.045514780  1396  Q   R 19258792 + 8 [fio]
+> 253,16   1   307652     2.045515251  1396  G   R 19258792 + 8 [fio]
+> 253,16   1   307653     2.045516023  1396  P   N [fio]
+> 253,16   1   307654     2.045516601  1396  U   N [fio] 1
+> 253,16   1   307655     2.045517220  1396  D   R 19258792 + 8 [fio]
+> 253,16   1   307656     2.045524439  1396  Q   R 17379048 + 8 [fio]
+> 253,16   1   307657     2.045524744  1396  G   R 17379048 + 8 [fio]
+> 253,16   1   307658     2.045525291  1396  P   N [fio]
+> 253,16   1   307659     2.045525815  1396  U   N [fio] 1
+> 253,16   1   307660     2.045526389  1396  D   R 17379048 + 8 [fio]
+> 253,16   1   307661     2.045533654  1396  Q   R 6701640 + 8 [fio]
+> 253,16   1   307662     2.045533958  1396  G   R 6701640 + 8 [fio]
+> 253,16   1   307663     2.045535034  1396  S   R 6701640 + 8 [fio]
+> 253,16   1   307664     2.045545018  1395  Q   R 3973592 + 8 [fio]
+> 253,16   1   307665     2.045545304  1395  G   R 3973592 + 8 [fio]
+> 253,16   1   307666     2.045546132  1395  S   R 3973592 + 8 [fio]
+> 253,16   1   307667     2.045574463  1393  Q   R 2334424 + 8 [fio]
+> 253,16   1   307668     2.045574949  1393  G   R 2334424 + 8 [fio]
+> 253,16   1   307669     2.045575980  1393  S   R 2334424 + 8 [fio]
+> CPU0 (vdb):
+>  Reads Queued:      52,778,  211,112KiB	 Writes Queued:           0,        0KiB
+>  Read Dispatches:   53,948,  215,792KiB	 Write Dispatches:        0,        0KiB
+>  Reads Requeued:         0		 Writes Requeued:         0
+>  Reads Completed:   51,912,  207,648KiB	 Writes Completed:        0,        0KiB
+>  Read Merges:            0,        0KiB	 Write Merges:            0,        0KiB
+>  Read depth:            64        	 Write depth:             0
+>  IO unplugs:        52,773        	 Timer unplugs:           0
+> CPU1 (vdb):
+>  Reads Queued:      50,593,  202,372KiB	 Writes Queued:           0,        0KiB
+>  Read Dispatches:   49,419,  197,676KiB	 Write Dispatches:        0,        0KiB
+>  Reads Requeued:         0		 Writes Requeued:         0
+>  Reads Completed:   51,391,  205,564KiB	 Writes Completed:        0,        0KiB
+>  Read Merges:            0,        0KiB	 Write Merges:            0,        0KiB
+>  Read depth:            64        	 Write depth:             0
+>  IO unplugs:        50,594        	 Timer unplugs:           0
 > 
-> I'm not really interested in doing a lot more digging about ancient
-> kernels, unless you think it's going to break something if applied to
-> them.
-
-As you said, this is not a big problem, it's ok for current upstream,
-and for 3.4 3.5 3.10 stable tree, it seems just a enable and disable symmetry problem.
-I don't find anything unsafe about this even though when we unbind pcie port driver,
-the pcie port maybe still enable. I have no objection to backport it to ancient kernels. :)
-
-Thanks!
-Yijing.
-
-
+> Total (vdb):
+>  Reads Queued:     103,371,  413,484KiB	 Writes Queued:           0,        0KiB
+>  Read Dispatches:  103,367,  413,468KiB	 Write Dispatches:        0,        0KiB
+>  Reads Requeued:         0		 Writes Requeued:         0
+>  Reads Completed:  103,303,  413,212KiB	 Writes Completed:        0,        0KiB
+>  Read Merges:            0,        0KiB	 Write Merges:            0,        0KiB
+>  IO unplugs:       103,367        	 Timer unplugs:           0
 > 
-> Bjorn
+> Throughput (R/W): 202,059KiB/s / 0KiB/s
+> Events (vdb): 629,502 entries
+> Skips: 0 forward (0 -   0.0%)
 > 
-> 
+> The last part of the trace is all 4 processes I run failing to allocate
+> a request and going to sleep. The last completion event is some 150
+> lines up, after various successful dispatch etc events.
+
+Looks like a race condition, below works for me, please try.
 
 
--- 
-Thanks!
-Yijing
+Subject: virtio_blk: fix race condition
 
+virtqueue_kick() isn't multi-thread safe.
+
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 588479d..f353959 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -204,10 +204,11 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 		virtqueue_kick(vblk->vq);
+ 		return BLK_MQ_RQ_QUEUE_BUSY;
+ 	}
+-	spin_unlock_irqrestore(&vblk->vq_lock, flags);
+ 
+ 	if (last)
+ 		virtqueue_kick(vblk->vq);
++	spin_unlock_irqrestore(&vblk->vq_lock, flags);
++
+ 	return BLK_MQ_RQ_QUEUE_OK;
+ }
+ 
