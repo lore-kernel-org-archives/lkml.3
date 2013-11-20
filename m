@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab3KTVKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:10:54 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:40070 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab3KTVKw (ORCPT
+	id S1755345Ab3KTVQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:16:21 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:65463 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab3KTVQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:10:52 -0500
+	Wed, 20 Nov 2013 16:16:17 -0500
+Message-ID: <528D26A4.4010600@linaro.org>
+Date: Wed, 20 Nov 2013 22:16:20 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <528D217B.5020500@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20131120.153642.2045230991917379052.davem@davemloft.net> <528D217B.5020500@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 20 Nov 2013 13:10:12 -0800
-Message-ID: <CAGVrzcZ5wV2eHPNfr-xToOEc6jbBJXiNQ+OtZv2j+yGbS9YW-w@mail.gmail.com>
-Subject: Re: [PATCH RFC v1 0/7] net: phy: Ethernet PHY powerdown optimization
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Pavel Machek <pavel@ucw.cz>, Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, will.deacon@arm.com, catalin.marinas@arm.com,
+        olof@lixom.net, sudeep.karkadanagesha@arm.com
+Subject: Re: [PATCH] drivers: clocksource: Hide arm_arch_timer eventstream
+ Kconfig on non-ARM
+References: <20131120192100.GA11723@amd.pavel.ucw.cz> <1384977723-32344-1-git-send-email-sboyd@codeaurora.org> <20131120210931.GA1782@amd.pavel.ucw.cz>
+In-Reply-To: <20131120210931.GA1782@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/20 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> On 11/20/2013 09:36 PM, David Miller wrote:
+On 11/20/2013 10:09 PM, Pavel Machek wrote:
+> On Wed 2013-11-20 12:02:03, Stephen Boyd wrote:
+>> Pavel Machek reports that this config is exposed on x86 where the
+>> ARM architected timers aren't even present. Make it depend on the
+>> ARM architected timers being selected so that non-ARM builds
+>> aren't asked about it.
 >>
->> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> Date: Wed, 20 Nov 2013 21:21:46 +0100
->>
->>> Ethernet PHYs consume a significant amount of power when link is
->>> detected.
->>> Especially, for embedded systems it can be easily 20-40% of total system
->>> power. Now, currently most likely all ethernet drivers leave PHYs powered
->>> on, even if the device is taken down. Also, some stupid boot loaders
->>> power
->>> on all PHYs available.
->>>
->>> This RFC deals with saving power consumed by ethernet PHYs, that have no
->>> corresponding ethernet device driver or are attached to ethernet devices
->>> which are taken down by user request, i.e. ifconfig ethN down. Ports with
->>> no link, i.e. cable removed, are already quite good at power saving due
->>> to
->>> PHY internal link detection.
->>
->>
->> The idea is sound and the goal is of course valuable, but it brings up
->> a chronically reoccurring issue as of late.
->>
->> You cannot reset the PHY or take it down without somehow retaining the
->> settings the PHY had when you bring it back up.
+>> Reported-by: Pavel Machek <pavel@ucw.cz>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 >
+> Reviewed-by: Pavel Machek <pavel@ucw.cz>
 >
-> Right, as far as I understand BMCR powerdown, i.e. what is called in
-> genphy_suspend/resume, powers down the PHY but _does_ retain PHY config.
-> It is not resetting the device.
+> Thanks!
 
-Right that's also my understanding of how BMCR powerdown works. That
-said, I am relatively sure that we can find PHY devices for which this
-is not true.
+Applied to my tree as a 3.13 fix.
 
-As for the PHY state machine, I think we need a new state
-PHY_SUSPENDED  and upon calling phy_start() we make sure that we treat
-PHY_SUSPENDED just like we treat PHY_HALTED today since that would
-make sure that the PHY parameters are applied correctly upon resume
-(interrupt configuration, autoneg and and such).
+Thanks Stephen and Pavel !
 
-There is still some discussion on how we should deal with
-auto-suspending the PHY when phy_stop() is called, and how does that
-differ from the PHY_HALTED state? So this also raises the question of
-whether PHY_HALTED is really different from PHY_SUSPENDED. The only
-difference with your patches would be that we have put the PHY into a
-low-power mode.
-
->
-> I haven't checked a lot of datasheets but [1] notes that "registers will
-> preserve their configuration". Even if we have PHYs that do not preserve
-> it, they should have a device specific callback for suspend/resume that
-> takes care of preserving it.
-
-Right, but the PHY driver should only take care of restoring "state
-less" PHY context, while the PHY state machine has to restore a "state
-aware" PHY device context. So for quirky PHY chips, or those having
-advanced power management features, we definitively need the two to be
-helping each other.
-
->
-> [1] http://www.ti.com/lit/an/snoa463a/snoa463a.pdf
->
->
->> If I ifdown/ifup a device, my ethtool link configuration better be
->> retained.
->>
->> This means the PHY layer must have a way to reprogram the device when
->> it is brought back up, with whatever settings the software state
->> things are there.
->>
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
+   -- Daniel
 
 -- 
-Florian
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
