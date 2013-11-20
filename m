@@ -1,166 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3KTGcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 01:32:41 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:13978 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab3KTGcg convert rfc822-to-8bit (ORCPT
+	id S1751551Ab3KTGoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 01:44:10 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38152 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab3KTGoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 01:32:36 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-9b-528c577d4fc3
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-References: 
-In-reply-to: 
-Subject: RE: [f2fs-dev] [PATCH V2 1/2 RESEND] f2fs: add a new function to
- support for merging contiguous read
-Date: Wed, 20 Nov 2013 14:31:23 +0800
-Message-id: <001b01cee5ba$46651330$d32f3990$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7lry7hQeiwBW3hTziushnsetuPhwACodeQ
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jAd3a8J4ggzmLeSyu7/rLZHFpkbvF
-	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoErY9/eC0wF
-	lxUqGiccYWtgXCvVxcjJISFgIvH1bxs7hC0mceHeejYQW0hgEaPEkX85XYxcQPYPRolPHx8x
-	gSTYBFQklnf8B7NFBBQlNrzfwA5SxCwwg1Hi8Nx/rF2MHEAd3BKrm4NAajgFeCTW/elkBgkL
-	C+RL/LotCxJmEVCVePTjOQuIzStgKdE5dS4bhC0o8WPyPbA4s4CGRP+iDWwQtrbEk3cXWCHu
-	VJDYcfY1I8QJRhLT/p2EqheX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5r
-	pFecmFtcmpeul5yfu4kRHAHPpHcwrmqwOMQowMGoxMNbsKg7SIg1say4MvcQowQHs5II7y33
-	niAh3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1MLUotgskwcnFINjCtWGM1d
-	tpzFZWXMprnsnwqPVixe8+TFzPdNN5SrXygkvqqcYcB6YLl507sT176ecqk6aSMb6VdUGcki
-	uWmln8NWhX2X2hfF2t7aulDwtpyT9No3S19anH92iEePY0YsWwHDdWbBqECdVfbBXgppme0X
-	T3deE8y4cpHFW6JyttGM0oD38ua2r5VYijMSDbWYi4oTASNNgnp8AgAA
+	Wed, 20 Nov 2013 01:44:06 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <528C5A1C.3040103@jp.fujitsu.com>
+Date: Wed, 20 Nov 2013 15:43:40 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+CC: "bhe@redhat.com" <bhe@redhat.com>,
+        "chaowang@redhat.com" <chaowang@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+References: <20131113204130.GD7613@redhat.com> <5284A689.70903@jp.fujitsu.com> <20131114151359.GA3913@redhat.com> <5285EC60.1060906@jp.fujitsu.com> <20131115142617.GC6637@redhat.com> <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp> <528B3585.5080606@jp.fujitsu.com> <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+(2013/11/20 14:27), Atsushi Kumagai wrote:
+> On 2013/11/19 18:56:21, kexec <kexec-bounces@lists.infradead.org> wrote:
+>> (2013/11/18 9:51), Atsushi Kumagai wrote:
+>>> (2013/11/15 23:26), Vivek Goyal wrote:
+>>>> On Fri, Nov 15, 2013 at 06:41:52PM +0900, HATAYAMA Daisuke wrote:
+>>>>
+>>>> [..]
+>>>>>> Given the fact that hpa does not like fixing it in kernel. We are
+>>>>>> left with option of fixing it in following places.
+>>>>>>
+>>>>>> - Drop partial pages in kexec-tools
+>>>>>> - Drop partial pages in makeudmpfile.
+>>>>>> - Read partial pages using read() interface in makedumpfile
+>>>>>> - Modify /proc/vmcore to copy partial pages in second kernel's memory.
+>>>>>>
+>>>>>> It is not clear to me that partial pages are really useful.  So I
+>>>>>> want to avoid modifying /proc/vmcore to deal with partial pages and
+>>>>>> increase complexity.
+>>>>>>
+>>>>>> So fixing makedumpfile (either option2 or option 3) seems least
+>>>>>> risky to me. In fact I would say let us keep it simple and truncate
+>>>>>> partial pages in makedumpfile to keep it simple. And look at option
+>>>>>> 3 once we have a strong use case for partial pages.
+>>>>>>
+>>>>>> What do you think?
+>>>>>>
+>>>>>
+>>>>> As you say, it's not clear that partial pages are really useful, but
+>>>>> on the other hand, it seems to me not clear that they are really useless.
+>>>>> I think we should get them as long as we have access to them.
+>>>>>
+>>>>> It seems best to me the option 3). Switching between read and mmap
+>>>>> would be not so complex and also it's by far flexible in
+>>>>> makedumpfile than in kernel.
+>>>>
+>>>> Ok, I am fine with option 3. It is more complicated option but safe
+>>>> option.
+>>>
+>>> It sounds reasonable also to me.
+>>>
+>>>> Is there any chance that you could look into fixing this. I have no
+>>>> experience writing code for makedumpfile.
+>>>
+>>> I'll send a patch to fix this soon.
+>>>
+>>
+>> Thanks.
+>>
+>> BTW, now the following patch has been applied on top of makedumpfile in kexec-tools package on fedora in order to avoid the issue.
+>>
+>> https://lists.fedoraproject.org/pipermail/kexec/2013-November/000254.html
+>>
+>> I remember prototype version of mmap patch implemented a kind of --no-mmap option and we could use it to disable mmap() use and use read() instead, I think which is useful when we face this kind of issue.
+> 
+> How about this fail back structure instead of such an extra option ?
+> 
 
-No considering 80 columns for the description, :(
-I will resend the patches.
+I think this logic is useful and should be merged together in this fix.
 
-> -----Original Message-----
-> From: Chao Yu [mailto:chao2.yu@samsung.com]
-> Sent: Wednesday, November 20, 2013 1:55 PM
-> To: ??? (jaegeuk.kim@samsung.com)
-> Cc: 'linux-fsdevel@vger.kernel.org'; 'linux-kernel@vger.kernel.org'; 'linux-f2fs-devel@lists.sourceforge.net'; Ì·æ­
-> (shu.tan@samsung.com)
-> Subject: [f2fs-dev] [PATCH V2 1/2 RESEND] f2fs: add a new function to support for merging contiguous read
-> 
-> For better read performance, we add a new function to support for merging contiguous read as the one for write.
-> 
-> v1-->v2:
->  o add declarations here as Gu Zheng suggested.
->  o use new structure f2fs_bio_info introduced by Jaegeuk Kim.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> Acked-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/f2fs/data.c  |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/f2fs/f2fs.h  |    3 +++
->  fs/f2fs/super.c |    1 +
->  3 files changed, 54 insertions(+)
-> 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index b4e4c7e..9cf3f6c 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -400,6 +400,56 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
->  	return 0;
->  }
-> 
-> +void f2fs_submit_read_bio(struct f2fs_sb_info *sbi, int rw)
-> +{
-> +	struct f2fs_bio_info *io = &sbi->read_io;
-> +
-> +	if (!io->bio)
-> +		return;
-> +
-> +	mutex_lock(&io->io_mutex);
-> +	if (io->bio) {
-> +		submit_bio(rw, io->bio);
-> +		io->bio = NULL;
-> +	}
-> +	mutex_unlock(&io->io_mutex);
-> +}
-> +
-> +void submit_read_page(struct f2fs_sb_info *sbi, struct page *page,
-> +					block_t blk_addr, int rw)
-> +{
-> +	struct block_device *bdev = sbi->sb->s_bdev;
-> +	struct f2fs_bio_info *io = &sbi->read_io;
-> +	int bio_blocks;
-> +
-> +	verify_block_addr(sbi, blk_addr);
-> +
-> +	mutex_lock(&io->io_mutex);
-> +
-> +	if (io->bio && io->last_block_in_bio != blk_addr - 1) {
-> +		submit_bio(rw, io->bio);
-> +		io->bio = NULL;
-> +	}
-> +alloc_new:
-> +	if (io->bio == NULL) {
-> +		bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-> +		io->bio = f2fs_bio_alloc(bdev, bio_blocks);
-> +		io->bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
-> +		io->bio->bi_end_io = read_end_io;
-> +	}
-> +
-> +	if (bio_add_page(io->bio, page, PAGE_CACHE_SIZE, 0) <
-> +							PAGE_CACHE_SIZE) {
-> +		submit_bio(rw, io->bio);
-> +		io->bio = NULL;
-> +		goto alloc_new;
-> +	}
-> +
-> +	io->last_block_in_bio = blk_addr;
-> +
-> +	mutex_unlock(&io->io_mutex);
-> +}
-> +
->  /*
->   * This function should be used by the data read flow only where it
->   * does not check the "create" flag that indicates block allocation.
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index a54fac2..e2cb920 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -368,6 +368,7 @@ struct f2fs_sb_info {
->  	struct f2fs_sm_info *sm_info;		/* segment manager */
-> 
->  	/* for bio operations */
-> +	struct f2fs_bio_info read_io;			/* for read bios */
->  	struct f2fs_bio_info write_io[NR_PAGE_TYPE];	/* for write bios */
-> 
->  	/* for checkpoint */
-> @@ -1118,6 +1119,8 @@ struct page *find_data_page(struct inode *, pgoff_t, bool);
->  struct page *get_lock_data_page(struct inode *, pgoff_t);
->  struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
->  int f2fs_readpage(struct f2fs_sb_info *, struct page *, block_t, int);
-> +void f2fs_submit_read_bio(struct f2fs_sb_info *, int);
-> +void submit_read_page(struct f2fs_sb_info *, struct page *, block_t, int);
->  int do_write_data_page(struct page *);
-> 
->  /*
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index 344fb86..6d78fff 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -876,6 +876,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
->  	sbi->por_doing = false;
->  	spin_lock_init(&sbi->stat_lock);
-> 
-> +	mutex_init(&sbi->read_io.io_mutex);
->  	for (i = 0; i < NR_PAGE_TYPE; i++)
->  		mutex_init(&sbi->write_io[i].io_mutex);
-> 
-> --
-> 1.7.9.5
+However, I still think a kind of --no-mmap option is needed. There could happen
+worse case due to mmap() in the future on some system, of course, I don't know
+what the system actually is, but at least it must be behaving differently from
+typical systems... Then, option is more flexible than patching.
+
+It would also be useful for debugging use. read() is simpler than mmap(), and
+read() is basic in the sense that initially makedumpfile didn't use mmap().
+There might be a situation where we want to avoid using mmap(); for example,
+when makedumpfile works badly and it looks like caused by mmap() code in kernel
+code; Then, we would want to see if makedumpfile works well by disabling mmap(), 
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
