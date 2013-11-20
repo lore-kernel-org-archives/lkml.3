@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3KTReB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:34:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36713 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab3KTReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:34:00 -0500
-Date: Wed, 20 Nov 2013 18:33:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Murzin <murzin.v@gmail.com>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Joern Engel <joern@logfs.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-Message-ID: <20131120173357.GC18809@dhcp22.suse.cz>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
- <20131119134007.GD20655@dhcp22.suse.cz>
- <20131120172119.GA1848@hp530>
+	id S1753949Ab3KTReX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:34:23 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49623 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab3KTReS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:34:18 -0500
+Message-ID: <528CF292.6070400@gmail.com>
+Date: Thu, 21 Nov 2013 01:34:10 +0800
+From: Peng Tao <bergwolf@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131120172119.GA1848@hp530>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amir Shehata <amir.shehata@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 4/9] staging/lustre/lnet: Fix assert on empty group in
+ selftest module
+References: <1384867428-8395-1-git-send-email-bergwolf@gmail.com> <1384867428-8395-5-git-send-email-bergwolf@gmail.com> <20131119183714.GA26216@kroah.com> <CA+a=Yy531J9LZv06P2aAHPSw_0jtNY+wdNExpLVOW9ee+8Ja1A@mail.gmail.com> <20131120162745.GA5831@kroah.com>
+In-Reply-To: <20131120162745.GA5831@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-11-13 18:21:23, Vladimir Murzin wrote:
-> On Tue, Nov 19, 2013 at 02:40:07PM +0100, Michal Hocko wrote:
-> Hi Michal
-> > On Tue 19-11-13 14:14:00, Michal Hocko wrote:
-> > [...]
-> > > We have basically ended up with 3 options AFAIR:
-> > > 	1) allow memcg approach (memcg.oom_control) on the root level
-> > >            for both OOM notification and blocking OOM killer and handle
-> > >            the situation from the userspace same as we can for other
-> > > 	   memcgs.
-> > 
-> > This looks like a straightforward approach as the similar thing is done
-> > on the local (memcg) level. There are several problems though.
-> > Running userspace from within OOM context is terribly hard to do
-> > right. This is true even in the memcg case and we strongly discurage
-> > users from doing that. The global case has nothing like outside of OOM
-> > context though. So any hang would blocking the whole machine. Even
-> > if the oom killer is careful and locks in all the resources it would
-> > have hard time to query the current system state (existing processes
-> > and their states) without any allocation.  There are certain ways to
-> > workaround these issues - e.g. give the killer access to memory reserves
-> > - but this all looks scary and fragile.
-> > 
-> > > 	2) allow modules to hook into OOM killer path and take the
-> > > 	   appropriate action.
-> > 
-> > This already exists actually. There is oom_notify_list callchain and
-> > {un}register_oom_notifier that allow modules to hook into oom and
-> > skip the global OOM if some memory is freed. There are currently only
-> > s390 and powerpc which seem to abuse it for something that looks like a
-> > shrinker except it is done in OOM path...
-> > 
-> > I think the interface should be changed if something like this would be
-> > used in practice. There is a lot of information lost on the way. I would
-> > basically expect to get everything that out_of_memory gets.
-> 
-> Some time ago I was trying to hook OOM with custom module based policy. I
-> needed to select process based on uss/pss values which required page walking
-> (yes, I know it is extremely expensive, but sometimes I'd pay the bill). The
-> learned lesson is quite simple - it is harmful to expose (all?) internal
-> functions and locking into modules - the result is going to be completely
-> unreliable and non predictable mess, unless the well defined interface and
-> helpers will be established. 
+On 11/21/2013 12:27 AM, Greg Kroah-Hartman wrote:
+> On Wed, Nov 20, 2013 at 05:26:57PM +0800, Peng Tao wrote:
+>> On Wed, Nov 20, 2013 at 2:37 AM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>>> On Tue, Nov 19, 2013 at 09:23:43PM +0800, Peng Tao wrote:
+>>>> From: Amir Shehata <amir.shehata@intel.com>
+>>>>
+>>>> The core of the issue is that the selftest module doesn't sanitize its
+>>>> own API, but it depends on lst utility to do such checks.  As a result
+>>>> this issue manifests itself in this particular LU through an assert
+>>>> on an empty group.  If the NID is misspelled then an empty group is
+>>>> added.  An error output is provided, but if that's never checked in a
+>>>> batch script, as is the case with this issue, then the script will try
+>>>> to add an empty group to a test to run in a batch, and that will cause
+>>>> an assert
+>>>>
+>>>> The fix is two fold.  Ensure that lst utility checks that a group is
+>>>> added with at least one node.  If not the group is subsequently
+>>>> deleted.  And the add_test command would fail, since the group no
+>>>> longer exists.
+>>>>
+>>>> The second fix is to ensure that the kernel module itself sanitizes
+>>>> its own API in this particular case, so that if a different utility is
+>>>> used other than lst to communicate with the selftest kernel module
+>>>> then this error would be caught.  This fix looks up the batch and the
+>>>> groups, src and dst, in the ioctl handle and sanitizes that input at
+>>>> this point.  If the group looked up either doesn't exist or doesn't
+>>>> have at least one ACTIVE node, then the command fails.
+>>>>
+>>>> NOTE:there are many other cases in the code where the selftest kernel
+>>>> module doesn't check for sanity of the input, but depends totally on
+>>>> the lst module to do such checks.  Particularly around length of
+>>>> strings passed in.  Thus it is possible to crash the selftest module
+>>>> if someone tries to create another userspace app to communicate with
+>>>> the selftest kernel module without ensuring sanity of the params sent
+>>>> to the kernel module.  In effect, it's always assumed that lst is the
+>>>> front end for selftest and no other front end is to be used.
+>>> This patch adds build warnings to the kernel build process, so I can't
+>>> apply it, sorry.  Please fix that up before sending it again.
+>>>
+>> Hi Greg,
+>>
+>> Can you please be explicit about what build warning you saw?
+> I don't remember what it was at the moment, sorry.
+>
+>> I tried to reproduce it with gcc version 4.1.2 and 4.6.3 on my
+>> machine, but didn't see any build warnings with this patch applied.
+> I have 4.7.3 here, and x86-64.  Try that and see what happens.
+>
+Could you please share you .config? I just tried gcc 4.7.3 on x86_64 but 
+still no luck. Guess it might have something to do with certain Kconfig 
+combinations.
 
-OK, I was a bit vague it seems. I meant to give zonelist, gfp_mask,
-allocation order and nodemask parameters to the modules. So they have a
-better picture of what is the OOM context.
-What everything ould modules need to do an effective work is a matter
-for discussion.
+[X61@linux-lustre]$gcc --version
+gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
+Copyright (C) 2012 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-> > > 	3) create a generic filtering mechanism which could be
-> > > 	   controlled from the userspace by a set of rules (e.g.
-> > > 	   something analogous to packet filtering).
-> > 
-> > This looks generic enough but I have no idea about the complexity.
-> 
-> Never thought about it, but just wonder which input and output supposed to
-> have for this filtering mechanism?
+[X61@linux-lustre]$uname -a
+Linux X61 3.11.0 #1 SMP Wed Sep 4 23:16:15 CST 2013 x86_64 x86_64 x86_64 
+GNU/Linux
 
-I wasn't an author of this idea and didn't think about details so much.
-My very superficial understanding is that oom basically needs to filter
-and cathegory tasks into few cathegories. Those to kill immediatelly,
-those that can wait for a fallback and those that should never be
-touched. I didn't get beyond this level of thinking. I have mentioned
-that merely because this idea was mentioned in the room at the time.
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Tao
