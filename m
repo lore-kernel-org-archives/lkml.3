@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab3KTSDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:03:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21104 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3KTSDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:03:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,738,1378882800"; 
-   d="scan'208";a="436784833"
-Message-ID: <528CF94E.8020300@linux.intel.com>
-Date: Wed, 20 Nov 2013 20:02:54 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754297Ab3KTSHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:07:00 -0500
+Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:56960 "EHLO
+	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752998Ab3KTSG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 13:06:58 -0500
+X-Greylist: delayed 697 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 13:06:58 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=UKm+Gfhny59ZZW7V6sk1nt3TG+K+SSq392izOhRJXBFgGBCO9VR0bufVC70+6fW1;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Jeff Layton'" <jlayton@redhat.com>, <linux-fsdevel@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <nfs-ganesha-devel@lists.sourceforge.net>,
+        <samba-technical@lists.samba.org>
+References: <1384965906-27327-1-git-send-email-jlayton@redhat.com> <1384965906-27327-6-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1384965906-27327-6-git-send-email-jlayton@redhat.com>
+Subject: RE: [RFC PATCH v2 5/5] locks: report l_pid as -1 for FL_FILP_PRIVATE locks
+Date: Wed, 20 Nov 2013 09:55:18 -0800
+Message-ID: <0d1101cee619$ad866500$08932f00$@mindspring.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-References: <20131120160450.072555619@infradead.org> <20131120162736.691879744@infradead.org>
-In-Reply-To: <20131120162736.691879744@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQHlugm2INdiPnZSZTPL4xrfW02UgAJKrwdFme5pBIA=
+Content-Language: en-us
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d24e0f1495a6cee8c4f268a5e97554bfa350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/11/2013 18:04, Peter Zijlstra wrote:
-> The only valid use of preempt_enable_no_resched() is if the very next
-> line is schedule() or if we know preemption cannot actually be enabled
-> by that statement due to known more preempt_count 'refs'.
+> FL_FILP_PRIVATE locks are no longer tied to a particular PID, and are
+instead
+> inheritable by child processes. Report a l_pid of '-1' for these sorts of
+locks
+> since the pid is somewhat meaningless for them.
 
-The reason I used the no resched version is that busy_poll_end_time()
-is almost always called with rcu read lock held, so it seemed the more
-correct option.
+Hmm, I suppose in the case of a process that acquires a private lock, forks
+(passing the lock to the child process) and then exits, pid would be
+meaningless, but I wonder how common that case is compared to a
+multi-threaded process (especially a file server) that will hold many
+private locks, and not pass them to child processes (and exit)?
 
-I have no issue with you changing this.
+I.e. as a future user of this feature, I wonder if I'm going to want to know
+that THESE private locks are owned by Ganesha and THOSE are owned by Samba?
 
-> As to the busy_poll mess; that looks to be completely and utterly
-> broken, sched_clock() can return utter garbage with interrupts enabled
-> (rare but still), it can drift unbounded between CPUs, so if you get
-> preempted/migrated and your new CPU is years behind on the previous
-> CPU we get to busy spin for a _very_ long time. There is a _REASON_
-> sched_clock() warns about preemptability - papering over it with a
-> preempt_disable()/preempt_enable_no_resched() is just terminal brain
-> damage on so many levels.
+Frank
 
-IMHO This has been reviewed thoroughly.
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index d5fb853..8a4d4e4 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -1889,7 +1889,7 @@ EXPORT_SYMBOL_GPL(vfs_test_lock);
+> 
+>  static int posix_lock_to_flock(struct flock *flock, struct file_lock *fl)
+{
+> -	flock->l_pid = fl->fl_pid;
+> +	flock->l_pid = IS_FILP_PVT(fl) ? -1 : fl->fl_pid;
+>  #if BITS_PER_LONG == 32
+>  	/*
+>  	 * Make sure we can represent the posix lock via @@ -1911,7 +1911,7
+> @@ static int posix_lock_to_flock(struct flock *flock, struct file_lock
+*fl)  #if
+> BITS_PER_LONG == 32  static void posix_lock_to_flock64(struct flock64
+> *flock, struct file_lock *fl)  {
+> -	flock->l_pid = fl->fl_pid;
+> +	flock->l_pid = IS_FILP_PVT(fl) ? -1 : fl->fl_pid;
+>  	flock->l_start = fl->fl_start;
+>  	flock->l_len = fl->fl_end == OFFSET_MAX ? 0 :
+>  		fl->fl_end - fl->fl_start + 1;
+> --
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
+in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
 
-When Ben Hutchings voiced concerns I rewrote the code to use time_after,
-so even if you do get switched over to a CPU where the time is random
-you will at most poll another full interval.
-
-Linus asked me to remove this since it makes us use two time values
-instead of one. see https://lkml.org/lkml/2013/7/8/345.
-
-Cheers,
-Eliezer
