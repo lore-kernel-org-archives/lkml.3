@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3KTUWD (ORCPT <rfc822;w@1wt.eu>);
+	id S1755276Ab3KTUWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:22:20 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:37159 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab3KTUWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Nov 2013 15:22:03 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46110 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab3KTUWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:22:00 -0500
-Message-ID: <528D18EC.6000501@ti.com>
-Date: Wed, 20 Nov 2013 22:17:48 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
-CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH 0/3] Reuse davinci-nand driver for Keystone arch
-References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v1 2/7] net: phy: provide phy_resume/phy_suspend helpers
+Date: Wed, 20 Nov 2013 21:21:48 +0100
+Message-Id: <1384978913-8052-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 06:24 PM, Ivan Khoronzhuk wrote:
-> This series contains updates of Davinci nand driver, in order to be
-> reused for Keystone platform.
->
-> Depends on:
-> - Davinci nand driver fixes and updates:
->    https://lkml.org/lkml/2013/11/20/271
+This adds helper functions to resume and suspend a given phy_device
+by calling the corresponding driver callbacks if available.
 
-^^^^ I suggest to merge this series with above one as it
-should not break anything.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: David S. Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/phy/phy_device.c |   19 +++++++++++++++++++
+ include/linux/phy.h          |    2 ++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
->
-> - Introduce AEMIF driver for Davinci/Keystone archs:
->    http://lkml.org/lkml/2013/11/11/352
->
-> V1:
-> https://lkml.org/lkml/2013/11/11/352
->
-> Ivan Khoronzhuk (3):
->    mtd: nand: davinci: reuse driver for Keystone arch
->    mtd: nand: davinci: don't set timings if AEMIF is used
->    mtd: nand: davinci: don't request AEMIF address range
-
-For patches:
-Reviewed-by: Grygorii Strashko <grygorii.strashko@ti.com>
-
->
->   .../devicetree/bindings/mtd/davinci-nand.txt       |    8 +--
->   drivers/mtd/nand/Kconfig                           |    6 +--
->   drivers/mtd/nand/davinci_nand.c                    |   57 +++++++++++++-------
->   3 files changed, 45 insertions(+), 26 deletions(-)
->
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 74630e9..2442895 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -625,6 +625,25 @@ void phy_detach(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(phy_detach);
+ 
++int phy_suspend(struct phy_device *phydev)
++{
++	struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
++
++	if (phydrv->suspend)
++		return phydrv->suspend(phydev);
++	return 0;
++}
++EXPORT_SYMBOL(phy_suspend);
++
++int phy_resume(struct phy_device *phydev)
++{
++	struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
++
++	if (phydrv->resume)
++		return phydrv->resume(phydev);
++	return 0;
++}
++EXPORT_SYMBOL(phy_resume);
+ 
+ /* Generic PHY support and helper functions */
+ 
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 64ab823..ed0d6d8 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -552,6 +552,8 @@ void phy_detach(struct phy_device *phydev);
+ void phy_start(struct phy_device *phydev);
+ void phy_stop(struct phy_device *phydev);
+ int phy_start_aneg(struct phy_device *phydev);
++int phy_suspend(struct phy_device *phydev);
++int phy_resume(struct phy_device *phydev);
+ 
+ int phy_stop_interrupts(struct phy_device *phydev);
+ 
+-- 
+1.7.2.5
 
