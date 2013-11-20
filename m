@@ -1,171 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3KSXxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 18:53:07 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:26063 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab3KSXxD (ORCPT
+	id S1753571Ab3KSX4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 18:56:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60874 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752961Ab3KSX4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 18:53:03 -0500
-X-AuditID: cbfec37b-b7fa96d00000716e-4a-528bf9deef36
-Message-id: <528BF9DB.6050308@samsung.com>
-Date: Tue, 19 Nov 2013 16:52:59 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: len.brown@intel.com, pavel@ucw.cz, anton@enomsg.org, dwmw2@infradead.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 2/2] power: Change device_wakeup_enable() to WARN_ON on
- null dev_name(dev)
-References: <cover.1384875691.git.shuah.kh@samsung.com>
- <622a097f9780dc721354d0e2b6cb512280da1ebc.1384875691.git.shuah.kh@samsung.com>
- <20131119231401.GC24054@kroah.com> <4885530.zkZVX2zzgu@vostro.rjw.lan>
-In-reply-to: <4885530.zkZVX2zzgu@vostro.rjw.lan>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wn+69n91BBt0XuC0ObtW0mLhyMrNF
-	8+L1bBazpuxlsri8aw6bxefeI4wWd08dZbM4c/oSq8XXnw4OnB4T+j8xeuycdZfdY/MKLY/F
-	e14yeeyfu4bdY8vVdhaPFau/s3t83iQXwBHFZZOSmpNZllqkb5fAlXF/4nT2gpNmFVNmTmBs
-	YHyp28XIySEhYCLx5u5/NghbTOLCvfVANheHkMAyRoltDZPYIZxeJomFW9cwQTibGCXunLzC
-	DtLCK6AlsfrVaUYQm0VAVWLazmlgcTYBdYnPr3eA2UICchJNS1Yzg9iiAhESR1c/Y4XoFZT4
-	MfkeC4gtIhAscet9P9gCZoEDjBJfjy0ESwgLJEi8aLvNBjHoIqPEweceIDangIHEj0+dYHFm
-	ATOJRy3rmCFseYnNa94yQ9QrS/y5fApoKAfQb4oS21dbTWAUmYVk9Swk3bOQdC9gZF7FKFZa
-	nFxQnJSeWmGkV5yYW1yal66XnJ+7iRESd9U7GO9+tTnEKMDBqMTDK7GgO0iINbGsuDL3EKME
-	B7OSCO+aF0Ah3pTEyqrUovz4otKc1OJDjEwcnFINjHZvSmX37r30Urf169YdLeJKrpezbhfe
-	rZz8OVsu9Pb+5RU7Lt28yFZ+1MD82+vvoTevP56g8snlwaFd7RxnNI2l3e0+vX89p29q2v6L
-	f9MbN6ZfX2xTzHMiWTPDu+Dv4y2HgtzDMpYlv3ogsUxzy7Sc9CfF7euy6t+X7nDSdlnzL0nL
-	iumS50wlluKMREMt5qLiRABhnGTPmQIAAA==
+	Tue, 19 Nov 2013 18:56:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
+Date: Wed, 20 Nov 2013 01:08:57 +0100
+Message-ID: <2499259.JLRCUgMzrL@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <3445730.IkUyvGUQQp@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan> <1384898320.1791.48.camel@misato.fc.hp.com> <3445730.IkUyvGUQQp@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 04:56 PM, Rafael J. Wysocki wrote:
-> On Tuesday, November 19, 2013 03:14:01 PM Greg KH wrote:
->> On Tue, Nov 19, 2013 at 09:05:46AM -0700, Shuah Khan wrote:
->>> device_wakeup_enable() uses dev_name(dev) as the wakeup source name.
->>> When it gets called with a device with its name not yet set, ws structure
->>> with ws->name = NULL gets created.
->>>
->>> When kernel is booted with wakeup_source_activate enabled, it will panic
->>> when the trace point code tries to dereferences ws->name.
->>>
->>> Change device_wakeup_enable() to WARN_ON on dev_name(dev) null condition
->>> to detect driver bugs that result in calling device_wakeup_enable() before
->>> device is fully initialized with its name in device_wakeup_enable().
->>>
->>> This change without the power_supply_register() fix will result in early
->>> boot panics when AC Adapter and Battery device drivers try to register
->>> wakeup source.
->>>
->>> The following panic resulted from power_supply_register() registering
->>> wakeup source with a null device name.
->>>
->>> [  819.769934] device: 'BAT1': device_add
->>> [  819.770078] PM: Adding info for No Bus:BAT1
->>> [  819.770235] BUG: unable to handle kernel NULL pointer dereference at           (null)
->>> [  819.770435] IP: [<ffffffff813381c0>] skip_spaces+0x30/0x30
->>> [  819.770572] PGD 3efd90067 PUD 3eff61067 PMD 0
->>> [  819.770716] Oops: 0000 [#1] SMP
->>> [  819.770829] Modules linked in: arc4 iwldvm mac80211 x86_pkg_temp_thermal coretemp kvm_intel joydev i915 kvm uvcvideo ghash_clmulni_intel videobuf2_vmalloc aesni_intel videobuf2_memops videobuf2_core aes_x86_64 ablk_helper cryptd videodev iwlwifi lrw rfcomm gf128mul glue_helper bnep btusb media bluetooth parport_pc hid_generic ppdev snd_hda_codec_hdmi drm_kms_helper snd_hda_codec_realtek cfg80211 drm tpm_infineon samsung_laptop snd_hda_intel usbhid snd_hda_codec hid snd_hwdep snd_pcm microcode snd_page_alloc snd_timer psmouse i2c_algo_bit lpc_ich tpm_tis video wmi mac_hid serio_raw ext2 lp parport r8169 mii
->>> [  819.771802] CPU: 0 PID: 2167 Comm: bash Not tainted 3.12.0+ #25
->>> [  819.771876] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 900X3C/900X3D/900X4C/900X4D/SAMSUNG_NP1234567890, BIOS P03AAC 07/12/2012
->>> [  819.772022] task: ffff88002e6ddcc0 ti: ffff8804015ca000 task.ti: ffff8804015ca000
->>> [  819.772119] RIP: 0010:[<ffffffff813381c0>]  [<ffffffff813381c0>] skip_spaces+0x30/0x30
->>> [  819.772242] RSP: 0018:ffff8804015cbc70  EFLAGS: 00010046
->>> [  819.772310] RAX: 0000000000000003 RBX: ffff88040cfd6d40 RCX: 0000000000000018
->>> [  819.772397] RDX: 0000000000020001 RSI: 0000000000000000 RDI: 0000000000000000
->>> [  819.772484] RBP: ffff8804015cbcc0 R08: 0000000000000000 R09: ffff8803f0768d40
->>> [  819.772570] R10: ffffea001033b800 R11: 0000000000000000 R12: ffffffff81c519c0
->>> [  819.772656] R13: 0000000000020001 R14: 0000000000000000 R15: 0000000000020001
->>> [  819.772744] FS:  00007ff98309b740(0000) GS:ffff88041f200000(0000) knlGS:0000000000000000
->>> [  819.772845] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [  819.772917] CR2: 0000000000000000 CR3: 00000003f59dc000 CR4: 00000000001407f0
->>> [  819.773001] Stack:
->>> [  819.773030]  ffffffff81114003 ffff8804015cbcb0 0000000000000000 0000000000000046
->>> [  819.773146]  ffff880409757a18 ffff8803f065a160 0000000000000000 0000000000020001
->>> [  819.773273]  0000000000000000 0000000000000000 ffff8804015cbce8 ffffffff8143e388
->>> [  819.773387] Call Trace:
->>> [  819.773434]  [<ffffffff81114003>] ? ftrace_raw_event_wakeup_source+0x43/0xe0
->>> [  819.773520]  [<ffffffff8143e388>] wakeup_source_report_event+0xb8/0xd0
->>> [  819.773595]  [<ffffffff8143e3cd>] __pm_stay_awake+0x2d/0x50
->>> [  819.773724]  [<ffffffff8153395c>] power_supply_changed+0x3c/0x90
->>> [  819.773795]  [<ffffffff8153407c>] power_supply_register+0x18c/0x250
->>> [  819.773869]  [<ffffffff813d8d18>] sysfs_add_battery+0x61/0x7b
->>> [  819.773935]  [<ffffffff813d8d69>] battery_notify+0x37/0x3f
->>> [  819.774001]  [<ffffffff816ccb7c>] notifier_call_chain+0x4c/0x70
->>> [  819.774071]  [<ffffffff81073ded>] __blocking_notifier_call_chain+0x4d/0x70
->>> [  819.774149]  [<ffffffff81073e26>] blocking_notifier_call_chain+0x16/0x20
->>> [  819.774227]  [<ffffffff8109397a>] pm_notifier_call_chain+0x1a/0x40
->>> [  819.774316]  [<ffffffff81095b66>] hibernate+0x66/0x1c0
->>> [  819.774407]  [<ffffffff81093931>] state_store+0x71/0xa0
->>> [  819.774507]  [<ffffffff81331d8f>] kobj_attr_store+0xf/0x20
->>> [  819.774613]  [<ffffffff811f8618>] sysfs_write_file+0x128/0x1c0
->>> [  819.774735]  [<ffffffff8118579d>] vfs_write+0xbd/0x1e0
->>> [  819.774841]  [<ffffffff811861d9>] SyS_write+0x49/0xa0
->>> [  819.774939]  [<ffffffff816d1052>] system_call_fastpath+0x16/0x1b
->>> [  819.775055] Code: 89 f8 48 89 e5 f6 82 c0 a6 84 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 c0 a6 84 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
->>> [  819.775760] RIP  [<ffffffff813381c0>] skip_spaces+0x30/0x30
->>> [  819.775881]  RSP <ffff8804015cbc70>
->>> [  819.775949] CR2: 0000000000000000
->>> [  819.794175] ---[ end trace c4ef25127039952e ]---
->>>
->>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->>> ---
->>>   drivers/base/power/wakeup.c | 3 +++
->>>   1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
->>> index 2d56f41..a605f0d 100644
->>> --- a/drivers/base/power/wakeup.c
->>> +++ b/drivers/base/power/wakeup.c
->>> @@ -223,6 +223,9 @@ int device_wakeup_enable(struct device *dev)
->>>   	if (!dev || !dev->power.can_wakeup)
->>>   		return -EINVAL;
->>>
->>> +	if (WARN_ON(!dev_name(dev)))
->>> +		return -EINVAL;
->>> +
->>>   	ws = wakeup_source_register(dev_name(dev));
->>
->> Shouldn't wakeup_source_register() just handle a NULL for a name better?
->
-> In fact, it does.
->
-> The bug is in wakeup_source_activate() and that's because it passes ws->name
-> to trace_wakeup_source_activate() which then doesn't bother to check it against
-> NULL.
->
-> So the solution here is to check ws->name before attempting to pass
-> it to trace_wakeup_source_activate() in wakeup_source_activate().  It is
-> actually valid to have a wakeup source with a NULL name and it shouldn't
-> blow up like this.
->
-> Thanks,
-> Rafael
->
+On Wednesday, November 20, 2013 12:42:28 AM Rafael J. Wysocki wrote:
+> On Tuesday, November 19, 2013 02:58:40 PM Toshi Kani wrote:
+> > On Tue, 2013-11-19 at 22:10 +0100, Rafael J. Wysocki wrote:
+> > > > On Tuesday, November 19, 2013 10:48:51 AM Toshi Kani wrote:
+> > > > > On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
+> > > > > > On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
+> > > > > > > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
+> > > > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > > > 
+> > > > > > > > Since the PCI host bridge scan handler does not set hotplug.enabled,
+> > > > > > > > the check of it in acpi_bus_device_eject() effectively prevents the
+> > > > > > > > root bridge hot removal from working after commit a3b1b1ef78cd
+> > > > > > > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
+> > > > > > > > check is not necessary, because the other acpi_bus_device_eject()
+> > > > > > > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
+> > > > > > > > check by themselves before executing that function.
+> > > > > > > > 
+> > > > > > > > For this reason, remove the scan handler check from
+> > > > > > > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
+> > > > > > > > again.
+> > > > > > > 
+> > > > > > > I am curious why the PCI host bridge scan handler does not set
+> > > > > > > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
+> > > > > > > enables via ACPI notification?
+> > > > > > 
+> > > > > > It just doesn't register for hotplug at all.  I guess it could set that
+> > > > > > bit alone, but then it would be quite confusing and the check is not
+> > > > > > necessary anyway.
+> > > > > 
+> > > > > I see.  Given how the PCI host bridge scan handler is integrated today,
+> > > > > the change looks reasonable to me.
+> > > > 
+> > > > Looking further, I noticed that there is one more issue to address.  The
+> > > > patch below applies on top of your patchset.
+> > > >
+> > > > From: Toshi Kani <toshi.kani@hp.com>
+> > > > Subject: [PATCH] ACPI / hotplug: Fix conflicted PCI bridge notify
+> > > > handlers
+> > > > 
+> > > > The PCI host bridge scan handler installs its own notify handler,
+> > > > handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
+> > > > hotplug framework also installs the common notify handler,
+> > > > acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
+> > > > acpi_hotplug_notify_cb() to call _OST method with unsupported
+> > > > error as hotplug.enabled is not set.
+> > > > 
+> > > > To address this issue, introduce hotplug.self_install flag, which
+> > > > indicates that the scan handler installs its own notify handler by
+> > > > itself.  The ACPI hotplug framework does not install the common
+> > > > notify handler when this flag is set.
+> > > 
+> > > Good catch!
+> > > 
+> > > Still, I don't think we need a new flag, because we know that that
+> > > scan handler doesn't support hotplug, because its hotplug profile
+> > > hasn't been registered (that actually applies to all scan handlers
+> > > without hotplug support, not only the root host bridge).  
+> > 
+> > When a scan handler does not support hotplug at all, the common notify
+> > handler should be installed so that it can call _OST with an appropriate
+> > response.
+> 
+> That creates an arbitrary difference between devices that have scan handlers
+> and devices that don't have them (PCI, USB, SATA etc).  So if we want _OST
+> to be called for all devices for which hotplug is not supported, that
+> should be implemented in a different way and not necessarily in 3.13.
+> 
+> > > Moreover,
+> > > if it does support hotplug, but the hotplug profile hasn't been
+> > > registered due to an error, we still should not install the notify
+> > > handler I think.  
+> > 
+> > This case, I think the common notify handler should be installed so that
+> > it can call _OST for error response as well.  The question is what to do
+> > when a scan handler has its own notify handler.
 
-Rafael beat me to it. Yes adding the following to 
-DECLARE_EVENT_CLASS(wakeup_source, should take care of the problem:
+Actually, having considered this particular case a bit more I think that it
+is useful to install acpi_hotplug_notify_cb() for things whose scan handlers
+register hotplug support, but the registration fails (which should be treated
+as "permanently disabled").
+
+However, I still think that devices whose scan handlers don't support hotplug
+at all should be treated consistently with devices without scan handlers.
+
+So, what about the slightly modified patch below?
+
+Rafael
 
 
-               const char *tmp_i = name ? name : "ws no name";
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / hotplug: Ignore notifications for scan handlers without hotplug
 
-                 __assign_str(name, tmp_i);
+If a scan handler's hotplug profile has not been initialized, do not
+install acpi_hotplug_notify_cb() as a notify handler for devices
+with the given scan handler attached.
 
-should make trace_wakeup_source_activate() not blow up. I did consider 
-this as one of the fixes to the oops. Would you rather see this fix 
-instead of this change to device_wakeup_enable()?
+This fixes a problem with the PCI host bridge hotplug which installs
+its own notify handler, handle_hotplug_event_root(), by itself and
+doesn't register its scan handler's hotplug profile.  Toshi says:
 
--- Shuah
+"Nevertheless, the ACPI hotplug framework also installs the common
+ notify handler, acpi_hotplug_notify_cb(), for PCI root bridges.
+ This causes acpi_hotplug_notify_cb() to call _OST method with
+ unsupported error as hotplug.enabled is not set."
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Moreover, the default behavior for all devices that don't have any
+scan handlers attached is not to install notify handlers for them
+and there is no difference between this case and the case when
+a device's scan handler doesn't support hotplug.
+
+Reported-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: 3.9+ <stable@vger.kernel.org> # 3.9+
+---
+ drivers/acpi/scan.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -84,6 +84,11 @@ int acpi_scan_add_handler_with_hotplug(s
+ 	return 0;
+ }
+ 
++static bool acpi_scan_handler_with_hotplug(struct acpi_scan_handler *handler)
++{
++	return handler && handler->hotplug.kobj.state_initialized;
++}
++
+ /*
+  * Creates hid/cid(s) string needed for modalias and uevent
+  * e.g. on a device with hid:IBM0001 and cid:ACPI0001 you get:
+@@ -1841,7 +1846,7 @@ static void acpi_scan_init_hotplug(acpi_
+ 	 */
+ 	list_for_each_entry(hwid, &pnp.ids, list) {
+ 		handler = acpi_scan_match_handler(hwid->id, NULL);
+-		if (handler) {
++		if (acpi_scan_handler_with_hotplug(handler)) {
+ 			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+ 					acpi_hotplug_notify_cb, handler);
+ 			break;
+
