@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab3KTIVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:21:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38149 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3KTIVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:21:44 -0500
-Date: Wed, 20 Nov 2013 11:17:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: micky_ching@realsil.com.cn
-Cc: cjb@laptop.org, sameo@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wei_wang@realsil.com.cn, devel@linuxdriverproject.org
-Subject: Re: [PATCH 2/2] mmc: rtsx: modify phase searching method for tunning
-Message-ID: <20131120081758.GX5302@mwanda>
-References: <cover.1384858553.git.micky_ching@realsil.com.cn>
- <38cd1d9d7f10f6a65b4dc608f310ac3818da827f.1384858553.git.micky_ching@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <38cd1d9d7f10f6a65b4dc608f310ac3818da827f.1384858553.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1751862Ab3KTI2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:28:42 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:57303 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3KTI2j (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 20 Nov 2013 03:28:39 -0500
+X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 03:28:39 EST
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia
+ parameter to efi_storage_paranoia
+From: joeyli <jlee@suse.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt@console-pimps.org>,
+        Richard Weinberger <richard@nod.at>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        matthew.garrett@nebula.com
+In-Reply-To: <528C562B.3070008@jp.fujitsu.com>
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
+	 <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at>
+	 <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at>
+	 <527CBDD3.2020609@jp.fujitsu.com>
+	 <20131108143421.GB22636@console-pimps.org>
+	 <52809AEB.9080100@jp.fujitsu.com>
+	 <20131111105424.GD22636@console-pimps.org>
+	 <528AD50D.6060503@jp.fujitsu.com> <87siutqdwv.fsf@redhat.com>
+	 <528C562B.3070008@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Nov 2013 16:08:01 +0800
+Message-ID: <1384934881.6516.4082.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 07:10:35PM +0800, micky_ching@realsil.com.cn wrote:
-> -static u8 sd_search_final_phase(struct realtek_pci_sdmmc *host, u32 phase_map)
-> +static inline u32 sd_get_phase_point(u32 phase_map, unsigned int idx)
->  {
-> -	struct timing_phase_path path[MAX_PHASE + 1];
-> -	int i, j, cont_path_cnt;
-> -	int new_block, max_len, final_path_idx;
-> -	u8 final_phase = 0xFF;
-> +	idx &= MAX_PHASE;
-> +	return phase_map & (1 << idx);
-> +}
-> +
+於 三，2013-11-20 於 15:26 +0900，Yasuaki Ishimatsu 提到：
+> (2013/11/19 12:16), Madper Xie wrote:
+> > 
+> > isimatu.yasuaki@jp.fujitsu.com writes:
+> > 
+> >> Hi Matt,
+> >>
+> >> Sorry for late the reply.
+> >>
+> >>
+> >> (2013/11/11 19:54), Matt Fleming wrote:
+> >>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+> >>>> Hi Matt,
+> >>>>
+> >>>> I uses FUJITSU's x86 box.
+> >>>> This does not become bricked even if I use all efi variable storage.
+> >>>> Thus I want a way to not need to specify efi_no_storage_paranoia
+> >>>> parameter.
+> >>>
+> >>> The efi_no_storage_paranoia parameter was introduced because some
+> >>> machines do not initiate garbage collection of the NVRAM until you
+> >>> allocate all space - basically it's a switch to turn off the "save 5KB
+> >>> of stoarge at all times" workaround that is needed to avoid bricking
+> >>> some machines.
+> >>>
+> >>> The intention of the switch is not to allow you to fill your NVRAM just
+> >>> because you can. If that is something you want to do then I think it's
+> >>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+> >>> I'm assuming here that you are doing something like writing lots and
+> >>> lots of pstore entries and just want to write as many as your variable
+> >>> storage will allow? Or are you doing something more fundamental like
+> >>> creating BootXXXX entries?
+> >>>
+> >>> What are you doing to run into the 5KB reserve? How much NVRAM does your
+> >>> machine come with?
+> >>
+> >> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+> >> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
+> >>
+> > Howdy Yasuaki,
+> >    If the remaining NVRAM is less than 5Kb, your writing will trigger a
+> >    NVRAM storage reclamation. However you still failed creating entry. So
+> >    I'm just curious what itmes occupy lots of nvram storage space.
+> 
+> Even if we got EFI_OUT_OF_RESOURCES while running Linux, gc does not run.
+> Trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS environment with
+> UEFI. So on my system, if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte threshold,
+> we cannot use nvram storage until EFI_OUT_OF_RESOURCES occurs on pre OS
+> environment with UEFI.
+> 
+> Thanks,
+> Yasuaki Ishimatsu
 
-This function is confusing....
+Can we try to trigger gc by EFI_OUT_OF_RESOURCE in EFI stub kernel or
+EFI boot loader to recover NVRAM space? Does work with the BIOS on this
+machine?
 
-MAX_PHASE is a terrible name.  It's in a global header but it doesn't
-have a prefix.  It should be #define RTS_MAX_PHASE.  It's weird that we
-are using it both as a number and as bit mask.  It's weird that we
-always add a "+ 1" to MAX_PHASE.  It means the name is chosen poorly.
-Maybe it should be:
 
-#define RTS_MAX_PHASE  32
-#define RTS_PHASE_MASK 0x1f
-
-So this function takes a phase_map and an index and it wraps the index
-by masking away the top bits then it tests to see if the wrapped index
-bit is set?  The wrapping is very strange.
-
-The name of the function is sd_get_phase_point() but we only test to
-see if it returns zero.  The name of the function is not helpful.
-"sd" is a generic prefix.
-"get" is misleading because we don't "get" anything it only returns zero
-on success?
-"phase_point" might be helpful but I don't know what a phase_point is.
-Add a comment about that maybe.
-
-regards,
-dan carpenter
+Thanks a lot!
+Joey Lee
 
