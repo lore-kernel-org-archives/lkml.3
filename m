@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3KTXKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 18:10:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:43675 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab3KTXKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 18:10:32 -0500
-Message-ID: <1384989013.26969.115.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Nov 2013 10:10:13 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755360Ab3KTXN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 18:13:56 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:33595 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135Ab3KTXNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 18:13:53 -0500
+Message-ID: <528D4232.3020708@linaro.org>
+Date: Thu, 21 Nov 2013 00:13:54 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Pavel Machek <pavel@ucw.cz>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PULL] : clockevents/clocksource fixes for 3.12
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
 
-With my previous pull request I mentioned some remaining Little Endian
-patches, notably support for our new ABI, which I was sitting on making
-sure it was all finalized.
+Hi Thomas, Ingo,
 
-The toolchain folks confirmed it now, the new ABI is stable and merged
-with gcc, so we are all good. Oh and we actually missed the actual
-Kconfig switch for LE so here it is, along with a couple more bug fixes.
+this pull request is an update of the previous one, refreshed against 
+the latest timers/urgent.
 
-I have more fixes but not related to LE so I'll send them as a separate
-pull request tomorrow, let's get this one out of the way.
+  * Stephen Boyd hidden the event stream Kconfig option for the 
+arch_arm_timer for non ARM architectures
 
-Note that this supports running user space binaries using the new ABI,
-but the kernel itself still needs to be built with the old one. We'll
-bring fixes for that after -rc1.
+  * Laurent Pinchard fixed a missing a clk_put in case the registering 
+of the sh_mtu[2] drivers fails.
 
-Here's Anton log that goes with this series:
+  * Uwe Kleine-König reuse clockevents_config_and_register for the 
+at91rm9200_time timer as it was depending on the patch (commit a4578ea 
+(clockevents: Sanitize ticks to nsec conversion)
 
-<<<
-This patch series adds support for the new ABI, LPAR support
-for H_SET_MODE and finally adds a kconfig option and defconfig.
+The following changes since commit 050ded1bbaea3331745cf2782315f5bc2582d083:
 
-ABIv2 support was recently committed to binutils and gcc, and
-should be merged into glibc soon. There are a number of
-very nice improvements including the removal of function
-descriptors. Rusty's kernel patches allow binaries of either
-ABI to work, easing the transition.
->>>
-
-Cheers,
-Ben.
-
-The following changes since commit 0c4888ef1d8a8b82c29075ce7e257ff795af15c7:
-
-  powerpc: Fix fatal SLB miss when restoring PPR (2013-11-06 14:13:53 +1100)
+   tick: Document tick_do_timer_cpu (2013-11-19 14:59:50 +0100)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+   git://git.linaro.org/people/dlezcano/linux.git clockevents/fixes
 
-for you to fetch changes up to 280270828f108be56f0c486def58acabb070244f:
+for you to fetch changes up to 77f7ce9a9f636daaa65731a833bae1311a7b80e5:
 
-  powerpc: Wrong DWARF CFI in the kernel vdso for little-endian / ELFv2 (2013-11-21 09:19:23 +1100)
+   clocksource: arm_arch_timer: Hide eventstream Kconfig on non-ARM 
+(2013-11-21 00:06:52 +0100)
 
 ----------------------------------------------------------------
-Alistair Popple (1):
-      powerpc: Don't use ELFv2 ABI to build the kernel
+Laurent Pinchart (4):
+       clocksource: sh_mtu2: Release clock when sh_mtu2_register() fails
+       clocksource: sh_mtu2: Add clk_prepare/unprepare support
+       clocksource: sh_tmu: Release clock when sh_tmu_register() fails
+       clocksource: sh_tmu: Add clk_prepare/unprepare support
 
-Anton Blanchard (4):
-      powerpc/pseries: Fix endian issues in pseries EEH code
-      pseries: Add H_SET_MODE to change exception endianness
-      powerpc: Add CONFIG_CPU_LITTLE_ENDIAN kernel config option.
-      powerpc: Add pseries_le_defconfig
+Stephen Boyd (1):
+       clocksource: arm_arch_timer: Hide eventstream Kconfig on non-ARM
 
-Rusty Russell (4):
-      powerpc: Add TIF_ELF2ABI flag.
-      powerpc: Set eflags correctly for ELF ABIv2 core dumps.
-      powerpc: ELF2 binaries launched directly.
-      powerpc: ELF2 binaries signal handling
+Uwe Kleine-König (1):
+       ARM: at91: rm9200: switch back to clockevents_config_and_register
 
-Ulrich Weigand (1):
-      powerpc: Wrong DWARF CFI in the kernel vdso for little-endian / ELFv2
-
- arch/powerpc/Makefile                        |   1 +
- arch/powerpc/configs/pseries_le_defconfig    | 352 +++++++++++++++++++++++++++
- arch/powerpc/include/asm/elf.h               |   4 +
- arch/powerpc/include/asm/hvcall.h            |   2 +
- arch/powerpc/include/asm/plpar_wrappers.h    |  26 ++
- arch/powerpc/include/asm/thread_info.h       |   9 +
- arch/powerpc/kernel/process.c                |  50 ++--
- arch/powerpc/kernel/signal_64.c              |  25 +-
- arch/powerpc/kernel/vdso64/sigtramp.S        |  16 +-
- arch/powerpc/platforms/Kconfig.cputype       |  11 +
- arch/powerpc/platforms/pseries/eeh_pseries.c |  21 +-
- arch/powerpc/platforms/pseries/lpar.c        |  17 ++
- arch/powerpc/platforms/pseries/setup.c       |  42 ++++
- 13 files changed, 542 insertions(+), 34 deletions(-)
- create mode 100644 arch/powerpc/configs/pseries_le_defconfig
+  arch/arm/mach-at91/at91rm9200_time.c |    7 ++-----
+  drivers/clocksource/Kconfig          |    1 +
+  drivers/clocksource/sh_mtu2.c        |   16 ++++++++++++++--
+  drivers/clocksource/sh_tmu.c         |   20 +++++++++++++++++---
+  4 files changed, 34 insertions(+), 10 deletions(-)
 
 
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
