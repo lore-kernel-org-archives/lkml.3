@@ -1,186 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab3KTKdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:33:08 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55758 "EHLO comal.ext.ti.com"
+	id S1753280Ab3KTKe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:34:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1479 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab3KTKdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:33:05 -0500
-Message-ID: <528C8FBC.7020407@ti.com>
-Date: Wed, 20 Nov 2013 12:32:28 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1750834Ab3KTKeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 05:34:20 -0500
+Date: Wed, 20 Nov 2013 12:37:29 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net 2/3] virtio-net: fix num calculation on frag skb
+ allocation failure
+Message-ID: <20131120103729.GG19341@redhat.com>
+References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
+ <1384938447-3775-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, <balbi@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-CC: <p.zabel@pengutronix.de>, <broonie@kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 09/10] ARM: dts: omap3-beagle-xm: Add USB Host support
-References: <1380012836-29900-1-git-send-email-rogerq@ti.com> <1380012836-29900-10-git-send-email-rogerq@ti.com> <528BD2AF.2030607@ti.com>
-In-Reply-To: <528BD2AF.2030607@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384938447-3775-2-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishant,
+On Wed, Nov 20, 2013 at 05:07:26PM +0800, Jason Wang wrote:
+> We need decrease the rq->num after we can get a buf through
+> virtqueue_get_buf() even if we could not allocate frag skb. Otherwise, the
+> refill routine won't be triggered under heavy memory stress since the driver may
+> still think there's enough room.
+> 
+> This bug was introduced by commit 2613af0ed18a11d5c566a81f9a6510b73180660a
+> (virtio_net: migrate mergeable rx buffers to page frag allocators).
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-On 11/19/2013 11:05 PM, Nishanth Menon wrote:
-> 
-> 
-> On 09/24/2013 03:53 AM, Roger Quadros wrote:
->> Provide RESET GPIO and Power regulator for the USB PHY,
->> the USB Host port mode and the PHY device for the controller.
->> Also provide pin multiplexer information for USB host pins.
->>
->> We also relocate omap3_pmx_core pin definations so that they
->> are close to omap3_pmx_wkup pin definations.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
-> 
-> just using this thread, but a question ->
-> 
-> I am kernel * master                                   dec8e46 Merge
-> tag 'arc-v3.13-rc1-part2' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc
-> 
-> and I see that VAUX2 which supplies USB_1V8[1] is not enabled -> I did
-> a quick patch and it did seem to work (Usb keyboard, networking, mouse
-> etc on my ehci ports seems to come up good) - any suggestions how we'd
-> like to handle this?
+So let's wrap virtqueue_get_buf to make sure we get it right?
 
-It worked for me without your patch. It could be that u-boot is enabling
-that regulator for me. I'm on u-boot-v2013.10.
-
-In any case, your patch seems the right thing to do. We should take it in
-the rc cycle.
-
+> ---
+> The patch was needed for 3.12 stable.
+> ---
+>  drivers/net/virtio_net.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> @@ -169,6 +169,14 @@
->         bus-width = <8>;
->  };
-> 
-> +&vaux2 {
-> +       regulator-name = "HubPower";
-> +       regulator-min-microvolt = <1800000>;
-> +       regulator-max-microvolt = <1800000>;
-> +       regulator-always-on;
-> +};
-> +
-> +
-> 
-> [1]
-> https://github.com/CircuitCo/BeagleBoard-xM-RevC/blob/master/BeagleBoard-xM_revC_SCH.pdf?raw=true
-
-
-cheers,
--roger
-
-> 
->>  arch/arm/boot/dts/omap3-beagle-xm.dts |   65 ++++++++++++++++++++++++++++-----
->>  1 files changed, 56 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> index afdb164..b081f5a 100644
->> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> @@ -69,6 +69,23 @@
->>  		};
->>  
->>  	};
->> +
->> +	/* HS USB Port 2 Power */
->> +	hsusb2_power: hsusb2_power_reg {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "hsusb2_vbus";
->> +		regulator-min-microvolt = <3300000>;
->> +		regulator-max-microvolt = <3300000>;
->> +		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
->> +		startup-delay-us = <70000>;
->> +	};
->> +
->> +	/* HS USB Host PHY on PORT 2 */
->> +	hsusb2_phy: hsusb2_phy {
->> +		compatible = "usb-nop-xceiv";
->> +		reset-gpios = <&gpio5 19 GPIO_ACTIVE_LOW>; /* gpio_147 */
->> +		vcc-supply = <&hsusb2_power>;
->> +	};
->>  };
->>  
->>  &omap3_pmx_wkup {
->> @@ -79,6 +96,37 @@
->>  	};
->>  };
->>  
->> +&omap3_pmx_core {
->> +	pinctrl-names = "default";
->> +	pinctrl-0 = <
->> +			&hsusbb2_pins
->> +	>;
->> +
->> +	uart3_pins: pinmux_uart3_pins {
->> +		pinctrl-single,pins = <
->> +			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
->> +			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
->> +		>;
->> +	};
->> +
->> +	hsusbb2_pins: pinmux_hsusbb2_pins {
->> +		pinctrl-single,pins = <
->> +			0x5c0 (PIN_OUTPUT | MUX_MODE3)		/* etk_d10.hsusb2_clk */
->> +			0x5c2 (PIN_OUTPUT | MUX_MODE3)		/* etk_d11.hsusb2_stp */
->> +			0x5c4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d12.hsusb2_dir */
->> +			0x5c6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d13.hsusb2_nxt */
->> +			0x5c8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d14.hsusb2_data0 */
->> +			0x5cA (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* etk_d15.hsusb2_data1 */
->> +			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi1_cs3.hsusb2_data2 */
->> +			0x1a6 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_clk.hsusb2_data7 */
->> +			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_simo.hsusb2_data4 */
->> +			0x1aa (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_somi.hsusb2_data5 */
->> +			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs0.hsusb2_data6 */
->> +			0x1ae (PIN_INPUT_PULLDOWN | MUX_MODE3)	/* mcspi2_cs1.hsusb2_data3 */
->> +		>;
->> +	};
->> +};
->> +
->>  &i2c1 {
->>  	clock-frequency = <2600000>;
->>  
->> @@ -148,15 +196,6 @@
->>  	power = <50>;
->>  };
->>  
->> -&omap3_pmx_core {
->> -	uart3_pins: pinmux_uart3_pins {
->> -		pinctrl-single,pins = <
->> -			0x16e (PIN_INPUT | PIN_OFF_WAKEUPENABLE | MUX_MODE0) /* uart3_rx_irrx.uart3_rx_irrx */
->> -			0x170 (PIN_OUTPUT | MUX_MODE0) /* uart3_tx_irtx.uart3_tx_irtx OUTPUT | MODE0 */
->> -		>;
->> -	};
->> -};
->> -
->>  &uart3 {
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&uart3_pins>;
->> @@ -166,3 +205,11 @@
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&gpio1_pins>;
->>  };
->> +
->> +&usbhshost {
->> +	port2-mode = "ehci-phy";
->> +};
->> +
->> +&usbhsehci {
->> +	phys = <0 &hsusb2_phy>;
->> +};
->>
-> 
-> 
-
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 24fd502..de1d6ca 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -333,6 +333,7 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
+>  			head_skb->dev->stats.rx_length_errors++;
+>  			return -EINVAL;
+>  		}
+> +		--rq->num;
+>  		if (unlikely(len > MERGE_BUFFER_LEN)) {
+>  			pr_debug("%s: rx error: merge buffer too long\n",
+>  				 head_skb->dev->name);
+> @@ -367,7 +368,6 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
+>  			skb_add_rx_frag(curr_skb, num_skb_frags, page,
+>  					offset, len, MERGE_BUFFER_LEN);
+>  		}
+> -		--rq->num;
+>  	}
+>  	return 0;
+>  }
+> -- 
+> 1.8.3.2
