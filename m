@@ -1,181 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3KTDBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 22:01:40 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50997 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab3KTDBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 22:01:21 -0500
-Date: Wed, 20 Nov 2013 11:00:56 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, cl@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] percpu: stop the loop when a cpu belongs to a new
- group
-Message-ID: <20131120030056.GA15273@weiyang.vnet.ibm.com>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1382345893-6644-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20131027123008.GJ14934@mtj.dyndns.org>
- <20131028030055.GC15642@weiyang.vnet.ibm.com>
- <20131028113120.GB11541@mtj.dyndns.org>
- <20131028151746.GA7548@weiyang.vnet.ibm.com>
+	id S1753629Ab3KTDBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 22:01:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234Ab3KTDBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 22:01:04 -0500
+Message-ID: <528C25D9.6030605@redhat.com>
+Date: Wed, 20 Nov 2013 11:00:41 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028151746.GA7548@weiyang.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112003-6102-0000-0000-00000489F559
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
+ allocate frag skb
+References: <1384848307-7217-1-git-send-email-jasowang@redhat.com> <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:17:46PM +0800, Wei Yang wrote:
->On Mon, Oct 28, 2013 at 07:31:20AM -0400, Tejun Heo wrote:
->>Hello,
->>
->>On Mon, Oct 28, 2013 at 11:00:55AM +0800, Wei Yang wrote:
->>> >Does this actually matter?  If so, it'd probably make a lot more sense
->>> >to start inner loop at @cpu + 1 so that it becomes O(N).
->>> 
->>> One of the worst case in my mind:
->>> 
->>> CPU:        0    1    2    3    4    ...
->>> Group:      0    1    2    3    4    ...
->>> (sounds it is impossible in the real world)
->>
->>I was wondering whether you had an actual case where this actually
->>matters or it's just something you thought of while reading the code.
+On 11/19/2013 10:03 PM, Eric Dumazet wrote:
+> On Tue, 2013-11-19 at 16:05 +0800, Jason Wang wrote:
+>> > We need to drop the refcnt of page when we fail to allocate an skb for frag
+>> > list, otherwise it will be leaked. The bug was introduced by commit
+>> > 2613af0ed18a11d5c566a81f9a6510b73180660a ("virtio_net: migrate mergeable rx
+>> > buffers to page frag allocators").
+>> > 
+>> > Cc: Michael Dalton <mwdalton@google.com>
+>> > Cc: Eric Dumazet <edumazet@google.com>
+>> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> > Cc: Michael S. Tsirkin <mst@redhat.com>
+>> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> > ---
+>> > The patch was needed for 3.12 stable.
+> Good catch, but if we return from receive_mergeable() in the 'middle'
+> of the frags we would need for the current skb, who will
+> call the virtqueue_get_buf() to flush the remaining frags ?
 >
->Tejun,
+> Don't we also need to call virtqueue_get_buf() like 
 >
->Thanks for your comments.
+> while (--num_buf) {
+>     buf = virtqueue_get_buf(rq->vq, &len);
+>     if (!buf)
+>         break;
+>     put_page(virt_to_head_page(buf));
+> }
 >
->I found this just in code review. :-)
->
->>
->>> Every time, when we encounter a new CPU and try to assign it to a group, we
->>> found it belongs to a new group. The original logic will iterate on all old
->>> CPUs again, while the new logic could skip this and assign it to a new group.
->>> 
->>> Again, this is a tiny change, which doesn't matters a lot.
->>
->>I think it *could* matter because the current implementation is O(N^2)
->>where N is the number of CPUs.  On machines, say, with 4k CPU, it's
->>gonna loop 16M times but then again even that takes only a few
->>millisecs on modern machines.
->
->I am not familiar with the real cases of the CPU numbers. Thanks for leting me
->know there could be 4K CPUs.
->
->Yep, a few millisecs sounds not a big a mount.
->
->>
->>> BTW, I don't get your point for "start inner loop at @cpu+1".
->>> 
->>> The original logic is:
->>> 	loop 1:   0 - nr_cpus
->>> 	loop 2:      0 - (cpu - 1)
->>> 
->>> If you found one better approach to improve the logic, I believe all the users
->>> will appreciate your efforts :-)
->>
->>Ooh, right, I forgot about the break and then I thought somehow that
->>would make it O(N).  Sorry about that.  I blame jetlag. :)
->>
->>Yeah, I don't know.  The function is quite hairy which makes me keep
->>things simpler and reluctant to make changes unless it actually makes
->>non-trivial difference.  The change looks okay to me but it seems
->>neither necessary or substantially beneficial and if my experience is
->>anything to go by, *any* change involves some risk of brekage no
->>matter how innocent it may look, so given the circumstances, I'd like
->>to keep things the way they are.
->
->Yep, I really agree with you. If no big improvement, it is really not
->necessary to change the code, which will face some risk.
->
->Here I have another one, which in my mind will improve it in one case. Looking
->forward to your comments :-) If I am not correct, please let me know. :-)
+> ?
 
-Tejun,
+Yes we need this, will send V2.
 
-What do you think about this one?
-
->
->From bd70498b9df47b25ff20054e24bb510c5430c0c3 Mon Sep 17 00:00:00 2001
->From: Wei Yang <weiyang@linux.vnet.ibm.com>
->Date: Thu, 10 Oct 2013 09:42:14 +0800
->Subject: [PATCH] percpu: optimize group assignment when cpu_distance_fn is
-> NULL
->
->When cpu_distance_fn is NULL, all CPUs belongs to group 0. The original logic
->will continue to go through each CPU and its predecessor. cpu_distance_fn is
->always NULL when pcpu_build_alloc_info() is called from pcpu_page_first_chunk().
->
->By applying this patch, the time complexity will drop to O(n) form O(n^2) in
->case cpu_distance_fn is NULL.
->
->Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
->---
-> mm/percpu.c |   23 ++++++++++++-----------
-> 1 files changed, 12 insertions(+), 11 deletions(-)
->
->diff --git a/mm/percpu.c b/mm/percpu.c
->index f79c807..8e6034f 100644
->--- a/mm/percpu.c
->+++ b/mm/percpu.c
->@@ -1481,20 +1481,21 @@ static struct pcpu_alloc_info * __init pcpu_build_alloc_info(
-> 	for_each_possible_cpu(cpu) {
-> 		group = 0;
-> 	next_group:
->-		for_each_possible_cpu(tcpu) {
->-			if (cpu == tcpu)
->-				break;
->-			if (group_map[tcpu] == group && cpu_distance_fn &&
->-			    (cpu_distance_fn(cpu, tcpu) > LOCAL_DISTANCE ||
->-			     cpu_distance_fn(tcpu, cpu) > LOCAL_DISTANCE)) {
->-				group++;
->-				if (group == nr_groups) {
->-					nr_groups++;
->+		if (cpu_distance_fn)
->+			for_each_possible_cpu(tcpu) {
->+				if (cpu == tcpu)
-> 					break;
->+				if (group_map[tcpu] == group &&
->+				    (cpu_distance_fn(cpu, tcpu) > LOCAL_DISTANCE ||
->+				     cpu_distance_fn(tcpu, cpu) > LOCAL_DISTANCE)) {
->+					group++;
->+					if (group == nr_groups) {
->+						nr_groups++;
->+						break;
->+					}
->+					goto next_group;
-> 				}
->-				goto next_group;
-> 			}
->-		}
-> 		group_map[cpu] = group;
-> 		group_cnt[group]++;
-> 	}
->-- 
->1.7.5.4
->
->BTW, this one is based on my previous patch.
->
->>
->>Thanks a lot!
->>
->>-- 
->>tejun
->
->-- 
->Richard Yang
->Help you, Help me
-
--- 
-Richard Yang
-Help you, Help me
-
+Thanks
