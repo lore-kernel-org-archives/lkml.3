@@ -1,48 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3KTAH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:07:57 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:54257 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3KTAHz (ORCPT
+	id S1753847Ab3KTAIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:08:04 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:41721 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab3KTAIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:07:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5bYwgK618AOgvD=mgbfjcLLGE3CVw1SN3sP3PqRaCk5A@mail.gmail.com>
-References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com> <CAErSpo5bYwgK618AOgvD=mgbfjcLLGE3CVw1SN3sP3PqRaCk5A@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Nov 2013 17:07:35 -0700
-Message-ID: <CAErSpo4ReYw5koMrwcuNQj7yfFXvDnuZGiRc70mekv6L40KjWw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-Cc: Yu Zhao <yu.zhao@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Nov 2013 19:08:00 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] lockdep: Simplify a bit hardirq <-> softirq transitions
+Date: Wed, 20 Nov 2013 01:07:34 +0100
+Message-Id: <1384906054-30676-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 3:24 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc linux-pci]
->
-> On Wed, Nov 6, 2013 at 7:49 AM, ethan.zhao <ethan.kernel@gmail.com> wrote:
->> Though no specification about NumVFs register initial value after POST, to void the confusion
->> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
->> to zero:
->>
->> $lspci -vvv -s 03:00.0
->> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
->> ~
->> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
->>                 IOVCap: Migration-, Interrupt Message Number: 000
->>                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
->>                 IOVSta: Migration-
->>                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
->>                                                               ^dazed !
+Instead of saving the hardirq state on a per CPU variable, which require
+an explicit call before the softirq handling and some complication,
+just save and restore the hardirq tracing state through functions
+return values and parameters.
 
-Did you mean to show lspci output from before SR-IOV was enabled?  It
-looks like SR-IOV is enabled here, so I don't think your patch would
-change this output at all.
+It simplifies a bit the black magic that works around the fact that
+softirqs can be called from hardirqs while hardirqs can nest on softirqs
+but those two cases have very different semantics and only the latter
+case assume both states.
 
-Bjorn
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/softirq.c | 37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index eb0acf4..dc43ee8 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -215,40 +215,35 @@ EXPORT_SYMBOL(local_bh_enable_ip);
+ 
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ /*
+- * Convoluted means of passing __do_softirq() a message through the various
+- * architecture execute_on_stack() bits.
+- *
+  * When we run softirqs from irq_exit() and thus on the hardirq stack we need
+  * to keep the lockdep irq context tracking as tight as possible in order to
+  * not miss-qualify lock contexts and miss possible deadlocks.
+  */
+-static DEFINE_PER_CPU(int, softirq_from_hardirq);
+ 
+-static inline void lockdep_softirq_from_hardirq(void)
++static inline bool lockdep_softirq_start(void)
+ {
+-	this_cpu_write(softirq_from_hardirq, 1);
+-}
++	bool in_hardirq = false;
+ 
+-static inline void lockdep_softirq_start(void)
+-{
+-	if (this_cpu_read(softirq_from_hardirq))
++	if (trace_hardirq_context(current)) {
++		in_hardirq = true;
+ 		trace_hardirq_exit();
++	}
++
+ 	lockdep_softirq_enter();
++
++	return in_hardirq;
+ }
+ 
+-static inline void lockdep_softirq_end(void)
++static inline void lockdep_softirq_end(bool in_hardirq)
+ {
+ 	lockdep_softirq_exit();
+-	if (this_cpu_read(softirq_from_hardirq)) {
+-		this_cpu_write(softirq_from_hardirq, 0);
++
++	if (in_hardirq)
+ 		trace_hardirq_enter();
+-	}
+ }
+-
+ #else
+-static inline void lockdep_softirq_from_hardirq(void) { }
+-static inline void lockdep_softirq_start(void) { }
+-static inline void lockdep_softirq_end(void) { }
++static inline bool lockdep_softirq_start(void) { return false; }
++static inline void lockdep_softirq_end(bool in_hardirq) { }
+ #endif
+ 
+ asmlinkage void __do_softirq(void)
+@@ -257,6 +252,7 @@ asmlinkage void __do_softirq(void)
+ 	unsigned long old_flags = current->flags;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	struct softirq_action *h;
++	bool in_hardirq;
+ 	__u32 pending;
+ 	int cpu;
+ 
+@@ -271,7 +267,7 @@ asmlinkage void __do_softirq(void)
+ 	account_irq_enter_time(current);
+ 
+ 	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
+-	lockdep_softirq_start();
++	in_hardirq = lockdep_softirq_start();
+ 
+ 	cpu = smp_processor_id();
+ restart:
+@@ -318,7 +314,7 @@ restart:
+ 		wakeup_softirqd();
+ 	}
+ 
+-	lockdep_softirq_end();
++	lockdep_softirq_end(in_hardirq);
+ 	account_irq_exit_time(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
+ 	WARN_ON_ONCE(in_interrupt());
+@@ -367,7 +363,6 @@ void irq_enter(void)
+ static inline void invoke_softirq(void)
+ {
+ 	if (!force_irqthreads) {
+-		lockdep_softirq_from_hardirq();
+ #ifdef CONFIG_HAVE_IRQ_EXIT_ON_IRQ_STACK
+ 		/*
+ 		 * We can safely execute softirq on the current stack if
+-- 
+1.8.3.1
+
