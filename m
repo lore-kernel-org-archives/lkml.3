@@ -1,221 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab3KTTdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:33:50 -0500
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:36212 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754254Ab3KTTds (ORCPT
+	id S1754944Ab3KTTer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:34:47 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51007 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab3KTTeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:33:48 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=Y1WYpBJhDp1qDh8WVkCfM+J4JOdqNAa59P+n1OgtdwTMDgto/aEh5O6N8sE1GulU;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <528D0E97.9020700@earthlink.net>
-Date: Wed, 20 Nov 2013 14:33:43 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 20 Nov 2013 14:34:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
+Date: Wed, 20 Nov 2013 20:34:34 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Magnus Damm <magnus.damm@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        khilman@linaro.org, linux-sh@vger.kernel.org,
+        daniel.lezcano@linaro.org, horms@verge.net.au, olof@lixom.net,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <20131106110508.6806.48070.sendpatchset@w520> <201311141340.38208.arnd@arndb.de> <528D001C.9010009@linaro.org>
+In-Reply-To: <528D001C.9010009@linaro.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 driver gpu hung kernel 3.11
-References: <52896862.5000300@earthlink.net> <20131118184107.67d6c875@neptune.home> <528B5581.8040006@earthlink.net> <20131120182649.1f2bd411@neptune.home>
-In-Reply-To: <20131120182649.1f2bd411@neptune.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec7946b510f645d6f868fc0ae05c95a48a1e350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 24.144.93.126
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311202034.34384.arnd@arndb.de>
+X-Provags-ID: V02:K0:pPbnZc0SROSMIeZELnt7ptYPKVeGS/o+fqxVLHmJcal
+ CeRqUxLkQn+wCn/ZdxxYlVt7dYCfJHyHpZqJ3OcS69vNM7vnk4
+ syde2ePUkIb4bWOSYhYQJ19R4Ps2iENqRBjLZiW2djLZkhJN/G
+ hWNDNS7UDowkGLw9ftP0JByckvYxkjLRwzJyOIc8Zx8IEnjKfE
+ 9HxnE4YOYRR5nL3/ojjOczbtrr/zPOy4WPmuRZaUWhqP/WzGDy
+ wxFzhuY56dV7T+1PfF+3FNsFqDGzq7X978W+2cfs/tqTiuPCbB
+ GncMVwYxE/pYzSUDAHUdKhxhr6hd9FVnIhJ2jvLhLeuKYhdstQ
+ 9fgWYDpLq9XVL4R08YMY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruno,
+On Wednesday 20 November 2013, John Stultz wrote:
+> On 11/14/2013 04:40 AM, Arnd Bergmann wrote:
+> 
+> Sorry, somehow this mail slipped by me.
+> 
+> So yea, as I mentioned earlier, the build testing is the one thing I
+> don't have a good argument against. But I still would rather not having
+> user prompts for these sorts of things.
+> 
+> Even so, it seems to me that it would be better to still avoid prompting
+> the user for the build test and instead just always build the drivers if
+> BUILD_TEST is enabled.
+> 
+> Is the driver by driver fine-granularity for build testing actually
+> worth having all the module prompts?  Or could we coarsen it a bit, and
+> have BUILT_TEST_TOPIC, so under kernel hacking or something you can
+> enable build testing and select the categories of items you want to
+> build (rather then having to go through them one by one?)
 
-I have tested the latest kernel and X, mesa etc, but am still using wine-1.3.24. 
-I am working on upgrading that. If I still
-have the error I will file a bug report at bugs.freedesktop.org. I already have 
-a login because of the same problem
-happening with Myst 5, but it was never resolved. Do you know if there is a 
-comprehensive set of test I can run to make
-sure my hardware is OK. When I run dxdiag under wine it passes all tests, but 
-then when trying to play Myst online or Myst 5
-I get the gpu hung situation.
+I would much prefer keeping things consistent across subsystems, which
+means one symbol with prompt per driver. The only technical argument for
+this is that it lets you disable some drivers when they do break in a
+randconfig or allmodconfig build.
 
-Anyway thanks for taking the time to respond.
-
-Regards,
-Steve
-
-On 11/20/2013 12:26 PM, Bruno Prémont wrote:
-> Hi Stephen,
->
-> On Tue, 19 November 2013 Stephen Clark<sclark46@earthlink.net>  wrote:
->> Thanks for the response. I have subscribed to the intel-gfx list. I didn't post
->> the error_state file since it huge.
-> It's best to submit a but report on bugs.freedesktop.org and attach the
-> error_state there (compressed if needed) - repeating the information you
-> provided in this thread.
->
-> Without the error_state chances of getting some developer look at it and
-> have a chance of understanding the cause are small. If they can reproduce
-> it's a bonus.
->
-> Once you have done so, replying with a reference to the bug might help
-> people who find your report in mailing list archives.
->
-> Bruno
->
->> I was trying to play Myst Online using wine-1.3.24. I get started and start
->> moving my avatar fairly
->> quickly I get the error.
->>
->> I have built the latest X, mesa etc from the git repo and loaded the latest
->> kernel but still have the problem,
->> though now my screen doesn't lose horizontal sync like it used to before I
->> uppgraded X etc.
->>
->> Below is a lspci of my laptop.
->>
->> 00:00.0 Host bridge: Intel Corporation Mobile 945GM/PM/GMS, 943/940GML and 945GT
->> Express Memory Controller Hub (rev 03)
->> 00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS,
->> 943/940GML Express Integrated Graphics Controller (rev 03)
->> 00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML
->> Express Integrated Graphics Controller (rev 03)
->> 00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio
->> Controller (rev 02)
->> 00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 02)
->> 00:1c.1 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 2 (rev 02)
->> 00:1c.2 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 3 (rev 02)
->> 00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller
->> #1 (rev 02)
->> 00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller
->> #2 (rev 02)
->> 00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller
->> #3 (rev 02)
->> 00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller
->> #4 (rev 02)
->> 00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller
->> (rev 02)
->> 00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e2)
->> 00:1f.0 ISA bridge: Intel Corporation 82801GBM (ICH7-M) LPC Interface Bridge
->> (rev 02)
->> 00:1f.2 IDE interface: Intel Corporation 82801GBM/GHM (ICH7 Family) SATA IDE
->> Controller (rev 02)
->> 00:1f.3 SMBus: Intel Corporation N10/ICH 7 Family SMBus Controller (rev 02)
->> 03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan]
->> Network Connection (rev 02)
->> 05:01.0 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller
->> 05:01.1 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host
->> Adapter (rev 19)
->> 05:01.2 System peripheral: Ricoh Co Ltd R5C843 MMC Host Controller (rev 01)
->> 05:01.3 System peripheral: Ricoh Co Ltd R5C592 Memory Stick Bus Host Adapter
->> (rev 0a)
->> 05:07.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC
->> Gigabit Ethernet (rev 10)
->>
->>
->> On 11/18/2013 12:41 PM, Bruno Prémont wrote:
->>> Hi Stephen,
->>>
->>> You may want to CC intel-gfx@lists.freedesktop.org  for i915 issues (even
->>> if you are not subscribed and you mail will wait for a moderator to let
->>> it go through).
->>>
->>> In case of intel GPU hangs you should at least include
->>> /sys/kernel/debug/dri/0/i915_error_state, probably submitting as a
->>> bug report on bugs.freedesktop.org due to its size.
->>>
->>> If you have any indication on what triggers the hang, please add!
->>>
->>> Bruno
->>>
->>> On Sun, 17 November 2013 Stephen Clark<sclark46@earthlink.net>   wrote:
->>>> Hi List,
->>>>
->>>> I am getting this in kernel 3.11 x86_64
->>>>
->>>> Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on
->>>> render ring
->>>> Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more
->>>> information in /sys/kernel/debug/dri/0/i915_error_state
->>>> Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6,
->>>> mode:0x200020
->>>> Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted
->>>> 3.11.6-1.el6.elrepo.x86_64 #1
->>>> Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F,
->>>> BIOS 080012  08/29/2006
->>>> Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0
->>>> ffffffff815f7f89 0000000000000010
->>>> Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970
->>>> ffffffff8114243d ffff8800b778ab28
->>>> Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000
->>>> 0000000000000000 0000000600000002
->>>> Nov 17 18:56:19 joker4 kernel: Call Trace:
->>>> Nov 17 18:56:19 joker4 kernel:<IRQ>    [<ffffffff815f7f89>] dump_stack+0x49/0x60
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>]
->>>> __alloc_pages_slowpath+0x4ae/0x7c0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ?
->>>> get_page_from_freelist+0x2dd/0x710
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>]
->>>> __alloc_pages_nodemask+0x30e/0x330
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ?
->>>> i915_capture_error_state+0x379/0x720 [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>]
->>>> i915_capture_error_state+0x379/0x720 [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80
->>>> [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>]
->>>> i915_hangcheck_elapsed+0x2ce/0x350 [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
->>>> i915_handle_error+0x80/0x80 [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
->>>> i915_handle_error+0x80/0x80 [i915]
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>]
->>>> smp_apic_timer_interrupt+0x4a/0x5a
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
->>>> Nov 17 18:56:19 joker4 kernel:<EOI>    [<ffffffff810bb1aa>] ?
->>>> cpu_idle_loop+0x10a/0x210
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
->>>> Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
->>>> Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
->>>> Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
->>>> Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
->>>> Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
->>>> hung inside bo (0x85c000 ctx 0) at 0x85c97c
->>>>
->>>> is this fixed in 3.12?
->>>>
->>>> Just checked get the same thing in 3.12 but no trace back.
->>>>
->>>>
->>>> Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
->>>> Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more
->>>> information in /sys/class/drm/card0/error
->>>> Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
->>>> hung inside bo (0x7214000 ctx 0) at 0x72142e0
->>>> Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
-
-
--- 
-Steve Clark
-
+	Arnd
