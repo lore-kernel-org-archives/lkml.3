@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab3KTQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:24:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:30385 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754258Ab3KTQY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:24:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438612621"
-Message-ID: <528CE24F.5000604@linux.intel.com>
-Date: Wed, 20 Nov 2013 08:24:47 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754510Ab3KTQZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:25:50 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47517 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab3KTQZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:25:49 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH 1/3] mtd: nand: davinci: reuse driver for Keystone arch
+Date: Wed, 20 Nov 2013 18:24:57 +0200
+Message-ID: <1384964699-15134-2-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shaohua.li@intel.com,
-        rui.zhang@intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86, acpi, idle: Restructure the mwait idle routines
-References: <20131119090019.GJ3866@twins.programming.kicks-ass.net> <20131119090859.GC3694@twins.programming.kicks-ass.net> <20131119113153.GD3694@twins.programming.kicks-ass.net> <528B7433.7020507@linux.intel.com> <20131119145143.GK10022@twins.programming.kicks-ass.net> <20131119151338.GF3694@twins.programming.kicks-ass.net> <20131119130630.487da962@ultegra> <20131120102803.GO10022@twins.programming.kicks-ass.net> <20131120105837.GH3694@twins.programming.kicks-ass.net>
-In-Reply-To: <20131120105837.GH3694@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 2:58 AM, Peter Zijlstra wrote:
-> On Wed, Nov 20, 2013 at 11:28:03AM +0100, Peter Zijlstra wrote:
->> On Tue, Nov 19, 2013 at 01:06:30PM -0800, Jacob Pan wrote:
->>> I applied this patch on top of upstream kernel (801a760) and found out
->>> my machine completely failed to enter idle when nothing is running.
->>> turbostate shows 100% C0. ftrace shows kernel coming in and out of idle
->>> frequently.
->>>
->>> Both ACPI idle and intel_idle behaves the same way. I have to do the
->>> following change to allow entering C-states again.
->
->> That doesn't make any sense; current_set_polling_and_test() returns the
->> same thing need_resched() does.
->>
->> But you're right, intel_idle resides 100% in C0 and acpi_idle has 100%
->> C1 residency... most weird.
->
-> So pretty silly actually; you cannot do a store (any store) in between
-> monitor and mwait.
+The Keystone arch has compatible nand device, so reuse it.
+In case with Keystone it depends on TI_AEMIF because AEMIF
+driver is responsible to set timings.
 
-you can
-just not to the cacheline you are watching (or things that alias with that)
+See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ .../devicetree/bindings/mtd/davinci-nand.txt       |    8 +++++---
+ drivers/mtd/nand/Kconfig                           |    6 +++---
+ drivers/mtd/nand/davinci_nand.c                    |    1 +
+ 3 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+index befaa5b..cfb18ab 100644
+--- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+@@ -1,14 +1,16 @@
+-Device tree bindings for Texas instruments Davinci NAND controller
++Device tree bindings for Texas instruments Davinci/Keystone NAND controller
+ 
+-This file provides information, what the device node for the davinci NAND
+-interface contains.
++This file provides information, what the device node for the davinci/keystone
++NAND interface contains.
+ 
+ Documentation:
+ Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
++Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+ 
+ Required properties:
+ 
+ - compatible:			"ti,davinci-nand"
++				"ti,keystone-nand"
+ 
+ - reg:				Contains 2 offset/length values:
+ 				- offset and length for the access window.
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index d885298..8bf69c7 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -492,11 +492,11 @@ config MTD_NAND_SH_FLCTL
+ 	  for NAND Flash using FLCTL.
+ 
+ config MTD_NAND_DAVINCI
+-        tristate "Support NAND on DaVinci SoC"
+-        depends on ARCH_DAVINCI
++        tristate "Support NAND on DaVinci/Keystone SoC"
++        depends on ARCH_DAVINCI || (ARCH_KEYSTONE && TI_AEMIF)
+         help
+ 	  Enable the driver for NAND flash chips on Texas Instruments
+-	  DaVinci processors.
++	  DaVinci/Keystone processors.
+ 
+ config MTD_NAND_TXX9NDFMC
+ 	tristate "NAND Flash support for TXx9 SoC"
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index f7b21b8..8459720 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -523,6 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
+ #if defined(CONFIG_OF)
+ static const struct of_device_id davinci_nand_of_match[] = {
+ 	{.compatible = "ti,davinci-nand", },
++	{.compatible = "ti,keystone-nand", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+-- 
+1.7.9.5
 
