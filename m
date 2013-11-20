@@ -1,129 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab3KTNeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:34:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab3KTNeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:34:09 -0500
-Date: Wed, 20 Nov 2013 15:37:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net 2/3] virtio-net: fix num calculation on frag skb
- allocation failure
-Message-ID: <20131120133707.GA8523@redhat.com>
-References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
- <1384938447-3775-2-git-send-email-jasowang@redhat.com>
- <20131120103729.GG19341@redhat.com>
- <734327384.27426189.1384949330819.JavaMail.root@redhat.com>
+	id S1753274Ab3KTNe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:34:28 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:37522 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3KTNeZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 08:34:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <734327384.27426189.1384949330819.JavaMail.root@redhat.com>
+In-Reply-To: <201311200137.20917.arnd@arndb.de>
+References: <1376996476-12027-2-git-send-email-geert@linux-m68k.org>
+	<201311191335.40506.arnd@arndb.de>
+	<CAMuHMdXvn2GigpnH020XA1JvtF=4ZxwrOF4T=ocGgjhrcbWkgg@mail.gmail.com>
+	<201311200137.20917.arnd@arndb.de>
+Date: Wed, 20 Nov 2013 14:34:24 +0100
+X-Google-Sender-Auth: eoPVmrmb8DSyyCEeIAKJIcaxA_g
+Message-ID: <CAMuHMdVKLFzz0zoEKGLQF+o=MwHX5_FMDtq0FuqF3_x00w6XrA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] asm/types.h: Remove include/asm-generic/int-l64.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 07:08:50AM -0500, Jason Wang wrote:
-> 
-> 
-> ----- 原始邮件 -----
-> > On Wed, Nov 20, 2013 at 05:07:26PM +0800, Jason Wang wrote:
-> > > We need decrease the rq->num after we can get a buf through
-> > > virtqueue_get_buf() even if we could not allocate frag skb. Otherwise, the
-> > > refill routine won't be triggered under heavy memory stress since the
-> > > driver may
-> > > still think there's enough room.
-> > > 
-> > > This bug was introduced by commit 2613af0ed18a11d5c566a81f9a6510b73180660a
-> > > (virtio_net: migrate mergeable rx buffers to page frag allocators).
-> > > 
-> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > Cc: Michael Dalton <mwdalton@google.com>
-> > > Cc: Eric Dumazet <edumazet@google.com>
-> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > 
-> > So let's wrap virtqueue_get_buf to make sure we get it right?
-> > 
-> 
-> Ok. good idea.
+On Wed, Nov 20, 2013 at 1:37 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 19 November 2013, Geert Uytterhoeven wrote:
+>> On Tue, Nov 19, 2013 at 1:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>
+>> > I'm pretty sure you are right with this, but I don't remember at all
+>> > what I suggested and don't understand what the problem (if any) is.
+>> > Can you remind me?
+>>
+>> Me neither :-(
+>> You said https://lkml.org/lkml/2011/8/13/109, and Al's umode_t
+>> consolidation has been completed.
+>>
+>> I think it had to do with include/uapi/asm-generic/types.h including
+>> <asm-generic/int-ll64.h>. Let's try...
+>>
+>> In userspace, it will include <asm-generic/int-ll64.h> from uapi to get
+>> e.g. __u32.
+>> In kernelspace, it will include plain <asm-generic/int-ll64.h> (to get e.g.
+>> u32), which will in turn include <uapi/asm-generic/int-ll64.h> (to also
+>> get e.g. __u32).
+>>
+>> As there's only include/uapi/asm-generic/types.h, but not
+>> include/asm-generic/types.h (the individual architectures still have their
+>> own asm/types.h), you cannot easily move (the contents of) int-ll64.h
+>> to asm-generic/types.h for both the normal and uapi headers.
+>>
+>> Does this make sense?
+>
+> I'm pretty sure I was not talking about include/uapi/asm-generic/types.h
+> there, and I still think we can just move include/asm-generic/int-ll64.h
+> to include/asm-generic/types.h but leave the uapi logic in place.
 
-So I did this (below) but the compiler is not smart enough to
-avoid two branches on data path.
-So I'm not sure anymore: with my patch it's pretty clear how
-the code works.
+The puzzle pieces are starting to fit: at that time, we still had
+include/asm-generic/types.h, which got later renamed to
+include/uapi/asm-generic/types.h...
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> All architectures that do nothing but #include <asm-generic/int-ll64.h>
+> from asm/types.h at the moment can then remove their private file and
+> use the generic version, the others need to change to #include
+> <asm-generic/types.h>.
+>
+> You can no longer #include <uapi/asm-generic/types.h> from kernel space
+> after this change, since it refers to <asm-generic/int-ll64.h> which
+> now only exists in user space, but that's ok because it would be a bug
+> to include already (it defines the wrong types), and we don't.
 
-but I don't think we need to apply this.
+I'll see what I can do...
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 11d9cc9..1cc2e43 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -296,6 +296,14 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
- 	return skb;
- }
- 
-+static void *rq_get_buf(struct receive_queue *rq, unsigned int *len)
-+{
-+	void *buf = virtqueue_get_buf(rq->vq, len);
-+	if (buf)
-+		rq->num--;
-+	return buf;
-+}
-+
- static struct sk_buff *receive_mergeable(struct net_device *dev,
- 					 struct receive_queue *rq,
- 					 void *buf,
-@@ -315,7 +323,7 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
- 	while (--num_buf) {
- 		int num_skb_frags;
- 
--		buf = virtqueue_get_buf(rq->vq, &len);
-+		buf = rq_get_buf(rq, &len);
- 		if (unlikely(!buf)) {
- 			pr_debug("%s: rx error: %d buffers out of %d missing\n",
- 				 dev->name, num_buf, hdr->mhdr.num_buffers);
-@@ -329,7 +337,6 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
- 		}
- 
- 		page = virt_to_head_page(buf);
--		--rq->num;
- 
- 		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
- 		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
-@@ -370,7 +377,7 @@ err_buf:
- 	dev->stats.rx_dropped++;
- 	dev_kfree_skb(head_skb);
- 	while (--num_buf) {
--		buf = virtqueue_get_buf(rq->vq, &len);
-+		buf = rq_get_buf(rq, &len);
- 		if (unlikely(!buf)) {
- 			pr_debug("%s: rx error: %d buffers missing\n",
- 				 dev->name, num_buf);
-@@ -379,7 +386,6 @@ err_buf:
- 		}
- 		page = virt_to_head_page(buf);
- 		put_page(page);
--		--rq->num;
- 	}
- 	return NULL;
- }
-@@ -675,9 +681,8 @@ static int virtnet_poll(struct napi_struct *napi, int budget)
- 
- again:
- 	while (received < budget &&
--	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
-+	       (buf = rq_get_buf(rq, &len)) != NULL) {
- 		receive_buf(rq, buf, len);
--		--rq->num;
- 		received++;
- 	}
- 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
