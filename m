@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab3KTU5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:57:16 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:35296 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab3KTU5M (ORCPT
+	id S1755453Ab3KTU52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:57:28 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:50173 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207Ab3KTU5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:57:12 -0500
-Message-ID: <528D2224.9090106@gmail.com>
-Date: Wed, 20 Nov 2013 21:57:08 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v1 7/7] net: cpsw: resume/suspend PHY on port start/stop
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1384978913-8052-8-git-send-email-sebastian.hesselbarth@gmail.com> <CAGVrzcZ+5oaucp+OSeGGe=6MBjEwi4K=E_NbCm3PjR_Owyxstw@mail.gmail.com>
-In-Reply-To: <CAGVrzcZ+5oaucp+OSeGGe=6MBjEwi4K=E_NbCm3PjR_Owyxstw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Nov 2013 15:57:25 -0500
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Johannes Erdfelt <johannes@erdfelt.com>,
+        linux-media@vger.kernel.org (open list:MEDIA INPUT INFRA...)
+Subject: [PATCH] usb: cx231xx: Fix explicit freed pointer dereference
+Date: Wed, 20 Nov 2013 17:51:23 -0300
+Message-Id: <1384980697-4696-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 09:48 PM, Florian Fainelli wrote:
-> 2013/11/20 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
->> Network PHYs consume a noticable amount of power. This adds phy_resume
->> on slave_open and phy_suspend on slave_stop to save this power if the
->> port is down anyway.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Cc: David S. Miller <davem@davemloft.net>
->> Cc: netdev@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/net/ethernet/ti/cpsw.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
->> index 90d41d2..f1dc54f 100644
->> --- a/drivers/net/ethernet/ti/cpsw.c
->> +++ b/drivers/net/ethernet/ti/cpsw.c
->> @@ -1013,6 +1013,7 @@ static void cpsw_slave_open(struct cpsw_slave *slave, struct cpsw_priv *priv)
->>          } else {
->>                  dev_info(priv->dev, "phy found : id is : 0x%x\n",
->>                           slave->phy->phy_id);
->> +               phy_resume(slave->phy);
->>                  phy_start(slave->phy);
->
-> Cannot phy_start() figure this out for us based on the internal PHY
-> device state machine?
+Put kfree after the 'clear_bit()' call.
 
-Yeah, as I said in the cover letter, I started with mv643xx_eth which
-is not using phy_start/stop as it probably should be. As soon as I
-looked at mvneta/cpsw, I also came to the conclusion that
-phy_suspend/resume should be hidden in phy_start/stop.
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ drivers/media/usb/cx231xx/cx231xx-cards.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> I would imagine that you would want to call phy_suspend/resume from an
-> Ethernet driver's PM suspend/resume callbacks to make sure that the
-> PHY also enters a low power mode, but I do not want to have to
-> remember that I need to call phy_resume before phy_start for instance.
-> As of today we have PHY_HALTED/PHY_RESUMING, and I think we certainly
-> need at least a PHY_SUSPENDED state to help us with that.
->
->>
->>                  /* Configure GMII_SEL register */
->> @@ -1081,6 +1082,7 @@ static void cpsw_slave_stop(struct cpsw_slave *slave, struct cpsw_priv *priv)
->>          if (!slave->phy)
->>                  return;
->>          phy_stop(slave->phy);
->> +       phy_suspend(slave->phy);
->
-> Same here, why is not that hidden in phy_stop? If there is any fear
-> that this breaks setups where WoL is used or such, we could add a new
-> argument to phy_connect() and friends which says whether it is okay to
-> auto-suspend the PHY upon PHY_stop
->
->>          phy_disconnect(slave->phy);
->>          slave->phy = NULL;
->>   }
->> --
->> 1.7.2.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+diff --git a/drivers/media/usb/cx231xx/cx231xx-cards.c b/drivers/media/usb/cx231xx/cx231xx-cards.c
+index e9d017b..528cce9 100644
+--- a/drivers/media/usb/cx231xx/cx231xx-cards.c
++++ b/drivers/media/usb/cx231xx/cx231xx-cards.c
+@@ -1412,8 +1412,8 @@ err_v4l2:
+ 	usb_set_intfdata(interface, NULL);
+ err_if:
+ 	usb_put_dev(udev);
+-	kfree(dev);
+ 	clear_bit(dev->devno, &cx231xx_devused);
++	kfree(dev);
+ 	return retval;
+ }
+ 
+-- 
+1.8.4.2
 
