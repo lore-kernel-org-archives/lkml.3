@@ -1,456 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3KTRxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:53:13 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53037 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754764Ab3KTRxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754777Ab3KTRxL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 20 Nov 2013 12:53:11 -0500
-Date: Wed, 20 Nov 2013 17:52:33 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rostedt@goodmis.org, linaro-kernel@lists.linaro.org,
-        shaojie.sun@linaro.org, patches@linaro.org, fweisbec@gmail.com,
-        broonie@linaro.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3] ARM: trace: Add tracepoint for the Inter Processor
- Interrupt
-Message-ID: <20131120175233.GB2582@e103592.cambridge.arm.com>
-References: <1383814887-15415-1-git-send-email-daniel.lezcano@linaro.org>
- <528B710E.2050505@linaro.org>
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53630 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab3KTRxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:53:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <528B710E.2050505@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131120173347.GA2369@hp530>
+References: <1384965522-5788-1-git-send-email-ddstreet@ieee.org> <20131120173347.GA2369@hp530>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 20 Nov 2013 12:52:47 -0500
+X-Google-Sender-Auth: FE2U8BN_mx7Cf_XJPF41DBvwCKg
+Message-ID: <CALZtONA81=R4abFMpMMtDZKQe0s-8+JxvEfZO3NEZ910VwRDmw@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: change params from hidden to ro
+To: Vladimir Murzin <murzin.v@gmail.com>
+Cc: linux-mm@kvack.org, Seth Jennings <sjennings@variantweb.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 03:09:18PM +0100, Daniel Lezcano wrote:
-> On 11/07/2013 10:01 AM, Daniel Lezcano wrote:
-> >The Inter Processor Interrupt is used on ARM to tell another processor to do
-> >a specific action. This is mainly used to emulate a timer interrupt on an idle
-> >cpu, force a cpu to reschedule or run a function on another processor context.
-> >
-> >Add a tracepoint when raising an IPI and in the entry/exit handler functions.
-> >
-> >When a cpu raises an IPI, the targeted cpus is an interesting information, the
-> >cpumask conversion in hexa is added in the trace using the cpumask_scnprintf
-> >function.
-> >
-> >Tested-on Vexpress TC2 (5 processors).
-> >Tested-on u8500 (2 processors).
-> >
-> >Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> 
-> Hi guys,
-> 
-> did you have time to look at this patch ?
+On Wed, Nov 20, 2013 at 12:33 PM, Vladimir Murzin <murzin.v@gmail.com> wrote:
+> Hi Dan!
+>
+> On Wed, Nov 20, 2013 at 11:38:42AM -0500, Dan Streetman wrote:
+>> The "compressor" and "enabled" params are currently hidden,
+>> this changes them to read-only, so userspace can tell if
+>> zswap is enabled or not and see what compressor is in use.
+>
+> Could you elaborate more why this pice of information is necessary for
+> userspace?
 
-I just spotted this recently.
+For anyone interested in zswap, it's handy to be able to tell if it's
+enabled or not ;-)  Technically people can check to see if the zswap
+debug files are in /sys/kernel/debug/zswap, but I think the actual
+"enabled" param is more obvious.  And the compressor param is really
+the only way anyone from userspace can see what compressor's being
+used; that's helpful to know for anyone that might want to be using a
+non-default compressor.
 
-It seems a potentially useful idea, and seems to work (on ARM Vexpress/
-TC2 anyway, which is what I have in front of me right now).
-
-> We are writing a tool [1] to do some statistics about the cpu's idle
-> times and giving the source of the wakeup. We hope it could be
-> useful for the community to do some measurements but we need the IPI
-> tracepoints to be more accurate.
-
-It's not obvious to me what already exists.  Are the new tracepoints
-giving genuinely more information?  Or otherwise, how/why is the
-information "more accurate" than what was available previously?
-
-> 
-> Thanks in advance
->   -- Daniel
-> 
-> [1] https://git.linaro.org/gitweb?p=tools/idlestat.git;a=summary
-> 
-> >---
-> >  arch/arm/include/asm/smp.h   |    9 ++++
-> >  arch/arm/kernel/smp.c        |   34 +++++++------
-> >  arch/arm64/include/asm/smp.h |    7 +++
-> >  arch/arm64/kernel/smp.c      |   21 ++++++--
-
-Is there any reason for this to be specific to ARM?
-
-Not all arches have that ipi_msg_type enum, so it would be worth
-thinking about what is common and how to make it more generic.
-
-Wiring up the tracepoint for other arches could be left to other
-people, but it's a good idea to have a framework that they can
-fit into.
-
-> >  include/trace/events/ipi.h   |  112 ++++++++++++++++++++++++++++++++++++++++++
-> >  5 files changed, 164 insertions(+), 19 deletions(-)
-> >  create mode 100644 include/trace/events/ipi.h
-> >
-> >diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-> >index a8cae71c..788706c 100644
-> >--- a/arch/arm/include/asm/smp.h
-> >+++ b/arch/arm/include/asm/smp.h
-> >@@ -18,6 +18,15 @@
-> >  # error "<asm/smp.h> included in non-SMP build"
-> >  #endif
-> >
-> >+enum ipi_msg_type {
-> >+	IPI_WAKEUP,
-> >+	IPI_TIMER,
-> >+	IPI_RESCHEDULE,
-> >+	IPI_CALL_FUNC,
-> >+	IPI_CALL_FUNC_SINGLE,
-> >+	IPI_CPU_STOP,
-> >+};
-> >+
-> >  #define raw_smp_processor_id() (current_thread_info()->cpu)
-> >
-> >  struct seq_file;
-> >diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> >index 72024ea..9ca8ce8 100644
-> >--- a/arch/arm/kernel/smp.c
-> >+++ b/arch/arm/kernel/smp.c
-> >@@ -46,6 +46,9 @@
-> >  #include <asm/mach/arch.h>
-> >  #include <asm/mpu.h>
-> >
-> >+#define CREATE_TRACE_POINTS
-> >+#include <trace/events/ipi.h>
-> >+
-> >  /*
-> >   * as from 2.5, kernels no longer have an init_tasks structure
-> >   * so we need some other way of telling a new secondary core
-> >@@ -59,15 +62,6 @@ struct secondary_data secondary_data;
-> >   */
-> >  volatile int pen_release = -1;
-> >
-> >-enum ipi_msg_type {
-> >-	IPI_WAKEUP,
-> >-	IPI_TIMER,
-> >-	IPI_RESCHEDULE,
-> >-	IPI_CALL_FUNC,
-> >-	IPI_CALL_FUNC_SINGLE,
-> >-	IPI_CPU_STOP,
-
-There are a couple of new entries you'll need to add when rebasing.
-They'll also need adding in show_ipi_name().
-
-> >-};
-> >-
-> >  static DECLARE_COMPLETION(cpu_running);
-> >
-> >  static struct smp_operations smp_ops;
-> >@@ -433,19 +427,25 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
-> >  		smp_cross_call = fn;
-> >  }
-> >
-> >+static void ipi_raise(const struct cpumask *mask, int ipinr)
-> >+{
-> >+	trace_ipi_raise(mask, ipinr);
-> >+	smp_cross_call(mask, ipinr);
-> >+}
-> >+
-> >  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-> >  {
-> >-	smp_cross_call(mask, IPI_CALL_FUNC);
-> >+	ipi_raise(mask, IPI_CALL_FUNC);
-> >  }
-> >
-> >  void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
-> >  {
-> >-	smp_cross_call(mask, IPI_WAKEUP);
-> >+	ipi_raise(mask, IPI_WAKEUP);
-> >  }
-> >
-> >  void arch_send_call_function_single_ipi(int cpu)
-> >  {
-> >-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> >+	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> >  }
-> >
-> >  static const char *ipi_types[NR_IPI] = {
-> >@@ -487,7 +487,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
-> >  #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> >  void tick_broadcast(const struct cpumask *mask)
-> >  {
-> >-	smp_cross_call(mask, IPI_TIMER);
-> >+	ipi_raise(mask, IPI_TIMER);
-> >  }
-> >  #endif
-> >
-> >@@ -528,6 +528,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  	unsigned int cpu = smp_processor_id();
-> >  	struct pt_regs *old_regs = set_irq_regs(regs);
-> >
-> >+	trace_ipi_handler_entry(ipinr);
-> >+
-> >  	if (ipinr < NR_IPI)
-> >  		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
-> >
-> >@@ -571,11 +573,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  		break;
-> >  	}
-> >  	set_irq_regs(old_regs);
-> >+
-> >+	trace_ipi_handler_exit(ipinr);
-> >  }
-> >
-> >  void smp_send_reschedule(int cpu)
-> >  {
-> >-	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> >+	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
-> >  }
-> >
-> >  void smp_send_stop(void)
-> >@@ -586,7 +590,7 @@ void smp_send_stop(void)
-> >  	cpumask_copy(&mask, cpu_online_mask);
-> >  	cpumask_clear_cpu(smp_processor_id(), &mask);
-> >  	if (!cpumask_empty(&mask))
-> >-		smp_cross_call(&mask, IPI_CPU_STOP);
-> >+		ipi_raise(&mask, IPI_CPU_STOP);
-> >
-> >  	/* Wait up to one second for other CPUs to stop */
-> >  	timeout = USEC_PER_SEC;
-> >diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
-> >index 4b8023c..7ebaa3a 100644
-> >--- a/arch/arm64/include/asm/smp.h
-> >+++ b/arch/arm64/include/asm/smp.h
-> >@@ -24,6 +24,13 @@
-> >  # error "<asm/smp.h> included in non-SMP build"
-> >  #endif
-> >
-> >+enum ipi_msg_type {
-> >+	IPI_RESCHEDULE,
-> >+	IPI_CALL_FUNC,
-> >+	IPI_CALL_FUNC_SINGLE,
-> >+	IPI_CPU_STOP,
-> >+};
-> >+
-> >  #define raw_smp_processor_id() (current_thread_info()->cpu)
-> >
-> >  struct seq_file;
-> >diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> >index 78db90d..c987b9f 100644
-> >--- a/arch/arm64/kernel/smp.c
-> >+++ b/arch/arm64/kernel/smp.c
-> >@@ -48,6 +48,9 @@
-> >  #include <asm/tlbflush.h>
-> >  #include <asm/ptrace.h>
-> >
-> >+#define CREATE_TRACE_POINTS
-> >+#include <trace/events/ipi.h>
-> >+
-> >  /*
-> >   * as from 2.5, kernels no longer have an init_tasks structure
-> >   * so we need some other way of telling a new secondary core
-> >@@ -426,14 +429,20 @@ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
-> >  	smp_cross_call = fn;
-> >  }
-> >
-> >+static void ipi_raise(const struct cpumask *mask, int ipinr)
-> >+{
-> >+	trace_ipi_raise(mask, ipinr);
-> >+	smp_cross_call(mask, ipinr);
-> >+}
-> >+
-> >  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-> >  {
-> >-	smp_cross_call(mask, IPI_CALL_FUNC);
-> >+	ipi_raise(mask, IPI_CALL_FUNC);
-> >  }
-> >
-> >  void arch_send_call_function_single_ipi(int cpu)
-> >  {
-> >-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> >+	ipi_raise(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-> >  }
-> >
-> >  static const char *ipi_types[NR_IPI] = {
-> >@@ -501,6 +510,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  	unsigned int cpu = smp_processor_id();
-> >  	struct pt_regs *old_regs = set_irq_regs(regs);
-> >
-> >+	trace_ipi_handler_entry(ipinr);
-> >+
-> >  	if (ipinr >= IPI_RESCHEDULE && ipinr < IPI_RESCHEDULE + NR_IPI)
-> >  		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_RESCHEDULE]);
-> >
-> >@@ -532,11 +543,13 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
-> >  		break;
-> >  	}
-> >  	set_irq_regs(old_regs);
-> >+
-> >+	trace_ipi_handler_exit(ipinr);
-> >  }
-> >
-> >  void smp_send_reschedule(int cpu)
-> >  {
-> >-	smp_cross_call(cpumask_of(cpu), IPI_RESCHEDULE);
-> >+	ipi_raise(cpumask_of(cpu), IPI_RESCHEDULE);
-> >  }
-> >
-> >  void smp_send_stop(void)
-> >@@ -549,7 +562,7 @@ void smp_send_stop(void)
-> >  		cpumask_copy(&mask, cpu_online_mask);
-> >  		cpu_clear(smp_processor_id(), mask);
-> >
-> >-		smp_cross_call(&mask, IPI_CPU_STOP);
-> >+		ipi_raise(&mask, IPI_CPU_STOP);
-> >  	}
-> >
-> >  	/* Wait up to one second for other CPUs to stop */
-> >diff --git a/include/trace/events/ipi.h b/include/trace/events/ipi.h
-> >new file mode 100644
-> >index 0000000..fa22d4f
-> >--- /dev/null
-> >+++ b/include/trace/events/ipi.h
-> >@@ -0,0 +1,112 @@
-> >+#undef TRACE_SYSTEM
-> >+#define TRACE_SYSTEM ipi
-
-Would it make sense to put these under irq instead?
-
-IPIs are a special kind of interrupt, but interrupts nonetheless.
-
-irq:ipi_ might make sense as a prefix ... the IRQ folks might have a
-view though.
-
-> >+
-> >+#if !defined(_TRACE_IPI_H) || defined(TRACE_HEADER_MULTI_READ)
-> >+#define _TRACE_IPI_H
-> >+
-> >+#include <linux/tracepoint.h>
-> >+
-> >+#define ipi_name(ipinr) { IPI_##ipinr, #ipinr }
-> >+#define show_ipi_name(val)				\
-> >+	__print_symbolic(val,				\
-> >+			 ipi_name(WAKEUP),		\
-> >+			 ipi_name(TIMER),		\
-> >+			 ipi_name(RESCHEDULE),		\
-> >+			 ipi_name(CALL_FUNC),		\
-> >+			 ipi_name(CALL_FUNC_SINGLE),	\
-> >+			 ipi_name(CPU_STOP))
-
-I can see this being a bit of a pain to maintain.  How do we keep it in
-sync with the arch headers?
-
-One option would be for the arch to provide this, or find a way to
-define the common entries in one place and the arch-specific entries
-via the arch headers.
-
-Cheers
----Dave
-
-> >+
-> >+#define show_cpumask(srcp)				\
-> >+	({						\
-> >+		char *buf = __get_dynamic_array(buf);	\
-> >+		cpumask_scnprintf(buf, NR_CPUS, srcp);	\
-> >+		buf;					\
-> >+	})
-> >+
-> >+DECLARE_EVENT_CLASS(ipi,
-> >+
-> >+    TP_PROTO(int ipinr),
-> >+
-> >+    TP_ARGS(ipinr),
-> >+
-> >+    TP_STRUCT__entry(
-> >+	    __field(int, ipinr)
-> >+    ),
-> >+
-> >+    TP_fast_assign(
-> >+	    __entry->ipinr = ipinr;
-> >+    ),
-> >+
-> >+    TP_printk("ipi=%d, name=%s", __entry->ipinr,
-> >+	      show_ipi_name(__entry->ipinr))
-> >+);
-> >+
-> >+/**
-> >+ * ipi_handle_entry - called right before the IPI handler
-> >+ * @ipinr: the IPI number
-> >+ *
-> >+ * The @ipinr value must be valid and the action name associated with
-> >+ * the IPI value is given in the trace.
-> >+ */
-> >+DEFINE_EVENT_CONDITION(ipi, ipi_handler_entry,
-> >+
-> >+    TP_PROTO(int ipinr),
-> >+
-> >+    TP_ARGS(ipinr),
-> >+
-> >+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-> >+);
-> >+
-> >+/**
-> >+ * ipi_handle_exit - called right after the IPI handler
-> >+ * @ipinr: the IPI number
-> >+ *
-> >+ * The @ipinr value must be valid and the action name associated with
-> >+ * the IPI value is given in the trace.
-> >+ */
-> >+DEFINE_EVENT_CONDITION(ipi, ipi_handler_exit,
-> >+
-> >+    TP_PROTO(int ipinr),
-> >+
-> >+    TP_ARGS(ipinr),
-> >+
-> >+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0)
-> >+);
-> >+
-> >+/**
-> >+ * ipi_raise - called when a smp cross call is made
-> >+ * @ipinr: the IPI number
-> >+ * @cpumask: the recipients for the IPI
-> >+ *
-> >+ * The @ipinr value must be valid and the action name associated with
-> >+ * the IPI value is given in the trace as well as the cpumask of the
-> >+ * targeted cpus.
-> >+ */
-> >+TRACE_EVENT_CONDITION(ipi_raise,
-> >+
-> >+    TP_PROTO(const struct cpumask *cpumask, int ipinr),
-> >+
-> >+    TP_ARGS(cpumask, ipinr),
-> >+
-> >+    TP_CONDITION(ipinr < NR_IPI && ipinr >= 0),
-> >+
-> >+    TP_STRUCT__entry(
-> >+	    __field(int, ipinr)
-> >+	    __field(const struct cpumask *, cpumask)
-> >+	    __dynamic_array(char, buf, NR_CPUS)
-> >+    ),
-> >+
-> >+    TP_fast_assign(
-> >+	    __entry->ipinr = ipinr;
-> >+	    __entry->cpumask = cpumask;
-> >+    ),
-> >+
-> >+    TP_printk("ipi=%d, cpumask=0x%s, name=%s", __entry->ipinr,
-> >+	      show_cpumask(__entry->cpumask),
-> >+	      show_ipi_name(__entry->ipinr))
-> >+);
-> >+
-> >+#endif /* _TRACE_IPI_H */
-> >+
-> >+/* This part must be outside protection */
-> >+#include <trace/define_trace.h>
-> >
-> 
-> 
-> -- 
->  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-> 
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+And of course, eventually we'll want to make the params writable, so
+the compressor can be changed dynamically, and zswap can be enabled or
+disabled dynamically (or at least enabled after boot).
