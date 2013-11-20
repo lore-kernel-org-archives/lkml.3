@@ -1,192 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab3KTNTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:19:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53449 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752633Ab3KTNTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:19:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] More ACPI and power management updates for v3.13-rc1
-Date: Wed, 20 Nov 2013 14:31:47 +0100
-Message-ID: <6443152.L15yMEV5my@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+	id S1751499Ab3KTNYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:24:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727Ab3KTNYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 08:24:00 -0500
+Date: Wed, 20 Nov 2013 15:26:57 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>, Shirley Ma <xma@us.ibm.com>
+Subject: [PATCH RFC] virtio_net: fix error handling for mergeable buffers
+Message-ID: <20131120132657.GA8455@redhat.com>
+References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Nov 20, 2013 at 05:07:25PM +0800, Jason Wang wrote:
+> When mergeable buffer were used, we only put the first page buf leave the rest
+> of buffers in the virt queue. This will cause the driver could not get the
+> correct head buffer any more. Fix this by dropping the rest of buffers for this
+> packet.
+> 
+> The bug was introduced by commit 9ab86bbcf8be755256f0a5e994e0b38af6b4d399
+> (virtio_net: Defer skb allocation in receive path).
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Shirley Ma <xma@us.ibm.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Please pull from the git repository at
+Just to clarify my previous comment: it was not about the
+idea of adding drop_mergeable_buffer - rather, I think that
+adding knowledge about mergeable buffers into page_to_skb creates an
+ugly internal API.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-2-3.13-rc1
+Let's move the call to page_to_skb within receive_mergeable instead:
+it's also nice that int offset = buf - page_address(page) logic
+is not spread around like it was.
 
-to receive more ACPI and power management updates for v3.13-rc1
-with top-most commit ed6a82546d2e8f6b5902269541733814d4adacc2
+Also, it's not nice that we ignore length errors when we drop
+packets because of OOM.
 
-  Merge branch 'acpi-hotplug'
+So I came up with the following - it seems to work but I didn't
+stress test yet.
 
-on top of commit 2f466d33f5f60542d3d82c0477de5863b22c94b9
+commit ebffb3fe4335ffe07124e4518e76d6e05844fa18
+Author: Michael S. Tsirkin <mst@redhat.com>
+Date:   Wed Nov 20 14:41:29 2013 +0200
 
-  Merge tag 'pci-v3.13-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci
+    virtio_net: fix error handling for mergeable buffers
+    
+    Eric Dumazet noticed that if we encounter an error
+    when processing a mergeable buffer, we don't
+    dequeue all of the buffers from this packet,
+    the result is almost sure to be loss of networking.
+    
+    Jason Wang noticed that we also leak a page and that we don't decrement
+    the rq buf count, so we won't repost buffers (a resource leak).
+    
+    Cc: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Michael Dalton <mwdalton@google.com>
+    Reported-by: Eric Dumazet <edumazet@google.com>
+    Reported-by: Jason Wang <jasowang@redhat.com>
+    Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-These commits were produced after I had sent my previous pull request.
-A couple of them fix bugs introduced in that pull request, some fix issues
-that have been present for a longer time, some add support for new hardware
-and there is a series changing the way in which ACPI companion device objects
-are associated with struct device things representing actual devices.
-
-Specifics:
-
-- ACPI-based device hotplug fixes for issues introduced recently and
-  a fix for an older error code path bug in the ACPI PCI host bridge
-  driver.
-
-- Fix for recently broken OMAP cpufreq build from Viresh Kumar.
-
-- Fix for a recent hibernation regression related to s2disk.
-
-- Fix for a locking-related regression in the ACPI EC driver from
-  Puneet Kumar.
-
-- System suspend error code path fix related to runtime PM and
-  runtime PM documentation update from Ulf Hansson.
-
-- cpufreq's conservative governor fix from Xiaoguang Chen.
-
-- New processor IDs for intel_idle and turbostat and removal of
-  an obsolete Kconfig option from Len Brown.
-
-- New device IDs for the ACPI LPSS (Low-Power Subsystem) driver and
-  ACPI-based PCI hotplug (ACPIPHP) cleanup from Mika Westerberg.
-
-- Removal of several ACPI video DMI blacklist entries that are not
-  necessary any more from Aaron Lu.
-
-- Rework of the ACPI companion representation in struct device and
-  code cleanup related to that change from Rafael J Wysocki,
-  Lan Tianyu and Jarkko Nikula.
-
-- Fixes for assigning names to ACPI-enumerated I2C and SPI devices
-  from Jarkko Nikula.
-
-Thanks!
-
-
----------------
-
-Aaron Lu (1):
-      ACPI / video: clean up DMI table for initial black screen problem
-
-Jarkko Nikula (3):
-      ACPI: Provide acpi_dev_name accessor for struct acpi_device device name
-      i2c: Use stable dev_name for ACPI enumerated I2C slaves
-      spi: Use stable dev_name for ACPI enumerated SPI slaves
-
-Lan Tianyu (2):
-      ACPI / AC: Remove struct acpi_device pointer from struct acpi_ac
-      cpufreq: governor: Remove fossil comment in the cpufreq_governor_dbs()
-
-Len Brown (3):
-      ACPI: delete CONFIG_ACPI_BLACKLIST_YEAR
-      intel_idle: Support Intel Atom Processor C2000 Product Family
-      tools / power turbostat: Support Silvermont
-
-Mika Westerberg (2):
-      ACPI / LPSS: add ACPI IDs for newer Intel PCHs
-      PCI / hotplug / ACPI: Drop unused acpiphp_debug declaration
-
-Puneet Kumar (1):
-      ACPI / EC: Ensure lock is acquired before accessing ec struct members
-
-Rafael J. Wysocki (8):
-      ACPI / driver core: Store an ACPI device pointer in struct acpi_dev_node
-      ACPI: Eliminate the DEVICE_ACPI_HANDLE() macro
-      ACPI / bind: Use (put|get)_device() on ACPI device objects too
-      PM / Hibernate: Do not crash kernel in free_basic_memory_bitmaps()
-      ACPI / hotplug: Fix acpi_bus_get_device() return value check
-      ACPI / hotplug: Fix PCI host bridge hot removal
-      ACPI / PCI root: Clear driver_data before failing enumeration
-      ACPI / scan: Set flags.match_driver in acpi_bus_scan_fixed()
-
-Ulf Hansson (2):
-      PM / Runtime: Update documentation around probe|remove|suspend
-      PM / Runtime: Fix error path for prepare
-
-Xiaoguang Chen (1):
-      cpufreq: conservative: set requested_freq to policy max when it is over policy max
-
-Viresh Kumar (1):
-      cpufreq: OMAP: Fix compilation error 'r & ret undeclared'
-
----------------
-
- Documentation/power/runtime_pm.txt             |   14 +-
- arch/ia64/hp/common/sba_iommu.c                |    2 +-
- arch/ia64/include/asm/pci.h                    |    2 +-
- arch/ia64/pci/pci.c                            |    6 +-
- arch/ia64/sn/kernel/io_acpi_init.c             |    4 +-
- arch/x86/include/asm/pci.h                     |    2 +-
- arch/x86/include/uapi/asm/msr-index.h          |    2 +
- arch/x86/pci/acpi.c                            |    4 +-
- drivers/acpi/Kconfig                           |   11 --
- drivers/acpi/ac.c                              |   15 +-
- drivers/acpi/acpi_lpss.c                       |    9 ++
- drivers/acpi/acpi_platform.c                   |    2 +-
- drivers/acpi/blacklist.c                       |   35 -----
- drivers/acpi/device_pm.c                       |   14 +-
- drivers/acpi/ec.c                              |    3 +-
- drivers/acpi/glue.c                            |   53 ++++---
- drivers/acpi/pci_root.c                        |    1 +
- drivers/acpi/scan.c                            |   14 +-
- drivers/acpi/video.c                           |   87 ++---------
- drivers/ata/libata-acpi.c                      |    4 +-
- drivers/base/platform.c                        |    4 +-
- drivers/base/power/main.c                      |    3 +
- drivers/cpufreq/cpufreq_conservative.c         |    3 +
- drivers/cpufreq/cpufreq_governor.c             |    4 -
- drivers/cpufreq/omap-cpufreq.c                 |    1 +
- drivers/gpio/gpiolib.c                         |    1 +
- drivers/gpu/drm/i915/intel_acpi.c              |    2 +-
- drivers/gpu/drm/i915/intel_opregion.c          |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/mxm/base.c |    2 +-
- drivers/gpu/drm/nouveau/nouveau_acpi.c         |    6 +-
- drivers/gpu/drm/radeon/radeon_acpi.c           |    8 +-
- drivers/gpu/drm/radeon/radeon_atpx_handler.c   |    7 +-
- drivers/gpu/drm/radeon/radeon_bios.c           |    2 +-
- drivers/hid/i2c-hid/i2c-hid.c                  |    2 +-
- drivers/i2c/i2c-core.c                         |   25 ++-
- drivers/ide/ide-acpi.c                         |    5 +-
- drivers/idle/intel_idle.c                      |   24 ++-
- drivers/mmc/core/sdio_bus.c                    |    3 +-
- drivers/pci/hotplug/acpi_pcihp.c               |    2 +-
- drivers/pci/hotplug/acpiphp.h                  |    1 -
- drivers/pci/hotplug/pciehp_acpi.c              |    4 +-
- drivers/pci/hotplug/sgi_hotplug.c              |    8 +-
- drivers/pci/ioapic.c                           |    2 +-
- drivers/pci/pci-acpi.c                         |    6 +-
- drivers/pci/pci-label.c                        |    6 +-
- drivers/platform/x86/apple-gmux.c              |    2 +-
- drivers/pnp/pnpacpi/core.c                     |   10 +-
- drivers/spi/spi.c                              |   19 ++-
- drivers/usb/core/hub.c                         |    2 +-
- drivers/usb/core/usb-acpi.c                    |    4 +-
- drivers/xen/pci.c                              |    6 +-
- include/acpi/acpi_bus.h                        |    2 +-
- include/linux/acpi.h                           |   23 +++
- include/linux/device.h                         |   12 +-
- include/linux/pci-acpi.h                       |    4 +-
- kernel/power/snapshot.c                        |    3 +-
- kernel/power/user.c                            |    1 +
- tools/power/x86/turbostat/turbostat.c          |  197 +++++++++++++++++-------
- 58 files changed, 374 insertions(+), 328 deletions(-)
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 01f4eb5..42f6a1e 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -296,41 +296,53 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
+ 	return skb;
+ }
+ 
+-static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
++static struct sk_buff *receive_mergeable(struct net_device *dev,
++					 struct receive_queue *rq,
++					 void *buf,
++					 unsigned int len)
+ {
+-	struct skb_vnet_hdr *hdr = skb_vnet_hdr(head_skb);
++	struct skb_vnet_hdr *hdr = buf;
++	int num_buf = hdr->mhdr.num_buffers;
++	struct page *page = virt_to_head_page(buf);
++	int offset = buf - page_address(page);
++	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len,
++					       MAX_PACKET_LEN);
+ 	struct sk_buff *curr_skb = head_skb;
+-	char *buf;
+-	struct page *page;
+-	int num_buf, len, offset;
+ 
+-	num_buf = hdr->mhdr.num_buffers;
+-	while (--num_buf) {
+-		int num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
++	if (unlikely(!curr_skb))
++		goto err_skb;
++
++	while (--num_buf) {
++		int num_skb_frags;
++
+ 		buf = virtqueue_get_buf(rq->vq, &len);
+ 		if (unlikely(!buf)) {
+-			pr_debug("%s: rx error: %d buffers missing\n",
+-				 head_skb->dev->name, hdr->mhdr.num_buffers);
+-			head_skb->dev->stats.rx_length_errors++;
+-			return -EINVAL;
++			pr_debug("%s: rx error: %d buffers out of %d missing\n",
++				 dev->name, num_buf, hdr->mhdr.num_buffers);
++			dev->stats.rx_length_errors++;
++			goto err_buf;
+ 		}
+ 		if (unlikely(len > MAX_PACKET_LEN)) {
+ 			pr_debug("%s: rx error: merge buffer too long\n",
+-				 head_skb->dev->name);
++				 dev->name);
+ 			len = MAX_PACKET_LEN;
+ 		}
++
++		page = virt_to_head_page(buf);
++		--rq->num;
++
++		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
+ 		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
+ 			struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
+-			if (unlikely(!nskb)) {
+-				head_skb->dev->stats.rx_dropped++;
+-				return -ENOMEM;
+-			}
++
++			if (unlikely(!nskb))
++				goto err_skb;
+ 			if (curr_skb == head_skb)
+ 				skb_shinfo(curr_skb)->frag_list = nskb;
+ 			else
+ 				curr_skb->next = nskb;
+-			curr_skb = nskb;
+ 			head_skb->truesize += nskb->truesize;
++			curr_skb = nskb;
+ 			num_skb_frags = 0;
+ 		}
+ 		if (curr_skb != head_skb) {
+@@ -338,8 +350,7 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
+ 			head_skb->len += len;
+ 			head_skb->truesize += MAX_PACKET_LEN;
+ 		}
+-		page = virt_to_head_page(buf);
+-		offset = buf - (char *)page_address(page);
++		offset = buf - page_address(page);
+ 		if (skb_can_coalesce(curr_skb, num_skb_frags, page, offset)) {
+ 			put_page(page);
+ 			skb_coalesce_rx_frag(curr_skb, num_skb_frags - 1,
+@@ -349,9 +360,28 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
+ 					offset, len,
+ 					MAX_PACKET_LEN);
+ 		}
++	}
++
++	return head_skb;
++
++err_skb:
++	put_page(page);
++err_buf:
++	dev->stats.rx_dropped++;
++	dev_kfree_skb(head_skb);
++	while (--num_buf) {
++		buf = virtqueue_get_buf(rq->vq, &len);
++		if (unlikely(!buf)) {
++			pr_debug("%s: rx error: %d buffers missing\n",
++				 dev->name, num_buf);
++			dev->stats.rx_length_errors++;
++			break;
++		}
++		page = virt_to_head_page(buf);
++		put_page(page);
+ 		--rq->num;
+ 	}
+-	return 0;
++	return NULL;
+ }
+ 
+ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+@@ -380,19 +410,9 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+ 		len -= sizeof(struct virtio_net_hdr);
+ 		skb_trim(skb, len);
+ 	} else if (vi->mergeable_rx_bufs) {
+-		struct page *page = virt_to_head_page(buf);
+-		skb = page_to_skb(rq, page,
+-				  (char *)buf - (char *)page_address(page),
+-				  len, MAX_PACKET_LEN);
+-		if (unlikely(!skb)) {
+-			dev->stats.rx_dropped++;
+-			put_page(page);
++		skb = receive_mergeable(dev, rq, buf, len);
++		if (unlikely(!skb))
+ 			return;
+-		}
+-		if (receive_mergeable(rq, skb)) {
+-			dev_kfree_skb(skb);
+-			return;
+-		}
+ 	} else {
+ 		page = buf;
+ 		skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
