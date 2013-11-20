@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3KTE53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 23:57:29 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:54089 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3KTE52 (ORCPT
+	id S1752845Ab3KTE6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:58:52 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:57746 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab3KTE6u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 23:57:28 -0500
-Date: Wed, 20 Nov 2013 05:57:26 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Kamala R <kamala@aristanetworks.com>
-Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] IPv6: Fixed support for blackhole and prohibit routes
-Message-ID: <20131120045726.GT16541@order.stressinduktion.org>
-Mail-Followup-To: Kamala R <kamala@aristanetworks.com>,
-	netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-	linux-kernel@vger.kernel.org
-References: <1384879773-8800-1-git-send-email-kamala@aristanetwors.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1384879773-8800-1-git-send-email-kamala@aristanetwors.com>
+	Tue, 19 Nov 2013 23:58:50 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] arc: Use NULL as the default DTB
+Thread-Topic: [PATCH 2/9] arc: Use NULL as the default DTB
+Thread-Index: AQHO5RhGcmry/eqS50adiKWGVBJcaw==
+Date: Wed, 20 Nov 2013 04:58:47 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075156ABC@IN01WEMBXA.internal.synopsys.com>
+References: <5283A000.8090007@gmail.com>
+ <1384859554-27268-1-git-send-email-geert@linux-m68k.org>
+ <1384859554-27268-2-git-send-email-geert@linux-m68k.org>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 10:19:33PM +0530, Kamala R wrote:
-> From: Kamala R <kamala@aristanetworks.com>
-> 
-> The behaviour of blackhole and prohibit routes has been corrected by setting the input and output
-> function pointers of the dst variable appropriately. For blackhole routes, they are set to
-> dst_discard and for prohibit routes they are set to ip6_pkt_prohibit and ip6_pkt_prohbit_out
-> respectively.
-> 
-> Signed-off-by: Kamala R <kamala@aristanetworks.com>
-> ---
->  net/ipv6/route.c |   18 +++++++++++-------
->  1 file changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-> index f54e3a1..f2289fd 100644
-> --- a/net/ipv6/route.c
-> +++ b/net/ipv6/route.c
-> @@ -1564,21 +1564,25 @@ int ip6_route_add(struct fib6_config *cfg)
->  				goto out;
->  			}
->  		}
-> -		rt->dst.output = ip6_pkt_discard_out;
-> -		rt->dst.input = ip6_pkt_discard;
-> +
->  		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
-> +		rt->dst.error = (cfg->fc_type == RTN_BLACKHOLE) ? -EINVAL
-> +				: ((cfg->fc_type == RTN_PROHIBIT ? -EACCES
-> +				: ((cfg->fc_type == RTN_THROW ? -EAGAIN
-> +				: -ENETUNREACH))));
+On 11/19/2013 04:42 PM, Geert Uytterhoeven wrote:
+> early_init_dt_scan() now takes care of falling back to the built-in DTB.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
 
-Uh, sorry, I was a bit too unclear. This is rather ugly. I meant merging
-the RTN_THROW and default case and just use one dst.error assignment
-with a ternary operator where it makes sense.
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
 
->  		switch (cfg->fc_type) {
->  		case RTN_BLACKHOLE:
-> -			rt->dst.error = -EINVAL;
-> +			rt->dst.output = dst_discard;
-> +			rt->dst.input = dst_discard;
->  			break;
->  		case RTN_PROHIBIT:
-> -			rt->dst.error = -EACCES;
-> +			rt->dst.output = ip6_pkt_prohibit_out;
-> +			rt->dst.input = ip6_pkt_prohibit;
->  			break;
->  		case RTN_THROW:
-> -			rt->dst.error = -EAGAIN;
-> -			break;
->  		default:
-> -			rt->dst.error = -ENETUNREACH;
-> +			rt->dst.output = ip6_pkt_discard_out;
-> +			rt->dst.input = ip6_pkt_discard;
->  			break;
-
-case RTN_THROW:
-default:
-	rt->dst.error = (cfg->fc_type == ...) ? ... : ...;
-	rt->dst.output = ....
-	rt->dst.input = ....
-
-I also don't mind if you are more verbose and specify each case
-independent. Just have a look how it looks more pleasing. ;)
-
-Greetings,
-
-  Hannes
-
+Thx,
+-Vineet
