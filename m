@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab3KTJp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:45:57 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:58859 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab3KTJpw (ORCPT
+	id S1753003Ab3KTJqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:46:47 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:53413 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab3KTJqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:45:52 -0500
+	Wed, 20 Nov 2013 04:46:44 -0500
 MIME-Version: 1.0
 Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <1384867809-15332-1-git-send-email-jhbird.choi@samsung.com>
-References: <1384867809-15332-1-git-send-email-jhbird.choi@samsung.com>
-Date: Wed, 20 Nov 2013 18:45:51 +0900
-X-Google-Sender-Auth: rNeO4Q6RwPdS-R6WiYtznwCjBfA
-Message-ID: <CAJ0PZbS0WKExdEmW2yepbMQWw=eeZXL8KykTMLqvKN2rCqJDuw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] PM / devfreq: Consider hibernation in pm notifier
+In-Reply-To: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
+References: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
+Date: Wed, 20 Nov 2013 18:46:43 +0900
+X-Google-Sender-Auth: xNheWXPl_NhbgNt5xwY0V3lehQs
+Message-ID: <CAJ0PZbRJLB_WcOkFq_e=DBCR7ABYoin-voBtbq61Pqd_wyzwmw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] PM / devfreq: Consider hibernation in pm notifier
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: Jonghwan Choi <jhbird.choi@gmail.com>
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -34,24 +34,21 @@ On Tue, Nov 19, 2013 at 10:30 PM, Jonghwan Choi <jhbird.choi@gmail.com> wrote:
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Applied in "driver-update" branch.
 
-Do you want this to be synchronously merged with others (1/4, 2/4) or
-is it ok to be done asynchronously?
 
 
 Cheers,
 MyungJoo.
 
 > ---
->  drivers/devfreq/exynos/exynos4_bus.c | 2 ++
+>  drivers/devfreq/exynos/exynos5_bus.c | 2 ++
 >  1 file changed, 2 insertions(+)
 >
-> diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
-> index cede6f7..dd6947e 100644
-> --- a/drivers/devfreq/exynos/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos/exynos4_bus.c
-> @@ -962,6 +962,7 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
+> diff --git a/drivers/devfreq/exynos/exynos5_bus.c b/drivers/devfreq/exynos/exynos5_bus.c
+> index a60da3c..bd672de0 100644
+> --- a/drivers/devfreq/exynos/exynos5_bus.c
+> +++ b/drivers/devfreq/exynos/exynos5_bus.c
+> @@ -268,6 +268,7 @@ static int exynos5_busfreq_int_pm_notifier_event(struct notifier_block *this,
 >         int err = 0;
 >
 >         switch (event) {
@@ -59,9 +56,9 @@ MyungJoo.
 >         case PM_SUSPEND_PREPARE:
 >                 /* Set Fastest and Deactivate DVFS */
 >                 mutex_lock(&data->lock);
-> @@ -1005,6 +1006,7 @@ unlock:
+> @@ -300,6 +301,7 @@ unlock:
 >                 if (err)
->                         return err;
+>                         return NOTIFY_BAD;
 >                 return NOTIFY_OK;
 > +       case PM_POST_HIBERNATION:
 >         case PM_POST_RESTORE:
