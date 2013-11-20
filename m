@@ -1,49 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3KTRyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:54:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4028 "EHLO mx1.redhat.com"
+	id S1754607Ab3KTRwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:52:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3KTRwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:52:06 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 1/6] kexec: Export vmcoreinfo note size properly
-Date: Wed, 20 Nov 2013 12:50:46 -0500
-Message-Id: <1384969851-7251-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+	id S1753223Ab3KTRvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:51:50 -0500
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Khalid Aziz <khalid.aziz@oracle.com>,
+        Pravin Shelar <pshelar@nicira.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 7/8] mm/swap.c: reorganize put_compound_page()
+Date: Wed, 20 Nov 2013 18:51:15 +0100
+Message-Id: <1384969876-6374-8-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1384969876-6374-1-git-send-email-aarcange@redhat.com>
+References: <1384969876-6374-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now we seem to be exporting the max data size contained inside
-vmcoreinfo note. But this does not include the size of meta data around
-vmcore info data. Like name of the note and starting and ending elf_note.
+From: Andrew Morton <akpm@linux-foundation.org>
 
-I think user space expects total size and that size is put in PT_NOTE
-elf header.
+Tweak it so save a tab stop, make code layout slightly less nutty.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/ksysfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/swap.c | 254 +++++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 125 insertions(+), 129 deletions(-)
 
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 9659d38..d945a94 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -126,7 +126,7 @@ static ssize_t vmcoreinfo_show(struct kobject *kobj,
- {
- 	return sprintf(buf, "%lx %x\n",
- 		       paddr_vmcoreinfo_note(),
--		       (unsigned int)vmcoreinfo_max_size);
-+		       (unsigned int)sizeof(vmcoreinfo_note));
- }
- KERNEL_ATTR_RO(vmcoreinfo);
+diff --git a/mm/swap.c b/mm/swap.c
+index b4c49bf..ddb470d 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -82,154 +82,150 @@ static void __put_compound_page(struct page *page)
  
--- 
-1.7.7.6
-
+ static void put_compound_page(struct page *page)
+ {
+-	if (unlikely(PageTail(page))) {
+-		/* __split_huge_page_refcount can run under us */
+-		struct page *page_head = compound_trans_head(page);
++	struct page *page_head;
+ 
+-		/*
+-		 * THP can not break up slab pages so avoid taking
+-		 * compound_lock() and skip the tail page refcounting
+-		 * (in _mapcount) too. Slab performs non-atomic bit
+-		 * ops on page->flags for better performance. In
+-		 * particular slab_unlock() in slub used to be a hot
+-		 * path. It is still hot on arches that do not support
+-		 * this_cpu_cmpxchg_double().
+-		 *
+-		 * If "page" is part of a slab or hugetlbfs page it
+-		 * cannot be splitted and the head page cannot change
+-		 * from under us. And if "page" is part of a THP page
+-		 * under splitting, if the head page pointed by the
+-		 * THP tail isn't a THP head anymore, we'll find
+-		 * PageTail clear after smp_rmb() and we'll threat it
+-		 * as a single page.
+-		 */
+-		if (!__compound_tail_refcounted(page_head)) {
++	if (likely(!PageTail(page))) {
++		if (put_page_testzero(page)) {
+ 			/*
+-			 * If "page" is a THP tail, we must read the tail page
+-			 * flags after the head page flags. The
+-			 * split_huge_page side enforces write memory
+-			 * barriers between clearing PageTail and before the
+-			 * head page can be freed and reallocated.
++			 * By the time all refcounts have been released
++			 * split_huge_page cannot run anymore from under us.
+ 			 */
+-			smp_rmb();
+-			if (likely(PageTail(page))) {
+-				/*
+-				 * __split_huge_page_refcount
+-				 * cannot race here.
+-				 */
+-				VM_BUG_ON(!PageHead(page_head));
+-				VM_BUG_ON(page_mapcount(page) != 0);
+-				if (put_page_testzero(page_head)) {
+-					/*
+-					 * If this is the tail of a
+-					 * slab compound page, the
+-					 * tail pin must not be the
+-					 * last reference held on the
+-					 * page, because the PG_slab
+-					 * cannot be cleared before
+-					 * all tail pins (which skips
+-					 * the _mapcount tail
+-					 * refcounting) have been
+-					 * released. For hugetlbfs the
+-					 * tail pin may be the last
+-					 * reference on the page
+-					 * instead, because
+-					 * PageHeadHuge will not go
+-					 * away until the compound
+-					 * page enters the buddy
+-					 * allocator.
+-					 */
+-					VM_BUG_ON(PageSlab(page_head));
+-					__put_compound_page(page_head);
+-				}
+-				return;
+-			} else
+-				/*
+-				 * __split_huge_page_refcount
+-				 * run before us, "page" was a
+-				 * THP tail. The split
+-				 * page_head has been freed
+-				 * and reallocated as slab or
+-				 * hugetlbfs page of smaller
+-				 * order (only possible if
+-				 * reallocated as slab on
+-				 * x86).
+-				 */
+-				goto out_put_single;
++			if (PageHead(page))
++				__put_compound_page(page);
++			else
++				__put_single_page(page);
+ 		}
++		return;
++	}
+ 
+-		if (likely(page != page_head &&
+-			   get_page_unless_zero(page_head))) {
+-			unsigned long flags;
++	/* __split_huge_page_refcount can run under us */
++	page_head = compound_trans_head(page);
+ 
++	/*
++	 * THP can not break up slab pages so avoid taking
++	 * compound_lock() and skip the tail page refcounting (in
++	 * _mapcount) too. Slab performs non-atomic bit ops on
++	 * page->flags for better performance. In particular
++	 * slab_unlock() in slub used to be a hot path. It is still
++	 * hot on arches that do not support
++	 * this_cpu_cmpxchg_double().
++	 *
++	 * If "page" is part of a slab or hugetlbfs page it cannot be
++	 * splitted and the head page cannot change from under us. And
++	 * if "page" is part of a THP page under splitting, if the
++	 * head page pointed by the THP tail isn't a THP head anymore,
++	 * we'll find PageTail clear after smp_rmb() and we'll threat
++	 * it as a single page.
++	 */
++	if (!__compound_tail_refcounted(page_head)) {
++		/*
++		 * If "page" is a THP tail, we must read the tail page
++		 * flags after the head page flags. The
++		 * split_huge_page side enforces write memory barriers
++		 * between clearing PageTail and before the head page
++		 * can be freed and reallocated.
++		 */
++		smp_rmb();
++		if (likely(PageTail(page))) {
+ 			/*
+-			 * page_head wasn't a dangling pointer but it
+-			 * may not be a head page anymore by the time
+-			 * we obtain the lock. That is ok as long as it
+-			 * can't be freed from under us.
++			 * __split_huge_page_refcount cannot race
++			 * here.
+ 			 */
+-			flags = compound_lock_irqsave(page_head);
+-			if (unlikely(!PageTail(page))) {
+-				/* __split_huge_page_refcount run before us */
+-				compound_unlock_irqrestore(page_head, flags);
+-				if (put_page_testzero(page_head)) {
+-					/*
+-					 * The head page may have been
+-					 * freed and reallocated as a
+-					 * compound page of smaller
+-					 * order and then freed again.
+-					 * All we know is that it
+-					 * cannot have become: a THP
+-					 * page, a compound page of
+-					 * higher order, a tail page.
+-					 * That is because we still
+-					 * hold the refcount of the
+-					 * split THP tail and
+-					 * page_head was the THP head
+-					 * before the split.
+-					 */
+-					if (PageHead(page_head))
+-						__put_compound_page(page_head);
+-					else
+-						__put_single_page(page_head);
+-				}
+-out_put_single:
+-				if (put_page_testzero(page))
+-					__put_single_page(page);
+-				return;
++			VM_BUG_ON(!PageHead(page_head));
++			VM_BUG_ON(page_mapcount(page) != 0);
++			if (put_page_testzero(page_head)) {
++				/*
++				 * If this is the tail of a slab
++				 * compound page, the tail pin must
++				 * not be the last reference held on
++				 * the page, because the PG_slab
++				 * cannot be cleared before all tail
++				 * pins (which skips the _mapcount
++				 * tail refcounting) have been
++				 * released. For hugetlbfs the tail
++				 * pin may be the last reference on
++				 * the page instead, because
++				 * PageHeadHuge will not go away until
++				 * the compound page enters the buddy
++				 * allocator.
++				 */
++				VM_BUG_ON(PageSlab(page_head));
++				__put_compound_page(page_head);
+ 			}
+-			VM_BUG_ON(page_head != page->first_page);
++			return;
++		} else
+ 			/*
+-			 * We can release the refcount taken by
+-			 * get_page_unless_zero() now that
+-			 * __split_huge_page_refcount() is blocked on
+-			 * the compound_lock.
++			 * __split_huge_page_refcount run before us,
++			 * "page" was a THP tail. The split page_head
++			 * has been freed and reallocated as slab or
++			 * hugetlbfs page of smaller order (only
++			 * possible if reallocated as slab on x86).
+ 			 */
+-			if (put_page_testzero(page_head))
+-				VM_BUG_ON(1);
+-			/* __split_huge_page_refcount will wait now */
+-			VM_BUG_ON(page_mapcount(page) <= 0);
+-			atomic_dec(&page->_mapcount);
+-			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
+-			VM_BUG_ON(atomic_read(&page->_count) != 0);
+-			compound_unlock_irqrestore(page_head, flags);
++			goto out_put_single;
++	}
++
++	if (likely(page != page_head && get_page_unless_zero(page_head))) {
++		unsigned long flags;
+ 
++		/*
++		 * page_head wasn't a dangling pointer but it may not
++		 * be a head page anymore by the time we obtain the
++		 * lock. That is ok as long as it can't be freed from
++		 * under us.
++		 */
++		flags = compound_lock_irqsave(page_head);
++		if (unlikely(!PageTail(page))) {
++			/* __split_huge_page_refcount run before us */
++			compound_unlock_irqrestore(page_head, flags);
+ 			if (put_page_testzero(page_head)) {
++				/*
++				 * The head page may have been freed
++				 * and reallocated as a compound page
++				 * of smaller order and then freed
++				 * again.  All we know is that it
++				 * cannot have become: a THP page, a
++				 * compound page of higher order, a
++				 * tail page.  That is because we
++				 * still hold the refcount of the
++				 * split THP tail and page_head was
++				 * the THP head before the split.
++				 */
+ 				if (PageHead(page_head))
+ 					__put_compound_page(page_head);
+ 				else
+ 					__put_single_page(page_head);
+ 			}
+-		} else {
+-			/* page_head is a dangling pointer */
+-			VM_BUG_ON(PageTail(page));
+-			goto out_put_single;
++out_put_single:
++			if (put_page_testzero(page))
++				__put_single_page(page);
++			return;
+ 		}
+-	} else if (put_page_testzero(page)) {
+-		if (PageHead(page))
+-			__put_compound_page(page);
+-		else
+-			__put_single_page(page);
++		VM_BUG_ON(page_head != page->first_page);
++		/*
++		 * We can release the refcount taken by
++		 * get_page_unless_zero() now that
++		 * __split_huge_page_refcount() is blocked on the
++		 * compound_lock.
++		 */
++		if (put_page_testzero(page_head))
++			VM_BUG_ON(1);
++		/* __split_huge_page_refcount will wait now */
++		VM_BUG_ON(page_mapcount(page) <= 0);
++		atomic_dec(&page->_mapcount);
++		VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
++		VM_BUG_ON(atomic_read(&page->_count) != 0);
++		compound_unlock_irqrestore(page_head, flags);
++
++		if (put_page_testzero(page_head)) {
++			if (PageHead(page_head))
++				__put_compound_page(page_head);
++			else
++				__put_single_page(page_head);
++		}
++	} else {
++		/* page_head is a dangling pointer */
++		VM_BUG_ON(PageTail(page));
++		goto out_put_single;
+ 	}
+ }
+ 
