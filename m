@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3KTPb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:31:57 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42879 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007Ab3KTPby (ORCPT
+	id S1754020Ab3KTPfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:35:42 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43101 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab3KTPfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 10:31:54 -0500
-Date: Wed, 20 Nov 2013 07:31:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH v6 4/5] MCS Lock: Barrier corrections
-Message-ID: <20131120153123.GF4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1384885312.git.tim.c.chen@linux.intel.com>
- <1384911463.11046.454.camel@schen9-DESK>
+	Wed, 20 Nov 2013 10:35:40 -0500
+Date: Wed, 20 Nov 2013 15:35:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20131120153507.GH2674@sirena.org.uk>
+References: <1384956732-19526-1-git-send-email-k.kozlowski@samsung.com>
+ <1384956732-19526-5-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8Dt/lkN5I0m8i0o7"
 Content-Disposition: inline
-In-Reply-To: <1384911463.11046.454.camel@schen9-DESK>
+In-Reply-To: <1384956732-19526-5-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: Drive defensively.  Buy a tank.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112015-7164-0000-0000-0000037C8C62
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 4/5] regulator: max14577: Add regulator driver for
+ Maxim 14577
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 05:37:43PM -0800, Tim Chen wrote:
-> This patch corrects the way memory barriers are used in the MCS lock
-> with smp_load_acquire and smp_store_release fucnction.
-> It removes ones that are not needed.
-> 
-> It uses architecture specific load-acquire and store-release
-> primitives for synchronization, if available. Generic implementations
-> are provided in case they are not defined even though they may not
-> be optimal. These generic implementation could be removed later on
-> once changes are made in all the relevant header files.
-> 
-> Suggested-by: Michel Lespinasse <walken@google.com>
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->  kernel/locking/mcs_spinlock.c | 19 ++++++++++++++-----
->  1 file changed, 14 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> index 44fb092..6f2ce8e 100644
-> --- a/kernel/locking/mcs_spinlock.c
-> +++ b/kernel/locking/mcs_spinlock.c
-> @@ -37,15 +37,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
->  	node->locked = 0;
->  	node->next   = NULL;
-> 
-> +	/* xchg() provides a memory barrier */
->  	prev = xchg(lock, node);
->  	if (likely(prev == NULL)) {
->  		/* Lock acquired */
->  		return;
->  	}
->  	ACCESS_ONCE(prev->next) = node;
-> -	smp_wmb();
-> -	/* Wait until the lock holder passes the lock down */
-> -	while (!ACCESS_ONCE(node->locked))
-> +	/*
-> +	 * Wait until the lock holder passes the lock down.
-> +	 * Using smp_load_acquire() provides a memory barrier that
-> +	 * ensures subsequent operations happen after the lock is acquired.
-> +	 */
-> +	while (!(smp_load_acquire(&node->locked)))
->  		arch_mutex_cpu_relax();
->  }
->  EXPORT_SYMBOL_GPL(mcs_spin_lock);
-> @@ -68,7 +72,12 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
->  		while (!(next = ACCESS_ONCE(node->next)))
->  			arch_mutex_cpu_relax();
->  	}
-> -	ACCESS_ONCE(next->locked) = 1;
-> -	smp_wmb();
-> +	/*
-> +	 * Pass lock to next waiter.
-> +	 * smp_store_release() provides a memory barrier to ensure
-> +	 * all operations in the critical section has been completed
-> +	 * before unlocking.
-> +	 */
-> +	smp_store_release(&next->locked, 1);
 
-However, there is one problem with this that I missed yesterday.
+--8Dt/lkN5I0m8i0o7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Documentation/memory-barriers.txt requires that an unlock-lock pair
-provide a full barrier, but this is not guaranteed if we use
-smp_store_release() for unlock and smp_load_acquire() for lock.
-At least one of these needs a full memory barrier.
+On Wed, Nov 20, 2013 at 03:12:11PM +0100, Krzysztof Kozlowski wrote:
 
-							Thanx, Paul
+> +	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
+> +	info->regulators = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+> +	if (!info->regulators) {
+> +		dev_err(&pdev->dev, "Cannot allocate memory for regulators\n");
+> +		return -ENOMEM;
+> +	}
 
->  }
->  EXPORT_SYMBOL_GPL(mcs_spin_unlock);
-> -- 
-> 1.7.11.7
-> 
-> 
-> 
+The set of regulators in the silicon doesn't vary - you should
+unconditionally register all the regulators.
 
+--8Dt/lkN5I0m8i0o7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjNaoAAoJELSic+t+oim9Ks4QAITh22bu4KFUkdernccb4Pe+
+J3BxtFhinCS1WFLgiQZp8qu8i9xTjHxxtzw+CZn8pF4/mZFnTGOptmajeoOwmbGw
+hyzP2yWq0EEJafAv6fPrvYxckm7cS6iqVW0SGdIXGP4BtRpaUFjc43mOcC/Vu1au
+httLzgaLFlOjH3LQEl3BYOvQSS+lu7i5UakhveW2RYITa4054YrqrOI8yxCpTuIK
+f/WichGNoOCgy/+LaVJGo+B3m9xLmLdBlckDHrTVOmyaVoR5cjvPd5MKuuseN1ur
+HvN7Kp1Y442/6rtBEcY1PZOmWgLwru+ZPtGIg0eKJ5OMN3TcJMVeK+T2HNqZ5P33
+oigbzrn652rZ1K75ZneQL49KBFDDIEX7380xPdIGSoudqFgNQ7+LBhrFh8xKMTbm
+9VKtAUJmkC+F1h+lUTeLlJyqFLFxNqWTMeG8rNeS3jD1iP0OIj925nHAPTWRXOEV
+Y+EI21o+K4n9KJLYa2yFf42OaScnnkE4BguUL3S+qFzntagbXB7HZxfXlm3/SFkG
+dpvg+Lsd5QiP9MpupSNitXoTRt+XSCCucTJPqZjaOLWMUe78ARcTvqE9zLVIyYnN
+9MLsb5OmSaqsA15S+2/oFuNDrzKO24//h56nLsyoET0uolEA7LhRwk8kLDC+EZ1p
+w5Hr6Qk1V8oTalQOHTio
+=eHY1
+-----END PGP SIGNATURE-----
+
+--8Dt/lkN5I0m8i0o7--
