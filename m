@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3KTUWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:22:13 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36683 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab3KTUWD (ORCPT
+	id S1755289Ab3KTUWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:22:23 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:58942 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3KTUWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:22:03 -0500
+	Wed, 20 Nov 2013 15:22:04 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v1 4/7] net: phy: suspend unused PHYs on mdio_bus in late_initcall
-Date: Wed, 20 Nov 2013 21:21:50 +0100
-Message-Id: <1384978913-8052-5-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH RFC v1 5/7] net: mv643xx_eth: resume/suspend PHY on port start/stop
+Date: Wed, 20 Nov 2013 21:21:51 +0100
+Message-Id: <1384978913-8052-6-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since phy_attach ensures PHYs are resumed, we can now suspend all
-PHYs that have no attached netdev after initcalls.
+Network PHYs consume a noticable amount of power. This adds phy_resume
+on port start and phy_suspend on port stop to save this power if the
+port is down anyway. While at it, also properly start/stop the phy.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -31,47 +32,34 @@ Cc: netdev@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/phy/mdio_bus.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 5617876..10eba58 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -320,6 +320,33 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
- 		(phydev->phy_id & phydrv->phy_id_mask));
- }
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index 00cd36e..55805b2 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2097,6 +2097,8 @@ static void port_start(struct mv643xx_eth_private *mp)
  
-+static int mdio_bus_suspend_unused(struct device *busdev, void *data)
-+{
-+	struct mii_bus *bus = to_mii_bus(busdev);
-+	struct phy_device *phydev;
-+	struct phy_driver *phydrv;
-+	int i;
-+
-+	for (i = 0; i < PHY_MAX_ADDR; i++) {
-+		if (!bus->phy_map[i])
-+			continue;
-+
-+		phydev = to_phy_device(&bus->phy_map[i]->dev);
-+		phydrv = to_phy_driver(phydev->dev.driver);
-+		if (!phydev->attached_dev && phydrv && phydrv->suspend)
-+			phy_suspend(phydev);
+ 		mv643xx_eth_get_settings(mp->dev, &cmd);
+ 		phy_reset(mp);
++		phy_resume(mp->phy);
++		phy_start(mp->phy);
+ 		mv643xx_eth_set_settings(mp->dev, &cmd);
+ 	}
+ 
+@@ -2306,6 +2308,11 @@ static int mv643xx_eth_stop(struct net_device *dev)
+ 	for (i = 0; i < mp->txq_count; i++)
+ 		txq_deinit(mp->txq + i);
+ 
++	if (mp->phy) {
++		phy_stop(mp->phy);
++		phy_suspend(mp->phy);
 +	}
 +
-+	return 0;
-+}
-+
-+static int mdio_bus_class_suspend_unused(void)
-+{
-+	return class_for_each_device(&mdio_bus_class, NULL, NULL,
-+				     mdio_bus_suspend_unused);
-+}
-+late_initcall_sync(mdio_bus_class_suspend_unused);
-+
- #ifdef CONFIG_PM
+ 	return 0;
+ }
  
- static bool mdio_bus_phy_may_suspend(struct phy_device *phydev)
 -- 
 1.7.2.5
 
