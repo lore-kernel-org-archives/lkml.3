@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab3KTMNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 07:13:01 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49890 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab3KTMM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 07:12:57 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: keystone: gate: fix error handling on init
-Date: Wed, 20 Nov 2013 14:09:01 +0200
-Message-ID: <1384949341-26486-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752328Ab3KTMTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 07:19:34 -0500
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:43835 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3KTMTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 07:19:30 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 07:19:30 EST
+X-Fcrdns: No
+Message-ID: <528CA73B.9070604@profihost.ag>
+Date: Wed, 20 Nov 2013 13:12:43 +0100
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: linux-fsdevel@vger.kernel.org
+CC: viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>,
+        matthew@wil.cx
+Subject: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes Keystone gate control clock driver initialization path:
-1) clk_register_psc() returns error code and not a pure pointer, hence
-its return value need to be checked using IS_ERR(clk) macro.
+Hello,
 
-2) Mapped IO memory isn't unmapped in case of errors, hence fix it.
+while struggling about an application beeing so slow on my SSD and
+having high I/O Waits while the app is using the raw block device i've
+detected that this is caused by open the block device with O_DSYNC.
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/clk/keystone/gate.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+I've used dd and fio with oflags=direct,dsync / --direct=1 and --sync=1
 
-diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
-index 1f333bc..17a5983 100644
---- a/drivers/clk/keystone/gate.c
-+++ b/drivers/clk/keystone/gate.c
-@@ -223,8 +223,7 @@ static void __init of_psc_clk_init(struct device_node *node, spinlock_t *lock)
- 	data->domain_base = of_iomap(node, i);
- 	if (!data->domain_base) {
- 		pr_err("%s: domain ioremap failed\n", __func__);
--		iounmap(data->control_base);
--		goto out;
-+		goto unmap_ctrl;
- 	}
- 
- 	of_property_read_u32(node, "domain-id", &data->domain_id);
-@@ -237,16 +236,21 @@ static void __init of_psc_clk_init(struct device_node *node, spinlock_t *lock)
- 	parent_name = of_clk_get_parent_name(node, 0);
- 	if (!parent_name) {
- 		pr_err("%s: Parent clock not found\n", __func__);
--		goto out;
-+		goto unmap_domain;
- 	}
- 
- 	clk = clk_register_psc(NULL, clk_name, parent_name, data, lock);
--	if (clk) {
-+	if (!IS_ERR(clk)) {
- 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
- 		return;
- 	}
- 
- 	pr_err("%s: error registering clk %s\n", __func__, node->name);
-+
-+unmap_domain:
-+	iounmap(data->domain_base);
-+unmap_ctrl:
-+	iounmap(data->control_base);
- out:
- 	kfree(data);
- 	return;
--- 
-1.7.9.5
+and got these "strange" results:
 
+fio --sync=1:
+WRITE: io=1694.0MB, aggrb=57806KB/s, minb=57806KB/s, maxb=57806KB/s,
+mint=30008msec, maxt=30008msec
+
+fio --sync=0:
+WRITE: io=5978.0MB, aggrb=204021KB/s, minb=204021KB/s, maxb=204021KB/s,
+mint=30004msec, maxt=30004msec
+
+I get the same results on a crucial m4 as on my intel 530 ssd.
+
+I also tried the same under FreeBSD 9.1 which shows around the same
+results for sync=0 as sync=1:
+
+sync=0:
+WRITE: io=5984.0MB, aggrb=204185KB/s, minb=204185KB/s, maxb=204185KB/s,
+mint=30010msec, maxt=30010msec
+
+sync=1:
+WRITE: io=5843.0MB, aggrb=199414KB/s, minb=199414KB/s, maxb=199414KB/s,
+mint=30004msec, maxt=30004msec
+
+Can anyone explain to me why O_DSYNC for my app on linux is so slow?
+
+used kernel is vanilla 3.10.19
+
+Thanks!
+
+
+Greets Stefan
