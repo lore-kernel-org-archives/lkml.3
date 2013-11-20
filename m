@@ -1,137 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3KTR6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:58:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39224 "EHLO arroyo.ext.ti.com"
+	id S1754729Ab3KTR6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:58:48 -0500
+Received: from fieldses.org ([174.143.236.118]:37661 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab3KTR6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:58:40 -0500
-Date: Wed, 20 Nov 2013 11:58:14 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: <ldewangan@nvidia.com>, <broonie@linaro.org>, <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-Message-ID: <20131120175814.GC27423@saruman.home>
-Reply-To: <balbi@ti.com>
+	id S1754502Ab3KTR6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:58:42 -0500
+Date: Wed, 20 Nov 2013 12:58:07 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Chinmay V S <cvs268@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+Message-ID: <20131120175807.GC5380@fieldses.org>
+References: <528CA73B.9070604@profihost.ag>
+ <20131120125446.GA6284@infradead.org>
+ <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com>
+ <528CC36A.7080003@profihost.ag>
+ <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
+ <20131120153703.GA23160@thunk.org>
+ <20131120155507.GA5380@fieldses.org>
+ <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oTHb8nViIGeoXxdp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---oTHb8nViIGeoXxdp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 20, 2013 at 10:41:54PM +0530, Chinmay V S wrote:
+> On Wed, Nov 20, 2013 at 9:25 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > Some SSD's are also claim the ability to flush the cache on power loss:
+> >
+> >         http://www.intel.com/content/www/us/en/solid-state-drives/ssd-320-series-power-loss-data-protection-brief.html
+> >
+> > Which should in theory let them respond immediately to flush requests,
+> > right?  Except they only seem to advertise it as a safety (rather than a
+> > performance) feature, so I probably misunderstand something.
+> >
+> > And the 520 doesn't claim this feature (look for "enhanced power loss
+> > protection" at http://ark.intel.com/products/66248), so that wouldn't
+> > explain these results anyway.
+> 
+> FYI, nowhere does Intel imply that the CMD_FLUSH is instantaneous. The
+> product brief for Intel 320 SSDs (above link), explains that it is
+> implemented by a power-fail detection circuit that detects drop in
+> power-supply, following which the on-disk controller issues an internal
+> CMD_FLUSH equivalent command to ensure data is moved to the
+> non-volatile area from the disk-cache. Large secondary capacitors
+> ensure backup supply for this brief duration.
+> 
+> Thus applications can always perform asynchronous I/O upon the disk,
+> taking comfort in the fact that the physical disk ensures that all
+> data in the volatile disk-cache is automatically transferred to the
+> non-volatile area even in the event of an external power-failure. Thus
+> the host never has to worry about issuing a CMD_FLUSH (which is still
+> a terribly expensive performance bottleneck, even on the Intel 320
+> SSDs).
 
-Hi,
+So why is it up to the application to do this and not the drive?
+Naively I'd've thought it would be simpler if the protocol allowed the
+drive to respond instantly if it knows it can do so safely, and then you
+could always issue flush requests, and save some poor admin from having
+to read spec sheets to figure out if they can safely mount "nobarrier".
 
-commit c368e5fc2a190923b786f2de3e79430ea3566a25 (regulator: fixed: get
-rid of {get|list}_voltage()) regresses any MMC host controller which
-uses fixed regulator for functionality.
+Is it that you want to eliminate CMD_FLUSH entirely because the protocol
+still has some significant overhead even if the drive responds to it
+quickly?
 
-Note that mmc core uses regulator_list_voltage() to setup OCR mask and
-that has a check for missing ->list_voltage() method.
-
-Reverting that commit makes beablebone black and white work with today's
-Linus' HEAD.
-
-That commit should either be reverted or regulator_list_voltages()
-should be fixed up accordingly.
-
-Proposed patch below:
-
-8<------------------------ cut here -----------------------------------
-
-=46rom 807bb4e91eea46390f184b737f7f8dc634e62a01 Mon Sep 17 00:00:00 2001
-=46rom: Felipe Balbi <balbi@ti.com>
-Date: Wed, 20 Nov 2013 11:52:33 -0600
-Subject: [PATCH] regulator: core: fix regulator_list_voltage()
-
-commit c368e5f (regulator: fixed: get rid of
-{get|list}_voltage()) caused a regression
-for any MMC host which uses a fixed regulator.
-
-MMC core uses regulator_list_voltage() to
-setup card's OCR mask. Unfortunately, said
-commit missed the fact that regulator_list_voltage()
-would bail out early if ->list_voltage()
-implementation is missing.
-
-This was not a problem before, since fixed
-regulator implemented that callback.
-
-The best solution is to patch regulator_list_voltage()
-itself, since MMC core shouldn't have to know
-which regulator type it's using.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/regulator/core.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 6382f0a..0da48ae 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2181,15 +2181,21 @@ EXPORT_SYMBOL_GPL(regulator_count_voltages);
- int regulator_list_voltage(struct regulator *regulator, unsigned selector)
- {
- 	struct regulator_dev	*rdev =3D regulator->rdev;
--	struct regulator_ops	*ops =3D rdev->desc->ops;
-+	const struct regulator_desc *desc =3D rdev->desc;
-+	struct regulator_ops	*ops =3D desc->ops;
- 	int			ret;
-=20
--	if (!ops->list_voltage || selector >=3D rdev->desc->n_voltages)
-+	if ((!ops->list_voltage && !desc->fixed_uV) ||
-+			selector >=3D rdev->desc->n_voltages)
- 		return -EINVAL;
-=20
--	mutex_lock(&rdev->mutex);
--	ret =3D ops->list_voltage(rdev, selector);
--	mutex_unlock(&rdev->mutex);
-+	if (ops->list_voltage) {
-+		mutex_lock(&rdev->mutex);
-+		ret =3D ops->list_voltage(rdev, selector);
-+		mutex_unlock(&rdev->mutex);
-+	} else /* if (desc->fixed_uV) */ {
-+		ret =3D desc->fixed_uV;
-+	}
-=20
- 	if (ret > 0) {
- 		if (ret < rdev->constraints->min_uV)
---=20
-1.8.4.GIT
-
-
---=20
-balbi
-
---oTHb8nViIGeoXxdp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSjPg1AAoJEIaOsuA1yqREq9MP/jfIsBIYGqaFZdguzeMnoO3h
-gfpe41b7R/JAh61BezJT6vL7DsV8MvceNAZKs7r6cs+rvlF3iZx07LLTmvGi+YLj
-jStKfE4cyV05q9NhyhHrxQg58LtDK11XIujWClIdF8pN4W0WFkFrM0coSWU5I/aH
-s/MYjXufZ2j/4Ymvzu4WQ4F87PKkES6PcbOHht90BqRCsYXGyLva6d7bqrGovb1B
-gVKg9IsaMzDLwavs9ORP8g4I9gChs81TL0jP1MBbAybfrujcqxhI9kvU6pKQc3KP
-07Jys92BENcjrZab13O+Yw+iEadXbXW4xKaGzMuJQ1ThcltjEaOvR+1NYWN90hld
-1xmbXY2xHcaz+yO3FdKUV6jis+iPyLTOFzdKAzZRP8NvtqL9r+LdHSq8QDFu6Zmd
-wc51+8OfyrbFYTKgc1w7aGg2EnaFzdqnnWR8fgJYCGOPCYg3ds3SeFPNLe/uzo0i
-DDZLn9sTrw2XfDnQgbj9jjuREtp7jD8zUTzkfrYQqGksDwFr8voRHw4KsGPDsMaj
-NOnQJeehH4M15ZUUN05nsSlWnvDTt4ulVHZeNDLD4sPmX+DG9t1YU2fbuYyzBns5
-8r/iIPUTjqhPiftHEABLwFwaRh8znjWeOYOuCv4WVSumr66wm4U+QU6LftBWMbsr
-HbSECV9HcXQvLY2MSO0h
-=xb2U
------END PGP SIGNATURE-----
-
---oTHb8nViIGeoXxdp--
+--b.
