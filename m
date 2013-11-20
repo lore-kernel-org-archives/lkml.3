@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3KTE0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 23:26:48 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40745 "EHLO
+	id S1754098Ab3KTE1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:27:10 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40715 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab3KTEWf (ORCPT
+	with ESMTP id S1752863Ab3KTEWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 23:22:35 -0500
-Subject: [PATCH -tip v3 16/23] x86/nmi: Use NOKPROBE_SYMBOL macro for nmi
- handlers
+	Tue, 19 Nov 2013 23:22:30 -0500
+Subject: [PATCH -tip v3 14/23] x86/fault: Use NOKPROBE_SYMBOL macro in
+ fault.c
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Dave Hansen <dave.hansen@linux.intel.com>,
+Cc: linux-arch@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
         lkml <linux-kernel@vger.kernel.org>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org,
-        Zhang Rui <rui.zhang@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, systemtap@sourceware.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed, 20 Nov 2013 04:22:28 +0000
-Message-ID: <20131120042228.15296.3460.stgit@kbuild-fedora.novalocal>
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 20 Nov 2013 04:22:23 +0000
+Message-ID: <20131120042223.15296.96831.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -36,179 +34,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation for nmi handlers.
+Use NOKPROBE_SYMBOL macro to protect functions from kprobes
+instead of __kprobes annotation in fault.c.
+This applies __always_inline annotation for some cases,
+because NOKPROBE_SYMBOL() will inhibit inlining by
+referring the symbol address.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- arch/x86/kernel/apic/hw_nmi.c            |    3 ++-
- arch/x86/kernel/cpu/perf_event.c         |    3 ++-
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |    3 ++-
- arch/x86/kernel/nmi.c                    |   18 ++++++++++++------
- 4 files changed, 18 insertions(+), 9 deletions(-)
+ arch/x86/mm/fault.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index a698d71..73eb5b3 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -60,7 +60,7 @@ void arch_trigger_all_cpu_backtrace(void)
- 	smp_mb__after_clear_bit();
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 9ff85bb..7c9305c 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -8,7 +8,7 @@
+ #include <linux/kdebug.h>		/* oops_begin/end, ...		*/
+ #include <linux/module.h>		/* search_exception_table	*/
+ #include <linux/bootmem.h>		/* max_low_pfn			*/
+-#include <linux/kprobes.h>		/* __kprobes, ...		*/
++#include <linux/kprobes.h>		/* NOKPROBE_SYMBOL, ...		*/
+ #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
+ #include <linux/perf_event.h>		/* perf_sw_event		*/
+ #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+@@ -45,7 +45,7 @@ enum x86_pf_error_code {
+  * Returns 0 if mmiotrace is disabled, or if the fault is not
+  * handled by mmiotrace:
+  */
+-static inline int __kprobes
++static __always_inline int
+ kmmio_fault(struct pt_regs *regs, unsigned long addr)
+ {
+ 	if (unlikely(is_kmmio_active()))
+@@ -54,7 +54,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
+ 	return 0;
  }
  
--static int __kprobes
-+static int
- arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+-static inline int __kprobes kprobes_fault(struct pt_regs *regs)
++static __always_inline int kprobes_fault(struct pt_regs *regs)
  {
- 	int cpu;
-@@ -80,6 +80,7 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
+ 	int ret = 0;
  
- 	return NMI_DONE;
+@@ -261,7 +261,7 @@ void vmalloc_sync_all(void)
+  *
+  *   Handle a fault on the vmalloc or module mapping area
+  */
+-static noinline __kprobes int vmalloc_fault(unsigned long address)
++static noinline int vmalloc_fault(unsigned long address)
+ {
+ 	unsigned long pgd_paddr;
+ 	pmd_t *pmd_k;
+@@ -291,6 +291,7 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+ 
+ 	return 0;
  }
-+NOKPROBE_SYMBOL(arch_trigger_all_cpu_backtrace_handler);
++NOKPROBE_SYMBOL(vmalloc_fault);
  
- static int __init register_trigger_all_cpu_backtrace(void)
+ /*
+  * Did it hit the DOS screen memory VA from vm86 mode?
+@@ -358,7 +359,7 @@ void vmalloc_sync_all(void)
+  *
+  * This assumes no large pages in there.
+  */
+-static noinline __kprobes int vmalloc_fault(unsigned long address)
++static noinline int vmalloc_fault(unsigned long address)
  {
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 98f845b..396c1a2 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1273,7 +1273,7 @@ void perf_events_lapic_init(void)
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	pgd_t *pgd, *pgd_ref;
+ 	pud_t *pud, *pud_ref;
+@@ -425,6 +426,7 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+ 
+ 	return 0;
  }
++NOKPROBE_SYMBOL(vmalloc_fault);
  
--static int __kprobes
-+static int
- perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
+ #ifdef CONFIG_CPU_SUP_AMD
+ static const char errata93_warning[] =
+@@ -904,7 +906,7 @@ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
+  * There are no security implications to leaving a stale TLB when
+  * increasing the permissions on a page.
+  */
+-static noinline __kprobes int
++static noinline int
+ spurious_fault(unsigned long error_code, unsigned long address)
  {
- 	u64 start_clock;
-@@ -1291,6 +1291,7 @@ perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
+ 	pgd_t *pgd;
+@@ -952,6 +954,7 @@ spurious_fault(unsigned long error_code, unsigned long address)
  
  	return ret;
  }
-+NOKPROBE_SYMBOL(perf_event_nmi_handler);
++NOKPROBE_SYMBOL(spurious_fault);
  
- struct event_constraint emptyconstraint;
- struct event_constraint unconstrained;
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index e09f0bf..c668309 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -592,7 +592,7 @@ out:
- 	return 1;
- }
+ int show_unhandled_signals = 1;
  
--static int __kprobes
-+static int
- perf_ibs_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- {
- 	int handled = 0;
-@@ -605,6 +605,7 @@ perf_ibs_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- 
- 	return handled;
- }
-+NOKPROBE_SYMBOL(perf_ibs_nmi_handler);
- 
- static __init int perf_ibs_pmu_init(struct perf_ibs *perf_ibs, char *name)
- {
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 6fcb49c..38ce829 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -95,7 +95,7 @@ static int __init nmi_warning_debugfs(void)
- }
- fs_initcall(nmi_warning_debugfs);
- 
--static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
-+static int nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
- {
- 	struct nmi_desc *desc = nmi_to_desc(type);
- 	struct nmiaction *a;
-@@ -137,6 +137,7 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
- 	/* return total number of NMI events handled */
- 	return handled;
- }
-+NOKPROBE_SYMBOL(nmi_handle);
- 
- int __register_nmi_handler(unsigned int type, struct nmiaction *action)
- {
-@@ -197,7 +198,7 @@ void unregister_nmi_handler(unsigned int type, const char *name)
- }
- EXPORT_SYMBOL_GPL(unregister_nmi_handler);
- 
--static __kprobes void
+@@ -997,7 +1000,7 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
+  * and the problem, and then passes it off to one of the appropriate
+  * routines.
+  */
+-static void __kprobes
 +static void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
  {
- 	/* check to see if anyone registered against these types of errors */
-@@ -227,8 +228,9 @@ pci_serr_error(unsigned char reason, struct pt_regs *regs)
- 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
- 	outb(reason, NMI_REASON_PORT);
- }
-+NOKPROBE_SYMBOL(pci_serr_error);
+ 	struct vm_area_struct *vma;
+@@ -1225,8 +1228,9 @@ good_area:
  
--static __kprobes void
-+static void
- io_check_error(unsigned char reason, struct pt_regs *regs)
+ 	up_read(&mm->mmap_sem);
+ }
++NOKPROBE_SYMBOL(__do_page_fault);
+ 
+-dotraplinkage void __kprobes
++dotraplinkage void
+ do_page_fault(struct pt_regs *regs, unsigned long error_code)
  {
- 	unsigned long i;
-@@ -258,8 +260,9 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- 	reason &= ~NMI_REASON_CLEAR_IOCHK;
- 	outb(reason, NMI_REASON_PORT);
+ 	enum ctx_state prev_state;
+@@ -1235,9 +1239,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	__do_page_fault(regs, error_code);
+ 	exception_exit(prev_state);
  }
-+NOKPROBE_SYMBOL(io_check_error);
++NOKPROBE_SYMBOL(do_page_fault);
  
--static __kprobes void
-+static void
- unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+-static void trace_page_fault_entries(struct pt_regs *regs,
+-				     unsigned long error_code)
++static __always_inline void
++trace_page_fault_entries(struct pt_regs *regs, unsigned long error_code)
  {
- 	int handled;
-@@ -287,11 +290,12 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 
- 	pr_emerg("Dazed and confused, but trying to continue\n");
+ 	if (user_mode(regs))
+ 		trace_page_fault_user(read_cr2(), regs, error_code);
+@@ -1245,7 +1250,7 @@ static void trace_page_fault_entries(struct pt_regs *regs,
+ 		trace_page_fault_kernel(read_cr2(), regs, error_code);
  }
-+NOKPROBE_SYMBOL(unknown_nmi_error);
  
- static DEFINE_PER_CPU(bool, swallow_nmi);
- static DEFINE_PER_CPU(unsigned long, last_nmi_rip);
- 
--static __kprobes void default_do_nmi(struct pt_regs *regs)
-+static void default_do_nmi(struct pt_regs *regs)
+-dotraplinkage void __kprobes
++dotraplinkage void
+ trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
  {
- 	unsigned char reason = 0;
- 	int handled;
-@@ -390,6 +394,7 @@ static __kprobes void default_do_nmi(struct pt_regs *regs)
- 	else
- 		unknown_nmi_error(reason, regs);
+ 	enum ctx_state prev_state;
+@@ -1255,3 +1260,4 @@ trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	__do_page_fault(regs, error_code);
+ 	exception_exit(prev_state);
  }
-+NOKPROBE_SYMBOL(default_do_nmi);
- 
- /*
-  * NMIs can hit breakpoints which will cause it to lose its
-@@ -509,7 +514,7 @@ static inline void nmi_nesting_postprocess(void)
- }
- #endif
- 
--dotraplinkage notrace __kprobes void
-+dotraplinkage notrace void
- do_nmi(struct pt_regs *regs, long error_code)
- {
- 	nmi_nesting_preprocess(regs);
-@@ -526,6 +531,7 @@ do_nmi(struct pt_regs *regs, long error_code)
- 	/* On i386, may loop back to preprocess */
- 	nmi_nesting_postprocess();
- }
-+NOKPROBE_SYMBOL(do_nmi);
- 
- void stop_nmi(void)
- {
++NOKPROBE_SYMBOL(trace_do_page_fault);
 
 
