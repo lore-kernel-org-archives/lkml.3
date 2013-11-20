@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab3KTTVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:21:06 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47565 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab3KTTVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:21:03 -0500
-Date: Wed, 20 Nov 2013 20:21:00 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>, daniel.lezcano@linaro.org,
-        will.deacon@arm.com, catalin.marinas@arm.com, olof@lixom.net,
-        sudeep.karkadanagesha@arm.com
-Subject: Support for ARM architected timer event stream generation on x86
-Message-ID: <20131120192100.GA11723@amd.pavel.ucw.cz>
+	id S1754836Ab3KTT2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:28:36 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18461 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754148Ab3KTT2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 14:28:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,738,1378882800"; 
+   d="scan'208";a="431049287"
+Message-ID: <528D0D61.1030902@linux.intel.com>
+Date: Wed, 20 Nov 2013 11:28:33 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+CC: Peter Anvin <hpa@zytor.com>, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org, fenghua.yu@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [tip:x86/asm] x86-64, copy_user: Remove zero byte check before
+ copy user buffer.
+References: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>	<tip-f4cb1cc18f364d761d5614eb6293cccc6647f259@git.kernel.org> <CA+55aFyFz_6oy8-1jb5Jzk+4VC5MLA5d0KbqhZxki0=+DmggBg@mail.gmail.com>
+In-Reply-To: <CA+55aFyFz_6oy8-1jb5Jzk+4VC5MLA5d0KbqhZxki0=+DmggBg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 11/16/2013 10:44 PM, Linus Torvalds wrote:
+> So this doesn't do the 32-bit truncation in the error path of the
+> generic string copy. Oversight?
+> 
+>        Linus
 
-On x86, I get asked if I want to support arm architectured
-timer. That's not exactly clever question... right?
+I looked at the code again, and it turns out to be false alarm.
 
-I'd say it is from this merge... please fix.
-								Pavel
+We *do* do 32-bit truncation in every path, still:
 
-commit 191124efb4d6e5e47fe073b4b97350873523e88c
-Merge: 68e9074 346e748
-Author: Daniel Lezcano <daniel.lezcano@linaro.org>
-Date:   Thu Oct 3 16:13:51 2013 +0200
+> ENTRY(copy_user_generic_string)
+> 	CFI_STARTPROC
+> 	ASM_STAC
+> 	cmpl $8,%edx
+> 	jb 2f		/* less than 8 bytes, go to byte copy loop */
 
-    Merge branch 'timer_evtstrm' of git://linux-arm.org/linux-skn into
-    clockevents/3.13
-    
+-> If we jump here, we will truncate at 2:
 
+> 	ALIGN_DESTINATION
+> 	movl %edx,%ecx
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-> If we don't jb 2f we end up
+
+> 	shrl $3,%ecx
+
+32-bit truncation here...
+
+> 	andl $7,%edx
+> 1:	rep
+> 	movsq
+> 2:	movl %edx,%ecx
+
+32-bit truncation here...
+
+> 3:	rep
+> 	movsb
+> 	xorl %eax,%eax
+> 	ASM_CLAC
+> 	ret
+> 
+> 	.section .fixup,"ax"
+> 11:	lea (%rdx,%rcx,8),%rcx
+> 12:	movl %ecx,%edx		/* ecx is zerorest also */
+
+-> Even if %rdx+%rcx*8 > 2^32 we end up truncating at 12: -- not that it
+matters, since both arguments are prototyped as "unsigned" and therefore
+the C compiler is supposed to guarantee the upper 32 bits are ignored.
+
+So I think Fenghua's patch is fine as-is.
+
+	-hpa
+
