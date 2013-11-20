@@ -1,185 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab3KTQax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:30:53 -0500
-Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:44817 "EHLO
-	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753953Ab3KTQau (ORCPT
+	id S1754332Ab3KTQdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:33:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46528 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab3KTQc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:30:50 -0500
-From: Julien DELACOU <julien.delacou@st.com>
-To: Paul Zimmerman <paulz@synopsys.com>, Matthijs Kooijman <matthijs@stdin.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, Julien Delacou <julien.delacou@st.com>
-Subject: [PATCH] staging: dwc2: add check on dwc2_core_reset return
-Date: Wed, 20 Nov 2013 17:29:49 +0100
-Message-Id: <1384964989-28760-1-git-send-email-julien.delacou@st.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 20 Nov 2013 11:32:56 -0500
+Message-Id: <20131120162736.624493595@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 20 Nov 2013 17:04:55 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH 5/7] locking: Optimize lock_bh functions
+References: <20131120160450.072555619@infradead.org>
+Content-Disposition: inline; filename=peter_zijlstra-remove_preempt_enable_no_sched-from-locks.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the GRSTCTL_CSFTRST self-clearing bit never comes
-back to 0 for any reason, the controller is under reset
-state and cannot be used. It's preferable to abort
-initialization in such case.
+Currently all _bh_ lock functions do two preempt_count operations:
 
-Signed-off-by: Julien Delacou <julien.delacou@st.com>
+  local_bh_disable();
+  preempt_disable();
+
+and for the unlock:
+
+  preempt_enable_no_resched();
+  local_bh_enable();
+
+Since its a waste of perfectly good cycles to modify the same variable
+twice when you can do it in one go; use the new
+__local_bh_{dis,en}able_ip() functions that allow us to provide a
+preempt_count value to add/sub.
+
+So define SOFTIRQ_LOCK_OFFSET as the offset a _bh_ lock needs to
+add/sub to be done in one go.
+
+As a bonus it gets rid of the preempt_enable_no_resched() usage.
+
+Cc: rjw@rjwysocki.net
+Cc: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: lenb@kernel.org
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/staging/dwc2/core.c |   58 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 45 insertions(+), 13 deletions(-)
+ include/linux/preempt_mask.h     |   15 +++++++++++++++
+ include/linux/rwlock_api_smp.h   |   12 ++++--------
+ include/linux/spinlock_api_smp.h |   12 ++++--------
+ include/linux/spinlock_api_up.h  |   16 +++++++++++-----
+ 4 files changed, 34 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/staging/dwc2/core.c b/drivers/staging/dwc2/core.c
-index 27e1964..ecce1ef 100644
---- a/drivers/staging/dwc2/core.c
-+++ b/drivers/staging/dwc2/core.c
-@@ -116,7 +116,7 @@ static void dwc2_init_fs_ls_pclk_sel(struct dwc2_hsotg *hsotg)
-  * Do core a soft reset of the core.  Be careful with this because it
-  * resets all the internal state machines of the core.
+--- a/include/linux/preempt_mask.h
++++ b/include/linux/preempt_mask.h
+@@ -78,6 +78,21 @@
+ #endif
+ 
+ /*
++ * The preempt_count offset needed for things like:
++ *
++ *  spin_lock_bh()
++ *
++ * Which need to disable both preemption (CONFIG_PREEMPT_COUNT) and
++ * softirqs, such that unlock sequences of:
++ *
++ *  spin_unlock();
++ *  local_bh_enable();
++ *
++ * Work as expected.
++ */
++#define SOFTIRQ_LOCK_OFFSET (SOFTIRQ_DISABLE_OFFSET + PREEMPT_CHECK_OFFSET)
++
++/*
+  * Are we running in atomic context?  WARNING: this macro cannot
+  * always detect atomic context; in particular, it cannot know about
+  * held spinlocks in non-preemptible kernels.  Thus it should not be
+--- a/include/linux/rwlock_api_smp.h
++++ b/include/linux/rwlock_api_smp.h
+@@ -172,8 +172,7 @@ static inline void __raw_read_lock_irq(r
+ 
+ static inline void __raw_read_lock_bh(rwlock_t *lock)
+ {
+-	local_bh_disable();
+-	preempt_disable();
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ 	rwlock_acquire_read(&lock->dep_map, 0, 0, _RET_IP_);
+ 	LOCK_CONTENDED(lock, do_raw_read_trylock, do_raw_read_lock);
+ }
+@@ -200,8 +199,7 @@ static inline void __raw_write_lock_irq(
+ 
+ static inline void __raw_write_lock_bh(rwlock_t *lock)
+ {
+-	local_bh_disable();
+-	preempt_disable();
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ 	rwlock_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+ 	LOCK_CONTENDED(lock, do_raw_write_trylock, do_raw_write_lock);
+ }
+@@ -250,8 +248,7 @@ static inline void __raw_read_unlock_bh(
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+ 	do_raw_read_unlock(lock);
+-	preempt_enable_no_resched();
+-	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
++	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ }
+ 
+ static inline void __raw_write_unlock_irqrestore(rwlock_t *lock,
+@@ -275,8 +272,7 @@ static inline void __raw_write_unlock_bh
+ {
+ 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
+ 	do_raw_write_unlock(lock);
+-	preempt_enable_no_resched();
+-	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
++	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ }
+ 
+ #endif /* __LINUX_RWLOCK_API_SMP_H */
+--- a/include/linux/spinlock_api_smp.h
++++ b/include/linux/spinlock_api_smp.h
+@@ -131,8 +131,7 @@ static inline void __raw_spin_lock_irq(r
+ 
+ static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
+ {
+-	local_bh_disable();
+-	preempt_disable();
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+ 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+ }
+@@ -174,20 +173,17 @@ static inline void __raw_spin_unlock_bh(
+ {
+ 	spin_release(&lock->dep_map, 1, _RET_IP_);
+ 	do_raw_spin_unlock(lock);
+-	preempt_enable_no_resched();
+-	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
++	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ }
+ 
+ static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
+ {
+-	local_bh_disable();
+-	preempt_disable();
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ 	if (do_raw_spin_trylock(lock)) {
+ 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
+ 		return 1;
+ 	}
+-	preempt_enable_no_resched();
+-	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
++	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
+ 	return 0;
+ }
+ 
+--- a/include/linux/spinlock_api_up.h
++++ b/include/linux/spinlock_api_up.h
+@@ -24,11 +24,14 @@
+  * flags straight, to suppress compiler warnings of unused lock
+  * variables, and to add the proper checker annotations:
   */
--static void dwc2_core_reset(struct dwc2_hsotg *hsotg)
-+static int dwc2_core_reset(struct dwc2_hsotg *hsotg)
- {
- 	u32 greset;
- 	int count = 0;
-@@ -131,7 +131,7 @@ static void dwc2_core_reset(struct dwc2_hsotg *hsotg)
- 			dev_warn(hsotg->dev,
- 				 "%s() HANG! AHB Idle GRSTCTL=%0x\n",
- 				 __func__, greset);
--			return;
-+			return -EBUSY;
- 		}
- 	} while (!(greset & GRSTCTL_AHBIDLE));
- 
-@@ -146,7 +146,7 @@ static void dwc2_core_reset(struct dwc2_hsotg *hsotg)
- 			dev_warn(hsotg->dev,
- 				 "%s() HANG! Soft Reset GRSTCTL=%0x\n",
- 				 __func__, greset);
--			break;
-+			return -EBUSY;
- 		}
- 	} while (greset & GRSTCTL_CSFTRST);
- 
-@@ -155,11 +155,14 @@ static void dwc2_core_reset(struct dwc2_hsotg *hsotg)
- 	 * not stay in host mode after a connector ID change!
- 	 */
- 	usleep_range(150000, 200000);
++#define ___LOCK(lock) \
++  do { __acquire(lock); (void)(lock); } while (0)
 +
-+	return 0;
- }
+ #define __LOCK(lock) \
+-  do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
++  do { preempt_disable(); ___LOCK(lock); } while (0);
  
--static void dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
-+static int dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- {
- 	u32 usbcfg, i2cctl;
-+	int retval = 0;
+ #define __LOCK_BH(lock) \
+-  do { local_bh_disable(); __LOCK(lock); } while (0)
++  do { __local_bh_disable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); ___LOCK(lock); } while (0)
  
- 	/*
- 	 * core_init() is now called on every switch so only call the
-@@ -172,7 +175,12 @@ static void dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- 		writel(usbcfg, hsotg->regs + GUSBCFG);
+ #define __LOCK_IRQ(lock) \
+   do { local_irq_disable(); __LOCK(lock); } while (0)
+@@ -36,12 +39,15 @@
+ #define __LOCK_IRQSAVE(lock, flags) \
+   do { local_irq_save(flags); __LOCK(lock); } while (0)
  
- 		/* Reset after a PHY select */
--		dwc2_core_reset(hsotg);
-+		retval = dwc2_core_reset(hsotg);
-+		if (retval) {
-+			dev_err(hsotg->dev, "%s() Reset failed, aborting",
-+					__func__);
-+			return retval;
-+		}
- 	}
- 
- 	/*
-@@ -200,14 +208,17 @@ static void dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- 		i2cctl |= GI2CCTL_I2CEN;
- 		writel(i2cctl, hsotg->regs + GI2CCTL);
- 	}
++#define ___UNLOCK(lock) \
++  do { __release(lock); (void)(lock); } while (0)
 +
-+	return retval;
- }
+ #define __UNLOCK(lock) \
+-  do { preempt_enable(); __release(lock); (void)(lock); } while (0)
++  do { preempt_enable(); ___UNLOCK(lock); } while (0)
  
--static void dwc2_hs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
-+static int dwc2_hs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- {
- 	u32 usbcfg;
-+	int retval = 0;
+ #define __UNLOCK_BH(lock) \
+-  do { preempt_enable_no_resched(); local_bh_enable(); \
+-	  __release(lock); (void)(lock); } while (0)
++  do { __local_bh_enable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); \
++       ___UNLOCK(lock); } while (0)
  
- 	if (!select_phy)
--		return;
-+		return -ENODEV;
- 
- 	usbcfg = readl(hsotg->regs + GUSBCFG);
- 
-@@ -240,20 +251,32 @@ static void dwc2_hs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- 	writel(usbcfg, hsotg->regs + GUSBCFG);
- 
- 	/* Reset after setting the PHY parameters */
--	dwc2_core_reset(hsotg);
-+	retval = dwc2_core_reset(hsotg);
-+	if (retval) {
-+		dev_err(hsotg->dev, "%s() Reset failed, aborting",
-+				__func__);
-+		return retval;
-+	}
-+
-+	return retval;
- }
- 
--static void dwc2_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
-+static int dwc2_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- {
- 	u32 usbcfg;
-+	int retval = 0;
- 
- 	if (hsotg->core_params->speed == DWC2_SPEED_PARAM_FULL &&
- 	    hsotg->core_params->phy_type == DWC2_PHY_TYPE_PARAM_FS) {
- 		/* If FS mode with FS PHY */
--		dwc2_fs_phy_init(hsotg, select_phy);
-+		retval = dwc2_fs_phy_init(hsotg, select_phy);
-+		if (retval)
-+			return retval;
- 	} else {
- 		/* High speed PHY */
--		dwc2_hs_phy_init(hsotg, select_phy);
-+		retval = dwc2_hs_phy_init(hsotg, select_phy);
-+		if (retval)
-+			return retval;
- 	}
- 
- 	if (hsotg->hw_params.hs_phy_type == GHWCFG2_HS_PHY_TYPE_ULPI &&
-@@ -270,6 +293,8 @@ static void dwc2_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
- 		usbcfg &= ~GUSBCFG_ULPI_CLK_SUSP_M;
- 		writel(usbcfg, hsotg->regs + GUSBCFG);
- 	}
-+
-+	return retval;
- }
- 
- static int dwc2_gahbcfg_init(struct dwc2_hsotg *hsotg)
-@@ -421,12 +446,19 @@ int dwc2_core_init(struct dwc2_hsotg *hsotg, bool select_phy, int irq)
- 	writel(usbcfg, hsotg->regs + GUSBCFG);
- 
- 	/* Reset the Controller */
--	dwc2_core_reset(hsotg);
-+	retval = dwc2_core_reset(hsotg);
-+	if (retval) {
-+		dev_err(hsotg->dev, "%s(): Reset failed, aborting\n",
-+				__func__);
-+		return retval;
-+	}
- 
- 	/*
- 	 * This needs to happen in FS mode before any other programming occurs
- 	 */
--	dwc2_phy_init(hsotg, select_phy);
-+	retval = dwc2_phy_init(hsotg, select_phy);
-+	if (retval)
-+		return retval;
- 
- 	/* Program the GAHBCFG Register */
- 	retval = dwc2_gahbcfg_init(hsotg);
--- 
-1.7.9.5
+ #define __UNLOCK_IRQ(lock) \
+   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+
 
