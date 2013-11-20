@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab3KTT2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:28:36 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18461 "EHLO mga11.intel.com"
+	id S1754876Ab3KTT3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:29:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29189 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab3KTT2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:28:34 -0500
+	id S1754545Ab3KTT3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 14:29:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,738,1378882800"; 
-   d="scan'208";a="431049287"
-Message-ID: <528D0D61.1030902@linux.intel.com>
-Date: Wed, 20 Nov 2013 11:28:33 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Peter Anvin <hpa@zytor.com>, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, fenghua.yu@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [tip:x86/asm] x86-64, copy_user: Remove zero byte check before
- copy user buffer.
-References: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>	<tip-f4cb1cc18f364d761d5614eb6293cccc6647f259@git.kernel.org> <CA+55aFyFz_6oy8-1jb5Jzk+4VC5MLA5d0KbqhZxki0=+DmggBg@mail.gmail.com>
-In-Reply-To: <CA+55aFyFz_6oy8-1jb5Jzk+4VC5MLA5d0KbqhZxki0=+DmggBg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+   d="scan'208";a="431049910"
+Date: Wed, 20 Nov 2013 11:29:35 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 7/7] preempt: Take away preempt_enable_no_resched() from
+ modules
+Message-ID: <20131120112935.6be596e4@ultegra>
+In-Reply-To: <20131120191841.GY16796@laptop.programming.kicks-ass.net>
+References: <20131120160450.072555619@infradead.org>
+	<20131120162736.760865926@infradead.org>
+	<20131120105457.04f6e51e@ultegra>
+	<20131120191841.GY16796@laptop.programming.kicks-ass.net>
+Organization: OTC
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2013 10:44 PM, Linus Torvalds wrote:
-> So this doesn't do the 32-bit truncation in the error path of the
-> generic string copy. Oversight?
-> 
->        Linus
+On Wed, 20 Nov 2013 20:18:41 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-I looked at the code again, and it turns out to be false alarm.
+> I think the below will cure both -- will fold in the proper patches
+> tomorrow, need to get away from the computer noaw.
+[Jacob Pan] looks good to me. one more thing for tomorrow :)
 
-We *do* do 32-bit truncation in every path, still:
 
-> ENTRY(copy_user_generic_string)
-> 	CFI_STARTPROC
-> 	ASM_STAC
-> 	cmpl $8,%edx
-> 	jb 2f		/* less than 8 bytes, go to byte copy loop */
-
--> If we jump here, we will truncate at 2:
-
-> 	ALIGN_DESTINATION
-> 	movl %edx,%ecx
-
--> If we don't jb 2f we end up
-
-> 	shrl $3,%ecx
-
-32-bit truncation here...
-
-> 	andl $7,%edx
-> 1:	rep
-> 	movsq
-> 2:	movl %edx,%ecx
-
-32-bit truncation here...
-
-> 3:	rep
-> 	movsb
-> 	xorl %eax,%eax
-> 	ASM_CLAC
-> 	ret
-> 
-> 	.section .fixup,"ax"
-> 11:	lea (%rdx,%rcx,8),%rcx
-> 12:	movl %ecx,%edx		/* ecx is zerorest also */
-
--> Even if %rdx+%rcx*8 > 2^32 we end up truncating at 12: -- not that it
-matters, since both arguments are prototyped as "unsigned" and therefore
-the C compiler is supposed to guarantee the upper 32 bits are ignored.
-
-So I think Fenghua's patch is fine as-is.
-
-	-hpa
-
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index d3283d3..750e853 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -114,6 +114,7 @@ void __local_bh_disable_ip(unsigned long ip,
+unsigned int cnt) if (preempt_count() == cnt)
+                trace_preempt_off(CALLER_ADDR0,
+get_parent_ip(CALLER_ADDR1)); }
++EXPORT_SYMBOL_GPL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+ 
+ static void __local_bh_enable(unsigned int cnt)
+@@ -169,7 +170,7 @@ void __local_bh_enable_ip(unsigned long ip,
+unsigned int cnt) #endif
+        preempt_check_resched();
+ }
+-
++EXPORT_SYMBOL_GPL(__local_bh_enable_ip);
+ /*
+  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
+  * but break the loop if need_resched() is set or after 2 ms.
