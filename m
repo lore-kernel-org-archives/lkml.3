@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab3KTFv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 00:51:28 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:49823 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab3KTFvZ (ORCPT
+	id S1750879Ab3KTFyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 00:54:00 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:62690 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab3KTFx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 00:51:25 -0500
-Date: Wed, 20 Nov 2013 00:51:21 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: cl@linux-foundation.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] percpu: stop the loop when a cpu belongs to a new
- group
-Message-ID: <20131120055121.GA13754@mtj.dyndns.org>
-References: <1382345893-6644-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20131027123008.GJ14934@mtj.dyndns.org>
- <20131028030055.GC15642@weiyang.vnet.ibm.com>
- <20131028113120.GB11541@mtj.dyndns.org>
- <20131028151746.GA7548@weiyang.vnet.ibm.com>
- <20131120030056.GA15273@weiyang.vnet.ibm.com>
+	Wed, 20 Nov 2013 00:53:58 -0500
+Message-ID: <528C4E6F.20507@linaro.org>
+Date: Wed, 20 Nov 2013 11:23:51 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131120030056.GA15273@weiyang.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: rjw@rjwysocki.net
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, shawn.guo@linaro.org,
+        ceh@ti.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] cpufreq/stats: Add "unknown" frequency field in stats
+ tables
+References: <b0a2e5d26be45d1d2853940d318d50415db48f6f.1384839287.git.viresh.kumar@linaro.org>
+In-Reply-To: <b0a2e5d26be45d1d2853940d318d50415db48f6f.1384839287.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tuesday 19 November 2013 11:10 AM, Viresh Kumar wrote:
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index 4cf0d28..ebb21cd 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -72,9 +72,13 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
+>  		return 0;
+>  	cpufreq_stats_update(stat->cpu);
+>  	for (i = 0; i < stat->state_num; i++) {
+> -		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
+> -			(unsigned long long)
+> -			jiffies_64_to_clock_t(stat->time_in_state[i]));
+> +		if (stat->freq_table[i] == -1)
+> +			return sprintf(buf + len, "unknown");
+> +		else
+> +			return sprintf(buf + len, "%u", stat->freq_table[i]);
+> +
+> +		len += sprintf(buf + len, " %llu\n", (unsigned long long)
+> +				jiffies_64_to_clock_t(stat->time_in_state[i]));
+>  	}
+>  	return len;
 
-On Wed, Nov 20, 2013 at 11:00:56AM +0800, Wei Yang wrote:
-> What do you think about this one?
-> 
-> >
-> >From bd70498b9df47b25ff20054e24bb510c5430c0c3 Mon Sep 17 00:00:00 2001
-> >From: Wei Yang <weiyang@linux.vnet.ibm.com>
-> >Date: Thu, 10 Oct 2013 09:42:14 +0800
-> >Subject: [PATCH] percpu: optimize group assignment when cpu_distance_fn is
-> > NULL
-> >
-> >When cpu_distance_fn is NULL, all CPUs belongs to group 0. The original logic
-> >will continue to go through each CPU and its predecessor. cpu_distance_fn is
-> >always NULL when pcpu_build_alloc_info() is called from pcpu_page_first_chunk().
-> >
-> >By applying this patch, the time complexity will drop to O(n) form O(n^2) in
-> >case cpu_distance_fn is NULL.
+Somehow I forgot to add below fix with this patch, which I have tested at that time.
 
-The test was put in the inner loop because the nesting was already too
-deep and cpu_distance_fn is unlikely to be NULL on machines where the
-number of CPUs is high enough to matter.  If that O(n^2) loop is gonna
-be a problem, it's gonna be a problem on large NUMA machines and we'll
-have to do something about it for cases where cpu_distance_fn exists
-anyway.
 
-The patch is just extremely marginal.  Ah well... why not?  I'll apply
-it once -rc1 drops.
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index ebb21cd..89012d1 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -73,9 +73,9 @@ static ssize_t show_time_in_state(struct cpufreq_policy
+*policy, char *buf)
+        cpufreq_stats_update(stat->cpu);
+        for (i = 0; i < stat->state_num; i++) {
+                if (stat->freq_table[i] == -1)
+-                       return sprintf(buf + len, "unknown");
++                       len+= sprintf(buf + len, "unknown");
+                else
+-                       return sprintf(buf + len, "%u", stat->freq_table[i]);
++                       len+= sprintf(buf + len, "%u", stat->freq_table[i]);
 
-Thanks.
+                len += sprintf(buf + len, " %llu\n", (unsigned long long)
+                                jiffies_64_to_clock_t(stat->time_in_state[i]));
 
--- 
-tejun
