@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3KTKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:44:16 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:58587 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab3KTKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:44:14 -0500
-Date: Wed, 20 Nov 2013 11:44:12 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipc,shm: Correct error return value in shmctl (SHM_UNLOCK)
-Message-ID: <20131120104411.GA15831@axis.com>
+	id S1752995Ab3KTKpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:45:34 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:45277 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab3KTKpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 05:45:31 -0500
+Date: Wed, 20 Nov 2013 10:45:26 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ASoC: wm5110: Expose input high pass filter controls
+Message-ID: <20131120104526.GA30524@lee--X1>
+References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1384877043-5640-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131120091636.GA30012@lee--X1>
+ <20131120102045.GW2674@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131120102045.GW2674@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2caacaa82a51b78fc0c800e206473874094287ed restructured
-the ipc shm to shorten critical region, but introduced a path
-where the return value could be -EPERM, even if the operation
-actually was performed.
+On Wed, 20 Nov 2013, Mark Brown wrote:
 
-Before the commit, the err return value was reset by the return value
-from security_shm_shmctl() after the if (!ns_capable(...)) statement.
+> On Wed, Nov 20, 2013 at 09:16:36AM +0000, Lee Jones wrote:
+> 
+> > For the MFD parts: Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+> > How do you want to play this ASoC?
+> 
+> I expect this to collide with future changes from Wolfson so it'll need
+> to go via ASoC.
 
-Now, we still exit the if statement with err set to -EPERM,
-and in the case of SHM_UNLOCK, it is not reset at all,
-and used as the return value from shmctl.
+Okay, what if I make you a branch to pull from? Or visa-versa?
 
-To fix this, we only set err when errors occur, leaving the
-fallthrough case alone.
-
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: stable@vger.kernel.org
----
- ipc/shm.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/ipc/shm.c b/ipc/shm.c
-index d697396..4076f9e 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -974,12 +974,15 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
- 		ipc_lock_object(&shp->shm_perm);
- 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			kuid_t euid = current_euid();
--			err = -EPERM;
- 			if (!uid_eq(euid, shp->shm_perm.uid) &&
--			    !uid_eq(euid, shp->shm_perm.cuid))
-+			    !uid_eq(euid, shp->shm_perm.cuid)) {
-+				err = -EPERM;
- 				goto out_unlock0;
--			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
-+			}
-+			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK)) {
-+				err = -EPERM;
- 				goto out_unlock0;
-+			}
- 		}
- 
- 		shm_file = shp->shm_file;
 -- 
-1.8.4
-
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
