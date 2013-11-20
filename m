@@ -1,27 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab3KTEWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 23:22:45 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:40813 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab3KTEWK (ORCPT
+	id S1752957Ab3KTEWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:22:32 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:59856 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab3KTEWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 23:22:10 -0500
-Subject: [PATCH -tip v3 06/23] kprobes/x86: Allow probe on some kprobe
- preparation functions
+	Tue, 19 Nov 2013 23:22:04 -0500
+Subject: [PATCH -tip v3 02/23] kprobes: Introduce NOKPROBE_SYMBOL() macro
+ for blacklist
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+Cc: linux-arch@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
         lkml <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
+        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alok Kataria <akataria@vmware.com>,
         "David S. Miller" <davem@davemloft.net>
-Date: Wed, 20 Nov 2013 04:22:04 +0000
-Message-ID: <20131120042203.15296.7073.stgit@kbuild-fedora.novalocal>
+Date: Wed, 20 Nov 2013 04:21:54 +0000
+Message-ID: <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
@@ -32,268 +37,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to prohibit probing on the functions
-used in preparation phase. Those are safely probed because
-those are not invoked from breakpoint/fault/debug handlers,
-there is no chance to cause recursive exceptions.
+Introduce NOKPROBE_SYMBOL() macro which builds a kprobe
+blacklist in build time. The usage of this macro is similar
+to the EXPORT_SYMBOL, put the NOKPROBE_SYMBOL(function); just
+after the function definition.
 
-Following functions are now removed from the kprobes blacklist.
- can_boost
- can_probe
- can_optimize
- is_IF_modifier
- __copy_instruction
- copy_optimized_instructions
- arch_copy_kprobe
- arch_prepare_kprobe
- arch_arm_kprobe
- arch_disarm_kprobe
- arch_remove_kprobe
- arch_trampoline_kprobe
- arch_prepare_kprobe_ftrace
- arch_prepare_optimized_kprobe
- arch_check_optimized_kprobe
- arch_within_optimized_kprobe
- __arch_remove_optimized_kprobe
- arch_remove_optimized_kprobe
- arch_optimize_kprobes
- arch_unoptimize_kprobe
+If CONFIG_KPROBES=y, the macro is expanded to the definition
+of a static data structure of kprobe_blackpoint which is
+initialized for the function and put the address of the data
+structure in the "_kprobe_blacklist" section.
 
-I tested the safety via kprobe-tracer as below;
+Since the data structures are not fully initialized by the
+macro (because there is no "size" information),  those
+are re-initialized at boot time by using kallsyms.
 
- # cd /sys/kernel/debug/tracing
- # cat above-coverted-symbols-list | while read s; do
-   echo "p $s"; done > kprobe_events
- (Note: some symbols are not found, those are inlined)
- # echo 1 > events/kprobes/enable
- # echo p:foo vfs_symlink >> kprobe_events
- # echo p:bar vfs_symlink+5 >> kprobe_events
- # echo p vfs_symlink+5 >> kprobe_events
- # echo 1 > events/kprobes/foo/enable
- # ln -sf /tmp/foo /tmp/bar
- # echo 0 > events/kprobes/foo/enable
- # echo -:foo >> kprobe_events
- # head -n 20 trace
- # echo 0 > events/kprobes/enable
- # echo > kprobe_events
- # echo > trace
+Changes from previous version:
+ - Rename in_nokprobes_functions to within_kprobe_blacklist
+   and it returns a bool value istead of an error.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Rob Landley <rob@landley.net>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Chris Wright <chrisw@sous-sol.org>
+Cc: Alok Kataria <akataria@vmware.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/kernel/kprobes/core.c   |   20 ++++++++++----------
- arch/x86/kernel/kprobes/ftrace.c |    2 +-
- arch/x86/kernel/kprobes/opt.c    |   24 ++++++++++++------------
- 3 files changed, 23 insertions(+), 23 deletions(-)
+ Documentation/kprobes.txt         |   16 ++++++
+ arch/x86/kernel/paravirt.c        |    4 ++
+ include/asm-generic/vmlinux.lds.h |    9 ++++
+ include/linux/kprobes.h           |   20 ++++++++
+ kernel/kprobes.c                  |   93 ++++++++++++++++++-------------------
+ kernel/sched/core.c               |    1 
+ 6 files changed, 94 insertions(+), 49 deletions(-)
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 349112e..c2f7b1f 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -159,7 +159,7 @@ static kprobe_opcode_t *__kprobes skip_prefixes(kprobe_opcode_t *insn)
-  * Returns non-zero if opcode is boostable.
-  * RIP relative instructions are adjusted at copying time in 64 bits mode
-  */
--int __kprobes can_boost(kprobe_opcode_t *opcodes)
-+int can_boost(kprobe_opcode_t *opcodes)
- {
- 	kprobe_opcode_t opcode;
- 	kprobe_opcode_t *orig_opcodes = opcodes;
-@@ -260,7 +260,7 @@ unsigned long recover_probed_instruction(kprobe_opcode_t *buf, unsigned long add
+diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+index 0cfb00f..7062631 100644
+--- a/Documentation/kprobes.txt
++++ b/Documentation/kprobes.txt
+@@ -22,8 +22,9 @@ Appendix B: The kprobes sysctl interface
+ 
+ Kprobes enables you to dynamically break into any kernel routine and
+ collect debugging and performance information non-disruptively. You
+-can trap at almost any kernel code address, specifying a handler
++can trap at almost any kernel code address(*), specifying a handler
+ routine to be invoked when the breakpoint is hit.
++(*: at some part of kernel code can not be trapped, see 1.5 Blacklist)
+ 
+ There are currently three types of probes: kprobes, jprobes, and
+ kretprobes (also called return probes).  A kprobe can be inserted
+@@ -273,6 +274,19 @@ using one of the following techniques:
+  or
+ - Execute 'sysctl -w debug.kprobes_optimization=n'
+ 
++1.5 Blacklist
++
++Kprobes can probe almost of the kernel except itself. This means
++that there are some functions where kprobes cannot probe. Probing
++(trapping) such functions can cause recursive trap (e.g. double
++fault) or at least the nested probe handler never be called.
++Kprobes manages such functions as a blacklist.
++If you want to add a function into the blacklist, you just need
++to (1) include linux/kprobes.h and (2) use NOKPROBE_SYMBOL() macro
++to specify a blacklisted function.
++Kprobes checks given probe address with the blacklist and reject
++registering if the given address is in the blacklist.
++
+ 2. Architectures Supported
+ 
+ Kprobes, jprobes, and return probes are implemented on the following
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index 1b10af8..4c785fd 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -23,6 +23,7 @@
+ #include <linux/efi.h>
+ #include <linux/bcd.h>
+ #include <linux/highmem.h>
++#include <linux/kprobes.h>
+ 
+ #include <asm/bug.h>
+ #include <asm/paravirt.h>
+@@ -389,6 +390,9 @@ __visible struct pv_cpu_ops pv_cpu_ops = {
+ 	.end_context_switch = paravirt_nop,
+ };
+ 
++/* At this point, native_get_debugreg has real function entry */
++NOKPROBE_SYMBOL(native_get_debugreg);
++
+ struct pv_apic_ops pv_apic_ops = {
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	.startup_ipi_hook = paravirt_nop,
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 83e2c31..294ea96 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -109,6 +109,14 @@
+ #define BRANCH_PROFILE()
+ #endif
+ 
++#ifdef CONFIG_KPROBES
++#define KPROBE_BLACKLIST()	VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
++				*(_kprobe_blacklist)			      \
++				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
++#else
++#define KPROBE_BLACKLIST()
++#endif
++
+ #ifdef CONFIG_EVENT_TRACING
+ #define FTRACE_EVENTS()	. = ALIGN(8);					\
+ 			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
+@@ -487,6 +495,7 @@
+ 	*(.init.rodata)							\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
++	KPROBE_BLACKLIST()						\
+ 	MEM_DISCARD(init.rodata)					\
+ 	CLK_OF_TABLES()							\
+ 	CLKSRC_OF_TABLES()						\
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index cdf9251..641d009 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -206,6 +206,7 @@ struct kretprobe_blackpoint {
+ };
+ 
+ struct kprobe_blackpoint {
++	struct list_head list;
+ 	const char *name;
+ 	unsigned long start_addr;
+ 	unsigned long range;
+@@ -477,4 +478,23 @@ static inline int enable_jprobe(struct jprobe *jp)
+ 	return enable_kprobe(&jp->kp);
  }
  
- /* Check if paddr is at an instruction boundary */
--static int __kprobes can_probe(unsigned long paddr)
-+static int can_probe(unsigned long paddr)
- {
- 	unsigned long addr, __addr, offset = 0;
- 	struct insn insn;
-@@ -299,7 +299,7 @@ static int __kprobes can_probe(unsigned long paddr)
++#ifdef CONFIG_KPROBES
++/*
++ * Blacklist ganerating macro. Specify functions which is not probed
++ * by using this macro.
++ */
++#define __NOKPROBE_SYMBOL(fname)				\
++static struct kprobe_blackpoint __used			\
++	_kprobe_bp_##fname = {				\
++		.name = #fname,				\
++		.start_addr = (unsigned long)fname,	\
++	};						\
++static struct kprobe_blackpoint __used			\
++	__attribute__((section("_kprobe_blacklist")))	\
++	*_p_kprobe_bp_##fname = &_kprobe_bp_##fname;
++#define NOKPROBE_SYMBOL(fname)	__NOKPROBE_SYMBOL(fname)
++#else
++#define NOKPROBE_SYMBOL(fname)
++#endif
++
+ #endif /* _LINUX_KPROBES_H */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 1756ecc..e04d8de 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -86,18 +86,8 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ 	return &(kretprobe_table_locks[hash].lock);
+ }
+ 
+-/*
+- * Normally, functions that we'd want to prohibit kprobes in, are marked
+- * __kprobes. But, there are cases where such functions already belong to
+- * a different section (__sched for preempt_schedule)
+- *
+- * For such cases, we now have a blacklist
+- */
+-static struct kprobe_blackpoint kprobe_blacklist[] = {
+-	{"preempt_schedule",},
+-	{"native_get_debugreg",},
+-	{NULL}    /* Terminator */
+-};
++/* Blacklist -- list of struct kprobe_blackpoint */
++static LIST_HEAD(kprobe_blacklist);
+ 
+ #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
  /*
-  * Returns non-zero if opcode modifies the interrupt flag.
-  */
--static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
-+static int is_IF_modifier(kprobe_opcode_t *insn)
- {
- 	/* Skip prefixes */
- 	insn = skip_prefixes(insn);
-@@ -322,7 +322,7 @@ static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
-  * If not, return null.
-  * Only applicable to 64-bit x86.
-  */
--int __kprobes __copy_instruction(u8 *dest, u8 *src)
-+int __copy_instruction(u8 *dest, u8 *src)
- {
- 	struct insn insn;
- 	kprobe_opcode_t buf[MAX_INSN_SIZE];
-@@ -365,7 +365,7 @@ int __kprobes __copy_instruction(u8 *dest, u8 *src)
- 	return insn.length;
+@@ -1328,24 +1318,23 @@ bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+ 		addr < (unsigned long)__kprobes_text_end);
  }
  
--static int __kprobes arch_copy_kprobe(struct kprobe *p)
-+static int arch_copy_kprobe(struct kprobe *p)
+-static int __kprobes in_kprobes_functions(unsigned long addr)
++static bool __kprobes within_kprobe_blacklist(unsigned long addr)
  {
- 	int ret;
+-	struct kprobe_blackpoint *kb;
++	struct kprobe_blackpoint *bp;
  
-@@ -392,7 +392,7 @@ static int __kprobes arch_copy_kprobe(struct kprobe *p)
- 	return 0;
- }
- 
--int __kprobes arch_prepare_kprobe(struct kprobe *p)
-+int arch_prepare_kprobe(struct kprobe *p)
- {
- 	if (alternatives_text_reserved(p->addr, p->addr))
- 		return -EINVAL;
-@@ -407,17 +407,17 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 	return arch_copy_kprobe(p);
- }
- 
--void __kprobes arch_arm_kprobe(struct kprobe *p)
-+void arch_arm_kprobe(struct kprobe *p)
- {
- 	text_poke(p->addr, ((unsigned char []){BREAKPOINT_INSTRUCTION}), 1);
- }
- 
--void __kprobes arch_disarm_kprobe(struct kprobe *p)
-+void arch_disarm_kprobe(struct kprobe *p)
- {
- 	text_poke(p->addr, &p->opcode, 1);
- }
- 
--void __kprobes arch_remove_kprobe(struct kprobe *p)
-+void arch_remove_kprobe(struct kprobe *p)
- {
- 	if (p->ainsn.insn) {
- 		free_insn_slot(p->ainsn.insn, (p->ainsn.boostable == 1));
-@@ -1079,7 +1079,7 @@ int __init arch_init_kprobes(void)
- 	return 0;
- }
- 
--int __kprobes arch_trampoline_kprobe(struct kprobe *p)
-+int arch_trampoline_kprobe(struct kprobe *p)
- {
- 	return 0;
- }
-diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
-index 23ef5c5..dcaa131 100644
---- a/arch/x86/kernel/kprobes/ftrace.c
-+++ b/arch/x86/kernel/kprobes/ftrace.c
-@@ -85,7 +85,7 @@ end:
- 	local_irq_restore(flags);
- }
- 
--int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
-+int arch_prepare_kprobe_ftrace(struct kprobe *p)
- {
- 	p->ainsn.insn = NULL;
- 	p->ainsn.boostable = -1;
-diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
-index 898160b..fba7fb0 100644
---- a/arch/x86/kernel/kprobes/opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -77,7 +77,7 @@ found:
- }
- 
- /* Insert a move instruction which sets a pointer to eax/rdi (1st arg). */
--static void __kprobes synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long val)
-+static void synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long val)
- {
- #ifdef CONFIG_X86_64
- 	*addr++ = 0x48;
-@@ -169,7 +169,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op, struct pt_
- 	local_irq_restore(flags);
- }
- 
--static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
-+static int copy_optimized_instructions(u8 *dest, u8 *src)
- {
- 	int len = 0, ret;
- 
-@@ -189,7 +189,7 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
- }
- 
- /* Check whether insn is indirect jump */
--static int __kprobes insn_is_indirect_jump(struct insn *insn)
-+static int insn_is_indirect_jump(struct insn *insn)
- {
- 	return ((insn->opcode.bytes[0] == 0xff &&
- 		(X86_MODRM_REG(insn->modrm.value) & 6) == 4) || /* Jump */
-@@ -224,7 +224,7 @@ static int insn_jump_into_range(struct insn *insn, unsigned long start, int len)
- }
- 
- /* Decode whole function to ensure any instructions don't jump into target */
--static int __kprobes can_optimize(unsigned long paddr)
-+static int can_optimize(unsigned long paddr)
- {
- 	unsigned long addr, size = 0, offset = 0;
- 	struct insn insn;
-@@ -275,7 +275,7 @@ static int __kprobes can_optimize(unsigned long paddr)
- }
- 
- /* Check optimized_kprobe can actually be optimized. */
--int __kprobes arch_check_optimized_kprobe(struct optimized_kprobe *op)
-+int arch_check_optimized_kprobe(struct optimized_kprobe *op)
- {
- 	int i;
- 	struct kprobe *p;
-@@ -290,15 +290,15 @@ int __kprobes arch_check_optimized_kprobe(struct optimized_kprobe *op)
- }
- 
- /* Check the addr is within the optimized instructions. */
--int __kprobes
--arch_within_optimized_kprobe(struct optimized_kprobe *op, unsigned long addr)
-+int arch_within_optimized_kprobe(struct optimized_kprobe *op,
-+				 unsigned long addr)
- {
- 	return ((unsigned long)op->kp.addr <= addr &&
- 		(unsigned long)op->kp.addr + op->optinsn.size > addr);
- }
- 
- /* Free optimized instruction slot */
--static __kprobes
-+static
- void __arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
- {
- 	if (op->optinsn.insn) {
-@@ -308,7 +308,7 @@ void __arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
+ 	if (arch_within_kprobe_blacklist(addr))
+-		return -EINVAL;
++		return true;
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
+ 	 * fail any probe registration in the prohibited area
+ 	 */
+-	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
+-		if (kb->start_addr) {
+-			if (addr >= kb->start_addr &&
+-			    addr < (kb->start_addr + kb->range))
+-				return -EINVAL;
+-		}
++	list_for_each_entry(bp, &kprobe_blacklist, list) {
++		if (addr >= bp->start_addr &&
++		    addr < (bp->start_addr + bp->range))
++			return true;
  	}
+-	return 0;
++
++	return false;
  }
  
--void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-+void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
- {
- 	__arch_remove_optimized_kprobe(op, 1);
- }
-@@ -318,7 +318,7 @@ void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-  * Target instructions MUST be relocatable (checked inside)
-  * This is called when new aggr(opt)probe is allocated or reused.
-  */
--int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
- {
- 	u8 *buf;
- 	int ret;
-@@ -372,7 +372,7 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-  * Replace breakpoints (int3) with relative jumps.
-  * Caller must call with locking kprobe_mutex and text_mutex.
-  */
--void __kprobes arch_optimize_kprobes(struct list_head *oplist)
-+void arch_optimize_kprobes(struct list_head *oplist)
- {
- 	struct optimized_kprobe *op, *tmp;
- 	u8 insn_buf[RELATIVEJUMP_SIZE];
-@@ -398,7 +398,7 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
- }
+ /*
+@@ -1436,7 +1425,7 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
  
- /* Replace a relative jump with a breakpoint (int3).  */
--void __kprobes arch_unoptimize_kprobe(struct optimized_kprobe *op)
-+void arch_unoptimize_kprobe(struct optimized_kprobe *op)
- {
- 	u8 insn_buf[RELATIVEJUMP_SIZE];
+ 	/* Ensure it is not in reserved area nor out of text */
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+-	    in_kprobes_functions((unsigned long) p->addr) ||
++	    within_kprobe_blacklist((unsigned long) p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -2065,14 +2054,41 @@ static struct notifier_block kprobe_module_nb = {
+ 	.priority = 0
+ };
  
+-static int __init init_kprobes(void)
++/*
++ * Lookup and populate the kprobe_blacklist.
++ *
++ * Unlike the kretprobe blacklist, we'll need to determine
++ * the range of addresses that belong to the said functions,
++ * since a kprobe need not necessarily be at the beginning
++ * of a function.
++ */
++static void __init populate_kprobe_blacklist(struct kprobe_blackpoint **start,
++					     struct kprobe_blackpoint **end)
+ {
+-	int i, err = 0;
++	struct kprobe_blackpoint **iter, *bp;
+ 	unsigned long offset = 0, size = 0;
+ 	char *modname, namebuf[128];
+ 	const char *symbol_name;
+-	void *addr;
+-	struct kprobe_blackpoint *kb;
++
++	for (iter = start; (unsigned long)iter < (unsigned long)end; iter++) {
++		bp = *iter;
++		symbol_name = kallsyms_lookup(bp->start_addr,
++				&size, &offset, &modname, namebuf);
++		if (!symbol_name)
++			continue;
++
++		bp->range = size;
++		INIT_LIST_HEAD(&bp->list);
++		list_add_tail(&bp->list, &kprobe_blacklist);
++	}
++}
++
++extern struct kprobe_blackpoint *__start_kprobe_blacklist[];
++extern struct kprobe_blackpoint *__stop_kprobe_blacklist[];
++
++static int __init init_kprobes(void)
++{
++	int i, err = 0;
+ 
+ 	/* FIXME allocate the probe table, currently defined statically */
+ 	/* initialize all list heads */
+@@ -2082,27 +2098,8 @@ static int __init init_kprobes(void)
+ 		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
+ 	}
+ 
+-	/*
+-	 * Lookup and populate the kprobe_blacklist.
+-	 *
+-	 * Unlike the kretprobe blacklist, we'll need to determine
+-	 * the range of addresses that belong to the said functions,
+-	 * since a kprobe need not necessarily be at the beginning
+-	 * of a function.
+-	 */
+-	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
+-		kprobe_lookup_name(kb->name, addr);
+-		if (!addr)
+-			continue;
+-
+-		kb->start_addr = (unsigned long)addr;
+-		symbol_name = kallsyms_lookup(kb->start_addr,
+-				&size, &offset, &modname, namebuf);
+-		if (!symbol_name)
+-			kb->range = 0;
+-		else
+-			kb->range = size;
+-	}
++	populate_kprobe_blacklist(__start_kprobe_blacklist,
++				  __stop_kprobe_blacklist);
+ 
+ 	if (kretprobe_blacklist_size) {
+ 		/* lookup the function address from its name */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c180860..504fdbd 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2659,6 +2659,7 @@ asmlinkage void __sched notrace preempt_schedule(void)
+ 		barrier();
+ 	} while (need_resched());
+ }
++NOKPROBE_SYMBOL(preempt_schedule);
+ EXPORT_SYMBOL(preempt_schedule);
+ 
+ /*
 
 
