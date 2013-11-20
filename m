@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab3KTOEO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 09:04:14 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10818 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3KTOEL convert rfc822-to-8bit (ORCPT
+	id S1751911Ab3KTOJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 09:09:27 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:62961 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab3KTOJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 09:04:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Nov 2013 05:58:11 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Nov 2013 15:03:59 +0100
-Subject: Re: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-Thread-Topic: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-Thread-Index: Ac7l+Vzl0nJgmHJeSGqDi7gCgWVsmg==
-Message-ID: <20131120.160359.1043627108929095327.hdoyu@nvidia.com>
-References: <528BD6A7.3030908@wwwdotorg.org><20131120.051708.396722414386125310.hdoyu@nvidia.com><20131120131447.GA8279@ulmo.nvidia.com>
-In-Reply-To: <20131120131447.GA8279@ulmo.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Wed, 20 Nov 2013 09:09:26 -0500
+X-AuditID: cbfec7f4-b7fee6d000004b2d-27-528cc2951989
+Message-id: <528CC27D.2000100@samsung.com>
+Date: Wed, 20 Nov 2013 15:09:01 +0100
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: mturquette@linaro.org, Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH] clk: propagate parent change up one level
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xy7pTD/UEGTx+LWCx6fE1VovLu+aw
+	WTydcJHNYv2M1ywOLB53ru1h89i8pN6jb8sqRo/Pm+QCWKK4bFJSczLLUov07RK4Mj51vmQs
+	OMJfsWnyD5YGxpM8XYycHBICJhJr3z5khbDFJC7cW8/WxcjFISSwlFHi5bJTrBDOZ0aJhstf
+	wap4BbQk+hoaGUFsFgFViXnzesHibECTji35DBYXFYiQOLr6GVS9oMSPyfdYQGwRATeJG40d
+	TCA2s4C1xM7355hBbGEBK4nZe76wQsR1JPa3TmODsOUlNq95yzyBkW8WklGzkJTNQlK2gJF5
+	FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIMH7Zwbj4mNUhRgEORiUeXokF3UFCrIllxZW5
+	hxglOJiVRHi79vYECfGmJFZWpRblxxeV5qQWH2Jk4uCUamDUyZ84NSxSgOnchUhm0xUtZYf3
+	TP2a45j17PmLv2+mZ97oihBeUvH0DVvHJBGGnxEMvv+OlTwXzBQQeKdg9PXQTQ8V192P1D+q
+	rFZxEO3aqJm38YycZ4Tivdsfw6/0XSjk6GyLTTnZwSEgEZYZf+Vgw91tnEo7veYUus+YdiX6
+	tuPR7533C7YqsRRnJBpqMRcVJwIAHA6bViQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry Reding <thierry.reding@gmail.com> wrote @ Wed, 20 Nov 2013 14:14:48 +0100:
-....
-> > Does the above mean the following?
-> > 
-> > int of_iommu_attach(struct device *dev)
-> > {
-> > 	int i;
-> > 	struct of_phandle_args args;
-> > 
-> > 	of_property_for_each_phandle_with_args(dev->of_node, "iommus",
-> > 					       "#iommu-cells", i, &args)
-> > 		if (!args->np->dev->driver)
-> > 			return -EPROBE_DEFER;
-> > 	return 0;
-> > }
-> 
-> Not quite. The above would only check that a driver was bound to the
-> device. But if that device isn't an IOMMU then this doesn't help you.
+This patch adds support for propagation of setup of clock's parent one level
+up.
 
-I thought that, as long as a device is a normal one, it's ok to let it
-go to be populated. We only care about that, IOMMU devices comes
-first, and clients should come later than IOMMUs, for population. In
-the above if all IOMMUs are not populated, client devices are always
-deferred. "args->np->dev" always points an IOMMU device in a
-loop. Otherwise(no "iommus=") it goes out from the loop immediately.
+This feature is helpful when a driver changes topology of its clocks using
+clk_set_parent().  The problem occurs when driver's clock is located at MUX
+output on one platform/SoC but on the other platform/SoC there is a gated proxy
+clock between the MUX and driver's clock.  In such a case, driver's code has to
+be modified to use one clock for enabling and the other clock for setup of a
+parent.
 
-+#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
-+	 for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+The code updates are avoided by propagating setup of a parent up one level.
 
-> The standard way to solve this issue is to add the IOMMU to a global
-> list upon registration. Typically subsystems have some way to do that
-> already,
+Additionally, this patch adds CLK_SET_PARENT_PARENT (sorry for naming) flag to
+inform clk-core that clk_set_parent() should be propagated.
 
-Your implementation has some possibiity that we could construct any
-hierarchy of IOMMUs.
+Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+---
+ drivers/clk/clk.c            |    6 ++++++
+ include/linux/clk-provider.h |    1 +
+ 2 files changed, 7 insertions(+)
 
-> already, but it seems like IOMMU doesn't. It looks like that's one of
-> the side-effects of the assumption that there will always only be a
-> single IOMMU (per bus).
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index a004769..14eda80 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1595,6 +1595,12 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
 
-There's the following case at least we have already had.
+ 	/* try finding the new parent index */
+ 	if (parent) {
++		if ((clk->flags & CLK_SET_PARENT_PARENT)
++		    && clk->num_parents == 1) {
++			ret = clk_set_parent(clk->parent, parent);
++			goto out;
++		}
++
+ 		p_index = clk_fetch_parent_index(clk, parent);
+ 		p_rate = parent->rate;
+ 		if (p_index == clk->num_parents) {
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 73bdb69..83c98d5 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -29,6 +29,7 @@
+ #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
+ #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
+ #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
++#define CLK_SET_PARENT_PARENT	BIT(8) /* propagate parent change up one level */
 
-"memory controller"---"smmu_a"---bus--+--"smmu_b"--"device_a"
-                                      |
-                                      |
-                                      +--"device_b"
+ struct clk_hw;
 
-"smmu_b" isn't related to a bus at all.
+-- 
+1.7.9.5
 
-> There's also no base object that IOMMU drivers implement, which is the
-> way it's usually done in other subsystems. The absence of that makes it
-> more difficult. I suspect the easiest way to do that would be to add a
-> new type, something like this:
-....
 
-> With that you can use of_find_iommu_by_node() in the loop to check
-> whether an IOMMU has really been registered.
-
-Do you think if it's acceptable to see if a device is populated or not
-via "dev->driver"[1]? Grant Likely proposed to use flag[2] instead of
-struct device[2], though.
-
-[1] http://lists.linuxfoundation.org/pipermail/iommu/2013-July/006023.html
-[2] http://lists.linuxfoundation.org/pipermail/iommu/2013-October/006763.html
