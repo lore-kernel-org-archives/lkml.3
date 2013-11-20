@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3KTPQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:16:36 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33852 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab3KTPQf (ORCPT
+	id S1753926Ab3KTPSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:18:22 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:43988 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab3KTPST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 10:16:35 -0500
-Message-ID: <1384960593.8604.147.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Date: Wed, 20 Nov 2013 07:16:33 -0800
-In-Reply-To: <20131120085835.GB19341@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
-	 <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20131119204909.GA15004@redhat.com>
-	 <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20131119215312.GE15004@redhat.com>
-	 <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20131120085835.GB19341@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 20 Nov 2013 10:18:19 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Madper Xie <cxie@redhat.com>, Richard Weinberger <richard@nod.at>
+CC: Tony Luck <tony.luck@gmail.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Linux EFI" <linux-efi@vger.kernel.org>,
+        =?gb2312?B?0Luzyb+l?= <bbboson@gmail.com>
+Subject: RE: [PATCH] Make efi-pstore return a unique id
+Thread-Topic: [PATCH] Make efi-pstore return a unique id
+Thread-Index: AQHO1x11Ng/G6VnJcECFaGjfqkQ0X5oQ08KAgAApt4D//8FFUIAAUlQAgB06dgCAAAom8A==
+Date: Wed, 20 Nov 2013 15:17:55 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47FA0B6EF@USINDEM103.corp.hds.com>
+References: <87ppqk6qvx.fsf@redhat.com>
+ <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
+ <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com>
+ <52740A3A.70202@nod.at> <87r4abmnfb.fsf@redhat.com>
+In-Reply-To: <87r4abmnfb.fsf@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.14,0.0.0000
+ definitions=2013-11-20_06:2013-11-20,2013-11-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1311200096
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, 2013-11-20 at 10:58 +0200, Michael S. Tsirkin wrote:
-> On Tue, Nov 19, 2013 at 02:00:11PM -0800, Eric Dumazet wrote:
-> > On Tue, 2013-11-19 at 23:53 +0200, Michael S. Tsirkin wrote:
-> > 
-> > > Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
-> > > it didn't drop packets received from host as far as I can tell.
-> > > virtio is more like a pipe than a real NIC in this respect.
-> > 
-> > Prior/after to this patch, you were not posting buffers, so if packets
-> > were received on a physical NIC, you were dropping the packets anyway.
-> >
-> > It makes no difference at all, adding a cushion might make you feel
-> > better, but its really not worth it.
-> > 
-> > Under memory stress, it makes better sense to drop a super big GRO
-> > packet (The one needing frag_list extension ...)
-> > 
-> > It gives a better signal to the sender to reduce its pressure, and gives
-> > opportunity to free more of your memory.
-> > 
-> 
-> OK, but in that case one wonders whether we should do more to free memory?
-> 
-> E.g. imagine that we dropped a packet of a specific TCP flow
-> because we couldn't allocate a new packet.
-> 
-> What happens now is that the old packet is freed as well.
-> 
-> So quite likely the next packet in queue will get processed
-> since it will reuse the memory we have just freed.
-> 
-> The next packet and the next after it etc all will have to go through
-> the net stack until they get at the socket and are dropped then
-> because we missed a segment.  Even worse, GRO gets disabled so the load
-> on receiver goes up instead of down.
-> 
-> Sounds like a problem doesn't it?
-
-I see no problem at all. GRO is a hint for high rates (and obviously
-when there is enough memory)
-
-> 
-> GRO actually detects it's the same flow and can see packet is
-> out of sequence. Why doesn't it drop the packet then?
-> Alternatively, we could (for example using the pre-allocated skb
-> like I suggested) notify GRO that it should start dropping packets
-> of this flow.
-> 
-> What do you think?
-> 
-
-I think we disagree a lot on memory management on networking stacks.
-
-We did a lot of work in TCP stack and Qdisc layers to lower memory
-pressure (and bufferbloat), an you seem to try hard to introduce yet
-another layer of buffer bloat in virtio_net.
-
-So add whatever you want to proudly state to your management :
-
-"Look how smart we are : we drop no packets in our layer"
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAKFIStH010229
 
 
+> Then will lost the sequence of our log. We will get lots of entries like
+> "dmesg-efi-`unique but meaningless number here`" in pstore fs. Who will
+> know which file is the latest record?
 
+Ah, that's good point.
+
+> And another side, the combin of timestamp, count and part is unique. Why
+> we generate a unique number from a unique number?
+> if you think "making a string from three ints and then a parse it to a
+> int again" is odd, i'd like to use ((timestamp * 100 + part) * 100 +
+> count.
+
+How about calculating the number of digit of part /count, instead of using fixed "100"?
+We can ensure the uniqueness of each id by doing it.
+
+digit_num = log2(part)/log2(10) + 1
+timestamp * 10^(digit_num + 1)
+
+Seiji
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
