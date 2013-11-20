@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab3KTRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:21:57 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:38194 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3KTRVy (ORCPT
+	id S1754711Ab3KTRX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:23:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34704 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab3KTRXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:21:54 -0500
-Date: Wed, 20 Nov 2013 18:21:23 +0100
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Joern Engel <joern@logfs.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-Message-ID: <20131120172119.GA1848@hp530>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
- <20131119134007.GD20655@dhcp22.suse.cz>
+	Wed, 20 Nov 2013 12:23:25 -0500
+Date: Wed, 20 Nov 2013 18:23:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arjan van de Ven <arjan@linux.intel.com>
+cc: Peter Zijlstra <peterz@infradead.org>, lenb@kernel.org, rjw@rjwysocki.net,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
+ implementations
+In-Reply-To: <528CE611.8040903@linux.intel.com>
+Message-ID: <alpine.DEB.2.02.1311201814410.30673@ionos.tec.linutronix.de>
+References: <20131120160450.072555619@infradead.org> <20131120162736.508462614@infradead.org> <528CE611.8040903@linux.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <20131119134007.GD20655@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 02:40:07PM +0100, Michal Hocko wrote:
-Hi Michal
-> On Tue 19-11-13 14:14:00, Michal Hocko wrote:
-> [...]
-> > We have basically ended up with 3 options AFAIR:
-> > 	1) allow memcg approach (memcg.oom_control) on the root level
-> >            for both OOM notification and blocking OOM killer and handle
-> >            the situation from the userspace same as we can for other
-> > 	   memcgs.
-> 
-> This looks like a straightforward approach as the similar thing is done
-> on the local (memcg) level. There are several problems though.
-> Running userspace from within OOM context is terribly hard to do
-> right. This is true even in the memcg case and we strongly discurage
-> users from doing that. The global case has nothing like outside of OOM
-> context though. So any hang would blocking the whole machine. Even
-> if the oom killer is careful and locks in all the resources it would
-> have hard time to query the current system state (existing processes
-> and their states) without any allocation.  There are certain ways to
-> workaround these issues - e.g. give the killer access to memory reserves
-> - but this all looks scary and fragile.
-> 
-> > 	2) allow modules to hook into OOM killer path and take the
-> > 	   appropriate action.
-> 
-> This already exists actually. There is oom_notify_list callchain and
-> {un}register_oom_notifier that allow modules to hook into oom and
-> skip the global OOM if some memory is freed. There are currently only
-> s390 and powerpc which seem to abuse it for something that looks like a
-> shrinker except it is done in OOM path...
-> 
-> I think the interface should be changed if something like this would be
-> used in practice. There is a lot of information lost on the way. I would
-> basically expect to get everything that out_of_memory gets.
+On Wed, 20 Nov 2013, Arjan van de Ven wrote:
 
-Some time ago I was trying to hook OOM with custom module based policy. I
-needed to select process based on uss/pss values which required page walking
-(yes, I know it is extremely expensive, but sometimes I'd pay the bill). The
-learned lesson is quite simple - it is harmful to expose (all?) internal
-functions and locking into modules - the result is going to be completely
-unreliable and non predictable mess, unless the well defined interface and
-helpers will be established. 
-
+> On 11/20/2013 8:04 AM, Peter Zijlstra wrote:
+> > This does not fully preseve existing behaviour in that the generic
+> > idle cycle function calls into the normal cpuidle governed idle
+> > routines and should thus respect things like QoS parameters and the
+> > like.
 > 
-> > 	3) create a generic filtering mechanism which could be
-> > 	   controlled from the userspace by a set of rules (e.g.
-> > 	   something analogous to packet filtering).
 > 
-> This looks generic enough but I have no idea about the complexity.
-
-Never thought about it, but just wonder which input and output supposed to
-have for this filtering mechanism?
-
-Vladimir
-> -- 
-> Michal Hocko
-> SUSE Labs
+> NAK on the powerclamp side.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> powerclamp MUST NOT do that....
+> it is needed to go to the deepest state no matter what
+> (this is for when your system is overheating. there is not a lot of choice
+> here... alternative is an emergency reset that the hardware does for safety)
+
+So that whole machinery falls apart when the thing which is running on
+that hot core is a while(1) loop with a higher or equal FIFO priority
+than this thread. Even if you'd run at prio 99, then there is no
+guarantee that the cpu hog does not run with prio 99 as well and due
+to FIFO and being on the CPU it's not going to let you on.
+
+And even if the issue was caused by a lower prio CPU hog, the system
+might just be in a RT throttled state because of the hog. So depending
+on the throttler settings it might take quite some time for the
+clamper thread to get on the CPU.
+
+Amazingly naive and stupid approach.
+
+Thanks,
+
+	tglx
