@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3KTUzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:55:36 -0500
-Received: from www17.your-server.de ([213.133.104.17]:34480 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab3KTUzd (ORCPT
+	id S1755357Ab3KTU5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:57:16 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:35296 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207Ab3KTU5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:55:33 -0500
-Message-ID: <1384980928.3312.6.camel@localhost.localdomain>
-Subject: [i915] BUG: Bad page state in process Xorg
-From: Thomas Meyer <thomas@m3y3r.de>
-To: airlied <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Nov 2013 21:55:28 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Wed, 20 Nov 2013 15:57:12 -0500
+Message-ID: <528D2224.9090106@gmail.com>
+Date: Wed, 20 Nov 2013 21:57:08 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v1 7/7] net: cpsw: resume/suspend PHY on port start/stop
+References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1384978913-8052-8-git-send-email-sebastian.hesselbarth@gmail.com> <CAGVrzcZ+5oaucp+OSeGGe=6MBjEwi4K=E_NbCm3PjR_Owyxstw@mail.gmail.com>
+In-Reply-To: <CAGVrzcZ+5oaucp+OSeGGe=6MBjEwi4K=E_NbCm3PjR_Owyxstw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/20/2013 09:48 PM, Florian Fainelli wrote:
+> 2013/11/20 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
+>> Network PHYs consume a noticable amount of power. This adds phy_resume
+>> on slave_open and phy_suspend on slave_stop to save this power if the
+>> port is down anyway.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/net/ethernet/ti/cpsw.c |    2 ++
+>>   1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+>> index 90d41d2..f1dc54f 100644
+>> --- a/drivers/net/ethernet/ti/cpsw.c
+>> +++ b/drivers/net/ethernet/ti/cpsw.c
+>> @@ -1013,6 +1013,7 @@ static void cpsw_slave_open(struct cpsw_slave *slave, struct cpsw_priv *priv)
+>>          } else {
+>>                  dev_info(priv->dev, "phy found : id is : 0x%x\n",
+>>                           slave->phy->phy_id);
+>> +               phy_resume(slave->phy);
+>>                  phy_start(slave->phy);
+>
+> Cannot phy_start() figure this out for us based on the internal PHY
+> device state machine?
 
-I reported this bug a few days ago, but nobody did respond to my bug
-report:
-http://lkml.indiana.edu/hypermail/linux/kernel/1311.2/00058.html
+Yeah, as I said in the cover letter, I started with mv643xx_eth which
+is not using phy_start/stop as it probably should be. As soon as I
+looked at mvneta/cpsw, I also came to the conclusion that
+phy_suspend/resume should be hidden in phy_start/stop.
 
-Every time I restart the X server I will run into this bug with 3.12.0.
-
-Help is welcome.
-
-[ 9913.719551] BUG: Bad page state in process Xorg  pfn:20f2bb
-[ 9913.721755] page:ffffea00083caec0 count:0 mapcount:0 mapping:ffff8802357975f8 index:0xe
-[ 9913.733741] page flags: 0x800000000008001c(referenced|uptodate|dirty|swapbacked)
-[ 9913.741062] Modules linked in: tcp_lp fuse ipt_MASQUERADE ip6t_REJECT xt_conntrack bluetooth ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw arc4 iwldvm snd_usb_audio mac80211 snd_hda_codec_hdmi iwlwifi snd_hda_codec_realtek snd_usbmidi_lib snd_hda_intel kvm_intel asix snd_hda_codec usbnet kvm atl1c snd_hwdep mii snd_seq acer_wmi acerhdf sparse_keymap snd_pcm joydev pcspkr cfg80211 rfkill acpi_cpufreq freq_table snd_rawmidi snd_seq_device snd_page_alloc snd_timer snd wmi soundcore uinput ipv6 xts gf128mul udl syscopyarea sysfillrect sysimgblt drm_usb usb_storage
-[ 9913.741125] CPU: 0 PID: 723 Comm: Xorg Tainted: G    B        3.12.0 #2
-[ 9913.741128] Hardware name: Acer Aspire 1810T/JM11-MS, BIOS v1.3310 03/25/2010
-[ 9913.741130]  0000000000000000 ffff880213127cc0 ffffffff8154dc8b ffff880213127cd8
-[ 9913.741135]  ffffffff8154b6e7 ffffea00083caec0 ffff880213127d10 ffffffff810c6955
-[ 9913.741139]  ffffea00083caec0 800000000008001c 0000000000000000 ffff880234080000
-[ 9913.741143] Call Trace:
-[ 9913.741151]  [<ffffffff8154dc8b>] dump_stack+0x19/0x1b
-[ 9913.741155]  [<ffffffff8154b6e7>] bad_page+0xc9/0xe2
-[ 9913.741160]  [<ffffffff810c6955>] free_pages_prepare+0xd5/0xe0
-[ 9913.741165]  [<ffffffff810c725d>] free_hot_cold_page+0x1d/0x120
-[ 9913.741169]  [<ffffffff810cbe9e>] __put_single_page+0x1e/0x30
-[ 9913.741172]  [<ffffffff810cc045>] put_page+0x25/0x40
-[ 9913.741178]  [<ffffffff81346a73>] i915_gem_object_put_pages_gtt+0xc3/0x1a0
-[ 9913.741183]  [<ffffffff81348378>] i915_gem_object_put_pages+0x78/0xd0
-[ 9913.741187]  [<ffffffff8134a167>] i915_gem_free_object+0xe7/0x220
-[ 9913.741192]  [<ffffffff81318a75>] drm_gem_object_free+0x25/0x30
-[ 9913.741196]  [<ffffffff8132e5db>] drm_gem_dmabuf_release+0x4b/0x70
-[ 9913.741201]  [<ffffffff813ae0b7>] dma_buf_release+0x27/0x90
-[ 9913.741205]  [<ffffffff8110deab>] __fput+0xcb/0x240
-[ 9913.741209]  [<ffffffff8110e059>] ____fput+0x9/0x10
-[ 9913.741214]  [<ffffffff81052b5c>] task_work_run+0x9c/0xc0
-[ 9913.741219]  [<ffffffff8103a365>] do_exit+0x6d5/0x9d0
-[ 9913.741223]  [<ffffffff81551063>] ? __schedule+0x243/0x5e0
-[ 9913.741227]  [<ffffffff81052b44>] ? task_work_run+0x84/0xc0
-[ 9913.741232]  [<ffffffff8103b4d5>] do_group_exit+0x35/0x90
-[ 9913.741236]  [<ffffffff8103b53f>] SyS_exit_group+0xf/0x10
-[ 9913.741241]  [<ffffffff81558960>] system_call_fastpath+0x16/0x1b
-[ 9913.741246] BUG: Bad page state in process Xorg  pfn:20f2bc
-[ 9913.749565] page:ffffea00083caf00 count:0 mapcount:0 mapping:ffff8802357975f8 index:0xf
-
-with kind regards
-thomas
-
-
+> I would imagine that you would want to call phy_suspend/resume from an
+> Ethernet driver's PM suspend/resume callbacks to make sure that the
+> PHY also enters a low power mode, but I do not want to have to
+> remember that I need to call phy_resume before phy_start for instance.
+> As of today we have PHY_HALTED/PHY_RESUMING, and I think we certainly
+> need at least a PHY_SUSPENDED state to help us with that.
+>
+>>
+>>                  /* Configure GMII_SEL register */
+>> @@ -1081,6 +1082,7 @@ static void cpsw_slave_stop(struct cpsw_slave *slave, struct cpsw_priv *priv)
+>>          if (!slave->phy)
+>>                  return;
+>>          phy_stop(slave->phy);
+>> +       phy_suspend(slave->phy);
+>
+> Same here, why is not that hidden in phy_stop? If there is any fear
+> that this breaks setups where WoL is used or such, we could add a new
+> argument to phy_connect() and friends which says whether it is okay to
+> auto-suspend the PHY upon PHY_stop
+>
+>>          phy_disconnect(slave->phy);
+>>          slave->phy = NULL;
+>>   }
+>> --
+>> 1.7.2.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
 
