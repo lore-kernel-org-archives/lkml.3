@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab3KTH6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 02:58:42 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:33754 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab3KTH6i (ORCPT
+	id S1752642Ab3KTH6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 02:58:46 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:52062 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab3KTH6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 02:58:38 -0500
-Date: Wed, 20 Nov 2013 15:57:15 +0800
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: Mark Einon <mark.einon@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3 4/5] staging: et131x: remove spinlock adapter->lock
-Message-ID: <14d763851982be40b32c297eba792f29d1bbd546.1384933520.git.gamerh2o@gmail.com>
-Mail-Followup-To: ZHAO Gang <gamerh2o@gmail.com>,
-	Mark Einon <mark.einon@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org
-References: <cover.1384933520.git.gamerh2o@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1384933520.git.gamerh2o@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Nov 2013 02:58:39 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, horms@verge.net.au,
+        linux-sh@vger.kernel.org
+Date: Wed, 20 Nov 2013 16:59:21 +0900
+Message-Id: <20131120075921.23557.23231.sendpatchset@w520>
+Subject: [PATCH 00/05] ARM: shmobile: r8a7790 and r8a7791 thermal update
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-adapter->lock is only used in et131x_multicast(), which is eventually
-called by network stack function __dev_set_rx_mode(). __dev_set_rx_mode()
-is always called by (net_device *)dev->addr_list_lock hold, to protect from
-concurrent access. So adapter->lock is redundant.
+ARM: shmobile: r8a7790 and r8a7791 thermal update
 
-Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+[PATCH 01/05] ARM: shmobile: Add r8a7790 thermal device node to DTS
+[PATCH 02/05] ARM: shmobile: Add r8a7790 clocks for thermal devices
+[PATCH 03/05] ARM: shmobile: Add r8a7791 thermal device node to DTS
+[PATCH 04/05] ARM: shmobile: Add r8a7791 thermal platform device
+[PATCH 05/05] ARM: shmobile: Add r8a7791 clocks for thermal devices
+
+Update the thermal support for the r8a7790 and the r8a7791 SoCs. As
+usual the code is split between the DT reference code and the legacy
+case. The DT reference code is written to be multiplatform aware and
+is used to point out the future direction. Hardware support may however
+be limited there due to lacking DT bindings.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- drivers/staging/et131x/et131x.c | 6 ------
- 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 6254a6b..66530b1 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -486,8 +486,6 @@ struct et131x_adapter {
- 	u8 eeprom_data[2];
- 
- 	/* Spinlocks */
--	spinlock_t lock;
--
- 	spinlock_t tcb_send_qlock;
- 	spinlock_t tcb_ready_qlock;
- 	spinlock_t send_hw_lock;
-@@ -3867,7 +3865,6 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
- 	adapter->netdev = netdev;
- 
- 	/* Initialize spinlocks here */
--	spin_lock_init(&adapter->lock);
- 	spin_lock_init(&adapter->tcb_send_qlock);
- 	spin_lock_init(&adapter->tcb_ready_qlock);
- 	spin_lock_init(&adapter->send_hw_lock);
-@@ -4429,8 +4426,6 @@ static void et131x_multicast(struct net_device *netdev)
- 	struct netdev_hw_addr *ha;
- 	int i;
- 
--	spin_lock_irqsave(&adapter->lock, flags);
--
- 	/* Before we modify the platform-independent filter flags, store them
- 	 * locally. This allows us to determine if anything's changed and if
- 	 * we even need to bother the hardware
-@@ -4484,7 +4479,6 @@ static void et131x_multicast(struct net_device *netdev)
- 		/* Call the device's filter function */
- 		et131x_set_packet_filter(adapter);
- 	}
--	spin_unlock_irqrestore(&adapter->lock, flags);
- }
- 
- /* et131x_tx - The handler to tx a packet on the device
--- 
-1.8.3.1
+ Written against renesas.git tag renesas-devel-v3.12-20131119
 
+ Tested on Lager and Koelsch.
+
+ arch/arm/boot/dts/r8a7790.dtsi         |    7 +++++++
+ arch/arm/boot/dts/r8a7791.dtsi         |    7 +++++++
+ arch/arm/mach-shmobile/clock-r8a7790.c |    1 +
+ arch/arm/mach-shmobile/clock-r8a7791.c |    4 ++++
+ arch/arm/mach-shmobile/setup-r8a7791.c |   12 ++++++++++++
+ 5 files changed, 31 insertions(+)
