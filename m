@@ -1,104 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab3KTU7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:59:35 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46075 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab3KTU7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:59:33 -0500
+	id S1755368Ab3KTVAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:00:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41028 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755170Ab3KTVAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 16:00:36 -0500
+Message-ID: <528D22DB.1020208@zytor.com>
+Date: Wed, 20 Nov 2013 13:00:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1384978913-8052-5-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1384978913-8052-5-git-send-email-sebastian.hesselbarth@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 20 Nov 2013 12:58:52 -0800
-Message-ID: <CAGVrzcYBexBWrh2Nz8tu0KRLQ4YPjtJux9N-TC07-Hxf3On1FQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v1 4/7] net: phy: suspend unused PHYs on mdio_bus in late_initcall
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall
+References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>	<528AF5D7.7000308@zytor.com>	<20131119184959.GE29695@two.firstfloor.org>	<528CE65B.6020300@zytor.com> <87mwkzvvck.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87mwkzvvck.fsf@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/20 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> Since phy_attach ensures PHYs are resumed, we can now suspend all
-> PHYs that have no attached netdev after initcalls.
+On 11/20/2013 09:25 AM, Andi Kleen wrote:
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+>>
+>> We're talking user space here, which has different requirement (COW,
+>> memory protection, ...) which means it is not really the same code.  You
+>> can't take a page fault while patching the kernel.
+> 
+> The syscall pins the page, then it calls the kernel code.
+> There are no page faults during patching.
+> 
 
-I do like the idea, but I think you might want to make sure that the
-MDIO bus suspend policy was set to "auto" (which is the default afair)
-not to expose unexpected behavior.
+But you don't need to pin anything if you just do it in userspace.
+Again, it is particularly poignant for large batched operations.
 
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/mdio_bus.c |   27 +++++++++++++++++++++++++++
->  1 files changed, 27 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 5617876..10eba58 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -320,6 +320,33 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
->                 (phydev->phy_id & phydrv->phy_id_mask));
->  }
->
-> +static int mdio_bus_suspend_unused(struct device *busdev, void *data)
-> +{
-> +       struct mii_bus *bus = to_mii_bus(busdev);
-> +       struct phy_device *phydev;
-> +       struct phy_driver *phydrv;
-> +       int i;
-> +
-> +       for (i = 0; i < PHY_MAX_ADDR; i++) {
-> +               if (!bus->phy_map[i])
-> +                       continue;
-> +
-> +               phydev = to_phy_device(&bus->phy_map[i]->dev);
-> +               phydrv = to_phy_driver(phydev->dev.driver);
-> +               if (!phydev->attached_dev && phydrv && phydrv->suspend)
-> +                       phy_suspend(phydev);
-> +       }
-> +
-> +       return 0;
+	-hpa
 
-You might want to reuse mdio_bus_phy_may_suspend() here to have a
-central place checking for phydev->attached_dev and phydrv->suspend
-just in case we need to add more callbacks in the future or implicit
-PHY state machine hooks. That might also take care of my concern
-expressed above.
-
-> +}
-> +
-> +static int mdio_bus_class_suspend_unused(void)
-> +{
-> +       return class_for_each_device(&mdio_bus_class, NULL, NULL,
-> +                                    mdio_bus_suspend_unused);
-> +}
-> +late_initcall_sync(mdio_bus_class_suspend_unused);
-> +
->  #ifdef CONFIG_PM
->
->  static bool mdio_bus_phy_may_suspend(struct phy_device *phydev)
-> --
-> 1.7.2.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
-
--- 
-Florian
