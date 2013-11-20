@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3KTAWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:22:39 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:58901 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab3KTAWg (ORCPT
+	id S1753857Ab3KTAWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:22:50 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36985 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab3KTAWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:22:36 -0500
+	Tue, 19 Nov 2013 19:22:45 -0500
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-sh@vger.kernel.org, linus.walleij@linaro.org,
         grant.likely@secretlab.ca, horms@verge.net.au,
         laurent.pinchart@ideasonboard.com, Magnus Damm <magnus.damm@gmail.com>
-Date: Wed, 20 Nov 2013 09:23:17 +0900
-Message-Id: <20131120002317.27342.34257.sendpatchset@w520>
+Date: Wed, 20 Nov 2013 09:23:26 +0900
+Message-Id: <20131120002326.27342.83787.sendpatchset@w520>
 In-Reply-To: <20131120002259.27342.35575.sendpatchset@w520>
 References: <20131120002259.27342.35575.sendpatchset@w520>
-Subject: [PATCH 02/05 v2] gpio: rcar: Enable mask on suspend
+Subject: [PATCH 03/05] gpio: em: Setup gpiochip->dev
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-Now when lazy interrupt disable has been enabled in the driver
-then extend the code to set IRQCHIP_MASK_ON_SUSPEND which tells
-the core that only IRQs marked as wakeups need to stay enabled
-during Suspend-to-RAM.
-
-Tested on the Lager board with GPIO-keys and Suspend-to-RAM.
+Make sure gpio_chip->dev is setup so of_gpiochip_add()
+will work as expected.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
 
- drivers/gpio/gpio-rcar.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpio/gpio-em.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- 0008/drivers/gpio/gpio-rcar.c
-+++ work/drivers/gpio/gpio-rcar.c	2013-11-20 08:30:28.000000000 +0900
-@@ -369,7 +369,8 @@ static int gpio_rcar_probe(struct platfo
- 	irq_chip->irq_mask = gpio_rcar_irq_disable;
- 	irq_chip->irq_unmask = gpio_rcar_irq_enable;
- 	irq_chip->irq_set_type = gpio_rcar_irq_set_type;
--	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED;
-+	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_SET_TYPE_MASKED
-+			 | IRQCHIP_MASK_ON_SUSPEND;
- 
- 	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
- 					      p->config.number_of_pins,
+--- 0001/drivers/gpio/gpio-em.c
++++ work/drivers/gpio/gpio-em.c	2013-11-13 20:47:40.000000000 +0900
+@@ -327,6 +327,7 @@ static int em_gio_probe(struct platform_
+ 	gpio_chip->request = em_gio_request;
+ 	gpio_chip->free = em_gio_free;
+ 	gpio_chip->label = name;
++	gpio_chip->dev = &pdev->dev;
+ 	gpio_chip->owner = THIS_MODULE;
+ 	gpio_chip->base = pdata->gpio_base;
+ 	gpio_chip->ngpio = pdata->number_of_pins;
