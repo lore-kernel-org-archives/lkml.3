@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3KTVJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:09:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49225 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3KTVJu (ORCPT
+	id S1755463Ab3KTVKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:10:05 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:37076 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281Ab3KTVKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:09:50 -0500
-Message-ID: <528D258C.1020102@oracle.com>
-Date: Wed, 20 Nov 2013 16:11:40 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        david.vrabel@citrix.com
-Subject: Re: [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is
- not yet up.
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 20 Nov 2013 16:10:04 -0500
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-br@googlegroups.com, "Geyslan G. Bem" <geyslan@gmail.com>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org (open list:VIDEOBUF2 FRAMEWORK)
+Subject: [PATCH] videobuf2-dma-sg: fix possible memory leak
+Date: Wed, 20 Nov 2013 18:02:52 -0300
+Message-Id: <1384981372-5579-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 12:38 PM, Konrad Rzeszutek Wilk wrote:
-> The user can launch the guest in this sequence:
->
-> xl create -p /vm.cfg	[launch, but pause it]
-> xl shutdown latest	[sets control/shutdown=poweroff]
-> xl unpause latest
-> xl console latest	[and see that the guest has completely
-> ignored the shutdown request]
->
-> In reality the guest hasn't ignored it. It registers a watch
-> and gets a notification that there is value. It then calls
-> the shutdown_handler which ends up calling orderly_shutdown.
->
-> Unfortunately that is so early in the bootup that there
-> are no user-space. Which means that the orderly_shutdown fails.
-> But since the force flag was set to false it continues on without
-> reporting.
->
-> We check if the system is still in the booting stage and if so
-> enable the force option (which will shutdown in early bootup
-> process). If in normal running case we don't force it.
->
-> Fixes-Bug: http://bugs.xenproject.org/xen/bug/6
-> Reported-by:  Alex Bligh <alex@alex.org.uk>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> [v2: Add switch statement]
+Fix the return when 'buf->pages' allocation error.
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-dma-sg.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> ---
->   drivers/xen/manage.c | 13 ++++++++++++-
->   1 file changed, 12 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-> index 624e8dc..3f8496c 100644
-> --- a/drivers/xen/manage.c
-> +++ b/drivers/xen/manage.c
-> @@ -185,7 +185,18 @@ struct shutdown_handler {
->   static void do_poweroff(void)
->   {
->   	shutting_down = SHUTDOWN_POWEROFF;
-> -	orderly_poweroff(false);
-> +	switch (system_state) {
-> +	case SYSTEM_BOOTING:
-> +		orderly_poweroff(true);
-> +		break;
-> +	case SYSTEM_RUNNING:
-> +		orderly_poweroff(false);
-> +		break;
-> +	default:
-> +		/* Don't do it when we are halting/rebooting. */
-> +		pr_info("Ignoring Xen toolstack shutdown.\n");
-> +		break;
-> +	}
->   }
->   
->   static void do_reboot(void)
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+index 2f86054..0d3a8ff 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -178,7 +178,7 @@ static void *vb2_dma_sg_get_userptr(void *alloc_ctx, unsigned long vaddr,
+ 	buf->pages = kzalloc(buf->num_pages * sizeof(struct page *),
+ 			     GFP_KERNEL);
+ 	if (!buf->pages)
+-		return NULL;
++		goto userptr_fail_alloc_pages;
+ 
+ 	num_pages_from_user = get_user_pages(current, current->mm,
+ 					     vaddr & PAGE_MASK,
+@@ -204,6 +204,7 @@ userptr_fail_get_user_pages:
+ 	while (--num_pages_from_user >= 0)
+ 		put_page(buf->pages[num_pages_from_user]);
+ 	kfree(buf->pages);
++userptr_fail_alloc_pages:
+ 	kfree(buf);
+ 	return NULL;
+ }
+-- 
+1.8.4.2
 
