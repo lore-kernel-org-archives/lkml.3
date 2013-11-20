@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab3KTVcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:32:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63806 "EHLO mx1.redhat.com"
+	id S1755514Ab3KTVcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:32:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2352 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222Ab3KTVcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:32:11 -0500
-Date: Wed, 20 Nov 2013 17:47:27 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 04/12] KVM: MMU: log dirty page after marking spte
- writable
-Message-ID: <20131120194727.GA3353@amt.cnet>
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130807014828.GA4781@amt.cnet>
- <5201C7D9.20004@linux.vnet.ibm.com>
- <20131120002920.GA14230@amt.cnet>
- <B166B522-2CDB-44CA-B594-687B45A1CF01@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <B166B522-2CDB-44CA-B594-687B45A1CF01@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755141Ab3KTVcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 16:32:42 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Antonio Ospite <ospite@studenti.unina.it>, simon@mungewell.org,
+        case@corpsmoderne.net, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Fixes for multitouch / generic gamepads interaction
+Date: Wed, 20 Nov 2013 16:32:18 -0500
+Message-Id: <1384983141-31019-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:20:09PM +0800, Xiao Guangrong wrote:
-> > But what guarantee does userspace require, from GET_DIRTY_LOG, while vcpus are
-> > executing? 
-> 
-> Aha. Single calling GET_DIRTY_LOG is useless since new dirty page can be generated
-> when GET_DIRTY_LOG is being returned. If user wants to get exact dirty pages the vcpus
-> should be stopped. 
-> 
-> > 
-> > With fast page fault:
-> > 
-> >      if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
-> >              /* The window in here... */
-> >              mark_page_dirty(vcpu->kvm, gfn);
-> > 
-> > And the $SUBJECT set_spte reordering, the rule becomes
-> > 
-> > A call to GET_DIRTY_LOG guarantees to return correct information about 
-> > dirty pages before invocation of the previous GET_DIRTY_LOG call.
-> > 
-> > (see example 1: the next GET_DIRTY_LOG will return the dirty information
-> > there).
-> > 
-> 
-> It seems no.
-> 
-> The first GET_DIRTY_LOG can happen before fast-page-fault，
-> the second GET_DIRTY_LOG happens in the window between cmpxchg()
-> and mark_page_dirty(), for the second one, the information is still “incorrect”.
+Hi guys,
 
-Its correct for the previous GET_DIRTY_LOG call.
+I have been reported recently a problem with the Sixaxis controller
+(http://www.spinics.net/lists/linux-input/msg28098.html).
+The root of the problem comes from hid-input, which maps unknown axis to
+ABS_MISC. However, when an event code is already in use, hid-input uses the one
+after, leading to uses of ABS_MISC + N, where N is the number of unknown axis.
 
-> > The rule for sptes that is, because kvm_write_guest does not match the
-> > documentation at all.
-> 
-> You mean the case of “kvm_write_guest” is valid (I do not know why it is)?
-> Or anything else?
-> 
-> > 
-> > So before example 1 and this patch, the rule (well for sptes at least) was
-> > 
-> > "Given a memory slot, return a bitmap containing any pages dirtied
-> > since the last call to this ioctl.  Bit 0 is the first page in the
-> > memory slot.  Ensure the entire structure is cleared to avoid padding
-> > issues."
-> > 
-> > Can you explain why it is OK to relax this rule?
-> 
-> It’s because:
-> 1) it doesn’t break current use cases, i.e. Live migration and FB-flushing.
-> 2) the current code, like kvm_write_guest  has already broken the documentation
->    (the guest page has been written but missed in the dirty bitmap).
-> 3) it’s needless to implement a exact get-dirty-pages since the dirty pages can
->    no be exactly got except stopping vcpus. 
-> 
-> So i think we'd document this case instead. No?
+We are encountering a problem with the multitouch protocol here because if a
+device has more than 7 unknown axis (which is the case for the PS3 Sixaxis
+controller), then the unknown axis get maps to ABS_MT_SLOT and beyond.
 
-Lets figure out the requirements, then. I don't understand why
-FB-flushing is safe (think kvm-autotest: one pixel off the entire
-test fails).
+This infers two problems:
+- the axis currently mapped on ABS_MT_SLOT is a special case in the kernel,
+and it is not updated
+- the axis after ABS_MT_SLOT are not filtered anymore, as the kernel things
+the device is using a multitouch protocol A.
 
-Before fast page fault: Pages are either write protected or the
-corresponding dirty bitmap bit is set. Any write faults to dirty logged
-sptes while GET_DIRTY log is executing in the protected section are
-allowed to instantiate writeable spte after GET_DIRTY log is finished.
+The patch 0001 solves the first problem, whereas the patches 0002 and 0003
+fix the second. Bonus point: the userspace is now correctly notified that one of
+the multitouch protocols is in used, so it does not have to rely on bad designed
+heuristics.
 
-After fast page fault: Pages can be writeable and the dirty bitmap not
-set. Therefore data can be dirty before GET_DIRTY executes and still
-fail to be returned in the bitmap.
+Cheers,
+Benjamin
 
-Since this patchset does not introduce change in behaviour (fast pf
-did), no reason to avoid merging this.
+Antonio Ospite (1):
+  Only process ABS_MT_SLOT where there are slots available
 
-BTW, since GET_DIRTY log does not require to report concurrent (to
-GET_DIRTY_LOG) write faults, it is not necessary to rewalk the spte
-list, is it?
+Benjamin Tissoires (2):
+  input: Introduce INPUT_PROP_MT
+  input: reintroduce filtering of mt axis when the device is not
+    multitouch
 
+ Documentation/input/event-codes.txt          | 7 +++++++
+ Documentation/input/multi-touch-protocol.txt | 6 ++++++
+ drivers/hid/hid-ntrig.c                      | 1 +
+ drivers/input/input-mt.c                     | 2 ++
+ drivers/input/input.c                        | 7 ++++---
+ drivers/input/touchscreen/auo-pixcir-ts.c    | 1 +
+ drivers/input/touchscreen/bu21013_ts.c       | 1 +
+ drivers/input/touchscreen/pixcir_i2c_ts.c    | 1 +
+ drivers/input/touchscreen/st1232.c           | 1 +
+ include/uapi/linux/input.h                   | 1 +
+ 10 files changed, 25 insertions(+), 3 deletions(-)
 
+-- 
+1.8.3.1
 
