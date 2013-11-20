@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3KTQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:33:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46543 "EHLO
+	id S1754635Ab3KTQd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:33:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46544 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab3KTQc7 (ORCPT
+	with ESMTP id S1754429Ab3KTQc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Nov 2013 11:32:59 -0500
-Message-Id: <20131120162736.691879744@infradead.org>
+Message-Id: <20131120162736.389511384@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 20 Nov 2013 17:04:56 +0100
+Date: Wed, 20 Nov 2013 17:04:51 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -19,98 +19,242 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 1/7] x86, acpi, idle: Restructure the mwait idle routines
 References: <20131120160450.072555619@infradead.org>
-Content-Disposition: inline; filename=peterz-fixup-weird-preempt_enable_no_resched-usage.patch
+Content-Disposition: inline; filename=peter_zijlstra-x86_acpi_idle-restructure_the_mwait_idle_routines.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only valid use of preempt_enable_no_resched() is if the very next
-line is schedule() or if we know preemption cannot actually be enabled
-by that statement due to known more preempt_count 'refs'.
+People seem to delight in writing wrong and broken mwait idle routines;
+collapse the lot.
 
-As to the busy_poll mess; that looks to be completely and utterly
-broken, sched_clock() can return utter garbage with interrupts enabled
-(rare but still), it can drift unbounded between CPUs, so if you get
-preempted/migrated and your new CPU is years behind on the previous
-CPU we get to busy spin for a _very_ long time. There is a _REASON_
-sched_clock() warns about preemptability - papering over it with a
-preempt_disable()/preempt_enable_no_resched() is just terminal brain
-damage on so many levels.
+This leaves mwait_play_dead() the sole remaining user of __mwait() and
+new __mwait() users are probably doing it wrong.
 
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: lenb@kernel.org
-Cc: rjw@rjwysocki.net
-Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Chris Leech <christopher.leech@intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: rui.zhang@intel.com
+Also remove __sti_mwait() as its unused.
+
+Cc: arjan@linux.intel.com
 Cc: jacob.jun.pan@linux.intel.com
 Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: hpa@zytor.com
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: lenb@kernel.org
+Cc: rui.zhang@intel.com
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/net/busy_poll.h |   20 ++++++++------------
- net/ipv4/tcp.c          |    4 ++--
- 2 files changed, 10 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/mwait.h       |   40 +++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h   |   23 ---------------------
+ arch/x86/kernel/acpi/cstate.c      |   23 ---------------------
+ drivers/acpi/acpi_pad.c            |    5 ----
+ drivers/acpi/processor_idle.c      |   15 -------------
+ drivers/idle/intel_idle.c          |    8 -------
+ drivers/thermal/intel_powerclamp.c |    4 ---
+ 7 files changed, 43 insertions(+), 75 deletions(-)
 
---- a/include/net/busy_poll.h
-+++ b/include/net/busy_poll.h
-@@ -42,27 +42,23 @@ static inline bool net_busy_loop_on(void
- 	return sysctl_net_busy_poll;
- }
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_MWAIT_H
+ #define _ASM_X86_MWAIT_H
  
--/* a wrapper to make debug_smp_processor_id() happy
-- * we can use sched_clock() because we don't care much about precision
-- * we only care that the average is bounded
-- */
--#ifdef CONFIG_DEBUG_PREEMPT
- static inline u64 busy_loop_us_clock(void)
- {
- 	u64 rc;
- 
-+	/*
-+	 * XXX with interrupts enabled sched_clock() can return utter garbage
-+	 * Futhermore, it can have unbounded drift between CPUs, so the below
-+	 * usage is terminally broken and only serves to shut up a valid debug
-+	 * warning.
-+	 */
++#include <linux/sched.h>
 +
- 	preempt_disable_notrace();
- 	rc = sched_clock();
--	preempt_enable_no_resched_notrace();
-+	preempt_enable_notrace();
+ #define MWAIT_SUBSTATE_MASK		0xf
+ #define MWAIT_CSTATE_MASK		0xf
+ #define MWAIT_SUBSTATE_SIZE		4
+@@ -13,4 +15,42 @@
  
- 	return rc >> 10;
+ #define MWAIT_ECX_INTERRUPT_BREAK	0x1
+ 
++static inline void __monitor(const void *eax, unsigned long ecx,
++			     unsigned long edx)
++{
++	/* "monitor %eax, %ecx, %edx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc8;"
++		     :: "a" (eax), "c" (ecx), "d"(edx));
++}
++
++static inline void __mwait(unsigned long eax, unsigned long ecx)
++{
++	/* "mwait %eax, %ecx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc9;"
++		     :: "a" (eax), "c" (ecx));
++}
++
++/*
++ * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
++ * which can obviate IPI to trigger checking of need_resched.
++ * We execute MONITOR against need_resched and enter optimized wait state
++ * through MWAIT. Whenever someone changes need_resched, we would be woken
++ * up from MWAIT (without an IPI).
++ *
++ * New with Core Duo processors, MWAIT can take some hints based on CPU
++ * capability.
++ */
++static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
++{
++	if (!current_set_polling_and_test()) {
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		if (!need_resched())
++			__mwait(eax, ecx);
++	}
++	__current_clr_polling();
++}
++
+ #endif /* _ASM_X86_MWAIT_H */
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -700,29 +700,6 @@ static inline void sync_core(void)
+ #endif
  }
--#else /* CONFIG_DEBUG_PREEMPT */
--static inline u64 busy_loop_us_clock(void)
--{
--	return sched_clock() >> 10;
--}
--#endif /* CONFIG_DEBUG_PREEMPT */
  
- static inline unsigned long sk_busy_loop_end_time(struct sock *sk)
+-static inline void __monitor(const void *eax, unsigned long ecx,
+-			     unsigned long edx)
+-{
+-	/* "monitor %eax, %ecx, %edx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc8;"
+-		     :: "a" (eax), "c" (ecx), "d"(edx));
+-}
+-
+-static inline void __mwait(unsigned long eax, unsigned long ecx)
+-{
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+-static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+-{
+-	trace_hardirqs_on();
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile("sti; .byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+ extern void select_idle_routine(const struct cpuinfo_x86 *c);
+ extern void init_amd_e400_c1e_mask(void);
+ 
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -150,29 +150,6 @@ int acpi_processor_ffh_cstate_probe(unsi
+ }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+ 
+-/*
+- * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
+- * which can obviate IPI to trigger checking of need_resched.
+- * We execute MONITOR against need_resched and enter optimized wait state
+- * through MWAIT. Whenever someone changes need_resched, we would be woken
+- * up from MWAIT (without an IPI).
+- *
+- * New with Core Duo processors, MWAIT can take some hints based on CPU
+- * capability.
+- */
+-void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+-{
+-	if (!need_resched()) {
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(ax, cx);
+-	}
+-}
+-
+ void acpi_processor_ffh_cstate_enter(struct acpi_processor_cx *cx)
  {
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1623,11 +1623,11 @@ int tcp_recvmsg(struct kiocb *iocb, stru
- 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
- 		    !sysctl_tcp_low_latency &&
- 		    net_dma_find_channel()) {
--			preempt_enable_no_resched();
-+			preempt_enable();
- 			tp->ucopy.pinned_list =
- 					dma_pin_iovec_pages(msg->msg_iov, len);
- 		} else {
--			preempt_enable_no_resched();
-+			preempt_enable();
+ 	unsigned int cpu = smp_processor_id();
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -193,10 +193,7 @@ static int power_saving_thread(void *dat
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 			stop_critical_timings();
+ 
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			smp_mb();
+-			if (!need_resched())
+-				__mwait(power_saving_mwait_eax, 1);
++			mwait_idle_with_hints(power_saving_mwait_eax, 1);
+ 
+ 			start_critical_timings();
+ 			if (lapic_marked_unstable)
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -727,11 +727,6 @@ static int acpi_idle_enter_c1(struct cpu
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	lapic_timer_state_broadcast(pr, cx, 1);
+ 	acpi_idle_do_entry(cx);
+ 
+@@ -785,11 +780,6 @@ static int acpi_idle_enter_simple(struct
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	/*
+ 	 * Must be done before busmaster disable as we might need to
+ 	 * access HPET !
+@@ -841,11 +831,6 @@ static int acpi_idle_enter_bm(struct cpu
  		}
  	}
- #endif
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	acpi_unlazy_tlb(smp_processor_id());
+ 
+ 	/* Tell the scheduler that we are going deep-idle: */
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -359,13 +359,7 @@ static int intel_idle(struct cpuidle_dev
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 
+-	if (!current_set_polling_and_test()) {
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(eax, ecx);
+-	}
++	mwait_idle_with_hints(eax, ecx);
+ 
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
+ 			 */
+ 			local_touch_nmi();
+ 			stop_critical_timings();
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			cpu_relax(); /* allow HT sibling to run */
+-			__mwait(eax, ecx);
++			mwait_idle_with_hints(eax, ecx);
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
 
 
