@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab3KTBVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 20:21:15 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:54032 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab3KTBVN (ORCPT
+	id S1753607Ab3KTB0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 20:26:50 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:27853 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3KTB0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 20:21:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <528C0CF9.3020906@huawei.com>
-References: <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
- <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com>
- <CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
- <CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com>
- <CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com>
- <CAErSpo5yhg1EgJmmOtJeh0myd50tJuu6qVMdVnwR276WTxL8kg@mail.gmail.com>
- <20131115115235.GA2281@intel.com> <20131119013343.GA17294@google.com>
- <528AC4F2.40708@huawei.com> <20131119171850.GA4261@google.com> <528C0CF9.3020906@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Nov 2013 18:20:51 -0700
-Message-ID: <CAErSpo7nKXR9NBbjs8K__T2TCONW6N76ytevTH-bxcs-NH3+Zg@mail.gmail.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Nov 2013 20:26:48 -0500
+Message-ID: <1384910527.1791.140.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Tue, 19 Nov 2013 18:22:07 -0700
+In-Reply-To: <2499259.JLRCUgMzrL@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
+	 <1384898320.1791.48.camel@misato.fc.hp.com>
+	 <3445730.IkUyvGUQQp@vostro.rjw.lan> <2499259.JLRCUgMzrL@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 6:14 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->>>> [bhelgaas: changelog, tag for stable]
->>>> Reported-by: David Bulkow <David.Bulkow@stratus.com>
->>>> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>>> CC: stable@vger.kernel.org  # v2.6.32+
->>>
->>> Hi Bjorn,
->>>    This issue in X86 seems to be introduced after commit 928bea9 "PCI: Delay enabling bridges until they're needed"
->>> So this patch needs to back port to 2.6.32+ ?
->>
->> 928bea9 might have made it more visible, but the underlying problem is that
->> we enable the device once in the probe path, and disable it twice in the
->> remove path.  That problem exists in 2.6.32.61:
->>
->>   pcie_portdrv_probe                # .probe() method
->>     pcie_port_device_register
->>       pci_enable_device             <-- enable
->>
->>   pcie_portdrv_remove               # .remove() method
->>     pcie_port_device_remove
->>       pci_disable_device            <-- disable #1
->>     pci_disable_device              <-- disable #2
->
-> During assign unassigned resources, we also enable the port device,
->
-> fs_initcall(pcibios_assign_resources);
->   pci_assign_unassigned_resources;
->     pci_enable_bridges()
->       pci_enable_device()
->
->
-> So I think before the commit 928bea9 , the pci bridge device enable and disable is symmetrical.
-> After the commit 928bea9, we only enable bridge once, but still remove twice.
+On Wed, 2013-11-20 at 01:08 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 20, 2013 12:42:28 AM Rafael J. Wysocki wrote:
+> > On Tuesday, November 19, 2013 02:58:40 PM Toshi Kani wrote:
+> > > On Tue, 2013-11-19 at 22:10 +0100, Rafael J. Wysocki wrote:
+> > > > > On Tuesday, November 19, 2013 10:48:51 AM Toshi Kani wrote:
+> > > > > > On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
+> > > > > > > On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
+> > > > > > > > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
+> > > > > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > > > > 
+> > > > > > > > > Since the PCI host bridge scan handler does not set hotplug.enabled,
+> > > > > > > > > the check of it in acpi_bus_device_eject() effectively prevents the
+> > > > > > > > > root bridge hot removal from working after commit a3b1b1ef78cd
+> > > > > > > > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
+> > > > > > > > > check is not necessary, because the other acpi_bus_device_eject()
+> > > > > > > > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
+> > > > > > > > > check by themselves before executing that function.
+> > > > > > > > > 
+> > > > > > > > > For this reason, remove the scan handler check from
+> > > > > > > > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
+> > > > > > > > > again.
+> > > > > > > > 
+> > > > > > > > I am curious why the PCI host bridge scan handler does not set
+> > > > > > > > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
+> > > > > > > > enables via ACPI notification?
+> > > > > > > 
+> > > > > > > It just doesn't register for hotplug at all.  I guess it could set that
+> > > > > > > bit alone, but then it would be quite confusing and the check is not
+> > > > > > > necessary anyway.
+> > > > > > 
+> > > > > > I see.  Given how the PCI host bridge scan handler is integrated today,
+> > > > > > the change looks reasonable to me.
+> > > > > 
+> > > > > Looking further, I noticed that there is one more issue to address.  The
+> > > > > patch below applies on top of your patchset.
+> > > > >
+> > > > > From: Toshi Kani <toshi.kani@hp.com>
+> > > > > Subject: [PATCH] ACPI / hotplug: Fix conflicted PCI bridge notify
+> > > > > handlers
+> > > > > 
+> > > > > The PCI host bridge scan handler installs its own notify handler,
+> > > > > handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
+> > > > > hotplug framework also installs the common notify handler,
+> > > > > acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
+> > > > > acpi_hotplug_notify_cb() to call _OST method with unsupported
+> > > > > error as hotplug.enabled is not set.
+> > > > > 
+> > > > > To address this issue, introduce hotplug.self_install flag, which
+> > > > > indicates that the scan handler installs its own notify handler by
+> > > > > itself.  The ACPI hotplug framework does not install the common
+> > > > > notify handler when this flag is set.
+> > > > 
+> > > > Good catch!
+> > > > 
+> > > > Still, I don't think we need a new flag, because we know that that
+> > > > scan handler doesn't support hotplug, because its hotplug profile
+> > > > hasn't been registered (that actually applies to all scan handlers
+> > > > without hotplug support, not only the root host bridge).  
+> > > 
+> > > When a scan handler does not support hotplug at all, the common notify
+> > > handler should be installed so that it can call _OST with an appropriate
+> > > response.
+> > 
+> > That creates an arbitrary difference between devices that have scan handlers
+> > and devices that don't have them (PCI, USB, SATA etc).  So if we want _OST
+> > to be called for all devices for which hotplug is not supported, that
+> > should be implemented in a different way and not necessarily in 3.13.
 
-The port driver should be symmetrical, regardless of what happens
-outside it.  We have to be able to bind/unbind/bind/unbind
-indefinitely.
+I do not think we have an immediate issue since it only matters when the
+firmware supports ACPI hotplug with _OST.  Such device types are CPU,
+memory, container, and PCI bridge, which uses scan handlers.  USB, SATA,
+etc. do not use ACPI hotplug.  That said, ideally, we should be able to
+call _OST for any device types.
+ 
+> > > > Moreover,
+> > > > if it does support hotplug, but the hotplug profile hasn't been
+> > > > registered due to an error, we still should not install the notify
+> > > > handler I think.  
+> > > 
+> > > This case, I think the common notify handler should be installed so that
+> > > it can call _OST for error response as well.  The question is what to do
+> > > when a scan handler has its own notify handler.
+> 
+> Actually, having considered this particular case a bit more I think that it
+> is useful to install acpi_hotplug_notify_cb() for things whose scan handlers
+> register hotplug support, but the registration fails (which should be treated
+> as "permanently disabled").
+>
+> However, I still think that devices whose scan handlers don't support hotplug
+> at all should be treated consistently with devices without scan handlers.
 
-Do you think the patch is a problem for current upstream, or are you
-just saying it doesn't need to be backported as far as 2.6.32?  I
-frankly don't care that much if those old kernels pick it up or not.
-All I'm saying is that the problem this fixes is present that far
-back.
+Basically, the kernel needs to be compliant with ACPI spec.  Once the
+kernel tells firmware that it supports _OST, it needs to call _OST for
+an ACPI hotplug event when _OST is implemented on the object.  Although
+we cannot assure this behavior for the devices without scan handler, we
+should do so for the devices with scan handlers.
 
-I'm not really interested in doing a lot more digging about ancient
-kernels, unless you think it's going to break something if applied to
-them.
+> So, what about the slightly modified patch below?
 
-Bjorn
+Well, I do not think it is right.  The kernel is supposed to tell
+firmware that it does not support hotplug when it doesn't... 
+
+Thanks,
+-Toshi
+
