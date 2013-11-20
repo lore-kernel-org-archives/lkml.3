@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab3KTI2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:28:42 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:57303 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3KTI2j (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 20 Nov 2013 03:28:39 -0500
-X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 03:28:39 EST
-Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia
- parameter to efi_storage_paranoia
-From: joeyli <jlee@suse.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt@console-pimps.org>,
-        Richard Weinberger <richard@nod.at>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
-        matthew.garrett@nebula.com
-In-Reply-To: <528C562B.3070008@jp.fujitsu.com>
-References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
-	 <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at>
-	 <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at>
-	 <527CBDD3.2020609@jp.fujitsu.com>
-	 <20131108143421.GB22636@console-pimps.org>
-	 <52809AEB.9080100@jp.fujitsu.com>
-	 <20131111105424.GD22636@console-pimps.org>
-	 <528AD50D.6060503@jp.fujitsu.com> <87siutqdwv.fsf@redhat.com>
-	 <528C562B.3070008@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Nov 2013 16:08:01 +0800
-Message-ID: <1384934881.6516.4082.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752168Ab3KTI3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:29:52 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:57261 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3KTI3u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 03:29:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131117120816.41fe2528@gandalf.local.home>
+References: <20131115093645.6dc03918@gandalf.local.home>
+	<CAMuHMdXSBSOkfd2MGbn=rpXQRZYw5TKLsR=3SoeSyrcD2CzunA@mail.gmail.com>
+	<20131117092731.75b091bd@gandalf.local.home>
+	<CAMuHMdWNh2L56FhDbKfC7TtdHp8=EY2ms_T+=9Xyczz3D-PF=w@mail.gmail.com>
+	<20131117120816.41fe2528@gandalf.local.home>
+Date: Wed, 20 Nov 2013 09:29:50 +0100
+X-Google-Sender-Auth: eVmAYUlQAuVXUFO9pFMQEoIOhvQ
+Message-ID: <CAMuHMdWLqC1ihx_AifUpF166tpuv0fLwj34trm65BzLw_-kRKA@mail.gmail.com>
+Subject: Re: [PATCH] scripts: Have make TAGS not include structure members
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Yang Bai <hamo.by@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2013-11-20 於 15:26 +0900，Yasuaki Ishimatsu 提到：
-> (2013/11/19 12:16), Madper Xie wrote:
-> > 
-> > isimatu.yasuaki@jp.fujitsu.com writes:
-> > 
-> >> Hi Matt,
-> >>
-> >> Sorry for late the reply.
-> >>
-> >>
-> >> (2013/11/11 19:54), Matt Fleming wrote:
-> >>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
-> >>>> Hi Matt,
-> >>>>
-> >>>> I uses FUJITSU's x86 box.
-> >>>> This does not become bricked even if I use all efi variable storage.
-> >>>> Thus I want a way to not need to specify efi_no_storage_paranoia
-> >>>> parameter.
-> >>>
-> >>> The efi_no_storage_paranoia parameter was introduced because some
-> >>> machines do not initiate garbage collection of the NVRAM until you
-> >>> allocate all space - basically it's a switch to turn off the "save 5KB
-> >>> of stoarge at all times" workaround that is needed to avoid bricking
-> >>> some machines.
-> >>>
-> >>> The intention of the switch is not to allow you to fill your NVRAM just
-> >>> because you can. If that is something you want to do then I think it's
-> >>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
-> >>> I'm assuming here that you are doing something like writing lots and
-> >>> lots of pstore entries and just want to write as many as your variable
-> >>> storage will allow? Or are you doing something more fundamental like
-> >>> creating BootXXXX entries?
-> >>>
-> >>> What are you doing to run into the 5KB reserve? How much NVRAM does your
-> >>> machine come with?
-> >>
-> >> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
-> >> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
-> >>
-> > Howdy Yasuaki,
-> >    If the remaining NVRAM is less than 5Kb, your writing will trigger a
-> >    NVRAM storage reclamation. However you still failed creating entry. So
-> >    I'm just curious what itmes occupy lots of nvram storage space.
-> 
-> Even if we got EFI_OUT_OF_RESOURCES while running Linux, gc does not run.
-> Trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS environment with
-> UEFI. So on my system, if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte threshold,
-> we cannot use nvram storage until EFI_OUT_OF_RESOURCES occurs on pre OS
-> environment with UEFI.
-> 
-> Thanks,
-> Yasuaki Ishimatsu
+On Sun, Nov 17, 2013 at 6:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Sun, 17 Nov 2013 16:19:53 +0100
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>
+>> Thanks! Now I have to look into my vim setup, why it doesn't do the
+>> above...
+>
+> $ vim --version
+> VIM - Vi IMproved 7.4 (2013 Aug 10, compiled Sep 11 2013 12:28:07)
 
-Can we try to trigger gc by EFI_OUT_OF_RESOURCE in EFI stub kernel or
-EFI boot loader to recover NVRAM space? Does work with the BIOS on this
-machine?
+I have 7.3.
 
+> And from the ctags man pages, I did:
+>
+> :ta dev_name
+>
+> and it gave me a list of tags.
 
-Thanks a lot!
-Joey Lee
+Not for me.
 
+>   # pri kind tag               file
+>   1 F   m    dev_name          drivers/clk/samsung/clk.h
+>                struct:samsung_clock_alias
+>                const char  *dev_name;
+
+I do remember seeing such a list on a different machine, though.
+
+However,  this encouraged me to dive into some docs.
+":ts <tag>" (or just ":ts" after a previous ":ta") does give me the list.
+ The same for "g CTRL-]" instead of plain "CTRL-]", so I'm happy now ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
