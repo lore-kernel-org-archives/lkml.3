@@ -1,43 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab3KTIEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:04:47 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44899 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3KTIEo (ORCPT
+	id S1752889Ab3KTIEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:04:54 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:49043 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3KTIEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:04:44 -0500
-Date: Wed, 20 Nov 2013 00:04:40 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted on
- virtio devices
-Message-ID: <20131120080440.GA13147@infradead.org>
-References: <20131119080218.GJ11434@dastard>
- <20131119201531.GA4094@kernel.dk>
- <20131119212042.GB4094@kernel.dk>
- <20131119213429.GQ11434@dastard>
- <528BDB97.8090608@kernel.dk>
+	Wed, 20 Nov 2013 03:04:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528BDB97.8090608@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <0a0c8e4c6fbf681d375f25b0c0eba036b8eaadf7.1380815504.git.viresh.kumar@linaro.org>
+References: <cover.1380815504.git.viresh.kumar@linaro.org>
+	<0a0c8e4c6fbf681d375f25b0c0eba036b8eaadf7.1380815504.git.viresh.kumar@linaro.org>
+Date: Wed, 20 Nov 2013 13:34:45 +0530
+Message-ID: <CAKohpon8s6mPVCVsvkZ-_LurDp=038FwqkCNy_Dx5mmeCF9+bw@mail.gmail.com>
+Subject: Re: [PATCH V2 14/16] cpuidle: don't calculate time-diff if
+ entered_state < 0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 02:43:51PM -0700, Jens Axboe wrote:
-> No, the nr_requests isn't actually relevant in the blk-mq context, the
-> driver sets its own depth. For the above, it's 64 normal commands, and 2
-> reserved. The reserved would be for a flush, for instance. If someone
-> attempts to queue more than the allocated number of requests, it'll stop
-> the blk-mq queue and kick things into gear on the virtio side. Then when
-> requests complete, we start the queue again.
+On 3 October 2013 21:26, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> If entered_state < 0, we don't need to set dev->last_residency to 'diff' as we
+> will be setting it to zero without using its new value.
+>
+> And so move calculation of diff also inside the "if" statement.
+>
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpuidle/cpuidle.c | 17 +++++++++--------
+>  1 file changed, 9 insertions(+), 8 deletions(-)
 
-Btw, any reason we lowerered the queue depth from 128 to 64 in
-virtio-blk?
+Missed applying this one too?
 
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index b45257a..1a6e9f5 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -77,23 +77,22 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>
+>         struct cpuidle_state *target_state = &drv->states[index];
+>         ktime_t time_start, time_end;
+> -       s64 diff;
+>
+>         time_start = ktime_get();
+>
+>         entered_state = target_state->enter(dev, drv, index);
+>
+> -       time_end = ktime_get();
+> +       if (entered_state >= 0) {
+> +               s64 diff;
+>
+> -       local_irq_enable();
+> +               time_end = ktime_get();
+> +               diff = ktime_to_us(ktime_sub(time_end, time_start));
+>
+> -       diff = ktime_to_us(ktime_sub(time_end, time_start));
+> -       if (diff > INT_MAX)
+> -               diff = INT_MAX;
+> +               if (diff > INT_MAX)
+> +                       diff = INT_MAX;
+>
+> -       dev->last_residency = (int) diff;
+> +               dev->last_residency = (int) diff;
+>
+> -       if (entered_state >= 0) {
+>                 /* Update cpuidle counters */
+>                 /* This can be moved to within driver enter routine
+>                  * but that results in multiple copies of same code.
+> @@ -104,6 +103,8 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>                 dev->last_residency = 0;
+>         }
+>
+> +       local_irq_enable();
+> +
+>         return entered_state;
+>  }
+>
+> --
+> 1.7.12.rc2.18.g61b472e
+>
