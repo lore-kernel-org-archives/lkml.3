@@ -1,135 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab3KTUER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:04:17 -0500
-Received: from fieldses.org ([174.143.236.118]:54348 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab3KTUEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:04:12 -0500
-Date: Wed, 20 Nov 2013 15:04:11 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [RFC PATCH v2 4/5] locks: show private lock types in /proc/locks
-Message-ID: <20131120200411.GC7387@fieldses.org>
-References: <1384965906-27327-1-git-send-email-jlayton@redhat.com>
- <1384965906-27327-5-git-send-email-jlayton@redhat.com>
- <20131120200056.GB7387@fieldses.org>
+	id S1755175Ab3KTUEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:04:34 -0500
+Received: from mail-de.keymile.com ([195.8.104.250]:48211 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab3KTUEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 15:04:13 -0500
+Message-ID: <528D15B6.2030800@keymile.com>
+Date: Wed, 20 Nov 2013 21:04:06 +0100
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131120200056.GB7387@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.drivers.mtd,gmane.linux.kernel
+To: Austin Boyle <Austin.Boyle@aviatnet.com>
+CC: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: m25p80: Flash protection support for STmicro chips
+References: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN>
+In-Reply-To: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 03:00:56PM -0500, bfields wrote:
-> On Wed, Nov 20, 2013 at 11:45:05AM -0500, Jeff Layton wrote:
-> > Show "private" locks in /proc/locks with a 'P' suffix. This does mean
-> > that we need to widen the column by one character.
-> > 
-> > Also, tighten up the check in locks_remove_filp() to ensure that only
-> > IS_FILP_PVT locks are removed there.
-> 
-> So that part belongs in the previous patch?
+Hi,
 
-I think it's that previous patch that actually "turns on" the new user
-interface (so after that patch userspace will get a lock instead of
--EINVAL or whatever).
+On 01/04/2013 01:02 AM, Austin Boyle wrote:
+> This patch adds generic support for flash protection on STmicro chips.
+> On chips with less than 3 protection bits, the unused bits are don't cares
+> and so can be written anyway.
 
-Might be safest to delay doing that until the end of the series so as
-not to expose any partial implementation.
+I have two remarks:
 
---b.
+1) I believe this introduces incompatibilities with existing bootloaders 
+which do not support this feature.
+Namely, u-boot is not able (to the best of my knowledge) to treat these 
+bits properly. So as soon as you write something to your SPI nor flash 
+from within linux, u-boot is not able to erase/rewrite those blocks anymore.
 
-> 
-> --b.
-> 
-> > 
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  fs/locks.c         | 15 +++++++++++----
-> >  include/linux/fs.h |  1 +
-> >  2 files changed, 12 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index 3b278a6..d5fb853 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -135,6 +135,7 @@
-> >  #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
-> >  #define IS_FLOCK(fl)	(fl->fl_flags & FL_FLOCK)
-> >  #define IS_LEASE(fl)	(fl->fl_flags & (FL_LEASE|FL_DELEG))
-> > +#define IS_FILP_PVT(fl)	(fl->fl_flags & FL_FILP_PRIVATE)
-> >  
-> >  static bool lease_breaking(struct file_lock *fl)
-> >  {
-> > @@ -357,14 +358,17 @@ static int posix_assign_type(struct file_lock *fl, long type)
-> >  	case F_RDLCKP:
-> >  		type = F_RDLCK;
-> >  		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> > +		fl->fl_flags |= FL_FILP_PRIVATE;
-> >  		break;
-> >  	case F_WRLCKP:
-> >  		type = F_WRLCK;
-> >  		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> > +		fl->fl_flags |= FL_FILP_PRIVATE;
-> >  		break;
-> >  	case F_UNLCKP:
-> >  		type = F_UNLCK;
-> >  		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> > +		fl->fl_flags |= FL_FILP_PRIVATE;
-> >  		break;
-> >  	}
-> >  
-> > @@ -2245,7 +2249,8 @@ void locks_remove_filp(struct file *filp)
-> >  
-> >  	while ((fl = *before) != NULL) {
-> >  		if (fl->fl_file == filp) {
-> > -			if (IS_FLOCK(fl) || IS_POSIX(fl)) {
-> > +			if (IS_FLOCK(fl) ||
-> > +			    (IS_POSIX(fl) && IS_FILP_PVT(fl))) {
-> >  				locks_delete_lock(before);
-> >  				continue;
-> >  			}
-> > @@ -2345,13 +2350,15 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
-> >  		seq_printf(f, "UNKNOWN UNKNOWN  ");
-> >  	}
-> >  	if (fl->fl_type & LOCK_MAND) {
-> > -		seq_printf(f, "%s ",
-> > +		seq_printf(f, "%s  ",
-> >  			       (fl->fl_type & LOCK_READ)
-> >  			       ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
-> >  			       : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
-> > +	} else if (IS_FILP_PVT(fl)) {
-> > +		seq_printf(f, "%s ", fl->fl_type == F_WRLCK ?  "WRITEP" : "READP ");
-> >  	} else {
-> > -		seq_printf(f, "%s ",
-> > -			       (lease_breaking(fl))
-> > +		seq_printf(f, "%s  ",
-> > +			       lease_breaking(fl)
-> >  			       ? (fl->fl_type == F_UNLCK) ? "UNLCK" : "READ "
-> >  			       : (fl->fl_type == F_WRLCK) ? "WRITE" : "READ ");
-> >  	}
-> > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> > index 2d890ce..9890bac 100644
-> > --- a/include/linux/fs.h
-> > +++ b/include/linux/fs.h
-> > @@ -888,6 +888,7 @@ static inline int file_check_writeable(struct file *filp)
-> >  #define FL_SLEEP	128	/* A blocking lock */
-> >  #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
-> >  #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
-> > +#define FL_FILP_PRIVATE	1024	/* lock is private to the filp */
-> >  
-> >  /*
-> >   * Special return value from posix_lock_file() and vfs_lock_file() for
-> > -- 
-> > 1.8.3.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Wouldn't it make more sense to selectively enable this feature, only if 
+explicity configured to do so (e.g. through its device tree node)?
+Like what was used for the Spansion's PPB, see:
+
+http://lists.infradead.org/pipermail/linux-mtd/2013-January/045536.html
+
+ > The lock function will only change the
+> protection bits if it would not unlock other areas. Similarly, the unlock
+> function will not lock currently unlocked areas. Tested on the m25p64.
+ >
+> From: Austin Boyle <Austin.Boyle@aviatnet.com>
+> Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
+> ---
+> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+> index 4eeeb2d..069e34f 100644
+> --- a/drivers/mtd/devices/m25p80.c
+> +++ b/drivers/mtd/devices/m25p80.c
+> @@ -565,6 +565,96 @@ time_out:
+>   	return ret;
+>   }
+>
+> +static int m25p80_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+> +{
+> +	struct m25p *flash = mtd_to_m25p(mtd);
+> +	uint32_t offset = ofs;
+> +	uint8_t status_old, status_new;
+> +	int res = 0;
+> +
+> +	mutex_lock(&flash->lock);
+> +	/* Wait until finished previous command */
+> +	if (wait_till_ready(flash)) {
+> +		res = 1;
+> +		goto err;
+> +	}
+> +
+> +	status_old = read_sr(flash);
+> +
+> +	if (offset < flash->mtd.size-(flash->mtd.size/2))
+> +		status_new = status_old | SR_BP2 | SR_BP1 | SR_BP0;
+> +	else if (offset < flash->mtd.size-(flash->mtd.size/4))
+> +		status_new = (status_old & ~SR_BP0) | SR_BP2 | SR_BP1;
+> +	else if (offset < flash->mtd.size-(flash->mtd.size/8))
+> +		status_new = (status_old & ~SR_BP1) | SR_BP2 | SR_BP0;
+> +	else if (offset < flash->mtd.size-(flash->mtd.size/16))
+> +		status_new = (status_old & ~(SR_BP0|SR_BP1)) | SR_BP2;
+> +	else if (offset < flash->mtd.size-(flash->mtd.size/32))
+> +		status_new = (status_old & ~SR_BP2) | SR_BP1 | SR_BP0;
+> +	else if (offset < flash->mtd.size-(flash->mtd.size/64))
+> +		status_new = (status_old & ~(SR_BP2|SR_BP0)) | SR_BP1;
+> +	else
+> +		status_new = (status_old & ~(SR_BP2|SR_BP1)) | SR_BP0;
+
+2) While I believe this might work on m25p32, m25p64 and m25p128 (i.e. 
+flashes with 64 blocks or more), it looks incorrect for smaller chips 
+(namely our m25p80, with just 16 blocks). There, the 1/64 logic scales 
+down to 1/16, e.g.
+- 000 means protect nothing
+- 001 means protect 1/16th (=1 blocks)    [m25p64 => 1/64th]
+- 010 means protect 1/8th  (=2 blocks)    [m25p64 => 1/32th]
+- ...
+- 100 means protect 1/2nd  (=8 blocks)
+- 101,110, 111 mean protect everything
+
+and I assume the same goes for chips with fewer sectors.
+
+Any comments?
+
+Thanks,
+Gerlando
+
+> +
+> +	/* Only modify protection if it will not unlock other areas */
+> +	if ((status_new&(SR_BP2|SR_BP1|SR_BP0)) >
+> +					(status_old&(SR_BP2|SR_BP1|SR_BP0))) {
+> +		write_enable(flash);
+> +		if (write_sr(flash, status_new) < 0) {
+> +			res = 1;
+> +			goto err;
+> +		}
+> +	}
+> +
+> +err:	mutex_unlock(&flash->lock);
+> +	return res;
+> +}
+> +
+> +static int m25p80_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+> +{
+> +	struct m25p *flash = mtd_to_m25p(mtd);
+> +	uint32_t offset = ofs;
+> +	uint8_t status_old, status_new;
+> +	int res = 0;
+> +
+> +	mutex_lock(&flash->lock);
+> +	/* Wait until finished previous command */
+> +	if (wait_till_ready(flash)) {
+> +		res = 1;
+> +		goto err;
+> +	}
+> +
+> +	status_old = read_sr(flash);
+> +
+> +	if (offset+len > flash->mtd.size-(flash->mtd.size/64))
+> +		status_new = status_old & ~(SR_BP2|SR_BP1|SR_BP0);
+> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/32))
+> +		status_new = (status_old & ~(SR_BP2|SR_BP1)) | SR_BP0;
+> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/16))
+> +		status_new = (status_old & ~(SR_BP2|SR_BP0)) | SR_BP1;
+> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/8))
+> +		status_new = (status_old & ~SR_BP2) | SR_BP1 | SR_BP0;
+> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/4))
+> +		status_new = (status_old & ~(SR_BP0|SR_BP1)) | SR_BP2;
+> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/2))
+> +		status_new = (status_old & ~SR_BP1) | SR_BP2 | SR_BP0;
+> +	else
+> +		status_new = (status_old & ~SR_BP0) | SR_BP2 | SR_BP1;
+> +
+> +	/* Only modify protection if it will not lock other areas */
+> +	if ((status_new&(SR_BP2|SR_BP1|SR_BP0)) <
+> +					(status_old&(SR_BP2|SR_BP1|SR_BP0))) {
+> +		write_enable(flash);
+> +		if (write_sr(flash, status_new) < 0) {
+> +			res = 1;
+> +			goto err;
+> +		}
+> +	}
+> +
+> +err:	mutex_unlock(&flash->lock);
+> +	return res;
+> +}
+> +
+>   /****************************************************************************/
+>
+>   /*
+> @@ -899,6 +989,12 @@ static int m25p_probe(struct spi_device *spi)
+>   	flash->mtd._erase = m25p80_erase;
+>   	flash->mtd._read = m25p80_read;
+>
+> +	/* flash protection support for STmicro chips */
+> +	if (JEDEC_MFR(info->jedec_id) == CFI_MFR_ST) {
+> +		flash->mtd._lock = m25p80_lock;
+> +		flash->mtd._unlock = m25p80_unlock;
+> +	}
+> +
+>   	/* sst flash chips use AAI word program */
+>   	if (JEDEC_MFR(info->jedec_id) == CFI_MFR_SST)
+>   		flash->mtd._write = sst_write;
+>
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
+
+
