@@ -1,461 +1,881 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3KTRwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:52:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57244 "EHLO mx1.redhat.com"
+	id S1754741Ab3KTRwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:52:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24196 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751Ab3KTRwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753874Ab3KTRwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Nov 2013 12:52:19 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in kernel kexec
-Date: Wed, 20 Nov 2013 12:50:49 -0500
-Message-Id: <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 6/6] kexec: Support for Kexec on panic using new system call
+Date: Wed, 20 Nov 2013 12:50:51 -0500
+Message-Id: <1384969851-7251-7-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
 References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the in kernel kexec functionality. It implements a
-new system call kexec_file_load. I think parameter list of this system
-call will change as I have not done the kernel image signature handling
-yet. I have been told that I might have to pass the detached signature
-and size as part of system call.
-
-Previously segment list was prepared in user space. Now user space just
-passes kernel fd, initrd fd and command line and kernel will create a
-segment list internally.
-
-This patch contains generic part of the code. Actual segment preparation
-and loading is done by arch and image specific loader. Which comes in
-next patch.
+This patch adds support for loading a kexec on panic (kdump) kernel usning
+new system call.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/kernel/machine_kexec_64.c |   57 ++++-
- arch/x86/syscalls/syscall_64.tbl   |    1 +
- include/linux/kexec.h              |   57 +++++
- include/linux/syscalls.h           |    3 +
- include/uapi/linux/kexec.h         |    4 +
- kernel/kexec.c                     |  486 +++++++++++++++++++++++++++++++++++-
- kernel/sys_ni.c                    |    1 +
- 7 files changed, 607 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/crash.h       |    9 +
+ arch/x86/include/asm/kexec.h       |   17 +
+ arch/x86/kernel/crash.c            |  585 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/kexec-bzimage.c    |   63 ++++-
+ arch/x86/kernel/machine_kexec_64.c |    1 +
+ kernel/kexec.c                     |   69 ++++-
+ 6 files changed, 731 insertions(+), 13 deletions(-)
+ create mode 100644 arch/x86/include/asm/crash.h
 
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 4eabc16..fb41b73 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -22,6 +22,13 @@
- #include <asm/mmu_context.h>
- #include <asm/debugreg.h>
+diff --git a/arch/x86/include/asm/crash.h b/arch/x86/include/asm/crash.h
+new file mode 100644
+index 0000000..2dd2eb8
+--- /dev/null
++++ b/arch/x86/include/asm/crash.h
+@@ -0,0 +1,9 @@
++#ifndef _ASM_X86_CRASH_H
++#define _ASM_X86_CRASH_H
++
++int load_crashdump_segments(struct kimage *image);
++int crash_copy_backup_region(struct kimage *image);
++int crash_setup_memmap_entries(struct kimage *image,
++		struct boot_params *params);
++
++#endif /* _ASM_X86_CRASH_H */
+diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
+index 94f1257..9dc19fe 100644
+--- a/arch/x86/include/asm/kexec.h
++++ b/arch/x86/include/asm/kexec.h
+@@ -64,6 +64,10 @@
+ # define KEXEC_ARCH KEXEC_ARCH_X86_64
+ #endif
  
-+/* arch dependent functionality related to kexec file based syscall */
-+static struct kexec_file_type kexec_file_type[]={
-+	{"", NULL, NULL, NULL, NULL},
++/* Memory to backup during crash kdump */
++#define KEXEC_BACKUP_SRC_START	(0UL)
++#define KEXEC_BACKUP_SRC_END	(655360UL)	/* 640K */
++
+ /*
+  * CPU does not save ss and sp on stack if execution is already
+  * running in kernel mode at the time of NMI occurrence. This code
+@@ -166,8 +170,21 @@ struct kimage_arch {
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
++	/* Details of backup region */
++	unsigned long backup_src_start;
++	unsigned long backup_src_sz;
++
++	/* Physical address of backup segment */
++	unsigned long backup_load_addr;
++
++	/* Core ELF header buffer */
++	unsigned long elf_headers;
++	unsigned long elf_headers_sz;
++	unsigned long elf_load_addr;
+ };
++#endif /* CONFIG_X86_32 */
+ 
++#ifdef CONFIG_X86_64
+ struct kexec_entry64_regs {
+ 	uint64_t rax;
+ 	uint64_t rbx;
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 18677a9..d5d3118 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -4,6 +4,9 @@
+  * Created by: Hariprasad Nellitheertha (hari@in.ibm.com)
+  *
+  * Copyright (C) IBM Corporation, 2004. All rights reserved.
++ * Copyright (C) Red Hat Inc., 2013. All rights reserved.
++ * Authors:
++ * 	Vivek Goyal <vgoyal@redhat.com>
+  *
+  */
+ 
+@@ -17,6 +20,7 @@
+ #include <linux/elf.h>
+ #include <linux/elfcore.h>
+ #include <linux/module.h>
++#include <linux/slab.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/hardirq.h>
+@@ -29,6 +33,45 @@
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
+ 
++/* Alignment required for elf header segment */
++#define ELF_CORE_HEADER_ALIGN   4096
++
++/* This primarily reprsents number of split ranges due to exclusion */
++#define CRASH_MAX_RANGES	16
++
++struct crash_mem_range {
++	unsigned long long start, end;
 +};
 +
-+static int nr_file_types = sizeof(kexec_file_type)/sizeof(kexec_file_type[0]);
++struct crash_mem {
++	unsigned int nr_ranges;
++	struct crash_mem_range ranges[CRASH_MAX_RANGES];
++};
 +
- static void free_transition_pgtable(struct kimage *image)
- {
- 	free_page((unsigned long)image->arch.pud);
-@@ -200,7 +207,7 @@ void machine_kexec(struct kimage *image)
- {
- 	unsigned long page_list[PAGES_NR];
- 	void *control_page;
--	int save_ftrace_enabled;
-+	int save_ftrace_enabled, idx;
- 
- #ifdef CONFIG_KEXEC_JUMP
- 	if (image->preserve_context)
-@@ -226,6 +233,11 @@ void machine_kexec(struct kimage *image)
- #endif
- 	}
- 
-+	/* Call image loader to prepare for entry */
-+	idx = image->file_handler_idx;
-+	if (kexec_file_type[idx].prep_entry)
-+		kexec_file_type[idx].prep_entry(image);
++/* Misc data about ram ranges needed to prepare elf headers */
++struct crash_elf_data {
++	struct kimage *image;
++	/*
++	 * Total number of ram ranges we have after various ajustments for
++	 * GART, crash reserved region etc.
++	 */
++	unsigned int max_nr_ranges;
++	unsigned long gart_start, gart_end;
 +
- 	control_page = page_address(image->control_code_page) + PAGE_SIZE;
- 	memcpy(control_page, relocate_kernel, KEXEC_CONTROL_CODE_MAX_SIZE);
++	/* Pointer to elf header */
++	void *ehdr;
++	/* Pointer to next phdr */
++	void *bufp;
++	struct crash_mem mem;
++};
++
++/* Used while prepareing memory map entries for second kernel */
++struct crash_memmap_data {
++	struct boot_params *params;
++	/* Type of memory */
++	unsigned int type;
++};
++
+ int in_crash_kexec;
  
-@@ -281,3 +293,46 @@ void arch_crash_save_vmcoreinfo(void)
+ /*
+@@ -138,3 +181,545 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
  #endif
+ 	crash_save_cpu(regs, safe_smp_processor_id());
  }
- 
-+/* arch dependent functionality related to kexec file based syscall */
 +
-+int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
-+					unsigned long buf_len)
++#ifdef CONFIG_X86_64
++static int get_nr_ram_ranges_callback(unsigned long start_pfn,
++				unsigned long nr_pfn, void *arg)
 +{
-+	int i, ret = -ENOEXEC;
++	int *nr_ranges = arg;
 +
-+	for (i = 0; i < nr_file_types; i++) {
-+		if (!kexec_file_type[i].probe)
-+			continue;
-+
-+		ret = kexec_file_type[i].probe(buf, buf_len);
-+		if (!ret) {
-+			image->file_handler_idx = i;
-+			return ret;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+void *arch_kexec_kernel_image_load(struct kimage *image, char *kernel,
-+			unsigned long kernel_len, char *initrd,
-+			unsigned long initrd_len, char *cmdline,
-+			unsigned long cmdline_len)
-+{
-+	int idx = image->file_handler_idx;
-+
-+	if (idx < 0)
-+		return ERR_PTR(-ENOEXEC);
-+
-+	return kexec_file_type[idx].load(image, kernel, kernel_len, initrd,
-+					initrd_len, cmdline, cmdline_len);
-+}
-+
-+int arch_image_file_post_load_cleanup(struct kimage *image)
-+{
-+	int idx = image->file_handler_idx;
-+
-+	if (kexec_file_type[idx].cleanup)
-+		return kexec_file_type[idx].cleanup(image);
++	(*nr_ranges)++;
 +	return 0;
 +}
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65d..6f37cc9 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -320,6 +320,7 @@
- 311	64	process_vm_writev	sys_process_vm_writev
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
-+314	common	kexec_file_load		sys_kexec_file_load
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index d78d28a..a2baf96 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -110,13 +110,60 @@ struct kimage {
- #define KEXEC_TYPE_DEFAULT 0
- #define KEXEC_TYPE_CRASH   1
- 	unsigned int preserve_context : 1;
-+	/* If set, we are using file mode kexec syscall */
-+	unsigned int file_mode : 1;
- 
- #ifdef ARCH_HAS_KIMAGE_ARCH
- 	struct kimage_arch arch;
- #endif
 +
-+	/* Additional Fields for file based kexec syscall */
-+	void *kernel_buf;
-+	unsigned long kernel_buf_len;
++static int get_gart_ranges_callback(u64 start, u64 end, void *arg)
++{
++	struct crash_elf_data *ced = arg;
 +
-+	void *initrd_buf;
-+	unsigned long initrd_buf_len;
++	ced->gart_start = start;
++	ced->gart_end = end;
 +
-+	char *cmdline_buf;
-+	unsigned long cmdline_buf_len;
++	/* Not expecting more than 1 gart aperture */
++	return 1;
++}
 +
-+	/* index of file handler in array */
-+	int file_handler_idx;
 +
-+	/* Image loader handling the kernel can store a pointer here */
-+	void * image_loader_data;
- };
- 
++/* Gather all the required information to prepare elf headers for ram regions */
++static int fill_up_ced(struct crash_elf_data *ced, struct kimage *image)
++{
++	unsigned int nr_ranges = 0;
++
++	ced->image = image;
++
++	walk_system_ram_range(0, -1, &nr_ranges,
++				get_nr_ram_ranges_callback);
++
++	ced->max_nr_ranges = nr_ranges;
++
++	/*
++	 * We don't create ELF headers for GART aperture as an attempt
++	 * to dump this memory in second kernel leads to hang/crash.
++	 * If gart aperture is present, one needs to exclude that region
++	 * and that could lead to need of extra phdr.
++	 */
++
++	walk_ram_res("GART", IORESOURCE_MEM, 0, -1,
++				ced, get_gart_ranges_callback);
++
++	/*
++	 * If we have gart region, excluding that could potentially split
++	 * a memory range, resulting in extra header. Account for  that.
++	 */
++	if (ced->gart_end)
++		ced->max_nr_ranges++;
++
++	/* Exclusion of crash region could split memory ranges */
++	ced->max_nr_ranges++;
++
++	/* If crashk_low_res is there, another range split possible */
++	if (crashk_low_res.end != 0)
++		ced->max_nr_ranges++;
++
++	return 0;
++}
++
++static int exclude_mem_range(struct crash_mem *mem,
++		unsigned long long mstart, unsigned long long mend)
++{
++	int i, j;
++	unsigned long long start, end;
++	struct crash_mem_range temp_range = {0, 0};
++
++	for (i = 0; i < mem->nr_ranges; i++) {
++		start = mem->ranges[i].start;
++		end = mem->ranges[i].end;
++
++		if (mstart > end || mend < start)
++			continue;
++
++		/* Truncate any area outside of range */
++		if (mstart < start)
++			mstart = start;
++		if (mend > end)
++			mend = end;
++
++		/* Found completely overlapping range */
++		if (mstart == start && mend == end) {
++			mem->ranges[i].start = 0;
++			mem->ranges[i].end = 0;
++			if (i < mem->nr_ranges - 1) {
++				/* Shift rest of the ranges to left */
++				for(j = i; j < mem->nr_ranges - 1; j++) {
++					mem->ranges[j].start =
++						mem->ranges[j+1].start;
++					mem->ranges[j].end =
++							mem->ranges[j+1].end;
++				}
++			}
++			mem->nr_ranges--;
++			return 0;
++		}
++
++		if (mstart > start && mend < end) {
++			/* Split original range */
++			mem->ranges[i].end = mstart - 1;
++			temp_range.start = mend + 1;
++			temp_range.end = end;
++		} else if (mstart != start)
++			mem->ranges[i].end = mstart - 1;
++		else
++			mem->ranges[i].start = mend + 1;
++		break;
++	}
++
++	/* If a split happend, add the split in array */
++	if (!temp_range.end)
++		return 0;
++
++	/* Split happened */
++	if (i == CRASH_MAX_RANGES - 1) {
++		printk("Too many crash ranges after split\n");
++		return -ENOMEM;
++	}
++
++	/* Location where new range should go */
++	j = i + 1;
++	if (j < mem->nr_ranges) {
++		/* Move over all ranges one place */
++		for (i = mem->nr_ranges - 1; i >= j; i--)
++			mem->ranges[i + 1] = mem->ranges[i];
++	}
++
++	mem->ranges[j].start = temp_range.start;
++	mem->ranges[j].end = temp_range.end;
++	mem->nr_ranges++;
++	return 0;
++}
++
 +/*
-+ * Keeps a track of buffer parameters as provided by caller for requesting
-+ * memory placement of buffer.
++ * Look for any unwanted ranges between mstart, mend and remove them. This
++ * might lead to split and split ranges are put in ced->mem.ranges[] array
 + */
-+struct kexec_buf {
-+	struct kimage *image;
-+	char *buffer;
-+	unsigned long bufsz;
-+	unsigned long memsz;
-+	unsigned long buf_align;
-+	unsigned long buf_min;
-+	unsigned long buf_max;
-+	int top_down;		/* allocate from top of memory hole */
-+};
- 
-+typedef int (kexec_probe_t)(const char *kernel_buf, unsigned long kernel_size);
-+typedef void *(kexec_load_t)(struct kimage *image, char *kernel_buf,
-+				unsigned long kernel_len, char *initrd,
-+				unsigned long initrd_len, char *cmdline,
-+				unsigned long cmdline_len);
-+typedef int (kexec_prep_entry_t)(struct kimage *image);
-+typedef int (kexec_cleanup_t)(struct kimage *image);
++static int elf_header_exclude_ranges(struct crash_elf_data *ced,
++		unsigned long long mstart, unsigned long long mend)
++{
++	struct crash_mem *cmem = &ced->mem;
++	int ret = 0;
 +
-+struct kexec_file_type {
-+	const char *name;
-+	kexec_probe_t *probe;
-+	kexec_load_t *load;
-+	kexec_prep_entry_t *prep_entry;
-+	kexec_cleanup_t *cleanup;
-+};
- 
- /* kexec interface functions */
- extern void machine_kexec(struct kimage *image);
-@@ -127,6 +174,11 @@ extern asmlinkage long sys_kexec_load(unsigned long entry,
- 					struct kexec_segment __user *segments,
- 					unsigned long flags);
- extern int kernel_kexec(void);
-+extern int kexec_add_buffer(struct kimage *image, char *buffer,
-+			unsigned long bufsz, unsigned long memsz,
-+			unsigned long buf_align, unsigned long buf_min,
-+			unsigned long buf_max, int buf_end,
-+			unsigned long *load_addr);
- #ifdef CONFIG_COMPAT
- extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
- 				unsigned long nr_segments,
-@@ -135,6 +187,8 @@ extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
- #endif
- extern struct page *kimage_alloc_control_pages(struct kimage *image,
- 						unsigned int order);
-+extern void kimage_set_start_addr(struct kimage *image, unsigned long start);
++	memset(cmem->ranges, 0, sizeof(cmem->ranges));
 +
- extern void crash_kexec(struct pt_regs *);
- int kexec_should_crash(struct task_struct *);
- void crash_save_cpu(struct pt_regs *regs, int cpu);
-@@ -182,6 +236,9 @@ extern struct kimage *kexec_crash_image;
- #define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
- #endif
- 
-+/* Listof defined/legal kexec file flags */
-+#define KEXEC_FILE_FLAGS	(KEXEC_FILE_UNLOAD | KEXEC_FILE_ON_CRASH)
++	cmem->ranges[0].start = mstart;
++	cmem->ranges[0].end = mend;
++	cmem->nr_ranges = 1;
 +
- #define VMCOREINFO_BYTES           (4096)
- #define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
- #define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 94273bb..b712ac7 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -301,6 +301,9 @@ asmlinkage long sys_restart_syscall(void);
- asmlinkage long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
- 				struct kexec_segment __user *segments,
- 				unsigned long flags);
-+asmlinkage long sys_kexec_file_load(int kernel_fd, int initrd_fd,
-+				const char __user * cmdline_ptr,
-+				unsigned long cmdline_len, unsigned long flags);
- 
- asmlinkage long sys_exit(int error_code);
- asmlinkage long sys_exit_group(int error_code);
-diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-index 104838f..cdd666b 100644
---- a/include/uapi/linux/kexec.h
-+++ b/include/uapi/linux/kexec.h
-@@ -13,6 +13,10 @@
- #define KEXEC_PRESERVE_CONTEXT	0x00000002
- #define KEXEC_ARCH_MASK		0xffff0000
- 
-+/* Kexec file load interface flags */
-+#define KEXEC_FILE_UNLOAD	0x00000001
-+#define KEXEC_FILE_ON_CRASH	0x00000002
++	/* Exclude crashkernel region */
++	ret = exclude_mem_range(cmem, crashk_res.start, crashk_res.end);
++	if (ret)
++		return ret;
 +
- /* These values match the ELF architecture values.
-  * Unless there is a good reason that should continue to be the case.
-  */
++	ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
++	if (ret)
++		return ret;
++
++	/* Exclude GART region */
++	if (ced->gart_end) {
++		ret = exclude_mem_range(cmem, ced->gart_start, ced->gart_end);
++		if (ret)
++			return ret;
++	}
++
++	return ret;
++}
++
++static int prepare_elf64_ram_headers_callback(u64 start, u64 end, void *arg)
++{
++	struct crash_elf_data *ced = arg;
++	Elf64_Ehdr *ehdr;
++	Elf64_Phdr *phdr;
++	unsigned long mstart, mend;
++	struct kimage *image = ced->image;
++	struct crash_mem *cmem;
++	int ret, i;
++
++	ehdr = ced->ehdr;
++
++	/* Exclude unwanted mem ranges */
++	ret = elf_header_exclude_ranges(ced, start, end);
++	if (ret)
++		return ret;
++
++	/* Go through all the ranges in ced->mem.ranges[] and prepare phdr */
++	cmem = &ced->mem;
++
++	for (i = 0; i < cmem->nr_ranges; i++) {
++		mstart = cmem->ranges[i].start;
++		mend = cmem->ranges[i].end;
++
++		phdr = ced->bufp;
++		ced->bufp += sizeof(Elf64_Phdr);
++
++		phdr->p_type = PT_LOAD;
++		phdr->p_flags = PF_R|PF_W|PF_X;
++		phdr->p_offset  = mstart;
++
++		/*
++		 * If a range matches backup region, adjust offset to backup
++		 * segment.
++		 */
++		if (mstart == image->arch.backup_src_start &&
++		    (mend - mstart + 1) == image->arch.backup_src_sz)
++			phdr->p_offset = image->arch.backup_load_addr;
++
++		phdr->p_paddr = mstart;
++		phdr->p_vaddr = (unsigned long long) __va(mstart);
++		phdr->p_filesz = phdr->p_memsz = mend - mstart + 1;
++		phdr->p_align = 0;
++		ehdr->e_phnum++;
++		pr_debug("Crash PT_LOAD elf header. phdr=%p"
++			" vaddr=0x%llx, paddr=0x%llx, sz=0x%llx e_phnum=%d"
++			" p_offset=0x%llx\n", phdr, phdr->p_vaddr,
++			phdr->p_paddr, phdr->p_filesz, ehdr->e_phnum,
++			phdr->p_offset);
++	}
++
++	return ret;
++}
++
++static int prepare_elf64_headers(struct crash_elf_data *ced,
++		unsigned long *addr, unsigned long *sz)
++{
++	Elf64_Ehdr *ehdr;
++	Elf64_Phdr *phdr;
++	unsigned long nr_cpus = NR_CPUS, nr_phdr, elf_sz;
++	unsigned char *buf, *bufp;
++	unsigned int cpu;
++	unsigned long long notes_addr;
++	int ret;
++
++	/* extra phdr for vmcoreinfo elf note */
++	nr_phdr = nr_cpus + 1;
++	nr_phdr += ced->max_nr_ranges;
++
++	/*
++	 * kexec-tools creates an extra PT_LOAD phdr for kernel text mapping
++	 * area on x86_64 (ffffffff80000000 - ffffffffa0000000).
++	 * I think this is required by tools like gdb. So same physical
++	 * memory will be mapped in two elf headers. One will contain kernel
++	 * text virtual addresses and other will have __va(physical) addresses.
++	 */
++
++	nr_phdr++;
++	elf_sz = sizeof(Elf64_Ehdr) + nr_phdr * sizeof(Elf64_Phdr);
++	elf_sz = ALIGN(elf_sz, ELF_CORE_HEADER_ALIGN);
++
++	buf = vzalloc(elf_sz);
++	if (!buf)
++		return -ENOMEM;
++
++	bufp = buf;
++	ehdr = (Elf64_Ehdr *)bufp;
++	bufp += sizeof(Elf64_Ehdr);
++	memcpy(ehdr->e_ident, ELFMAG, SELFMAG);
++	ehdr->e_ident[EI_CLASS] = ELFCLASS64;
++	ehdr->e_ident[EI_DATA] = ELFDATA2LSB;
++	ehdr->e_ident[EI_VERSION] = EV_CURRENT;
++	ehdr->e_ident[EI_OSABI] = ELF_OSABI;
++	memset(ehdr->e_ident + EI_PAD, 0, EI_NIDENT - EI_PAD);
++	ehdr->e_type = ET_CORE;
++	ehdr->e_machine = ELF_ARCH;
++	ehdr->e_version = EV_CURRENT;
++	ehdr->e_entry = 0;
++	ehdr->e_phoff = sizeof(Elf64_Ehdr);
++	ehdr->e_shoff = 0;
++	ehdr->e_flags = 0;
++	ehdr->e_ehsize = sizeof(Elf64_Ehdr);
++	ehdr->e_phentsize = sizeof(Elf64_Phdr);
++	ehdr->e_phnum = 0;
++	ehdr->e_shentsize = 0;
++	ehdr->e_shnum = 0;
++	ehdr->e_shstrndx = 0;
++
++	/* Prepare one phdr of type PT_NOTE for each present cpu */
++	for_each_present_cpu(cpu) {
++		phdr = (Elf64_Phdr *)bufp;
++		bufp += sizeof(Elf64_Phdr);
++		phdr->p_type = PT_NOTE;
++		phdr->p_flags = 0;
++		notes_addr = per_cpu_ptr_to_phys(per_cpu_ptr(crash_notes, cpu));
++		phdr->p_offset = phdr->p_paddr = notes_addr;
++		phdr->p_vaddr = 0;
++		phdr->p_filesz = phdr->p_memsz = sizeof(note_buf_t);
++		phdr->p_align = 0;
++		(ehdr->e_phnum)++;
++	}
++
++	/* Prepare one PT_NOTE header for vmcoreinfo */
++	phdr = (Elf64_Phdr *)bufp;
++	bufp += sizeof(Elf64_Phdr);
++	phdr->p_type = PT_NOTE;
++	phdr->p_flags = 0;
++	phdr->p_offset = phdr->p_paddr = paddr_vmcoreinfo_note();
++	phdr->p_vaddr = 0;
++	phdr->p_filesz = phdr->p_memsz = sizeof(vmcoreinfo_note);
++	phdr->p_align = 0;
++	(ehdr->e_phnum)++;
++
++#ifdef CONFIG_X86_64
++	/* Prepare PT_LOAD type program header for kernel text region */
++	phdr = (Elf64_Phdr *)bufp;
++	bufp += sizeof(Elf64_Phdr);
++	phdr->p_type = PT_LOAD;
++	phdr->p_flags = PF_R|PF_W|PF_X;
++	phdr->p_vaddr = (Elf64_Addr)_text;
++	phdr->p_filesz = phdr->p_memsz = _end - _text;
++	phdr->p_offset = phdr->p_paddr = __pa_symbol(_text);
++	phdr->p_align = 0;
++	(ehdr->e_phnum)++;
++#endif
++
++	/* Prepare PT_LOAD headers for system ram chunks. */
++	ced->ehdr = ehdr;
++	ced->bufp = bufp;
++	ret = walk_system_ram_res(0, -1, ced,
++			prepare_elf64_ram_headers_callback);
++	if (ret < 0)
++		return ret;
++
++	*addr = (unsigned long)buf;
++	*sz = elf_sz;
++	return 0;
++}
++
++/* Prepare elf headers. Return addr and size */
++static int prepare_elf_headers(struct kimage *image, unsigned long *addr,
++					unsigned long *sz)
++{
++	struct crash_elf_data *ced;
++	int ret;
++
++	ced = kzalloc(sizeof(*ced), GFP_KERNEL);
++	if (!ced)
++		return -ENOMEM;
++
++	ret = fill_up_ced(ced, image);
++	if (ret)
++		goto out;
++
++	/* By default prepare 64bit headers */
++	ret =  prepare_elf64_headers(ced, addr, sz);
++out:
++	kfree(ced);
++	return ret;
++}
++
++static int add_e820_entry(struct boot_params *params, struct e820entry *entry)
++{
++	unsigned int nr_e820_entries;
++
++	nr_e820_entries = params->e820_entries;
++	if (nr_e820_entries >= E820MAX)
++		return 1;
++
++	memcpy(&params->e820_map[nr_e820_entries], entry,
++                        sizeof(struct e820entry));
++	params->e820_entries++;
++
++	pr_debug("Add e820 entry to bootparams. addr=0x%llx size=0x%llx"
++		" type=%d\n", entry->addr, entry->size, entry->type);
++	return 0;
++}
++
++static int memmap_entry_callback(u64 start, u64 end, void *arg)
++{
++	struct crash_memmap_data *cmd = arg;
++	struct boot_params *params = cmd->params;
++	struct e820entry ei;
++
++	ei.addr = start;
++	ei.size = end - start + 1;
++	ei.type = cmd->type;
++	add_e820_entry(params, &ei);
++
++	return 0;
++}
++
++static int memmap_exclude_ranges(struct kimage *image, struct crash_mem *cmem,
++		unsigned long long mstart, unsigned long long mend)
++{
++	unsigned long start, end;
++	int ret = 0;
++
++	memset(cmem->ranges, 0, sizeof(cmem->ranges));
++
++	cmem->ranges[0].start = mstart;
++	cmem->ranges[0].end = mend;
++	cmem->nr_ranges = 1;
++
++	/* Exclude Backup region */
++	start = image->arch.backup_load_addr;
++	end = start + image->arch.backup_src_sz - 1;
++	ret = exclude_mem_range(cmem, start, end);
++	if (ret)
++		return ret;
++
++	/* Exclude elf header region */
++	start = image->arch.elf_load_addr;
++	end = start + image->arch.elf_headers_sz - 1;
++	ret = exclude_mem_range(cmem, start, end);
++	return ret;
++}
++
++/* Prepare memory map for crash dump kernel */
++int crash_setup_memmap_entries(struct kimage *image, struct boot_params *params)
++{
++	int i, ret = 0;
++	unsigned long flags;
++	struct e820entry ei;
++	struct crash_memmap_data cmd;
++	struct crash_mem *cmem;
++
++	cmem = vzalloc(sizeof(struct crash_mem));
++	if (!cmem)
++		return -ENOMEM;
++
++	memset(&cmd, 0, sizeof(struct crash_memmap_data));
++	cmd.params = params;
++
++	/* Add first 640K segment */
++	ei.addr = image->arch.backup_src_start;
++	ei.size = image->arch.backup_src_sz;
++	ei.type = E820_RAM;
++	add_e820_entry(params, &ei);
++
++	/* Add ACPI tables */
++	cmd.type = E820_ACPI;
++	flags = IORESOURCE_MEM | IORESOURCE_BUSY;
++	walk_ram_res("ACPI Tables", flags, 0, -1, &cmd, memmap_entry_callback);
++
++	/* Add ACPI Non-volatile Storage */
++	cmd.type = E820_NVS;
++	walk_ram_res("ACPI Non-volatile Storage", flags, 0, -1, &cmd,
++			memmap_entry_callback);
++
++	/* Add crashk_low_res region */
++	if (crashk_low_res.end) {
++		ei.addr = crashk_low_res.start;
++		ei.size = crashk_low_res.end - crashk_low_res.start + 1;
++		ei.type = E820_RAM;
++		add_e820_entry(params, &ei);
++	}
++
++	/* Exclude some ranges from crashk_res and add rest to memmap */
++	ret = memmap_exclude_ranges(image, cmem, crashk_res.start,
++						crashk_res.end);
++	if (ret)
++		goto out;
++
++	for (i = 0; i < cmem->nr_ranges; i++) {
++		ei.addr = cmem->ranges[i].start;
++		ei.size = cmem->ranges[i].end - ei.addr + 1;
++		ei.type = E820_RAM;
++
++		/* If entry is less than a page, skip it */
++		if (ei.size < PAGE_SIZE) {
++			continue;
++		}
++		add_e820_entry(params, &ei);
++	}
++
++out:
++	vfree(cmem);
++	return ret;
++}
++
++static int determine_backup_region(u64 start, u64 end, void *arg)
++{
++	struct kimage *image = arg;
++
++	image->arch.backup_src_start = start;
++	image->arch.backup_src_sz = end - start + 1;
++
++	/* Expecting only one range for backup region */
++	return 1;
++}
++
++int load_crashdump_segments(struct kimage *image)
++{
++	unsigned long src_start, src_sz;
++	unsigned long elf_addr, elf_sz;
++	int ret;
++
++	/*
++	 * Determine and load a segment for backup area. First 640K RAM
++	 * region is backup source
++	 */
++
++	ret = walk_system_ram_res(KEXEC_BACKUP_SRC_START, KEXEC_BACKUP_SRC_END,
++				image, determine_backup_region);
++
++	/* Zero of postive return values are ok */
++	if (ret < 0)
++		return ret;
++
++	src_start = image->arch.backup_src_start;
++	src_sz = image->arch.backup_src_sz;
++
++	/* Add backup segment. */
++	if (src_sz) {
++		ret = kexec_add_buffer(image, __va(src_start), src_sz, src_sz,
++					PAGE_SIZE, 0, -1, 0,
++					&image->arch.backup_load_addr);
++		if (ret)
++			return ret;
++	}
++
++	/* Prepare elf headers and add a segment */
++	ret = prepare_elf_headers(image, &elf_addr, &elf_sz);
++	if (ret)
++		return ret;
++
++	image->arch.elf_headers = elf_addr;
++	image->arch.elf_headers_sz = elf_sz;
++
++	ret = kexec_add_buffer(image, (char *)elf_addr, elf_sz, elf_sz,
++			ELF_CORE_HEADER_ALIGN, 0, -1, 0,
++			&image->arch.elf_load_addr);
++	if (ret)
++		kfree((void *)image->arch.elf_headers);
++
++	return ret;
++}
++
++int crash_copy_backup_region(struct kimage *image)
++{
++	unsigned long dest_start, src_start, src_sz;
++
++	dest_start = image->arch.backup_load_addr;
++	src_start = image->arch.backup_src_start;
++	src_sz = image->arch.backup_src_sz;
++
++	memcpy(__va(dest_start), __va(src_start), src_sz);
++
++	return 0;
++}
++#endif /* CONFIG_X86_64 */
+diff --git a/arch/x86/kernel/kexec-bzimage.c b/arch/x86/kernel/kexec-bzimage.c
+index a1032d4..606942c 100644
+--- a/arch/x86/kernel/kexec-bzimage.c
++++ b/arch/x86/kernel/kexec-bzimage.c
+@@ -8,6 +8,9 @@
+ 
+ #include <asm/bootparam.h>
+ #include <asm/setup.h>
++#include <asm/crash.h>
++
++#define MAX_ELFCOREHDR_STR_LEN	30 	/* elfcorehdr=0x<64bit-value> */
+ 
+ #ifdef CONFIG_X86_64
+ 
+@@ -86,7 +89,8 @@ static int setup_memory_map_entries(struct boot_params *params)
+ 	return 0;
+ }
+ 
+-static void setup_linux_system_parameters(struct boot_params *params)
++static void setup_linux_system_parameters(struct kimage *image,
++			struct boot_params *params)
+ {
+ 	unsigned int nr_e820_entries;
+ 	unsigned long long mem_k, start, end;
+@@ -113,7 +117,10 @@ static void setup_linux_system_parameters(struct boot_params *params)
+ 	/* Default sysdesc table */
+ 	params->sys_desc_table.length = 0;
+ 
+-	setup_memory_map_entries(params);
++	if (image->type == KEXEC_TYPE_CRASH)
++		crash_setup_memmap_entries(image, params);
++	else
++		setup_memory_map_entries(params);
+ 	nr_e820_entries = params->e820_entries;
+ 
+ 	for(i = 0; i < nr_e820_entries; i++) {
+@@ -151,18 +158,23 @@ static void setup_initrd(struct boot_params *boot_params, unsigned long initrd_l
+ 	boot_params->ext_ramdisk_size = initrd_len >> 32;
+ }
+ 
+-static void setup_cmdline(struct boot_params *boot_params,
++static void setup_cmdline(struct kimage *image, struct boot_params *boot_params,
+ 		unsigned long bootparams_load_addr,
+ 		unsigned long cmdline_offset, char *cmdline,
+ 		unsigned long cmdline_len)
+ {
+ 	char *cmdline_ptr = ((char *)boot_params) + cmdline_offset;
+-	unsigned long cmdline_ptr_phys;
++	unsigned long cmdline_ptr_phys, len;
+ 	uint32_t cmdline_low_32, cmdline_ext_32;
+ 
+ 	memcpy(cmdline_ptr, cmdline, cmdline_len);
++	if (image->type == KEXEC_TYPE_CRASH) {
++		len = sprintf(cmdline_ptr + cmdline_len - 1,
++			" elfcorehdr=0x%lx", image->arch.elf_load_addr);
++		cmdline_len += len;
++	}
+ 	cmdline_ptr[cmdline_len - 1] = '\0';
+-
++	pr_debug("Final command line is:%s\n", cmdline_ptr);
+ 	cmdline_ptr_phys = bootparams_load_addr + cmdline_offset;
+ 	cmdline_low_32 = cmdline_ptr_phys & 0xffffffffUL;
+ 	cmdline_ext_32 = cmdline_ptr_phys >> 32;
+@@ -203,17 +215,34 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
++	/*
++	 * In case of crash dump, we will append elfcorehdr=<addr> to
++	 * command line. Make sure it does not overflow
++	 */
++	if (cmdline_len + MAX_ELFCOREHDR_STR_LEN > header->cmdline_size) {
++		ret = -EINVAL;
++		pr_debug("Kernel command line too long\n");
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	/* Allocate loader specific data */
+ 	ldata = kzalloc(sizeof(struct bzimage64_data), GFP_KERNEL);
+ 	if (!ldata)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	/* Allocate and load backup region */
++	if (image->type == KEXEC_TYPE_CRASH) {
++		ret = load_crashdump_segments(image);
++		if (ret)
++			goto out_free_loader_data;
++	}
++
+ 	/* Argument/parameter segment */
+ 	kern16_size_needed = kern16_size;
+ 	if (kern16_size_needed < 4096)
+ 		kern16_size_needed = 4096;
+ 
+-	setup_size = kern16_size_needed + cmdline_len;
++	setup_size = kern16_size_needed + cmdline_len + MAX_ELFCOREHDR_STR_LEN;
+ 	params = kzalloc(setup_size, GFP_KERNEL);
+ 	if (!params) {
+ 		ret = -ENOMEM;
+@@ -259,14 +288,14 @@ void *bzImage64_load(struct kimage *image, char *kernel,
+ 		setup_initrd(params, initrd_load_addr, initrd_len);
+ 	}
+ 
+-	setup_cmdline(params, bootparam_load_addr, kern16_size_needed,
++	setup_cmdline(image, params, bootparam_load_addr, kern16_size_needed,
+ 			cmdline, cmdline_len);
+ 
+ 	/* bootloader info. Do we need a separate ID for kexec kernel loader? */
+ 	params->hdr.type_of_loader = 0x0D << 4;
+ 	params->hdr.loadflags = 0;
+ 
+-	setup_linux_system_parameters(params);
++	setup_linux_system_parameters(image, params);
+ 
+ 	/*
+ 	 * Allocate a purgatory page. For 64bit entry point, purgatory
+@@ -302,7 +331,7 @@ out_free_loader_data:
+ 	return ERR_PTR(ret);
+ }
+ 
+-int bzImage64_prep_entry(struct kimage *image)
++static int prepare_purgatory(struct kimage *image)
+ {
+ 	struct bzimage64_data *ldata;
+ 	char *purgatory_page;
+@@ -362,6 +391,22 @@ int bzImage64_prep_entry(struct kimage *image)
+ 	return 0;
+ }
+ 
++int bzImage64_prep_entry(struct kimage *image)
++{
++	if (!image->file_mode)
++		return 0;
++
++	if (!image->image_loader_data)
++		return -EINVAL;
++
++	prepare_purgatory(image);
++
++	if (image->type == KEXEC_TYPE_CRASH)
++		crash_copy_backup_region(image);
++
++	return 0;
++}
++
+ /* This cleanup function is called after various segments have been loaded */
+ int bzImage64_cleanup(struct kimage *image)
+ {
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index a66ce1d..9d7a42d 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -334,6 +334,7 @@ int arch_image_file_post_load_cleanup(struct kimage *image)
+ {
+ 	int idx = image->file_handler_idx;
+ 
++	vfree((void *)image->arch.elf_headers);
+ 	if (kexec_file_type[idx].cleanup)
+ 		return kexec_file_type[idx].cleanup(image);
+ 	return 0;
 diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 6238927..50bcaa8 100644
+index 50bcaa8..64184a7 100644
 --- a/kernel/kexec.c
 +++ b/kernel/kexec.c
-@@ -120,6 +120,11 @@ static struct page *kimage_alloc_page(struct kimage *image,
- 				       gfp_t gfp_mask,
- 				       unsigned long dest);
+@@ -524,7 +524,6 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+ 	*rimage = image;
+ 	return 0;
  
-+void kimage_set_start_addr(struct kimage *image, unsigned long start)
-+{
-+	image->start = start;
-+}
-+
- static int copy_user_segment_list(struct kimage *image,
- 				unsigned long nr_segments,
- 				struct kexec_segment __user *segments)
-@@ -256,6 +261,225 @@ static struct kimage *do_kimage_alloc_init(void)
+-
+ out_free_control_pages:
+ 	kimage_free_page_list(&image->control_pages);
+ out_free_image:
+@@ -532,6 +531,54 @@ out_free_image:
+ 	return result;
+ }
  
- static void kimage_free_page_list(struct list_head *list);
- 
-+static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
-+{
-+	struct fd f = fdget(fd);
-+	int ret = 0;
-+	struct kstat stat;
-+	loff_t pos;
-+	ssize_t bytes = 0;
-+
-+	if (!f.file)
-+		return -EBADF;
-+
-+	ret = vfs_getattr(&f.file->f_path, &stat);
-+	if (ret)
-+		goto out;
-+
-+	if (stat.size > INT_MAX) {
-+		ret = -EFBIG;
-+		goto out;
-+	}
-+
-+	/* Don't hand 0 to vmalloc, it whines. */
-+	if (stat.size == 0) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	*buf = vmalloc(stat.size);
-+        if (!*buf) {
-+                ret = -ENOMEM;
-+                goto out;
-+        }
-+
-+	pos = 0;
-+	while (pos < stat.size) {
-+		bytes = kernel_read(f.file, pos, (char *)(*buf) + pos,
-+                                    stat.size - pos);
-+                if (bytes < 0) {
-+                        vfree(*buf);
-+                        ret = bytes;
-+                        goto out;
-+                }
-+
-+                if (bytes == 0)
-+                        break;
-+                pos += bytes;
-+        }
-+
-+        *buf_len = pos;
-+
-+out:
-+	fdput(f);
-+	return ret;
-+}
-+
-+/* Architectures can provide this probe function */
-+int __attribute__ ((weak))
-+arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
-+				unsigned long buf_len)
-+{
-+	return -ENOEXEC;
-+}
-+
-+void * __attribute__ ((weak))
-+arch_kexec_kernel_image_load(struct kimage *image, char *kernel,
-+		unsigned long kernel_len, char *initrd,
-+		unsigned long initrd_len, char *cmdline,
-+		unsigned long cmdline_len)
-+{
-+	return ERR_PTR(-ENOEXEC);
-+}
-+
-+void __attribute__ ((weak))
-+arch_kimage_file_post_load_cleanup(struct kimage *image)
-+{
-+	return;
-+}
-+
-+/*
-+ * Free up tempory buffers allocated which are not needed after image has
-+ * been loaded.
-+ *
-+ * Free up memory used by kernel, initrd, and comand line. This is temporary
-+ * memory allocation which is not needed any more after these buffers have
-+ * been loaded into separate segments and have been copied elsewhere
-+ */
-+static void kimage_file_post_load_cleanup(struct kimage *image)
-+{
-+	if (image->kernel_buf) {
-+		vfree(image->kernel_buf);
-+		image->kernel_buf = NULL;
-+	}
-+
-+	if (image->initrd_buf) {
-+		vfree(image->initrd_buf);
-+		image->initrd_buf = NULL;
-+	}
-+
-+	if (image->cmdline_buf) {
-+		vfree(image->cmdline_buf);
-+		image->cmdline_buf = NULL;
-+	}
-+
-+	/* See if architcture has anything to cleanup post load */
-+	arch_kimage_file_post_load_cleanup(image);
-+}
-+
-+/*
-+ * In file mode list of segments is prepared by kernel. Copy relevant
-+ * data from user space, do error checking, prepare segment list
-+ */
-+static int kimage_file_prepare_segments(struct kimage *image, int kernel_fd,
-+		int initrd_fd, const char __user *cmdline_ptr,
-+		unsigned long cmdline_len)
-+{
-+	int ret = 0;
-+	void *ldata;
-+
-+	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
-+					&image->kernel_buf_len);
-+	if (ret)
-+		goto out;
-+
-+	/* Call arch image probe handlers */
-+	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
-+						image->kernel_buf_len);
-+
-+	if (ret)
-+		goto out;
-+
-+	ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
-+					&image->initrd_buf_len);
-+	if (ret)
-+		goto out;
-+
-+	image->cmdline_buf = vzalloc(cmdline_len);
-+	if (!image->cmdline_buf)
-+		goto out;
-+
-+	ret = copy_from_user(image->cmdline_buf, cmdline_ptr, cmdline_len);
-+	if (ret) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+
-+	image->cmdline_buf_len = cmdline_len;
-+
-+	/* command line should be a string with last byte null */
-+	if (image->cmdline_buf[cmdline_len - 1] != '\0') {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Call arch image load handlers */
-+	ldata = arch_kexec_kernel_image_load(image,
-+			image->kernel_buf, image->kernel_buf_len,
-+			image->initrd_buf, image->initrd_buf_len,
-+			image->cmdline_buf, image->cmdline_buf_len);
-+
-+	if (IS_ERR(ldata)) {
-+		ret = PTR_ERR(ldata);
-+		goto out;
-+	}
-+
-+	image->image_loader_data = ldata;
-+out:
-+	return ret;
-+}
-+
-+static int kimage_file_normal_alloc(struct kimage **rimage, int kernel_fd,
++static int kimage_file_crash_alloc(struct kimage **rimage, int kernel_fd,
 +		int initrd_fd, const char __user *cmdline_ptr,
 +		unsigned long cmdline_len)
 +{
@@ -469,6 +889,10 @@ index 6238927..50bcaa8 100644
 +
 +	image->file_mode = 1;
 +	image->file_handler_idx = -1;
++
++	/* Enable the special crash kernel control page allocation policy. */
++	image->control_page = crashk_res.start;
++	image->type = KEXEC_TYPE_CRASH;
 +
 +	result = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
 +			cmdline_ptr, cmdline_len);
@@ -487,17 +911,9 @@ index 6238927..50bcaa8 100644
 +		goto out_free_post_load_bufs;
 +	}
 +
-+	image->swap_page = kimage_alloc_control_pages(image, 0);
-+	if (!image->swap_page) {
-+		printk(KERN_ERR "Could not allocate swap buffer\n");
-+		goto out_free_control_pages;
-+	}
-+
 +	*rimage = image;
 +	return 0;
 +
-+out_free_control_pages:
-+	kimage_free_page_list(&image->control_pages);
 +out_free_post_load_bufs:
 +	kimage_file_post_load_cleanup(image);
 +	kfree(image->image_loader_data);
@@ -506,311 +922,51 @@ index 6238927..50bcaa8 100644
 +	return result;
 +}
 +
- static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
++
+ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
  				unsigned long nr_segments,
  				struct kexec_segment __user *segments)
-@@ -679,6 +903,14 @@ static void kimage_free(struct kimage *image)
- 
- 	/* Free the kexec control pages... */
- 	kimage_free_page_list(&image->control_pages);
-+
-+	kfree(image->image_loader_data);
-+
-+	/*
-+	 * Free up any temporary buffers allocated. This might hit if
-+	 * error occurred much later after buffer allocation.
-+	 */
-+	kimage_file_post_load_cleanup(image);
- 	kfree(image);
- }
- 
-@@ -843,7 +1075,11 @@ static int kimage_load_normal_segment(struct kimage *image,
- 				PAGE_SIZE - (maddr & ~PAGE_MASK));
- 		uchunk = min(ubytes, mchunk);
- 
+@@ -1130,7 +1177,12 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 			/* Zero the trailing part of the page */
+ 			memset(ptr + uchunk, 0, mchunk - uchunk);
+ 		}
 -		result = copy_from_user(ptr, buf, uchunk);
++
 +		/* For file based kexec, source pages are in kernel memory */
 +		if (image->file_mode)
 +			memcpy(ptr, buf, uchunk);
 +		else
 +			result = copy_from_user(ptr, buf, uchunk);
+ 		kexec_flush_icache_page(page);
  		kunmap(page);
  		if (result) {
- 			result = -EFAULT;
-@@ -1093,6 +1329,72 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
- }
- #endif
+@@ -1358,7 +1410,11 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd, const char __us
+ 	if (flags & KEXEC_FILE_UNLOAD)
+ 		goto exchange;
  
-+SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd, const char __user *, cmdline_ptr, unsigned long, cmdline_len, unsigned long, flags)
-+{
-+	int ret = 0, i;
-+	struct kimage **dest_image, *image;
-+
-+	/* We only trust the superuser with rebooting the system. */
-+	if (!capable(CAP_SYS_BOOT))
-+		return -EPERM;
-+
-+	pr_debug("kexec_file_load: kernel_fd=%d initrd_fd=%d cmdline=0x%p"
-+			" cmdline_len=%lu flags=0x%lx\n", kernel_fd, initrd_fd,
-+			cmdline_ptr, cmdline_len, flags);
-+
-+	/* Make sure we have a legal set of flags */
-+	if (flags != (flags & KEXEC_FILE_FLAGS))
-+		return -EINVAL;
-+
-+	image = NULL;
-+
-+	if (!mutex_trylock(&kexec_mutex))
-+		return -EBUSY;
-+
-+	dest_image = &kexec_image;
+-	ret = kimage_file_normal_alloc(&image, kernel_fd, initrd_fd,
 +	if (flags & KEXEC_FILE_ON_CRASH)
-+		dest_image = &kexec_crash_image;
-+
-+	if (flags & KEXEC_FILE_UNLOAD)
-+		goto exchange;
-+
-+	ret = kimage_file_normal_alloc(&image, kernel_fd, initrd_fd,
++		ret = kimage_file_crash_alloc(&image, kernel_fd, initrd_fd,
 +				cmdline_ptr, cmdline_len);
-+	if (ret)
-+		goto out;
-+
-+	ret = machine_kexec_prepare(image);
-+	if (ret)
-+		goto out;
-+
-+	for (i = 0; i < image->nr_segments; i++) {
-+		struct kexec_segment *ksegment;
-+
-+		ksegment = &image->segment[i];
-+		pr_debug("Loading segment %d: buf=0x%p bufsz=0x%lx mem=0x%lx"
-+			" memsz=0x%lx\n", i, ksegment->buf, ksegment->bufsz,
-+			ksegment->mem, ksegment->memsz);
-+		ret = kimage_load_segment(image, &image->segment[i]);
-+		if (ret)
-+			goto out;
-+		pr_debug("Done loading segment %d\n", i);
-+	}
-+
-+	kimage_terminate(image);
-+
-+	/*
-+	 * Free up any temporary buffers allocated which are not needed
-+	 * after image has been loaded
-+	 */
-+	kimage_file_post_load_cleanup(image);
-+exchange:
-+	image = xchg(dest_image, image);
-+out:
-+	mutex_unlock(&kexec_mutex);
-+	kimage_free(image);
-+	return ret;
-+}
-+
- void crash_kexec(struct pt_regs *regs)
- {
- 	/* Take the kexec_mutex here to prevent sys_kexec_load
-@@ -1647,6 +1949,188 @@ static int __init crash_save_vmcoreinfo_init(void)
- 
- module_init(crash_save_vmcoreinfo_init)
- 
-+static int kexec_add_segment(struct kimage *image, char *buf,
-+		unsigned long bufsz, unsigned long mem, unsigned long memsz)
-+{
-+	struct kexec_segment *ksegment;
-+
-+	ksegment = &image->segment[image->nr_segments];
-+	ksegment->buf = buf;
-+	ksegment->bufsz = bufsz;
-+	ksegment->mem = mem;
-+	ksegment->memsz = memsz;
-+	image->nr_segments++;
-+
-+	return 0;
-+}
-+
-+static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
-+					struct kexec_buf *kbuf)
-+{
-+	struct kimage *image = kbuf->image;
-+	unsigned long temp_start, temp_end;
-+
-+	temp_end = min(end, kbuf->buf_max);
-+	temp_start = temp_end - kbuf->memsz;
-+
-+	do {
-+		/* align down start */
-+		temp_start = temp_start & (~ (kbuf->buf_align - 1));
-+
-+		if (temp_start < start || temp_start < kbuf->buf_min)
-+			return 0;
-+
-+		temp_end = temp_start + kbuf->memsz - 1;
-+
-+		/*
-+		 * Make sure this does not conflict with any of existing
-+		 * segments
-+		 */
-+		if (kimage_is_destination_range(image, temp_start, temp_end)) {
-+			temp_start = temp_start - PAGE_SIZE;
-+			continue;
-+		}
-+
-+		/* We found a suitable memory range */
-+		break;
-+	} while(1);
-+
-+	/* If we are here, we found a suitable memory range */
-+	kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-+				kbuf->memsz);
-+
-+	/* Stop navigating through remaining System RAM ranges */
-+	return 1;
-+}
-+
-+static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
-+					struct kexec_buf *kbuf)
-+{
-+	struct kimage *image = kbuf->image;
-+	unsigned long temp_start, temp_end;
-+
-+	temp_start = max(start, kbuf->buf_min);
-+
-+	do {
-+		temp_start = ALIGN(temp_start, kbuf->buf_align);
-+		temp_end = temp_start + kbuf->memsz - 1;
-+
-+		if (temp_end > end || temp_end > kbuf->buf_max)
-+			return 0;
-+		/*
-+		 * Make sure this does not conflict with any of existing
-+		 * segments
-+		 */
-+		if (kimage_is_destination_range(image, temp_start, temp_end)) {
-+			temp_start = temp_start + PAGE_SIZE;
-+			continue;
-+		}
-+
-+		/* We found a suitable memory range */
-+		break;
-+	} while(1);
-+
-+	/* If we are here, we found a suitable memory range */
-+	kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
-+				kbuf->memsz);
-+
-+	/* Stop navigating through remaining System RAM ranges */
-+	return 1;
-+}
-+
-+static int walk_ram_range_callback(u64 start, u64 end, void *arg)
-+{
-+	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
-+	unsigned long sz = end - start + 1;
-+
-+	/* Returning 0 will take to next memory range */
-+	if (sz < kbuf->memsz)
-+		return 0;
-+
-+	if (end < kbuf->buf_min || start > kbuf->buf_max)
-+		return 0;
-+
-+	/*
-+	 * Allocate memory top down with-in ram range. Otherwise bottom up
-+	 * allocation.
-+	 */
-+	if (kbuf->top_down)
-+		return locate_mem_hole_top_down(start, end, kbuf);
 +	else
-+		return locate_mem_hole_bottom_up(start, end, kbuf);
-+}
-+
-+/*
-+ * Helper functions for placing a buffer in a kexec segment. This assumes
-+ * that kexec_mutex is held.
-+ */
-+int kexec_add_buffer(struct kimage *image, char *buffer,
-+		unsigned long bufsz, unsigned long memsz,
-+		unsigned long buf_align, unsigned long buf_min,
-+		unsigned long buf_max, int top_down, unsigned long *load_addr)
-+{
-+
-+	unsigned long nr_segments = image->nr_segments, new_nr_segments;
-+	struct kexec_segment *ksegment;
-+	struct kexec_buf *kbuf;
-+
-+	/* Currently adding segment this way is allowed only in file mode */
-+	if (!image->file_mode)
-+		return -EINVAL;
-+
-+	if (nr_segments >= KEXEC_SEGMENT_MAX)
-+		return -EINVAL;
-+
-+	/*
-+	 * Make sure we are not trying to add buffer after allocating
-+	 * control pages. All segments need to be placed first before
-+	 * any control pages are allocated. As control page allocation
-+	 * logic goes through list of segments to make sure there are
-+	 * no destination overlaps.
-+	 */
-+	WARN_ONCE(!list_empty(&image->control_pages), "Adding kexec buffer"
-+			" after allocating control pages\n");
-+
-+	kbuf = kzalloc(sizeof(struct kexec_buf), GFP_KERNEL);
-+	if (!kbuf)
-+		return -ENOMEM;
-+
-+	kbuf->image = image;
-+	kbuf->buffer = buffer;
-+	kbuf->bufsz = bufsz;
-+	/* Align memsz to next page boundary */
-+	kbuf->memsz = ALIGN(memsz, PAGE_SIZE);
-+
-+	/* Align to atleast page size boundary */
-+	kbuf->buf_align = max(buf_align, PAGE_SIZE);
-+	kbuf->buf_min = buf_min;
-+	kbuf->buf_max = buf_max;
-+	kbuf->top_down = top_down;
-+
-+	/* Walk the RAM ranges and allocate a suitable range for the buffer */
-+	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
-+
-+	kbuf->image = NULL;
-+	kfree(kbuf);
-+
-+	/*
-+	 * If range could be found successfully, it would have incremented
-+	 * the nr_segments value.
-+	 */
-+	new_nr_segments = image->nr_segments;
-+
-+	/* A suitable memory range could not be found for buffer */
-+	if (new_nr_segments == nr_segments)
-+		return -EADDRNOTAVAIL;
-+
-+	/* Found a suitable memory range */
-+
-+	ksegment = &image->segment[new_nr_segments - 1];
-+	*load_addr = ksegment->mem;
-+	return 0;
-+}
-+
-+
- /*
-  * Move into place and start executing a preloaded standalone
-  * executable.  If nothing was preloaded return an error.
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 7078052..7e1e13d 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -25,6 +25,7 @@ cond_syscall(sys_swapon);
- cond_syscall(sys_swapoff);
- cond_syscall(sys_kexec_load);
- cond_syscall(compat_sys_kexec_load);
-+cond_syscall(sys_kexec_file_load);
- cond_syscall(sys_init_module);
- cond_syscall(sys_finit_module);
- cond_syscall(sys_delete_module);
++		ret = kimage_file_normal_alloc(&image, kernel_fd, initrd_fd,
+ 				cmdline_ptr, cmdline_len);
+ 	if (ret)
+ 		goto out;
+@@ -2108,7 +2164,12 @@ int kexec_add_buffer(struct kimage *image, char *buffer,
+ 	kbuf->top_down = top_down;
+ 
+ 	/* Walk the RAM ranges and allocate a suitable range for the buffer */
+-	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
++	if (image->type == KEXEC_TYPE_CRASH)
++		walk_ram_res("Crash kernel", IORESOURCE_MEM | IORESOURCE_BUSY,
++				crashk_res.start, crashk_res.end, kbuf,
++				walk_ram_range_callback);
++	else
++		walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
+ 
+ 	kbuf->image = NULL;
+ 	kfree(kbuf);
 -- 
 1.7.7.6
 
