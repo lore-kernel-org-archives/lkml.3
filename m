@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab3KTLLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 06:11:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab3KTLLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 06:11:15 -0500
-Date: Wed, 20 Nov 2013 13:08:25 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christian Engelmayer <cengelma@gmx.at>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        fweisbec@gmail.com, Paul Turner <pjt@google.com>
-Subject: Re: [PROBLEM] possible divide by 0 in kernel/sched/cputime.c
- scale_stime()
-Message-ID: <20131120120815.GA12860@redhat.com>
-References: <20131116223740.3cd579cb@spike>
- <20131118140224.GA3330@redhat.com>
- <20131118172706.GI3866@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131118172706.GI3866@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752771Ab3KTLOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 06:14:09 -0500
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:54478 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751312Ab3KTLOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 06:14:05 -0500
+From: Vinayak Kale <vkale@apm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: tglx@linutronix.de, will.deacon@arm.com, patches@apm.com, jcm@redhat.com,
+        Vinayak Kale <vkale@apm.com>
+Subject: [PATCH V4 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
+Date: Wed, 20 Nov 2013 16:43:40 +0530
+Message-Id: <1384946021-22100-2-git-send-email-vkale@apm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1384946021-22100-1-git-send-email-vkale@apm.com>
+References: <1384946021-22100-1-git-send-email-vkale@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 06:27:06PM +0100, Peter Zijlstra wrote:
-> The below is a compile tested only attempt to deal with both these
-> problems. Comments?
+This patch adds an accessor function for IRQ_PER_CPU flag.
+The accessor function is useful to dertermine whether an IRQ is percpu or not.
 
-Just two nits as I don't understand vast of the patch.
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+---
+ include/linux/irqdesc.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> +	delta_exec = now - curr->exec_start;
-> +	if ((s64)delta_exec < 0)
->  		return;
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 56fb646..26e2661 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -152,6 +152,14 @@ static inline int irq_balancing_disabled(unsigned int irq)
+ 	return desc->status_use_accessors & IRQ_NO_BALANCING_MASK;
+ }
+ 
++static inline int irq_is_percpu(unsigned int irq)
++{
++	struct irq_desc *desc;
++
++	desc = irq_to_desc(irq);
++	return desc->status_use_accessors & IRQ_PER_CPU;
++}
++
+ static inline void
+ irq_set_lockdep_class(unsigned int irq, struct lock_class_key *class)
+ {
+-- 
+1.7.9.5
 
-Check here should probably use <= and also unlikely() would be
-reasonable. 
-
-> +	schedstat_set(curr->statistics.exec_max,
-> +		      max((u64)delta_exec, curr->statistics.exec_max));
-
-(u64) cast not needed.
-
-Stanislaw
