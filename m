@@ -1,40 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab3KTUuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:50:52 -0500
-Received: from bosmailout03.eigbox.net ([66.96.189.3]:39590 "EHLO
-	bosmailout03.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab3KTUuu convert rfc822-to-8bit (ORCPT
+	id S1755325Ab3KTUvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:51:00 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:48393 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab3KTUuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:50:50 -0500
-X-Greylist: delayed 2427 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 15:50:50 EST
-X-Authority-Analysis: v=2.0 cv=NPBXCjGg c=1 sm=1
- a=REEzMTYCFQvuz9lD38uNxw==:17 a=s-rK9S4SD2gA:10 a=Dyoqhi_TatcA:10
- a=arPR-jPAH-sA:10 a=OpIKwDZBtmgA:10 a=jPJDawAOAc8A:10 a=Kch0xvc2YgsA:10
- a=Cfj4BQAnxiAA:10 a=8-SOdm1zAAAA:8 a=kP-5wYnYG14A:10 a=g_wfRLS8AAAA:20
- a=8H2TTa1clgEKrJpyVa4A:9 a=Ft8UYL4EG9YA:10 a=6Wuv6OrgnYMA:10
- a=ddZT45GQ4RAA:10 a=OOeTIUQ0s2YA:10 a=iO6sFjju6vYA:10
- a=anyYG9rjTBM1sAjEBQ8Cew==:117
-X-EN-OrigOutIP: 10.20.18.11
-X-EN-IMPSID: rwAK1m00M0EKspE01wAKx6
-Reply-To: "fotomaster_s" <vince@vincellc.com>
-To: <linux-kernel@vger.kernel.org>, <hopsgb@nfyfc.org.uk>,
-        <info@germa-company.ru>, <info@catimini-m.ru>, <zayawka@ridolina.ru>
-From: "fotomaster_s" <vince@vincellc.com>
-Subject: =?windows-1251?Q?=C4=EE=E1=F0=EE=E3=EE_=E2=F0=E5=EC=E5=ED?=
-	=?windows-1251?Q?=E8_=F1=F3=F2=EE=EA?=
-Message-ID: <059894210.20131120210955@vincellc.com>
+	Wed, 20 Nov 2013 15:50:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="windows-1251";
-Content-Transfer-Encoding: 8BIT
-X-EN-UserInfo: 76d8f247464e360c25104d52afbc3850:931c98230c6409dcc37fa7e93b490c27
-X-EN-AuthUser: vince@vincellc.com
-X-EN-OrigIP: 95.181.98.85
-X-EN-OrigHost: unknown
-Date: Wed, 20 Nov 2013 15:50:50 -0500
+In-Reply-To: <1384859554-27268-1-git-send-email-geert@linux-m68k.org>
+References: <5283A000.8090007@gmail.com>
+	<1384859554-27268-1-git-send-email-geert@linux-m68k.org>
+Date: Wed, 20 Nov 2013 14:50:53 -0600
+Message-ID: <CAL_Jsq+ri0rVg-urU74cE__tor7WSu_0xexUDzQHc+o=Qo8E3A@mail.gmail.com>
+Subject: Re: [PATCH 1/9] dt: Handle passed/built-in DT selection in early_init_dt_scan()
+From: Rob Herring <robherring2@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://goo.gl/ReMnjO располагаете бытовать «р€чим?
+On Tue, Nov 19, 2013 at 5:12 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Let early_init_dt_scan() fall-back to the built-in DT if no DT was passed,
+> or if it's invalid, so architectures don't have to duplicate this logic.
+>
+> Suggested-by: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+
+Looks good to me. I can take this series if you want to send me a pull
+request. In any case, for the series:
+
+Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+
+Rob
+
+>  drivers/of/fdt.c       |   24 +++++++++++++++++-------
+>  include/linux/of_fdt.h |    1 +
+>  2 files changed, 18 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 2fa024b97c43..a797cd43bc8b 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -868,18 +868,28 @@ void * __init __weak early_init_dt_alloc_memory_arch(u64 size, u64 align)
+>
+>  bool __init early_init_dt_scan(void *params)
+>  {
+> -       if (!params)
+> -               return false;
+> -
+>         /* Setup flat device-tree pointer */
+>         initial_boot_params = params;
+>
+> -       /* check device tree validity */
+> -       if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
+> -               initial_boot_params = NULL;
+> -               return false;
+> +       /* check passed device tree validity */
+> +       if (initial_boot_params &&
+> +           be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+> +               pr_info("FDT at %p\n", initial_boot_params);
+> +               goto found;
+> +       }
+> +
+> +       /* check built-in device tree validity */
+> +       initial_boot_params = &__dtb_start;
+> +       if (__dtb_end != (void *)&__dtb_start &&
+> +           be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+> +               pr_info("Compiled-in FDT at %p\n", initial_boot_params);
+> +               goto found;
+>         }
+>
+> +       initial_boot_params = NULL;
+> +       return false;
+> +
+> +found:
+>         /* Retrieve various information from the /chosen node */
+>         of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
+>
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index aabc49f3e403..6c4a60454854 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -59,6 +59,7 @@ struct boot_param_header {
+>
+>  /* For kernels with a built-in device tree */
+>  extern struct boot_param_header __dtb_start;
+> +extern char __dtb_end[];
+>
+>  #if defined(CONFIG_OF_FLATTREE)
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
