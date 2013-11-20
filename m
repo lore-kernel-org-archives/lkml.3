@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab3KTVQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:16:21 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:65463 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3KTVQR (ORCPT
+	id S1755391Ab3KTVTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:19:37 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:35944 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab3KTVTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:16:17 -0500
-Message-ID: <528D26A4.4010600@linaro.org>
-Date: Wed, 20 Nov 2013 22:16:20 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 20 Nov 2013 16:19:34 -0500
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Stephen Boyd <sboyd@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, will.deacon@arm.com, catalin.marinas@arm.com,
-        olof@lixom.net, sudeep.karkadanagesha@arm.com
-Subject: Re: [PATCH] drivers: clocksource: Hide arm_arch_timer eventstream
- Kconfig on non-ARM
-References: <20131120192100.GA11723@amd.pavel.ucw.cz> <1384977723-32344-1-git-send-email-sboyd@codeaurora.org> <20131120210931.GA1782@amd.pavel.ucw.cz>
-In-Reply-To: <20131120210931.GA1782@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <528A648F.1030007@oracle.com>
+References: <528A648F.1030007@oracle.com>
+Date: Wed, 20 Nov 2013 13:19:33 -0800
+X-Google-Sender-Auth: lad0iCTsU0L4d06IB99AWtjc-AI
+Message-ID: <CA+55aFyF-Za7B=1kVDodbn942hETsWixAHCsh_wBA1b6pnUigQ@mail.gmail.com>
+Subject: Re: [GIT PULL] direct IO support for loop driver
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>, linux-aio@kvack.org,
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 10:09 PM, Pavel Machek wrote:
-> On Wed 2013-11-20 12:02:03, Stephen Boyd wrote:
->> Pavel Machek reports that this config is exposed on x86 where the
->> ARM architected timers aren't even present. Make it depend on the
->> ARM architected timers being selected so that non-ARM builds
->> aren't asked about it.
->>
->> Reported-by: Pavel Machek <pavel@ucw.cz>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On Mon, Nov 18, 2013 at 11:03 AM, Dave Kleikamp
+<dave.kleikamp@oracle.com> wrote:
+> Linus,
 >
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
->
-> Thanks!
+> Please pull the following patches. They add the infrastructure for
+> kernel-initiated direct-io, change the loop driver to perform direct-io,
+> and change swap-over-nfs to use the new infrastructure.
 
-Applied to my tree as a 3.13 fix.
+Quite frankly, I got maybe ten patches into this series, at which
+point I just threw my hands up and said: "This is too ugly to live".
 
-Thanks Stephen and Pavel !
+The naming in fs/iov-iter.c is disgusting. :ii_iov_xyz? WTF?
 
-   -- Daniel
+Random "flag" value for marking things atomic? F*ck me, that's ugly.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+A separate phase for checking addresses instead of just doing it in
+the loop that loops over iovec's? Why? It sure as hell isn't because
+it's more efficient, and it doubly sure as hell isn't because it's
+prettier.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+At that point, I just couldn't take it any more.
 
+I really don't see the point of all this crap. All this for the loop
+driver? If so, it had better at least be prettier than it is.
+
+                      Linus
