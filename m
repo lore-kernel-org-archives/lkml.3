@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3KTOhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 09:37:52 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:56871 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab3KTOhr (ORCPT
+	id S1751967Ab3KTOnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 09:43:10 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:61336 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3KTOnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 09:37:47 -0500
-Date: Tue, 19 Nov 2013 13:27:36 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: input question: ambient light sensor button
-Message-ID: <20131119212736.GA25784@core.coreip.homeip.net>
-References: <201309151553.34000@pali>
- <alpine.LNX.2.00.1311131146410.22940@pobox.suse.cz>
- <20131113162840.GB11657@core.coreip.homeip.net>
- <201311141302.33384@pali>
+	Wed, 20 Nov 2013 09:43:03 -0500
+X-Authority-Analysis: v=2.0 cv=LKjkseq9 c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=h_Sp9wbh10QA:10 a=PkNLigSBFxoA:10 a=S1A5HrydsesA:10 a=N659UExz7-8A:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=FZWhsWj0kowA:10 a=QfKxxUxMAAAA:8 a=b43j7TwRUNC48_B710sA:9 a=pILNOxqGKmIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.78.168.186
+Message-ID: <528CCA74.4040709@ubuntu.com>
+Date: Wed, 20 Nov 2013 09:43:00 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Johan Hedberg <johan.hedberg@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: OOPS: Bluetooth: Store RFCOMM address information in its own
+ socket structure
+References: <528C2A68.1000304@ubuntu.com> <7410329D-F774-418E-8883-5A1171165113@holtmann.org>
+In-Reply-To: <7410329D-F774-418E-8883-5A1171165113@holtmann.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311141302.33384@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 14, 2013 at 01:02:31PM +0100, Pali Rohár wrote:
-> On Wednesday 13 November 2013 17:28:40 Dmitry Torokhov wrote:
-> > On Wed, Nov 13, 2013 at 11:47:18AM +0100, Jiri Kosina wrote:
-> > > On Sun, 15 Sep 2013, Pali Rohár wrote:
-> > > > I do not know where to ask this question, but I think that
-> > > > kernel developers could help me.
-> > > > 
-> > > > I have notebook with one special button on keyboard which
-> > > > is designed for turning ambient light sensor on and off.
-> > > > By default pressing button do nothing (I can turn ambient
-> > > > light sensor on/off via sysfs platform wmi module).
-> > > > Button press is reported by kernel input device AT
-> > > > Translated Set 2 keyboard and reports it as button
-> > > > "touchpad off".
-> > > > 
-> > > > Of course "touchpad off" is incorrect and I'd like to ask
-> > > > which kernel key or button from
-> > > > /usr/include/linux/input.h should be mapped for my
-> > > > ambient light sensor button? Is there already some? And
-> > > > what is strategy for allocating KEY_* and BTN_* numbers?
-> > > 
-> > > This is maintained by Dmitry, so he's the one to answer
-> > > this. I am adding him to CC.
-> > 
-> > I guess we need patch adding
-> > 
-> > 	#define KEY_ALS_TOGGLE	0x230
-> > 
-> > Thanks.
-> 
-> So there is no good key for als yet?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-No, but if you send me a patch adding it I will gladly apply it.
+On 11/20/2013 2:53 AM, Marcel Holtmann wrote:
+> fix for this is already in John’s wireless tree. On a side note,
+> the bisect is correct, but it is not the patch that broke it. It is
+> just the patch that uncovered it.
 
-Thanks.
+Great, thanks!
 
--- 
-Dmitry
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJSjMp0AAoJEJrBOlT6nu75SVcIAIdHUznWh7VjtCEebcF+LzGK
+DGPReiaaRqHJMtd02Oka/3ARxwv9F2y8V/eYK9RIrE+6Wbi3uSOueqgWlz6mZQoo
+cXNceyZngmwBmvQZJyDa3Eza/D/SBXclkkZu5F0J8umlY2y59FWNk2mBLJCYGJbB
+o+SQgP6lwgUsB92PWLUJ4khd/oqsWYb9t5d2TJO1uMKCy2Gzr4y5EjXfoe7xluIw
+UkzxW1TDO3bwBUlzB8u7bmJLt52D3+n2Tmc6YC819R67t/BqKDjbG+/kocEizrL5
+w7QjsU0/HJw8b0E3jx3Y87z0fCdEAL2RibxUUuG5MIPjrFsh4QqDopqZ71+mbc4=
+=G8YC
+-----END PGP SIGNATURE-----
