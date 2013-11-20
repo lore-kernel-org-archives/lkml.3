@@ -1,117 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab3KTJ50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:57:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48718 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab3KTJ5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:57:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,736,1378882800"; 
-   d="scan'208";a="430787429"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2] sysfs: handle duplicate removal attempts in sysfs_remove_group()
-Date: Wed, 20 Nov 2013 11:56:35 +0200
-Message-Id: <1384941395-13505-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <20131120061830.GA16081@mtj.dyndns.org>
-References: <20131120061830.GA16081@mtj.dyndns.org>
+	id S1751668Ab3KTKFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:05:40 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:36328 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KTKFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 05:05:39 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAKA4wht028105, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <maximlevitsky@gmail.com>,
+        <gregkh@linuxfoundation.org>, <oakad@yahoo.com>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
+        Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v2] memstick: rtsx: fix ms card data transfer bug
+Date: Wed, 20 Nov 2013 17:54:53 +0800
+Message-ID: <1384941293-16520-1-git-send-email-micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
-the behavior so that directory removals will be done recursively. This
-means that the sysfs group might already be removed if its parent directory
-has been removed.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-The current code outputs warnings similar to following log snippet when it
-detects that there is no group for the given kobject:
+This patch is used to add support for ms card. The main difference
+between ms card and mspro card is long data transfer mode. mspro card
+can use auto mode DMA for long data transfer, but ms can not use this
+mode, it should use normal mode DMA.
 
- WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
- sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
- Modules linked in:
- CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
- Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
- Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-  0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
-  ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
-  ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
- Call Trace:
-  [<ffffffff817daab1>] dump_stack+0x45/0x56
-  [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
-  [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
-  [<ffffffff811ad319>] ? sysfs_get_dirent_ns+0x49/0x70
-  [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
-  [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
-  [<ffffffff8142a0d0>] device_del+0x40/0x1b0
-  [<ffffffff8142a24d>] device_unregister+0xd/0x20
-  [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
-  [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
-  [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
-  [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
-  [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
-  [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
-  [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
-  [<ffffffff8142a1b1>] device_del+0x121/0x1b0
-  [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
-  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-  [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
-  [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
-  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-  [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
-  [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
-  [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
-  [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
-  [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
-  [<ffffffff8105db29>] worker_thread+0x119/0x390
-  [<ffffffff8105da10>] ? manage_workers.isra.25+0x2a0/0x2a0
-  [<ffffffff81063a5d>] kthread+0xcd/0xf0
-  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
-  [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
+The memstick core add support for ms card, but the original driver will
+make ms card fail at initialize, because it use auto mode DMA. This
+patch can make ms card work properly.
 
-On this particular machine I see ~16 of these message during Thunderbolt
-hot-unplug.
-
-Fix this in similar way that was done for sysfs_remove_one() by checking
-if the parent directory has already been removed and bailing out early.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- fs/sysfs/group.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/memstick/host/rtsx_pci_ms.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 1898a10e38ce..3796afdff40c 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -206,6 +206,15 @@ void sysfs_remove_group(struct kobject *kobj,
- 	struct sysfs_dirent *dir_sd = kobj->sd;
- 	struct sysfs_dirent *sd;
+diff --git a/drivers/memstick/host/rtsx_pci_ms.c b/drivers/memstick/host/rtsx_pci_ms.c
+index 25f8f93..2a635b6 100644
+--- a/drivers/memstick/host/rtsx_pci_ms.c
++++ b/drivers/memstick/host/rtsx_pci_ms.c
+@@ -145,6 +145,8 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 	unsigned int length = sg->length;
+ 	u16 sec_cnt = (u16)(length / 512);
+ 	u8 val, trans_mode, dma_dir;
++	struct memstick_dev *card = host->msh->card;
++	bool pro_card = card->id.type == MEMSTICK_TYPE_PRO;
  
-+	/*
-+	 * Sysfs directories are now removed recursively by
-+	 * sysfs_remove_dir(). This means that the function can be called
-+	 * for a group whose sysfs entry is already removed. In that case
-+	 * all its groups are guaranteed to be already removed.
-+	 */
-+	if (dir_sd->s_flags & SYSFS_FLAG_REMOVED)
-+		return;
-+
- 	if (grp->name) {
- 		sd = sysfs_get_dirent(dir_sd, grp->name);
- 		if (!sd) {
+ 	dev_dbg(ms_dev(host), "%s: tpc = 0x%02x, data_dir = %s, length = %d\n",
+ 			__func__, tpc, (data_dir == READ) ? "READ" : "WRITE",
+@@ -152,19 +154,21 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 
+ 	if (data_dir == READ) {
+ 		dma_dir = DMA_DIR_FROM_CARD;
+-		trans_mode = MS_TM_AUTO_READ;
++		trans_mode = pro_card ? MS_TM_AUTO_READ : MS_TM_NORMAL_READ;
+ 	} else {
+ 		dma_dir = DMA_DIR_TO_CARD;
+-		trans_mode = MS_TM_AUTO_WRITE;
++		trans_mode = pro_card ? MS_TM_AUTO_WRITE : MS_TM_NORMAL_WRITE;
+ 	}
+ 
+ 	rtsx_pci_init_cmd(pcr);
+ 
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TPC, 0xFF, tpc);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_H,
+-			0xFF, (u8)(sec_cnt >> 8));
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_L,
+-			0xFF, (u8)sec_cnt);
++	if (pro_card) {
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_H,
++				0xFF, (u8)(sec_cnt >> 8));
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_L,
++				0xFF, (u8)sec_cnt);
++	}
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANS_CFG, 0xFF, cfg);
+ 
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, IRQSTAT0,
+@@ -192,8 +196,14 @@ static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
+ 	}
+ 
+ 	rtsx_pci_read_register(pcr, MS_TRANS_CFG, &val);
+-	if (val & (MS_INT_CMDNK | MS_INT_ERR | MS_CRC16_ERR | MS_RDY_TIMEOUT))
+-		return -EIO;
++	if (pro_card) {
++		if (val & (MS_INT_CMDNK | MS_INT_ERR |
++				MS_CRC16_ERR | MS_RDY_TIMEOUT))
++			return -EIO;
++	} else {
++		if (val & (MS_CRC16_ERR | MS_RDY_TIMEOUT))
++			return -EIO;
++	}
+ 
+ 	return 0;
+ }
+@@ -462,8 +472,8 @@ static int rtsx_pci_ms_set_param(struct memstick_host *msh,
+ 			clock = 19000000;
+ 			ssc_depth = RTSX_SSC_DEPTH_500K;
+ 
+-			err = rtsx_pci_write_register(pcr, MS_CFG,
+-					0x18, MS_BUS_WIDTH_1);
++			err = rtsx_pci_write_register(pcr, MS_CFG, 0x58,
++					MS_BUS_WIDTH_1 | PUSH_TIME_DEFAULT);
+ 			if (err < 0)
+ 				return err;
+ 		} else if (value == MEMSTICK_PAR4) {
 -- 
-1.8.4.3
+1.7.9.5
 
