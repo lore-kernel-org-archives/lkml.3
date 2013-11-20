@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab3KTUOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:14:24 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44177 "EHLO mga02.intel.com"
+	id S1755155Ab3KTUPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:15:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57180 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754982Ab3KTUOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:14:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438742602"
-Message-ID: <528D180A.5050209@linux.intel.com>
-Date: Wed, 20 Nov 2013 22:14:02 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754809Ab3KTUPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 15:15:40 -0500
+Message-ID: <528D1784.8080704@ti.com>
+Date: Wed, 20 Nov 2013 22:11:48 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-References: <20131120160450.072555619@infradead.org> <20131120162736.691879744@infradead.org> <528CF94E.8020300@linux.intel.com> <20131120181536.GW16796@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131120181536.GW16796@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Boyd <sboyd@codeaurora.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <santosh.shilimkar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME
+ is set
+References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com> <528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com> <528D1327.7080205@codeaurora.org>
+In-Reply-To: <528D1327.7080205@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/11/2013 20:15, Peter Zijlstra wrote:
-> There are options (CONFIG_PREEMPT_RCU) that allow scheduling while
-> holding rcu_read_lock().
+On 11/20/2013 09:53 PM, Stephen Boyd wrote:
+> On 11/20/13 11:06, Grygorii Strashko wrote:
+>> On 11/20/2013 08:42 PM, Stephen Boyd wrote:
+>>> On 11/20/13 05:31, Grygorii Strashko wrote:
+>>>> @@ -230,7 +230,7 @@ int pm_clk_suspend(struct device *dev)
+>>>>    	list_for_each_entry_reverse(ce, &psd->clock_list, node) {
+>>>>    		if (ce->status < PCE_STATUS_ERROR) {
+>>>>    			if (ce->status == PCE_STATUS_ENABLED)
+>>>> -				clk_disable(ce->clk);
+>>>> +				clk_disable_unprepare(ce->clk);
+>>>>    			ce->status = PCE_STATUS_ACQUIRED;
+>>>>    		}
+>>>>    	}
+>>>> @@ -259,7 +259,7 @@ int pm_clk_resume(struct device *dev)
+>>>>    
+>>>>    	list_for_each_entry(ce, &psd->clock_list, node) {
+>>>>    		if (ce->status < PCE_STATUS_ERROR) {
+>>>> -			clk_enable(ce->clk);
+>>>> +			clk_prepare_enable(ce->clk);
+>>>>    			ce->status = PCE_STATUS_ENABLED;
+>>>>    		}
+>>>>    	}
+>>> This is inside a spin_lock_irqsave(). You should be getting scheduling
+>>> while atomic warnings with this change. Are you testing with
+>>> DEBUG_ATOMIC_SLEEP=y?
+>> Ops, thanks. No, It's not tested with DEBUG_ATOMIC_SLEEP and
+>> I agree with you.
+>>
+>> So, I see two option here:
+>> 1) split above loops on two
+>> 2) add calls of clk_prepare()/clk_unprepare() in pm_clk_notify()
+>>
+>> In my opinion option [2] is better.
+>>
 > 
-> Also, preempt_enable() only schedules when its possible to schedule, so
-> calling it when you know you cannot schedule is no issue.
+> Doesn't that mean the clock will always be prepared as long as the
+> device is present? That doesn't sound good. I would like the clocks to
+> be disabled and unprepared as long as the device is suspended.
+
+Yep (
+
 > 
+> What is the lock protecting? The linked list or something more? Can we
+> remove the locks?
 
-I have no issue with you changing busy_loop_us_clock() to use a regular
-preempt enable.
+Looks like it's protecting linked list pm_clock_entry'es.
 
-I think that we still need to only do this if config preempt debug
-is on. When it's off we should use the alternate implementation.
-We are silencing a warning, but this is a performance critical path,
-and we think we know what we are doing.
+> 
+> It looks like even if you just remove the locks here, the PM core is
+> free to call this function with irqs disabled if pm_runtime_irq_safe()
+> has been called on the device. Perhaps runtime PM can only do the
+> clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
+> calls should happen in the system suspend callbacks?
 
-I tried to explain this in the comments. If you think my comments are
-not clear enough, I'm open to suggestions.
+Even don't know what to say :( On Keystone clk_unprepare()/clk_prepare() are NOPs.
+But clk_prepare() has to be called at least once before clk_enable() :((
+So, solution with suspend/resume will not fix current problem :( unfortunately.
 
-Cheers,
-Eliezer
+FYI, Now pm_clk_suspend/pm_clk_resume are called from arch/arm/mach-keystone/pm_domain.c
+(also similar solution is used by Davinci, but issue has not been detected because
+PM runtime hasn't been used by Davinci IP drivers before)
+
+Regards,
+- grygorii
+
+
