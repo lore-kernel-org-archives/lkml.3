@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab3KTVAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:00:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41028 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab3KTVAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:00:36 -0500
-Message-ID: <528D22DB.1020208@zytor.com>
-Date: Wed, 20 Nov 2013 13:00:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755343Ab3KTVEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:04:16 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:60253 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab3KTVEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 16:04:14 -0500
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Add a text_poke syscall
-References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>	<528AF5D7.7000308@zytor.com>	<20131119184959.GE29695@two.firstfloor.org>	<528CE65B.6020300@zytor.com> <87mwkzvvck.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87mwkzvvck.fsf@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1384978295-18292-1-git-send-email-msw@linux.com>
+References: <1384978295-18292-1-git-send-email-msw@linux.com>
+Date: Wed, 20 Nov 2013 13:04:14 -0800
+Message-ID: <CA+aC4ktbsP4zQSP6Urn=25-F4CHWBXSKStis--K-N7wASj4O0A@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] xen/gnttab: leave lazy MMU mode in the case
+ of a m2p override failure
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Matt Wilson <msw@linux.com>
+Cc: xen-devel@lists.xenproject.org, Matt Wilson <msw@amazon.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 09:25 AM, Andi Kleen wrote:
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->>
->> We're talking user space here, which has different requirement (COW,
->> memory protection, ...) which means it is not really the same code.  You
->> can't take a page fault while patching the kernel.
-> 
-> The syscall pins the page, then it calls the kernel code.
-> There are no page faults during patching.
-> 
+On Wed, Nov 20, 2013 at 12:11 PM, Matt Wilson <msw@linux.com> wrote:
+> From: Matt Wilson <msw@amazon.com>
+>
+> Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+> m2p_add/remove_override call fails.
+>
+> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Anthony Liguori <aliguori@amazon.com>
+> Cc: xen-devel@lists.xenproject.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Matt Wilson <msw@amazon.com>
 
-But you don't need to pin anything if you just do it in userspace.
-Again, it is particularly poignant for large batched operations.
+Reviewed-by: Anthony Liguori <aliguori@amazon.com>
 
-	-hpa
+Regards,
 
+Anthony Liguori
+
+> ---
+>  drivers/xen/grant-table.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 62ccf54..0283871 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -930,9 +930,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>                 ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>                                        &kmap_ops[i] : NULL);
+>                 if (ret)
+> -                       return ret;
+> +                       goto out;
+>         }
+>
+> + out:
+>         if (lazy)
+>                 arch_leave_lazy_mmu_mode();
+>
+> @@ -969,9 +970,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>                 ret = m2p_remove_override(pages[i], kmap_ops ?
+>                                        &kmap_ops[i] : NULL);
+>                 if (ret)
+> -                       return ret;
+> +                       goto out;
+>         }
+>
+> + out:
+>         if (lazy)
+>                 arch_leave_lazy_mmu_mode();
+>
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
