@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab3KTIC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:02:26 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:46056 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3KTICY (ORCPT
+	id S1752876Ab3KTIDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:03:15 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:42864 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3KTIDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:02:24 -0500
-Date: Wed, 20 Nov 2013 00:02:20 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-In-Reply-To: <20131119134007.GD20655@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 20 Nov 2013 03:03:12 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <61fdca8bd1502d7319bfaad29583013f0fbec6b4.1380815504.git.viresh.kumar@linaro.org>
+References: <cover.1380815504.git.viresh.kumar@linaro.org>
+	<61fdca8bd1502d7319bfaad29583013f0fbec6b4.1380815504.git.viresh.kumar@linaro.org>
+Date: Wed, 20 Nov 2013 13:33:12 +0530
+Message-ID: <CAKohpo=+W9vTcfRcH=6t0Bbct2+GJYge60ZoQZwYuZ=An6UCtQ@mail.gmail.com>
+Subject: Re: [PATCH V2 13/16] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Nov 2013, Michal Hocko wrote:
+On 3 October 2013 21:26, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Loop for states is currently present on callers side and so is replicated at
+> several places. It would be better to move that inside cpuidle_free_state_kobj()
+> instead.
+>
+> This patch does it.
+>
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
+>  1 file changed, 12 insertions(+), 11 deletions(-)
 
-> > We have basically ended up with 3 options AFAIR:
-> > 	1) allow memcg approach (memcg.oom_control) on the root level
-> >            for both OOM notification and blocking OOM killer and handle
-> >            the situation from the userspace same as we can for other
-> > 	   memcgs.
-> 
-> This looks like a straightforward approach as the similar thing is done
-> on the local (memcg) level. There are several problems though.
-> Running userspace from within OOM context is terribly hard to do
-> right.
+Hi Rafael,
 
-Not sure it's hard if you have per-memcg memory reserves which I've 
-brought up in the past with true and complete kmem accounting.  Even if 
-you don't allocate slab, it guarantees that there will be at least a 
-little excess memory available so that the userspace oom handler isn't oom 
-itself.
+You missed applying this one?
 
-This involves treating processes waiting on memory.oom_control to be 
-treated as a special class so that they are allowed to allocate an 
-additional pre-configured amount of memory.  For non-root memcgs, this 
-would simply be a dummy usage that would be charged to the memcg when the 
-oom notification is registered and actually accessible only by the oom 
-handler itself while memcg->under_oom.  For root memcgs, this would simply 
-be a PF_MEMALLOC type behavior that dips into per-zone memory reserves.
-
-> This is true even in the memcg case and we strongly discurage
-> users from doing that. The global case has nothing like outside of OOM
-> context though. So any hang would blocking the whole machine.
-
-Why would there be a hang if the userspace oom handlers aren't actually 
-oom themselves as described above?
-
-I'd suggest against the other two suggestions because hierarchical 
-per-memcg userspace oom handlers are very powerful and can be useful 
-without actually killing anything at all, and parent oom handlers can 
-signal child oom handlers to free memory in oom conditions (in other 
-words, defer a parent oom condition to a child's oom handler upon 
-notification).  I was planning on writing a liboom library that would lay 
-the foundation for how this was supposed to work and some generic 
-functions that make use of the per-memcg memory reserves.
-
-So my plan for the complete solution was:
-
- - allow userspace notification from the root memcg on system oom 
-   conditions,
-
- - implement a memory.oom_delay_millisecs timeout so that the kernel 
-   eventually intervenes if userspace fails to respond, including for
-   system oom conditions, for whatever reason which would be set to 0
-   if no userspace oom handler is registered for the notification, and
-
- - implement per-memcg reserves as described above so that userspace oom 
-   handlers have access to memory even in oom conditions as an upfront
-   charge and have the ability to free memory as necessary.
-
-We already have the ability to do the actual kill from userspace, both the 
-system oom killer and the memcg oom killer grants access to memory 
-reserves for any process needing to allocate memory if it has a pending 
-SIGKILL which we can send from userspace.
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index e918b6d..ade31a9 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
+>         .release = cpuidle_state_sysfs_release,
+>  };
+>
+> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
+> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
+> +               int count)
+>  {
+> -       kobject_put(&device->kobjs[i]->kobj);
+> -       wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> -       kfree(device->kobjs[i]);
+> -       device->kobjs[i] = NULL;
+> +       int i;
+> +
+> +       for (i = 0; i < count; i++) {
+> +               kobject_put(&device->kobjs[i]->kobj);
+> +               wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> +               kfree(device->kobjs[i]);
+> +               device->kobjs[i] = NULL;
+> +       }
+>  }
+>
+>  /**
+> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>         return 0;
+>
+>  error_state:
+> -       for (i = i - 1; i >= 0; i--)
+> -               cpuidle_free_state_kobj(device, i);
+> +       cpuidle_free_state_kobj(device, i);
+>         return ret;
+>  }
+>
+> @@ -430,10 +434,7 @@ error_state:
+>   */
+>  static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
+>  {
+> -       int i;
+> -
+> -       for (i = 0; i < device->state_count; i++)
+> -               cpuidle_free_state_kobj(device, i);
+> +       cpuidle_free_state_kobj(device, device->state_count);
+>  }
+>
+>  #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
+> --
+> 1.7.12.rc2.18.g61b472e
+>
