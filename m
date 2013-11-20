@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab3KTNgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:36:01 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37539 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3KTNf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:35:59 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>, <santosh.shilimkar@ti.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME is set
-Date: Wed, 20 Nov 2013 15:31:47 +0200
-Message-ID: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753800Ab3KTNhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:37:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22437 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751527Ab3KTNhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 08:37:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="438508972"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Wagin <avagin@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] x86, mm: do not leak page->ptl for pmd page tables
+Date: Wed, 20 Nov 2013 15:36:58 +0200
+Message-Id: <1384954618-17783-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning is shown and clk_enable() failed on Keystone platform
-if CONFIG_PM_RUNTIME is set and Runtime PM is enabled for Davinci gpio driver:
-[    0.564486] ------------[ cut here ]------------
-[    0.569221] WARNING: CPU: 0 PID: 1 at drivers/clk/clk.c:883__clk_enable+0x8c/0x98()
-[    0.577070] Modules linked in:
-[    0.580231] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-10116-g11d59938-dirty #259
-[    0.588368] [<c0014d34>] (unwind_backtrace+0x0/0xf8) from [<c0011eb8>] (show_stack+0x10/0x14)
-[    0.597018] [<c0011eb8>] (show_stack+0x10/0x14) from [<c03c5df0>] (dump_stack+0x64/0xa4)
-[    0.605235] [<c03c5df0>] (dump_stack+0x64/0xa4) from [<c00216b8>] (warn_slowpath_common+0x68/0x88)
-[    0.614315] [<c00216b8>] (warn_slowpath_common+0x68/0x88) from [<c00216f4>] (warn_slowpath_null+0x1c/0x24)
-[    0.624092] [<c00216f4>] (warn_slowpath_null+0x1c/0x24) from [<c0287a60>] (__clk_enable+0x8c/0x98)
-[    0.633173] [<c0287a60>] (__clk_enable+0x8c/0x98) from [<c0287c54>] (clk_enable+0x18/0x2c)
-[    0.641556] [<c0287c54>] (clk_enable+0x18/0x2c) from [<c023677c>] (pm_clk_resume+0x5c/0x80)
-[    0.650025] [<c023677c>] (pm_clk_resume+0x5c/0x80) from [<c001eba8>] (keystone_pm_runtime_resume+0xc/0x18)
-[    0.659800] [<c001eba8>] (keystone_pm_runtime_resume+0xc/0x18) from [<c02344e4>] (__rpm_callback+0x34/0x70)
-[    0.669662] [<c02344e4>] (__rpm_callback+0x34/0x70) from [<c0234548>] (rpm_callback+0x28/0x88)
-[    0.678390] [<c0234548>] (rpm_callback+0x28/0x88) from [<c023590c>] (rpm_resume+0x3c8/0x684)
-[    0.686942] [<c023590c>] (rpm_resume+0x3c8/0x684) from [<c0235e40>] (__pm_runtime_resume+0x4c/0x64)
-[    0.696111] [<c0235e40>] (__pm_runtime_resume+0x4c/0x64) from [<c0204798>] (davinci_gpio_probe+0x20c/0x5ac)
-[    0.705983] [<c0204798>] (davinci_gpio_probe+0x20c/0x5ac) from [<c02310cc>] (platform_drv_probe+0x18/0x48)
-[    0.715758] [<c02310cc>] (platform_drv_probe+0x18/0x48) from [<c022fa0c>] (driver_probe_device+0x80/0x21c)
-[    0.725532] [<c022fa0c>] (driver_probe_device+0x80/0x21c) from [<c022fc34>] (__driver_attach+0x8c/0x90)
-[    0.735044] [<c022fc34>] (__driver_attach+0x8c/0x90) from [<c022e35c>] (bus_for_each_dev+0x60/0x94)
-[    0.744207] [<c022e35c>] (bus_for_each_dev+0x60/0x94) from [<c022f24c>] (bus_add_driver+0xdc/0x1d0)
-[    0.753371] [<c022f24c>] (bus_add_driver+0xdc/0x1d0) from [<c023002c>] (driver_register+0x78/0xf4)
-[    0.762449] [<c023002c>] (driver_register+0x78/0xf4) from [<c00088fc>] (do_one_initcall+0xec/0x148)
-[    0.771616] [<c00088fc>] (do_one_initcall+0xec/0x148) from [<c0538c0c>] (kernel_init_freeable+0xfc/0x1c8)
-[    0.781303] [<c0538c0c>] (kernel_init_freeable+0xfc/0x1c8) from [<c03c19d0>] (kernel_init+0x8/0x110)
-[    0.790553] [<c03c19d0>] (kernel_init+0x8/0x110) from [<c000e318>] (ret_from_fork+0x14/0x3c)
-[    0.799117] ---[ end trace 6588a0ec7fbc847a ]---
+There are two code paths how page with pmd page table can be freed:
+pmd_free() and pmd_free_tlb().
 
-This happens because the clk_enable() is called without clk_prepare()
-from pm_clk_resume().
+I've missed the second one and didn't add page table destructor call
+there. It leads to leak of page->ptl for pmd page tables, if dynamically
+allocated page->ptl is in use.
 
-Hence, switch to use clk_prepare_enable()/clk_disable_unprepare()
-instead of clk_enable()/clk_disable() in case if CONFIG_PM_RUNTIME is
-set.
-Actually, This is remainder fix of the earlier commit c122f27e1c
-"base: power - use clk_prepare_enable and clk_prepare_disable".
+The patch adds the missed destructor and modifies documentation
+accordingly.
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-and-Tested-by: Andrey Vagin <avagin@openvz.org>
 ---
- drivers/base/power/clock_ops.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/vm/split_page_table_lock | 6 +++---
+ arch/x86/mm/pgtable.c                  | 4 +++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index 9d8fde7..60d389a 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -230,7 +230,7 @@ int pm_clk_suspend(struct device *dev)
- 	list_for_each_entry_reverse(ce, &psd->clock_list, node) {
- 		if (ce->status < PCE_STATUS_ERROR) {
- 			if (ce->status == PCE_STATUS_ENABLED)
--				clk_disable(ce->clk);
-+				clk_disable_unprepare(ce->clk);
- 			ce->status = PCE_STATUS_ACQUIRED;
- 		}
- 	}
-@@ -259,7 +259,7 @@ int pm_clk_resume(struct device *dev)
+diff --git a/Documentation/vm/split_page_table_lock b/Documentation/vm/split_page_table_lock
+index 7521d367f21d..6dea4fd5c961 100644
+--- a/Documentation/vm/split_page_table_lock
++++ b/Documentation/vm/split_page_table_lock
+@@ -63,9 +63,9 @@ levels.
+ PMD split lock enabling requires pgtable_pmd_page_ctor() call on PMD table
+ allocation and pgtable_pmd_page_dtor() on freeing.
  
- 	list_for_each_entry(ce, &psd->clock_list, node) {
- 		if (ce->status < PCE_STATUS_ERROR) {
--			clk_enable(ce->clk);
-+			clk_prepare_enable(ce->clk);
- 			ce->status = PCE_STATUS_ENABLED;
- 		}
- 	}
+-Allocation usually happens in pmd_alloc_one(), freeing in pmd_free(), but
+-make sure you cover all PMD table allocation / freeing paths: i.e X86_PAE
+-preallocate few PMDs on pgd_alloc().
++Allocation usually happens in pmd_alloc_one(), freeing in pmd_free() and
++pmd_free_tlb(), but make sure you cover all PMD table allocation / freeing
++paths: i.e X86_PAE preallocate few PMDs on pgd_alloc().
+ 
+ With everything in place you can set CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK.
+ 
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index a7cccb6d7fec..7be5809754cf 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -61,6 +61,7 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
+ #if PAGETABLE_LEVELS > 2
+ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ {
++	struct page *page = virt_to_page(pmd);
+ 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
+ 	/*
+ 	 * NOTE! For PAE, any changes to the top page-directory-pointer-table
+@@ -69,7 +70,8 @@ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ #ifdef CONFIG_X86_PAE
+ 	tlb->need_flush_all = 1;
+ #endif
+-	tlb_remove_page(tlb, virt_to_page(pmd));
++	pgtable_pmd_page_dtor(page);
++	tlb_remove_page(tlb, page);
+ }
+ 
+ #if PAGETABLE_LEVELS > 3
 -- 
-1.7.9.5
+1.8.4.3
 
