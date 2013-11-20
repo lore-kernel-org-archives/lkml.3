@@ -1,194 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab3KTR04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:26:56 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:55131 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3KTR0y convert rfc822-to-8bit (ORCPT
+	id S1754637Ab3KTR2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:28:54 -0500
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:34456 "HELO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754301Ab3KTR2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:26:54 -0500
-Date: Wed, 20 Nov 2013 18:26:49 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: sclark46@earthlink.net
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 driver gpu hung kernel 3.11
-Message-ID: <20131120182649.1f2bd411@neptune.home>
-In-Reply-To: <528B5581.8040006@earthlink.net>
-References: <52896862.5000300@earthlink.net>
-	<20131118184107.67d6c875@neptune.home>
-	<528B5581.8040006@earthlink.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Nov 2013 12:28:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <528CB5AC.5080007@arm.com>
+References: <1384946021-22100-1-git-send-email-vkale@apm.com>
+	<1384946021-22100-3-git-send-email-vkale@apm.com>
+	<528CB5AC.5080007@arm.com>
+Date: Wed, 20 Nov 2013 22:58:50 +0530
+Message-ID: <CAPrCYkcu7wVjoV5Q=pd55Zn8+PR30n3WJ8F6t=qV4BMLhZFcxA@mail.gmail.com>
+Subject: Re: [PATCH V4 2/2] arm64: perf: add support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, Tuan Phan <tphan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Marc,
 
-On Tue, 19 November 2013 Stephen Clark <sclark46@earthlink.net> wrote:
-> Thanks for the response. I have subscribed to the intel-gfx list. I didn't post 
-> the error_state file since it huge.
+On Wed, Nov 20, 2013 at 6:44 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> [dropped patches@apm.com]
+>
+> Vinayak,
+>
+> Please keep reviewers on CC, as it makes easier to track the changes.
+Sure, will do.
+>
+> On 20/11/13 11:13, Vinayak Kale wrote:
+>> Add support for irq registration when pmu interrupt is percpu.
+>>
+>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>> Signed-off-by: Tuan Phan <tphan@apm.com>
+>> ---
+>>  arch/arm64/kernel/perf_event.c |  108 ++++++++++++++++++++++++++++++----------
+>>  1 file changed, 81 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+>> index cea1594..de12ba8 100644
+>> --- a/arch/arm64/kernel/perf_event.c
+>> +++ b/arch/arm64/kernel/perf_event.c
+>> @@ -22,6 +22,7 @@
+>>
+>>  #include <linux/bitmap.h>
+>>  #include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/export.h>
+>>  #include <linux/perf_event.h>
+>> @@ -363,22 +364,55 @@ validate_group(struct perf_event *event)
+>>  }
+>>
+>>  static void
+>> +armpmu_disable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
+>> +     disable_percpu_irq(irq);
+>> +}
+>> +
+>> +static void
+>>  armpmu_release_hardware(struct arm_pmu *armpmu)
+>>  {
+>>       int i, irq, irqs;
+>>       struct platform_device *pmu_device = armpmu->plat_device;
+>>
+>>       irqs = min(pmu_device->num_resources, num_possible_cpus());
+>> +     if (irqs < 1)
+>> +             return;
+>>
+>> -     for (i = 0; i < irqs; ++i) {
+>> -             if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> -                     continue;
+>> -             irq = platform_get_irq(pmu_device, i);
+>> -             if (irq >= 0)
+>> -                     free_irq(irq, armpmu);
+>> +     irq = platform_get_irq(pmu_device, 0);
+>> +     if (irq < 0)
+>
+> So I'm going to sound like a stuck record: irq == 0 is not a valid IRQ
+> number, full stop. This is how we express the fact that there is no IRQ.
+>
+> If you're touching that code, you might as well fix this buglet.
+In Will's existing code, I think he was taking care of 'no IRQ' case
+by comparing pmu_device->num_resources. Do you think this is not
+enough and we must enforce the check after each platform_get_irq()?
+Existing driver code snippet as below for quick reference.
 
-It's best to submit a but report on bugs.freedesktop.org and attach the
-error_state there (compressed if needed) - repeating the information you
-provided in this thread.
+[snip]
+static int
+armpmu_reserve_hardware(struct arm_pmu *armpmu)
+{
+        int i, err, irq, irqs;
+        struct platform_device *pmu_device = armpmu->plat_device;
 
-Without the error_state chances of getting some developer look at it and
-have a chance of understanding the cause are small. If they can reproduce
-it's a bonus.
+        if (!pmu_device) {
+                pr_err("no PMU device registered\n");
+                return -ENODEV;
+        }
 
-Once you have done so, replying with a reference to the bug might help
-people who find your report in mailing list archives.
+        irqs = min(pmu_device->num_resources, num_possible_cpus());
+        if (irqs < 1) {
+                pr_err("no irqs for PMUs defined\n");
+                return -ENODEV;
+        }
+        for (i = 0; i < irqs; ++i) {
+                err = 0;
+                irq = platform_get_irq(pmu_device, i);
+                if (irq < 0)
+                         continue;
 
-Bruno
-
-> I was trying to play Myst Online using wine-1.3.24. I get started and start 
-> moving my avatar fairly
-> quickly I get the error.
-> 
-> I have built the latest X, mesa etc from the git repo and loaded the latest 
-> kernel but still have the problem,
-> though now my screen doesn't lose horizontal sync like it used to before I 
-> uppgraded X etc.
-> 
-> Below is a lspci of my laptop.
-> 
-> 00:00.0 Host bridge: Intel Corporation Mobile 945GM/PM/GMS, 943/940GML and 945GT 
-> Express Memory Controller Hub (rev 03)
-> 00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 
-> 943/940GML Express Integrated Graphics Controller (rev 03)
-> 00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML 
-> Express Integrated Graphics Controller (rev 03)
-> 00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio 
-> Controller (rev 02)
-> 00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 02)
-> 00:1c.1 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 2 (rev 02)
-> 00:1c.2 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 3 (rev 02)
-> 00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-> #1 (rev 02)
-> 00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-> #2 (rev 02)
-> 00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-> #3 (rev 02)
-> 00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller 
-> #4 (rev 02)
-> 00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller 
-> (rev 02)
-> 00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e2)
-> 00:1f.0 ISA bridge: Intel Corporation 82801GBM (ICH7-M) LPC Interface Bridge 
-> (rev 02)
-> 00:1f.2 IDE interface: Intel Corporation 82801GBM/GHM (ICH7 Family) SATA IDE 
-> Controller (rev 02)
-> 00:1f.3 SMBus: Intel Corporation N10/ICH 7 Family SMBus Controller (rev 02)
-> 03:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] 
-> Network Connection (rev 02)
-> 05:01.0 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller
-> 05:01.1 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro Host 
-> Adapter (rev 19)
-> 05:01.2 System peripheral: Ricoh Co Ltd R5C843 MMC Host Controller (rev 01)
-> 05:01.3 System peripheral: Ricoh Co Ltd R5C592 Memory Stick Bus Host Adapter 
-> (rev 0a)
-> 05:07.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC 
-> Gigabit Ethernet (rev 10)
-> 
-> 
-> On 11/18/2013 12:41 PM, Bruno Prémont wrote:
-> > Hi Stephen,
-> >
-> > You may want to CC intel-gfx@lists.freedesktop.org  for i915 issues (even
-> > if you are not subscribed and you mail will wait for a moderator to let
-> > it go through).
-> >
-> > In case of intel GPU hangs you should at least include
-> > /sys/kernel/debug/dri/0/i915_error_state, probably submitting as a
-> > bug report on bugs.freedesktop.org due to its size.
-> >
-> > If you have any indication on what triggers the hang, please add!
-> >
-> > Bruno
-> >
-> > On Sun, 17 November 2013 Stephen Clark<sclark46@earthlink.net>  wrote:
-> >> Hi List,
-> >>
-> >> I am getting this in kernel 3.11 x86_64
-> >>
-> >> Nov 17 18:56:19 joker4 kernel: [drm:i915_hangcheck_elapsed] *ERROR* stuck on
-> >> render ring
-> >> Nov 17 18:56:19 joker4 kernel: [drm] capturing error event; look for more
-> >> information in /sys/kernel/debug/dri/0/i915_error_state
-> >> Nov 17 18:56:19 joker4 kernel: swapper/1: page allocation failure: order:6,
-> >> mode:0x200020
-> >> Nov 17 18:56:19 joker4 kernel: CPU: 1 PID: 0 Comm: swapper/1 Not tainted
-> >> 3.11.6-1.el6.elrepo.x86_64 #1
-> >> Nov 17 18:56:19 joker4 kernel: Hardware name: To Be Filled By O.E.M. Z96F/Z96F,
-> >> BIOS 080012  08/29/2006
-> >> Nov 17 18:56:19 joker4 kernel: 0000000000000006 ffff8800b73038e0
-> >> ffffffff815f7f89 0000000000000010
-> >> Nov 17 18:56:19 joker4 kernel: 0000000000200020 ffff8800b7303970
-> >> ffffffff8114243d ffff8800b778ab28
-> >> Nov 17 18:56:19 joker4 kernel: 0000003000000001 ffff8800b7789000
-> >> 0000000000000000 0000000600000002
-> >> Nov 17 18:56:19 joker4 kernel: Call Trace:
-> >> Nov 17 18:56:19 joker4 kernel:<IRQ>   [<ffffffff815f7f89>] dump_stack+0x49/0x60
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114243d>] warn_alloc_failed+0xfd/0x160
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8114e98c>] ? wakeup_kswapd+0x10c/0x140
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff811455ae>]
-> >> __alloc_pages_slowpath+0x4ae/0x7c0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81142d9d>] ?
-> >> get_page_from_freelist+0x2dd/0x710
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81145bce>]
-> >> __alloc_pages_nodemask+0x30e/0x330
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118c437>] kmem_getpages+0x67/0x1e0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dea9>] fallback_alloc+0x189/0x270
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118dc55>] ____cache_alloc_node+0x95/0x160
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8118e9b7>] __kmalloc+0x177/0x2c0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>] ?
-> >> i915_capture_error_state+0x379/0x720 [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044a29>]
-> >> i915_capture_error_state+0x379/0x720 [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044dfb>] i915_handle_error+0x2b/0x80
-> >> [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa004511e>]
-> >> i915_hangcheck_elapsed+0x2ce/0x350 [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8101b019>] ? sched_clock+0x9/0x10
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8109d905>] ? sched_clock_local+0x25/0x90
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff814711f0>] ? usb_add_hcd+0x3d0/0x3d0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
-> >> i915_handle_error+0x80/0x80 [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81073b19>] call_timer_fn+0x49/0x120
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8107470b>] run_timer_softirq+0x23b/0x2a0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff812b2660>] ? timerqueue_add+0x60/0xb0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffffa0044e50>] ?
-> >> i915_handle_error+0x80/0x80 [i915]
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106c147>] __do_softirq+0xf7/0x270
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8108e0c3>] ? hrtimer_interrupt+0x163/0x260
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81606adc>] call_softirq+0x1c/0x30
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81015885>] do_softirq+0x65/0xa0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8106be75>] irq_exit+0xc5/0xd0
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff8160757a>]
-> >> smp_apic_timer_interrupt+0x4a/0x5a
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff81605e1d>] apic_timer_interrupt+0x6d/0x80
-> >> Nov 17 18:56:19 joker4 kernel:<EOI>   [<ffffffff810bb1aa>] ?
-> >> cpu_idle_loop+0x10a/0x210
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb17c>] ? cpu_idle_loop+0xdc/0x210
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff810bb320>] cpu_startup_entry+0x70/0x80
-> >> Nov 17 18:56:19 joker4 kernel: [<ffffffff810437bd>] start_secondary+0xcd/0xd0
-> >> Nov 17 18:56:19 joker4 kernel: SLAB: Unable to allocate memory on node 0 (gfp=0x20)
-> >> Nov 17 18:56:19 joker4 kernel:  cache: kmalloc-262144, object size: 262144, order: 6
-> >> Nov 17 18:56:19 joker4 kernel:  node 0: slabs: 0/0, objs: 0/0, free: 0
-> >> Nov 17 18:56:19 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
-> >> hung inside bo (0x85c000 ctx 0) at 0x85c97c
-> >>
-> >> is this fixed in 3.12?
-> >>
-> >> Just checked get the same thing in 3.12 but no trace back.
-> >>
-> >>
-> >> Nov 17 19:41:33 joker4 kernel: [drm] stuck on render ring
-> >> Nov 17 19:41:33 joker4 kernel: [drm] capturing error event; look for more
-> >> information in /sys/class/drm/card0/error
-> >> Nov 17 19:41:33 joker4 kernel: [drm:i915_set_reset_status] *ERROR* render ring
-> >> hung inside bo (0x7214000 ctx 0) at 0x72142e0
-> >> Nov 17 19:41:33 joker4 kernel: [drm:i915_reset] *ERROR* Failed to reset chip.
+[snip]
+>
+>> +             return;
+>> +
+>> +     if (irq_is_percpu(irq)) {
+>> +             on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
+>> +             free_percpu_irq(irq, &cpu_hw_events);
+>> +     } else {
+>> +             for (i = 0; i < irqs; ++i) {
+>> +                     if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> +                             continue;
+>> +                     irq = platform_get_irq(pmu_device, i);
+>> +                     if (irq >= 0)
+>
+> Same here.
+>
+>> +                             free_irq(irq, armpmu);
+>> +             }
+>>       }
+>>  }
+>>
+>> +static void
+>> +armpmu_enable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     enable_percpu_irq(irq, 0);
+>> +     cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
+>> +}
+>> +
+>>  static int
+>>  armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>>  {
+>> @@ -396,34 +430,54 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>>               return -ENODEV;
+>>       }
+>>
+>> -     for (i = 0; i < irqs; ++i) {
+>> -             err = 0;
+>> -             irq = platform_get_irq(pmu_device, i);
+>> -             if (irq < 0)
+>> -                     continue;
+>> +     irq = platform_get_irq(pmu_device, 0);
+>> +     if (irq < 0) {
+>
+> And here.
+>
+>> +             pr_err("failed to get an irq for PMU device\n");
+>> +             return -ENODEV;
+>> +     }
+>>
+>> -             /*
+>> -              * If we have a single PMU interrupt that we can't shift,
+>> -              * assume that we're running on a uniprocessor machine and
+>> -              * continue. Otherwise, continue without this interrupt.
+>> -              */
+>> -             if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+>> -                     pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+>> -                                 irq, i);
+>> -                     continue;
+>> -             }
+>> +     if (irq_is_percpu(irq)) {
+>> +             err = request_percpu_irq(irq, armpmu->handle_irq,
+>> +                             "arm-pmu", &cpu_hw_events);
+>>
+>> -             err = request_irq(irq, armpmu->handle_irq,
+>> -                               IRQF_NOBALANCING,
+>> -                               "arm-pmu", armpmu);
+>>               if (err) {
+>> -                     pr_err("unable to request IRQ%d for ARM PMU counters\n",
+>> -                             irq);
+>> +                     pr_err("unable to request percpu IRQ%d for ARM PMU counters\n",
+>> +                                     irq);
+>>                       armpmu_release_hardware(armpmu);
+>>                       return err;
+>>               }
+>>
+>> -             cpumask_set_cpu(i, &armpmu->active_irqs);
+>> +             on_each_cpu(armpmu_enable_percpu_irq, armpmu, 1);
+>> +     } else {
+>> +             for (i = 0; i < irqs; ++i) {
+>> +                     err = 0;
+>> +                     irq = platform_get_irq(pmu_device, i);
+>> +                     if (irq < 0)
+>
+> And here.
+>
+>> +                             continue;
+>> +
+>> +                     /*
+>> +                      * If we have a single PMU interrupt that we can't shift,
+>> +                      * assume that we're running on a uniprocessor machine and
+>> +                      * continue. Otherwise, continue without this interrupt.
+>> +                      */
+>> +                     if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+>> +                             pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+>> +                                             irq, i);
+>> +                             continue;
+>> +                     }
+>> +
+>> +                     err = request_irq(irq, armpmu->handle_irq,
+>> +                                     IRQF_NOBALANCING,
+>> +                                     "arm-pmu", armpmu);
+>> +                     if (err) {
+>> +                             pr_err("unable to request IRQ%d for ARM PMU counters\n",
+>> +                                             irq);
+>> +                             armpmu_release_hardware(armpmu);
+>> +                             return err;
+>> +                     }
+>> +
+>> +                     cpumask_set_cpu(i, &armpmu->active_irqs);
+>> +             }
+>>       }
+>>
+>>       return 0;
+>>
+>
+>         M.
+> --
+> Jazz is not dead. It just smells funny...
+>
