@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3KTJ0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:26:51 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40907 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3KTJ0r convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 20 Nov 2013 04:26:47 -0500
-Message-Id: <528C8E620200007800104EA1@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 20 Nov 2013 09:26:42 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Bob Liu" <bob.liu@oracle.com>
-Cc: <ian.campbell@citrix.com>, "Bob Liu" <lliubbo@gmail.com>,
-        <xen-devel@lists.xenproject.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <keir@xen.org>
-Subject: Re: [PATCH] xen: tmem: rmove useless parameters
-References: <1384937575-25168-1-git-send-email-bob.liu@oracle.com>
- <528C8A980200007800104E69@nat28.tlf.novell.com>
- <528C7F4B.3050802@oracle.com>
-In-Reply-To: <528C7F4B.3050802@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752577Ab3KTJ1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:27:23 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38934 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab3KTJ1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 04:27:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131119183714.GA26216@kroah.com>
+References: <1384867428-8395-1-git-send-email-bergwolf@gmail.com>
+ <1384867428-8395-5-git-send-email-bergwolf@gmail.com> <20131119183714.GA26216@kroah.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Wed, 20 Nov 2013 17:26:57 +0800
+Message-ID: <CA+a=Yy531J9LZv06P2aAHPSw_0jtNY+wdNExpLVOW9ee+8Ja1A@mail.gmail.com>
+Subject: Re: [PATCH 4/9] staging/lustre/lnet: Fix assert on empty group in
+ selftest module
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amir Shehata <amir.shehata@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.11.13 at 10:22, Bob Liu <bob.liu@oracle.com> wrote:
-> On 11/20/2013 05:10 PM, Jan Beulich wrote:
->>>>> On 20.11.13 at 09:52, Bob Liu <lliubbo@gmail.com> wrote:
->>> @@ -100,9 +100,6 @@ static inline int xen_tmem_op(u32 tmem_cmd, u32 
-> tmem_pool, struct tmem_oid oid,
->>>  	op.u.gen.oid[1] = oid.oid[1];
->>>  	op.u.gen.oid[2] = oid.oid[2];
->>>  	op.u.gen.index = index;
->>> -	op.u.gen.tmem_offset = tmem_offset;
->>> -	op.u.gen.pfn_offset = pfn_offset;
->>> -	op.u.gen.len = len;
->> 
->> But you can't leave these fields uninitialized.
->> 
-> 
-> Oh, yes.
-> And I should remove those members totally from struct tmem_op {}
+On Wed, Nov 20, 2013 at 2:37 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Nov 19, 2013 at 09:23:43PM +0800, Peng Tao wrote:
+>> From: Amir Shehata <amir.shehata@intel.com>
+>>
+>> The core of the issue is that the selftest module doesn't sanitize its
+>> own API, but it depends on lst utility to do such checks.  As a result
+>> this issue manifests itself in this particular LU through an assert
+>> on an empty group.  If the NID is misspelled then an empty group is
+>> added.  An error output is provided, but if that's never checked in a
+>> batch script, as is the case with this issue, then the script will try
+>> to add an empty group to a test to run in a batch, and that will cause
+>> an assert
+>>
+>> The fix is two fold.  Ensure that lst utility checks that a group is
+>> added with at least one node.  If not the group is subsequently
+>> deleted.  And the add_test command would fail, since the group no
+>> longer exists.
+>>
+>> The second fix is to ensure that the kernel module itself sanitizes
+>> its own API in this particular case, so that if a different utility is
+>> used other than lst to communicate with the selftest kernel module
+>> then this error would be caught.  This fix looks up the batch and the
+>> groups, src and dst, in the ioctl handle and sanitizes that input at
+>> this point.  If the group looked up either doesn't exist or doesn't
+>> have at least one ACTIVE node, then the command fails.
+>>
+>> NOTE:there are many other cases in the code where the selftest kernel
+>> module doesn't check for sanity of the input, but depends totally on
+>> the lst module to do such checks.  Particularly around length of
+>> strings passed in.  Thus it is possible to crash the selftest module
+>> if someone tries to create another userspace app to communicate with
+>> the selftest kernel module without ensuring sanity of the params sent
+>> to the kernel module.  In effect, it's always assumed that lst is the
+>> front end for selftest and no other front end is to be used.
+>
+> This patch adds build warnings to the kernel build process, so I can't
+> apply it, sorry.  Please fix that up before sending it again.
+>
+Hi Greg,
 
-That's an established ABI - you can't just remove members there.
+Can you please be explicit about what build warning you saw?
 
-Jan
+I tried to reproduce it with gcc version 4.1.2 and 4.6.3 on my
+machine, but didn't see any build warnings with this patch applied.
 
+Thanks,
+Tao
