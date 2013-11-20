@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3KTT3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:29:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:29189 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab3KTT3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:29:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,738,1378882800"; 
-   d="scan'208";a="431049910"
-Date: Wed, 20 Nov 2013 11:29:35 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 7/7] preempt: Take away preempt_enable_no_resched() from
- modules
-Message-ID: <20131120112935.6be596e4@ultegra>
-In-Reply-To: <20131120191841.GY16796@laptop.programming.kicks-ass.net>
-References: <20131120160450.072555619@infradead.org>
-	<20131120162736.760865926@infradead.org>
-	<20131120105457.04f6e51e@ultegra>
-	<20131120191841.GY16796@laptop.programming.kicks-ass.net>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754906Ab3KTTcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:32:53 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:33792 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431Ab3KTTcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 14:32:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131120.135413.920731121262719289.davem@davemloft.net>
+References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
+	<20131120.004026.2013972041095203460.davem@davemloft.net>
+	<CANEJEGtBmvFNcFzOW9ZnOFd=ZMnz82ajcN52YqW3+n0+=rhxBA@mail.gmail.com>
+	<20131120.135413.920731121262719289.davem@davemloft.net>
+Date: Wed, 20 Nov 2013 11:32:50 -0800
+Message-ID: <CANEJEGtXOjxj+85QVfWFGH6WuxxCz6uAfEuUo7bv9YEwh_8OAw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B under ChromeOS
+From: Grant Grundler <grundler@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: Freddy Xin <freddy@asix.com.tw>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        davemloft@davemloft.net,
+        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>, Daniel_ASIX <daniel@asix.com.tw>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013 20:18:41 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Wed, Nov 20, 2013 at 10:54 AM, David Miller <davem@davemloft.net> wrote:
+> From: Grant Grundler <grundler@google.com>
+> Date: Wed, 20 Nov 2013 09:42:42 -0800
+>
+>> While this patch raises a new issue, can you apply this patch anyway
+>> since in most cases (default settings) it improves "the user
+>> experience" for most users?
+>
+> I'm not applying a patch which knowingly is not implemented correctly.
 
-> I think the below will cure both -- will fold in the proper patches
-> tomorrow, need to get away from the computer noaw.
-[Jacob Pan] looks good to me. one more thing for tomorrow :)
+Ok - fair enough. I'll figure out what needs to be done to
+save/restore phy values.
 
+Seems like this should be part of usbnet_resume code based on whether
+the driver provides mdio_write hook (most USBNET drivers do).
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index d3283d3..750e853 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -114,6 +114,7 @@ void __local_bh_disable_ip(unsigned long ip,
-unsigned int cnt) if (preempt_count() == cnt)
-                trace_preempt_off(CALLER_ADDR0,
-get_parent_ip(CALLER_ADDR1)); }
-+EXPORT_SYMBOL_GPL(__local_bh_disable_ip);
- #endif /* CONFIG_TRACE_IRQFLAGS */
- 
- static void __local_bh_enable(unsigned int cnt)
-@@ -169,7 +170,7 @@ void __local_bh_enable_ip(unsigned long ip,
-unsigned int cnt) #endif
-        preempt_check_resched();
- }
--
-+EXPORT_SYMBOL_GPL(__local_bh_enable_ip);
- /*
-  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
-  * but break the loop if need_resched() is set or after 2 ms.
+thanks,
+grant
