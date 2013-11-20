@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3KTIyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:54:16 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750969Ab3KTIyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:54:14 -0500
-From: Richard Weinberger <richard@nod.at>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matt@console-pimps.org, matt.fleming@intel.com,
-        matthew.garrett@nebula.com, jlee@suse.com, cxie@redhat.com
-Subject: Re: [PATCH] x86, efi: add no_bricked_efi whitelist
-Date: Wed, 20 Nov 2013 09:54:03 +0100
-Message-ID: <2242165.pl7XBGF5ii@sandpuppy>
-User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <528C740A.6010407@jp.fujitsu.com>
-References: <528C740A.6010407@jp.fujitsu.com>
+	id S1752632Ab3KTIzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:55:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745Ab3KTIz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 03:55:29 -0500
+Date: Wed, 20 Nov 2013 10:58:35 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
+ allocate frag skb
+Message-ID: <20131120085835.GB19341@redhat.com>
+References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
+ <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131119204909.GA15004@redhat.com>
+ <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131119215312.GE15004@redhat.com>
+ <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 20. November 2013, 17:34:18 schrieb Yasuaki Ishimatsu:
-> By following works, my system very often fails set_variable() to set new
-> variable to efi variable storage and shows "efivars: set_variable() failed:
-> status=-28" message.
+On Tue, Nov 19, 2013 at 02:00:11PM -0800, Eric Dumazet wrote:
+> On Tue, 2013-11-19 at 23:53 +0200, Michael S. Tsirkin wrote:
 > 
-> - commit 68d929862e29a8b52a7f2f2f86a0600423b093cd
->     efi: be more paranoid about available space when creating variables
-> - commit 31ff2f20d9003e74991d135f56e503fe776c127c
->     efi: Distinguish between "remaining space" and actually used space
-> - commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
->     x86,efi: Implement efi_no_storage_paranoia parameter
-> - commit f8b8404337de4e2466e2e1139ea68b1f8295974f
->     Modify UEFI anti-bricking code
+> > Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
+> > it didn't drop packets received from host as far as I can tell.
+> > virtio is more like a pipe than a real NIC in this respect.
 > 
-> When booting my system, remaining space of efi variable storage is about
-> 5KB. So there is no room that sets a new variable to the storage. On my
-> system, trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS
-> environment with UEFI. So if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte
-> threshold, nvram storage cannot be used until EFI_OUT_OF_RESOURCES occurs
-> on pre OS environment with UEFI.
+> Prior/after to this patch, you were not posting buffers, so if packets
+> were received on a physical NIC, you were dropping the packets anyway.
+>
+> It makes no difference at all, adding a cushion might make you feel
+> better, but its really not worth it.
 > 
-> This patch adds whitelist. If a server is in the whitelist,
-> efi_no_storage_paranoia is set to true. And the system can use all efi
-> variable storage.
+> Under memory stress, it makes better sense to drop a super big GRO
+> packet (The one needing frag_list extension ...)
 > 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> CC: Matthew Garrett <matthew.garrett@nebula.com>
-> CC: Richard Weinberger <richard@nod.at>
-> CC: Lee, Chun-Y <jlee@suse.com>
-> CC: Madper Xie <cxie@redhat.com>
-> CC: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/platform/efi/efi.c | 29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
+> It gives a better signal to the sender to reduce its pressure, and gives
+> opportunity to free more of your memory.
 > 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index c7e22ab..9fadf5d 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -116,6 +116,15 @@ static int __init setup_storage_paranoia(char *arg)
->  }
->  early_param("efi_no_storage_paranoia", setup_storage_paranoia);
-> 
-> +struct no_bricked_efi {
-> +	char vendor[100];
-> +	u32 revision;
-> +};
-> +
-> +static struct no_bricked_efi efi_whitelist[] __initdata = {
-> +	{"FUJITSU LIMITED", 0},
 
-So, no UEFI from Fujitsu on planet earth suffers from such issues?
-How can you guarantee that?
+OK, but in that case one wonders whether we should do more to free memory?
 
-Thanks,
-//richard
+E.g. imagine that we dropped a packet of a specific TCP flow
+because we couldn't allocate a new packet.
+
+What happens now is that the old packet is freed as well.
+
+So quite likely the next packet in queue will get processed
+since it will reuse the memory we have just freed.
+
+The next packet and the next after it etc all will have to go through
+the net stack until they get at the socket and are dropped then
+because we missed a segment.  Even worse, GRO gets disabled so the load
+on receiver goes up instead of down.
+
+Sounds like a problem doesn't it?
+
+GRO actually detects it's the same flow and can see packet is
+out of sequence. Why doesn't it drop the packet then?
+Alternatively, we could (for example using the pre-allocated skb
+like I suggested) notify GRO that it should start dropping packets
+of this flow.
+
+What do you think?
+
+-- 
+MST
