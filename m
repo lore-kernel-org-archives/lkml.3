@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab3KTQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:27:27 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:38179 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3KTQ1X (ORCPT
+	id S1754618Ab3KTQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:27:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60936 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3KTQ1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:27:23 -0500
-Date: Wed, 20 Nov 2013 08:27:21 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Markus Mayer <markus.mayer@linaro.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Christian Daudt <bcm@fixthebug.org>,
-        Linaro Patches <patches@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] watchdog: bcm281xx: Watchdog Driver
-Message-ID: <20131120162721.GB28683@roeck-us.net>
-References: <1384888074-19696-1-git-send-email-markus.mayer@linaro.org>
- <1384888074-19696-2-git-send-email-markus.mayer@linaro.org>
- <CAPdLdqmxFnJ9HZa04buh8NecMszEAp11VRU4Q159vZ+=NG9p3A@mail.gmail.com>
+	Wed, 20 Nov 2013 11:27:53 -0500
+Date: Wed, 20 Nov 2013 08:28:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.4 00/12] 3.4.70-stable review
+Message-ID: <20131120162819.GB5831@kroah.com>
+References: <20131118184130.257996039@linuxfoundation.org>
+ <528CD522.4020603@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPdLdqmxFnJ9HZa04buh8NecMszEAp11VRU4Q159vZ+=NG9p3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528CD522.4020603@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 08:12:37AM -0800, Markus Mayer wrote:
-> On 19 November 2013 11:07, Markus Mayer <markus.mayer@linaro.org> wrote:
-> > This commit adds support for the watchdog timer used on the BCM281xx
-> > family of SoCs.
+On Wed, Nov 20, 2013 at 08:28:34AM -0700, Shuah Khan wrote:
+> On 11/18/2013 11:41 AM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.4.70 release.
+> > There are 12 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
 > >
-> > Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-> > Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  drivers/watchdog/Kconfig        |   22 +++
-> >  drivers/watchdog/Makefile       |    1 +
-> >  drivers/watchdog/bcm_kona_wdt.c |  365 +++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 388 insertions(+)
-> >  create mode 100644 drivers/watchdog/bcm_kona_wdt.c
+> > Responses should be made by Wed Nov 20 18:41:11 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.70-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
 > >
 > 
-> [...]
+> 3.4.70:
 > 
-> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> > index 6c5bb27..7c860ca 100644
-> > --- a/drivers/watchdog/Makefile
-> > +++ b/drivers/watchdog/Makefile
-> > @@ -55,6 +55,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
-> >  obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
-> >  obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
-> >  obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
-> > +obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
-> >
-> >  # AVR32 Architecture
-> >  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> patches applied cleanly
+> Compile test - passed
+> Boot tests - passed
 > 
-> Just to let everyone know, due to the watchdog -> mainline merge a few
-> days ago, there's a trivial merge conflict now in the makefile. I'll
-> send out a re-based v5 of this patch once 3.13-rc1 has been tagged
-> (unless you would like a rebased-to-tip version before then).
+> dmesg regression tests - passed
+> [dmesgs look good. No regressions compared to the previous dmesgs for 
+> this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+> warn.]
 > 
-Hi Markus,
+> Cross-compile testing - limited tests passed (alpha, arm, arm64, 
+> blackfin, c6x, powerpc, sh, sparc, tile)
+> 
+> Test systems:
+> Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2 (cross-compile testing)
 
-Yes, I noticed when I merged it into my watchdog-next branch.
+Thanks for testing all 4 kernels and letting me know they work.
 
-Reminds me ... v3 had a whitespace problem. I don't recall if you fixed
-that in v4. If you didn't, that might be a better reason to send v5.
-Take your patch and apply it with "git am" to find out.
-
-Thanks,
-Guenter
+greg k-h
