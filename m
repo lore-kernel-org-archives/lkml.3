@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3KTUeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:34:11 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36322 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab3KTUeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:34:06 -0500
-Date: Wed, 20 Nov 2013 20:34:00 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: ldewangan@nvidia.com, lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Message-ID: <20131120203400.GL2674@sirena.org.uk>
-References: <20131120175814.GC27423@saruman.home>
+	id S1755268Ab3KTUgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:36:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40768 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754937Ab3KTUgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 15:36:39 -0500
+Message-ID: <528D1D44.3000600@zytor.com>
+Date: Wed, 20 Nov 2013 12:36:20 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOHdEyqYAbgZNeC0"
-Content-Disposition: inline
-In-Reply-To: <20131120175814.GC27423@saruman.home>
-X-Cookie: Drive defensively.  Buy a tank.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [tip:x86/asm] x86-64, copy_user: Remove zero byte check before
+ copy user buffer.
+References: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>	<tip-f4cb1cc18f364d761d5614eb6293cccc6647f259@git.kernel.org>	<CA+55aFyFz_6oy8-1jb5Jzk+4VC5MLA5d0KbqhZxki0=+DmggBg@mail.gmail.com>	<528D0D61.1030902@linux.intel.com> <CA+55aFz9-bh=L8vf9qd3kx7wMtYqTtqx8YzULABX5reGtPBExw@mail.gmail.com>
+In-Reply-To: <CA+55aFz9-bh=L8vf9qd3kx7wMtYqTtqx8YzULABX5reGtPBExw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/20/2013 12:13 PM, Linus Torvalds wrote:
+> On Wed, Nov 20, 2013 at 11:28 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>>
+>>>       .section .fixup,"ax"
+>>> 11:   lea (%rdx,%rcx,8),%rcx
+>>> 12:   movl %ecx,%edx          /* ecx is zerorest also */
+>>
+>> -> Even if %rdx+%rcx*8 > 2^32 we end up truncating at 12: -- not that it
+>> matters, since both arguments are prototyped as "unsigned" and therefore
+>> the C compiler is supposed to guarantee the upper 32 bits are ignored.
+> 
+> Ahh. That was the one I thought was broken, but yes, while the upper
+> bits of %rcx are calculated and not zeroed, they end up not actually
+> getting used. So yeah, I'll believe it's correct.
+> 
 
---BOHdEyqYAbgZNeC0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That being said, "lea (%rdx,%rcx,8),%ecx" (leal, as opposed to leaq) is
+a perfectly legitimate instruction and actually one byte shorter.  The
+big question is if some broken version of gas will choke on it.
 
-On Wed, Nov 20, 2013 at 11:58:14AM -0600, Felipe Balbi wrote:
+	-hpa
 
-> commit c368e5fc2a190923b786f2de3e79430ea3566a25 (regulator: fixed: get
-> rid of {get|list}_voltage()) regresses any MMC host controller which
-> uses fixed regulator for functionality.
 
-This is already fixed in -next.  Please remember to always CC
-maintainers on mails and please try to write subject lines which are
-readable by humans - full SHA1s for commits that obscure any actual
-content don't help.
 
---BOHdEyqYAbgZNeC0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSjRy1AAoJELSic+t+oim9oVoP/0lfe126LNuvhEwFW1mvHlm3
-VoO7QFg6lP2OHzgMx7rfvCeFspVumerWIvMFqyGFd8zZdcN1sYN/BVJqg0YUbx1q
-ZBQ0FLMTkc0S0c8BPifI+U8T4wTeiYyjrB9AjkOx+xRymR6E9sMjgoLkqm7sB9oe
-bpv1FGzu8CzSoEdfm6mfKyhwnIAxHT+mMTCLA1wiC0gUXbYJrDibn1mYaiTamFjQ
-4P+cttDpT5AeAwOIBu8sFnAbChB3bLGzTyhu9WkI5maY6RhemsKrWu0n95gP83jo
-35AgciUQNdRVwXti2HpE3eEIZASF9uuBwIzBBCJmzU3IE8wccnjQ7z5BG/iAhoGC
-h+4B+byBTk8GxrYpi2ka4yxsW03IDaV1/K1xbH6QgKmGwk+Vo0gzf68+lTOdB64l
-gLya//KndYHOM3I6b2HSkBzYuPgvOThrYujJ7LoBNZJeEn4w2cLJNEE5qkgas6uv
-rjYSgTk1Ct7XuoSF7/NGxSGZ+MmUfsxSJVcj0UXstplCUoZrSzw36N88A1GlGGN+
-Pqnygc/rtLyCSSudv8C2RmMCxHRaUIBXY+N1OO/Dq0dyDWsdnc7kqo7aElTNeC/2
-xQov1AiNfBOOjtp0C+jpjh0zQvYNk3zAfJgdm8P/T72adMI/QhqRg6KQpwOowgUH
-JAsZlWsGYlpy3ev/1kh3
-=Qmyd
------END PGP SIGNATURE-----
-
---BOHdEyqYAbgZNeC0--
