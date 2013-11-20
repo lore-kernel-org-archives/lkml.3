@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab3KTUy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:54:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40944 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027Ab3KTUyy (ORCPT
+	id S1755421Ab3KTUzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:55:09 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:34065 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab3KTUy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:54:54 -0500
-Date: Wed, 20 Nov 2013 12:54:35 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-372474e12a858807f03f73cb30e830a76fd1ae07@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, fenghua.yu@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, fenghua.yu@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
-References: <1384634221-6006-1-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86-64, copy_user:
-  Use leal to produce 32-bit results
-Git-Commit-ID: 372474e12a858807f03f73cb30e830a76fd1ae07
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 20 Nov 2013 12:54:41 -0800 (PST)
+	Wed, 20 Nov 2013 15:54:56 -0500
+Date: Wed, 20 Nov 2013 21:54:53 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: sclark46@earthlink.net
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] i915 driver gpu hung kernel 3.11
+Message-ID: <20131120215453.03109171@neptune.home>
+In-Reply-To: <528D0E97.9020700@earthlink.net>
+References: <52896862.5000300@earthlink.net>
+	<20131118184107.67d6c875@neptune.home>
+	<528B5581.8040006@earthlink.net>
+	<20131120182649.1f2bd411@neptune.home>
+	<528D0E97.9020700@earthlink.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  372474e12a858807f03f73cb30e830a76fd1ae07
-Gitweb:     http://git.kernel.org/tip/372474e12a858807f03f73cb30e830a76fd1ae07
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 20 Nov 2013 12:50:51 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 20 Nov 2013 12:50:51 -0800
+Hi Stephen,
 
-x86-64, copy_user: Use leal to produce 32-bit results
+On Wed, 20 November 2013 Stephen Clark <sclark46@earthlink.net> wrote:
+> Hi Bruno,
+> 
+> I have tested the latest kernel and X, mesa etc, but am still using
+> wine-1.3.24.
+> I am working on upgrading that. If I still have the error I will file
+> a bug report at bugs.freedesktop.org. I already have a login because
+> of the same problem happening with Myst 5, but it was never resolved.
 
-When we are using lea to produce a 32-bit result, we can use the leal
-form, rather than using leaq and worry about truncation elsewhere.
+If you add an error_state file to the bug you should have rather good
+chance to get it solved (of course mentioning the various software
+versions in use - mesa, libdrm, xf86-video-intel, wine, kernel).
 
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1384634221-6006-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/lib/copy_user_64.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Do you know if there is a comprehensive set of test I can run to make
+> sure my hardware is OK. When I run dxdiag under wine it passes all
+> tests, but then when trying to play Myst online or Myst 5
+> I get the gpu hung situation.
 
-diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
-index ffe4eb9..f00a87c 100644
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -186,7 +186,7 @@ ENTRY(copy_user_generic_unrolled)
- 30:	shll $6,%ecx
- 	addl %ecx,%edx
- 	jmp 60f
--40:	lea (%rdx,%rcx,8),%rdx
-+40:	lea (%rdx,%rcx,8),%edx
- 	jmp 60f
- 50:	movl %ecx,%edx
- 60:	jmp copy_user_handle_tail /* ecx is zerorest also */
-@@ -252,7 +252,7 @@ ENTRY(copy_user_generic_string)
- 	ret
- 
- 	.section .fixup,"ax"
--11:	lea (%rdx,%rcx,8),%rcx
-+11:	lea (%rdx,%rcx,8),%ecx
- 12:	movl %ecx,%edx		/* ecx is zerorest also */
- 	jmp copy_user_handle_tail
- 	.previous
+I've not heard of a comprehensive test suite though.
+It probably is a bug in the driver (libdrm, mesa or xf86-video-intel).
+
+I think I've identified your bug as #32582 for the Myth 5 hang.
+As Chris Wilson has already replied to it, it's maybe just a matter of
+re-testing with current software, mentioning those versions (and
+including error_state).
+If you get no feedback you usually have a good chance attracting attention
+to the bug(s) by showing up on #intel-gfx IRC channel on freenode and
+referring to the bug (and stay around long enough to catch possible
+replies - an be prepared to apply patches and recompile/test to verify
+if a proposed fix helps).
+If there are multiple games hanging the GPU (via Wine) they might even
+all trigger the same issue, thus having error_state for both will be
+an advantage.
+
+Bruno
+
+> Anyway thanks for taking the time to respond.
+> 
+> Regards,
+> Steve
