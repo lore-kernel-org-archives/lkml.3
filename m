@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3KTQUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:20:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45921 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3KTQUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:20:44 -0500
-Message-ID: <528CE13D.3000907@kernel.dk>
-Date: Wed, 20 Nov 2013 09:20:13 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754404Ab3KTQVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:21:12 -0500
+Received: from mout.gmx.net ([212.227.17.20]:54997 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754396Ab3KTQVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:21:08 -0500
+Date: Wed, 20 Nov 2013 17:21:04 +0100
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [GIT PULL] parisc fixes for v3.13
+Message-ID: <20131120162104.GA15157@ls3530.dhcp.wdf.sap.corp>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Regression x2, 3.13-git] virtio block mq hang, iostat busted
- on virtio devices
-References: <20131119080218.GJ11434@dastard> <20131119201531.GA4094@kernel.dk> <20131119212042.GB4094@kernel.dk> <20131119213429.GQ11434@dastard> <528BDB97.8090608@kernel.dk> <20131120080440.GA13147@infradead.org>
-In-Reply-To: <20131120080440.GA13147@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:TX6a7CVT/8E0FLzsJbyC7+vmFDRLalKUhu0/ZXxJtwvb5vZCbjF
+ pcZxuswygHnFnCREG9J9I8ToTfueItEO5YNZPeox6AJmPUOHEi6b0H0mjRIX+eyRdwz3LKh
+ gw+uDytEl22P1pVPlN1NUaE9Tp8GaUAAHKSunbVOn+2t4tiuPlSbpcKVYHWMRAjWEwBqM5K
+ pg5LYPWREedmL2xr9XR5Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 01:04 AM, Christoph Hellwig wrote:
-> On Tue, Nov 19, 2013 at 02:43:51PM -0700, Jens Axboe wrote:
->> No, the nr_requests isn't actually relevant in the blk-mq context, the
->> driver sets its own depth. For the above, it's 64 normal commands, and 2
->> reserved. The reserved would be for a flush, for instance. If someone
->> attempts to queue more than the allocated number of requests, it'll stop
->> the blk-mq queue and kick things into gear on the virtio side. Then when
->> requests complete, we start the queue again.
-> 
-> Btw, any reason we lowerered the queue depth from 128 to 64 in
-> virtio-blk?
+Hi Linus,
 
-No, we can easily bump it to 128 again, I think it was a leftover from
-where it had more queues and testing.
+Please pull the latest fixes for the parisc architecture from
 
--- 
-Jens Axboe
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.13
 
+which has the following fixes: 
+- revert an access_ok() patch which broke 32bit userspace on 64bit kernels
+- avoid a gcc miscompilation in two internal pa_memcpy() functions by not inlining those
+- do not export the definition of SOCK_NONBLOCK via uapi header (fixes build of audit package)
+- depending on the fault type we now correctly report either SIGBUS or SIGSEGV
+- a small fix to not compare a size_t variable for < 0
+
+Thanks,
+Helge
+
+----------------------------------------------------------------
+Helge Deller (5):
+      Revert "parisc: implement full version of access_ok()"
+      parisc: do not inline pa_memcpy() internal functions
+      parisc: break out SOCK_NONBLOCK define to own asm header file
+      parisc: improve SIGBUS/SIGSEGV error reporting
+      parisc: size_t is unsigned, so comparison size < 0 doesn't make sense.
+
+ arch/parisc/include/asm/socket.h      | 11 +++++++++
+ arch/parisc/include/asm/uaccess.h     | 46 +++--------------------------------
+ arch/parisc/include/uapi/asm/socket.h | 11 +++------
+ arch/parisc/lib/memcpy.c              |  6 ++---
+ arch/parisc/mm/fault.c                | 22 +++++++++++++++--
+ 5 files changed, 41 insertions(+), 55 deletions(-)
+ create mode 100644 arch/parisc/include/asm/socket.h
