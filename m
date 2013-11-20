@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3KTReX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:34:23 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49623 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3KTReS (ORCPT
+	id S1754010Ab3KTRej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:34:39 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:59310 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab3KTReh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:34:18 -0500
-Message-ID: <528CF292.6070400@gmail.com>
-Date: Thu, 21 Nov 2013 01:34:10 +0800
-From: Peng Tao <bergwolf@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 20 Nov 2013 12:34:37 -0500
+Date: Wed, 20 Nov 2013 18:33:50 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, Seth Jennings <sjennings@variantweb.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Subject: Re: [PATCH] mm/zswap: change params from hidden to ro
+Message-ID: <20131120173347.GA2369@hp530>
+References: <1384965522-5788-1-git-send-email-ddstreet@ieee.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amir Shehata <amir.shehata@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 4/9] staging/lustre/lnet: Fix assert on empty group in
- selftest module
-References: <1384867428-8395-1-git-send-email-bergwolf@gmail.com> <1384867428-8395-5-git-send-email-bergwolf@gmail.com> <20131119183714.GA26216@kroah.com> <CA+a=Yy531J9LZv06P2aAHPSw_0jtNY+wdNExpLVOW9ee+8Ja1A@mail.gmail.com> <20131120162745.GA5831@kroah.com>
-In-Reply-To: <20131120162745.GA5831@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <1384965522-5788-1-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 12:27 AM, Greg Kroah-Hartman wrote:
-> On Wed, Nov 20, 2013 at 05:26:57PM +0800, Peng Tao wrote:
->> On Wed, Nov 20, 2013 at 2:37 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>> On Tue, Nov 19, 2013 at 09:23:43PM +0800, Peng Tao wrote:
->>>> From: Amir Shehata <amir.shehata@intel.com>
->>>>
->>>> The core of the issue is that the selftest module doesn't sanitize its
->>>> own API, but it depends on lst utility to do such checks.  As a result
->>>> this issue manifests itself in this particular LU through an assert
->>>> on an empty group.  If the NID is misspelled then an empty group is
->>>> added.  An error output is provided, but if that's never checked in a
->>>> batch script, as is the case with this issue, then the script will try
->>>> to add an empty group to a test to run in a batch, and that will cause
->>>> an assert
->>>>
->>>> The fix is two fold.  Ensure that lst utility checks that a group is
->>>> added with at least one node.  If not the group is subsequently
->>>> deleted.  And the add_test command would fail, since the group no
->>>> longer exists.
->>>>
->>>> The second fix is to ensure that the kernel module itself sanitizes
->>>> its own API in this particular case, so that if a different utility is
->>>> used other than lst to communicate with the selftest kernel module
->>>> then this error would be caught.  This fix looks up the batch and the
->>>> groups, src and dst, in the ioctl handle and sanitizes that input at
->>>> this point.  If the group looked up either doesn't exist or doesn't
->>>> have at least one ACTIVE node, then the command fails.
->>>>
->>>> NOTE:there are many other cases in the code where the selftest kernel
->>>> module doesn't check for sanity of the input, but depends totally on
->>>> the lst module to do such checks.  Particularly around length of
->>>> strings passed in.  Thus it is possible to crash the selftest module
->>>> if someone tries to create another userspace app to communicate with
->>>> the selftest kernel module without ensuring sanity of the params sent
->>>> to the kernel module.  In effect, it's always assumed that lst is the
->>>> front end for selftest and no other front end is to be used.
->>> This patch adds build warnings to the kernel build process, so I can't
->>> apply it, sorry.  Please fix that up before sending it again.
->>>
->> Hi Greg,
->>
->> Can you please be explicit about what build warning you saw?
-> I don't remember what it was at the moment, sorry.
->
->> I tried to reproduce it with gcc version 4.1.2 and 4.6.3 on my
->> machine, but didn't see any build warnings with this patch applied.
-> I have 4.7.3 here, and x86-64.  Try that and see what happens.
->
-Could you please share you .config? I just tried gcc 4.7.3 on x86_64 but 
-still no luck. Guess it might have something to do with certain Kconfig 
-combinations.
+Hi Dan!
 
-[X61@linux-lustre]$gcc --version
-gcc (Ubuntu/Linaro 4.7.3-1ubuntu1) 4.7.3
-Copyright (C) 2012 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+On Wed, Nov 20, 2013 at 11:38:42AM -0500, Dan Streetman wrote:
+> The "compressor" and "enabled" params are currently hidden,
+> this changes them to read-only, so userspace can tell if
+> zswap is enabled or not and see what compressor is in use.
 
-[X61@linux-lustre]$uname -a
-Linux X61 3.11.0 #1 SMP Wed Sep 4 23:16:15 CST 2013 x86_64 x86_64 x86_64 
-GNU/Linux
+Could you elaborate more why this pice of information is necessary for
+userspace?
 
-Thanks,
-Tao
+Vladimir
+
+> 
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> ---
+>  mm/zswap.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index d93510c..36b268b 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -77,12 +77,12 @@ static u64 zswap_duplicate_entry;
+>  **********************************/
+>  /* Enable/disable zswap (disabled by default, fixed at boot for now) */
+>  static bool zswap_enabled __read_mostly;
+> -module_param_named(enabled, zswap_enabled, bool, 0);
+> +module_param_named(enabled, zswap_enabled, bool, 0444);
+>  
+>  /* Compressor to be used by zswap (fixed at boot for now) */
+>  #define ZSWAP_COMPRESSOR_DEFAULT "lzo"
+>  static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
+> -module_param_named(compressor, zswap_compressor, charp, 0);
+> +module_param_named(compressor, zswap_compressor, charp, 0444);
+>  
+>  /* The maximum percentage of memory that the compressed pool can occupy */
+>  static unsigned int zswap_max_pool_percent = 20;
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
