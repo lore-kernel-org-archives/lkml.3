@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab3KTEZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 23:25:53 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60122 "EHLO
+	id S1754056Ab3KTE0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:26:23 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:60106 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab3KTEWr (ORCPT
+	with ESMTP id S1753198Ab3KTEWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 23:22:47 -0500
-Subject: [PATCH -tip v3 21/23] notifier: Use NOKPROBE_SYMBOL macro in
- notifier
+	Tue, 19 Nov 2013 23:22:43 -0500
+Subject: [PATCH -tip v3 20/23] [BUGFIX] kprobes: Prohibit probing on
+ func_ptr_is_kernel_text
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,99 +16,57 @@ Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         lkml <linux-kernel@vger.kernel.org>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 20 Nov 2013 04:22:41 +0000
-Message-ID: <20131120042241.15296.89670.stgit@kbuild-fedora.novalocal>
+        Uwe =?utf-8?q?Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, "David S. Miller" <davem@davemloft.net>
+Date: Wed, 20 Nov 2013 04:22:38 +0000
+Message-ID: <20131120042238.15296.41605.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation in notifier.
+Prohibit probing on func_ptr_is_kernel_text() by adding
+it to the kprobe_blacklist.
+
+Since the func_ptr_is_kernel_text() is called from
+notifier_call_chain() which is called from int3 handler,
+probing it may cause double int3 fault and kernel will
+reboot.
+
+This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/notifier.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ kernel/extable.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 2d5cc4c..61fc78a 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
-  *	@returns:	notifier_call_chain returns the value returned by the
-  *			last notifier function called.
-  */
--static int __kprobes notifier_call_chain(struct notifier_block **nl,
--					unsigned long val, void *v,
--					int nr_to_call,	int *nr_calls)
-+static int notifier_call_chain(struct notifier_block **nl,
-+			       unsigned long val, void *v,
-+			       int nr_to_call, int *nr_calls)
- {
- 	int ret = NOTIFY_DONE;
- 	struct notifier_block *nb, *next_nb;
-@@ -102,6 +102,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
- 	}
- 	return ret;
+diff --git a/kernel/extable.c b/kernel/extable.c
+index 832cb28..885c877 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/init.h>
++#include <linux/kprobes.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/uaccess.h>
+@@ -137,3 +138,4 @@ int func_ptr_is_kernel_text(void *ptr)
+ 		return 1;
+ 	return is_module_text_address(addr);
  }
-+NOKPROBE_SYMBOL(notifier_call_chain);
- 
- /*
-  *	Atomic notifier chain routines.  Registration and unregistration
-@@ -172,9 +173,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
-  *	Otherwise the return value is the return value
-  *	of the last notifier function called.
-  */
--int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
--					unsigned long val, void *v,
--					int nr_to_call, int *nr_calls)
-+int __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-+				 unsigned long val, void *v,
-+				 int nr_to_call, int *nr_calls)
- {
- 	int ret;
- 
-@@ -184,13 +185,15 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
-+NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
- 
--int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
--		unsigned long val, void *v)
-+int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-+			       unsigned long val, void *v)
- {
- 	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
- }
- EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
-+NOKPROBE_SYMBOL(atomic_notifier_call_chain);
- 
- /*
-  *	Blocking notifier chain routines.  All access to the chain is
-@@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
- 
- static ATOMIC_NOTIFIER_HEAD(die_chain);
- 
--int notrace __kprobes notify_die(enum die_val val, const char *str,
-+int notrace notify_die(enum die_val val, const char *str,
- 	       struct pt_regs *regs, long err, int trap, int sig)
- {
- 	struct die_args args = {
-@@ -540,6 +543,7 @@ int notrace __kprobes notify_die(enum die_val val, const char *str,
- 	};
- 	return atomic_notifier_call_chain(&die_chain, val, &args);
- }
-+NOKPROBE_SYMBOL(notify_die);
- 
- int register_die_notifier(struct notifier_block *nb)
- {
++NOKPROBE_SYMBOL(func_ptr_is_kernel_text);
 
 
