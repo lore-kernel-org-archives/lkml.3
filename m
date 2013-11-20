@@ -1,85 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab3KTJ3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:29:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3KTJ3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:29:49 -0500
-References: <87ppqk6qvx.fsf@redhat.com> <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com> <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com> <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com> <52740A3A.70202@nod.at>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Madper Xie <cxie@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@gmail.com>,
-        Madper Xie <cxie@redhat.com>,
-        "matt.fleming\@intel.com" <matt.fleming@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        =?utf-8?B?6LCi5oiQ6aqP?= <bbboson@gmail.com>
-Subject: Re: [PATCH] Make efi-pstore return a unique id
-In-reply-to: <52740A3A.70202@nod.at>
-Date: Wed, 20 Nov 2013 17:29:12 +0800
-Message-ID: <87r4abmnfb.fsf@redhat.com>
+	id S1752761Ab3KTJbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:31:14 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:50251 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab3KTJbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 04:31:10 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAK9V6fP013309, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net v5 1/4] r8152: fix tx/rx memory overflow
+Date: Wed, 20 Nov 2013 17:30:54 +0800
+Message-ID: <1384939857-13519-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1384939857-13519-1-git-send-email-hayeswang@realtek.com>
+References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com>
+ <1384939857-13519-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The tx/rx would access the memory which is out of the desired range.
+Modify the method of checking the end of the memory to avoid it.
 
-richard@nod.at writes:
+For r8152_tx_agg_fill(), the variable remain may become negative.
+However, the declaration is unsigned, so the while loop wouldn't
+break when reaching the end of the desied memory. Although to change
+the declaration from unsigned to signed is enough to fix it, I also
+modify the checking method for safe. Replace
 
-> Am 01.11.2013 20:22, schrieb Seiji Aguchi:
->>>
->>> Agreed.  I liked your ((timestamp * 100 + part) * 100 + count function much
->>> more than this.
->> 
->> I was worried that the part and count could be more than 100.
->> If it happens, the id may not be unique...
->> 
->> But, currently, size of nvram storage is limited, so it is a corner case.
->> I respect your opinion.
->
-> What about feeding the bytes of all three integers into a
-> non-cryptographic hash function?
+		remain = rx_buf_sz - sizeof(*tx_desc) -
+			 (u32)((void *)tx_data - agg->head);
 
-Then will lost the sequence of our log. We will get lots of entries like
-"dmesg-efi-`unique but meaningless number here`" in pstore fs. Who will
-know which file is the latest record?
-A possible way is sort them by created time. But pstore splits large
-messages into many parts. So they will have the same created-time. Like
-the following case:
-[root@dhcp-13-41 ~]# ls -rtl /dev/pstore/
-total 0
--r--r--r--. 1 root root  930 Nov 15 08:42 dmesg-efi-9
--r--r--r--. 1 root root 1017 Nov 15 08:42 dmesg-efi-8
--r--r--r--. 1 root root  993 Nov 15 08:42 dmesg-efi-7
--r--r--r--. 1 root root  984 Nov 15 08:42 dmesg-efi-6
--r--r--r--. 1 root root 1008 Nov 15 08:42 dmesg-efi-5
--r--r--r--. 1 root root  909 Nov 15 08:42 dmesg-efi-10
--r--r--r--. 1 root root 1003 Nov 15 08:42 dmesg-efi-11
--r--r--r--. 1 root root  980 Nov 18 00:41 dmesg-efi-4
--r--r--r--. 1 root root  990 Nov 18 00:41 dmesg-efi-3
--r--r--r--. 1 root root  966 Nov 18 00:41 dmesg-efi-2
--r--r--r--. 1 root root 1010 Nov 18 00:41 dmesg-efi-1
+with
 
-or more intuitive:
-ls /sys/firmware/efi/efivars/ | grep -i "dump" | cut -d'-' -f5 | sort |wc -l
-103
-ls /sys/firmware/efi/efivars/ | grep -i "dump" | cut -d'-' -f5 | sort |uniq |wc -l
-26
+		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
 
-So if we using a hashed unique number for uniqueness, we will lose the
-sequence. We must sort them manually.
+to make sure the variable remain is always positive. Then, the
+overflow wouldn't happen.
 
-And another side, the combin of timestamp, count and part is unique. Why
-we generate a unique number from a unique number?
-if you think "making a string from three ints and then a parse it to a
-int again" is odd, i'd like to use ((timestamp * 100 + part) * 100 +
-count.
+For rx_bottom(), the rx_desc should not be used to calculate the
+packet length before making sure the rx_desc is in the desired range.
+Change the checking to two parts. First, check the descriptor is in
+the memory. The other, using the descriptor to find out the packet
+length and check if the packet is in the memory.
 
-> Using this way you get a cheap unique id.
->
-> Thanks,
-> //richard
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index f3fce41..428600d 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -24,7 +24,7 @@
+ #include <linux/ipv6.h>
+ 
+ /* Version Information */
+-#define DRIVER_VERSION "v1.01.0 (2013/08/12)"
++#define DRIVER_VERSION "v1.02.0 (2013/10/28)"
+ #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
+ #define DRIVER_DESC "Realtek RTL8152 Based USB 2.0 Ethernet Adapters"
+ #define MODULENAME "r8152"
+@@ -1136,14 +1136,14 @@ r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
+ 
+ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ {
+-	u32 remain;
++	int remain;
+ 	u8 *tx_data;
+ 
+ 	tx_data = agg->head;
+ 	agg->skb_num = agg->skb_len = 0;
+-	remain = rx_buf_sz - sizeof(struct tx_desc);
++	remain = rx_buf_sz;
+ 
+-	while (remain >= ETH_ZLEN) {
++	while (remain >= ETH_ZLEN + sizeof(struct tx_desc)) {
+ 		struct tx_desc *tx_desc;
+ 		struct sk_buff *skb;
+ 		unsigned int len;
+@@ -1152,12 +1152,14 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 		if (!skb)
+ 			break;
+ 
++		remain -= sizeof(*tx_desc);
+ 		len = skb->len;
+ 		if (remain < len) {
+ 			skb_queue_head(&tp->tx_queue, skb);
+ 			break;
+ 		}
+ 
++		tx_data = tx_agg_align(tx_data);
+ 		tx_desc = (struct tx_desc *)tx_data;
+ 		tx_data += sizeof(*tx_desc);
+ 
+@@ -1167,9 +1169,8 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 		agg->skb_len += len;
+ 		dev_kfree_skb_any(skb);
+ 
+-		tx_data = tx_agg_align(tx_data + len);
+-		remain = rx_buf_sz - sizeof(*tx_desc) -
+-			 (u32)((void *)tx_data - agg->head);
++		tx_data += len;
++		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
+ 	}
+ 
+ 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
+@@ -1188,7 +1189,6 @@ static void rx_bottom(struct r8152 *tp)
+ 	list_for_each_safe(cursor, next, &tp->rx_done) {
+ 		struct rx_desc *rx_desc;
+ 		struct rx_agg *agg;
+-		unsigned pkt_len;
+ 		int len_used = 0;
+ 		struct urb *urb;
+ 		u8 *rx_data;
+@@ -1204,17 +1204,22 @@ static void rx_bottom(struct r8152 *tp)
+ 
+ 		rx_desc = agg->head;
+ 		rx_data = agg->head;
+-		pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
+-		len_used += sizeof(struct rx_desc) + pkt_len;
++		len_used += sizeof(struct rx_desc);
+ 
+-		while (urb->actual_length >= len_used) {
++		while (urb->actual_length > len_used) {
+ 			struct net_device *netdev = tp->netdev;
+ 			struct net_device_stats *stats;
++			unsigned int pkt_len;
+ 			struct sk_buff *skb;
+ 
++			pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
+ 			if (pkt_len < ETH_ZLEN)
+ 				break;
+ 
++			len_used += pkt_len;
++			if (urb->actual_length < len_used)
++				break;
++
+ 			stats = rtl8152_get_stats(netdev);
+ 
+ 			pkt_len -= 4; /* CRC */
+@@ -1234,9 +1239,8 @@ static void rx_bottom(struct r8152 *tp)
+ 
+ 			rx_data = rx_agg_align(rx_data + pkt_len + 4);
+ 			rx_desc = (struct rx_desc *)rx_data;
+-			pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
+ 			len_used = (int)(rx_data - (u8 *)agg->head);
+-			len_used += sizeof(struct rx_desc) + pkt_len;
++			len_used += sizeof(struct rx_desc);
+ 		}
+ 
+ submit:
+-- 
+1.8.3.1
 
