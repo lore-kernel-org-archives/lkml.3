@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab3KTJW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:22:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52828 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3KTJWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:22:51 -0500
-Date: Wed, 20 Nov 2013 10:22:48 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clocksource: time-efm32: Select CLKSRC_MMIO
-Message-ID: <20131120092248.GL28642@pengutronix.de>
-References: <1384913711.13115.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1751994Ab3KTJ0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:26:51 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:40907 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KTJ0r convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 20 Nov 2013 04:26:47 -0500
+Message-Id: <528C8E620200007800104EA1@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 20 Nov 2013 09:26:42 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Bob Liu" <bob.liu@oracle.com>
+Cc: <ian.campbell@citrix.com>, "Bob Liu" <lliubbo@gmail.com>,
+        <xen-devel@lists.xenproject.org>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <keir@xen.org>
+Subject: Re: [PATCH] xen: tmem: rmove useless parameters
+References: <1384937575-25168-1-git-send-email-bob.liu@oracle.com>
+ <528C8A980200007800104E69@nat28.tlf.novell.com>
+ <528C7F4B.3050802@oracle.com>
+In-Reply-To: <528C7F4B.3050802@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1384913711.13115.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:15:11AM +0800, Axel Lin wrote:
-> The time-efm32 driver uses the clocksource MMIO functions.
-> Thus it needs to select CLKSRC_MMIO in Kconfig.
+>>> On 20.11.13 at 10:22, Bob Liu <bob.liu@oracle.com> wrote:
+> On 11/20/2013 05:10 PM, Jan Beulich wrote:
+>>>>> On 20.11.13 at 09:52, Bob Liu <lliubbo@gmail.com> wrote:
+>>> @@ -100,9 +100,6 @@ static inline int xen_tmem_op(u32 tmem_cmd, u32 
+> tmem_pool, struct tmem_oid oid,
+>>>  	op.u.gen.oid[1] = oid.oid[1];
+>>>  	op.u.gen.oid[2] = oid.oid[2];
+>>>  	op.u.gen.index = index;
+>>> -	op.u.gen.tmem_offset = tmem_offset;
+>>> -	op.u.gen.pfn_offset = pfn_offset;
+>>> -	op.u.gen.len = len;
+>> 
+>> But you can't leave these fields uninitialized.
+>> 
 > 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Good catch. I selected CLKSRC_MMIO from MACH_EFM32 (still out-of-tree)
-but of course this is wrong.
+> Oh, yes.
+> And I should remove those members totally from struct tmem_op {}
 
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+That's an established ABI - you can't just remove members there.
 
-Thanks
-Uwe
+Jan
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
