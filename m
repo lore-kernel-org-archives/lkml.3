@@ -1,116 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab3KTIfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:35:08 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44056 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3KTIfG (ORCPT
+	id S1752013Ab3KTIlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:41:05 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:42587 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3KTIlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:35:06 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <528C740A.6010407@jp.fujitsu.com>
-Date: Wed, 20 Nov 2013 17:34:18 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <matt@console-pimps.org>, <richard@nod.at>, <matt.fleming@intel.com>,
-        <matthew.garrett@nebula.com>, <jlee@suse.com>, <cxie@redhat.com>
-Subject: [PATCH] x86, efi: add no_bricked_efi whitelist
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Wed, 20 Nov 2013 03:41:03 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-e8-528c759d8e8d
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH 1/2] f2fs: adds a tracepoint for submit_read_page
+Date: Wed, 20 Nov 2013 16:40:10 +0800
+Message-id: <001e01cee5cc$3d118310$b7348930$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7lysJw152B31R1Tku1iEIEWIYTpA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jQd25pT1BBrfPiltc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxv79txgL
+	FvJWLO3pYWlg/MzVxcjJISFgIvF41glmCFtM4sK99WxdjFwcQgLTGSVOX5rODOH8YJTYMmcr
+	E0gVm4CKxPKO/2C2iICixIb3G9hBipgFZjBKHJ77jxUkISzgI9HSvJYdxGYRUJVYvbEZLM4r
+	YClxvLuLGcIWlPgx+R4LiM0soCHRv2gDG4QtL7F5zVuokxQkdpx9zQixTE/i1uN/UPXiEhuP
+	3GKZwCgwC8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgsP6mdQO
+	xpUNFocYBTgYlXh4JRZ0BwmxJpYVV+YeYpTgYFYS4V1R2BMkxJuSWFmVWpQfX1Sak1p8iFGa
+	g0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgTFU0Sd1tsfKQ7c/MZx8IPvqSH4UT1Yqp9y6
+	fdYnHa949f55UfvczmNiwet7/aa/L4hun39nenXs98Xx4vbdMm9r1M6ekeRTTZ2mtDpcNmqj
+	37z7HxyzXRb2rLyxbbPXjFbez0v+JjWYHk762pi4jr1p+v0J2e67d1c6r9snsTUqr6Zb7N1E
+	8UglluKMREMt5qLiRAAZpmvjZwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By following works, my system very often fails set_variable() to set new
-variable to efi variable storage and shows "efivars: set_variable() failed:
-status=-28" message.
+This patch adds a tracepoint for submit_read_page.
 
-- commit 68d929862e29a8b52a7f2f2f86a0600423b093cd
-    efi: be more paranoid about available space when creating variables
-- commit 31ff2f20d9003e74991d135f56e503fe776c127c
-    efi: Distinguish between "remaining space" and actually used space
-- commit 8c58bf3eec3b8fc8162fe557e9361891c20758f2
-    x86,efi: Implement efi_no_storage_paranoia parameter
-- commit f8b8404337de4e2466e2e1139ea68b1f8295974f
-    Modify UEFI anti-bricking code
-
-When booting my system, remaining space of efi variable storage is about
-5KB. So there is no room that sets a new variable to the storage. On my
-system, trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS
-environment with UEFI. So if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte
-threshold, nvram storage cannot be used until EFI_OUT_OF_RESOURCES occurs
-on pre OS environment with UEFI.
-
-This patch adds whitelist. If a server is in the whitelist,
-efi_no_storage_paranoia is set to true. And the system can use all efi
-variable storage.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>
-CC: Richard Weinberger <richard@nod.at>
-CC: Lee, Chun-Y <jlee@suse.com>
-CC: Madper Xie <cxie@redhat.com>
-CC: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- arch/x86/platform/efi/efi.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ fs/f2fs/data.c              |    1 +
+ include/trace/events/f2fs.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..9fadf5d 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -116,6 +116,15 @@ static int __init setup_storage_paranoia(char *arg)
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 9cf3f6c..0ca93be 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -448,6 +448,7 @@ alloc_new:
+ 	io->last_block_in_bio = blk_addr;
+ 
+ 	mutex_unlock(&io->io_mutex);
++	trace_f2fs_submit_read_page(page, blk_addr, rw);
  }
- early_param("efi_no_storage_paranoia", setup_storage_paranoia);
-
-+struct no_bricked_efi {
-+	char vendor[100];
-+	u32 revision;
-+};
+ 
+ /*
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+index e0dc355..571f39a 100644
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -453,6 +453,36 @@ TRACE_EVENT_CONDITION(f2fs_readpage,
+ 		show_bio_type(__entry->type))
+ );
+ 
++TRACE_EVENT(f2fs_submit_read_page,
 +
-+static struct no_bricked_efi efi_whitelist[] __initdata = {
-+	{"FUJITSU LIMITED", 0},
-+	{""}
-+};
-
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
- {
-@@ -704,6 +713,24 @@ static int __init efi_memmap_init(void)
- 	return 0;
- }
-
-+static bool __init is_no_bricked_efi(char *vendor, u32 revision)
-+{
-+	int i = 0;
++	TP_PROTO(struct page *page, block_t blk_addr, int rw),
 +
-+	while (efi_whitelist[i].vendor[0] != '\0') {
-+		if (strncmp(efi_whitelist[i].vendor, vendor,
-+			    sizeof(efi_whitelist[i].vendor))) {
-+			i++;
-+			continue;
-+		}
++	TP_ARGS(page, blk_addr, rw),
 +
-+		if (revision >= efi_whitelist[i].revision)
-+			return true;
-+	}
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(int, rw)
++		__field(pgoff_t, index)
++		__field(block_t, block)
++	),
 +
-+	return false;
-+}
++	TP_fast_assign(
++		__entry->dev	= page->mapping->host->i_sb->s_dev;
++		__entry->ino	= page->mapping->host->i_ino;
++		__entry->rw	= rw;
++		__entry->index	= page->index;
++		__entry->block	= blk_addr;
++	),
 +
- void __init efi_init(void)
- {
- 	efi_char16_t *c16;
-@@ -778,6 +805,8 @@ void __init efi_init(void)
- #if EFI_DEBUG
- 	print_efi_memmap();
- #endif
-+	if (is_no_bricked_efi(vendor, efi.systab->hdr.revision))
-+		efi_no_storage_paranoia = true;
- }
-
- void __init efi_late_init(void)
++	TP_printk("dev = (%d,%d), ino = %lu, bio_type = %s, "
++		"index = %lu, blkaddr = 0x%llx",
++		show_dev_ino(__entry),
++		show_bio_type(__entry->rw),
++		(unsigned long)__entry->index,
++		(unsigned long long)__entry->block)
++);
++
+ TRACE_EVENT(f2fs_get_data_block,
+ 	TP_PROTO(struct inode *inode, sector_t iblock,
+ 				struct buffer_head *bh, int ret),
+-- 
+1.7.9.5
 
