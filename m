@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab3KTQdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:33:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46528 "EHLO
+	id S1754480Ab3KTQdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:33:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46529 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab3KTQc4 (ORCPT
+	with ESMTP id S1754272Ab3KTQc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Nov 2013 11:32:56 -0500
-Message-Id: <20131120162736.624493595@infradead.org>
+Message-Id: <20131120162736.446984500@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 20 Nov 2013 17:04:55 +0100
+Date: Wed, 20 Nov 2013 17:04:52 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -20,189 +20,127 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH 5/7] locking: Optimize lock_bh functions
+Subject: [PATCH 2/7] sched, preempt: Fixup missed PREEMPT_NEED_RESCHED folding
 References: <20131120160450.072555619@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-remove_preempt_enable_no_sched-from-locks.patch
+Content-Disposition: inline; filename=peterz-preempt_fold_need_resched.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all _bh_ lock functions do two preempt_count operations:
+With various drivers wanting to inject idle time; we get people
+calling idle routines outside of the idle loop proper.
 
-  local_bh_disable();
-  preempt_disable();
+Therefore we need to be extra careful about not missing
+TIF_NEED_RESCHED -> PREEMPT_NEED_RESCHED propagations.
 
-and for the unlock:
+While looking at this, I also realized there's a small window in the
+existing idle loop where we can miss TIF_NEED_RESCHED; when it hits
+right after the tif_need_resched() test at the end of the loop but
+right before the need_resched() test at the start of the loop.
 
-  preempt_enable_no_resched();
-  local_bh_enable();
+So move preempt_fold_need_resched() out of the loop where we're
+guaranteed to have TIF_NEED_RESCHED set.
 
-Since its a waste of perfectly good cycles to modify the same variable
-twice when you can do it in one go; use the new
-__local_bh_{dis,en}able_ip() functions that allow us to provide a
-preempt_count value to add/sub.
-
-So define SOFTIRQ_LOCK_OFFSET as the offset a _bh_ lock needs to
-add/sub to be done in one go.
-
-As a bonus it gets rid of the preempt_enable_no_resched() usage.
-
-Cc: rjw@rjwysocki.net
-Cc: rui.zhang@intel.com
-Cc: jacob.jun.pan@linux.intel.com
-Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: lenb@kernel.org
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/preempt_mask.h     |   15 +++++++++++++++
- include/linux/rwlock_api_smp.h   |   12 ++++--------
- include/linux/spinlock_api_smp.h |   12 ++++--------
- include/linux/spinlock_api_up.h  |   16 +++++++++++-----
- 4 files changed, 34 insertions(+), 21 deletions(-)
+ arch/x86/include/asm/mwait.h |    2 +-
+ include/linux/preempt.h      |   10 ++++++++++
+ include/linux/sched.h        |   15 +++++++++++++++
+ kernel/cpu/idle.c            |   14 +++++++-------
+ kernel/sched/core.c          |    3 +--
+ 5 files changed, 34 insertions(+), 10 deletions(-)
 
---- a/include/linux/preempt_mask.h
-+++ b/include/linux/preempt_mask.h
-@@ -78,6 +78,21 @@
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -50,7 +50,7 @@ static inline void mwait_idle_with_hints
+ 		if (!need_resched())
+ 			__mwait(eax, ecx);
+ 	}
+-	__current_clr_polling();
++	current_clr_polling();
+ }
+ 
+ #endif /* _ASM_X86_MWAIT_H */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -116,6 +116,16 @@ do { \
+ 
+ #endif /* CONFIG_PREEMPT_COUNT */
+ 
++#ifdef CONFIG_PREEMPT
++#define preempt_fold_need_resched() \
++do { \
++	if (tif_need_resched()) \
++		set_preempt_need_resched(); \
++} while (0)
++#else
++#define preempt_fold_need_resched() do { } while (0)
++#endif
++
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
+ struct preempt_notifier;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2630,6 +2630,21 @@ static inline bool __must_check current_
+ }
  #endif
  
- /*
-+ * The preempt_count offset needed for things like:
-+ *
-+ *  spin_lock_bh()
-+ *
-+ * Which need to disable both preemption (CONFIG_PREEMPT_COUNT) and
-+ * softirqs, such that unlock sequences of:
-+ *
-+ *  spin_unlock();
-+ *  local_bh_enable();
-+ *
-+ * Work as expected.
-+ */
-+#define SOFTIRQ_LOCK_OFFSET (SOFTIRQ_DISABLE_OFFSET + PREEMPT_CHECK_OFFSET)
++static inline void current_clr_polling(void)
++{
++	__current_clr_polling();
 +
-+/*
-  * Are we running in atomic context?  WARNING: this macro cannot
-  * always detect atomic context; in particular, it cannot know about
-  * held spinlocks in non-preemptible kernels.  Thus it should not be
---- a/include/linux/rwlock_api_smp.h
-+++ b/include/linux/rwlock_api_smp.h
-@@ -172,8 +172,7 @@ static inline void __raw_read_lock_irq(r
- 
- static inline void __raw_read_lock_bh(rwlock_t *lock)
++	/*
++	 * Ensure we check TIF_NEED_RESCHED after we clear the polling bit.
++	 * Once the bit is cleared, we'll get IPIs with every new
++	 * TIF_NEED_RESCHED and the IPI handler, scheduler_ipi(), will also
++	 * fold.
++	 */
++	smp_mb(); /* paired with resched_task() */
++
++	preempt_fold_need_resched();
++}
++
+ static __always_inline bool need_resched(void)
  {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire_read(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_read_trylock, do_raw_read_lock);
- }
-@@ -200,8 +199,7 @@ static inline void __raw_write_lock_irq(
- 
- static inline void __raw_write_lock_bh(rwlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_write_trylock, do_raw_write_lock);
- }
-@@ -250,8 +248,7 @@ static inline void __raw_read_unlock_bh(
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_read_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- static inline void __raw_write_unlock_irqrestore(rwlock_t *lock,
-@@ -275,8 +272,7 @@ static inline void __raw_write_unlock_bh
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_write_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- #endif /* __LINUX_RWLOCK_API_SMP_H */
---- a/include/linux/spinlock_api_smp.h
-+++ b/include/linux/spinlock_api_smp.h
-@@ -131,8 +131,7 @@ static inline void __raw_spin_lock_irq(r
- 
- static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
- }
-@@ -174,20 +173,17 @@ static inline void __raw_spin_unlock_bh(
- {
- 	spin_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_spin_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	if (do_raw_spin_trylock(lock)) {
- 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
- 		return 1;
+ 	return unlikely(tif_need_resched());
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -105,14 +105,14 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
+-			/*
+-			 * We need to test and propagate the TIF_NEED_RESCHED
+-			 * bit here because we might not have send the
+-			 * reschedule IPI to idle tasks.
+-			 */
+-			if (tif_need_resched())
+-				set_preempt_need_resched();
+ 		}
++
++		/*
++		 * We need to test and propagate the TIF_NEED_RESCHED bit here
++		 * because we might not have send the reschedule IPI to idle
++		 * tasks.
++		 */
++		preempt_fold_need_resched();
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
  	}
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	return 0;
- }
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1499,8 +1499,7 @@ void scheduler_ipi(void)
+ 	 * TIF_NEED_RESCHED remotely (for the first time) will also send
+ 	 * this IPI.
+ 	 */
+-	if (tif_need_resched())
+-		set_preempt_need_resched();
++	preempt_fold_need_resched();
  
---- a/include/linux/spinlock_api_up.h
-+++ b/include/linux/spinlock_api_up.h
-@@ -24,11 +24,14 @@
-  * flags straight, to suppress compiler warnings of unused lock
-  * variables, and to add the proper checker annotations:
-  */
-+#define ___LOCK(lock) \
-+  do { __acquire(lock); (void)(lock); } while (0)
-+
- #define __LOCK(lock) \
--  do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
-+  do { preempt_disable(); ___LOCK(lock); } while (0);
- 
- #define __LOCK_BH(lock) \
--  do { local_bh_disable(); __LOCK(lock); } while (0)
-+  do { __local_bh_disable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); ___LOCK(lock); } while (0)
- 
- #define __LOCK_IRQ(lock) \
-   do { local_irq_disable(); __LOCK(lock); } while (0)
-@@ -36,12 +39,15 @@
- #define __LOCK_IRQSAVE(lock, flags) \
-   do { local_irq_save(flags); __LOCK(lock); } while (0)
- 
-+#define ___UNLOCK(lock) \
-+  do { __release(lock); (void)(lock); } while (0)
-+
- #define __UNLOCK(lock) \
--  do { preempt_enable(); __release(lock); (void)(lock); } while (0)
-+  do { preempt_enable(); ___UNLOCK(lock); } while (0)
- 
- #define __UNLOCK_BH(lock) \
--  do { preempt_enable_no_resched(); local_bh_enable(); \
--	  __release(lock); (void)(lock); } while (0)
-+  do { __local_bh_enable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); \
-+       ___UNLOCK(lock); } while (0)
- 
- #define __UNLOCK_IRQ(lock) \
-   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
 
 
