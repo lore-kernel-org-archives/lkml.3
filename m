@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3KTUwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:52:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59746 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027Ab3KTUwM (ORCPT
+	id S1755376Ab3KTUwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:52:45 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37486 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027Ab3KTUwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:52:12 -0500
-Date: Wed, 20 Nov 2013 14:51:43 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, <ldewangan@nvidia.com>, <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-Message-ID: <20131120205143.GA9182@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20131120175814.GC27423@saruman.home>
- <20131120203400.GL2674@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
-Content-Disposition: inline
-In-Reply-To: <20131120203400.GL2674@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Nov 2013 15:52:42 -0500
+Date: Wed, 20 Nov 2013 20:52:12 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Rob Landley <rob@landley.net>
+Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131120205212.2509cb8b@alan.etchedpixels.co.uk>
+In-Reply-To: <1384881423.1974.277@driftwood>
+References: <20131030120152.GM2400@suse.de>
+	<1384881423.1974.277@driftwood>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This is assuming your hard drive _itself_ doesn't have bufferbloat, but  
+> http://spritesmods.com/?art=hddhack&f=rss implies they don't, and  
+> tagged command queueing lets you see through that anyway so your  
+> "actually committed" numbers could presumably still be accurate if the  
+> manufacturers aren't totally lying.
 
-Hi,
+They don't but they do have wildly variable completion rates and times.
+Nothing like a drive having a seven second hiccup to annoy people but
+they can do that at times.
 
-On Wed, Nov 20, 2013 at 08:34:00PM +0000, Mark Brown wrote:
-> On Wed, Nov 20, 2013 at 11:58:14AM -0600, Felipe Balbi wrote:
->=20
-> > commit c368e5fc2a190923b786f2de3e79430ea3566a25 (regulator: fixed: get
-> > rid of {get|list}_voltage()) regresses any MMC host controller which
-> > uses fixed regulator for functionality.
->=20
-> This is already fixed in -next.  Please remember to always CC
-> maintainers on mails and please try to write subject lines which are
+There are two problems though
 
-that's why Liam and Laxman are in Cc. Looks like only you were missed.
+1. Disk performance particularly in the rotating rust world is
+operations/second which is rarely related to volume
 
-> readable by humans - full SHA1s for commits that obscure any actual
-> content don't help.
+2. If the block layer is trying to decide whether the drive is busy
+you've got it the wrong way up IMHO. Busy-ness is a property of the
+device and often very device and subsystem specific, so the device end of
+the chain should figure out how loaded it feels
 
-right...
 
---=20
-balbi
+Beyond that the entire problem is well understood and there isn't any
+real difference between an IPv4 network and a storage layer. In fact in
+some cases like NFS, DRBD, AoE, and remote block device stuff it's even
+more so.
 
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+(TCP based remote block devices btw are a prime example of why you need
+device end of chain figuring out busy state.. you'll otherwise end up
+doing double backoff)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Alan
 
-iQIcBAEBAgAGBQJSjSDfAAoJEIaOsuA1yqRE4JEP/0FfCWkqAtbMR7sV/GuNs/XS
-eFjqZ8kliLz9DREw78maw/njTgZj3aA3kmK5Psm/4R3UGHb8UxNIMXPLzXUWIn/e
-ymSPBJ5u8OsOb26kTqkhdYBMRGPq3WcoZ46W4UnzWswGAAFZwfWzGKWUyJp4di+Y
-4z+waSMcWIMmhNWky9WzHCQJ/pmSbEi3BBkLS28JyASU2hH7nRM2z1TxrzaH7IV7
-74oWE/SnAdoZyT4LRq0USFkEIx2mmf+q4Vp5ySaXJn6WaBU6d42IpeX4coft9vm5
-z5WrmhhjQm4ZC5ajE94NhGbLmx4VbCybGeXyfsf0iTEOb3rxj6k2iNLF8xkwue85
-xtONcEwf+RY+bEPL2gkQs6WUwDsUnYhZxyjr8gLFlqA9fTSA31Axfh3b6D9NB/I/
-KdIK0RJqagRw1QGZs6ReCdwXngftb8coSwG3ABIrpyFnopo6uM/OCddn3VYVKOHF
-lKl5Ha/9IGwmaBr26FgQzynCTQfxjuYbwoZPQVsugWgFU8xtRFLpe/SBwFfKjJVx
-lST3Zw7XZ1MheQtTod6naEsrsuDwabS9IDg+4+FcsHBUCqRbcqM0/yG4Qa4xGWTA
-mMKceyVK8m155OTlEavB2h7awNXhRWmGBXhXZnnpsTAL3rY7+U3vWJ+mgcaeiym0
-eCO9sEUYBSTbIwTXYiQf
-=0yj3
------END PGP SIGNATURE-----
-
---sm4nu43k4a2Rpi4c--
