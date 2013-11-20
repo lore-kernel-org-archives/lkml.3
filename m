@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab3KTNbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:31:03 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:37506 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab3KTNbA (ORCPT
+	id S1752647Ab3KTNcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:32:55 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:40920 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3KTNcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:31:00 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Subject: [PATCH] afs: proc cells and rootcell are writeable
-Date: Wed, 20 Nov 2013 14:30:55 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
+	Wed, 20 Nov 2013 08:32:52 -0500
+Date: Wed, 20 Nov 2013 14:32:48 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/5] perf/urgent fixes
+Message-ID: <20131120133248.GA7374@gmail.com>
+References: <1384893718-18762-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart57709678.k529xufkBf";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311201430.56135@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384893718-18762-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart57709678.k529xufkBf
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
 
-Both proc files are writeable and used for configuring cells. But
-there is missing correct mode flag for writeable files. Without
-this patch both proc files are read only.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-diff --git a/fs/afs/proc.c b/fs/afs/proc.c
-index 526e4bb..276cb6e 100644
-=2D-- a/fs/afs/proc.c
-+++ b/fs/afs/proc.c
-@@ -147,11 +147,11 @@ int afs_proc_init(void)
- 	if (!proc_afs)
- 		goto error_dir;
-=20
-=2D	p =3D proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
-+	p =3D proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_pr=
-oc_cells_fops);
- 	if (!p)
- 		goto error_cells;
-=20
-=2D	p =3D proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
-+	p =3D proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs=
-_proc_rootcell_fops);
- 	if (!p)
- 		goto error_rootcell;
-=20
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 801a76050bcf8d4e500eb8d048ff6265f37a61c8:
+> 
+>   seq_file: always clear m->count when we free m->buf (2013-11-18 19:07:53 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to 6b5fa0ba4f85a8499287aefaf3f1375450c40c6d:
+> 
+>   tools lib traceevent: Fix conversion of pointer to integer of different size (2013-11-19 16:37:59 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> . Tag thread comm as overriden, showing the right comm for threads after forks,
+>   fix from Frederic Weisbecker.
+> 
+> . Fix memory leak when processing perf.data file header, from Namhyung Kim.
+> 
+> . Don't try to free string constant used for anonymous event groups, fix from Namhyung Kim.
+> 
+> . Fix use of multiple options in processing field in libtraceevent, fix from Steven Rostedt.
+> 
+> . Fix conversion of pointer to integer of different size in libtraceevent.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       tools lib traceevent: Fix conversion of pointer to integer of different size
+> 
+> Frederic Weisbecker (1):
+>       perf tools: Tag thread comm as overriden
+> 
+> Namhyung Kim (2):
+>       perf header: Fix bogus group name
+>       perf header: Fix possible memory leaks in process_group_desc()
+> 
+> Steven Rostedt (1):
+>       tools lib traceevent: Fix use of multiple options in processing field
+> 
+>  tools/lib/traceevent/event-parse.c | 25 ++++++++++++++++++++++---
+>  tools/perf/util/header.c           |  6 ++++--
+>  tools/perf/util/thread.c           | 11 +++++------
+>  3 files changed, 31 insertions(+), 11 deletions(-)
 
---nextPart57709678.k529xufkBf
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Pulled, thanks a lot Arnaldo!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKMuZAACgkQi/DJPQPkQ1KxIACgxeceQXHMOv0r0V+Ob0t+QPFX
-hWEAni09eRci0Ux+Q40TAj0oFsPtcN5l
-=u+Up
------END PGP SIGNATURE-----
-
---nextPart57709678.k529xufkBf--
+	Ingo
