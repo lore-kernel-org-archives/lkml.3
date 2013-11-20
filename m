@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3KTTqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:46:49 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:29607 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754750Ab3KTTqs (ORCPT
+	id S1755024Ab3KTTsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:48:14 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37375 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab3KTTsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:46:48 -0500
-Date: Wed, 20 Nov 2013 14:46:47 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.2.52-rt73
-Message-ID: <20131120144647.3a8a5a6f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 20 Nov 2013 14:48:12 -0500
+From: Dan Streetman <ddstreet@ieee.org>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Dan Streetman <ddstreet@ieee.org>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Subject: [PATCH] mm/zswap: remove unneeded zswap_rb_erase calls
+Date: Wed, 20 Nov 2013 14:47:04 -0500
+Message-Id: <1384976824-32624-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since zswap_rb_erase was added to the final (when refcount == 0)
+zswap_put_entry, there is no need to call zswap_rb_erase before
+calling zswap_put_entry.
 
-Dear RT Folks,
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+---
+ mm/zswap.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-I'm pleased to announce the 3.2.52-rt73 stable release.
-
-
-This release is just an update to the new stable 3.2.52 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.2-rt
-  Head SHA1: 8f50d792dcaf70f762c271a9722a83704abf3e0f
-
-
-Or to build 3.2.52-rt73 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.52.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.52-rt73.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
+diff --git a/mm/zswap.c b/mm/zswap.c
+index e154f1e..f4fbbd5 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -711,8 +711,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 		ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
+ 		if (ret == -EEXIST) {
+ 			zswap_duplicate_entry++;
+-			/* remove from rbtree */
+-			zswap_rb_erase(&tree->rbroot, dupentry);
+ 			zswap_entry_put(tree, dupentry);
+ 		}
+ 	} while (ret == -EEXIST);
+@@ -787,9 +785,6 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+ 		return;
+ 	}
+ 
+-	/* remove from rbtree */
+-	zswap_rb_erase(&tree->rbroot, entry);
+-
+ 	/* drop the initial reference from entry creation */
+ 	zswap_entry_put(tree, entry);
+ 
+-- 
+1.8.3.1
 
