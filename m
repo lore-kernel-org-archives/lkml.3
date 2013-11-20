@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3KTI5D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:57:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab3KTI5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:57:01 -0500
-Date: Wed, 20 Nov 2013 11:00:09 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Michael Dalton <mwdalton@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jason Wang <jasowang@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-Message-ID: <20131120090009.GC19341@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131119204909.GA15004@redhat.com>
- <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131119215312.GE15004@redhat.com>
- <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
- <CANJ5vP+ZxtDf8OzREpyDpgh8JLnWGEjkUcS388hi+AOjdu0fZw@mail.gmail.com>
+	id S1752863Ab3KTI51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:57:27 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:48712 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3KTI5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 03:57:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANJ5vP+ZxtDf8OzREpyDpgh8JLnWGEjkUcS388hi+AOjdu0fZw@mail.gmail.com>
+In-Reply-To: <5280BB65.5040305@ti.com>
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
+	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
+	<527744B2.4090303@ti.com>
+	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
+	<52779D28.9000905@ti.com>
+	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
+	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
+	<000001ceda17$f41c2030$dc546090$%han@samsung.com>
+	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>
+	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>
+	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
+	<5280BB65.5040305@ti.com>
+Date: Wed, 20 Nov 2013 14:27:23 +0530
+Message-ID: <CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 05:34:16PM -0800, Michael Dalton wrote:
+Hi Kishon,
+
+
+On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
 > Hi,
-> 
-> After further reflection I think we're looking at two related issues:
-> (a) a memory leak that Jason has identified that occurs when a memory
-> allocation fails in receive_mergeable. Jasons commit solves this issue.
-> (b) virtio-net does not dequeue all buffers for a packet in the
-> case that an error occurs on receive and mergeable receive buffers is
-> enabled.
-> 
-> For (a), this bug is new and due to changes in 2613af0ed18a, and the
-> net impact is memory leak on the physical page. However, I believe (b)
-> has always been possible in some form because if page_to_skb() returns
-> NULL (e.g., due to SKB allocation failure), receive_mergeable is never
-> called. AFAICT this is also the behavior prior to 2613af0ed18a.
-> 
-> The net impact of (b) would be that virtio-net would interpret a packet
-> buffer that is in the middle of a mergeable packet as the start of a
-> new packet, which is definitely also a bug (and the buffer contents
-> could contain bytes that resembled a valid virtio-net header).
-> 
-> A solution for (b) will require handling both the page_to_skb memory
-> allocation failures and the memory allocation failures in
-> receive_mergeable introduced by 2613af0ed18a.
-> 
-> Best,
-> 
-> Mike
+sorry for the delayed response.
+
+>
+> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
+>> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
+>>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>
+>> [.....]
+>>
+>>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
+>>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
+>>>> and 2.0 block, respectively.
+>>>>
+>>>> Conclusion:
+>>>>
+>>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
+>>>>                        Base address: 0x1213 0000
+>>>>
+>>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
+>>>>                        Base address: 0x1210 0000
+>>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
+>>>
+>>> And this is of course the PHY used by DWC3 controller, which works at
+>>> both High speed as well as Super Speed.
+>>> Right ?
+>>
+>> Right.
+>>
+>> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
+>> can be used for High speed.
+>
+> It should then come under *single IP muliple PHY* category similar to what
+> Sylwester has done.
+
+Do you mean that i should be including PHY IDs for UTMI+ phy and PIPE3
+phy present in this PHY block ?
+AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
+registers to program, and that's the reason
+we program the entire PHY in a shot.
+
+>
+> Thanks
+> Kishon
 
 
-Absolutely. I missed this fact yesterday night but I can see it clearly
-in the morning.
 
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
