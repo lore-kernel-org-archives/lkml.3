@@ -1,95 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3KTPtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:49:36 -0500
-Received: from 6.mo1.mail-out.ovh.net ([46.105.43.205]:44677 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752060Ab3KTPtf (ORCPT
+	id S1754051Ab3KTPwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:52:45 -0500
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:42927 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab3KTPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 10:49:35 -0500
-X-Greylist: delayed 3233 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 10:49:35 EST
-Date: Wed, 20 Nov 2013 16:02:55 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 8/9] ARM: at91/dt: add new at91rm9200ek_mmc board
-Message-ID: <20131120150255.GH14627@ns203013.ovh.net>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
- <1377693456-11133-1-git-send-email-b.brezillon@overkiz.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377693456-11133-1-git-send-email-b.brezillon@overkiz.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 14898470518650678137
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 20 Nov 2013 10:52:40 -0500
+X-Greylist: delayed 626 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 10:52:40 EST
+Message-ID: <1384961813.1791.141.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3] ACPI / hotplug: Fix PCI host bridge hot removal
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Wed, 20 Nov 2013 08:36:53 -0700
+In-Reply-To: <13221031.pZI6l8TTGT@vostro.rjw.lan>
+References: <2434673.zhjYZOTQ4A@vostro.rjw.lan>
+	 <2499259.JLRCUgMzrL@vostro.rjw.lan>
+	 <1384910527.1791.140.camel@misato.fc.hp.com>
+	 <13221031.pZI6l8TTGT@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:37 Wed 28 Aug     , Boris BREZILLON wrote:
-> Add a new at91rm9200ek_mmc board (based on at91rm9200ek board) which enables
-> mmc0/slot0.
-
-no for multiple dts
-
-this need to handle at user space level
-
-Best Regards,
-J.
+On Wed, 2013-11-20 at 12:56 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, November 19, 2013 06:22:07 PM Toshi Kani wrote:
+> > On Wed, 2013-11-20 at 01:08 +0100, Rafael J. Wysocki wrote:
+> > > On Wednesday, November 20, 2013 12:42:28 AM Rafael J. Wysocki wrote:
+> > > > On Tuesday, November 19, 2013 02:58:40 PM Toshi Kani wrote:
+> > > > > On Tue, 2013-11-19 at 22:10 +0100, Rafael J. Wysocki wrote:
+> > > > > > > On Tuesday, November 19, 2013 10:48:51 AM Toshi Kani wrote:
+> > > > > > > > On Mon, 2013-11-18 at 22:39 +0100, Rafael J. Wysocki wrote:
+> > > > > > > > > On Monday, November 18, 2013 11:10:05 AM Toshi Kani wrote:
+> > > > > > > > > > On Thu, 2013-11-14 at 00:16 +0100, Rafael J. Wysocki wrote:
+> > > > > > > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > > > > > > 
+> > > > > > > > > > > Since the PCI host bridge scan handler does not set hotplug.enabled,
+> > > > > > > > > > > the check of it in acpi_bus_device_eject() effectively prevents the
+> > > > > > > > > > > root bridge hot removal from working after commit a3b1b1ef78cd
+> > > > > > > > > > > (ACPI / hotplug: Merge device hot-removal routines).  However, that
+> > > > > > > > > > > check is not necessary, because the other acpi_bus_device_eject()
+> > > > > > > > > > > users, acpi_hotplug_notify_cb and acpi_eject_store(), do the same
+> > > > > > > > > > > check by themselves before executing that function.
+> > > > > > > > > > > 
+> > > > > > > > > > > For this reason, remove the scan handler check from
+> > > > > > > > > > > acpi_bus_device_eject() to make PCI hot bridge hot removal work
+> > > > > > > > > > > again.
+> > > > > > > > > > 
+> > > > > > > > > > I am curious why the PCI host bridge scan handler does not set
+> > > > > > > > > > hotplug.enabled.  Is this how it disables hotplug via sysfs eject but
+> > > > > > > > > > enables via ACPI notification?
+> > > > > > > > > 
+> > > > > > > > > It just doesn't register for hotplug at all.  I guess it could set that
+> > > > > > > > > bit alone, but then it would be quite confusing and the check is not
+> > > > > > > > > necessary anyway.
+> > > > > > > > 
+> > > > > > > > I see.  Given how the PCI host bridge scan handler is integrated today,
+> > > > > > > > the change looks reasonable to me.
+> > > > > > > 
+> > > > > > > Looking further, I noticed that there is one more issue to address.  The
+> > > > > > > patch below applies on top of your patchset.
+> > > > > > >
+> > > > > > > From: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > Subject: [PATCH] ACPI / hotplug: Fix conflicted PCI bridge notify
+> > > > > > > handlers
+> > > > > > > 
+> > > > > > > The PCI host bridge scan handler installs its own notify handler,
+> > > > > > > handle_hotplug_event_root(), by itself.  Nevertheless, the ACPI
+> > > > > > > hotplug framework also installs the common notify handler,
+> > > > > > > acpi_hotplug_notify_cb(), for PCI root bridges.  This causes
+> > > > > > > acpi_hotplug_notify_cb() to call _OST method with unsupported
+> > > > > > > error as hotplug.enabled is not set.
+> > > > > > > 
+> > > > > > > To address this issue, introduce hotplug.self_install flag, which
+> > > > > > > indicates that the scan handler installs its own notify handler by
+> > > > > > > itself.  The ACPI hotplug framework does not install the common
+> > > > > > > notify handler when this flag is set.
+> > > > > > 
+> > > > > > Good catch!
+> > > > > > 
+> > > > > > Still, I don't think we need a new flag, because we know that that
+> > > > > > scan handler doesn't support hotplug, because its hotplug profile
+> > > > > > hasn't been registered (that actually applies to all scan handlers
+> > > > > > without hotplug support, not only the root host bridge).  
+> > > > > 
+> > > > > When a scan handler does not support hotplug at all, the common notify
+> > > > > handler should be installed so that it can call _OST with an appropriate
+> > > > > response.
+> > > > 
+> > > > That creates an arbitrary difference between devices that have scan handlers
+> > > > and devices that don't have them (PCI, USB, SATA etc).  So if we want _OST
+> > > > to be called for all devices for which hotplug is not supported, that
+> > > > should be implemented in a different way and not necessarily in 3.13.
+> > 
+> > I do not think we have an immediate issue since it only matters when the
+> > firmware supports ACPI hotplug with _OST.  Such device types are CPU,
+> > memory, container, and PCI bridge, which uses scan handlers.  USB, SATA,
+> > etc. do not use ACPI hotplug.  That said, ideally, we should be able to
+> > call _OST for any device types.
+> >  
+> > > > > > Moreover,
+> > > > > > if it does support hotplug, but the hotplug profile hasn't been
+> > > > > > registered due to an error, we still should not install the notify
+> > > > > > handler I think.  
+> > > > > 
+> > > > > This case, I think the common notify handler should be installed so that
+> > > > > it can call _OST for error response as well.  The question is what to do
+> > > > > when a scan handler has its own notify handler.
+> > > 
+> > > Actually, having considered this particular case a bit more I think that it
+> > > is useful to install acpi_hotplug_notify_cb() for things whose scan handlers
+> > > register hotplug support, but the registration fails (which should be treated
+> > > as "permanently disabled").
+> > >
+> > > However, I still think that devices whose scan handlers don't support hotplug
+> > > at all should be treated consistently with devices without scan handlers.
+> > 
+> > Basically, the kernel needs to be compliant with ACPI spec.  Once the
+> > kernel tells firmware that it supports _OST, it needs to call _OST for
+> > an ACPI hotplug event when _OST is implemented on the object.  Although
+> > we cannot assure this behavior for the devices without scan handler, we
+> > should do so for the devices with scan handlers.
+> > 
+> > > So, what about the slightly modified patch below?
+> > 
+> > Well, I do not think it is right.  The kernel is supposed to tell
+> > firmware that it does not support hotplug when it doesn't... 
 > 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  arch/arm/boot/dts/at91rm9200ek_mmc.dts |   23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91rm9200ek_mmc.dts
+> OK, I see your point.
 > 
-> diff --git a/arch/arm/boot/dts/at91rm9200ek_mmc.dts b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
-> new file mode 100644
-> index 0000000..c87a861
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
-> @@ -0,0 +1,23 @@
-> +/*
-> + * at91rm9200ek.dts - Device Tree file for Atmel AT91RM9200 evaluation kit with
-> + *                    an MMC slot
-> + *
-> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> + *
-> + * Licensed under GPLv2 only
-> + */
-> +/dts-v1/;
-> +#include "at91rm9200ek.dts"
-> +
-> +/ {
-> +	model = "Atmel AT91RM9200 evaluation kit with MMC slot";
-> +	compatible = "atmel,at91rm9200ek-mmc", "atmel,at91rm9200ek", "atmel,at91rm9200";
-> +
-> +	ahb {
-> +		apb {
-> +			mmc0: mmc@fffb4000 {
-> +				status = "okay";
-> +			};
-> +		};
-> +	};
-> +};
-> -- 
-> 1.7.9.5
-> 
+> I'll apply your patch, then, but I'm going to rename the new flag to
+> "ignore".
+
+Great. Thanks Rafael!
+-Toshi
+
