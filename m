@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3KTJvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:51:46 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:40150 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab3KTJvl (ORCPT
+	id S1752357Ab3KTJyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:54:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40178 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab3KTJyh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:51:41 -0500
+	Wed, 20 Nov 2013 04:54:37 -0500
+X-IronPort-AV: E=Sophos;i="4.93,735,1378828800"; 
+   d="scan'208";a="9084664"
+Message-ID: <528C8559.6040909@cn.fujitsu.com>
+Date: Wed, 20 Nov 2013 17:48:09 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20131119220829.27502.62997@capellas-linux>
-References: <1384867831-15383-1-git-send-email-jhbird.choi@samsung.com>
-	<27161890.Zx6CiZOMr8@amdc1032>
-	<20131119220829.27502.62997@capellas-linux>
-Date: Wed, 20 Nov 2013 18:51:41 +0900
-X-Google-Sender-Auth: zqBVZUgyZ2PNcdZK80QH0-gzvTs
-Message-ID: <CAJ0PZbSkDegFSwJoEHsZGGbXxtTDt419rdK+cn+E+bzmux9U7w@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PM / devfreq: Consider hibernation in pm notifier
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Jonghwan Choi <jhbird.choi@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Samsung SoC <linux-samsung-soc@vger.kernel.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: jaegeuk.kim@samsung.com
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] f2fs: move the list_head initialization into the
+ lock protection region
+References: <528B3783.2040905@cn.fujitsu.com> <1384911101.26319.37.camel@kjgkr>
+In-Reply-To: <1384911101.26319.37.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/20 17:52:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/20 17:52:40
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 7:08 AM, Sebastian Capella
-<sebastian.capella@linaro.org> wrote:
-> Quoting Bartlomiej Zolnierkiewicz (2013-11-19 06:50:05)
->> Hi,
->>
->> Are you planning to add hibernation support to ARM?
->>
->> If so then this should be stated somewhere in the patch description.
->>
->> OTOH if you are not going to add hibernation support to ARM I see
->> a little sense in adding hibernation support to ARM-only drivers..
->
-> FYI, we at Linaro and a few others have been working on adding
-> hibernation support for ARM.  I have not coordinated with Jonghwan
-> however.
+Hi Kim,
+On 11/20/2013 09:31 AM, Jaegeuk Kim wrote:
 
-That is great.
+> Hi Gu,
+> 
+> IMO, there is no reason to cover the list header by the lock.
+> In any flows, sbi should have the header all the time.
 
-We once tried to upstream hibernation support and forgot it for a while, too.
-http://lists.infradead.org/pipermail/linux-arm-kernel/2010-December/036101.html
+Yes, you're right.
 
-I have not coordinated with Jonghwan Choi, either.
-However, it appears that some others are trying now, too.
+> What is your opinion?
 
+Moving the list_head initialization into the lock protection region, so
+that we can ignore the list change during the gap(initialization<-->use).
+And on the other side, it can keep the code style uniform for better
+maintenance.
 
-Cheers,
-MyungJoo
+Regards,
+Gu
 
->
-> Apoligies for the earlier toppost.
->
+> 
 > Thanks,
->
-> Sebastian Capella
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 2013-11-19 (화), 18:03 +0800, Gu Zheng:
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  fs/f2fs/checkpoint.c |   15 ++++++++++-----
+>>  1 files changed, 10 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> index f884589..1de70cc 100644
+>> --- a/fs/f2fs/checkpoint.c
+>> +++ b/fs/f2fs/checkpoint.c
+>> @@ -511,8 +511,8 @@ void add_dirty_dir_inode(struct inode *inode)
+>>  void remove_dirty_dir_inode(struct inode *inode)
+>>  {
+>>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>> -	struct list_head *head = &sbi->dir_inode_list;
+>> -	struct list_head *this;
+>> +
+>> +	struct list_head *this, *head;
+>>  
+>>  	if (!S_ISDIR(inode->i_mode))
+>>  		return;
+>> @@ -523,6 +523,7 @@ void remove_dirty_dir_inode(struct inode *inode)
+>>  		return;
+>>  	}
+>>  
+>> +	head = &sbi->dir_inode_list;
+>>  	list_for_each(this, head) {
+>>  		struct dir_inode_entry *entry;
+>>  		entry = list_entry(this, struct dir_inode_entry, list);
+>> @@ -544,11 +545,13 @@ void remove_dirty_dir_inode(struct inode *inode)
+>>  
+>>  struct inode *check_dirty_dir_inode(struct f2fs_sb_info *sbi, nid_t ino)
+>>  {
+>> -	struct list_head *head = &sbi->dir_inode_list;
+>> -	struct list_head *this;
+>> +
+>> +	struct list_head *this, *head;
+>>  	struct inode *inode = NULL;
+>>  
+>>  	spin_lock(&sbi->dir_inode_lock);
+>> +
+>> +	head = &sbi->dir_inode_list;
+>>  	list_for_each(this, head) {
+>>  		struct dir_inode_entry *entry;
+>>  		entry = list_entry(this, struct dir_inode_entry, list);
+>> @@ -563,11 +566,13 @@ struct inode *check_dirty_dir_inode(struct f2fs_sb_info *sbi, nid_t ino)
+>>  
+>>  void sync_dirty_dir_inodes(struct f2fs_sb_info *sbi)
+>>  {
+>> -	struct list_head *head = &sbi->dir_inode_list;
+>> +	struct list_head *head;
+>>  	struct dir_inode_entry *entry;
+>>  	struct inode *inode;
+>>  retry:
+>>  	spin_lock(&sbi->dir_inode_lock);
+>> +
+>> +	head = &sbi->dir_inode_list;
+>>  	if (list_empty(head)) {
+>>  		spin_unlock(&sbi->dir_inode_lock);
+>>  		return;
+> 
 
 
-
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
