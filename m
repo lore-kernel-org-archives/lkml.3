@@ -1,159 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3KTK6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:58:31 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:46383 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3KTK6a convert rfc822-to-8bit (ORCPT
+	id S1753198Ab3KTK6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:58:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35459 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab3KTK6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:58:30 -0500
-Message-ID: <528C95D2.5090200@arm.com>
-Date: Wed, 20 Nov 2013 10:58:26 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 20 Nov 2013 05:58:46 -0500
+Date: Wed, 20 Nov 2013 11:58:37 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shaohua.li@intel.com,
+        rui.zhang@intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        hpa@zytor.com
+Subject: Re: [PATCH] x86, acpi, idle: Restructure the mwait idle routines
+Message-ID: <20131120105837.GH3694@twins.programming.kicks-ass.net>
+References: <20131119090019.GJ3866@twins.programming.kicks-ass.net>
+ <20131119090859.GC3694@twins.programming.kicks-ass.net>
+ <20131119113153.GD3694@twins.programming.kicks-ass.net>
+ <528B7433.7020507@linux.intel.com>
+ <20131119145143.GK10022@twins.programming.kicks-ass.net>
+ <20131119151338.GF3694@twins.programming.kicks-ass.net>
+ <20131119130630.487da962@ultegra>
+ <20131120102803.GO10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Feng Kan <fkan@apm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-In-Reply-To: <1384897358-22940-1-git-send-email-fkan@apm.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 20 Nov 2013 10:58:26.0737 (UTC) FILETIME=[7072EA10:01CEE5DF]
-X-MC-Unique: 113112010582801001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120102803.GO10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[dropping <patches@apm.com> from the CC list, as someone seems to have
- tripped on the config file, and I'm tired of getting bounces]
+On Wed, Nov 20, 2013 at 11:28:03AM +0100, Peter Zijlstra wrote:
+> On Tue, Nov 19, 2013 at 01:06:30PM -0800, Jacob Pan wrote:
+> > I applied this patch on top of upstream kernel (801a760) and found out
+> > my machine completely failed to enter idle when nothing is running.
+> > turbostate shows 100% C0. ftrace shows kernel coming in and out of idle
+> > frequently.
+> > 
+> > Both ACPI idle and intel_idle behaves the same way. I have to do the
+> > following change to allow entering C-states again.
 
-Feng,
-
-On 19/11/13 21:42, Feng Kan wrote:
-> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
-> X-Gene implementation, the FIQ bypass must be enabled at all time.
-> Otherwise, some PPI will appear as FIQ and cause kernel problem.
-
-How comes? Are only PPIs affected? When you say "some PPIs", can you be
-more specific?
-
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
->  include/linux/irqchip/arm-gic.h |    4 ++--
->  2 files changed, 13 insertions(+), 6 deletions(-)
+> That doesn't make any sense; current_set_polling_and_test() returns the
+> same thing need_resched() does.
 > 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index d0e9480..aa7342e 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -65,6 +65,7 @@ struct gic_chip_data {
->  #endif
->  	struct irq_domain *domain;
->  	unsigned int gic_irqs;
-> +	unsigned int bypass_flag;
->  #ifdef CONFIG_GIC_NON_BANKED
->  	void __iomem *(*get_base)(union gic_base *);
->  #endif
-> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->  
->  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, base + GIC_CPU_CTRL);
-> +	writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
->  }
->  
->  void gic_cpu_if_down(void)
-> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->  
->  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-> +	writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
->  }
->  
->  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
-> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
->  
->  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->  			   void __iomem *dist_base, void __iomem *cpu_base,
-> -			   u32 percpu_offset, struct device_node *node)
-> +			   u32 percpu_offset, u32 bypass_val,
-> +			   struct device_node *node)
->  {
->  	irq_hw_number_t hwirq_base;
->  	struct gic_chip_data *gic;
-> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->  
->  	set_handle_irq(gic_handle_irq);
->  
-> +	gic->bypass_flag = (bypass_val & 0xf) << 4;
+> But you're right, intel_idle resides 100% in C0 and acpi_idle has 100%
+> C1 residency... most weird.
 
-Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
+So pretty silly actually; you cannot do a store (any store) in between
+monitor and mwait.
 
->  	gic_chip.flags |= gic_arch_extn.flags;
->  	gic_dist_init(gic);
->  	gic_cpu_init(gic);
-> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->  	void __iomem *cpu_base;
->  	void __iomem *dist_base;
->  	u32 percpu_offset;
-> +	u32 bypass_val;
->  	int irq;
->  
->  	if (WARN_ON(!node))
-> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->  	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->  		percpu_offset = 0;
->  
-> -	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
-> +	if (of_property_read_u32(node, "bypass-flags", &bypass_val))
-> +		bypass_val = 0;
+The below version seems to work properly again with both acpi_idle and
+intel_idle.
 
-[adding Mark on Cc, so he can comment on the DT parts]
+Now to go make that preempt_disable_no_resched cleanup compile.. :-)
 
-Where's the DT documentation update? Also, as this is an
-implementation-specific quirk, you should consider using a separate
-compatible string and move the handling of this issue into some X-Gene
-specific code.
+---
+Subject: x86, acpi, idle: Restructure the mwait idle routines
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 19 Nov 2013 12:31:53 +0100
 
-> +	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, bypass_val, node);
->  
->  	if (parent) {
->  		irq = irq_of_parse_and_map(node, 0);
-> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-> index 0e5d9ec..999515b 100644
-> --- a/include/linux/irqchip/arm-gic.h
-> +++ b/include/linux/irqchip/arm-gic.h
-> @@ -64,14 +64,14 @@ struct device_node;
->  extern struct irq_chip gic_arch_extn;
->  
->  void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
-> -		    u32 offset, struct device_node *);
-> +		    u32 offset, u32 bypass_val, struct device_node *);
->  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
->  void gic_cpu_if_down(void);
->  
->  static inline void gic_init(unsigned int nr, int start,
->  			    void __iomem *dist , void __iomem *cpu)
->  {
-> -	gic_init_bases(nr, start, dist, cpu, 0, NULL);
-> +	gic_init_bases(nr, start, dist, cpu, 0, 0, NULL);
->  }
->  
->  #endif /* __ASSEMBLY */
-> 
+People seem to delight in writing wrong and broken mwait idle routines;
+collapse the lot.
 
-Cheers,
+This leaves mwait_play_dead() the sole remaining user of __mwait() and
+new __mwait() users are probably doing it wrong.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Also remove __sti_mwait() as its unused.
 
+Cc: arjan@linux.intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: hpa@zytor.com
+Cc: lenb@kernel.org
+Cc: shaohua.li@intel.com
+Cc: rui.zhang@intel.com
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/mwait.h       |   40 +++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h   |   23 ---------------------
+ arch/x86/kernel/acpi/cstate.c      |   23 ---------------------
+ drivers/acpi/acpi_pad.c            |    5 ----
+ drivers/acpi/processor_idle.c      |   15 -------------
+ drivers/idle/intel_idle.c          |    8 -------
+ drivers/thermal/intel_powerclamp.c |    4 ---
+ 7 files changed, 43 insertions(+), 75 deletions(-)
+
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_MWAIT_H
+ #define _ASM_X86_MWAIT_H
+ 
++#include <linux/sched.h>
++
+ #define MWAIT_SUBSTATE_MASK		0xf
+ #define MWAIT_CSTATE_MASK		0xf
+ #define MWAIT_SUBSTATE_SIZE		4
+@@ -13,4 +15,42 @@
+ 
+ #define MWAIT_ECX_INTERRUPT_BREAK	0x1
+ 
++static inline void __monitor(const void *eax, unsigned long ecx,
++			     unsigned long edx)
++{
++	/* "monitor %eax, %ecx, %edx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc8;"
++		     :: "a" (eax), "c" (ecx), "d"(edx));
++}
++
++static inline void __mwait(unsigned long eax, unsigned long ecx)
++{
++	/* "mwait %eax, %ecx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc9;"
++		     :: "a" (eax), "c" (ecx));
++}
++
++/*
++ * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
++ * which can obviate IPI to trigger checking of need_resched.
++ * We execute MONITOR against need_resched and enter optimized wait state
++ * through MWAIT. Whenever someone changes need_resched, we would be woken
++ * up from MWAIT (without an IPI).
++ *
++ * New with Core Duo processors, MWAIT can take some hints based on CPU
++ * capability.
++ */
++static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
++{
++	if (!current_set_polling_and_test()) {
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		if (!need_resched())
++			__mwait(eax, ecx);
++	}
++	__current_clr_polling();
++}
++
+ #endif /* _ASM_X86_MWAIT_H */
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -700,29 +700,6 @@ static inline void sync_core(void)
+ #endif
+ }
+ 
+-static inline void __monitor(const void *eax, unsigned long ecx,
+-			     unsigned long edx)
+-{
+-	/* "monitor %eax, %ecx, %edx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc8;"
+-		     :: "a" (eax), "c" (ecx), "d"(edx));
+-}
+-
+-static inline void __mwait(unsigned long eax, unsigned long ecx)
+-{
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+-static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+-{
+-	trace_hardirqs_on();
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile("sti; .byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+ extern void select_idle_routine(const struct cpuinfo_x86 *c);
+ extern void init_amd_e400_c1e_mask(void);
+ 
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -150,29 +150,6 @@ int acpi_processor_ffh_cstate_probe(unsi
+ }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+ 
+-/*
+- * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
+- * which can obviate IPI to trigger checking of need_resched.
+- * We execute MONITOR against need_resched and enter optimized wait state
+- * through MWAIT. Whenever someone changes need_resched, we would be woken
+- * up from MWAIT (without an IPI).
+- *
+- * New with Core Duo processors, MWAIT can take some hints based on CPU
+- * capability.
+- */
+-void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+-{
+-	if (!need_resched()) {
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(ax, cx);
+-	}
+-}
+-
+ void acpi_processor_ffh_cstate_enter(struct acpi_processor_cx *cx)
+ {
+ 	unsigned int cpu = smp_processor_id();
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -193,10 +193,7 @@ static int power_saving_thread(void *dat
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 			stop_critical_timings();
+ 
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			smp_mb();
+-			if (!need_resched())
+-				__mwait(power_saving_mwait_eax, 1);
++			mwait_idle_with_hints(power_saving_mwait_eax, 1);
+ 
+ 			start_critical_timings();
+ 			if (lapic_marked_unstable)
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -727,11 +727,6 @@ static int acpi_idle_enter_c1(struct cpu
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	lapic_timer_state_broadcast(pr, cx, 1);
+ 	acpi_idle_do_entry(cx);
+ 
+@@ -785,11 +780,6 @@ static int acpi_idle_enter_simple(struct
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	/*
+ 	 * Must be done before busmaster disable as we might need to
+ 	 * access HPET !
+@@ -841,11 +831,6 @@ static int acpi_idle_enter_bm(struct cpu
+ 		}
+ 	}
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	acpi_unlazy_tlb(smp_processor_id());
+ 
+ 	/* Tell the scheduler that we are going deep-idle: */
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -359,13 +359,7 @@ static int intel_idle(struct cpuidle_dev
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 
+-	if (!current_set_polling_and_test()) {
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(eax, ecx);
+-	}
++	mwait_idle_with_hints(eax, ecx);
+ 
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
+ 			 */
+ 			local_touch_nmi();
+ 			stop_critical_timings();
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			cpu_relax(); /* allow HT sibling to run */
+-			__mwait(eax, ecx);
++			mwait_idle_with_hints(eax, ecx);
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
