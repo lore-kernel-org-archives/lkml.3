@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3KTRnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:43:47 -0500
-Received: from 4.mo5.mail-out.ovh.net ([178.33.111.247]:53106 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750906Ab3KTRnq (ORCPT
+	id S1753898Ab3KTRrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:47:05 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:44452 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab3KTRrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:43:46 -0500
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 12:43:46 EST
-Date: Wed, 20 Nov 2013 18:27:22 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 8/9] ARM: at91/dt: add new at91rm9200ek_mmc board
-Message-ID: <20131120172722.GJ14627@ns203013.ovh.net>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
- <1377693456-11133-1-git-send-email-b.brezillon@overkiz.com>
- <20131120150255.GH14627@ns203013.ovh.net>
- <528CE3E6.1040802@overkiz.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528CE3E6.1040802@overkiz.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 17324503342588078969
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 20 Nov 2013 12:47:02 -0500
+Message-ID: <1384969615.2470.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] fs: partitions: efi: Fix bound check
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Antti Miettinen <amiettinen@nvidia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "kzak@redhat.com" <kzak@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Will Drewry <wad@chromium.org>
+Date: Wed, 20 Nov 2013 09:46:55 -0800
+In-Reply-To: <528C625A.4040509@nvidia.com>
+References: <20131115.191422.1787913255098350249.apm@brigitte.kvy.fi>
+	 <20131119160438.f1cce64660ab5c545be8baa9@linux-foundation.org>
+	 <528C625A.4040509@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:31 Wed 20 Nov     , boris brezillon wrote:
-> On 20/11/2013 16:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >On 14:37 Wed 28 Aug     , Boris BREZILLON wrote:
-> >>Add a new at91rm9200ek_mmc board (based on at91rm9200ek board) which enables
-> >>mmc0/slot0.
-> >no for multiple dts
+On Wed, 2013-11-20 at 08:18 +0100, Antti Miettinen wrote:
+> On 20.11.2013 02:04, Andrew Morton wrote:
+> > On Fri, 15 Nov 2013 19:14:22 +0200 (EET) Antti P Miettinen
+> > <amiettinen@nvidia.com> wrote:
 > >
-> >this need to handle at user space level
+> >  > Use ARRAY_SIZE instead of sizeof to get proper max for label
+> >  > length.
+> >  >
+> >  > Signed-off-by: Antti P Miettinen <amiettinen@nvidia.com>
+> >  > Reviewed-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> >  > Tested-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> >
+> > When fixing a bug, please provide a description of the user-visible
+> > impact of that bug.  This is so that others can decide which kernel
+> > version(s) need the patch.
+> >
+> > Hiroshi Doyu tested this patch, so I assume there was some observable
+> > misbehaviour to test.  Please fully describe that.
 > 
-> You mean, by controlling the regulator using the sysfs interface, or
-> by loading
-> only the appropriate driver ?
-load the partial dts via userspace
+> Since this is just a read out of bounds it's not that bad, but the 
+> problem becomes user-visible e.g. if one tries to use 
+> CONFIG_DEBUG_PAGEALLOC and CONFIG_DEBUG_RODATA, at least with some 
+> enhancements from Hiroshi. Of course the destination array can contain 
+> garbage when we read beyond the end of source array so that would be 
+> another user-visible problem.
 > 
-> What if both drivers are loaded (or not compiled as modules) ?
-> This will lead to one device being unusable (and maybe even worst)...
-> 
-this will never be the case
 
-Best Regards,
-J.
-> Please explain what you had in mind ?
+Cc'ing Will - this path as been untouched since it's inclusion back in
+2.6.37:
+
+commit eec7ecfede74bb996060efefd5c157acd5794e8a
+Author: Will Drewry <wad@chromium.org>
+Date:   Tue Aug 31 15:47:06 2010 -0500
+
+    genhd, efi: add efi partition metadata to hd_structs
+    
+    This change extends the partition_meta_info structure to
+    support EFI GPT-specific metadata and ensures that data
+    is copied in on partition scanning.
+    
+    Signed-off-by: Will Drewry <wad@chromium.org>
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+
+
+> Should I send a new version with better commit message?
 > 
-> >
-> >Best Regards,
-> >J.
-> >>Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> >>---
-> >>  arch/arm/boot/dts/at91rm9200ek_mmc.dts |   23 +++++++++++++++++++++++
-> >>  1 file changed, 23 insertions(+)
-> >>  create mode 100644 arch/arm/boot/dts/at91rm9200ek_mmc.dts
-> >>
-> >>diff --git a/arch/arm/boot/dts/at91rm9200ek_mmc.dts b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
-> >>new file mode 100644
-> >>index 0000000..c87a861
-> >>--- /dev/null
-> >>+++ b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
-> >>@@ -0,0 +1,23 @@
-> >>+/*
-> >>+ * at91rm9200ek.dts - Device Tree file for Atmel AT91RM9200 evaluation kit with
-> >>+ *                    an MMC slot
-> >>+ *
-> >>+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> >>+ *
-> >>+ * Licensed under GPLv2 only
-> >>+ */
-> >>+/dts-v1/;
-> >>+#include "at91rm9200ek.dts"
-> >>+
-> >>+/ {
-> >>+	model = "Atmel AT91RM9200 evaluation kit with MMC slot";
-> >>+	compatible = "atmel,at91rm9200ek-mmc", "atmel,at91rm9200ek", "atmel,at91rm9200";
-> >>+
-> >>+	ahb {
-> >>+		apb {
-> >>+			mmc0: mmc@fffb4000 {
-> >>+				status = "okay";
-> >>+			};
-> >>+		};
-> >>+	};
-> >>+};
-> >>-- 
-> >>1.7.9.5
-> >>
-> 
+> 	--Antti
+
+
