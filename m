@@ -1,38 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3KTFYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 00:24:36 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:61917 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab3KTFYe (ORCPT
+	id S1751165Ab3KTFee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 00:34:34 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:47362 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab3KTFe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 00:24:34 -0500
-Message-ID: <528C478C.1070901@linaro.org>
-Date: Wed, 20 Nov 2013 10:54:28 +0530
-From: viresh kumar <viresh.kumar@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 20 Nov 2013 00:34:29 -0500
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+In-Reply-To: <5289A80B.7080808@linaro.org>
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org>
+	<5974906.WAPp3f3eVY@vostro.rjw.lan>
+	<CAKohpo=PoAaYgLNEVkkTC6tzAH=5hKw4VWTsrjt2jQnr7+6Q_w@mail.gmail.com>
+	<5229929.5JRiWnF6CT@vostro.rjw.lan>
+	<5289A80B.7080808@linaro.org>
+Date: Wed, 20 Nov 2013 11:04:28 +0530
+Message-ID: <CAKohpon5L21yXg=GAuSLSgkr_66iRSn_uUWKZ1FhwD3zuQNb_A@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
         "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: Use a sane boot frequency when
- booting with a mismatched bootloader configuration
-References: <1384568535-26611-1-git-send-email-nm@ti.com>	<20131116134445.GI11014@S2101-09.ap.freescale.net>	<CAKohponU-WFnG8Gx6ba=k3eJmWV_0eWtpsy9kDP8yA2KrdoKtg@mail.gmail.com>	<528A27F8.3070402@ti.com>	<20131118155753.GU11014@S2101-09.ap.freescale.net>	<528A4340.3020508@ti.com>	<20131119022133.GB18434@S2101-09.ap.freescale.net>	<CAKohpok_yRZr-XQEC+w8PLN+ZyW83uijFyZrDM1LB8G2X4h-fg@mail.gmail.com>	<528B72C1.5060006@ti.com>	<CAKohpo=hzCSuQBGreRStzkOuH6aFiZKTtK9SF+_eGEajkwSXEA@mail.gmail.com>	<528B7CE5.5040502@ti.com>	<CAKohponO7M6rYoPt=ePNTZh=y+iU=BEbFWBqxr1JQPbVptvgXA@mail.gmail.com>	<528B884C.7070908@ti.com> <CAKohpo=brpnLe68ExPRPg9h5ABMhg+GS85Ebn-+S5-vWaStrPQ@mail.gmail.com> <528BA355.4040008@ti.com>
-In-Reply-To: <528BA355.4040008@ti.com>
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 November 2013 11:13 PM, Nishanth Menon wrote:
-> we depend on the first transition to take us to a sane configuration -
-> but we cannot predict when and if it will happen.
+On 18 November 2013 11:09, viresh kumar <viresh.kumar@linaro.org> wrote:
+> On 18 November 2013 03:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Sunday, November 17, 2013 10:27:43 PM Viresh Kumar wrote:
+>
+>>> Okay.. Even these notifiers would be fine for me. To make things more clear
+>>> before I start implementing them:
+>>> - What about implementing syscore's suspend_prepare and post_suspend?
+>>
+>> I'm not sure how useful that would be.  When would you like to execute those
+>> things?
+>
+> Maybe after freezing userspace. So I was actually looking to move the existing
+> code I wrote in PM notifiers to those..
+>
+> Because in our usecase, we just want to know when suspend has started or
+> resume has finished. And so we really don't need a per cpu callback.
+>
+> And so I felt probably it would be better to implement those instead of
+> cpu_subsys callbacks.
+>
+>>> - Or you want to extend only CPU subsystems notifiers? What notifiers exactly?
+>>> And at which places we want to issue them from?
+>>
+>> Why do we need to use notifiers?  What about PM callbacks?
+>
+> Yeah, we don't need notifiers but callbacks.
+>
+>>> Okay, so you were asking about extending following list: CPU_ONLINE,
+>>> CPU_UP_PREPARE, CPU_UP_CANCELED, CPU_DOWN_PREPARE, etc.. to
+>>> include suspend/resume ones as well?
+>>
+>> No.  Bus types (among other things) may provide suspend/resume callbacks for
+>> handling devices.  We have a bus type for CPUs, which is called cpu_subsys
+>> and currently doesn't define any PM callbacks, although it could do that in
+>> principle.  Have you investigated that possibility?
+>
+> I did it now and got really confused. :)
+>
+> This is what my understanding is:
+> - bus can register PM hooks, like suspend/resume/prepare, etc..
+> - devices under that bus would register themselves to that bus and eventually
+> can get their _driver's_ callbacks called via bus hooks.. For example and I2C
+> controller driver's callbacks will get called via i2c core bus..
+>
+> - In case of cpu subsystem, even if cpu_subsys adds those hooks in
+> drivers/base/cpu.c, then those hooks will get called for each cpu. CPU's don't
+> have a driver and so the only callbacks called are the ones of cpu_subsys.
+> - How will we bind/use them with cpufreq?
+>
+> Our sole requirement here is to get notify cpufreq core that system
+> suspend/resume/hibernation/restore has started/finished. How will that get
+> fulfilled with cpu_subsys callbacks?
+>
+>>> Logically speaking, all existing ones does look correct as they are more or
+>>> less cpu related. But suspend/resume doesn't look any similar, Atleast to me.
+>>>
+>>> Suspend/resume are system's state rather than CPU's.. We aren't suspending
+>>> or resuming CPUs, we are shutting them off.. So I thought maybe syscore ops
+>>> is a better place (which is already used by cpufreq)..
+>>
+>> cpufreq uses syscore_ops for the boot CPU only and that admittedly is a hack.
+>
+> Why do you call it a hack?
+>
+>> syscore_ops is specifically for things that have to be suspended with only one
+>> CPU online and with interrupts off.  I'm not sure how that applies to cpufreq.
+>
+> Currently syscore_ops only implements suspend/resume/shutdown callbacks and
+> those precisely happen the way you mentioned. i.e. after removing all non-boot
+> CPUs and disabling interrupts (And before bringing back all CPUs and enabling
+> interrupts on resume side).. So, yes we have limitation currently..
+>
+> Honestly speaking I have looked at syscore ops for the first time now, when we
+> got to this problem.. I couldn't find much information about it anywhere,
+> leaving the commit itself: 40dc16
+>
+> And by that, this is the definition of this framework: "PM / Core: Introduce
+> struct syscore_ops for core subsystems PM"
+>
+> I can see that you mentioned the limitations like single cpu and disabled
+> interrupts even in the log, but I think we can enhance this framework a little bit.
+>
+> Also I can see that there are many users of this framework which aren't core
+> frameworks but simply drivers. I don't think that was the intention behind this
+> framework, but that's how others went to use it.
+>
+> So, this framework exists to service core frameworks for their requirements
+> about PM stages. Currently that is only limited to late suspend and early resume
+> but I feel there is space for more..
+>
+> For example, our current problem.. A core framework wants to prepare before
+> suspend starts and after everything has resumed. Obviously that would violate
+> one of the basic rules with which this was designed, but still this feature lies
+> in scope of syscore. And so we can keep the limitations as is for
+> suspend/resume/shutdown but not for prepare and resume_late.
+>
+> And I really feel even if we would be able to use cpu callbacks for
+> suspend/resume, that would be a real *Hack*, because our framework doesn't want
+> to get a callback for each of its devices (i.e. cpu) but a single callback at
+> certain instances.. And syscore suits very well to this scenario..
 
-I really believe that it happens fairly quickly, isn't it? We straight away
-start the sampling of load and withing few milliseconds we must be fixing the freq..
+Hi Rafael,
 
-We aren't going to stay for the unknown, might be unstable, freq for ever..
+I need few more suggestions from you on this :)
