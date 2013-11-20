@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3KTUvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:51:00 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:48393 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab3KTUuz (ORCPT
+	id S1755351Ab3KTUwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:52:14 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59746 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027Ab3KTUwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:50:55 -0500
+	Wed, 20 Nov 2013 15:52:12 -0500
+Date: Wed, 20 Nov 2013 14:51:43 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, <ldewangan@nvidia.com>, <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
+Message-ID: <20131120205143.GA9182@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131120175814.GC27423@saruman.home>
+ <20131120203400.GL2674@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1384859554-27268-1-git-send-email-geert@linux-m68k.org>
-References: <5283A000.8090007@gmail.com>
-	<1384859554-27268-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 20 Nov 2013 14:50:53 -0600
-Message-ID: <CAL_Jsq+ri0rVg-urU74cE__tor7WSu_0xexUDzQHc+o=Qo8E3A@mail.gmail.com>
-Subject: Re: [PATCH 1/9] dt: Handle passed/built-in DT selection in early_init_dt_scan()
-From: Rob Herring <robherring2@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
+Content-Disposition: inline
+In-Reply-To: <20131120203400.GL2674@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 5:12 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Let early_init_dt_scan() fall-back to the built-in DT if no DT was passed,
-> or if it's invalid, so architectures don't have to duplicate this logic.
->
-> Suggested-by: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
+--sm4nu43k4a2Rpi4c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks good to me. I can take this series if you want to send me a pull
-request. In any case, for the series:
+Hi,
 
-Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+On Wed, Nov 20, 2013 at 08:34:00PM +0000, Mark Brown wrote:
+> On Wed, Nov 20, 2013 at 11:58:14AM -0600, Felipe Balbi wrote:
+>=20
+> > commit c368e5fc2a190923b786f2de3e79430ea3566a25 (regulator: fixed: get
+> > rid of {get|list}_voltage()) regresses any MMC host controller which
+> > uses fixed regulator for functionality.
+>=20
+> This is already fixed in -next.  Please remember to always CC
+> maintainers on mails and please try to write subject lines which are
 
-Rob
+that's why Liam and Laxman are in Cc. Looks like only you were missed.
 
->  drivers/of/fdt.c       |   24 +++++++++++++++++-------
->  include/linux/of_fdt.h |    1 +
->  2 files changed, 18 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 2fa024b97c43..a797cd43bc8b 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -868,18 +868,28 @@ void * __init __weak early_init_dt_alloc_memory_arch(u64 size, u64 align)
->
->  bool __init early_init_dt_scan(void *params)
->  {
-> -       if (!params)
-> -               return false;
-> -
->         /* Setup flat device-tree pointer */
->         initial_boot_params = params;
->
-> -       /* check device tree validity */
-> -       if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
-> -               initial_boot_params = NULL;
-> -               return false;
-> +       /* check passed device tree validity */
-> +       if (initial_boot_params &&
-> +           be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
-> +               pr_info("FDT at %p\n", initial_boot_params);
-> +               goto found;
-> +       }
-> +
-> +       /* check built-in device tree validity */
-> +       initial_boot_params = &__dtb_start;
-> +       if (__dtb_end != (void *)&__dtb_start &&
-> +           be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
-> +               pr_info("Compiled-in FDT at %p\n", initial_boot_params);
-> +               goto found;
->         }
->
-> +       initial_boot_params = NULL;
-> +       return false;
-> +
-> +found:
->         /* Retrieve various information from the /chosen node */
->         of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
->
-> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-> index aabc49f3e403..6c4a60454854 100644
-> --- a/include/linux/of_fdt.h
-> +++ b/include/linux/of_fdt.h
-> @@ -59,6 +59,7 @@ struct boot_param_header {
->
->  /* For kernels with a built-in device tree */
->  extern struct boot_param_header __dtb_start;
-> +extern char __dtb_end[];
->
->  #if defined(CONFIG_OF_FLATTREE)
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> readable by humans - full SHA1s for commits that obscure any actual
+> content don't help.
+
+right...
+
+--=20
+balbi
+
+--sm4nu43k4a2Rpi4c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjSDfAAoJEIaOsuA1yqRE4JEP/0FfCWkqAtbMR7sV/GuNs/XS
+eFjqZ8kliLz9DREw78maw/njTgZj3aA3kmK5Psm/4R3UGHb8UxNIMXPLzXUWIn/e
+ymSPBJ5u8OsOb26kTqkhdYBMRGPq3WcoZ46W4UnzWswGAAFZwfWzGKWUyJp4di+Y
+4z+waSMcWIMmhNWky9WzHCQJ/pmSbEi3BBkLS28JyASU2hH7nRM2z1TxrzaH7IV7
+74oWE/SnAdoZyT4LRq0USFkEIx2mmf+q4Vp5ySaXJn6WaBU6d42IpeX4coft9vm5
+z5WrmhhjQm4ZC5ajE94NhGbLmx4VbCybGeXyfsf0iTEOb3rxj6k2iNLF8xkwue85
+xtONcEwf+RY+bEPL2gkQs6WUwDsUnYhZxyjr8gLFlqA9fTSA31Axfh3b6D9NB/I/
+KdIK0RJqagRw1QGZs6ReCdwXngftb8coSwG3ABIrpyFnopo6uM/OCddn3VYVKOHF
+lKl5Ha/9IGwmaBr26FgQzynCTQfxjuYbwoZPQVsugWgFU8xtRFLpe/SBwFfKjJVx
+lST3Zw7XZ1MheQtTod6naEsrsuDwabS9IDg+4+FcsHBUCqRbcqM0/yG4Qa4xGWTA
+mMKceyVK8m155OTlEavB2h7awNXhRWmGBXhXZnnpsTAL3rY7+U3vWJ+mgcaeiym0
+eCO9sEUYBSTbIwTXYiQf
+=0yj3
+-----END PGP SIGNATURE-----
+
+--sm4nu43k4a2Rpi4c--
