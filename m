@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab3KTNcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:32:55 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40920 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab3KTNcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:32:52 -0500
-Date: Wed, 20 Nov 2013 14:32:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/5] perf/urgent fixes
-Message-ID: <20131120133248.GA7374@gmail.com>
-References: <1384893718-18762-1-git-send-email-acme@infradead.org>
+	id S1752958Ab3KTNeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:34:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39099 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796Ab3KTNeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 08:34:09 -0500
+Date: Wed, 20 Nov 2013 15:37:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net 2/3] virtio-net: fix num calculation on frag skb
+ allocation failure
+Message-ID: <20131120133707.GA8523@redhat.com>
+References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
+ <1384938447-3775-2-git-send-email-jasowang@redhat.com>
+ <20131120103729.GG19341@redhat.com>
+ <734327384.27426189.1384949330819.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1384893718-18762-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <734327384.27426189.1384949330819.JavaMail.root@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 20, 2013 at 07:08:50AM -0500, Jason Wang wrote:
+> 
+> 
+> ----- 原始邮件 -----
+> > On Wed, Nov 20, 2013 at 05:07:26PM +0800, Jason Wang wrote:
+> > > We need decrease the rq->num after we can get a buf through
+> > > virtqueue_get_buf() even if we could not allocate frag skb. Otherwise, the
+> > > refill routine won't be triggered under heavy memory stress since the
+> > > driver may
+> > > still think there's enough room.
+> > > 
+> > > This bug was introduced by commit 2613af0ed18a11d5c566a81f9a6510b73180660a
+> > > (virtio_net: migrate mergeable rx buffers to page frag allocators).
+> > > 
+> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > Cc: Michael Dalton <mwdalton@google.com>
+> > > Cc: Eric Dumazet <edumazet@google.com>
+> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > 
+> > So let's wrap virtqueue_get_buf to make sure we get it right?
+> > 
+> 
+> Ok. good idea.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+So I did this (below) but the compiler is not smart enough to
+avoid two branches on data path.
+So I'm not sure anymore: with my patch it's pretty clear how
+the code works.
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 801a76050bcf8d4e500eb8d048ff6265f37a61c8:
-> 
->   seq_file: always clear m->count when we free m->buf (2013-11-18 19:07:53 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to 6b5fa0ba4f85a8499287aefaf3f1375450c40c6d:
-> 
->   tools lib traceevent: Fix conversion of pointer to integer of different size (2013-11-19 16:37:59 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fixes:
-> 
-> . Tag thread comm as overriden, showing the right comm for threads after forks,
->   fix from Frederic Weisbecker.
-> 
-> . Fix memory leak when processing perf.data file header, from Namhyung Kim.
-> 
-> . Don't try to free string constant used for anonymous event groups, fix from Namhyung Kim.
-> 
-> . Fix use of multiple options in processing field in libtraceevent, fix from Steven Rostedt.
-> 
-> . Fix conversion of pointer to integer of different size in libtraceevent.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (1):
->       tools lib traceevent: Fix conversion of pointer to integer of different size
-> 
-> Frederic Weisbecker (1):
->       perf tools: Tag thread comm as overriden
-> 
-> Namhyung Kim (2):
->       perf header: Fix bogus group name
->       perf header: Fix possible memory leaks in process_group_desc()
-> 
-> Steven Rostedt (1):
->       tools lib traceevent: Fix use of multiple options in processing field
-> 
->  tools/lib/traceevent/event-parse.c | 25 ++++++++++++++++++++++---
->  tools/perf/util/header.c           |  6 ++++--
->  tools/perf/util/thread.c           | 11 +++++------
->  3 files changed, 31 insertions(+), 11 deletions(-)
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Pulled, thanks a lot Arnaldo!
+but I don't think we need to apply this.
 
-	Ingo
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 11d9cc9..1cc2e43 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -296,6 +296,14 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
+ 	return skb;
+ }
+ 
++static void *rq_get_buf(struct receive_queue *rq, unsigned int *len)
++{
++	void *buf = virtqueue_get_buf(rq->vq, len);
++	if (buf)
++		rq->num--;
++	return buf;
++}
++
+ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 					 struct receive_queue *rq,
+ 					 void *buf,
+@@ -315,7 +323,7 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 	while (--num_buf) {
+ 		int num_skb_frags;
+ 
+-		buf = virtqueue_get_buf(rq->vq, &len);
++		buf = rq_get_buf(rq, &len);
+ 		if (unlikely(!buf)) {
+ 			pr_debug("%s: rx error: %d buffers out of %d missing\n",
+ 				 dev->name, num_buf, hdr->mhdr.num_buffers);
+@@ -329,7 +337,6 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 		}
+ 
+ 		page = virt_to_head_page(buf);
+-		--rq->num;
+ 
+ 		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
+ 		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
+@@ -370,7 +377,7 @@ err_buf:
+ 	dev->stats.rx_dropped++;
+ 	dev_kfree_skb(head_skb);
+ 	while (--num_buf) {
+-		buf = virtqueue_get_buf(rq->vq, &len);
++		buf = rq_get_buf(rq, &len);
+ 		if (unlikely(!buf)) {
+ 			pr_debug("%s: rx error: %d buffers missing\n",
+ 				 dev->name, num_buf);
+@@ -379,7 +386,6 @@ err_buf:
+ 		}
+ 		page = virt_to_head_page(buf);
+ 		put_page(page);
+-		--rq->num;
+ 	}
+ 	return NULL;
+ }
+@@ -675,9 +681,8 @@ static int virtnet_poll(struct napi_struct *napi, int budget)
+ 
+ again:
+ 	while (received < budget &&
+-	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
++	       (buf = rq_get_buf(rq, &len)) != NULL) {
+ 		receive_buf(rq, buf, len);
+-		--rq->num;
+ 		received++;
+ 	}
+ 
