@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab3KTD3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 22:29:05 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:38435 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab3KTD3D (ORCPT
+	id S1752228Ab3KTEHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:07:45 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:54792 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab3KTEHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 22:29:03 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rAK3Sgkw016322, This message is accepted by code: ctloc85258
-From: hayeswang <hayeswang@realtek.com>
-To: "'David Miller'" <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, "'nic_swsd'" <nic_swsd@realtek.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-References: <1384502279-9959-1-git-send-email-hayeswang@realtek.com><1384831511-1625-1-git-send-email-hayeswang@realtek.com><1384831511-1625-4-git-send-email-hayeswang@realtek.com> <20131119.152536.146706009595105149.davem@davemloft.net>
-Subject: RE: [PATCH net v4 3/4] r8152: support stopping/waking tx queue
-Date: Wed, 20 Nov 2013 11:28:46 +0800
-Message-ID: <9C2E97E7BED9426ABE0FF4F63E12E33D@realtek.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac7lZYSCUTCXJxUhRMux5ihooSDGuAANTKUg
-In-Reply-To: <20131119.152536.146706009595105149.davem@davemloft.net>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Originating-IP: [172.21.71.143]
+	Tue, 19 Nov 2013 23:07:43 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] perf script: Print callchains and symbols if they exist - v2
+Date: Tue, 19 Nov 2013 21:07:37 -0700
+Message-Id: <1384920457-5986-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- David Miller [mailto:davem@davemloft.net] 
-[...]
-> This is racy.
-> 
-> You have nothing which synchronizes r8152_tx_agg_fill() and 
-> rtl8152_start_xmit(),
-> therefore:
-> 
-> > +	if (netif_queue_stopped(tp->netdev))
-> > +		netif_wake_queue(tp->netdev);
-> > +
-> 
-> A netif_stop_queue() can occur right after the 
-> netif_queue_stopped() check,
-> meaning you can end up with the queue being stopped forever 
-> and the TX queue
-> stuck.
+The intent of perf-script is to dump the events and information
+in the file. H/W, S/W and raw events all dump callchains if they
+are present; might as well make that the default for tracepoints
+too.
 
-If the situation occurs, it means there is no tx buffer at that time. If the
-netif_wake_queue() is called, only one more packet would be queued and the tx
-queue would be stopped again after calling rtl8152_start_xmit(). That is, it
-is not necessary to wake the queue. Besides, after the tx is completed, another
-tasklet would be scheduled if there is any packet which is queued in the list.
-That is, the r8152_tx_agg_fill() would be called and the netif_queue_stopped()
-would be check againg, so the tx queue would not be stopped forever.
+v2: Only add options for sym, dso and ip if callchains are present
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/perf/builtin-script.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index b392770766dd..9f3ba4404a14 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -280,6 +280,30 @@ static int perf_session__check_output_opt(struct perf_session *session)
+ 		set_print_ip_opts(&evsel->attr);
+ 	}
  
-Best Regards,
-Hayes
++	/*
++	 * set default for tracepoints to print symbols only
++	 * if callchains are present
++	 */
++	if (symbol_conf.use_callchain &&
++	    !output[PERF_TYPE_TRACEPOINT].user_set) {
++		struct perf_event_attr *attr;
++
++		j = PERF_TYPE_TRACEPOINT;
++		evsel = perf_session__find_first_evtype(session, j);
++		if (evsel == NULL)
++			goto out;
++
++		attr = &evsel->attr;
++
++		if (attr->sample_type & PERF_SAMPLE_CALLCHAIN) {
++			output[j].fields |= PERF_OUTPUT_IP;
++			output[j].fields |= PERF_OUTPUT_SYM;
++			output[j].fields |= PERF_OUTPUT_DSO;
++			set_print_ip_opts(attr);
++		}
++	}
++
++out:
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.4 (Apple Git-47)
 
