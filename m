@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab3KTTxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:53:21 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:65051 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab3KTTxR (ORCPT
+	id S1754988Ab3KTT7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:59:47 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:49536 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab3KTT7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:53:17 -0500
-Message-ID: <528D132A.3010207@linaro.org>
-Date: Wed, 20 Nov 2013 11:53:14 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 20 Nov 2013 14:59:43 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Magnus Damm <magnus.damm@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        khilman@linaro.org, linux-sh@vger.kernel.org,
-        daniel.lezcano@linaro.org, horms@verge.net.au, olof@lixom.net,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-References: <20131106110508.6806.48070.sendpatchset@w520> <201311141340.38208.arnd@arndb.de> <528D001C.9010009@linaro.org> <201311202034.34384.arnd@arndb.de>
-In-Reply-To: <201311202034.34384.arnd@arndb.de>
-X-Enigmail-Version: 1.6
+In-Reply-To: <20130917183628.857145384@linutronix.de>
+References: <20130917082838.218329307@infradead.org>
+	<20130917182350.449685712@linutronix.de>
+	<20130917183628.857145384@linutronix.de>
+Date: Wed, 20 Nov 2013 11:59:42 -0800
+Message-ID: <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
+Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
+From: Tony Luck <tony.luck@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 11:34 AM, Arnd Bergmann wrote:
-> On Wednesday 20 November 2013, John Stultz wrote:
->> On 11/14/2013 04:40 AM, Arnd Bergmann wrote:
->>
->> Sorry, somehow this mail slipped by me.
->>
->> So yea, as I mentioned earlier, the build testing is the one thing I
->> don't have a good argument against. But I still would rather not having
->> user prompts for these sorts of things.
->>
->> Even so, it seems to me that it would be better to still avoid prompting
->> the user for the build test and instead just always build the drivers if
->> BUILD_TEST is enabled.
->>
->> Is the driver by driver fine-granularity for build testing actually
->> worth having all the module prompts?  Or could we coarsen it a bit, and
->> have BUILT_TEST_TOPIC, so under kernel hacking or something you can
->> enable build testing and select the categories of items you want to
->> build (rather then having to go through them one by one?)
-> I would much prefer keeping things consistent across subsystems, which
-> means one symbol with prompt per driver. 
+On Tue, Sep 17, 2013 at 11:53 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Use the proper core function instead of fiddling with PREEMPT_ACTIVE
+> and enable/disable interrupts in the low level code.
+>
+> Index: linux-2.6/arch/ia64/kernel/entry.S
+> ===================================================================
+> --- linux-2.6.orig/arch/ia64/kernel/entry.S
+> +++ linux-2.6/arch/ia64/kernel/entry.S
+...
+> -       br.call.spnt.many rp=schedule
+> +       br.call.spnt.many rp=preempt_schedule_irq
 
-My main issue though is that with clocksource/clockevents, these are not
-classic drivers. They are much closer to platform drivers, and in the
-majority of cases are much more tightly bound to specific systems.
+This just hit mainline ... and I'm getting
 
-They were abstracted out to be more classic driver like, because that
-gave us more flexibility to support various systems at runtime. I just
-hate to see that flexibility abused at the cost of users trying to build
-kernels that will boot on their devices.
+arch/ia64/kernel/built-in.o: In function `skip_rbs_switch':
+(.text+0xef2): undefined reference to `preempt_schedule_irq'
+make: *** [vmlinux] Error 1
 
-> The only technical argument for
-> this is that it lets you disable some drivers when they do break in a
-> randconfig or allmodconfig build.
-If you have to add special Kconfig annotation anyway to support
-BUILD_TEST, why not ensure the drivers build before adding that
-annotation? That way any build regressions will be more easily found
-(and not accidentally missed because it wasn't enabled via randconfig),
-and we don't have to pester users with redundant config options.
+Probably because I have CONFIG_PREEMPT=n, and there seems only
+to be a definition for this function in kernel/sched/core.c when it is =y.
 
-thanks
--john
+Do we need a stub for the =n case:
 
+asmlinkage void __sched preempt_schedule_irq(void)
+{
+           schedule();
+}
+
+Or is life more complicated than that?
+
+-Tony
