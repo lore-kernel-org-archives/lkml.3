@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab3KTHuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 02:50:35 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:50511 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3KTHud (ORCPT
+	id S1752092Ab3KTHvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 02:51:13 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:59773 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3KTHvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 02:50:33 -0500
-Date: Tue, 19 Nov 2013 23:50:29 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-In-Reply-To: <20131119131400.GC20655@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1311192341300.20752@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 20 Nov 2013 02:51:10 -0500
+Date: Wed, 20 Nov 2013 09:51:02 +0200
+From: Johan Hedberg <johan.hedberg@intel.com>
+To: Phillip Susi <psusi@ubuntu.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: OOPS: Bluetooth: Store RFCOMM address information in its own
+ socket structure
+Message-ID: <20131120075102.GA13210@x220.p-661hnu-f1>
+References: <528C2A68.1000304@ubuntu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528C2A68.1000304@ubuntu.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Nov 2013, Michal Hocko wrote:
+Hi Phillip,
 
-> Hi,
-> it's been quite some time since LSFMM 2013 when this has been
-> discussed[1]. In short, it seems that there are usecases with a
-> strong demand on a better user/admin policy control for the global
-> OOM situations. Per process oom_{adj,score} which is used for the
-> prioritizing is no longer sufficient because there are other categories
-> which might be important. For example, often it doesn't make sense to
-> kill just a part of the workload and killing the whole group would be a
-> better fit. I am pretty sure there are many others some of them workload
-> specific and thus not appropriate for the generic implementation.
+On Tue, Nov 19, 2013, Phillip Susi wrote:
+> Bisected an OOPS to this commit:
 > 
+> commit 94a86df01082557e2de45865e538d7fb6c46231c
+> Author: Marcel Holtmann <marcel@holtmann.org>
+> Date:   Sun Oct 13 10:34:02 2013 -0700
+> 
+>     Bluetooth: Store RFCOMM address information in its own socket structure
+> 
+>     The address information of RFCOMM sockets should be stored in its
+>     own socket structure. Trying to generalize them is not helpful since
+>     different transports have different address types.
+> 
+>     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+>     Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+> 
+> OOPS looks like:
+> 
+> [   16.636145] BUG: unable to handle kernel paging request at 000000268333770b
+> [   16.637771] IP: [<ffffffffa01d7c78>] rfcomm_sock_getsockopt+0xe8/0x220 [rfcomm]
+> [   16.639350] PGD 0 
+> [   16.640875] Oops: 0000 [#11] SMP 
+> [   16.642394] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec joydev snd_hwdep snd_pcm snd_page_alloc snd_seq_midi radeon snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore ttm dm_multipath scsi_dh drm_kms_helper microcode(+) drm btusb i2c_algo_bit lpc_ich psmouse wmi serio_raw bnep rfcomm bluetooth binfmt_misc btrfs xor raid6_pq libcrc32c hid_generic hid_microsoft usbhid hid e1000e ahci libahci ptp pps_core
+> [   16.645718] CPU: 1 PID: 968 Comm: bluetoothd Tainted: G      D      3.12.0+ #74
+> [   16.647369] Hardware name: System manufacturer System Product Name/P8P67 PRO REV 3.1, BIOS 1904 08/15/2011
+> [   16.649030] task: ffff8801262d8000 ti: ffff8800c772c000 task.ti: ffff8800c772c000
+> [   16.650693] RIP: 0010:[<ffffffffa01d7c78>]  [<ffffffffa01d7c78>] rfcomm_sock_getsockopt+0xe8/0x220 [rfcomm]
+> [   16.652372] RSP: 0018:ffff8800c772df08  EFLAGS: 00010246
+> [   16.654118] RAX: 000000268333770b RBX: ffff8800c9156080 RCX: 00007fff67e9cd98
+> [   16.655800] RDX: 0000000000000003 RSI: 0000000000000012 RDI: ffff8800c9156080
+> [   16.657445] RBP: ffff8800c772df38 R08: 00007fff67e9cd9c R09: 00007fff67e9d018
+> [   16.659055] R10: 00007fff67e9cd98 R11: 0000000000000202 R12: ffff880036dbd800
+> [   16.660624] R13: 00007fff67e9cd98 R14: 0000000000000003 R15: 00007fff67e9cd9c
+> [   16.662190] FS:  00007f1cfe1a1740(0000) GS:ffff88012f480000(0000) knlGS:0000000000000000
+> [   16.663742] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   16.665284] CR2: 000000268333770b CR3: 00000000c746b000 CR4: 00000000000407e0
+> [   16.666823] Stack:
+> [   16.668353]  00038800c772df30 ffff8800c9156080 0000000000000012 0000000000000003
+> [   16.669906]  00007fff67e9cd98 00007fff67e9cd9c ffff8800c772df78 ffffffff8155ff38
+> [   16.671460]  0000000000000000 0000000000000001 00007fff67e9d018 0000000000000001
+> [   16.673016] Call Trace:
+> [   16.674562]  [<ffffffff8155ff38>] SyS_getsockopt+0x68/0xd0
+> [   16.676111]  [<ffffffff81672356>] system_call_fastpath+0x1a/0x1f
+> [   16.677651] Code: 00 4c 89 e7 e8 1a bf 38 e1 45 89 f1 48 83 c4 08 44 89 c8 5b 41 5c 41 5d 41 5e 41 5f 5d c3 0f 1f 44 00 00 49 8b 84 24 e8 02 00 00 <48> 8b 18 4c 89 c0 e8 dd 91 14 e1 85 c0 49 89 d7 41 b9 f2 ff ff 
+> [   16.679393] RIP  [<ffffffffa01d7c78>] rfcomm_sock_getsockopt+0xe8/0x220 [rfcomm]
+> [   16.681022]  RSP <ffff8800c772df08>
+> [   16.682639] CR2: 000000268333770b
+> [   16.684262] ---[ end trace a5f6978e71640635 ]---
 
-Thanks for starting this thread.  We'd like to have two things:
+I have a feeling this one was already fixed but just hasn't propagated
+itself to the upstream trees. The fix should already available in
+the wireless.git and bluetooth.git trees though.
 
- - allow userspace to call into our implementation of malloc() to free
-   excess memory that will avoid requiring anything from being killed,
-   which may include freeing userspace caches back to the kernel or
-   using MADV_DONTNEED over a range of unused memory within the arena,
-   and
-
- - enforce a hierarchical memcg prioritization policy so that memcgs can 
-   be iterated at each level beneath the oom memcg (which may include the
-   root memcg for system oom conditions) and eligible processes are killed 
-   in the lowest priority memcg.
-
-This obviously allows for much more powerful implementations as well that 
-can be defined by users of memcgs to drop caches, increase memcg limits, 
-signaling applications to free unused memory, start throttling memory 
-usage, heap analysis, logging, etc. and userspace oom handlers are the 
-perfect place to do so.
-
-> We have basically ended up with 3 options AFAIR:
-> 	1) allow memcg approach (memcg.oom_control) on the root level
->            for both OOM notification and blocking OOM killer and handle
->            the situation from the userspace same as we can for other
-> 	   memcgs.
-
-This is what I've been proposing both with my latest patches, the 
-memory.oom_delay_millisecs patch in the past, and future patch to allow 
-for per-memcg memory reserves that allow charging to be bypassed to a 
-pre-defined threshold much like per-zone memory reserves for TIF_MEMDIE 
-processes today so that userspace has access to memory to handle the 
-situation even in system oom conditions.
+Johan
