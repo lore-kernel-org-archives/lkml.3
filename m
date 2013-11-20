@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab3KTWni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 17:43:38 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:16387 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab3KTWng (ORCPT
+	id S1754754Ab3KTWrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 17:47:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23369 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab3KTWrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 17:43:36 -0500
-Message-ID: <1384987135.1791.153.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] sysfs, acpi, tables: Set file size for each ACPI table
-From: Toshi Kani <toshi.kani@hp.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Nov 2013 15:38:55 -0700
-In-Reply-To: <528B2757.6010406@jp.fujitsu.com>
-References: <528B2757.6010406@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Wed, 20 Nov 2013 17:47:13 -0500
+Message-ID: <528D3BCE.2060703@oracle.com>
+Date: Wed, 20 Nov 2013 16:46:38 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>, linux-aio@kvack.org,
+        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [GIT PULL] direct IO support for loop driver
+References: <528A648F.1030007@oracle.com>	<CA+55aFyF-Za7B=1kVDodbn942hETsWixAHCsh_wBA1b6pnUigQ@mail.gmail.com> <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
+In-Reply-To: <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 17:54 +0900, HATAYAMA Daisuke wrote:
-> Currently, each of the ACPI tables exported from
-> /sys/firmware/acpi/tables is of zero size:
+On 11/20/2013 03:38 PM, Linus Torvalds wrote:
+> On Wed, Nov 20, 2013 at 1:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> At that point, I just couldn't take it any more.
 > 
-> $ LANG=C ls -ld /sys/firmware/acpi/tables/*
-> -r-------- 1 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/APIC
-> -r-------- 1 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/BOOT
-> -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/DSDT
-> -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/FACP
-> -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/FACS
-> -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/MCFG
-> -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/SRAT
-> drwxr-xr-x 2 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/dynamic/
-> 
-> due to which, user-land tools fail reading each table. For example:
-> 
-> $ acpidump -f /sys/firmware/acpi/tables/SRAT
-> Could not get input file size: /sys/firmware/acpi/tables/SRAT
-> 
-> To deal with the issue, this patch assigns size of each ACPI table to
-> the corresponding sysfs file.
-> 
-> $ LANG=C ls -hld /sys/firmware/acpi/tables/*
-> -r-------- 1 root root  94 Nov 19 16:45 /sys/firmware/acpi/tables/APIC
-> -r-------- 1 root root  40 Nov 19 16:45 /sys/firmware/acpi/tables/BOOT
-> -r-------- 1 root root 58K Nov 19 16:55 /sys/firmware/acpi/tables/DSDT
-> -r-------- 1 root root 244 Nov 19 16:55 /sys/firmware/acpi/tables/FACP
-> -r-------- 1 root root  64 Nov 19 16:55 /sys/firmware/acpi/tables/FACS
-> -r-------- 1 root root  60 Nov 19 16:55 /sys/firmware/acpi/tables/MCFG
-> -r-------- 1 root root 168 Nov 19 16:45 /sys/firmware/acpi/tables/SRAT
-> drwxr-xr-x 2 root root   0 Nov 19 16:55 /sys/firmware/acpi/tables/dynamic/
-> 
-> Then, user-land tools work well like:
-> 
-> $ acpidump -f /sys/firmware/acpi/tables/SRAT
-> SRAT @ 0x0000000000000000
->   0000: 53 52 41 54 A8 00 00 00 02 65 56 4D 57 41 52 45  SRAT.....eVMWARE
->   0010: 4D 45 4D 50 4C 55 47 20 00 00 04 06 56 4D 57 20  MEMPLUG ....VMW
->   0020: 01 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00  ................
->   0030: 01 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00  .(..............
->   0040: 00 00 0A 00 00 00 00 00 00 00 00 00 01 00 00 00  ................
->   0050: 00 00 00 00 00 00 00 00 01 28 00 00 00 00 00 00  .........(......
->   0060: 00 00 10 00 00 00 00 00 00 00 F0 BF 00 00 00 00  ................
->   0070: 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00  ................
->   0080: 01 28 00 00 00 00 00 00 00 00 00 00 01 00 00 00  .(..............
->   0090: 00 00 00 40 00 00 00 00 00 00 00 00 01 00 00 00  ...@............
->   00A0: 00 00 00 00 00 00 00 00                          ........
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> Just to clarify, I think it might be fixable. But it does need fixing,
+> because I really feel dirty from reading it. And I may not care all
+> that deeply about what random drivers or low-level filesystems do, but
+> I *do* care about generic code in mm/ and fs/, so making those iovec
+> functions uglier makes me go all "Hulk angry! Hulk smash" on the code.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Okay, fair enough. This patchset started out as a bit of a hack, but it
+ended up working well and I had multiple other developers wanting the
+function in mainline. I didn't get too much critical feedback, but I
+should have been more critical myself.
+
+> The whole "separate out checking from user copy" needs to go away.
+> There's no excuse for it.
+> 
+> The whole "if (atomic) do_atomic_ops() else do_regular_ops()" crap
+> needs to go away. You can do it either by just duplicating the
+> function, or by having it use a indirect function for the copy (and
+> that indirect function acts like copy_from/to_user() and checks the
+> address range - and you can obviously then also have it be a "copy
+> from kernel" thing too if you want/need it). And no, you don't then
+> make it do *both* the conditional *and* the function pointer like you
+> did in that discusting commit that mixes the two with the struct
+> iov_iter_ops).
+
+I'll fix those.
+
+> The "__" versions that don't check the user address range needs to die entirely.
+> 
+> The whole crazy "ii_iov_xyz" naming needs to go away. It doesn't even
+> make sense (one of the "i"s is for "iov".
+
+okay
+
+> That "unsigned long data" that contains an iovec *? WTF? How did that
+> ever start making sense?
+
+In a later patch, it could also be a biovec. It'd probably be better to
+make it a union at that point, or at least add a comment.
+
+> IOW, there are many many details that just make me absolutely detest
+> this series. Enough that there's no way in hell I feel comfortable
+> pulling it. But they are likely fixable.
+
+Yeah, I'll work on something cleaner. The vital piece is some container
+that can either contain an iovec or or an array of kernel pages to be
+passed to the filesystems. The iov_iter structure was a reasonable
+choice, but the implementation is a bit sloppy. Kent wants to pass the
+bio structure itself, while this patchset used the biovec array. As long
+as I'm reworking the patchset, I'll see if I can accommodate his
+requirements.
 
 Thanks,
--Toshi
-
-
+Dave
