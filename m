@@ -1,197 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab3KTORe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 09:17:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab3KTORb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 09:17:31 -0500
-Date: Wed, 20 Nov 2013 16:20:32 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>, Shirley Ma <xma@us.ibm.com>
-Subject: Re: [PATCH RFC] virtio_net: fix error handling for mergeable buffers
-Message-ID: <20131120142032.GA13492@redhat.com>
-References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
- <20131120132657.GA8455@redhat.com>
- <125586345.27477452.1384955642143.JavaMail.root@redhat.com>
-MIME-Version: 1.0
+	id S1753039Ab3KTOUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 09:20:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55517 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab3KTOUX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 09:20:23 -0500
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <125586345.27477452.1384955642143.JavaMail.root@redhat.com>
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH 04/12] KVM: MMU: log dirty page after marking spte writable
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+In-Reply-To: <20131120002920.GA14230@amt.cnet>
+Date: Wed, 20 Nov 2013 22:20:09 +0800
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B166B522-2CDB-44CA-B594-687B45A1CF01@linux.vnet.ibm.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130807014828.GA4781@amt.cnet> <5201C7D9.20004@linux.vnet.ibm.com> <20131120002920.GA14230@amt.cnet>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 08:54:02AM -0500, Jason Wang wrote:
+
+On Nov 20, 2013, at 8:29 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+
+> On Wed, Aug 07, 2013 at 12:06:49PM +0800, Xiao Guangrong wrote:
+>> On 08/07/2013 09:48 AM, Marcelo Tosatti wrote:
+>>> On Tue, Jul 30, 2013 at 09:02:02PM +0800, Xiao Guangrong wrote:
+>>>> Make sure we can see the writable spte before the dirt bitmap is visible
+>>>> 
+>>>> We do this is for kvm_vm_ioctl_get_dirty_log() write-protects the spte based
+>>>> on the dirty bitmap, we should ensure the writable spte can be found in rmap
+>>>> before the dirty bitmap is visible. Otherwise, we cleared the dirty bitmap and
+>>>> failed to write-protect the page
+>>>> 
+>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>> ---
+>>>> arch/x86/kvm/mmu.c | 6 +++---
+>>>> 1 file changed, 3 insertions(+), 3 deletions(-)
+>>> 
+>>> Can you explain why this is safe, with regard to the rule 
+>>> at edde99ce05290e50 ?
+>> 
+>> BTW, this log fixed this case:
+>> 
+>>    VCPU 0                KVM migration control
+>> 
+>>                          write-protects all pages
+>> #Pf happen then the page
+>> become writable, set dirty
+>> bit on the bitmap
+>> 
+>>                         swap the bitmap, current bitmap is empty
+>> 
+>> write the page (no dirty log)
+>> 
+>>                         stop the guest and push
+>>                         the remaining dirty pages
+>> Stopped
+>>                         See current bitmap is empty that means
+>>                         no page is dirty.
+>>> 
+>>> "The rule is that all pages are either dirty in the current bitmap,
+>>> or write-protected, which is violated here."
+>> 
+>> Actually, this rule is not complete true, there's the 3th case:
+>> the window between write guest page and set dirty bitmap is valid.
+>> In that window, page is write-free and not dirty logged.
+>> 
+>> This case is based on the fact that at the final step of live migration,
+>> kvm should stop the guest and push the remaining dirty pages to the
+>> destination.
+>> 
+>> They're some examples in the current code:
+>> example 1, in fast_pf_fix_direct_spte():
+>> 	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
+>> 		/* The window in here... */
+>> 		mark_page_dirty(vcpu->kvm, gfn);
+>> 
+>> example 2, in kvm_write_guest_page():
+>> 	r = __copy_to_user((void __user *)addr + offset, data, len);
+>> 	if (r)
+>> 		return -EFAULT;
+>> 	/*
+>> 	 * The window is here, the page is dirty but not logged in
+>>        * The bitmap.
+>> 	 */
+>> 	mark_page_dirty(kvm, gfn);
+>> 	return 0;
 > 
+
+Hi Marcelo,
+
+> Why is this valid ? That is, the obviously correct rule is
 > 
-> ----- 原始邮件 -----
-> > On Wed, Nov 20, 2013 at 05:07:25PM +0800, Jason Wang wrote:
-> > > When mergeable buffer were used, we only put the first page buf leave the
-> > > rest
-> > > of buffers in the virt queue. This will cause the driver could not get the
-> > > correct head buffer any more. Fix this by dropping the rest of buffers for
-> > > this
-> > > packet.
-> > > 
-> > > The bug was introduced by commit 9ab86bbcf8be755256f0a5e994e0b38af6b4d399
-> > > (virtio_net: Defer skb allocation in receive path).
-> > > 
-> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > Cc: Michael Dalton <mwdalton@google.com>
-> > > Cc: Eric Dumazet <edumazet@google.com>
-> > > Cc: Shirley Ma <xma@us.ibm.com>
-> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > 
-> > Just to clarify my previous comment: it was not about the
-> > idea of adding drop_mergeable_buffer - rather, I think that
-> > adding knowledge about mergeable buffers into page_to_skb creates an
-> > ugly internal API.
-> > 
-> > Let's move the call to page_to_skb within receive_mergeable instead:
-> > it's also nice that int offset = buf - page_address(page) logic
-> > is not spread around like it was.
-> > 
-> > Also, it's not nice that we ignore length errors when we drop
-> > packets because of OOM.
-> > 
-> > So I came up with the following - it seems to work but I didn't
-> > stress test yet.
+> "that all pages are either dirty in the current bitmap,
+> or write-protected, which is violated here."
 > 
-> I've no objection on this. But I've rather like my small and direct patch 
-> to be applied to -net first. It has lower risk and was much more easier to 
-> be backported to stable trees. Then we can do the re-factor like this in 
-> net-next. 
+> With the window above, GET_DIRTY_LOG can be called 100 times while the 
+> page is dirty, but the corresponding bit not set in the dirty bitmap.
+> 
+> It violates the documentation:
+> 
+> /* for KVM_GET_DIRTY_LOG */
+> struct kvm_dirty_log {
+>       __u32 slot;
+>       __u32 padding;
+>       union {
+>               void __user *dirty_bitmap; /* one bit per page */
+>               __u64 padding;
+>       };
+> };
+> 
+> Given a memory slot, return a bitmap containing any pages dirtied
+> since the last call to this ioctl.  Bit 0 is the first page in the
+> memory slot.  Ensure the entire structure is cleared to avoid padding
+> issues.
+> 
+> The point about migration, is that GET_DIRTY_LOG is strictly correct
+> because it stops vcpus.
+> 
+> But what guarantee does userspace require, from GET_DIRTY_LOG, while vcpus are
+> executing? 
 
-It makes the interfaces too messy. We are not in code freeze in -net -
-only feature freeze, so no reason to make code like spagetty,
-and it's only 25 lines changed as compared to 40.
-It's not a huge refactoring.
+Aha. Single calling GET_DIRTY_LOG is useless since new dirty page can be generated
+when GET_DIRTY_LOG is being returned. If user wants to get exact dirty pages the vcpus
+should be stopped. 
 
-It's just as easy to backport my patch too.
-You just drop the goto in the new code path we added.
+> 
+> With fast page fault:
+> 
+>      if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
+>              /* The window in here... */
+>              mark_page_dirty(vcpu->kvm, gfn);
+> 
+> And the $SUBJECT set_spte reordering, the rule becomes
+> 
+> A call to GET_DIRTY_LOG guarantees to return correct information about 
+> dirty pages before invocation of the previous GET_DIRTY_LOG call.
+> 
+> (see example 1: the next GET_DIRTY_LOG will return the dirty information
+> there).
+> 
 
-Let me show you (untested) - your patch is not smaller.
+It seems no.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+The first GET_DIRTY_LOG can happen before fast-page-fault，
+the second GET_DIRTY_LOG happens in the window between cmpxchg()
+and mark_page_dirty(), for the second one, the information is still “incorrect”.
+
+> The rule for sptes that is, because kvm_write_guest does not match the
+> documentation at all.
+
+You mean the case of “kvm_write_guest” is valid (I do not know why it is)?
+Or anything else?
+
+> 
+> So before example 1 and this patch, the rule (well for sptes at least) was
+> 
+> "Given a memory slot, return a bitmap containing any pages dirtied
+> since the last call to this ioctl.  Bit 0 is the first page in the
+> memory slot.  Ensure the entire structure is cleared to avoid padding
+> issues."
+> 
+> Can you explain why it is OK to relax this rule?
+
+It’s because:
+1) it doesn’t break current use cases, i.e. Live migration and FB-flushing.
+2) the current code, like kvm_write_guest  has already broken the documentation
+   (the guest page has been written but missed in the dirty bitmap).
+3) it’s needless to implement a exact get-dirty-pages since the dirty pages can
+   no be exactly got except stopping vcpus. 
+
+So i think we'd document this case instead. No?
 
 
-
-commit 9b442fe970d5c71311d4314edef26ee2eb16e7fb
-Author: Michael S. Tsirkin <mst@redhat.com>
-Date:   Wed Nov 20 12:44:14 2013 +0200
-
-    virtio_net: fix resource leak on alloc failure
-    
-    virtio net got confused, started dropping packets.
-    
-    Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 9fbdfcd..df4b9d0 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -297,13 +297,22 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
- 	return skb;
- }
- 
--static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
-+static struct sk_buff *receive_mergeable(struct net_device *dev,
-+					 struct receive_queue *rq,
-+					 struct page *page,
-+					 unsigned int len)
- {
--	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
--	struct page *page;
--	int num_buf, i, len;
-+	struct skb_vnet_hdr *hdr = page_address(buf);
-+	int num_buf = hdr->mhdr.num_buffers;
-+	struct sk_buff *skb = page_to_skb(rq, page, len);
-+	int i;
-+
-+	skb = page_to_skb(rq, page, len);
-+
-+	if (unlikely(!skb))
-+		goto err_skb;
-+
- 
--	num_buf = hdr->mhdr.num_buffers;
- 	while (--num_buf) {
- 		i = skb_shinfo(skb)->nr_frags;
- 		if (i >= MAX_SKB_FRAGS) {
-@@ -313,10 +322,10 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
- 		}
- 		page = virtqueue_get_buf(rq->vq, &len);
- 		if (!page) {
--			pr_debug("%s: rx error: %d buffers missing\n",
--				 skb->dev->name, hdr->mhdr.num_buffers);
--			skb->dev->stats.rx_length_errors++;
--			return -EINVAL;
-+			pr_debug("%s: rx error: %d buffers %d missing\n",
-+				 dev->name, hdr->mhdr.num_buffers, num_buf);
-+			dev->stats.rx_length_errors++;
-+			goto err_buf;
- 		}
- 
- 		if (len > PAGE_SIZE)
-@@ -326,7 +335,25 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *skb)
- 
- 		--rq->num;
- 	}
--	return 0;
-+	return skb;
-+err_skb:
-+	put_page(page);
-+err_buf:
-+	dev->stats.rx_dropped++;
-+	dev_kfree_skb(head_skb);
-+	while (--num_buf) {
-+		buf = virtqueue_get_buf(rq->vq, &len);
-+		if (unlikely(!buf)) {
-+			pr_debug("%s: rx error: %d buffers missing\n",
-+				 dev->name, num_buf);
-+			dev->stats.rx_length_errors++;
-+			break;
-+		}
-+		page = buf;
-+		give_pages(rq, page);
-+		--rq->num;
-+	}
-+	return NULL;
- }
- 
- static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
-@@ -354,17 +381,18 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 		skb_trim(skb, len);
- 	} else {
- 		page = buf;
--		skb = page_to_skb(rq, page, len);
--		if (unlikely(!skb)) {
--			dev->stats.rx_dropped++;
--			give_pages(rq, page);
--			return;
--		}
--		if (vi->mergeable_rx_bufs)
--			if (receive_mergeable(rq, skb)) {
--				dev_kfree_skb(skb);
-+		if (vi->mergeable_rx_bufs) {
-+			skb = receive_mergeable(dev, rq, page, len);
-+			if (unlikely(!skb))
-+				return;
-+		} else {
-+			skb = page_to_skb(rq, page, len);
-+			if (unlikely(!skb)) {
-+				dev->stats.rx_dropped++;
-+				give_pages(rq, page);
- 				return;
- 			}
-+		}
- 	}
- 
- 	hdr = skb_vnet_hdr(skb);
