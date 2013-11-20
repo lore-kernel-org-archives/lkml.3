@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab3KTXFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 18:05:37 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:34235 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab3KTXFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 18:05:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131120212851.GA3658@google.com>
-References: <20131120212851.GA3658@google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 20 Nov 2013 16:05:14 -0700
-Message-ID: <CAErSpo59LUoh5icU7ev2TyKTzS-sQRUaxSM76eEZ4dMhHJ+0nw@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI updates for v3.13
+	id S1754821Ab3KTXKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 18:10:35 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43675 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753646Ab3KTXKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 18:10:32 -0500
+Message-ID: <1384989013.26969.115.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Slaby <jslaby@suse.cz>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Nov 2013 10:10:13 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Jiri, Tejun]
+Hi Linus !
 
-On Wed, Nov 20, 2013 at 2:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> The following changes since commit 4fbf888accb39af423f271111d44e8186f053723:
->
->   Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-11-14 17:19:58 +0900)
->
-> are available in the git repository at:
->
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.13-fixes-1
->
-> for you to fetch changes up to 30b7fc1277c74667d0d5421526dc5f7a7fa926c5:
+With my previous pull request I mentioned some remaining Little Endian
+patches, notably support for our new ABI, which I was sitting on making
+sure it was all finalized.
 
-Sigh, please ignore this until we figure out the "scheduling while
-atomic" problem Jiri reported [1].  Sorry.
+The toolchain folks confirmed it now, the new ABI is stable and merged
+with gcc, so we are all good. Oh and we actually missed the actual
+Kconfig switch for LE so here it is, along with a couple more bug fixes.
 
-[1] http://lkml.kernel.org/r/528D3F36.3050403@suse.cz
+I have more fixes but not related to LE so I'll send them as a separate
+pull request tomorrow, let's get this one out of the way.
 
->
->   PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove() (2013-11-18 17:02:45 -0700)
->
-> ----------------------------------------------------------------
-> PCI updates for v3.13:
->
->   Miscellaneous
->     - Avoid CPU switch for .probe() methods (Alexander Duyck)
->     - Restore work_on_cpu() lockdep annotation (Bjorn Helgaas)
->     - Remove duplicate disable from pcie_portdrv_remove() (Yinghai Lu)
->     - Fix whitespace, capitalization, and spelling errors (Bjorn Helgaas)
->
-> ----------------------------------------------------------------
-> Alexander Duyck (1):
->       PCI: Avoid unnecessary CPU switch when calling driver .probe() method
->
-> Bjorn Helgaas (2):
->       PCI: Fix whitespace, capitalization, and spelling errors
->       Revert "workqueue: allow work_on_cpu() to be called recursively"
->
-> Yinghai Lu (1):
->       PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove()
->
->  drivers/pci/ats.c                       |   2 +-
->  drivers/pci/host/pci-tegra.c            |  12 ++--
->  drivers/pci/host/pcie-designware.c      |   2 +-
->  drivers/pci/hotplug/Kconfig             |   4 +-
->  drivers/pci/hotplug/Makefile            |   2 +-
->  drivers/pci/hotplug/acpiphp_core.c      |  12 ++--
->  drivers/pci/hotplug/acpiphp_glue.c      |   2 +-
->  drivers/pci/hotplug/acpiphp_ibm.c       |  14 ++--
->  drivers/pci/hotplug/cpci_hotplug_core.c |   2 +-
->  drivers/pci/hotplug/cpci_hotplug_pci.c  |   2 +-
->  drivers/pci/hotplug/cpcihp_generic.c    |  20 +++---
->  drivers/pci/hotplug/cpcihp_zt5550.c     |  22 +++----
->  drivers/pci/hotplug/cpcihp_zt5550.h     |  18 +++---
->  drivers/pci/hotplug/cpqphp_core.c       |   4 +-
->  drivers/pci/hotplug/cpqphp_ctrl.c       |  10 +--
->  drivers/pci/hotplug/cpqphp_pci.c        |   5 +-
->  drivers/pci/hotplug/ibmphp.h            |  12 ++--
->  drivers/pci/hotplug/ibmphp_core.c       | 109 ++++++++++++++++----------------
->  drivers/pci/hotplug/ibmphp_ebda.c       | 103 +++++++++++++++---------------
->  drivers/pci/hotplug/ibmphp_hpc.c        |  24 +++----
->  drivers/pci/hotplug/ibmphp_pci.c        |  71 ++++++++++-----------
->  drivers/pci/hotplug/ibmphp_res.c        |  76 +++++++++++-----------
->  drivers/pci/hotplug/pci_hotplug_core.c  |   8 +--
->  drivers/pci/hotplug/pciehp.h            |   2 +-
->  drivers/pci/hotplug/pciehp_acpi.c       |   2 +-
->  drivers/pci/hotplug/pciehp_core.c       |   4 +-
->  drivers/pci/hotplug/pciehp_hpc.c        |   6 +-
->  drivers/pci/hotplug/pcihp_skeleton.c    |   8 +--
->  drivers/pci/hotplug/rpadlpar_core.c     |   2 +-
->  drivers/pci/hotplug/rpaphp.h            |   6 +-
->  drivers/pci/hotplug/rpaphp_core.c       |   8 +--
->  drivers/pci/hotplug/rpaphp_pci.c        |   3 +-
->  drivers/pci/hotplug/rpaphp_slot.c       |  19 +++---
->  drivers/pci/hotplug/shpchp.h            |   8 +--
->  drivers/pci/hotplug/shpchp_core.c       |  10 +--
->  drivers/pci/hotplug/shpchp_hpc.c        |   2 +-
->  drivers/pci/iov.c                       |   2 +-
->  drivers/pci/irq.c                       |   2 +-
->  drivers/pci/msi.c                       |   2 +-
->  drivers/pci/pci-acpi.c                  |   2 +-
->  drivers/pci/pci-driver.c                |  40 ++++++++----
->  drivers/pci/pci-stub.c                  |   4 +-
->  drivers/pci/pci-sysfs.c                 |  28 ++++----
->  drivers/pci/pci.c                       |  46 +++++++-------
->  drivers/pci/pcie/aer/aerdrv_core.c      |   2 +-
->  drivers/pci/pcie/aspm.c                 |   2 +-
->  drivers/pci/pcie/pme.c                  |   4 +-
->  drivers/pci/pcie/portdrv.h              |   2 +-
->  drivers/pci/pcie/portdrv_bus.c          |   4 +-
->  drivers/pci/pcie/portdrv_core.c         |   2 +-
->  drivers/pci/pcie/portdrv_pci.c          |   7 +-
->  drivers/pci/probe.c                     |  10 +--
->  drivers/pci/proc.c                      |   2 +-
->  drivers/pci/quirks.c                    | 104 +++++++++++++++---------------
->  drivers/pci/remove.c                    |   2 +-
->  drivers/pci/search.c                    |  12 ++--
->  drivers/pci/setup-bus.c                 |  18 +++---
->  drivers/pci/setup-res.c                 |   2 +-
->  drivers/pci/slot.c                      |   2 +-
->  drivers/pci/syscall.c                   |   2 +-
->  include/linux/msi.h                     |  10 +--
->  include/linux/pci.h                     |  55 ++++++++--------
->  include/linux/pci_hotplug.h             |   5 +-
->  include/linux/pcieport_if.h             |   2 +-
->  include/uapi/linux/pci_regs.h           |  72 ++++++++++-----------
->  kernel/workqueue.c                      |  32 +++-------
->  66 files changed, 547 insertions(+), 548 deletions(-)
+Note that this supports running user space binaries using the new ABI,
+but the kernel itself still needs to be built with the old one. We'll
+bring fixes for that after -rc1.
+
+Here's Anton log that goes with this series:
+
+<<<
+This patch series adds support for the new ABI, LPAR support
+for H_SET_MODE and finally adds a kconfig option and defconfig.
+
+ABIv2 support was recently committed to binutils and gcc, and
+should be merged into glibc soon. There are a number of
+very nice improvements including the removal of function
+descriptors. Rusty's kernel patches allow binaries of either
+ABI to work, easing the transition.
+>>>
+
+Cheers,
+Ben.
+
+The following changes since commit 0c4888ef1d8a8b82c29075ce7e257ff795af15c7:
+
+  powerpc: Fix fatal SLB miss when restoring PPR (2013-11-06 14:13:53 +1100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+for you to fetch changes up to 280270828f108be56f0c486def58acabb070244f:
+
+  powerpc: Wrong DWARF CFI in the kernel vdso for little-endian / ELFv2 (2013-11-21 09:19:23 +1100)
+
+----------------------------------------------------------------
+Alistair Popple (1):
+      powerpc: Don't use ELFv2 ABI to build the kernel
+
+Anton Blanchard (4):
+      powerpc/pseries: Fix endian issues in pseries EEH code
+      pseries: Add H_SET_MODE to change exception endianness
+      powerpc: Add CONFIG_CPU_LITTLE_ENDIAN kernel config option.
+      powerpc: Add pseries_le_defconfig
+
+Rusty Russell (4):
+      powerpc: Add TIF_ELF2ABI flag.
+      powerpc: Set eflags correctly for ELF ABIv2 core dumps.
+      powerpc: ELF2 binaries launched directly.
+      powerpc: ELF2 binaries signal handling
+
+Ulrich Weigand (1):
+      powerpc: Wrong DWARF CFI in the kernel vdso for little-endian / ELFv2
+
+ arch/powerpc/Makefile                        |   1 +
+ arch/powerpc/configs/pseries_le_defconfig    | 352 +++++++++++++++++++++++++++
+ arch/powerpc/include/asm/elf.h               |   4 +
+ arch/powerpc/include/asm/hvcall.h            |   2 +
+ arch/powerpc/include/asm/plpar_wrappers.h    |  26 ++
+ arch/powerpc/include/asm/thread_info.h       |   9 +
+ arch/powerpc/kernel/process.c                |  50 ++--
+ arch/powerpc/kernel/signal_64.c              |  25 +-
+ arch/powerpc/kernel/vdso64/sigtramp.S        |  16 +-
+ arch/powerpc/platforms/Kconfig.cputype       |  11 +
+ arch/powerpc/platforms/pseries/eeh_pseries.c |  21 +-
+ arch/powerpc/platforms/pseries/lpar.c        |  17 ++
+ arch/powerpc/platforms/pseries/setup.c       |  42 ++++
+ 13 files changed, 542 insertions(+), 34 deletions(-)
+ create mode 100644 arch/powerpc/configs/pseries_le_defconfig
+
+
+
