@@ -1,325 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3KTRxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:53:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62077 "EHLO mx1.redhat.com"
+	id S1754822Ab3KTRyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:54:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab3KTRwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:52:11 -0500
+	id S1753223Ab3KTRwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:52:06 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 2/6] kexec: Move segment verification code in a separate function
-Date: Wed, 20 Nov 2013 12:50:47 -0500
-Message-Id: <1384969851-7251-3-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 1/6] kexec: Export vmcoreinfo note size properly
+Date: Wed, 20 Nov 2013 12:50:46 -0500
+Message-Id: <1384969851-7251-2-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
 References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously do_kimage_alloc() will allocate a kimage structure, copy
-segment list from user space and then do the segment list sanity verification.
+Right now we seem to be exporting the max data size contained inside
+vmcoreinfo note. But this does not include the size of meta data around
+vmcore info data. Like name of the note and starting and ending elf_note.
 
-Break down this function in 3 parts. do_kimage_alloc_init() to do actual
-allocation and basic initialization of kimage structure.
-copy_user_segment_list() to copy segment list from user space and
-sanity_check_segment_list() to verify the sanity of segment list as passed
-by user space.
-
-In later patches, I need to only allocate kimage and not copy segment
-list from user space. So breaking down in smaller functions enables
-re-use of code at other places.
+I think user space expects total size and that size is put in PT_NOTE
+elf header.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- kernel/kexec.c |  182 +++++++++++++++++++++++++++++++-------------------------
- 1 files changed, 101 insertions(+), 81 deletions(-)
+ kernel/ksysfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 490afc0..6238927 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -120,45 +120,27 @@ static struct page *kimage_alloc_page(struct kimage *image,
- 				       gfp_t gfp_mask,
- 				       unsigned long dest);
- 
--static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
--	                    unsigned long nr_segments,
--                            struct kexec_segment __user *segments)
-+static int copy_user_segment_list(struct kimage *image,
-+				unsigned long nr_segments,
-+				struct kexec_segment __user *segments)
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 9659d38..d945a94 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -126,7 +126,7 @@ static ssize_t vmcoreinfo_show(struct kobject *kobj,
  {
-+	int ret;
- 	size_t segment_bytes;
--	struct kimage *image;
--	unsigned long i;
--	int result;
--
--	/* Allocate a controlling structure */
--	result = -ENOMEM;
--	image = kzalloc(sizeof(*image), GFP_KERNEL);
--	if (!image)
--		goto out;
--
--	image->head = 0;
--	image->entry = &image->head;
--	image->last_entry = &image->head;
--	image->control_page = ~0; /* By default this does not apply */
--	image->start = entry;
--	image->type = KEXEC_TYPE_DEFAULT;
--
--	/* Initialize the list of control pages */
--	INIT_LIST_HEAD(&image->control_pages);
--
--	/* Initialize the list of destination pages */
--	INIT_LIST_HEAD(&image->dest_pages);
--
--	/* Initialize the list of unusable pages */
--	INIT_LIST_HEAD(&image->unuseable_pages);
- 
- 	/* Read in the segments */
- 	image->nr_segments = nr_segments;
- 	segment_bytes = nr_segments * sizeof(*segments);
--	result = copy_from_user(image->segment, segments, segment_bytes);
--	if (result) {
--		result = -EFAULT;
--		goto out;
--	}
-+	ret = copy_from_user(image->segment, segments, segment_bytes);
-+	if (ret)
-+		ret = -EFAULT;
-+
-+	return ret;
-+}
-+
-+static int sanity_check_segment_list(struct kimage *image)
-+{
-+	int result, i;
-+	unsigned long nr_segments = image->nr_segments;
- 
- 	/*
- 	 * Verify we have good destination addresses.  The caller is
-@@ -180,9 +162,9 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 		mstart = image->segment[i].mem;
- 		mend   = mstart + image->segment[i].memsz;
- 		if ((mstart & ~PAGE_MASK) || (mend & ~PAGE_MASK))
--			goto out;
-+			return result;
- 		if (mend >= KEXEC_DESTINATION_MEMORY_LIMIT)
--			goto out;
-+			return result;
- 	}
- 
- 	/* Verify our destination addresses do not overlap.
-@@ -203,7 +185,7 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 			pend   = pstart + image->segment[j].memsz;
- 			/* Do the segments overlap ? */
- 			if ((mend > pstart) && (mstart < pend))
--				goto out;
-+				return result;
- 		}
- 	}
- 
-@@ -215,18 +197,61 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 	result = -EINVAL;
- 	for (i = 0; i < nr_segments; i++) {
- 		if (image->segment[i].bufsz > image->segment[i].memsz)
--			goto out;
-+			return result;
- 	}
- 
--	result = 0;
--out:
--	if (result == 0)
--		*rimage = image;
--	else
--		kfree(image);
-+	/*
-+	 * Verify we have good destination addresses.  Normally
-+	 * the caller is responsible for making certain we don't
-+	 * attempt to load the new image into invalid or reserved
-+	 * areas of RAM.  But crash kernels are preloaded into a
-+	 * reserved area of ram.  We must ensure the addresses
-+	 * are in the reserved area otherwise preloading the
-+	 * kernel could corrupt things.
-+	 */
- 
--	return result;
-+	if (image->type == KEXEC_TYPE_CRASH) {
-+		result = -EADDRNOTAVAIL;
-+		for (i = 0; i < nr_segments; i++) {
-+			unsigned long mstart, mend;
- 
-+			mstart = image->segment[i].mem;
-+			mend = mstart + image->segment[i].memsz - 1;
-+			/* Ensure we are within the crash kernel limits */
-+			if ((mstart < crashk_res.start) ||
-+			    (mend > crashk_res.end))
-+				return result;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static struct kimage *do_kimage_alloc_init(void)
-+{
-+	struct kimage *image;
-+
-+	/* Allocate a controlling structure */
-+	image = kzalloc(sizeof(*image), GFP_KERNEL);
-+	if (!image)
-+		return NULL;
-+
-+	image->head = 0;
-+	image->entry = &image->head;
-+	image->last_entry = &image->head;
-+	image->control_page = ~0; /* By default this does not apply */
-+	image->type = KEXEC_TYPE_DEFAULT;
-+
-+	/* Initialize the list of control pages */
-+	INIT_LIST_HEAD(&image->control_pages);
-+
-+	/* Initialize the list of destination pages */
-+	INIT_LIST_HEAD(&image->dest_pages);
-+
-+	/* Initialize the list of unusable pages */
-+	INIT_LIST_HEAD(&image->unuseable_pages);
-+
-+	return image;
+ 	return sprintf(buf, "%lx %x\n",
+ 		       paddr_vmcoreinfo_note(),
+-		       (unsigned int)vmcoreinfo_max_size);
++		       (unsigned int)sizeof(vmcoreinfo_note));
  }
- 
- static void kimage_free_page_list(struct list_head *list);
-@@ -239,10 +264,19 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 	struct kimage *image;
- 
- 	/* Allocate and initialize a controlling structure */
--	image = NULL;
--	result = do_kimage_alloc(&image, entry, nr_segments, segments);
-+	image = do_kimage_alloc_init();
-+	if (!image)
-+		return -ENOMEM;
-+
-+	image->start = entry;
-+
-+	result = copy_user_segment_list(image, nr_segments, segments);
- 	if (result)
--		goto out;
-+		goto out_free_image;
-+
-+	result = sanity_check_segment_list(image);
-+	if (result)
-+		goto out_free_image;
- 
- 	/*
- 	 * Find a location for the control code buffer, and add it
-@@ -254,22 +288,23 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
- 	if (!image->control_code_page) {
- 		printk(KERN_ERR "Could not allocate control_code_buffer\n");
--		goto out_free;
-+		goto out_free_image;
- 	}
- 
- 	image->swap_page = kimage_alloc_control_pages(image, 0);
- 	if (!image->swap_page) {
- 		printk(KERN_ERR "Could not allocate swap buffer\n");
--		goto out_free;
-+		goto out_free_control_pages;
- 	}
- 
- 	*rimage = image;
- 	return 0;
- 
--out_free:
-+
-+out_free_control_pages:
- 	kimage_free_page_list(&image->control_pages);
-+out_free_image:
- 	kfree(image);
--out:
- 	return result;
- }
- 
-@@ -279,19 +314,17 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- {
- 	int result;
- 	struct kimage *image;
--	unsigned long i;
- 
--	image = NULL;
- 	/* Verify we have a valid entry point */
--	if ((entry < crashk_res.start) || (entry > crashk_res.end)) {
--		result = -EADDRNOTAVAIL;
--		goto out;
--	}
-+	if ((entry < crashk_res.start) || (entry > crashk_res.end))
-+		return -EADDRNOTAVAIL;
- 
- 	/* Allocate and initialize a controlling structure */
--	result = do_kimage_alloc(&image, entry, nr_segments, segments);
--	if (result)
--		goto out;
-+	image = do_kimage_alloc_init();
-+	if (!image)
-+		return -ENOMEM;
-+
-+	image->start = entry;
- 
- 	/* Enable the special crash kernel control page
- 	 * allocation policy.
-@@ -299,25 +332,13 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- 	image->control_page = crashk_res.start;
- 	image->type = KEXEC_TYPE_CRASH;
- 
--	/*
--	 * Verify we have good destination addresses.  Normally
--	 * the caller is responsible for making certain we don't
--	 * attempt to load the new image into invalid or reserved
--	 * areas of RAM.  But crash kernels are preloaded into a
--	 * reserved area of ram.  We must ensure the addresses
--	 * are in the reserved area otherwise preloading the
--	 * kernel could corrupt things.
--	 */
--	result = -EADDRNOTAVAIL;
--	for (i = 0; i < nr_segments; i++) {
--		unsigned long mstart, mend;
-+	result = copy_user_segment_list(image, nr_segments, segments);
-+	if (result)
-+		goto out_free_image;
- 
--		mstart = image->segment[i].mem;
--		mend = mstart + image->segment[i].memsz - 1;
--		/* Ensure we are within the crash kernel limits */
--		if ((mstart < crashk_res.start) || (mend > crashk_res.end))
--			goto out_free;
--	}
-+	result = sanity_check_segment_list(image);
-+	if (result)
-+		goto out_free_image;
- 
- 	/*
- 	 * Find a location for the control code buffer, and add
-@@ -329,15 +350,14 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
- 	if (!image->control_code_page) {
- 		printk(KERN_ERR "Could not allocate control_code_buffer\n");
--		goto out_free;
-+		goto out_free_image;
- 	}
- 
- 	*rimage = image;
- 	return 0;
- 
--out_free:
-+out_free_image:
- 	kfree(image);
--out:
- 	return result;
- }
+ KERNEL_ATTR_RO(vmcoreinfo);
  
 -- 
 1.7.7.6
