@@ -1,242 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3KTNyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:54:18 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:53619 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3KTNyP convert rfc822-to-8bit (ORCPT
+	id S1752530Ab3KTNyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:54:40 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:58472 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab3KTNyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:54:15 -0500
-Date: Wed, 20 Nov 2013 08:54:02 -0500 (EST)
-From: Jason Wang <jasowang@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>, Shirley Ma <xma@us.ibm.com>
-Message-ID: <125586345.27477452.1384955642143.JavaMail.root@redhat.com>
-In-Reply-To: <20131120132657.GA8455@redhat.com>
-References: <1384938447-3775-1-git-send-email-jasowang@redhat.com> <20131120132657.GA8455@redhat.com>
-Subject: Re: [PATCH RFC] virtio_net: fix error handling for mergeable
- buffers
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - GC31 (Win)/8.0.3_GA_5664)
-Thread-Topic: virtio_net: fix error handling for mergeable buffers
-Thread-Index: Q/EvnJnAgGDdgZfXTPGVS7+N4S7ZxA==
+	Wed, 20 Nov 2013 08:54:35 -0500
+X-AuditID: cbfec7f4-b7fee6d000004b2d-06-528cbf199ed7
+Message-id: <528CBF17.4020500@samsung.com>
+Date: Wed, 20 Nov 2013 17:54:31 +0400
+From: Tarek Dakhran <t.dakhran@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
+        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Dave.Martin@arm.com,
+        nicolas.pitre@linaro.org
+Subject: Re: [PATCH v3 0/4] Exynos 5410 Dual cluster support
+References: <1383811969-32712-1-git-send-email-v.tyrtov@samsung.com>
+ <1951315.Ol55YFu91h@flatron>
+In-reply-to: <1951315.Ol55YFu91h@flatron>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t/xq7qS+3uCDN51ylhMWneAyWLeZ1mL
+	prl7GC3mHznHavH/0WtWi3OvVjJa9C64ymax6fE1VouFbUtYLC7vmsNmMeP8PiaL25d5LZZe
+	v8hk8XTCRTaLT8/+sVtMmL6WxeLwCqBp615OZ7HY8rOD0eLVwTYWi82bpjJbrNr1h9Fi6owf
+	7A7iHmvmrWH0aGnuYfNY8PkKu8ffVS+YPXbOusvusXL5FzaPV6tnsnrcubaHzePduXPsHpuX
+	1Hu8usbi0bdlFaPH9mvzmD0+b5Lz2Dg3NIA/issmJTUnsyy1SN8ugSujbdZrtoIZShXrtk1l
+	b2B8Kt3FyMkhIWAisfBuBzOELSZx4d56ti5GLg4hgaWMEluW/mSGcN4zShyccY4RpIpXQEvi
+	/It37CA2i4CqxKb7N4DiHBxsAtoSW3Z4gYRFBSIkjq5+xgpRLijxY/I9FhBbRCBYYsfOVWAz
+	mQV+sEps+LELrEhYwEai4eN3JhBbSCBZ4uSDt2C7OAU0JT58OsQGYjMLWEusnLSNEcKWl9i8
+	5i3zBEaBWUh2zEJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIRH+ZQfj4mNW
+	hxgFOBiVeHglFnQHCbEmlhVX5h5ilOBgVhLh7drbEyTEm5JYWZValB9fVJqTWnyIkYmDU6qB
+	0XaaqVpx/wOVbXO3Ms2P+MTnuqfGxP9Bl2+Himrs/zNck3b0f1+xM2lB219jYISESrW94yqa
+	ynnY9mzHO1c/560mEz4+efj6Y9KmZ2cmnfylW581edtMKcnwzF3eD68kdc6Q0Jv19V36IW2T
+	tWpZje5WbM5Lra3uz2BbuOX879LrO12OiMx8pcRSnJFoqMVcVJwIAOkVuwTOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-
------ 原始邮件 -----
-> On Wed, Nov 20, 2013 at 05:07:25PM +0800, Jason Wang wrote:
-> > When mergeable buffer were used, we only put the first page buf leave the
-> > rest
-> > of buffers in the virt queue. This will cause the driver could not get the
-> > correct head buffer any more. Fix this by dropping the rest of buffers for
-> > this
-> > packet.
-> > 
-> > The bug was introduced by commit 9ab86bbcf8be755256f0a5e994e0b38af6b4d399
-> > (virtio_net: Defer skb allocation in receive path).
-> > 
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Cc: Michael Dalton <mwdalton@google.com>
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Cc: Shirley Ma <xma@us.ibm.com>
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> 
-> Just to clarify my previous comment: it was not about the
-> idea of adding drop_mergeable_buffer - rather, I think that
-> adding knowledge about mergeable buffers into page_to_skb creates an
-> ugly internal API.
-> 
-> Let's move the call to page_to_skb within receive_mergeable instead:
-> it's also nice that int offset = buf - page_address(page) logic
-> is not spread around like it was.
-> 
-> Also, it's not nice that we ignore length errors when we drop
-> packets because of OOM.
-> 
-> So I came up with the following - it seems to work but I didn't
-> stress test yet.
-
-I've no objection on this. But I've rather like my small and direct patch 
-to be applied to -net first. It has lower risk and was much more easier to 
-be backported to stable trees. Then we can do the re-factor like this in 
-net-next. 
-> 
-> commit ebffb3fe4335ffe07124e4518e76d6e05844fa18
-> Author: Michael S. Tsirkin <mst@redhat.com>
-> Date:   Wed Nov 20 14:41:29 2013 +0200
-> 
->     virtio_net: fix error handling for mergeable buffers
->     
->     Eric Dumazet noticed that if we encounter an error
->     when processing a mergeable buffer, we don't
->     dequeue all of the buffers from this packet,
->     the result is almost sure to be loss of networking.
->     
->     Jason Wang noticed that we also leak a page and that we don't decrement
->     the rq buf count, so we won't repost buffers (a resource leak).
->     
->     Cc: Rusty Russell <rusty@rustcorp.com.au>
->     Cc: Michael Dalton <mwdalton@google.com>
->     Reported-by: Eric Dumazet <edumazet@google.com>
->     Reported-by: Jason Wang <jasowang@redhat.com>
->     Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 01f4eb5..42f6a1e 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -296,41 +296,53 @@ static struct sk_buff *page_to_skb(struct receive_queue
-> *rq,
->  	return skb;
->  }
->  
-> -static int receive_mergeable(struct receive_queue *rq, struct sk_buff
-> *head_skb)
-> +static struct sk_buff *receive_mergeable(struct net_device *dev,
-> +					 struct receive_queue *rq,
-> +					 void *buf,
-> +					 unsigned int len)
->  {
-> -	struct skb_vnet_hdr *hdr = skb_vnet_hdr(head_skb);
-> +	struct skb_vnet_hdr *hdr = buf;
-> +	int num_buf = hdr->mhdr.num_buffers;
-> +	struct page *page = virt_to_head_page(buf);
-> +	int offset = buf - page_address(page);
-> +	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len,
-> +					       MAX_PACKET_LEN);
->  	struct sk_buff *curr_skb = head_skb;
-> -	char *buf;
-> -	struct page *page;
-> -	int num_buf, len, offset;
->  
-> -	num_buf = hdr->mhdr.num_buffers;
-> -	while (--num_buf) {
-> -		int num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
-> +	if (unlikely(!curr_skb))
-> +		goto err_skb;
-> +
-> +	while (--num_buf) {
-> +		int num_skb_frags;
-> +
->  		buf = virtqueue_get_buf(rq->vq, &len);
->  		if (unlikely(!buf)) {
-> -			pr_debug("%s: rx error: %d buffers missing\n",
-> -				 head_skb->dev->name, hdr->mhdr.num_buffers);
-> -			head_skb->dev->stats.rx_length_errors++;
-> -			return -EINVAL;
-> +			pr_debug("%s: rx error: %d buffers out of %d missing\n",
-> +				 dev->name, num_buf, hdr->mhdr.num_buffers);
-> +			dev->stats.rx_length_errors++;
-> +			goto err_buf;
->  		}
->  		if (unlikely(len > MAX_PACKET_LEN)) {
->  			pr_debug("%s: rx error: merge buffer too long\n",
-> -				 head_skb->dev->name);
-> +				 dev->name);
->  			len = MAX_PACKET_LEN;
->  		}
-> +
-> +		page = virt_to_head_page(buf);
-> +		--rq->num;
-> +
-> +		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
->  		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
->  			struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
-> -			if (unlikely(!nskb)) {
-> -				head_skb->dev->stats.rx_dropped++;
-> -				return -ENOMEM;
-> -			}
-> +
-> +			if (unlikely(!nskb))
-> +				goto err_skb;
->  			if (curr_skb == head_skb)
->  				skb_shinfo(curr_skb)->frag_list = nskb;
->  			else
->  				curr_skb->next = nskb;
-> -			curr_skb = nskb;
->  			head_skb->truesize += nskb->truesize;
-> +			curr_skb = nskb;
->  			num_skb_frags = 0;
->  		}
->  		if (curr_skb != head_skb) {
-> @@ -338,8 +350,7 @@ static int receive_mergeable(struct receive_queue *rq,
-> struct sk_buff *head_skb)
->  			head_skb->len += len;
->  			head_skb->truesize += MAX_PACKET_LEN;
->  		}
-> -		page = virt_to_head_page(buf);
-> -		offset = buf - (char *)page_address(page);
-> +		offset = buf - page_address(page);
->  		if (skb_can_coalesce(curr_skb, num_skb_frags, page, offset)) {
->  			put_page(page);
->  			skb_coalesce_rx_frag(curr_skb, num_skb_frags - 1,
-> @@ -349,9 +360,28 @@ static int receive_mergeable(struct receive_queue *rq,
-> struct sk_buff *head_skb)
->  					offset, len,
->  					MAX_PACKET_LEN);
->  		}
-> +	}
-> +
-> +	return head_skb;
-> +
-> +err_skb:
-> +	put_page(page);
-> +err_buf:
-> +	dev->stats.rx_dropped++;
-> +	dev_kfree_skb(head_skb);
-> +	while (--num_buf) {
-> +		buf = virtqueue_get_buf(rq->vq, &len);
-> +		if (unlikely(!buf)) {
-> +			pr_debug("%s: rx error: %d buffers missing\n",
-> +				 dev->name, num_buf);
-> +			dev->stats.rx_length_errors++;
-> +			break;
-> +		}
-> +		page = virt_to_head_page(buf);
-> +		put_page(page);
->  		--rq->num;
->  	}
-> -	return 0;
-> +	return NULL;
->  }
->  
->  static void receive_buf(struct receive_queue *rq, void *buf, unsigned int
->  len)
-> @@ -380,19 +410,9 @@ static void receive_buf(struct receive_queue *rq, void
-> *buf, unsigned int len)
->  		len -= sizeof(struct virtio_net_hdr);
->  		skb_trim(skb, len);
->  	} else if (vi->mergeable_rx_bufs) {
-> -		struct page *page = virt_to_head_page(buf);
-> -		skb = page_to_skb(rq, page,
-> -				  (char *)buf - (char *)page_address(page),
-> -				  len, MAX_PACKET_LEN);
-> -		if (unlikely(!skb)) {
-> -			dev->stats.rx_dropped++;
-> -			put_page(page);
-> +		skb = receive_mergeable(dev, rq, buf, len);
-> +		if (unlikely(!skb))
->  			return;
-> -		}
-> -		if (receive_mergeable(rq, skb)) {
-> -			dev_kfree_skb(skb);
-> -			return;
-> -		}
->  	} else {
->  		page = buf;
->  		skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On 20.11.2013 03:23, Tomasz Figa wrote:
+> Hi,
 >
+> On Thursday 07 of November 2013 12:12:45 Vyacheslav Tyrtov wrote:
+>> The series of patches represent support of Exynos 5410 SoC
+>>
+>> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
+>> Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
+>>
+>> Patches add new platform description, support of clock controller,
+>> dual cluster support and device tree for Exynos 5410
+>>
+>> Has been build on v3.12.
+>> Has been tested on Exynos 5410 reference board (exynos_defconfig).
+> I've applied the patches on top of today's linux-next and tried to boot
+> my ODROID-XU using exynos5410-smdk5410.dts and exynos_defconfig, but all
+> I can get is an imprecise external abort, when the kernel tries to jump
+> to init. Full boot log below. Any ideas?
+>
+> Best regards,
+> Tomasz
+>
+> 8><------------
+>
+> U-Boot 2012.07-g2bcb371 (Nov 19 2013 - 20:17:37) for Exynos5410
+>
+> CPU: Exynos5410 Rev2.3 [Samsung SOC on SMP Platform Base on ARM CortexA15]
+> APLL = 900MHz, KPLL = 600MHz
+[snip]
+>    
+> Starting kernel ...
+>
+> Uncompressing Linux... done, booting the kernel.
+> [    0.000000] Booting Linux on physical CPU 0x0
+> [    0.000000] Initializing cgroup subsys cpuset
+> [    0.000000] Initializing cgroup subsys cpu
+> [    0.000000] Initializing cgroup subsys cpuacct
+> [    0.000000] Linux version 3.12.0-next-20131119-00004-g27f3f5f-dirty (tom3q@flatron) (gcc version 4.7.2 (Gentoo 4.7.2-r1 p1.6, pie-0.5.5) ) #11 SMP PREEMPT Wed Nov 20 00:08:02 CET 2013
+> [    0.000000] CPU: ARMv7 Processor [412fc0f3] revision 3 (ARMv7), cr=10c5387d
+> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
+> [    0.000000] Machine model: Hardkernel ODROID-XU board based on EXYNOS5410
+> [    0.000000] bootconsole [earlycon0] enabled
+> [    0.000000] debug: ignoring loglevel setting.
+> [    0.000000] Memory policy: Data cache writealloc
+> [    0.000000] CPU EXYNOS5410 (id 0xe5410023)
+> [    0.000000] On node 0 totalpages: 262144
+[snip]
+> [    5.040000] isa bounce pool size: 16 pages
+> [    5.045000] mmcblk0: mmc1:e624 SU16G 14.8 GiB
+> [    5.050000]  mmcblk0: p1
+> [    5.120000] EXT3-fs (mmcblk0p1): error: couldn't mount because of unsupported optional features (240)
+> [    5.125000] EXT2-fs (mmcblk0p1): error: couldn't mount because of unsupported optional features (240)
+> [    5.145000] EXT4-fs (mmcblk0p1): mounted filesystem with ordered data mode. Opts: (null)
+> [    5.150000] VFS: Mounted root (ext4 filesystem) readonly on device 179:1.
+> [    5.165000] devtmpfs: mounted
+> [    5.170000] Freeing unused kernel memory: 228K (c0513000 - c054c000)
+> [    5.195000] Unhandled fault: imprecise external abort (0x1406) at 0x00000000
+> [    5.210000] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000007
+> [    5.210000]
+> [    5.210000] CPU: 2 PID: 1 Comm: init Not tainted 3.12.0-next-20131119-00004-g27f3f5f-dirty #11
+> [    5.210000] [<c0014068>] (unwind_backtrace+0x0/0xf8) from [<c0011438>] (show_stack+0x10/0x14)
+> [    5.210000] [<c0011438>] (show_stack+0x10/0x14) from [<c03a486c>] (dump_stack+0x7c/0xbc)
+> [    5.210000] [<c03a486c>] (dump_stack+0x7c/0xbc) from [<c03a1e78>] (panic+0x8c/0x1e4)
+> [    5.210000] [<c03a1e78>] (panic+0x8c/0x1e4) from [<c001f504>] (do_exit+0x850/0x920)
+> [    5.210000] [<c001f504>] (do_exit+0x850/0x920) from [<c001f63c>] (do_group_exit+0x3c/0xb0)
+> [    5.210000] [<c001f63c>] (do_group_exit+0x3c/0xb0) from [<c0029e1c>] (get_signal_to_deliver+0x1d4/0x538)
+> [    5.210000] [<c0029e1c>] (get_signal_to_deliver+0x1d4/0x538) from [<c0010974>] (do_signal+0x100/0x40c)
+> [    5.210000] [<c0010974>] (do_signal+0x100/0x40c) from [<c0010fb4>] (do_work_pending+0x68/0xa8)
+> [    5.210000] [<c0010fb4>] (do_work_pending+0x68/0xa8) from [<c000e620>] (work_pending+0xc/0x20)
+> [    5.300000] CPU3: stopping
+> [    5.300000] CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.12.0-next-20131119-00004-g27f3f5f-dirty #11
+>
+Tomasz, there is CCI on/off switcher on smdk5410 board, also there is 
+XOMCCI pin on SoC.
+Looks like switcher on board controls the XOMCCI SoC pin.
+
+When I turn switcher OFF, I getting the same problem you got.
+Please, check the cci state on Odroid-XU Board, maybe it is turned off.
+
+Best regards,
+     Tarek Dakhran
+
