@@ -1,75 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3KTNGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:06:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8507 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab3KTNGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:06:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438489536"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <CANaxB-xcyRBB4UV+RMxh34=eDCuCfDUFEHexvkSCsg4fKDDGRQ@mail.gmail.com>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
- <CANaxB-x3k8DPEaDCtCzhkuyPcwR1YcRJZwXW777+q+y2KBvzHg@mail.gmail.com>
- <20131120125325.07A42E0090@blue.fi.intel.com>
- <CANaxB-xcyRBB4UV+RMxh34=eDCuCfDUFEHexvkSCsg4fKDDGRQ@mail.gmail.com>
-Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be
- embedded to struct page
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131120130626.715B7E0090@blue.fi.intel.com>
-Date: Wed, 20 Nov 2013 15:06:26 +0200 (EET)
+	id S1752677Ab3KTNO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:14:26 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:41918 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3KTNOZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 08:14:25 -0500
+Message-ID: <528CB5AC.5080007@arm.com>
+Date: Wed, 20 Nov 2013 13:14:20 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Vinayak Kale <vkale@apm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, Tuan Phan <tphan@apm.com>
+Subject: Re: [PATCH V4 2/2] arm64: perf: add support for percpu pmu interrupt
+References: <1384946021-22100-1-git-send-email-vkale@apm.com> <1384946021-22100-3-git-send-email-vkale@apm.com>
+In-Reply-To: <1384946021-22100-3-git-send-email-vkale@apm.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 20 Nov 2013 13:14:21.0634 (UTC) FILETIME=[6D257220:01CEE5F2]
+X-MC-Unique: 113112013142204401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Wagin wrote:
-> 2013/11/20 Kirill A. Shutemov <kirill.shutemov@linux.intel.com>:
-> > Andrey Wagin wrote:
-> >> Hi Kirill,
-> >>
-> >> Looks like this patch adds memory leaks.
-> >> [  116.188310] kmemleak: 15672 new suspected memory leaks (see
-> >> /sys/kernel/debug/kmemleak)
-> >> unreferenced object 0xffff8800da45a350 (size 96):
-> >>   comm "dracut-initqueu", pid 93, jiffies 4294671391 (age 362.277s)
-> >>   hex dump (first 32 bytes):
-> >>     07 00 07 00 ad 4e ad de ff ff ff ff 6b 6b 6b 6b  .....N......kkkk
-> >>     ff ff ff ff ff ff ff ff 80 24 b4 82 ff ff ff ff  .........$......
-> >>   backtrace:
-> >>     [<ffffffff817152fe>] kmemleak_alloc+0x5e/0xc0
-> >>     [<ffffffff811c34f3>] kmem_cache_alloc_trace+0x113/0x290
-> >>     [<ffffffff811920f7>] __ptlock_alloc+0x27/0x50
-> >>     [<ffffffff81192849>] __pmd_alloc+0x59/0x170
-> >>     [<ffffffff81195ffa>] copy_page_range+0x38a/0x3e0
-> >>     [<ffffffff8105a013>] dup_mm+0x313/0x540
-> >>     [<ffffffff8105b9da>] copy_process+0x161a/0x1880
-> >>     [<ffffffff8105c01b>] do_fork+0x8b/0x360
-> >>     [<ffffffff8105c306>] SyS_clone+0x16/0x20
-> >>     [<ffffffff81727b79>] stub_clone+0x69/0x90
-> >>     [<ffffffffffffffff>] 0xffffffffffffffff
-> >>
-> >> It's quite serious, because my test host went to panic in a few hours.
-> >
-> > Sorry for that.
-> >
-> > Could you test patch below.
+[dropped patches@apm.com]
+
+Vinayak,
+
+Please keep reviewers on CC, as it makes easier to track the changes.
+
+On 20/11/13 11:13, Vinayak Kale wrote:
+> Add support for irq registration when pmu interrupt is percpu.
 > 
-> Yes, it works.
+> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> Signed-off-by: Tuan Phan <tphan@apm.com>
+> ---
+>  arch/arm64/kernel/perf_event.c |  108 ++++++++++++++++++++++++++++++----------
+>  1 file changed, 81 insertions(+), 27 deletions(-)
 > 
-> I found this too a few minutes ago:)
+> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+> index cea1594..de12ba8 100644
+> --- a/arch/arm64/kernel/perf_event.c
+> +++ b/arch/arm64/kernel/perf_event.c
+> @@ -22,6 +22,7 @@
+>  
+>  #include <linux/bitmap.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/irq.h>
+>  #include <linux/kernel.h>
+>  #include <linux/export.h>
+>  #include <linux/perf_event.h>
+> @@ -363,22 +364,55 @@ validate_group(struct perf_event *event)
+>  }
+>  
+>  static void
+> +armpmu_disable_percpu_irq(void *data)
+> +{
+> +	struct arm_pmu *armpmu = data;
+> +	struct platform_device *pmu_device = armpmu->plat_device;
+> +	int irq = platform_get_irq(pmu_device, 0);
+> +
+> +	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
+> +	disable_percpu_irq(irq);
+> +}
+> +
+> +static void
+>  armpmu_release_hardware(struct arm_pmu *armpmu)
+>  {
+>  	int i, irq, irqs;
+>  	struct platform_device *pmu_device = armpmu->plat_device;
+>  
+>  	irqs = min(pmu_device->num_resources, num_possible_cpus());
+> +	if (irqs < 1)
+> +		return;
+>  
+> -	for (i = 0; i < irqs; ++i) {
+> -		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+> -			continue;
+> -		irq = platform_get_irq(pmu_device, i);
+> -		if (irq >= 0)
+> -			free_irq(irq, armpmu);
+> +	irq = platform_get_irq(pmu_device, 0);
+> +	if (irq < 0)
 
-Nice
+So I'm going to sound like a stuck record: irq == 0 is not a valid IRQ
+number, full stop. This is how we express the fact that there is no IRQ.
 
-Tested-by ?
+If you're touching that code, you might as well fix this buglet.
 
+> +		return;
+> +
+> +	if (irq_is_percpu(irq)) {
+> +		on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
+> +		free_percpu_irq(irq, &cpu_hw_events);
+> +	} else {
+> +		for (i = 0; i < irqs; ++i) {
+> +			if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+> +				continue;
+> +			irq = platform_get_irq(pmu_device, i);
+> +			if (irq >= 0)
+
+Same here.
+
+> +				free_irq(irq, armpmu);
+> +		}
+>  	}
+>  }
+>  
+> +static void
+> +armpmu_enable_percpu_irq(void *data)
+> +{
+> +	struct arm_pmu *armpmu = data;
+> +	struct platform_device *pmu_device = armpmu->plat_device;
+> +	int irq = platform_get_irq(pmu_device, 0);
+> +
+> +	enable_percpu_irq(irq, 0);
+> +	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
+> +}
+> +
+>  static int
+>  armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>  {
+> @@ -396,34 +430,54 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>  		return -ENODEV;
+>  	}
+>  
+> -	for (i = 0; i < irqs; ++i) {
+> -		err = 0;
+> -		irq = platform_get_irq(pmu_device, i);
+> -		if (irq < 0)
+> -			continue;
+> +	irq = platform_get_irq(pmu_device, 0);
+> +	if (irq < 0) {
+
+And here.
+
+> +		pr_err("failed to get an irq for PMU device\n");
+> +		return -ENODEV;
+> +	}
+>  
+> -		/*
+> -		 * If we have a single PMU interrupt that we can't shift,
+> -		 * assume that we're running on a uniprocessor machine and
+> -		 * continue. Otherwise, continue without this interrupt.
+> -		 */
+> -		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+> -			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+> -				    irq, i);
+> -			continue;
+> -		}
+> +	if (irq_is_percpu(irq)) {
+> +		err = request_percpu_irq(irq, armpmu->handle_irq,
+> +				"arm-pmu", &cpu_hw_events);
+>  
+> -		err = request_irq(irq, armpmu->handle_irq,
+> -				  IRQF_NOBALANCING,
+> -				  "arm-pmu", armpmu);
+>  		if (err) {
+> -			pr_err("unable to request IRQ%d for ARM PMU counters\n",
+> -				irq);
+> +			pr_err("unable to request percpu IRQ%d for ARM PMU counters\n",
+> +					irq);
+>  			armpmu_release_hardware(armpmu);
+>  			return err;
+>  		}
+>  
+> -		cpumask_set_cpu(i, &armpmu->active_irqs);
+> +		on_each_cpu(armpmu_enable_percpu_irq, armpmu, 1);
+> +	} else {
+> +		for (i = 0; i < irqs; ++i) {
+> +			err = 0;
+> +			irq = platform_get_irq(pmu_device, i);
+> +			if (irq < 0)
+
+And here.
+
+> +				continue;
+> +
+> +			/*
+> +			 * If we have a single PMU interrupt that we can't shift,
+> +			 * assume that we're running on a uniprocessor machine and
+> +			 * continue. Otherwise, continue without this interrupt.
+> +			 */
+> +			if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+> +				pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+> +						irq, i);
+> +				continue;
+> +			}
+> +
+> +			err = request_irq(irq, armpmu->handle_irq,
+> +					IRQF_NOBALANCING,
+> +					"arm-pmu", armpmu);
+> +			if (err) {
+> +				pr_err("unable to request IRQ%d for ARM PMU counters\n",
+> +						irq);
+> +				armpmu_release_hardware(armpmu);
+> +				return err;
+> +			}
+> +
+> +			cpumask_set_cpu(i, &armpmu->active_irqs);
+> +		}
+>  	}
+>  
+>  	return 0;
+> 
+
+	M.
 -- 
- Kirill A. Shutemov
+Jazz is not dead. It just smells funny...
+
