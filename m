@@ -1,322 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab3KTRwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:52:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36485 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3KTRvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:51:50 -0500
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 7/8] mm/swap.c: reorganize put_compound_page()
-Date: Wed, 20 Nov 2013 18:51:15 +0100
-Message-Id: <1384969876-6374-8-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1384969876-6374-1-git-send-email-aarcange@redhat.com>
-References: <1384969876-6374-1-git-send-email-aarcange@redhat.com>
+	id S1754840Ab3KTRyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:54:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:13897 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab3KTRyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:54:43 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-91-528cf761a627
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 4/5] regulator: max14577: Add regulator driver for Maxim
+ 14577
+Date: Wed, 20 Nov 2013 18:54:34 +0100
+Message-id: <3176793.htnYthLYeH@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1384956732-19526-5-git-send-email-k.kozlowski@samsung.com>
+References: <1384956732-19526-1-git-send-email-k.kozlowski@samsung.com>
+ <1384956732-19526-5-git-send-email-k.kozlowski@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t9jAd3E7z1BButm61oc3KppMfXhEzaL
+	61+es1rMP3KO1WLiysnMFgf+7GC0OPdqJaPF6xeGFmeb3rBb3P96lNHi25UOJotNj6+xWixs
+	W8JicXnXHDaLtUfuslvcblzBZjFh+loWi8MrDjBZrHs5ncXidDerxauDbSwOoh5r5q1h9Fjw
+	+Qq7x4T+T4weO2fdZfdYufwLm8fmFVoem1Z1snm8Wj2T1ePOtT1sHvNOBnpsXlLv0bdlFaPH
+	501yHhvnhgbwRXHZpKTmZJalFunbJXBl9PyYyVrQEFuxZ+snpgbGu95djJwcEgImEi+ffWCC
+	sMUkLtxbz9bFyMUhJLCIUeJzw1FGCKeFSeLOlSfMIFVsAlYSE9tXMYLYIgKGEgd3bwfrZhb4
+	wSrR98oRxBYWCJf4s3UNC4jNIqAqMeXrZrBeXgFNiYPzv4LZogKeEju2r2QDsTkFPCS2tHwA
+	mykk0Moo0Xw/FqJeUOLH5HssEPPlJfbtn8oKYetI7G+dxjaBUWAWkrJZSMpmISlbwMi8ilE0
+	tSC5oDgpPddIrzgxt7g0L10vOT93EyM4fp9J72Bc1WBxiFGAg1GJh/fB054gIdbEsuLK3EOM
+	EhzMSiK83h+BQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODil
+	Ghgl5VUE3acZ3ny4symr9bHO+dmZt+bFlfm4Wu00dZiSznNC/k5VWkOjr2uJ+eJCjnY/Pa0Y
+	5p1nltVYZbLwZU797rr6Vs7b590ZmzkXysWw8QtcMNdhfCFUqLDYTUS6/RuXeQzTkd9FdjXN
+	Eo6ufX0Lp17es+lY9mOR3o0bDz45dKj95Go/HyWW4oxEQy3mouJEAD6KWAPbAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
 
-Tweak it so save a tab stop, make code layout slightly less nutty.
+Hi Krzysztof,
 
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/swap.c | 254 +++++++++++++++++++++++++++++++-------------------------------
- 1 file changed, 125 insertions(+), 129 deletions(-)
+On Wednesday, November 20, 2013 03:12:11 PM Krzysztof Kozlowski wrote:
+> MAX14577 chip is a multi-function device which includes MUIC,
+> charger and voltage regulator. The driver is located in drivers/mfd.
+> 
+> This patch adds regulator driver for MAX14577 chip. There are two
+> regulators in this chip:
+> 1. Safeout LDO with constant voltage output of 4.9V. It can be only
+>    enabled or disabled.
+> 2. Current regulator for the charger. It provides current from 90mA up
+>    to 950mA.
+> Driver supports Device Tree.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/regulator/Kconfig    |    7 ++
+>  drivers/regulator/Makefile   |    1 +
+>  drivers/regulator/max14577.c |  282 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 290 insertions(+)
+>  create mode 100644 drivers/regulator/max14577.c
+> 
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index ce785f4..11ee053 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -249,6 +249,13 @@ config REGULATOR_LP8788
+>  	help
+>  	  This driver supports LP8788 voltage regulator chip.
+>  
+> +config REGULATOR_MAX14577
+> +	tristate "Maxim 14577 regulator"
+> +	depends on MFD_MAX14577
+> +	help
+> +	  This driver controls a Maxim 14577 regulator via I2C bus.
+> +	  The regulators include safeout LDO and current regulator 'CHARGER'.
+> +
+>  config REGULATOR_MAX1586
+>  	tristate "Maxim 1586/1587 voltage regulator"
+>  	depends on I2C
+> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+> index 01c597e..654bd43 100644
+> --- a/drivers/regulator/Makefile
+> +++ b/drivers/regulator/Makefile
+> @@ -35,6 +35,7 @@ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+>  obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
+>  obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
+>  obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
+> +obj-$(CONFIG_REGULATOR_MAX14577) += max14577.o
+>  obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+>  obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+>  obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
+> diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+> new file mode 100644
+> index 0000000..f449e57
+> --- /dev/null
+> +++ b/drivers/regulator/max14577.c
+> @@ -0,0 +1,282 @@
+> +/*
+> + * max14577.c - Regulator driver for the Maxim 14577
+> + *
+> + * Copyright (C) 2013 Samsung Electronics
+> + * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/mfd/max14577.h>
+> +#include <linux/mfd/max14577-private.h>
+> +#include <linux/regulator/of_regulator.h>
+> +
+> +struct max14577_regulator {
+> +	struct device *dev;
+> +	struct max14577 *max14577;
+> +	int num_regulators;
+> +	struct regulator_dev **regulators;
+> +};
+> +
+> +static int max14577_reg_is_enabled(struct regulator_dev *rdev)
+> +{
+> +	int rid = rdev_get_id(rdev);
+> +	struct regmap *rmap = rdev->regmap;
+> +	u8 reg_data;
+> +
+> +	switch (rid) {
+> +	case MAX14577_CHARGER:
+> +		max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2, &reg_data);
+> +		if ((reg_data & CHGCTRL2_MBCHOSTEN_MASK) == 0)
+> +			return 0;
+> +		max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
+> +		if ((reg_data & STATUS3_CGMBC_MASK) == 0)
+> +			return 0;
+> +		/* MBCHOSTEN and CGMBC are on */
+> +		return 1;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
+> +{
+> +	u8 reg_data;
+> +	struct regmap *rmap = rdev->regmap;
+> +
+> +	if (rdev_get_id(rdev) != MAX14577_CHARGER)
+> +		return -EINVAL;
+> +
+> +	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL4, &reg_data);
+> +
+> +	if ((reg_data & CHGCTRL4_MBCICHWRCL_MASK) == 0)
+> +		return MAX14577_REGULATOR_CURRENT_LIMIT_MIN;
+> +
+> +	reg_data = ((reg_data & CHGCTRL4_MBCICHWRCH_MASK) >>
+> +			CHGCTRL4_MBCICHWRCH_SHIFT);
+> +	return MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
+> +		reg_data * MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP;
+> +}
+> +
+> +static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
+> +		int min_uA, int max_uA)
+> +{
+> +	int i, current_bits = 0xf;
+> +	u8 reg_data;
+> +
+> +	if (rdev_get_id(rdev) != MAX14577_CHARGER)
+> +		return -EINVAL;
+> +
+> +	if (min_uA > MAX14577_REGULATOR_CURRENT_LIMIT_MAX ||
+> +			max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_MIN)
+> +		return -EINVAL;
+> +
+> +	if (max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START) {
+> +		/* Less than 200 mA, so set 90mA (turn only Low Bit off) */
+> +		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
+> +		return max14577_update_reg(rdev->regmap,
+> +				MAX14577_CHG_REG_CHG_CTRL4,
+> +				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
+> +	}
+> +
+> +	/* max_uA is in range: <LIMIT_HIGH_START, inifinite>, so search for
+> +	 * valid current starting from LIMIT_MAX. */
+> +	for (i = MAX14577_REGULATOR_CURRENT_LIMIT_MAX;
+> +			i >= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START;
+> +			i -= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP) {
+> +		if (i <= max_uA)
+> +			break;
+> +		current_bits--;
+> +	}
+> +	BUG_ON(current_bits < 0); /* Cannot happen */
+> +	/* Turn Low Bit on (use range 200mA-950 mA) */
+> +	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
+> +	/* and set proper High Bits */
+> +	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
+> +
+> +	return max14577_update_reg(rdev->regmap, MAX14577_CHG_REG_CHG_CTRL4,
+> +			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
+> +			reg_data);
+> +}
+> +
+> +static struct regulator_ops max14577_safeout_ops = {
+> +	.is_enabled		= regulator_is_enabled_regmap,
+> +	.enable			= regulator_enable_regmap,
+> +	.disable		= regulator_disable_regmap,
+> +	.list_voltage		= regulator_list_voltage_linear,
+> +};
+> +
+> +static struct regulator_ops max14577_charger_ops = {
+> +	.is_enabled		= max14577_reg_is_enabled,
+> +	.enable			= regulator_enable_regmap,
+> +	.disable		= regulator_disable_regmap,
+> +	.get_current_limit	= max14577_reg_get_current_limit,
+> +	.set_current_limit	= max14577_reg_set_current_limit,
+> +};
+> +
+> +static struct regulator_desc supported_regulators[] = {
+> +	{
+> +		.name = "SAFEOUT",
+> +		.id = MAX14577_SAFEOUT,
+> +		.ops = &max14577_safeout_ops,
+> +		.type = REGULATOR_VOLTAGE,
+> +		.owner = THIS_MODULE,
+> +		.n_voltages = 1,
+> +		.min_uV = MAX14577_REGULATOR_SAFEOUT_VOLTAGE,
+> +		.enable_reg = MAX14577_REG_CONTROL2,
+> +		.enable_mask = CTRL2_SFOUTORD_MASK,
+> +	}, {
+> +		.name = "CHARGER",
+> +		.id = MAX14577_CHARGER,
+> +		.ops = &max14577_charger_ops,
+> +		.type = REGULATOR_CURRENT,
+> +		.owner = THIS_MODULE,
+> +		.enable_reg = MAX14577_CHG_REG_CHG_CTRL2,
+> +		.enable_mask = CHGCTRL2_MBCHOSTEN_MASK,
+> +	}
+> +};
+> +
+> +#ifdef CONFIG_OF
+> +static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
+> +					struct max14577_platform_data *pdata)
+> +{
+> +	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
+> +	struct device_node *np;
+> +	struct max14577_regulator_platform_data *reg_pdata;
+> +	struct of_regulator_match rmatch;
+> +	int i, ret, cnt = 0;
+> +
+> +	np = of_get_child_by_name(max14577->dev->of_node, "regulators");
+> +	if (!np)
+> +		return -EINVAL;
+> +
+> +	reg_pdata = devm_kzalloc(&pdev->dev, sizeof(*reg_pdata) *
+> +			     ARRAY_SIZE(supported_regulators), GFP_KERNEL);
+> +	if (!reg_pdata)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(supported_regulators); i++) {
+> +		rmatch.name = supported_regulators[i].name;
+> +		ret = of_regulator_match(&pdev->dev, np, &rmatch, 1);
+> +		if (ret != 1)
+> +			continue;
+> +		dev_dbg(&pdev->dev, "Found regulator %d/%s\n",
+> +				supported_regulators[i].id,
+> +				supported_regulators[i].name);
+> +		reg_pdata[cnt].id = supported_regulators[i].id;
+> +		reg_pdata[cnt].initdata = rmatch.init_data;
+> +		reg_pdata[cnt].of_node = rmatch.of_node;
+> +		cnt++;
+> +	}
+> +
+> +	pdata->num_regulators = cnt;
+> +	pdata->regulators = reg_pdata;
+> +
+> +	return 0;
+> +}
+> +#else
+> +static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
+> +					struct max14577_platform_data *pdata)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static int max14577_regulator_probe(struct platform_device *pdev)
+> +{
+> +	struct max14577_regulator *info;
+> +	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
+> +	struct max14577_platform_data *pdata = dev_get_platdata(max14577->dev);
+> +	int i, size;
+> +	struct regulator_config config = {};
+> +
+> +	if (!pdata) {
+> +		/* Parent must provide pdata */
+> +		dev_err(&pdev->dev, "No MFD driver platform data found.\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	if (max14577->dev->of_node) {
+> +		int ret = max14577_regulator_dt_parse_pdata(pdev, pdata);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	info = devm_kzalloc(&pdev->dev, sizeof(struct max14577_regulator),
+> +			GFP_KERNEL);
+> +	if (!info)
+> +		return -ENOMEM;
+> +
+> +	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
+> +	info->regulators = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+> +	if (!info->regulators) {
+> +		dev_err(&pdev->dev, "Cannot allocate memory for regulators\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	info->dev = &pdev->dev;
+> +	info->max14577 = max14577;
+> +	info->num_regulators = pdata->num_regulators;
+> +
+> +	config.dev = &pdev->dev;
+> +	config.regmap = max14577->regmap;
+> +	config.driver_data = info;
+> +	platform_set_drvdata(pdev, info);
 
-diff --git a/mm/swap.c b/mm/swap.c
-index b4c49bf..ddb470d 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -82,154 +82,150 @@ static void __put_compound_page(struct page *page)
- 
- static void put_compound_page(struct page *page)
- {
--	if (unlikely(PageTail(page))) {
--		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = compound_trans_head(page);
-+	struct page *page_head;
- 
--		/*
--		 * THP can not break up slab pages so avoid taking
--		 * compound_lock() and skip the tail page refcounting
--		 * (in _mapcount) too. Slab performs non-atomic bit
--		 * ops on page->flags for better performance. In
--		 * particular slab_unlock() in slub used to be a hot
--		 * path. It is still hot on arches that do not support
--		 * this_cpu_cmpxchg_double().
--		 *
--		 * If "page" is part of a slab or hugetlbfs page it
--		 * cannot be splitted and the head page cannot change
--		 * from under us. And if "page" is part of a THP page
--		 * under splitting, if the head page pointed by the
--		 * THP tail isn't a THP head anymore, we'll find
--		 * PageTail clear after smp_rmb() and we'll threat it
--		 * as a single page.
--		 */
--		if (!__compound_tail_refcounted(page_head)) {
-+	if (likely(!PageTail(page))) {
-+		if (put_page_testzero(page)) {
- 			/*
--			 * If "page" is a THP tail, we must read the tail page
--			 * flags after the head page flags. The
--			 * split_huge_page side enforces write memory
--			 * barriers between clearing PageTail and before the
--			 * head page can be freed and reallocated.
-+			 * By the time all refcounts have been released
-+			 * split_huge_page cannot run anymore from under us.
- 			 */
--			smp_rmb();
--			if (likely(PageTail(page))) {
--				/*
--				 * __split_huge_page_refcount
--				 * cannot race here.
--				 */
--				VM_BUG_ON(!PageHead(page_head));
--				VM_BUG_ON(page_mapcount(page) != 0);
--				if (put_page_testzero(page_head)) {
--					/*
--					 * If this is the tail of a
--					 * slab compound page, the
--					 * tail pin must not be the
--					 * last reference held on the
--					 * page, because the PG_slab
--					 * cannot be cleared before
--					 * all tail pins (which skips
--					 * the _mapcount tail
--					 * refcounting) have been
--					 * released. For hugetlbfs the
--					 * tail pin may be the last
--					 * reference on the page
--					 * instead, because
--					 * PageHeadHuge will not go
--					 * away until the compound
--					 * page enters the buddy
--					 * allocator.
--					 */
--					VM_BUG_ON(PageSlab(page_head));
--					__put_compound_page(page_head);
--				}
--				return;
--			} else
--				/*
--				 * __split_huge_page_refcount
--				 * run before us, "page" was a
--				 * THP tail. The split
--				 * page_head has been freed
--				 * and reallocated as slab or
--				 * hugetlbfs page of smaller
--				 * order (only possible if
--				 * reallocated as slab on
--				 * x86).
--				 */
--				goto out_put_single;
-+			if (PageHead(page))
-+				__put_compound_page(page);
-+			else
-+				__put_single_page(page);
- 		}
-+		return;
-+	}
- 
--		if (likely(page != page_head &&
--			   get_page_unless_zero(page_head))) {
--			unsigned long flags;
-+	/* __split_huge_page_refcount can run under us */
-+	page_head = compound_trans_head(page);
- 
-+	/*
-+	 * THP can not break up slab pages so avoid taking
-+	 * compound_lock() and skip the tail page refcounting (in
-+	 * _mapcount) too. Slab performs non-atomic bit ops on
-+	 * page->flags for better performance. In particular
-+	 * slab_unlock() in slub used to be a hot path. It is still
-+	 * hot on arches that do not support
-+	 * this_cpu_cmpxchg_double().
-+	 *
-+	 * If "page" is part of a slab or hugetlbfs page it cannot be
-+	 * splitted and the head page cannot change from under us. And
-+	 * if "page" is part of a THP page under splitting, if the
-+	 * head page pointed by the THP tail isn't a THP head anymore,
-+	 * we'll find PageTail clear after smp_rmb() and we'll threat
-+	 * it as a single page.
-+	 */
-+	if (!__compound_tail_refcounted(page_head)) {
-+		/*
-+		 * If "page" is a THP tail, we must read the tail page
-+		 * flags after the head page flags. The
-+		 * split_huge_page side enforces write memory barriers
-+		 * between clearing PageTail and before the head page
-+		 * can be freed and reallocated.
-+		 */
-+		smp_rmb();
-+		if (likely(PageTail(page))) {
- 			/*
--			 * page_head wasn't a dangling pointer but it
--			 * may not be a head page anymore by the time
--			 * we obtain the lock. That is ok as long as it
--			 * can't be freed from under us.
-+			 * __split_huge_page_refcount cannot race
-+			 * here.
- 			 */
--			flags = compound_lock_irqsave(page_head);
--			if (unlikely(!PageTail(page))) {
--				/* __split_huge_page_refcount run before us */
--				compound_unlock_irqrestore(page_head, flags);
--				if (put_page_testzero(page_head)) {
--					/*
--					 * The head page may have been
--					 * freed and reallocated as a
--					 * compound page of smaller
--					 * order and then freed again.
--					 * All we know is that it
--					 * cannot have become: a THP
--					 * page, a compound page of
--					 * higher order, a tail page.
--					 * That is because we still
--					 * hold the refcount of the
--					 * split THP tail and
--					 * page_head was the THP head
--					 * before the split.
--					 */
--					if (PageHead(page_head))
--						__put_compound_page(page_head);
--					else
--						__put_single_page(page_head);
--				}
--out_put_single:
--				if (put_page_testzero(page))
--					__put_single_page(page);
--				return;
-+			VM_BUG_ON(!PageHead(page_head));
-+			VM_BUG_ON(page_mapcount(page) != 0);
-+			if (put_page_testzero(page_head)) {
-+				/*
-+				 * If this is the tail of a slab
-+				 * compound page, the tail pin must
-+				 * not be the last reference held on
-+				 * the page, because the PG_slab
-+				 * cannot be cleared before all tail
-+				 * pins (which skips the _mapcount
-+				 * tail refcounting) have been
-+				 * released. For hugetlbfs the tail
-+				 * pin may be the last reference on
-+				 * the page instead, because
-+				 * PageHeadHuge will not go away until
-+				 * the compound page enters the buddy
-+				 * allocator.
-+				 */
-+				VM_BUG_ON(PageSlab(page_head));
-+				__put_compound_page(page_head);
- 			}
--			VM_BUG_ON(page_head != page->first_page);
-+			return;
-+		} else
- 			/*
--			 * We can release the refcount taken by
--			 * get_page_unless_zero() now that
--			 * __split_huge_page_refcount() is blocked on
--			 * the compound_lock.
-+			 * __split_huge_page_refcount run before us,
-+			 * "page" was a THP tail. The split page_head
-+			 * has been freed and reallocated as slab or
-+			 * hugetlbfs page of smaller order (only
-+			 * possible if reallocated as slab on x86).
- 			 */
--			if (put_page_testzero(page_head))
--				VM_BUG_ON(1);
--			/* __split_huge_page_refcount will wait now */
--			VM_BUG_ON(page_mapcount(page) <= 0);
--			atomic_dec(&page->_mapcount);
--			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
--			VM_BUG_ON(atomic_read(&page->_count) != 0);
--			compound_unlock_irqrestore(page_head, flags);
-+			goto out_put_single;
-+	}
-+
-+	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		unsigned long flags;
- 
-+		/*
-+		 * page_head wasn't a dangling pointer but it may not
-+		 * be a head page anymore by the time we obtain the
-+		 * lock. That is ok as long as it can't be freed from
-+		 * under us.
-+		 */
-+		flags = compound_lock_irqsave(page_head);
-+		if (unlikely(!PageTail(page))) {
-+			/* __split_huge_page_refcount run before us */
-+			compound_unlock_irqrestore(page_head, flags);
- 			if (put_page_testzero(page_head)) {
-+				/*
-+				 * The head page may have been freed
-+				 * and reallocated as a compound page
-+				 * of smaller order and then freed
-+				 * again.  All we know is that it
-+				 * cannot have become: a THP page, a
-+				 * compound page of higher order, a
-+				 * tail page.  That is because we
-+				 * still hold the refcount of the
-+				 * split THP tail and page_head was
-+				 * the THP head before the split.
-+				 */
- 				if (PageHead(page_head))
- 					__put_compound_page(page_head);
- 				else
- 					__put_single_page(page_head);
- 			}
--		} else {
--			/* page_head is a dangling pointer */
--			VM_BUG_ON(PageTail(page));
--			goto out_put_single;
-+out_put_single:
-+			if (put_page_testzero(page))
-+				__put_single_page(page);
-+			return;
- 		}
--	} else if (put_page_testzero(page)) {
--		if (PageHead(page))
--			__put_compound_page(page);
--		else
--			__put_single_page(page);
-+		VM_BUG_ON(page_head != page->first_page);
-+		/*
-+		 * We can release the refcount taken by
-+		 * get_page_unless_zero() now that
-+		 * __split_huge_page_refcount() is blocked on the
-+		 * compound_lock.
-+		 */
-+		if (put_page_testzero(page_head))
-+			VM_BUG_ON(1);
-+		/* __split_huge_page_refcount will wait now */
-+		VM_BUG_ON(page_mapcount(page) <= 0);
-+		atomic_dec(&page->_mapcount);
-+		VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
-+		VM_BUG_ON(atomic_read(&page->_count) != 0);
-+		compound_unlock_irqrestore(page_head, flags);
-+
-+		if (put_page_testzero(page_head)) {
-+			if (PageHead(page_head))
-+				__put_compound_page(page_head);
-+			else
-+				__put_single_page(page_head);
-+		}
-+	} else {
-+		/* page_head is a dangling pointer */
-+		VM_BUG_ON(PageTail(page));
-+		goto out_put_single;
- 	}
- }
- 
+I don't see any code in this driver that reads from "info" so unless
+I'm missing something obvious "info" is redundant and can be removed
+altogether.
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+> +	for (i = 0; i < pdata->num_regulators; i++) {
+> +		int id = pdata->regulators[i].id;
+> +
+> +		config.init_data = pdata->regulators[i].initdata;
+> +		config.of_node = pdata->regulators[i].of_node;
+> +
+> +		info->regulators[i] = devm_regulator_register(&pdev->dev,
+> +				&supported_regulators[id], &config);
+> +		if (IS_ERR(info->regulators[i])) {
+> +			int ret = PTR_ERR(info->regulators[i]);
+> +			dev_err(&pdev->dev,
+> +					"Regulator init failed for ID %d with error: %d\n",
+> +					id, ret);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver max14577_regulator_driver = {
+> +	.driver = {
+> +		   .owner = THIS_MODULE,
+> +		   .name = "max14577-regulator",
+> +		   },
+> +	.probe	= max14577_regulator_probe,
+> +};
+> +
+> +static int __init max14577_regulator_init(void)
+> +{
+> +	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
+> +			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
+> +			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
+> +	return platform_driver_register(&max14577_regulator_driver);
+> +}
+> +subsys_initcall(max14577_regulator_init);
+> +
+> +static void __exit max14577_regulator_exit(void)
+> +{
+> +	platform_driver_unregister(&max14577_regulator_driver);
+> +}
+> +module_exit(max14577_regulator_exit);
+> +
+> +MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+> +MODULE_DESCRIPTION("MAXIM 14577 regulator driver");
+> +MODULE_LICENSE("GPL");
+
