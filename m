@@ -1,105 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab3KTM4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 07:56:36 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:52647 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab3KTM4d (ORCPT
+	id S1753747Ab3KTNCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:02:08 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41164 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab3KTNCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 07:56:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131120125325.07A42E0090@blue.fi.intel.com>
-References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
-	<CANaxB-x3k8DPEaDCtCzhkuyPcwR1YcRJZwXW777+q+y2KBvzHg@mail.gmail.com>
-	<20131120125325.07A42E0090@blue.fi.intel.com>
-Date: Wed, 20 Nov 2013 16:56:32 +0400
-Message-ID: <CANaxB-xcyRBB4UV+RMxh34=eDCuCfDUFEHexvkSCsg4fKDDGRQ@mail.gmail.com>
-Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be
- embedded to struct page
-From: Andrey Wagin <avagin@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Nov 2013 08:02:02 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
+        jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: [PATCH 03/11] vfs: rename: use common code for dir and non-dir
+Date: Wed, 20 Nov 2013 14:01:44 +0100
+Message-Id: <1384952512-21600-4-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
+References: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/20 Kirill A. Shutemov <kirill.shutemov@linux.intel.com>:
-> Andrey Wagin wrote:
->> Hi Kirill,
->>
->> Looks like this patch adds memory leaks.
->> [  116.188310] kmemleak: 15672 new suspected memory leaks (see
->> /sys/kernel/debug/kmemleak)
->> unreferenced object 0xffff8800da45a350 (size 96):
->>   comm "dracut-initqueu", pid 93, jiffies 4294671391 (age 362.277s)
->>   hex dump (first 32 bytes):
->>     07 00 07 00 ad 4e ad de ff ff ff ff 6b 6b 6b 6b  .....N......kkkk
->>     ff ff ff ff ff ff ff ff 80 24 b4 82 ff ff ff ff  .........$......
->>   backtrace:
->>     [<ffffffff817152fe>] kmemleak_alloc+0x5e/0xc0
->>     [<ffffffff811c34f3>] kmem_cache_alloc_trace+0x113/0x290
->>     [<ffffffff811920f7>] __ptlock_alloc+0x27/0x50
->>     [<ffffffff81192849>] __pmd_alloc+0x59/0x170
->>     [<ffffffff81195ffa>] copy_page_range+0x38a/0x3e0
->>     [<ffffffff8105a013>] dup_mm+0x313/0x540
->>     [<ffffffff8105b9da>] copy_process+0x161a/0x1880
->>     [<ffffffff8105c01b>] do_fork+0x8b/0x360
->>     [<ffffffff8105c306>] SyS_clone+0x16/0x20
->>     [<ffffffff81727b79>] stub_clone+0x69/0x90
->>     [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> It's quite serious, because my test host went to panic in a few hours.
->
-> Sorry for that.
->
-> Could you test patch below.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Yes, it works.
+There's actually very little difference between vfs_rename_dir() and
+vfs_rename_other() so move both inline into vfs_rename() which still stays
+reasonably readable.
 
-I found this too a few minutes ago:)
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/namei.c | 187 +++++++++++++++++++++++++------------------------------------
+ 1 file changed, 75 insertions(+), 112 deletions(-)
 
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index a7cccb6..44c366c 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -62,6 +62,7 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
- void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+diff --git a/fs/namei.c b/fs/namei.c
+index c0446b916af0..7048339ad1b7 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3967,7 +3967,27 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
+ 	return sys_linkat(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
+ }
+ 
+-/*
++/**
++ * vfs_rename - rename a filesystem object
++ * @old_dir:	parent of source
++ * @old_dentry:	source
++ * @new_dir:	parent of destination
++ * @new_dentry:	destination
++ * @delegated_inode: returns an inode needing a delegation break
++ *
++ * The caller must hold multiple mutexes--see lock_rename()).
++ *
++ * If vfs_rename discovers a delegation in need of breaking at either
++ * the source or destination, it will return -EWOULDBLOCK and return a
++ * reference to the inode in delegated_inode.  The caller should then
++ * break the delegation and retry.  Because breaking a delegation may
++ * take a long time, the caller should drop all locks before doing
++ * so.
++ *
++ * Alternatively, a caller may pass NULL for delegated_inode.  This may
++ * be appropriate for callers that expect the underlying filesystem not
++ * to be NFS exported.
++ *
+  * The worst of all namespace operations - renaming directory. "Perverted"
+  * doesn't even start to describe it. Somebody in UCB had a heck of a trip...
+  * Problems:
+@@ -3995,19 +4015,39 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
+  *	   ->i_mutex on parents, which works but leads to some truly excessive
+  *	   locking].
+  */
+-static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+-			  struct inode *new_dir, struct dentry *new_dentry)
++int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
++	       struct inode *new_dir, struct dentry *new_dentry,
++	       struct inode **delegated_inode)
  {
-        paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
-+       pgtable_pmd_page_dtor(virt_to_page(pmd));
-        /*
-         * NOTE! For PAE, any changes to the top page-directory-pointer-table
-         * entries need a full cr3 reload to flush.
+-	int error = 0;
++	int error;
++	bool is_dir = d_is_dir(old_dentry);
++	const unsigned char *old_name;
++	struct inode *source = old_dentry->d_inode;
+ 	struct inode *target = new_dentry->d_inode;
+-	unsigned max_links = new_dir->i_sb->s_max_links;
++
++	if (source == target)
++		return 0;
++
++	error = may_delete(old_dir, old_dentry, is_dir);
++	if (error)
++		return error;
++
++	if (!target)
++		error = may_create(new_dir, new_dentry);
++	else
++		error = may_delete(new_dir, new_dentry, is_dir);
++	if (error)
++		return error;
++
++	if (!old_dir->i_op->rename)
++		return -EPERM;
+ 
+ 	/*
+ 	 * If we are going to change the parent - check write permissions,
+ 	 * we'll need to flip '..'.
+ 	 */
+-	if (new_dir != old_dir) {
+-		error = inode_permission(old_dentry->d_inode, MAY_WRITE);
++	if (is_dir && new_dir != old_dir) {
++		error = inode_permission(source, MAY_WRITE);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -4016,134 +4056,57 @@ static int vfs_rename_dir(struct inode *old_dir, struct dentry *old_dentry,
+ 	if (error)
+ 		return error;
+ 
++	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
+ 	dget(new_dentry);
+-	if (target)
++	if (!is_dir)
++		lock_two_nondirectories(source, target);
++	else if (target)
+ 		mutex_lock(&target->i_mutex);
+ 
+ 	error = -EBUSY;
+ 	if (d_mountpoint(old_dentry) || d_mountpoint(new_dentry))
+ 		goto out;
+ 
+-	error = -EMLINK;
+-	if (max_links && !target && new_dir != old_dir &&
+-	    new_dir->i_nlink >= max_links)
+-		goto out;
+-
+-	if (target)
+-		shrink_dcache_parent(new_dentry);
+-	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+-	if (error)
+-		goto out;
+-
+-	if (target) {
+-		target->i_flags |= S_DEAD;
+-		dont_mount(new_dentry);
+-	}
+-	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+-		d_move(old_dentry, new_dentry);
+-out:
+-	if (target)
+-		mutex_unlock(&target->i_mutex);
+-	dput(new_dentry);
+-	return error;
+-}
+-
+-static int vfs_rename_other(struct inode *old_dir, struct dentry *old_dentry,
+-			    struct inode *new_dir, struct dentry *new_dentry,
+-			    struct inode **delegated_inode)
+-{
+-	struct inode *target = new_dentry->d_inode;
+-	struct inode *source = old_dentry->d_inode;
+-	int error;
+-
+-	error = security_inode_rename(old_dir, old_dentry, new_dir, new_dentry);
+-	if (error)
+-		return error;
+-
+-	dget(new_dentry);
+-	lock_two_nondirectories(source, target);
++	if (is_dir) {
++		unsigned max_links = new_dir->i_sb->s_max_links;
+ 
+-	error = -EBUSY;
+-	if (d_mountpoint(old_dentry)||d_mountpoint(new_dentry))
+-		goto out;
++		error = -EMLINK;
++		if (max_links && !target && new_dir != old_dir &&
++		    new_dir->i_nlink >= max_links)
++			goto out;
+ 
+-	error = try_break_deleg(source, delegated_inode);
+-	if (error)
+-		goto out;
+-	if (target) {
+-		error = try_break_deleg(target, delegated_inode);
++		if (target)
++			shrink_dcache_parent(new_dentry);
++	} else {
++		error = try_break_deleg(source, delegated_inode);
+ 		if (error)
+ 			goto out;
++		if (target) {
++			error = try_break_deleg(target, delegated_inode);
++			if (error)
++				goto out;
++		}
+ 	}
+ 	error = old_dir->i_op->rename(old_dir, old_dentry, new_dir, new_dentry);
+ 	if (error)
+ 		goto out;
+ 
+-	if (target)
++	if (target) {
++		if (is_dir)
++			target->i_flags |= S_DEAD;
+ 		dont_mount(new_dentry);
++	}
+ 	if (!(old_dir->i_sb->s_type->fs_flags & FS_RENAME_DOES_D_MOVE))
+ 		d_move(old_dentry, new_dentry);
+ out:
+-	unlock_two_nondirectories(source, target);
++	if (!is_dir)
++		unlock_two_nondirectories(source, target);
++	else if (target)
++		mutex_unlock(&target->i_mutex);
+ 	dput(new_dentry);
+-	return error;
+-}
+-
+-/**
+- * vfs_rename - rename a filesystem object
+- * @old_dir:	parent of source
+- * @old_dentry:	source
+- * @new_dir:	parent of destination
+- * @new_dentry:	destination
+- * @delegated_inode: returns an inode needing a delegation break
+- *
+- * The caller must hold multiple mutexes--see lock_rename()).
+- *
+- * If vfs_rename discovers a delegation in need of breaking at either
+- * the source or destination, it will return -EWOULDBLOCK and return a
+- * reference to the inode in delegated_inode.  The caller should then
+- * break the delegation and retry.  Because breaking a delegation may
+- * take a long time, the caller should drop all locks before doing
+- * so.
+- *
+- * Alternatively, a caller may pass NULL for delegated_inode.  This may
+- * be appropriate for callers that expect the underlying filesystem not
+- * to be NFS exported.
+- */
+-int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+-	       struct inode *new_dir, struct dentry *new_dentry,
+-	       struct inode **delegated_inode)
+-{
+-	int error;
+-	int is_dir = d_is_dir(old_dentry);
+-	const unsigned char *old_name;
+-
+-	if (old_dentry->d_inode == new_dentry->d_inode)
+- 		return 0;
+- 
+-	error = may_delete(old_dir, old_dentry, is_dir);
+-	if (error)
+-		return error;
+-
+-	if (!new_dentry->d_inode)
+-		error = may_create(new_dir, new_dentry);
+-	else
+-		error = may_delete(new_dir, new_dentry, is_dir);
+-	if (error)
+-		return error;
+-
+-	if (!old_dir->i_op->rename)
+-		return -EPERM;
+-
+-	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
+-
+-	if (is_dir)
+-		error = vfs_rename_dir(old_dir,old_dentry,new_dir,new_dentry);
+-	else
+-		error = vfs_rename_other(old_dir,old_dentry,new_dir,new_dentry,delegated_inode);
+ 	if (!error)
+ 		fsnotify_move(old_dir, new_dir, old_name, is_dir,
+-			      new_dentry->d_inode, old_dentry);
++			      target, old_dentry);
+ 	fsnotify_oldname_free(old_name);
+ 
+ 	return error;
+-- 
+1.8.1.4
 
-Thanks.
-
->
-> diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-> index a7cccb6d7fec..7be5809754cf 100644
-> --- a/arch/x86/mm/pgtable.c
-> +++ b/arch/x86/mm/pgtable.c
-> @@ -61,6 +61,7 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
->  #if PAGETABLE_LEVELS > 2
->  void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
->  {
-> +       struct page *page = virt_to_page(pmd);
->         paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
->         /*
->          * NOTE! For PAE, any changes to the top page-directory-pointer-table
-> @@ -69,7 +70,8 @@ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
->  #ifdef CONFIG_X86_PAE
->         tlb->need_flush_all = 1;
->  #endif
-> -       tlb_remove_page(tlb, virt_to_page(pmd));
-> +       pgtable_pmd_page_dtor(page);
-> +       tlb_remove_page(tlb, page);
->  }
->
->  #if PAGETABLE_LEVELS > 3
-> --
->  Kirill A. Shutemov
