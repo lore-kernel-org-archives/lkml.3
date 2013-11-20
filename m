@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3KTJJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:09:45 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:44555 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3KTJJk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:09:40 -0500
-Message-ID: <528C7C57.7000107@linaro.org>
-Date: Wed, 20 Nov 2013 10:09:43 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] clksrc-of: warn if no clock sources are found
-References: <1384937936-14267-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1384937936-14267-1-git-send-email-linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752800Ab3KTJKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:10:44 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:35628 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab3KTJKi convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 20 Nov 2013 04:10:38 -0500
+Message-Id: <528C8A980200007800104E69@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 20 Nov 2013 09:10:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Bob Liu" <lliubbo@gmail.com>
+Cc: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        "Bob Liu" <bob.liu@oracle.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <keir@xen.org>
+Subject: Re: [PATCH] xen: tmem: rmove useless parameters
+References: <1384937575-25168-1-git-send-email-bob.liu@oracle.com>
+In-Reply-To: <1384937575-25168-1-git-send-email-bob.liu@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 09:58 AM, Linus Walleij wrote:
-> Many platforms rely on clocksource_of_init() being implicitly
-> called for registering clock sources and will get zero warnings
-> if no working clock source is available. Let's print a critical
-> error message if no clock source is found.
->
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>>> On 20.11.13 at 09:52, Bob Liu <lliubbo@gmail.com> wrote:
+> @@ -100,9 +100,6 @@ static inline int xen_tmem_op(u32 tmem_cmd, u32 tmem_pool, struct tmem_oid oid,
+>  	op.u.gen.oid[1] = oid.oid[1];
+>  	op.u.gen.oid[2] = oid.oid[2];
+>  	op.u.gen.index = index;
+> -	op.u.gen.tmem_offset = tmem_offset;
+> -	op.u.gen.pfn_offset = pfn_offset;
+> -	op.u.gen.len = len;
 
-+1.
+But you can't leave these fields uninitialized.
 
-Added Stephen Warren in Cc.
-
-> ---
->   drivers/clocksource/clksrc-of.c | 4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
-> index 35639cf4e5a2..a30b42c3ac3b 100644
-> --- a/drivers/clocksource/clksrc-of.c
-> +++ b/drivers/clocksource/clksrc-of.c
-> @@ -28,6 +28,7 @@ void __init clocksource_of_init(void)
->   	struct device_node *np;
->   	const struct of_device_id *match;
->   	clocksource_of_init_fn init_func;
-> +	unsigned clocksources = 0;
->
->   	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
->   		if (!of_device_is_available(np))
-> @@ -36,5 +37,8 @@ void __init clocksource_of_init(void)
->   		init_func = match->data;
->   		init_func(np);
->   		of_node_put(np);
-> +		clocksources++;
->   	}
-> +	if (!clocksources)
-> +		pr_crit("%s: no matching clocksources found\n", __func__);
->   }
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Jan
 
