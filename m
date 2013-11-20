@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3KTAh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:37:59 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:62883 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab3KTAh4 (ORCPT
+	id S1753336Ab3KTAlT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:41:19 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:33269 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab3KTAlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:37:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH RESEND] asm/types.h: Remove include/asm-generic/int-l64.h
-Date: Wed, 20 Nov 2013 01:37:20 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Linux-Arch" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1376996476-12027-2-git-send-email-geert@linux-m68k.org> <201311191335.40506.arnd@arndb.de> <CAMuHMdXvn2GigpnH020XA1JvtF=4ZxwrOF4T=ocGgjhrcbWkgg@mail.gmail.com>
-In-Reply-To: <CAMuHMdXvn2GigpnH020XA1JvtF=4ZxwrOF4T=ocGgjhrcbWkgg@mail.gmail.com>
+	Tue, 19 Nov 2013 19:41:17 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311200137.20917.arnd@arndb.de>
-X-Provags-ID: V02:K0:Qr3PTjyMv85wmbSRb47Frl8p+lD2G5moEAZZSx1U9uJ
- 061RXWZzewibiJA3Z3GB8r7Usn8J2XTdfERGSFaYH8GIcNmEZP
- 1feEv3lnI61FTR2tDDBDBjnx6zP3B2d0T9hit62xLUMpdJ0SCj
- XA6rdPPLCxteyYqz19eCT73VXFzk9ZPPUEQZXOUWQ4udXtiNeV
- R6tz0DLj81uTvCCI3PtWxPkX+nCHpRAzvixZjAGL78eWHaMSiT
- kZPj+fWwrZKbuYg5qPU5Rloj1YTQTHq3yU+2mCvDeTfZXBxhzq
- KQWZuXWatv0qcnIq4ftAZcFwMFggfJn3z/dDdTJk/6RqaCnzjW
- Cx+Lm1Pf8kD+52LYARKw=
+In-Reply-To: <1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+References: <52803E5D.3050109@mentor.com>
+	<52851395.3010306@mentor.com>
+	<67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+	<1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+Date: Tue, 19 Nov 2013 16:41:17 -0800
+X-Google-Sender-Auth: wPOMOW-vYS16jgfC4vSNVXsoS-0
+Message-ID: <CA+55aFw923sA0E1RQNxFF0OWFtAfcaG-dBUc-0YYZGDSAsaQyg@mail.gmail.com>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 November 2013, Geert Uytterhoeven wrote:
-> On Tue, Nov 19, 2013 at 1:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Tue, Nov 19, 2013 at 7:29 AM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
 >
-> > I'm pretty sure you are right with this, but I don't remember at all
-> > what I suggested and don't understand what the problem (if any) is.
-> > Can you remind me?
-> 
-> Me neither :-(
-> You said https://lkml.org/lkml/2011/8/13/109, and Al's umode_t
-> consolidation has been completed.
-> 
-> I think it had to do with include/uapi/asm-generic/types.h including
-> <asm-generic/int-ll64.h>. Let's try...
-> 
-> In userspace, it will include <asm-generic/int-ll64.h> from uapi to get
-> e.g. __u32.
-> In kernelspace, it will include plain <asm-generic/int-ll64.h> (to get e.g.
-> u32), which will in turn include <uapi/asm-generic/int-ll64.h> (to also
-> get e.g. __u32).
-> 
-> As there's only include/uapi/asm-generic/types.h, but not
-> include/asm-generic/types.h (the individual architectures still have their
-> own asm/types.h), you cannot easily move (the contents of) int-ll64.h
-> to asm-generic/types.h for both the normal and uapi headers.
-> 
-> Does this make sense?
+> Since each current_thread_info() is a different asm ("sp") without clobber nor volatile, AFAIU, the compiler is within its right to reorder them.
 
-I'm pretty sure I was not talking about include/uapi/asm-generic/types.h
-there, and I still think we can just move include/asm-generic/int-ll64.h
-to include/asm-generic/types.h but leave the uapi logic in place.
+I don't understand why you say that.
 
-All architectures that do nothing but #include <asm-generic/int-ll64.h>
-from asm/types.h at the moment can then remove their private file and
-use the generic version, the others need to change to #include 
-<asm-generic/types.h>.
+The ordering of the access to the asm("sp") register is totally
+irrelevant. You are "correct" in saying that the compiler is within
+its right to re-order them, but that is the worst kind of correct:
+it's totally immaterial. In fact, we *want* the compiler to not just
+re-order the accesses to %sp, but to notice that it can combine them,
+and do CSE on that whole expression when it is used multiple times
+within the same function (like it often is used).
 
-You can no longer #include <uapi/asm-generic/types.h> from kernel space
-after this change, since it refers to <asm-generic/int-ll64.h> which
-now only exists in user space, but that's ok because it would be a bug
-to include already (it defines the wrong types), and we don't.
+So the compiler can very much decide to re-read %sp all it wants, and
+re-order those reads all it wants, and that's not the bug at all.
+Putting a clobber or a volatile on it would disable the optimization
+we *want* to happen.
 
-> Note that this discussion is about what to do with the remaining int-ll64.h,
-> not about removing int-l64.h, which is what this patch is really about.
-> So _this_ patch can just go in.
+So don't bark up the wrong tree.
 
-Right.
+The bug seems to be that gcc re-orders the *memory* *accesses* through
+that point, which is not correct in any way, shape, or form. If we
+have a write to a memory location followed by a read of the same
+memory location, the compiler ABSOLUTELY MUST NOT RE-ORDER THEM. The
+write obviously changes the value of the read.
 
-	Arnd
+It seems that some gcc alias analysis completely incorrectly thinks
+that they are not the same memory location, and do not alias. My guess
+would be that gcc sees that that they are based on the stack pointer
+with "different" offsets, and decides that the memory locations must
+be different - without noticing that the "& ~(THREAD_SIZE - 1)" will
+end up generating the same address for both of them.
+
+There may be some insane "two different objects on the stack cannot
+alias" logic, which is true for *objects* on the stack, but it sure as
+hell isn't true for random accesses through asm("sp").
+
+If I read this thread correctly, you're all talking about something
+else than the actual bug, and are trying to say that there is
+something wrong with re-ordering the access to %sp itself. Missing the
+_real_ bug entirely. See above.
+
+                  Linus
