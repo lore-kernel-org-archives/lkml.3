@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3KTUEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:04:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31091 "EHLO mx1.redhat.com"
+	id S1755168Ab3KTUER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:04:17 -0500
+Received: from fieldses.org ([174.143.236.118]:54348 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab3KTUEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:04:09 -0500
-Date: Wed, 20 Nov 2013 15:03:58 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1754864Ab3KTUEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 15:04:12 -0500
+Date: Wed, 20 Nov 2013 15:04:11 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         nfs-ganesha-devel@lists.sourceforge.net,
         samba-technical@lists.samba.org
-Subject: Re: [RFC PATCH v2 4/5] locks: show private lock types in
- /proc/locks
-Message-ID: <20131120150358.0d7195ac@tlielax.poochiereds.net>
-In-Reply-To: <20131120200056.GB7387@fieldses.org>
+Subject: Re: [RFC PATCH v2 4/5] locks: show private lock types in /proc/locks
+Message-ID: <20131120200411.GC7387@fieldses.org>
 References: <1384965906-27327-1-git-send-email-jlayton@redhat.com>
-	<1384965906-27327-5-git-send-email-jlayton@redhat.com>
-	<20131120200056.GB7387@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <1384965906-27327-5-git-send-email-jlayton@redhat.com>
+ <20131120200056.GB7387@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120200056.GB7387@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013 15:00:56 -0500
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
-
+On Wed, Nov 20, 2013 at 03:00:56PM -0500, bfields wrote:
 > On Wed, Nov 20, 2013 at 11:45:05AM -0500, Jeff Layton wrote:
 > > Show "private" locks in /proc/locks with a 'P' suffix. This does mean
 > > that we need to widen the column by one character.
@@ -37,17 +35,19 @@ On Wed, 20 Nov 2013 15:00:56 -0500
 > > IS_FILP_PVT locks are removed there.
 > 
 > So that part belongs in the previous patch?
+
+I think it's that previous patch that actually "turns on" the new user
+interface (so after that patch userspace will get a lock instead of
+-EINVAL or whatever).
+
+Might be safest to delay doing that until the end of the series so as
+not to expose any partial implementation.
+
+--b.
+
 > 
 > --b.
 > 
-
-Well, it's not technically broken with it in this patch. The code
-should still basically work, but yeah it probably makes some sense to
-move that part into the previous patch. I'll fix in that in the next
-version.
-
-Thanks,
-
 > > 
 > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
 > > ---
@@ -133,7 +133,3 @@ Thanks,
 > > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
 > > the body of a message to majordomo@vger.kernel.org
 > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
