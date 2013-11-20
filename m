@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3KTTSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:18:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52547 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428Ab3KTTSu (ORCPT
+	id S1754889Ab3KTTVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:21:06 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47565 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab3KTTVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:18:50 -0500
-Date: Wed, 20 Nov 2013 20:18:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 7/7] preempt: Take away preempt_enable_no_resched() from
- modules
-Message-ID: <20131120191841.GY16796@laptop.programming.kicks-ass.net>
-References: <20131120160450.072555619@infradead.org>
- <20131120162736.760865926@infradead.org>
- <20131120105457.04f6e51e@ultegra>
+	Wed, 20 Nov 2013 14:21:03 -0500
+Date: Wed, 20 Nov 2013 20:21:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>, daniel.lezcano@linaro.org,
+        will.deacon@arm.com, catalin.marinas@arm.com, olof@lixom.net,
+        sudeep.karkadanagesha@arm.com
+Subject: Support for ARM architected timer event stream generation on x86
+Message-ID: <20131120192100.GA11723@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131120105457.04f6e51e@ultegra>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:54:57AM -0800, Jacob Pan wrote:
-> run into a couple of compile issues.
-> 
-> 1)
-> include/linux/rcupdate.h: In function ‘rcu_read_unlock_sched_notrace’:
-> include/linux/rcupdate.h:889:2: error: implicit declaration of function
-> ‘preempt_enable_no_resched_notrace’ [-Werror=implicit-function-declaration]
-> 
-> 2)
-> In file included from drivers/cpufreq/acpi-cpufreq.c:41:0:
-> include/linux/uaccess.h: In function ‘pagefault_enable’:
-> include/linux/uaccess.h:34:2: error: implicit declaration of function
-> ‘preempt_check_resched’ [-Werror=implicit-function-declaration]
-> 
-> 1) happens when CONFIG_PREEMPT is not set, perhaps add a dummy function?
-> 2) I am not sure if we should take pagefault_enable away from modules
+Hi!
 
-I think the below will cure both -- will fold in the proper patches
-tomorrow, need to get away from the computer noaw.
+On x86, I get asked if I want to support arm architectured
+timer. That's not exactly clever question... right?
 
----
- include/linux/preempt.h | 6 +++++-
- include/linux/uaccess.h | 5 ++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+I'd say it is from this merge... please fix.
+								Pavel
 
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index a3d9dc8c2c00..41bc3fc4cdc5 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -93,7 +93,11 @@ do { \
- 		__preempt_schedule_context(); \
- } while (0)
- #else
--#define preempt_enable_notrace() preempt_enable_no_resched_notrace()
-+#define preempt_enable_notrace() \
-+do { \
-+	barrier(); \
-+	__preempt_count_dec(); \
-+} while (0)
- #endif
- 
- #else /* !CONFIG_PREEMPT_COUNT */
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index 9d8cf056e661..ecd3319dac33 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -25,13 +25,16 @@ static inline void pagefault_disable(void)
- 
- static inline void pagefault_enable(void)
- {
-+#ifndef CONFIG_PREEMPT
- 	/*
- 	 * make sure to issue those last loads/stores before enabling
- 	 * the pagefault handler again.
- 	 */
- 	barrier();
- 	preempt_count_dec();
--	preempt_check_resched();
-+#else
-+	preempt_enable();
-+#endif
- }
- 
- #ifndef ARCH_HAS_NOCACHE_UACCESS
+commit 191124efb4d6e5e47fe073b4b97350873523e88c
+Merge: 68e9074 346e748
+Author: Daniel Lezcano <daniel.lezcano@linaro.org>
+Date:   Thu Oct 3 16:13:51 2013 +0200
+
+    Merge branch 'timer_evtstrm' of git://linux-arm.org/linux-skn into
+    clockevents/3.13
+    
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
