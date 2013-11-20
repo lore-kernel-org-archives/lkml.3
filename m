@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab3KTSVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:21:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64520 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753716Ab3KTSVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:21:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438680538"
-Message-ID: <528CFDB1.3020300@linux.intel.com>
-Date: Wed, 20 Nov 2013 10:21:37 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>, lenb@kernel.org, rjw@rjwysocki.net,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle implementations
-References: <20131120160450.072555619@infradead.org> <20131120162736.508462614@infradead.org> <528CE611.8040903@linux.intel.com> <alpine.DEB.2.02.1311201814410.30673@ionos.tec.linutronix.de> <528CF028.2040002@linux.intel.com> <alpine.DEB.2.02.1311201851040.30673@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1311201851040.30673@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754783Ab3KTSVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:21:52 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50210 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3KTSVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 13:21:46 -0500
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Heiko Stuebner <heiko@sntech.de>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Doug Andersen <dianders@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 2/3] ARM: SAMSUNG: Let s3c_pm_do_restore_*() take const sleep_save
+Date: Thu, 21 Nov 2013 02:21:25 +0800
+Message-Id: <1384971686-7208-2-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
+In-Reply-To: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
+References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 9:55 AM, Thomas Gleixner wrote:
-> On Wed, 20 Nov 2013, Arjan van de Ven wrote:
->> On 11/20/2013 9:23 AM, Thomas Gleixner wrote:
->>> On Wed, 20 Nov 2013, Arjan van de Ven wrote:
->>>
->>>> On 11/20/2013 8:04 AM, Peter Zijlstra wrote:
->>>>> This does not fully preseve existing behaviour in that the generic
->>>>> idle cycle function calls into the normal cpuidle governed idle
->>>>> routines and should thus respect things like QoS parameters and the
->>>>> like.
->>>>
->>>>
->>>> NAK on the powerclamp side.
->>>>
->>>> powerclamp MUST NOT do that....
->>>> it is needed to go to the deepest state no matter what
->>>> (this is for when your system is overheating. there is not a lot of choice
->>>> here... alternative is an emergency reset that the hardware does for
->>>> safety)
->>>
->>> So that whole machinery falls apart when the thing which is running on
->>> that hot core is a while(1) loop with a higher or equal FIFO priority
->>> than this thread. Even if you'd run at prio 99, then there is no
->>> guarantee that the cpu hog does not run with prio 99 as well and due
->>> to FIFO and being on the CPU it's not going to let you on.
->>
->> the idea was to at least give people who know what they're doing a chance to
->> run
->
-> You can't be serious about that. Even if people know what they are
-> doing, they have no chance to prevent the occasional high prio runaway
-> bug. And then you shrug your shoulders and tell that guy who spent
-> time to tune the thing proper "bad luck" or what?
+The restore functions do not modify the passed in struct sleep_save,
+so that parameter can be const.
 
-his system will crawl to a halt (and if it's for a long time on a system with
-submarginal cooling, potentially reboot) due to the hardware protecting itself.
-What powerclamp is trying to do is avoid these steps from the hardware (they are both
-very harsh and very inefficient).
+This allows us to pass in const struct.  This allows us to use const
+structs sleep_save to define system registers that will always be
+restored to a constant value.
 
-but for powerclamp to work, it needs to inject a deep idle....
-I'm very ok using generic abstractions for that, but the abstraction needs to then
-include a "don't be nice about picking shallow C states for performance reasons, just
-pick something very deep" parameter.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ arch/arm/plat-samsung/include/plat/pm.h | 4 ++--
+ arch/arm/plat-samsung/pm.c              | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-(powerclamp will adjust if you have some periodic realtime task or interrupts or ..
-taking away idle from it, by over time injecting a bit more idle)
-
+diff --git a/arch/arm/plat-samsung/include/plat/pm.h b/arch/arm/plat-samsung/include/plat/pm.h
+index 6bc1a8f..ff6063f 100644
+--- a/arch/arm/plat-samsung/include/plat/pm.h
++++ b/arch/arm/plat-samsung/include/plat/pm.h
+@@ -101,8 +101,8 @@ struct pm_uart_save {
+ /* helper functions to save/restore lists of registers. */
+ 
+ extern void s3c_pm_do_save(struct sleep_save *ptr, int count);
+-extern void s3c_pm_do_restore(struct sleep_save *ptr, int count);
+-extern void s3c_pm_do_restore_core(struct sleep_save *ptr, int count);
++extern void s3c_pm_do_restore(const struct sleep_save *ptr, int count);
++extern void s3c_pm_do_restore_core(const struct sleep_save *ptr, int count);
+ 
+ #ifdef CONFIG_SAMSUNG_PM
+ extern int s3c_irq_wake(struct irq_data *data, unsigned int state);
+diff --git a/arch/arm/plat-samsung/pm.c b/arch/arm/plat-samsung/pm.c
+index d0c2301..416e5be 100644
+--- a/arch/arm/plat-samsung/pm.c
++++ b/arch/arm/plat-samsung/pm.c
+@@ -182,7 +182,7 @@ void s3c_pm_do_save(struct sleep_save *ptr, int count)
+  * restore the UARTs state yet
+ */
+ 
+-void s3c_pm_do_restore(struct sleep_save *ptr, int count)
++void s3c_pm_do_restore(const struct sleep_save *ptr, int count)
+ {
+ 	for (; count > 0; count--, ptr++) {
+ 		printk(KERN_DEBUG "restore %p (restore %08lx, was %08x)\n",
+@@ -203,7 +203,7 @@ void s3c_pm_do_restore(struct sleep_save *ptr, int count)
+  * peripherals, as things may be changing!
+ */
+ 
+-void s3c_pm_do_restore_core(struct sleep_save *ptr, int count)
++void s3c_pm_do_restore_core(const struct sleep_save *ptr, int count)
+ {
+ 	for (; count > 0; count--, ptr++)
+ 		__raw_writel(ptr->val, ptr->reg);
+-- 
+1.8.4.1
 
