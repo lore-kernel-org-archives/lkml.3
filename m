@@ -1,146 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab3KTSJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:09:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29593 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab3KTSJt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:09:49 -0500
+	id S1754760Ab3KTSLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:11:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753715Ab3KTSLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 13:11:35 -0500
+Message-ID: <528CFAED.1000703@redhat.com>
+Date: Wed, 20 Nov 2013 10:09:49 -0800
+From: Josh Stone <jistone@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Message-ID: <25bef391-380b-486a-b06f-8be210e8abb7@default>
-Date: Wed, 20 Nov 2013 10:09:39 -0800 (PST)
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-To: Honggang LI <honli@redhat.com>, Josh Hunt <joshhunt00@gmail.com>
-Cc: David Miller <davem@davemloft.net>, jjolly@suse.com,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
-References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
- <20120922.152524.1294103117346567757.davem@davemloft.net>
- <CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>
- <CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
- <23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
- <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
- <52841F95.7040204@redhat.com> <41aa904c-6707-4c74-ae72-96e401c68e13@default>
- <528587D0.5060105@redhat.com> <8744a6a4-d7a8-4e6f-8934-48a4fd4da0ce@default>
-In-Reply-To: <8744a6a4-d7a8-4e6f-8934-48a4fd4da0ce@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
- 12.0.6680.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Steven Rostedt <rostedt@goodmis.org>, "Frank Ch. Eigler" <fche@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v3 00/23] kprobes: introduce NOKPROBE_SYMBOL() and
+ general cleaning of kprobe blacklist
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>	<y0mvbznxi6k.fsf@fche.csb>	<20131120153801.GA9743@gmail.com>	<20131120173600.GK8993@redhat.com> <20131120125649.40ca99c3@gandalf.local.home>
+In-Reply-To: <20131120125649.40ca99c3@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/20/2013 09:56 AM, Steven Rostedt wrote:
+> On Wed, 20 Nov 2013 12:36:00 -0500
+> "Frank Ch. Eigler" <fche@redhat.com> wrote:
+> 
+>> Hi -
+>>
+>>>> Does this new blacklist cover enough that the kernel now survives a 
+>>>> broadly wildcarded perf-probe, e.g. over e.g. all of its kallsyms?
+>>>
+>>> That's generally the purpose of the annotations - if it doesn't then 
+>>> that's a bug.
+>>
+>> AFAIK, no kernel since kprobes was introduced has ever stood up to
+>> that test.  perf probe lacks the wildcarding powers of systemtap, so
+>> one needs to resort to something like:
+>>
+>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
+>>    perf probe $symbol
+>> done
+> 
+> I'm curious to why one would do that. IIUC, perf now has function
+> tracing support.
 
+Then consider something like probing all inline "call" sites, which will
+be sprinkled in the middle where ftrace doesn't apply.
 
------Original Message-----
-From: Venkat Venkatsubra 
-Sent: Tuesday, November 19, 2013 5:33 PM
-To: Honggang LI; Josh Hunt
-Cc: David Miller; jjolly@suse.com; LKML; netdev@vger.kernel.org
-Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
+The point is not whether there's an alternative - kprobes really ought
+to be wholly safe regardless.  Slow, if you did such broad probing,
+sure, but still safe.
 
-We now have lot more information than we did before.
-When sending a "congestion update" in rds_ib_xmit() we are now returning an incorrect number as bytes sent:
-
-        BUG_ON(off % RDS_FRAG_SIZE);
-        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
-
-        /* Do not send cong updates to IB loopback */
-        if (conn->c_loopback
-            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-                scat = &rm->data.op_sg[sg];
-                ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-                ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
-                return ret;
-        }
-
-It returns min(8240, 4096-0) i.e. 4096 bytes.
-The caller rds_send_xmit() is made to think a partial message (4096 out of 8240) was sent.
-It calls rds_ib_xmit() again with a data offset "off" of 4096-48 (rds header) (=4048 bytes). And we hit the BUG_ON.
-
-The reason I didn't hit the panic on my test on Oracle UEK2 which is based on 2.6.39 kernel is it had it like this:
-        BUG_ON(off % RDS_FRAG_SIZE);
-        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
-
-        /* Do not send cong updates to IB loopback */
-        if (conn->c_loopback
-            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-                return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-        }
-(So it wasn't 100% 2.6.39 ;-). )
-It returned 8240 bytes. The caller rds_send_xmit decides the full message was sent (48 byte header + 4096 data + 4096 data).
-And it worked.
-
-Then I found this info on the change that was done upstream which now causes the panic:
-http://marc.info/?l=linux-netdev&m=129908332903057
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6094628bfd94323fc1cea05ec2c6affd98c18f7f 
-
-Will investigate more into which problem the above change addressed.
-
-Venkat
---
-
-Looks like the fix pointed to by the above link is for a panic on a PPC system with a PAGE_SIZE of 64Kbytes.
-I think the sequence it was going through before that fix was:
-/* Do not send cong updates to IB loopback */
-        if (conn->c_loopback
-            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-                return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-        }
-rds_ib_xmit returns 8240
-rds_send_xmit : c_xmit_data_off = 0 + 8240 - 48 (rds header the first time) = 8196
-                c_xmit_data_off < 65536 (sg->length)
-                calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit: c_xmit_data_off = 8192+8240 = 16432 and calls rds_ib_xmit
-rds_ib_xmit : returns 8240
-rds_send_xmit: c_xmit_data_off 24672 and calls rds_ib_xmit
-...
-...
-and so on till
-rds_send_xmit: c_xmit_data_off 57632 and calls rds_ib_xmit
-rds_ib_xmit: returns 8240
-
-On the last iteration it hits the below BUG_ON in rds_send_xmit.
-while (ret) {
-    tmp = min_t(int, ret, sg->length -
-                         conn->c_xmit_data_off);
-[tmp = 7904]
-    conn->c_xmit_data_off += tmp;
-[c_xmit_data_off = 65536]
-    ret -= tmp;
-[ret = 8240-7904 = 336]
-    if (conn->c_xmit_data_off == sg->length) {
-         conn->c_xmit_data_off = 0;
-         sg++;
-         conn->c_xmit_sg++;
-         BUG_ON(ret != 0 &&
-             conn->c_xmit_sg == rm->data.op_nents);
-    }
-}
-
-Since the congestion update over loopback is not actually transmitted as a message,
-the multiple iterations we see in the case of ppc is unnecessary.
-All that rds_ib_xmit needs to do is return a number of bytes that will tell the caller that
-we are done with this message.
-  
-This might fix the original problem without introducing the current panic:
-/* Do not send cong updates to IB loopback */
-        if (conn->c_loopback
-            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-                scat = &rm->data.op_sg[sg];
-                ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-                return ret + sizeof(struct rds_header);
-        }
-It will return 8240 when PAGE_SIZE is 4k and 64k+48 in case of ppc when scat->length is 64k and
-be done with one iteration of rds_send_xmit/rds_ib_xmit loop.
-
-Venkat
+And a real use-case probably wouldn't probe *all* functions/inlines, but
+it illustrates that there are at least a few in the full set that don't
+behave well.
