@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab3KTHXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 02:23:46 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:50625 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750969Ab3KTHXo (ORCPT
+	id S1751596Ab3KTHeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 02:34:12 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:53739 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab3KTHeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 02:23:44 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux@maxim.org.za, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, michael.opdenacker@free-electrons.com,
-        Yanis Moreno <yanis.moreno63@gmail.com>
-Subject: [PATCH] ARM: at91: remove redundant dependency
-Date: Wed, 20 Nov 2013 08:23:10 +0100
-Message-Id: <1384932191-8967-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 20 Nov 2013 02:34:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131120054119.GC367@kroah.com>
+References: <62a00a45d2fc38d1881f153f35ba282e85d78a3e.1384518190.git.gamerh2o@gmail.com>
+	<CANK3SE36i0+NQdEtuO+FFebDKtrBBM=RjzB4WqSun2o1FK3xpA@mail.gmail.com>
+	<CAAb+SYbnL7bNd6+yibrp+bYRKCM+kC_X+kg+KUsZtGj2S0JaaA@mail.gmail.com>
+	<20131120054119.GC367@kroah.com>
+Date: Wed, 20 Nov 2013 15:34:09 +0800
+Message-ID: <CAAb+SYYTg90tDi+QPO=E9tQ+rQQCK3iSn22+-g4veOQmZk823Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] staging: et131x: clean up code
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Einon <mark.einon@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanis Moreno <yanis.moreno63@gmail.com>
+On Wed, Nov 20, 2013 at 1:41 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> In the future, you need to tell me to drop the old ones from my queue.
+> Normally you can do that by replying to them saying to remove them, or
+> put a "v2" for "version 2" on this series.
+>
+> Anyway, as Mark told you to redo them a bit, care to do a "v3" series
+> with his recommended changes (i.e. the TODO file update)?
 
-This removes the "depends on SOC_SAM_V7" statement
-in a Kconfig section that's under an "if SOC_SAM_V7"
-condition (same parameter).
-
-Signed-off-by: Yanis Moreno <yanis.moreno63@gmail.com>
-Reviewed-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-
----
- arch/arm/mach-at91/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 699b71e..d1b3fe5 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -61,7 +61,6 @@ comment "Atmel AT91 Processor"
- if SOC_SAM_V7
- config SOC_SAMA5D3
- 	bool "SAMA5D3 family"
--	depends on SOC_SAM_V7
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
--- 
-1.7.9.5
-
+Got it. I will send a v3 soon.
