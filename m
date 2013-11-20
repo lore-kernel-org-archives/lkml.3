@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab3KTLCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 06:02:32 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63917 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3KTLCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 06:02:30 -0500
+	id S1752637Ab3KTLDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 06:03:39 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:50274 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab3KTLDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 06:03:37 -0500
+Date: Wed, 20 Nov 2013 16:33:20 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: Document xol_area and arch_uprobe->insn/ixol
+Message-ID: <20131120110320.GA22744@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131109190344.GA32281@redhat.com>
+ <20131111084149.GC12405@gmail.com>
+ <20131111195836.GA20615@redhat.com>
+ <20131111210327.GG18886@gmail.com>
+ <20131119162545.GA776@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1384944598.95627.YahooMailNeo@web163903.mail.gq1.yahoo.com>
-References: <1384934391.56931.YahooMailNeo@web163904.mail.gq1.yahoo.com>
-	<CAMuHMdW-j=FOAo9ZAFFJBiFqBn111Ebng6wTM-t7a3fGhjXsDg@mail.gmail.com>
-	<1384944598.95627.YahooMailNeo@web163903.mail.gq1.yahoo.com>
-Date: Wed, 20 Nov 2013 12:02:29 +0100
-X-Google-Sender-Auth: JkvvRN2fCOoOAZsxCcjLqdxSFLY
-Message-ID: <CAMuHMdUqfqxfxHxuMY1W1jfovun3WvXy05wsYUHz53Pwrio+jw@mail.gmail.com>
-Subject: Re: Having troubles in updating MTD partitions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Suki Buryani <sukiburyani@yahoo.com>
-Cc: "uclinux-dev@uclinux.org" <uclinux-dev@uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131119162545.GA776@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112011-5806-0000-0000-00002378E94E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 11:49 AM, Suki Buryani <sukiburyani@yahoo.com> wrote:
->>5824 is the usable size of the file system on mtdblock3, i.e. after subtracting
-> the overhead for file system bookkeeping.
->
-> By default mtd partitions were like
->
-> cat /proc/partitions
-> major minor  #blocks  name
->
->   31     0       8192 mtdblock0
->   31     1        256 mtdblock1
->   31     2       2048 mtdblock2
->   31     3       5824 mtdblock3
->   31     4         64 mtdblock4
->
-> mtdblock3 was having 5824 blocks and 5824 blocks were able to use,
->
-> I think you are missing my point, i have increase size of mtdblock3 but i am unable use whole partion and idk why
+> 
+> OK. Let me try to make a first step to improve this a little bit...
+> 
+> How about the patch below? Srikar?
+> 
+> 
+> Subject: [PATCH] uprobes: Document xol_area and arch_uprobe->insn/ixol
+> 
+> Document xol_area and arch_uprobe.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
 
-Sorry, I indeed misunderstood you.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Could it be that jffs2 requires a minimum granularity for file system sizes?
-Probably the size needs to be a multiple of the eraseblock size?
+>  kernel/events/uprobes.c |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 51a7f53..b886a5e 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -73,6 +73,17 @@ struct uprobe {
+>  	struct inode		*inode;		/* Also hold a ref to inode */
+>  	loff_t			offset;
+>  	unsigned long		flags;
+> +
+> +	/*
+> +	 * The generic code assumes that it has two members of unknown type
+> +	 * owned by the arch-specific code:
+> +	 *
+> +	 * 	insn -	copy_insn() saves the original instruction here for
+> +	 *		arch_uprobe_analyze_insn().
+> +	 *
+> +	 *	ixol -	potentially modified instruction to execute out of
+> +	 *		line, copied to xol_area by xol_get_insn_slot().
+> +	 */
+>  	struct arch_uprobe	arch;
+>  };
+> 
+> @@ -86,6 +97,10 @@ struct return_instance {
+>  };
+> 
+>  /*
+> + * Execute out of line area: anonymous executable mapping installed
+> + * by the probed task to execute the copy of the original instruction
+> + * mangled by set_swbp().
+> + *
+>   * On a breakpoint hit, thread contests for a slot.  It frees the
+>   * slot after singlestep. Currently a fixed number of slots are
+>   * allocated.
+> -- 
+> 1.5.5.1
+> 
+> 
 
-$ factor 5824
-5824: 2 2 2 2 2 2 7 13
-$ factor 5884
-5884: 2 2 1471
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
-I.e. the former is a multiple of 64 (KiB), the latter is a multiple of 4 (KiB).
-
-> there is one more thing, Can any one tell me how i can change eraseblock for a partition, i > believe i also having wrong eraseblock for mtdblock3
-
-Sorry, I don't know.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
