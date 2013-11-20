@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3KTCfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 21:35:48 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41563 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab3KTCfq (ORCPT
+	id S1753659Ab3KTCnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 21:43:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55628 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab3KTCn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 21:35:46 -0500
-Message-ID: <1384914940.14597.2.camel@phoenix>
-Subject: [PATCH] ramfs: nommu: Statize ramfs_nommu_get_unmapped_area and
- ramfs_nommu_mmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rob Landley <rob@landley.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Nov 2013 10:35:40 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Nov 2013 21:43:28 -0500
+Date: Tue, 19 Nov 2013 19:43:25 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: [GIT PULL] Block fixes for 3.13-rc1
+Message-ID: <20131120024325.GA30914@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 853ac43ab194f "shmem: unify regular and tiny shmem",
-ramfs_nommu_get_unmapped_area() and ramfs_nommu_mmap() are not directly
-referenced outside of file-nommu.c. Thus make them static.
+Hi Linus,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- fs/ramfs/file-nommu.c | 10 ++++++++--
- include/linux/ramfs.h |  7 -------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+Normally I'd defer my initial for-linus pull request until after the
+merge window, but a race was uncovered in the virtio-blk conversion to
+blk-mq that could cause hangs. So here's a small collection of fixes for
+you to pull:
 
-diff --git a/fs/ramfs/file-nommu.c b/fs/ramfs/file-nommu.c
-index f2487c3..9b831f7 100644
---- a/fs/ramfs/file-nommu.c
-+++ b/fs/ramfs/file-nommu.c
-@@ -27,6 +27,12 @@
- #include "internal.h"
- 
- static int ramfs_nommu_setattr(struct dentry *, struct iattr *);
-+static unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
-+						   unsigned long addr,
-+						   unsigned long len,
-+						   unsigned long pgoff,
-+						   unsigned long flags);
-+static int ramfs_nommu_mmap(struct file *file, struct vm_area_struct *vma);
- 
- const struct address_space_operations ramfs_aops = {
- 	.readpage		= simple_readpage,
-@@ -197,7 +203,7 @@ static int ramfs_nommu_setattr(struct dentry *dentry, struct iattr *ia)
-  *   - the pages to be mapped must exist
-  *   - the pages be physically contiguous in sequence
-  */
--unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
-+static unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
- 					    unsigned long addr, unsigned long len,
- 					    unsigned long pgoff, unsigned long flags)
- {
-@@ -256,7 +262,7 @@ out:
- /*
-  * set up a mapping for shared memory segments
-  */
--int ramfs_nommu_mmap(struct file *file, struct vm_area_struct *vma)
-+static int ramfs_nommu_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	if (!(vma->vm_flags & VM_SHARED))
- 		return -ENOSYS;
-diff --git a/include/linux/ramfs.h b/include/linux/ramfs.h
-index 753207c..ecc7309 100644
---- a/include/linux/ramfs.h
-+++ b/include/linux/ramfs.h
-@@ -14,13 +14,6 @@ ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize)
- }
- #else
- extern int ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize);
--extern unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
--						   unsigned long addr,
--						   unsigned long len,
--						   unsigned long pgoff,
--						   unsigned long flags);
--
--extern int ramfs_nommu_mmap(struct file *file, struct vm_area_struct *vma);
- #endif
- 
- extern const struct file_operations ramfs_file_operations;
+- The fix for the virtio-blk IO hang reported by Dave Chinner, from
+  Shaohua and myself.
+
+- Add the Insert blktrace event for blk-mq. This makes 'btt' happy when
+  it is doing it's state transition analysis.
+
+- Ensure that blk-mq has disk/partition stats enabled by default,
+  instead of making it opt-in.
+
+- A fix for __bio_add_page() and large sector counts.
+
+
+Please pull!
+
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+
+Akinobu Mita (1):
+      bio: fix argument of __bio_add_page() for max_sectors > 0xffff
+
+Jens Axboe (2):
+      blk-mq: ensure that we set REQ_IO_STAT so diskstats work
+      blk-mq: add blktrace insert event trace
+
+Shaohua Li (1):
+      virtio-blk: virtqueue_kick() must be ordered with other virtqueue operations
+
+ block/blk-mq.c             | 14 ++++++++++----
+ drivers/block/virtio_blk.c |  5 +++--
+ fs/bio.c                   |  2 +-
+ include/linux/blkdev.h     |  3 +++
+ 4 files changed, 17 insertions(+), 7 deletions(-)
+
+
 -- 
-1.8.1.2
-
-
+Jens Axboe
 
