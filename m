@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab3KTMTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 07:19:34 -0500
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:43835 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab3KTMTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 07:19:30 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 07:19:30 EST
-X-Fcrdns: No
-Message-ID: <528CA73B.9070604@profihost.ag>
-Date: Wed, 20 Nov 2013 13:12:43 +0100
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752787Ab3KTM01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 07:26:27 -0500
+Received: from vistrem1.vector-informatik.com ([217.89.139.138]:55629 "EHLO
+	vistrem1.vector-informatik.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751962Ab3KTM00 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 07:26:26 -0500
+From: "Frederich, Jens" <Jens.Frederich@vector.com>
+To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Kernel Panic] 3.10.10-rt7
+Thread-Topic: [Kernel Panic] 3.10.10-rt7
+Thread-Index: Ac7l66BMdAdPuzbGTZONTbGkPOT5yw==
+Date: Wed, 20 Nov 2013 12:26:22 +0000
+Message-ID: <9B7F15AA4177464A8FAB5BE79B14288B88967CEF@vistrex3.vi.vector.int>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.49.46.146]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>,
-        matthew@wil.cx
-Subject: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-while struggling about an application beeing so slow on my SSD and
-having high I/O Waits while the app is using the raw block device i've
-detected that this is caused by open the block device with O_DSYNC.
+I got a Kernel panic by some long time stress tests. Look here: http://dy.cx/pqP7M.
 
-I've used dd and fio with oflags=direct,dsync / --direct=1 and --sync=1
+Furthermore I got sporadic some BUG messages:
 
-and got these "strange" results:
+[ 1128.358971] BUG: scheduling while atomic: swapper/0/0/0x00010002
+[ 1128.358982] Preemption disabled at:[<ffffffff810dfb8a>] cpu_startup_entry+0x17a/0x300
 
-fio --sync=1:
-WRITE: io=1694.0MB, aggrb=57806KB/s, minb=57806KB/s, maxb=57806KB/s,
-mint=30008msec, maxt=30008msec
+Hardware
+--------
 
-fio --sync=0:
-WRITE: io=5978.0MB, aggrb=204021KB/s, minb=204021KB/s, maxb=204021KB/s,
-mint=30004msec, maxt=30004msec
+My system is a i7 with 4 GB RAM congatec evalboard.
 
-I get the same results on a crucial m4 as on my intel 530 ssd.
+Setup
+-----
 
-I also tried the same under FreeBSD 9.1 which shows around the same
-results for sync=0 as sync=1:
+On the system runs Linux RT (text mode) 3.10.10-rt7 with 1 GB RAM and a
+Windows 7 KVM/QEMU (Qemu 1.6.1) guest with 3 GB RAM. Each system has it own
+ethernet card. The Win 7 guest uses it per pci pass-through. The Win 7 is
+pinned to core 2,3.
 
-sync=0:
-WRITE: io=5984.0MB, aggrb=204185KB/s, minb=204185KB/s, maxb=204185KB/s,
-mint=30010msec, maxt=30010msec
+Scenario
+--------
 
-sync=1:
-WRITE: io=5843.0MB, aggrb=199414KB/s, minb=199414KB/s, maxb=199414KB/s,
-mint=30004msec, maxt=30004msec
+We sending UDP packages every 1 msec on the Linux side. The UDP sender process
+has real time prio 80 and the ethernet driver 90. At the same time we are
+stressing Win 7. Memory stress - allocate as much as possible and do memset(),
+then CPU stress - high CPU load, then Kernel DPC stress - high load thread at
+DPC level and ethernet stress - send UDP packages every milliseconds. I got the
+panic after 45 minutes. It seems that is correlates with the ethernet stress.
 
-Can anyone explain to me why O_DSYNC for my app on linux is so slow?
+Can anybody help me?
 
-used kernel is vanilla 3.10.19
+thanks
+Jens
 
-Thanks!
 
 
-Greets Stefan
