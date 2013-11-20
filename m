@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3KTPTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:19:39 -0500
-Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:36146 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751608Ab3KTPTf (ORCPT
+	id S1754009Ab3KTPUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:20:50 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45141 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab3KTPUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 10:19:35 -0500
-Date: Wed, 20 Nov 2013 15:57:30 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/9] ARM: at91/dt: add usb1 vbus and pullup pins
-Message-ID: <20131120145730.GD14627@ns203013.ovh.net>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
- <1377687881-10688-1-git-send-email-b.brezillon@overkiz.com>
+	Wed, 20 Nov 2013 10:20:48 -0500
+Date: Wed, 20 Nov 2013 15:20:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, tiwai@suse.de, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        perex@perex.cz
+Message-ID: <20131120152024.GF2674@sirena.org.uk>
+References: <20131120131547.GA7357@opensource.wolfsonmicro.com>
+ <20131120143709.GA12897@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k4g3xMTzTwvmb7wy"
 Content-Disposition: inline
-In-Reply-To: <1377687881-10688-1-git-send-email-b.brezillon@overkiz.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+In-Reply-To: <20131120143709.GA12897@opensource.wolfsonmicro.com>
+X-Cookie: Drive defensively.  Buy a tank.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 14806991150213999481
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/1] ASoC: arizona: Set FLL to free-run before
+ disabling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:04 Wed 28 Aug     , Boris BREZILLON wrote:
-> Add vbus and pullup pinctrl definitions.
-> Request the vbus and pullup pins in usb1 node.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  arch/arm/boot/dts/at91rm9200ek.dts |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/at91rm9200ek.dts b/arch/arm/boot/dts/at91rm9200ek.dts
-> index 37b0880..76f3e87 100644
-> --- a/arch/arm/boot/dts/at91rm9200ek.dts
-> +++ b/arch/arm/boot/dts/at91rm9200ek.dts
-> @@ -29,6 +29,18 @@
->  
->  	ahb {
->  		apb {
-> +			pinctrl@fffff400 {
-> +				usb1 {
-> +					pinctrl_usb1_vbus: usb1_vbus-0 {
-> +						atmel,pins = <AT91_PIOD 4 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
-> +					};
 
-it's a gpio no-need
-> +
-> +					pinctrl_usb1_pullup: usb1_pullup-0 {
-> +						atmel,pins = <AT91_PIOD 5 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;
-> +					};
-no-need multidrive
-> +				};
-> +			};
-> +
->  			dbgu: serial@fffff200 {
->  				status = "okay";
->  			};
-> @@ -56,6 +68,9 @@
->  
->  			usb1: gadget@fffb0000 {
->  				atmel,vbus-gpio = <&pioD 4 GPIO_ACTIVE_HIGH>;
-> +				pinctrl-names = "default";
-> +				pinctrl-0 = <&pinctrl_usb1_vbus
-> +					     &pinctrl_usb1_pullup>;
->  				status = "okay";
->  			};
->  
-> -- 
-> 1.7.9.5
-> 
+--k4g3xMTzTwvmb7wy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Nov 20, 2013 at 02:37:09PM +0000, Richard Fitzgerald wrote:
+> The FLL must be placed into free-run mode before disabling
+> to allow it to entirely shut down.
+
+Applied, thanks.
+
+--k4g3xMTzTwvmb7wy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjNM0AAoJELSic+t+oim9ZssP/jEsE5qIb8cjcwdJmOmynRJd
+794GNC5BIUKEqKCyKBFjQ7nOSLXrLsTHE0wc1OFL6OEoxQVBNQ63WVATHg8P5JeK
+kd6kT2SVS/lqmVB4Lnxe3CIKs+8Z8rD7Ilw+IrORhYVRm97/e18xE28eG+E5D14s
+4FFFu+sLvYbTnCGi6Zh2MZ7/5HP6iLjiRxs9wT8nEaxh5OKUwwco1kSJjaUrALi9
+bvhSGrL7ti5gDWlctP5xoUJjj2fuhroC6q5g3YFtPFSOKc9wZ6n8T/HmyiOO0F8v
+PpPArQp7YC9/vCsYmvqDLZybDC9KtyEvQwfdwmwgW3AnDHrD9FATv+E17OPCDAt1
+5Z/hMouMEHaFPSei0uSnRT2dJCO9MbdMVSg5l+Ujh9K5yWsrBf6X5VpTmykSXhLe
+chaQq68vu8vcCULZY6+NvVYuCrYELZM8tUM3LuGf0g38Mm0uqP/nHUwr0PJBLRMO
+91aZ6bUi5j3YxVg0pozukxrBEFp3yFFp2Oj4K5JHXGfnRjJNesE3ozhR/Rdj5YJK
+wfj2ipUa/LA4XD/H9D5TYQBJil8FfsAmv+P5LIUj6BszinVeVPvF6gFvWybNoC9S
+V04885fpbOzEwJ9AO2K4115jSgP1n0YXhIqIinrTFeg7nkKu3evQcBUpbYiKsr6d
+a0lh4cDikaN8PhzKnGNz
+=JBqQ
+-----END PGP SIGNATURE-----
+
+--k4g3xMTzTwvmb7wy--
