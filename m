@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab3KTJUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:20:30 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:54598 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab3KTJUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:20:25 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Ian Campbell <ian.campbell@citrix.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>
-Subject: IRQF_RESUME_EARLY and errors in dpm_suspend_noirq
-Date: Wed, 20 Nov 2013 10:20:07 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+	id S1752397Ab3KTJWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:22:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24917 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KTJWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 04:22:33 -0500
+Message-ID: <528C7F4B.3050802@oracle.com>
+Date: Wed, 20 Nov 2013 17:22:19 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Jan Beulich <JBeulich@suse.com>
+CC: Bob Liu <lliubbo@gmail.com>, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, keir@xen.org
+Subject: Re: [PATCH] xen: tmem: rmove useless parameters
+References: <1384937575-25168-1-git-send-email-bob.liu@oracle.com> <528C8A980200007800104E69@nat28.tlf.novell.com>
+In-Reply-To: <528C8A980200007800104E69@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311201020.08158.heiko@sntech.de>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such IRQs
-earlier) split the suspend/resume of the irqs into two parts.
+On 11/20/2013 05:10 PM, Jan Beulich wrote:
+>>>> On 20.11.13 at 09:52, Bob Liu <lliubbo@gmail.com> wrote:
+>> @@ -100,9 +100,6 @@ static inline int xen_tmem_op(u32 tmem_cmd, u32 tmem_pool, struct tmem_oid oid,
+>>  	op.u.gen.oid[1] = oid.oid[1];
+>>  	op.u.gen.oid[2] = oid.oid[2];
+>>  	op.u.gen.index = index;
+>> -	op.u.gen.tmem_offset = tmem_offset;
+>> -	op.u.gen.pfn_offset = pfn_offset;
+>> -	op.u.gen.len = len;
+> 
+> But you can't leave these fields uninitialized.
+> 
 
-The early-irqs get resumed during syscore_resume, while the rest get
-resumed by the regular resume_device_irqs.
+Oh, yes.
+And I should remove those members totally from struct tmem_op {}
 
-I may be blind, but where get the early-irqs resumed in the error
-path of dpm_suspend_noirq?
-
-When a suspend_noirq callback returns an error, dpm_resume_noirq gets called,
-which only calls resume_device_irqs while the suspend_device_irqs call in
-dpm_suspend_noirq suspends all irqs. So it does not seem that the early-irqs
-get resumed at all in this case.
-
-
-Thanks
-Heiko
+-- 
+Thanks,
+-Bob
