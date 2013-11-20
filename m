@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab3KTRX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:23:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10827 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424Ab3KTRXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:23:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438649453"
-Message-ID: <528CF028.2040002@linux.intel.com>
-Date: Wed, 20 Nov 2013 09:23:52 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754734Ab3KTRYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:24:20 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:63527 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3KTRYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 12:24:18 -0500
+Date: Wed, 20 Nov 2013 12:24:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Hong Zhiguo <honkiko@gmail.com>
+Cc: vgoyal@redhat.com, cgroups@vger.kernel.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Subject: Re: [PATCH] blkcg: have bh disable for 32bit UP system reading 64bit
+ stats
+Message-ID: <20131120172413.GN28946@htj.dyndns.org>
+References: <1383736484-393-1-git-send-email-zhiguohong@tencent.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>, lenb@kernel.org, rjw@rjwysocki.net,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle implementations
-References: <20131120160450.072555619@infradead.org> <20131120162736.508462614@infradead.org> <528CE611.8040903@linux.intel.com> <alpine.DEB.2.02.1311201814410.30673@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1311201814410.30673@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383736484-393-1-git-send-email-zhiguohong@tencent.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 9:23 AM, Thomas Gleixner wrote:
-> On Wed, 20 Nov 2013, Arjan van de Ven wrote:
->
->> On 11/20/2013 8:04 AM, Peter Zijlstra wrote:
->>> This does not fully preseve existing behaviour in that the generic
->>> idle cycle function calls into the normal cpuidle governed idle
->>> routines and should thus respect things like QoS parameters and the
->>> like.
->>
->>
->> NAK on the powerclamp side.
->>
->> powerclamp MUST NOT do that....
->> it is needed to go to the deepest state no matter what
->> (this is for when your system is overheating. there is not a lot of choice
->> here... alternative is an emergency reset that the hardware does for safety)
->
-> So that whole machinery falls apart when the thing which is running on
-> that hot core is a while(1) loop with a higher or equal FIFO priority
-> than this thread. Even if you'd run at prio 99, then there is no
-> guarantee that the cpu hog does not run with prio 99 as well and due
-> to FIFO and being on the CPU it's not going to let you on.
+On Wed, Nov 06, 2013 at 07:14:44PM +0800, Hong Zhiguo wrote:
+> From: Hong Zhiguo <zhiguohong@tencent.com>
+> 
+> Update of blkg_stat and blkg_rwstat may happen in bh context.
+> While u64_stats_fetch_retry is only preempt_disable on 32bit
+> UP system. This is not enough to avoid preemption by bh and
+> may read strange 64 bit value.
+> 
+> Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
 
-the idea was to at least give people who know what they're doing a chance to run
+Acked-by: Tejun Heo <tj@kernel.org>
 
+Jens, can you please pick this one up?  This probably needs to be
+tagged for stable too.
+
+Thanks!
+
+-- 
+tejun
