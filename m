@@ -1,197 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3KTUEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:04:34 -0500
-Received: from mail-de.keymile.com ([195.8.104.250]:48211 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab3KTUEN (ORCPT
+	id S1755019Ab3KTUMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:12:14 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:49975 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab3KTUMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:04:13 -0500
-Message-ID: <528D15B6.2030800@keymile.com>
-Date: Wed, 20 Nov 2013 21:04:06 +0100
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
-MIME-Version: 1.0
-Newsgroups: gmane.linux.drivers.mtd,gmane.linux.kernel
-To: Austin Boyle <Austin.Boyle@aviatnet.com>
-CC: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: m25p80: Flash protection support for STmicro chips
-References: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN>
-In-Reply-To: <1357257748.31023.12.camel@pc786-ubu.GNET.GLOBAL.VPN>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Nov 2013 15:12:10 -0500
+From: Matt Wilson <msw@linux.com>
+To: xen-devel@lists.xenproject.org
+Cc: Matt Wilson <msw@amazon.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+Date: Wed, 20 Nov 2013 12:11:35 -0800
+Message-Id: <1384978295-18292-1-git-send-email-msw@linux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Matt Wilson <msw@amazon.com>
 
-On 01/04/2013 01:02 AM, Austin Boyle wrote:
-> This patch adds generic support for flash protection on STmicro chips.
-> On chips with less than 3 protection bits, the unused bits are don't cares
-> and so can be written anyway.
+Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+m2p_add/remove_override call fails.
 
-I have two remarks:
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Anthony Liguori <aliguori@amazon.com>
+Cc: xen-devel@lists.xenproject.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Matt Wilson <msw@amazon.com>
+---
+ drivers/xen/grant-table.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-1) I believe this introduces incompatibilities with existing bootloaders 
-which do not support this feature.
-Namely, u-boot is not able (to the best of my knowledge) to treat these 
-bits properly. So as soon as you write something to your SPI nor flash 
-from within linux, u-boot is not able to erase/rewrite those blocks anymore.
-
-Wouldn't it make more sense to selectively enable this feature, only if 
-explicity configured to do so (e.g. through its device tree node)?
-Like what was used for the Spansion's PPB, see:
-
-http://lists.infradead.org/pipermail/linux-mtd/2013-January/045536.html
-
- > The lock function will only change the
-> protection bits if it would not unlock other areas. Similarly, the unlock
-> function will not lock currently unlocked areas. Tested on the m25p64.
- >
-> From: Austin Boyle <Austin.Boyle@aviatnet.com>
-> Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
-> ---
-> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-> index 4eeeb2d..069e34f 100644
-> --- a/drivers/mtd/devices/m25p80.c
-> +++ b/drivers/mtd/devices/m25p80.c
-> @@ -565,6 +565,96 @@ time_out:
->   	return ret;
->   }
->
-> +static int m25p80_lock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
-> +{
-> +	struct m25p *flash = mtd_to_m25p(mtd);
-> +	uint32_t offset = ofs;
-> +	uint8_t status_old, status_new;
-> +	int res = 0;
-> +
-> +	mutex_lock(&flash->lock);
-> +	/* Wait until finished previous command */
-> +	if (wait_till_ready(flash)) {
-> +		res = 1;
-> +		goto err;
-> +	}
-> +
-> +	status_old = read_sr(flash);
-> +
-> +	if (offset < flash->mtd.size-(flash->mtd.size/2))
-> +		status_new = status_old | SR_BP2 | SR_BP1 | SR_BP0;
-> +	else if (offset < flash->mtd.size-(flash->mtd.size/4))
-> +		status_new = (status_old & ~SR_BP0) | SR_BP2 | SR_BP1;
-> +	else if (offset < flash->mtd.size-(flash->mtd.size/8))
-> +		status_new = (status_old & ~SR_BP1) | SR_BP2 | SR_BP0;
-> +	else if (offset < flash->mtd.size-(flash->mtd.size/16))
-> +		status_new = (status_old & ~(SR_BP0|SR_BP1)) | SR_BP2;
-> +	else if (offset < flash->mtd.size-(flash->mtd.size/32))
-> +		status_new = (status_old & ~SR_BP2) | SR_BP1 | SR_BP0;
-> +	else if (offset < flash->mtd.size-(flash->mtd.size/64))
-> +		status_new = (status_old & ~(SR_BP2|SR_BP0)) | SR_BP1;
-> +	else
-> +		status_new = (status_old & ~(SR_BP2|SR_BP1)) | SR_BP0;
-
-2) While I believe this might work on m25p32, m25p64 and m25p128 (i.e. 
-flashes with 64 blocks or more), it looks incorrect for smaller chips 
-(namely our m25p80, with just 16 blocks). There, the 1/64 logic scales 
-down to 1/16, e.g.
-- 000 means protect nothing
-- 001 means protect 1/16th (=1 blocks)    [m25p64 => 1/64th]
-- 010 means protect 1/8th  (=2 blocks)    [m25p64 => 1/32th]
-- ...
-- 100 means protect 1/2nd  (=8 blocks)
-- 101,110, 111 mean protect everything
-
-and I assume the same goes for chips with fewer sectors.
-
-Any comments?
-
-Thanks,
-Gerlando
-
-> +
-> +	/* Only modify protection if it will not unlock other areas */
-> +	if ((status_new&(SR_BP2|SR_BP1|SR_BP0)) >
-> +					(status_old&(SR_BP2|SR_BP1|SR_BP0))) {
-> +		write_enable(flash);
-> +		if (write_sr(flash, status_new) < 0) {
-> +			res = 1;
-> +			goto err;
-> +		}
-> +	}
-> +
-> +err:	mutex_unlock(&flash->lock);
-> +	return res;
-> +}
-> +
-> +static int m25p80_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
-> +{
-> +	struct m25p *flash = mtd_to_m25p(mtd);
-> +	uint32_t offset = ofs;
-> +	uint8_t status_old, status_new;
-> +	int res = 0;
-> +
-> +	mutex_lock(&flash->lock);
-> +	/* Wait until finished previous command */
-> +	if (wait_till_ready(flash)) {
-> +		res = 1;
-> +		goto err;
-> +	}
-> +
-> +	status_old = read_sr(flash);
-> +
-> +	if (offset+len > flash->mtd.size-(flash->mtd.size/64))
-> +		status_new = status_old & ~(SR_BP2|SR_BP1|SR_BP0);
-> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/32))
-> +		status_new = (status_old & ~(SR_BP2|SR_BP1)) | SR_BP0;
-> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/16))
-> +		status_new = (status_old & ~(SR_BP2|SR_BP0)) | SR_BP1;
-> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/8))
-> +		status_new = (status_old & ~SR_BP2) | SR_BP1 | SR_BP0;
-> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/4))
-> +		status_new = (status_old & ~(SR_BP0|SR_BP1)) | SR_BP2;
-> +	else if (offset+len > flash->mtd.size-(flash->mtd.size/2))
-> +		status_new = (status_old & ~SR_BP1) | SR_BP2 | SR_BP0;
-> +	else
-> +		status_new = (status_old & ~SR_BP0) | SR_BP2 | SR_BP1;
-> +
-> +	/* Only modify protection if it will not lock other areas */
-> +	if ((status_new&(SR_BP2|SR_BP1|SR_BP0)) <
-> +					(status_old&(SR_BP2|SR_BP1|SR_BP0))) {
-> +		write_enable(flash);
-> +		if (write_sr(flash, status_new) < 0) {
-> +			res = 1;
-> +			goto err;
-> +		}
-> +	}
-> +
-> +err:	mutex_unlock(&flash->lock);
-> +	return res;
-> +}
-> +
->   /****************************************************************************/
->
->   /*
-> @@ -899,6 +989,12 @@ static int m25p_probe(struct spi_device *spi)
->   	flash->mtd._erase = m25p80_erase;
->   	flash->mtd._read = m25p80_read;
->
-> +	/* flash protection support for STmicro chips */
-> +	if (JEDEC_MFR(info->jedec_id) == CFI_MFR_ST) {
-> +		flash->mtd._lock = m25p80_lock;
-> +		flash->mtd._unlock = m25p80_unlock;
-> +	}
-> +
->   	/* sst flash chips use AAI word program */
->   	if (JEDEC_MFR(info->jedec_id) == CFI_MFR_SST)
->   		flash->mtd._write = sst_write;
->
->
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
->
-
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 62ccf54..0283871 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -930,9 +930,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 	}
+ 
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+ 
+@@ -969,9 +970,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		ret = m2p_remove_override(pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 	}
+ 
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+ 
+-- 
+1.7.9.5
 
