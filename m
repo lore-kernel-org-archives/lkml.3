@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3KTPqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:46:16 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:35399 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3KTPqP (ORCPT
+	id S1754105Ab3KTPqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:46:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58309 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3KTPqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 10:46:15 -0500
-Message-ID: <528CD93D.4060609@windriver.com>
-Date: Wed, 20 Nov 2013 10:46:05 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 20 Nov 2013 10:46:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 6/7] mtd: nand: davinci: extend description of bindings
+Date: Wed, 20 Nov 2013 16:46:21 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        grygorii.strashko@ti.com, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+References: <1384960945-14528-1-git-send-email-ivan.khoronzhuk@ti.com> <1384960945-14528-7-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1384960945-14528-7-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>,
-        "Frederich, Jens" <Jens.Frederich@vector.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Kernel Panic] 3.10.10-rt7
-References: <9B7F15AA4177464A8FAB5BE79B14288B88967CEF@vistrex3.vi.vector.int> <528CAC42.1060706@siemens.com>
-In-Reply-To: <528CAC42.1060706@siemens.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Message-Id: <201311201646.21435.arnd@arndb.de>
+X-Provags-ID: V02:K0:n3zYvlMhIufRJFVaKzYdetgrhKYR3ekt8hHU63N7ypr
+ k6s+yb5PbWfQ/e9DSd61ZIFue6/cU5Jm/ce+GMwAd7kEfUMzb/
+ +GPXg0nnMI4/SCCd4hPmM1fK0wF3hcsK7Z6Rwa6p+fnl7D5YQ3
+ idPqbS3m1YjkiehVQdaccgofV1oLcs14SJKfWIP69akysqOD2f
+ oXGq9vWy8shSubIcJgpJDkqRmHyVBUhWdK1+5D9XZPoq9J3a56
+ 103kiwd2nQ4xlkXURyU4Q7tCbSFRBVh+leEWeSIC9fKDI0gaQu
+ UCBs3mc4zRqU/priBxw/rtzy0Cha5ZqKFUXM0+TO+9sBr/Lvbx
+ L40D+EqyMOydv7Dtrb6w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-11-20 07:34 AM, Jan Kiszka wrote:
-> On 2013-11-20 13:26, Frederich, Jens wrote:
->> Hello,
->>
->> I got a Kernel panic by some long time stress tests. Look here: http://dy.cx/pqP7M.
+On Wednesday 20 November 2013, Ivan Khoronzhuk wrote:
+> Extend bindings for davinci_nand driver to be more clear.
 > 
-> Ah, that should be http://thread.gmane.org/gmane.linux.kernel/1564783
-> 
-> Paul, was there any follow-up patch on this topic?
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  .../devicetree/bindings/mtd/davinci-nand.txt       |   77 ++++++++++++++------
+>  1 file changed, 54 insertions(+), 23 deletions(-)
 
-Yeah, from the rt-summit [ http://lwn.net/Articles/572740/ ] it is on me
-to get those simple wait queue patches mainlined (and then the local_bh
-stuff).  Once I've got that done, I'll look at spending some time on 3.12-rt
-kvm patches -- in the meantime, you are right, the screenshot shows that his
-3.10-rt needs the straightforward conversion of vpcu->wq to simple wait.
+Hi Ivan,
 
-Paul.
---
+The changes look good to me, but please clarify in the changeset description
+above whether this is a backwards-compatible change, a clarification without
+semantic changes, or an incompatible change (which should be avoided).
 
-> 
-> Jan
-> 
->>
->> Furthermore I got sporadic some BUG messages:
->>
->> [ 1128.358971] BUG: scheduling while atomic: swapper/0/0/0x00010002
->> [ 1128.358982] Preemption disabled at:[<ffffffff810dfb8a>] cpu_startup_entry+0x17a/0x300
->>
->> Hardware
->> --------
->>
->> My system is a i7 with 4 GB RAM congatec evalboard.
->>
->> Setup
->> -----
->>
->> On the system runs Linux RT (text mode) 3.10.10-rt7 with 1 GB RAM and a
->> Windows 7 KVM/QEMU (Qemu 1.6.1) guest with 3 GB RAM. Each system has it own
->> ethernet card. The Win 7 guest uses it per pci pass-through. The Win 7 is
->> pinned to core 2,3.
->>
->> Scenario
->> --------
->>
->> We sending UDP packages every 1 msec on the Linux side. The UDP sender process
->> has real time prio 80 and the ethernet driver 90. At the same time we are
->> stressing Win 7. Memory stress - allocate as much as possible and do memset(),
->> then CPU stress - high CPU load, then Kernel DPC stress - high load thread at
->> DPC level and ethernet stress - send UDP packages every milliseconds. I got the
->> panic after 45 minutes. It seems that is correlates with the ethernet stress.
->>
->> Can anybody help me?
->>
->> thanks
->> Jens
-> 
+	Arnd
