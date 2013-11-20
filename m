@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3KTXBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 18:01:40 -0500
-Received: from pavo.uberspace.de ([95.143.172.191]:57136 "HELO
-	pavo.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753646Ab3KTXBR (ORCPT
+	id S1755428Ab3KTXFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 18:05:37 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:34235 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab3KTXFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 18:01:17 -0500
-From: =?UTF-8?q?Friedrich=20Sch=C3=B6ller?= <linux@schoeller.se>
-To: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Friedrich=20Sch=C3=B6ller?= <linux@schoeller.se>
-Subject: [PATCH 2/3] Input: Fixed pressure and tool width calculation in BCM5974 multitouch driver
-Date: Wed, 20 Nov 2013 23:54:11 +0100
-Message-Id: <1384988052-31898-2-git-send-email-linux@schoeller.se>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1384988052-31898-1-git-send-email-linux@schoeller.se>
-References: <1384988052-31898-1-git-send-email-linux@schoeller.se>
+	Wed, 20 Nov 2013 18:05:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131120212851.GA3658@google.com>
+References: <20131120212851.GA3658@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 20 Nov 2013 16:05:14 -0700
+Message-ID: <CAErSpo59LUoh5icU7ev2TyKTzS-sQRUaxSM76eEZ4dMhHJ+0nw@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI updates for v3.13
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Slaby <jslaby@suse.cz>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously ABS_PRESSURE and ABS_TOOL_WIDTH were calculated by looking at the
-size of the first touch in the list reported by the trackpad. This is not
-necessarily the same touch as the one used to perform pointer emulation in the
-input multitouch library (input-mt). By using the sum of the sizes of all
-touches as a basis for this calculation we get more coherent values.
----
- drivers/input/mouse/bcm5974.c | 21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+[+cc Jiri, Tejun]
 
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index af15410..ecbf359 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -539,19 +539,10 @@ static void report_finger_data(struct input_dev *input,
- 
- static void report_synaptics_data(struct input_dev *input,
- 				  const struct bcm5974_config *cfg,
--				  const struct tp_finger *f, int raw_n)
-+				  int p, int w)
- {
--	int abs_p = 0, abs_w = 0;
--
--	if (raw_n) {
--		int p = raw2int(f->touch_major);
--		int w = raw2int(f->tool_major);
--		if (p > 0 && raw2int(f->origin)) {
--			abs_p = clamp_val(256 * p / cfg->p.max, 0, 255);
--			abs_w = clamp_val(16 * w / cfg->w.max, 0, 15);
--		}
--	}
--
-+	int abs_p = clamp_val(256 * p / cfg->p.max, 0, 255);
-+	int abs_w = clamp_val(16 * w / cfg->w.max, 0, 15);
- 	input_report_abs(input, ABS_PRESSURE, abs_p);
- 	input_report_abs(input, ABS_TOOL_WIDTH, abs_w);
- }
-@@ -562,7 +553,7 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 	const struct bcm5974_config *c = &dev->cfg;
- 	const struct tp_finger *f;
- 	struct input_dev *input = dev->input;
--	int raw_n, i, n = 0;
-+	int raw_n, i, n = 0, p = 0, w = 0;
- 
- 	if (size < c->tp_offset || (size - c->tp_offset) % SIZEOF_FINGER != 0)
- 		return -EIO;
-@@ -577,6 +568,8 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 		dev->pos[n].x = raw2int(f[i].abs_x);
- 		dev->pos[n].y = c->y.min + c->y.max - raw2int(f[i].abs_y);
- 		dev->index[n++] = &f[i];
-+		p += raw2int(f[i].touch_major);
-+		w += raw2int(f[i].tool_major);
- 	}
- 
- 	input_mt_assign_slots(input, dev->slots, dev->pos, n);
-@@ -587,7 +580,7 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 
- 	input_mt_sync_frame(input);
- 
--	report_synaptics_data(input, c, f, raw_n);
-+	report_synaptics_data(input, c, p, w);
- 
- 	/* type 2 reports button events via ibt only */
- 	if (c->tp_type == TYPE2) {
--- 
-1.8.4.2
+On Wed, Nov 20, 2013 at 2:28 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> The following changes since commit 4fbf888accb39af423f271111d44e8186f053723:
+>
+>   Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-11-14 17:19:58 +0900)
+>
+> are available in the git repository at:
+>
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.13-fixes-1
+>
+> for you to fetch changes up to 30b7fc1277c74667d0d5421526dc5f7a7fa926c5:
 
+Sigh, please ignore this until we figure out the "scheduling while
+atomic" problem Jiri reported [1].  Sorry.
+
+[1] http://lkml.kernel.org/r/528D3F36.3050403@suse.cz
+
+>
+>   PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove() (2013-11-18 17:02:45 -0700)
+>
+> ----------------------------------------------------------------
+> PCI updates for v3.13:
+>
+>   Miscellaneous
+>     - Avoid CPU switch for .probe() methods (Alexander Duyck)
+>     - Restore work_on_cpu() lockdep annotation (Bjorn Helgaas)
+>     - Remove duplicate disable from pcie_portdrv_remove() (Yinghai Lu)
+>     - Fix whitespace, capitalization, and spelling errors (Bjorn Helgaas)
+>
+> ----------------------------------------------------------------
+> Alexander Duyck (1):
+>       PCI: Avoid unnecessary CPU switch when calling driver .probe() method
+>
+> Bjorn Helgaas (2):
+>       PCI: Fix whitespace, capitalization, and spelling errors
+>       Revert "workqueue: allow work_on_cpu() to be called recursively"
+>
+> Yinghai Lu (1):
+>       PCI: Remove duplicate pci_disable_device() from pcie_portdrv_remove()
+>
+>  drivers/pci/ats.c                       |   2 +-
+>  drivers/pci/host/pci-tegra.c            |  12 ++--
+>  drivers/pci/host/pcie-designware.c      |   2 +-
+>  drivers/pci/hotplug/Kconfig             |   4 +-
+>  drivers/pci/hotplug/Makefile            |   2 +-
+>  drivers/pci/hotplug/acpiphp_core.c      |  12 ++--
+>  drivers/pci/hotplug/acpiphp_glue.c      |   2 +-
+>  drivers/pci/hotplug/acpiphp_ibm.c       |  14 ++--
+>  drivers/pci/hotplug/cpci_hotplug_core.c |   2 +-
+>  drivers/pci/hotplug/cpci_hotplug_pci.c  |   2 +-
+>  drivers/pci/hotplug/cpcihp_generic.c    |  20 +++---
+>  drivers/pci/hotplug/cpcihp_zt5550.c     |  22 +++----
+>  drivers/pci/hotplug/cpcihp_zt5550.h     |  18 +++---
+>  drivers/pci/hotplug/cpqphp_core.c       |   4 +-
+>  drivers/pci/hotplug/cpqphp_ctrl.c       |  10 +--
+>  drivers/pci/hotplug/cpqphp_pci.c        |   5 +-
+>  drivers/pci/hotplug/ibmphp.h            |  12 ++--
+>  drivers/pci/hotplug/ibmphp_core.c       | 109 ++++++++++++++++----------------
+>  drivers/pci/hotplug/ibmphp_ebda.c       | 103 +++++++++++++++---------------
+>  drivers/pci/hotplug/ibmphp_hpc.c        |  24 +++----
+>  drivers/pci/hotplug/ibmphp_pci.c        |  71 ++++++++++-----------
+>  drivers/pci/hotplug/ibmphp_res.c        |  76 +++++++++++-----------
+>  drivers/pci/hotplug/pci_hotplug_core.c  |   8 +--
+>  drivers/pci/hotplug/pciehp.h            |   2 +-
+>  drivers/pci/hotplug/pciehp_acpi.c       |   2 +-
+>  drivers/pci/hotplug/pciehp_core.c       |   4 +-
+>  drivers/pci/hotplug/pciehp_hpc.c        |   6 +-
+>  drivers/pci/hotplug/pcihp_skeleton.c    |   8 +--
+>  drivers/pci/hotplug/rpadlpar_core.c     |   2 +-
+>  drivers/pci/hotplug/rpaphp.h            |   6 +-
+>  drivers/pci/hotplug/rpaphp_core.c       |   8 +--
+>  drivers/pci/hotplug/rpaphp_pci.c        |   3 +-
+>  drivers/pci/hotplug/rpaphp_slot.c       |  19 +++---
+>  drivers/pci/hotplug/shpchp.h            |   8 +--
+>  drivers/pci/hotplug/shpchp_core.c       |  10 +--
+>  drivers/pci/hotplug/shpchp_hpc.c        |   2 +-
+>  drivers/pci/iov.c                       |   2 +-
+>  drivers/pci/irq.c                       |   2 +-
+>  drivers/pci/msi.c                       |   2 +-
+>  drivers/pci/pci-acpi.c                  |   2 +-
+>  drivers/pci/pci-driver.c                |  40 ++++++++----
+>  drivers/pci/pci-stub.c                  |   4 +-
+>  drivers/pci/pci-sysfs.c                 |  28 ++++----
+>  drivers/pci/pci.c                       |  46 +++++++-------
+>  drivers/pci/pcie/aer/aerdrv_core.c      |   2 +-
+>  drivers/pci/pcie/aspm.c                 |   2 +-
+>  drivers/pci/pcie/pme.c                  |   4 +-
+>  drivers/pci/pcie/portdrv.h              |   2 +-
+>  drivers/pci/pcie/portdrv_bus.c          |   4 +-
+>  drivers/pci/pcie/portdrv_core.c         |   2 +-
+>  drivers/pci/pcie/portdrv_pci.c          |   7 +-
+>  drivers/pci/probe.c                     |  10 +--
+>  drivers/pci/proc.c                      |   2 +-
+>  drivers/pci/quirks.c                    | 104 +++++++++++++++---------------
+>  drivers/pci/remove.c                    |   2 +-
+>  drivers/pci/search.c                    |  12 ++--
+>  drivers/pci/setup-bus.c                 |  18 +++---
+>  drivers/pci/setup-res.c                 |   2 +-
+>  drivers/pci/slot.c                      |   2 +-
+>  drivers/pci/syscall.c                   |   2 +-
+>  include/linux/msi.h                     |  10 +--
+>  include/linux/pci.h                     |  55 ++++++++--------
+>  include/linux/pci_hotplug.h             |   5 +-
+>  include/linux/pcieport_if.h             |   2 +-
+>  include/uapi/linux/pci_regs.h           |  72 ++++++++++-----------
+>  kernel/workqueue.c                      |  32 +++-------
+>  66 files changed, 547 insertions(+), 548 deletions(-)
