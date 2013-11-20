@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3KTS7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:59:38 -0500
-Received: from mo1.mail-out.ovh.net ([178.32.228.1]:34997 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3KTS7h (ORCPT
+	id S1754860Ab3KTTAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:00:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52040 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3KTTAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:59:37 -0500
-Message-ID: <528CE3E6.1040802@overkiz.com>
-Date: Wed, 20 Nov 2013 17:31:34 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 20 Nov 2013 14:00:20 -0500
+Date: Wed, 20 Nov 2013 20:00:11 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 7/7] preempt: Take away preempt_enable_no_resched() from
+ modules
+Message-ID: <20131120190011.GX16796@laptop.programming.kicks-ass.net>
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.760865926@infradead.org>
+ <20131120105457.04f6e51e@ultegra>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 8/9] ARM: at91/dt: add new at91rm9200ek_mmc board
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com> <1377693456-11133-1-git-send-email-b.brezillon@overkiz.com> <20131120150255.GH14627@ns203013.ovh.net>
-In-Reply-To: <20131120150255.GH14627@ns203013.ovh.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16435886841158793388
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131120105457.04f6e51e@ultegra>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/11/2013 16:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 14:37 Wed 28 Aug     , Boris BREZILLON wrote:
->> Add a new at91rm9200ek_mmc board (based on at91rm9200ek board) which enables
->> mmc0/slot0.
-> no for multiple dts
->
-> this need to handle at user space level
+On Wed, Nov 20, 2013 at 10:54:57AM -0800, Jacob Pan wrote:
+> run into a couple of compile issues.
+> 
+> 1)
+> include/linux/rcupdate.h: In function ‘rcu_read_unlock_sched_notrace’:
+> include/linux/rcupdate.h:889:2: error: implicit declaration of function
+> ‘preempt_enable_no_resched_notrace’ [-Werror=implicit-function-declaration]
+> 
+> 2)
+> In file included from drivers/cpufreq/acpi-cpufreq.c:41:0:
+> include/linux/uaccess.h: In function ‘pagefault_enable’:
+> include/linux/uaccess.h:34:2: error: implicit declaration of function
+> ‘preempt_check_resched’ [-Werror=implicit-function-declaration]
+> 
+> 1) happens when CONFIG_PREEMPT is not set, perhaps add a dummy function?
 
-You mean, by controlling the regulator using the sysfs interface, or by 
-loading
-only the appropriate driver ?
+Ah, indeed, will fix.
 
-What if both drivers are loaded (or not compiled as modules) ?
-This will lead to one device being unusable (and maybe even worst)...
+> 2) I am not sure if we should take pagefault_enable away from modules
 
-Please explain what you had in mind ?
-
->
-> Best Regards,
-> J.
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   arch/arm/boot/dts/at91rm9200ek_mmc.dts |   23 +++++++++++++++++++++++
->>   1 file changed, 23 insertions(+)
->>   create mode 100644 arch/arm/boot/dts/at91rm9200ek_mmc.dts
->>
->> diff --git a/arch/arm/boot/dts/at91rm9200ek_mmc.dts b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
->> new file mode 100644
->> index 0000000..c87a861
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
->> @@ -0,0 +1,23 @@
->> +/*
->> + * at91rm9200ek.dts - Device Tree file for Atmel AT91RM9200 evaluation kit with
->> + *                    an MMC slot
->> + *
->> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
->> + *
->> + * Licensed under GPLv2 only
->> + */
->> +/dts-v1/;
->> +#include "at91rm9200ek.dts"
->> +
->> +/ {
->> +	model = "Atmel AT91RM9200 evaluation kit with MMC slot";
->> +	compatible = "atmel,at91rm9200ek-mmc", "atmel,at91rm9200ek", "atmel,at91rm9200";
->> +
->> +	ahb {
->> +		apb {
->> +			mmc0: mmc@fffb4000 {
->> +				status = "okay";
->> +			};
->> +		};
->> +	};
->> +};
->> -- 
->> 1.7.9.5
->>
-
+We can't I think, I'll have to fix that up. Easiest would be to make
+preempt_check_resched() available again. That function actually adds
+preemption points so its not bad.
