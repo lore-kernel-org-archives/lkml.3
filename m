@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3KTQZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:25:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47517 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab3KTQZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:25:49 -0500
+	id S1754544Ab3KTQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:26:00 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43671 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512Ab3KTQZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:25:54 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
@@ -19,9 +18,9 @@ CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH 1/3] mtd: nand: davinci: reuse driver for Keystone arch
-Date: Wed, 20 Nov 2013 18:24:57 +0200
-Message-ID: <1384964699-15134-2-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH 2/3] mtd: nand: davinci: don't set timings if AEMIF is used
+Date: Wed, 20 Nov 2013 18:24:58 +0200
+Message-ID: <1384964699-15134-3-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -31,74 +30,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Keystone arch has compatible nand device, so reuse it.
-In case with Keystone it depends on TI_AEMIF because AEMIF
-driver is responsible to set timings.
+The problem that the set timings code contains the call of Davinci
+platform function davinci_aemif_setup_timing() which is not
+accessible if kernel is built for Keystone only.
 
-See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+The Keysone platform is going to use TI AEMIF driver.
+If TI AEMIF is used we don't need to set timings and bus width.
+It is done by AEMIF driver (drivers/memory/ti-aemfi.c).
+
+The timings code has to be removed together with Davinci aemif
+platform code (aemif.c), once Davinci will be converted to DT and use
+ti-aemif.c driver.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../devicetree/bindings/mtd/davinci-nand.txt       |    8 +++++---
- drivers/mtd/nand/Kconfig                           |    6 +++---
- drivers/mtd/nand/davinci_nand.c                    |    1 +
- 3 files changed, 9 insertions(+), 6 deletions(-)
+ drivers/mtd/nand/davinci_nand.c |   48 +++++++++++++++++++++++++--------------
+ 1 file changed, 31 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-index befaa5b..cfb18ab 100644
---- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-@@ -1,14 +1,16 @@
--Device tree bindings for Texas instruments Davinci NAND controller
-+Device tree bindings for Texas instruments Davinci/Keystone NAND controller
- 
--This file provides information, what the device node for the davinci NAND
--interface contains.
-+This file provides information, what the device node for the davinci/keystone
-+NAND interface contains.
- 
- Documentation:
- Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
-+Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
- 
- Required properties:
- 
- - compatible:			"ti,davinci-nand"
-+				"ti,keystone-nand"
- 
- - reg:				Contains 2 offset/length values:
- 				- offset and length for the access window.
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index d885298..8bf69c7 100644
---- a/drivers/mtd/nand/Kconfig
-+++ b/drivers/mtd/nand/Kconfig
-@@ -492,11 +492,11 @@ config MTD_NAND_SH_FLCTL
- 	  for NAND Flash using FLCTL.
- 
- config MTD_NAND_DAVINCI
--        tristate "Support NAND on DaVinci SoC"
--        depends on ARCH_DAVINCI
-+        tristate "Support NAND on DaVinci/Keystone SoC"
-+        depends on ARCH_DAVINCI || (ARCH_KEYSTONE && TI_AEMIF)
-         help
- 	  Enable the driver for NAND flash chips on Texas Instruments
--	  DaVinci processors.
-+	  DaVinci/Keystone processors.
- 
- config MTD_NAND_TXX9NDFMC
- 	tristate "NAND Flash support for TXx9 SoC"
 diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index f7b21b8..8459720 100644
+index 8459720..e904364 100644
 --- a/drivers/mtd/nand/davinci_nand.c
 +++ b/drivers/mtd/nand/davinci_nand.c
-@@ -523,6 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
- #if defined(CONFIG_OF)
- static const struct of_device_id davinci_nand_of_match[] = {
- 	{.compatible = "ti,davinci-nand", },
-+	{.compatible = "ti,keystone-nand", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+@@ -605,6 +605,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 	int				ret;
+ 	uint32_t			val;
+ 	nand_ecc_modes_t		ecc_mode;
++	bool aemif = IS_ENABLED(CONFIG_TI_AEMIF);
+ 
+ 	pdata = nand_davinci_get_pdata(pdev);
+ 	if (IS_ERR(pdata))
+@@ -741,25 +742,38 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/*
+-	 * Setup Async configuration register in case we did not boot from
+-	 * NAND and so bootloader did not bother to set it up.
++	 * TODO:
++	 * This is temp solution to support Davinci platform and it has to be
++	 * removed once Davinci will be updated to use ti-aemif.c driver.
+ 	 */
+-	val = davinci_nand_readl(info, A1CR_OFFSET + info->core_chipsel * 4);
+-
+-	/* Extended Wait is not valid and Select Strobe mode is not used */
+-	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
+-	if (info->chip.options & NAND_BUSWIDTH_16)
+-		val |= 0x1;
+-
+-	davinci_nand_writel(info, A1CR_OFFSET + info->core_chipsel * 4, val);
++	if (!aemif) {
++		/*
++		 * Setup Async configuration register in case we did not boot
++		 * from NAND and so bootloader did not bother to set it up.
++		 */
++		val = davinci_nand_readl(info, A1CR_OFFSET +
++					 info->core_chipsel * 4);
+ 
+-	ret = 0;
+-	if (info->timing)
+-		ret = davinci_aemif_setup_timing(info->timing, info->base,
+-							info->core_chipsel);
+-	if (ret < 0) {
+-		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
+-		goto err;
++		/*
++		 * Extended Wait is not valid and Select Strobe mode is not
++		 * used
++		 */
++		val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
++		if (info->chip.options & NAND_BUSWIDTH_16)
++			val |= 0x1;
++
++		davinci_nand_writel(info, A1CR_OFFSET +
++				    info->core_chipsel * 4, val);
++
++		ret = 0;
++		if (info->timing)
++			ret = davinci_aemif_setup_timing(info->timing,
++							 info->base,
++							 info->core_chipsel);
++		if (ret < 0) {
++			dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
++			goto err;
++		}
+ 	}
+ 
+ 	spin_lock_irq(&davinci_nand_lock);
 -- 
 1.7.9.5
 
