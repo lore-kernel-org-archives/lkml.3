@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab3KTHvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 02:51:13 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:59773 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3KTHvK (ORCPT
+	id S1752180Ab3KTHxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 02:53:36 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:57951 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3KTHxe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 02:51:10 -0500
-Date: Wed, 20 Nov 2013 09:51:02 +0200
-From: Johan Hedberg <johan.hedberg@intel.com>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: OOPS: Bluetooth: Store RFCOMM address information in its own
- socket structure
-Message-ID: <20131120075102.GA13210@x220.p-661hnu-f1>
-References: <528C2A68.1000304@ubuntu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	Wed, 20 Nov 2013 02:53:34 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: OOPS: Bluetooth: Store RFCOMM address information in its own socket structure
+From: Marcel Holtmann <marcel@holtmann.org>
 In-Reply-To: <528C2A68.1000304@ubuntu.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 20 Nov 2013 14:53:20 +0700
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7410329D-F774-418E-8883-5A1171165113@holtmann.org>
+References: <528C2A68.1000304@ubuntu.com>
+To: Phillip Susi <psusi@ubuntu.com>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Phillip,
+Hi Susi,
 
-On Tue, Nov 19, 2013, Phillip Susi wrote:
 > Bisected an OOPS to this commit:
 > 
 > commit 94a86df01082557e2de45865e538d7fb6c46231c
 > Author: Marcel Holtmann <marcel@holtmann.org>
 > Date:   Sun Oct 13 10:34:02 2013 -0700
 > 
->     Bluetooth: Store RFCOMM address information in its own socket structure
+>    Bluetooth: Store RFCOMM address information in its own socket structure
 > 
->     The address information of RFCOMM sockets should be stored in its
->     own socket structure. Trying to generalize them is not helpful since
->     different transports have different address types.
+>    The address information of RFCOMM sockets should be stored in its
+>    own socket structure. Trying to generalize them is not helpful since
+>    different transports have different address types.
 > 
->     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
->     Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+>    Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+>    Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 > 
 > OOPS looks like:
 > 
@@ -77,8 +74,9 @@ On Tue, Nov 19, 2013, Phillip Susi wrote:
 > [   16.682639] CR2: 000000268333770b
 > [   16.684262] ---[ end trace a5f6978e71640635 ]---
 
-I have a feeling this one was already fixed but just hasn't propagated
-itself to the upstream trees. The fix should already available in
-the wireless.git and bluetooth.git trees though.
+fix for this is already in John’s wireless tree. On a side note, the bisect is correct, but it is not the patch that broke it. It is just the patch that uncovered it.
 
-Johan
+Regards
+
+Marcel
+
