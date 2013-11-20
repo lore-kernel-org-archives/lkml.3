@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab3KTQSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:18:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60914 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab3KTQSi (ORCPT
+	id S1754280Ab3KTQUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:20:35 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:59420
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754001Ab3KTQUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:18:38 -0500
-Date: Wed, 20 Nov 2013 08:19:03 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: devel@driverdev.osuosl.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: Re: [PATCH] staging: imx-drm: Fix modular build of DRM_IMX_IPUV3
-Message-ID: <20131120161903.GA5343@kroah.com>
-References: <20131112171544.GR20328@hansolo.jdub.homelinux.org>
- <20131118090309.GU24559@pengutronix.de>
- <20131120015659.GF1908@hansolo.jdub.homelinux.org>
- <20131120053919.GB367@kroah.com>
- <20131120131632.GG1908@hansolo.jdub.homelinux.org>
+	Wed, 20 Nov 2013 11:20:32 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI9371I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh839h944hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h1155h)
+X-WSS-ID: 0MWKLBE-07-5KH-02
+X-M-MSG: 
+From: Tom Lendacky <thomas.lendacky@amd.com>
+To: <herbert@gondor.hengli.com.au>
+CC: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] AMD Cryptographic Coprocessor support
+Date: Wed, 20 Nov 2013 10:20:10 -0600
+Message-ID: <5441273.HtAtgCrPKB@tlendack-t1>
+Organization: Advanced Micro Devices, Inc.
+User-Agent: KMail/4.8.5 (Linux/3.2.0-56-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
+References: <20131112174558.19746.47262.stgit@tlendack-t1.amdoffice.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131120131632.GG1908@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 08:16:32AM -0500, Josh Boyer wrote:
-> On Tue, Nov 19, 2013 at 09:39:19PM -0800, Greg KH wrote:
-> > On Tue, Nov 19, 2013 at 08:56:59PM -0500, Josh Boyer wrote:
-> > > On Mon, Nov 18, 2013 at 10:03:10AM +0100, Sascha Hauer wrote:
-> > > > On Tue, Nov 12, 2013 at 12:15:45PM -0500, Josh Boyer wrote:
-> > > > > commit b8d181e408af (staging: drm/imx: add drm plane support) added a file
-> > > > > to the make target for DRM_IMX_IPUV3 but didn't adjust the objs required
-> > > > > to actually build that as a module.  Kbuild got confused and this lead to
-> > > > > link errors like:
-> > > > > 
-> > > > > ERROR: "ipu_plane_disable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
-> > > > > ERROR: "ipu_plane_enable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
-> > > > > 
-> > > > > Additionally, it added a call to imx_drm_crtc_id which also fails with a
-> > > > > link error as above.  To fix this, we adjust the make target with the proper
-> > > > > objs, which will change the name of the resulting .ko.  We also add an
-> > > > > EXPORT_SYMBOL_GPL for imx_drm_crtc_id.
-> > > > > 
-> > > > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> > > > 
-> > > > 
-> > > > Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > > > 
-> > > > Sascha
-> > > 
-> > > Thanks.  So who picks this fix up?  Greg, is that you?
-> > 
-> > Yes, I will once 3.13-rc1 is out.
-> 
-> OK.  And send it to Linus for 3.13-rc2?  I know you've been traveling
-> and are busy, so I'm just pointing out it's a fix for 3.13.
+Hi Herbert,
 
-Yes, it will be queued up for 3.13-final.
+Is the crypto tree the right tree to go through for this support
+or would you prefer I go through another tree?
+
+Thanks,
+Tom
+
+On Tuesday, November 12, 2013 11:45:59 AM Tom Lendacky wrote:
+> Resending because of typo in mailing list address...
+> 
+> The following series implements support for the AMD Cryptographic
+> Coprocessor (CCP).  The AMD CCP provides hardware encryption, hashing
+> and other related operations.
+> 
+> This patch series is based on the 3.12 kernel.
+> 
+> ---
+> 
+> Tom Lendacky (10):
+>       crypto: authenc - Find proper IV address in ablkcipher callback
+>       crypto: scatterwalk - Set the chain pointer indication bit
+>       crypto: CCP device driver and interface support
+>       crypto: crypto API interface to the CCP device driver
+>       crypto: CCP AES crypto API support
+>       crypto: CCP AES CMAC mode crypto API support
+>       crypto: CCP XTS-AES crypto API support
+>       crypto: CCP SHA crypto API support
+>       crytpo: CCP device driver build files
+>       crypto: CCP maintainer information
+> 
+> 
+>  MAINTAINERS                              |    7
+>  crypto/authenc.c                         |    7
+>  drivers/crypto/Kconfig                   |   12
+>  drivers/crypto/Makefile                  |    1
+>  drivers/crypto/ccp/Kconfig               |   23
+>  drivers/crypto/ccp/Makefile              |   10
+>  drivers/crypto/ccp/ccp-crypto-aes-cmac.c |  355 +++++
+>  drivers/crypto/ccp/ccp-crypto-aes-xts.c  |  285 ++++
+>  drivers/crypto/ccp/ccp-crypto-aes.c      |  375 ++++++
+>  drivers/crypto/ccp/ccp-crypto-main.c     |  432 ++++++
+>  drivers/crypto/ccp/ccp-crypto-sha.c      |  497 +++++++
+>  drivers/crypto/ccp/ccp-crypto.h          |  191 +++
+>  drivers/crypto/ccp/ccp-dev.c             |  582 +++++++++
+>  drivers/crypto/ccp/ccp-dev.h             |  272 ++++
+>  drivers/crypto/ccp/ccp-ops.c             | 2020
+> ++++++++++++++++++++++++++++++ drivers/crypto/ccp/ccp-pci.c             | 
+> 360 +++++
+>  include/crypto/scatterwalk.h             |    1
+>  include/linux/ccp.h                      |  525 ++++++++
+>  18 files changed, 5952 insertions(+), 3 deletions(-)
+>  create mode 100644 drivers/crypto/ccp/Kconfig
+>  create mode 100644 drivers/crypto/ccp/Makefile
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-cmac.c
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto-aes-xts.c
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto-aes.c
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto-main.c
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto-sha.c
+>  create mode 100644 drivers/crypto/ccp/ccp-crypto.h
+>  create mode 100644 drivers/crypto/ccp/ccp-dev.c
+>  create mode 100644 drivers/crypto/ccp/ccp-dev.h
+>  create mode 100644 drivers/crypto/ccp/ccp-ops.c
+>  create mode 100644 drivers/crypto/ccp/ccp-pci.c
+>  create mode 100644 include/linux/ccp.h
+-- 
+Tom
+
+Thomas Lendacky
+Advanced Micro Devices, Inc.
+
