@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab3KTOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 09:37:16 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4320 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab3KTOhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 09:37:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,737,1378882800"; 
-   d="scan'208";a="430896954"
-Message-ID: <1384958201.6723.1.camel@smile>
-Subject: Re: [PATCH v1.2] gpiolib: append SFI helpers for GPIO API
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Wed, 20 Nov 2013 16:36:41 +0200
-In-Reply-To: <528BA0C6.8010604@linux.intel.com>
-References: <1370440690-21898-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CACRpkdaP+tkJn8jcR_RaCz_c6hk66F8qde2KRiCzNyyLWUkgjw@mail.gmail.com>
-	 <528B2EF2.5010104@nvidia.com> <528BA0C6.8010604@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753152Ab3KTOhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 09:37:31 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49631 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750976Ab3KTOhN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 09:37:13 -0500
+Date: Wed, 20 Nov 2013 14:37:09 +0000
+From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: alsa-devel@alsa-project.org, tiwai@suse.de, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        perex@perex.cz
+Subject: [PATCH v2 1/1] ASoC: arizona: Set FLL to free-run before disabling
+Message-ID: <20131120143709.GA12897@opensource.wolfsonmicro.com>
+References: <20131120131547.GA7357@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120131547.GA7357@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-19 at 09:32 -0800, David Cohen wrote:
-> On 11/19/2013 01:27 AM, Alex Courbot wrote:
-> > On 11/19/2013 06:24 PM, Linus Walleij wrote:
-> >> On Wed, Jun 5, 2013 at 3:58 PM, Andy Shevchenko
-> >> <andriy.shevchenko@linux.intel.com> wrote:
-> >>
-> >>> To support some (legacy) firmwares and platforms let's make life
-> >>> easier for
-> >>> their customers.
-> >>>
-> >>> This patch extracts SFI GPIO API from arch/x86/platform/mrst/mrst.c.
-> >>>
-> >>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> >>
-> >> So since this patch was ACKed the world has changed a bit and now
-> >> I want new changes (or maybe I was tired and not paying enough
-> >> attention at the time).
-> 
-> Agreed. Even my e-mail was outdated :)
-> Updating from david.a.cohen@intel.com to david.a.cohen@linux.intel.com
-> to avoid M$ servers.
+The FLL must be placed into free-run mode before disabling
+to allow it to entirely shut down.
 
-Just sent a version, though, sorry, I forgot to update your email there.
+Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/arizona.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/sound/soc/codecs/arizona.c b/sound/soc/codecs/arizona.c
+index 6f05b17..fea9910 100644
+--- a/sound/soc/codecs/arizona.c
++++ b/sound/soc/codecs/arizona.c
+@@ -1529,6 +1529,8 @@ static void arizona_enable_fll(struct arizona_fll *fll,
+ 	try_wait_for_completion(&fll->ok);
+ 
+ 	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, 0);
++	regmap_update_bits(arizona->regmap, fll->base + 1,
+ 			   ARIZONA_FLL1_ENA, ARIZONA_FLL1_ENA);
+ 	if (use_sync)
+ 		regmap_update_bits(arizona->regmap, fll->base + 0x11,
+@@ -1546,6 +1548,8 @@ static void arizona_disable_fll(struct arizona_fll *fll)
+ 	struct arizona *arizona = fll->arizona;
+ 	bool change;
+ 
++	regmap_update_bits(arizona->regmap, fll->base + 1,
++			   ARIZONA_FLL1_FREERUN, ARIZONA_FLL1_FREERUN);
+ 	regmap_update_bits_check(arizona->regmap, fll->base + 1,
+ 				 ARIZONA_FLL1_ENA, 0, &change);
+ 	regmap_update_bits(arizona->regmap, fll->base + 0x11,
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.2.5
+
 
