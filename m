@@ -1,103 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3KTA0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:26:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab3KTA01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:26:27 -0500
-Date: Wed, 20 Nov 2013 01:26:00 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/3] mm: hugetlbfs: fix hugetlbfs optimization
-Message-ID: <20131120002600.GF10493@redhat.com>
-References: <1384537668-10283-1-git-send-email-aarcange@redhat.com>
- <1384537668-10283-2-git-send-email-aarcange@redhat.com>
- <20131119151146.a1e1f9073a0e5d35c4e83bab@linux-foundation.org>
+	id S1753436Ab3KTAaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:30:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42896 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KTAaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Nov 2013 19:30:10 -0500
+Date: Tue, 19 Nov 2013 16:30:32 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-serial@vger.kernel.org, "# .39.x" <stable@kernel.org>
+Subject: Re: [PATCH] n_tty: Ensure reader restarts worker for next reader
+Message-ID: <20131120003032.GA27825@kroah.com>
+References: <20131017211236.GA6155@kroah.com>
+ <1383850796-24300-1-git-send-email-peter@hurleysoftware.com>
+ <CA+55aFwYps=q14pQ04yWYThFwi3NnR__MeggU8N3M4Q0vrk+nQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131119151146.a1e1f9073a0e5d35c4e83bab@linux-foundation.org>
+In-Reply-To: <CA+55aFwYps=q14pQ04yWYThFwi3NnR__MeggU8N3M4Q0vrk+nQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 03:11:46PM -0800, Andrew Morton wrote:
-> This is all rather verbose.  How about we do this?
-> 
-> --- a/mm/hugetlb.c~mm-hugetlbc-simplify-pageheadhuge-and-pagehuge
-> +++ a/mm/hugetlb.c
-> @@ -690,15 +690,11 @@ static void prep_compound_gigantic_page(
->   */
->  int PageHuge(struct page *page)
->  {
-> -	compound_page_dtor *dtor;
-> -
->  	if (!PageCompound(page))
->  		return 0;
->  
->  	page = compound_head(page);
-> -	dtor = get_compound_page_dtor(page);
-> -
-> -	return dtor == free_huge_page;
-> +	return get_compound_page_dtor(page) == free_huge_page;
->  }
->  EXPORT_SYMBOL_GPL(PageHuge);
->  
-> @@ -708,14 +704,10 @@ EXPORT_SYMBOL_GPL(PageHuge);
->   */
->  int PageHeadHuge(struct page *page_head)
->  {
-> -	compound_page_dtor *dtor;
-> -
->  	if (!PageHead(page_head))
->  		return 0;
->  
-> -	dtor = get_compound_page_dtor(page_head);
-> -
-> -	return dtor == free_huge_page;
-> +	return get_compound_page_dtor(page_head) == free_huge_page;
->  }
->  EXPORT_SYMBOL_GPL(PageHeadHuge);
+On Tue, Nov 19, 2013 at 04:21:54PM -0800, Linus Torvalds wrote:
+> Greg,
+>  what happened to this patch? Is it still waiting in some random tree
+> of yours, or did it get lost?
 
-Sure good idea!
+I was waiting for 3.13-rc1 to be out to populate my trees and then send
+it on to you.
 
-> > @@ -82,19 +82,6 @@ static void __put_compound_page(struct page *page)
-> >  
-> >  static void put_compound_page(struct page *page)
-> 
-> This function has become quite crazy.  I sat down to refamiliarize but
-> immediately failed.
-> 
-> : static void put_compound_page(struct page *page)
-> : {
-> : 	if (unlikely(PageTail(page))) {
-> :	...
-> : 	} else if (put_page_testzero(page)) {
-> : 		if (PageHead(page))
-> 
-> How can a page be both PageTail() and PageHead()?
+But if you want to take it now, great, I have no objection, otherwise I
+was going to wait till next week.
 
-We execute the PageHead you quoted only if it's !PageTail. So then
-PageHead tells us if if it's compound head or not compound by the time
-all reference counts have been released (by the time the last
-reference is released it can't be splitted anymore).
-
-> 
-> : 			__put_compound_page(page);
-> : 		else
-> : 			__put_single_page(page);
-> : 	}
-> : }
-> : 
-> : 
-> 
+greg k-h
