@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab3KTQD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:03:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13969 "EHLO mx1.redhat.com"
+	id S1754171Ab3KTQHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:07:22 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38477 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab3KTQDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:03:22 -0500
-Date: Wed, 20 Nov 2013 18:06:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
- allocate frag skb
-Message-ID: <20131120160625.GA21188@redhat.com>
-References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
- <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131119204909.GA15004@redhat.com>
- <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131119215312.GE15004@redhat.com>
- <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
- <20131120085835.GB19341@redhat.com>
- <1384960593.8604.147.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1753756Ab3KTQHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:07:18 -0500
+Date: Wed, 20 Nov 2013 11:07:12 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
+Message-ID: <20131120160712.GF3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+ <20131113152412.GH707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
+ <20131114000043.GK707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384960593.8604.147.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 07:16:33AM -0800, Eric Dumazet wrote:
-> On Wed, 2013-11-20 at 10:58 +0200, Michael S. Tsirkin wrote:
-> > On Tue, Nov 19, 2013 at 02:00:11PM -0800, Eric Dumazet wrote:
-> > > On Tue, 2013-11-19 at 23:53 +0200, Michael S. Tsirkin wrote:
-> > > 
-> > > > Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
-> > > > it didn't drop packets received from host as far as I can tell.
-> > > > virtio is more like a pipe than a real NIC in this respect.
-> > > 
-> > > Prior/after to this patch, you were not posting buffers, so if packets
-> > > were received on a physical NIC, you were dropping the packets anyway.
-> > >
-> > > It makes no difference at all, adding a cushion might make you feel
-> > > better, but its really not worth it.
-> > > 
-> > > Under memory stress, it makes better sense to drop a super big GRO
-> > > packet (The one needing frag_list extension ...)
-> > > 
-> > > It gives a better signal to the sender to reduce its pressure, and gives
-> > > opportunity to free more of your memory.
-> > > 
-> > 
-> > OK, but in that case one wonders whether we should do more to free memory?
-> > 
-> > E.g. imagine that we dropped a packet of a specific TCP flow
-> > because we couldn't allocate a new packet.
-> > 
-> > What happens now is that the old packet is freed as well.
-> > 
-> > So quite likely the next packet in queue will get processed
-> > since it will reuse the memory we have just freed.
-> > 
-> > The next packet and the next after it etc all will have to go through
-> > the net stack until they get at the socket and are dropped then
-> > because we missed a segment.  Even worse, GRO gets disabled so the load
-> > on receiver goes up instead of down.
-> > 
-> > Sounds like a problem doesn't it?
+On Mon, Nov 18, 2013 at 05:17:31PM -0800, David Rientjes wrote:
+> On Mon, 18 Nov 2013, Johannes Weiner wrote:
 > 
-> I see no problem at all. GRO is a hint for high rates (and obviously
-> when there is enough memory)
-> 
+> > > Um, no, those processes are going through a repeated loop of direct 
+> > > reclaim, calling the oom killer, iterating the tasklist, finding an 
+> > > existing oom killed process that has yet to exit, and looping.  They 
+> > > wouldn't loop for too long if we can reduce the amount of time that it 
+> > > takes for that oom killed process to exit.
 > > 
-> > GRO actually detects it's the same flow and can see packet is
-> > out of sequence. Why doesn't it drop the packet then?
-> > Alternatively, we could (for example using the pre-allocated skb
-> > like I suggested) notify GRO that it should start dropping packets
-> > of this flow.
-> > 
-> > What do you think?
+> > I'm not talking about the big loop in the page allocator.  The victim
+> > is going through the same loop.  This patch is about the victim being
+> > in a pointless direct reclaim cycle when it could be exiting, all I'm
+> > saying is that the other tasks doing direct reclaim at that moment
+> > should also be quitting and retrying the allocation.
 > > 
 > 
-> I think we disagree a lot on memory management on networking stacks.
-> 
-> We did a lot of work in TCP stack and Qdisc layers to lower memory
-> pressure (and bufferbloat), an you seem to try hard to introduce yet
-> another layer of buffer bloat in virtio_net.
-> 
-> So add whatever you want to proudly state to your management :
-> 
-> "Look how smart we are : we drop no packets in our layer"
-> 
+> "All other tasks" would be defined as though sharing the same mempolicy 
+> context as the oom kill victim or the same set of cpuset mems, I'm not 
+> sure what type of method for determining reclaim eligiblity you're 
+> proposing to avoid pointlessly spinning without making progress.  Until an 
+> alternative exists, my patch avoids the needless spinning and expedites 
+> the exit, so I'll ask that it be merged.
 
-Hmm some kind of disconnect here.
-I got you rmanagement about bufferbloat.
+I laid this out in the second half of my email, which you apparently
+did not read:
 
-What I am saying is that maybe we should drop packets more
-aggressively: when we drop one packet of a flow, why not
-drop everything that's queued and is for the same flow?
+"If we have multi-second stalls in direct reclaim then it should be
+ fixed for all direct reclaimers.  The problem is not only OOM kill
+ victims getting stuck, it's every direct reclaimer being stuck trying
+ to do way too much work before retrying the allocation.
 
+ Kswapd checks the system state after every priority cycle.  Direct
+ reclaim should probably do the same and retry the allocation after
+ every priority cycle or every X pages scanned, where X is something
+ reasonable and not "up to every LRU page in the system"."
+
+NAK to this incomplete drive-by fix.
