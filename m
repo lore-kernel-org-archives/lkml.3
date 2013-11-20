@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab3KTMv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 07:51:56 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59086 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3KTMvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 07:51:53 -0500
-Date: Wed, 20 Nov 2013 12:51:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Doug Anderson <dianders@chromium.org>, devicetree@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-ID: <20131120125121.GB2674@sirena.org.uk>
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com>
- <528BB1F2.4080107@wwwdotorg.org>
- <CAD=FV=XS0dbE7zfgDGVdp84h4fHH6tfO8aN_HNh1LbOjYy51aQ@mail.gmail.com>
- <528BB913.6080409@wwwdotorg.org>
- <CAH9JG2UjnL5bZzNUuJhWY3GpwPD=rJvR2O4Hcpm33G+prSS=BA@mail.gmail.com>
- <528BFD28.3050909@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ghfi4GlmwTrWkODx"
-Content-Disposition: inline
-In-Reply-To: <528BFD28.3050909@wwwdotorg.org>
-X-Cookie: Drive defensively.  Buy a tank.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized
- using pinfunc.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753591Ab3KTMxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 07:53:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2082 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751944Ab3KTMx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 07:53:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,736,1378882800"; 
+   d="scan'208";a="436623713"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <CANaxB-x3k8DPEaDCtCzhkuyPcwR1YcRJZwXW777+q+y2KBvzHg@mail.gmail.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
+ <CANaxB-x3k8DPEaDCtCzhkuyPcwR1YcRJZwXW777+q+y2KBvzHg@mail.gmail.com>
+Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be
+ embedded to struct page
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131120125325.07A42E0090@blue.fi.intel.com>
+Date: Wed, 20 Nov 2013 14:53:24 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrey Wagin wrote:
+> Hi Kirill,
+> 
+> Looks like this patch adds memory leaks.
+> [  116.188310] kmemleak: 15672 new suspected memory leaks (see
+> /sys/kernel/debug/kmemleak)
+> unreferenced object 0xffff8800da45a350 (size 96):
+>   comm "dracut-initqueu", pid 93, jiffies 4294671391 (age 362.277s)
+>   hex dump (first 32 bytes):
+>     07 00 07 00 ad 4e ad de ff ff ff ff 6b 6b 6b 6b  .....N......kkkk
+>     ff ff ff ff ff ff ff ff 80 24 b4 82 ff ff ff ff  .........$......
+>   backtrace:
+>     [<ffffffff817152fe>] kmemleak_alloc+0x5e/0xc0
+>     [<ffffffff811c34f3>] kmem_cache_alloc_trace+0x113/0x290
+>     [<ffffffff811920f7>] __ptlock_alloc+0x27/0x50
+>     [<ffffffff81192849>] __pmd_alloc+0x59/0x170
+>     [<ffffffff81195ffa>] copy_page_range+0x38a/0x3e0
+>     [<ffffffff8105a013>] dup_mm+0x313/0x540
+>     [<ffffffff8105b9da>] copy_process+0x161a/0x1880
+>     [<ffffffff8105c01b>] do_fork+0x8b/0x360
+>     [<ffffffff8105c306>] SyS_clone+0x16/0x20
+>     [<ffffffff81727b79>] stub_clone+0x69/0x90
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> It's quite serious, because my test host went to panic in a few hours.
 
---Ghfi4GlmwTrWkODx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry for that.
 
-On Tue, Nov 19, 2013 at 05:07:04PM -0700, Stephen Warren wrote:
-> On 11/19/2013 05:02 PM, Kyungmin Park wrote:
+Could you test patch below.
 
-> > Some pins are not connected (NC). At that cases, there's no drivers to
-> > handle it. To reduce power leakage, it sets proper configuration with
-> > values instead of reset values.
-
-> Hmm. Shouldn't board firmware configure that kind of thing?
-
-> (Of course, some firmware is starting to use DT to configure itself, so
-> that just shifts the DT discussion, but anyway).
-
-Even if it's not sometimes the firmware is intended to be thin with
-configuration punted to the OS.
-
---Ghfi4GlmwTrWkODx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSjLBGAAoJELSic+t+oim9O3kQAIvdeY7tzGmzEuyfDcnqDUZ4
-y9t9LFMCjDRDyT+m8ggfFId66s1bx8U4HAvXygMo/M56ThVZ2AjdzNc0pbSvC1+e
-kYGxfmXv2yYDcypmqQQZndZuIhCHBDOOjbFskkHYfqe588wzdFsBMjdo9hPAzxF1
-T9eXKSADHLMcthw/cCsLGkgzn64uIQS1S0faNOle82Vzc1qqL63/HktAfnp95gwc
-d1WxvdGbr5pUekFrdPDzisir5L5GKfBc0LC+dogWBqU0LWhDRSl6RgBJpHjilfnJ
-KLdpo3TcIcLNxAOEGqZuR/tF3FP1yCk8LHZiGjqFTJ6svKio8HYtdXMDiY2Wjua0
-qLhpwSobBpVLIUO5o46ytj28f49lKwL9yYt8riWr8aZmQTvlWGSrjR2H6cx/7KZf
-RgO9GAdcRGbSzL3Ax1Oz9yGN2S8AOVsvPkyt3Yiph/8R42xu4t51DpyC99cku5CO
-Lklh7HX2tfIRXPzQrPSzzmt2Pj8wUmEbl5Et0WrtmI3TKTSOwc7NUQc4yqlB468T
-Y/PmooXeWIk7a/ZLYHFSvfAZoqsUggxmg1tIIDh3Dt3vzGkEmnEepQ+S0ce3MGxy
-Phj+kQrC4BDrzi5czymLIORG5IEcYvFwCfzDJyf13QaD1glbdX7neZOAq9rwKy8P
-zcTkxZI7R2nYVKbbHnrF
-=f5LR
------END PGP SIGNATURE-----
-
---Ghfi4GlmwTrWkODx--
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index a7cccb6d7fec..7be5809754cf 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -61,6 +61,7 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
+ #if PAGETABLE_LEVELS > 2
+ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ {
++	struct page *page = virt_to_page(pmd);
+ 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
+ 	/*
+ 	 * NOTE! For PAE, any changes to the top page-directory-pointer-table
+@@ -69,7 +70,8 @@ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ #ifdef CONFIG_X86_PAE
+ 	tlb->need_flush_all = 1;
+ #endif
+-	tlb_remove_page(tlb, virt_to_page(pmd));
++	pgtable_pmd_page_dtor(page);
++	tlb_remove_page(tlb, page);
+ }
+ 
+ #if PAGETABLE_LEVELS > 3
+-- 
+ Kirill A. Shutemov
