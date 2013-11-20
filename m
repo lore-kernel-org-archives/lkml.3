@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3KTJIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 04:08:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40273 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab3KTJIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 04:08:00 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH net 3/3] virtio-net: fix resources leaking when fail to allocate frag skb
-Date: Wed, 20 Nov 2013 17:07:27 +0800
-Message-Id: <1384938447-3775-3-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
-References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
+	id S1752732Ab3KTJJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 04:09:45 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:44555 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab3KTJJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 04:09:40 -0500
+Message-ID: <528C7C57.7000107@linaro.org>
+Date: Wed, 20 Nov 2013 10:09:43 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH] clksrc-of: warn if no clock sources are found
+References: <1384937936-14267-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1384937936-14267-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we fail to allocate a frag skb, we need put the refcnt of the page and drop
-the rest of the buffers. Otherwise the page was leaked and driver won't get a
-correct head buffer after this failure.
+On 11/20/2013 09:58 AM, Linus Walleij wrote:
+> Many platforms rely on clocksource_of_init() being implicitly
+> called for registering clock sources and will get zero warnings
+> if no working clock source is available. Let's print a critical
+> error message if no clock source is found.
+>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-This bug was introduced by commit 2613af0ed18a11d5c566a81f9a6510b73180660a
-(virtio_net: migrate mergeable rx buffers to page frag allocators).
++1.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Michael Dalton <mwdalton@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-The patch was needed for 3.12 stable.
----
- drivers/net/virtio_net.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Added Stephen Warren in Cc.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index de1d6ca..f6f1e20 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -339,9 +339,12 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
- 				 head_skb->dev->name);
- 			len = MERGE_BUFFER_LEN;
- 		}
-+		page = virt_to_head_page(buf);
- 		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
- 			struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
- 			if (unlikely(!nskb)) {
-+				put_page(page);
-+				drop_mergeable_buffer(rq, num_buf);
- 				head_skb->dev->stats.rx_dropped++;
- 				return -ENOMEM;
- 			}
-@@ -358,7 +361,6 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
- 			head_skb->len += len;
- 			head_skb->truesize += MERGE_BUFFER_LEN;
- 		}
--		page = virt_to_head_page(buf);
- 		offset = buf - (char *)page_address(page);
- 		if (skb_can_coalesce(curr_skb, num_skb_frags, page, offset)) {
- 			put_page(page);
+> ---
+>   drivers/clocksource/clksrc-of.c | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+> index 35639cf4e5a2..a30b42c3ac3b 100644
+> --- a/drivers/clocksource/clksrc-of.c
+> +++ b/drivers/clocksource/clksrc-of.c
+> @@ -28,6 +28,7 @@ void __init clocksource_of_init(void)
+>   	struct device_node *np;
+>   	const struct of_device_id *match;
+>   	clocksource_of_init_fn init_func;
+> +	unsigned clocksources = 0;
+>
+>   	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
+>   		if (!of_device_is_available(np))
+> @@ -36,5 +37,8 @@ void __init clocksource_of_init(void)
+>   		init_func = match->data;
+>   		init_func(np);
+>   		of_node_put(np);
+> +		clocksources++;
+>   	}
+> +	if (!clocksources)
+> +		pr_crit("%s: no matching clocksources found\n", __func__);
+>   }
+>
+
+
 -- 
-1.8.3.2
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
