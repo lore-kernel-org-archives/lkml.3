@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab3KTQDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:03:05 -0500
-Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:10619
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753830Ab3KTQDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:03:01 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "jlee@suse.com" <jlee@suse.com>,
-        "matt@console-pimps.org" <matt@console-pimps.org>,
-        "richard@nod.at" <richard@nod.at>, "cxie@redhat.com" <cxie@redhat.com>
-Subject: Re: [PATCH] x86, efi: add no_bricked_efi whitelist
-Thread-Topic: [PATCH] x86, efi: add no_bricked_efi whitelist
-Thread-Index: AQHO5ctsbQuFm47B1katHCc9ePY1AJouSFwA
-Date: Wed, 20 Nov 2013 16:02:57 +0000
-Message-ID: <1384963376.20536.3.camel@x230>
-References: <528C740A.6010407@jp.fujitsu.com>
-In-Reply-To: <528C740A.6010407@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0036736630
-x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(24454002)(377424004)(31966008)(47736001)(50986001)(47976001)(74662001)(49866001)(4396001)(53806001)(69226001)(74366001)(19580395003)(80976001)(19580405001)(87266001)(46102001)(83072001)(54316002)(51856001)(56776001)(54356001)(81342001)(2656002)(65816001)(77096001)(80022001)(74876001)(77982001)(81816001)(56816003)(59766001)(87936001)(76482001)(47446002)(74502001)(83322001)(81542001)(33716001)(76796001)(74706001)(63696002)(33646001)(85306002)(76786001)(81686001)(79102001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <EF699C1FFAC7AD4885B63996E56B9E61@namprd05.prod.outlook.com>
+	id S1754252Ab3KTQD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:03:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13969 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab3KTQDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:03:22 -0500
+Date: Wed, 20 Nov 2013 18:06:26 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net] virtio-net: fix page refcnt leaking when fail to
+ allocate frag skb
+Message-ID: <20131120160625.GA21188@redhat.com>
+References: <1384848307-7217-1-git-send-email-jasowang@redhat.com>
+ <1384869828.8604.97.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131119204909.GA15004@redhat.com>
+ <1384896996.8604.120.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131119215312.GE15004@redhat.com>
+ <1384898411.8604.127.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20131120085835.GB19341@redhat.com>
+ <1384960593.8604.147.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384960593.8604.147.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAKG39Rv010549
 
-On Wed, 2013-11-20 at 17:34 +0900, Yasuaki Ishimatsu wrote:
+On Wed, Nov 20, 2013 at 07:16:33AM -0800, Eric Dumazet wrote:
+> On Wed, 2013-11-20 at 10:58 +0200, Michael S. Tsirkin wrote:
+> > On Tue, Nov 19, 2013 at 02:00:11PM -0800, Eric Dumazet wrote:
+> > > On Tue, 2013-11-19 at 23:53 +0200, Michael S. Tsirkin wrote:
+> > > 
+> > > > Which NIC? Virtio? Prior to 2613af0ed18a11d5c566a81f9a6510b73180660a
+> > > > it didn't drop packets received from host as far as I can tell.
+> > > > virtio is more like a pipe than a real NIC in this respect.
+> > > 
+> > > Prior/after to this patch, you were not posting buffers, so if packets
+> > > were received on a physical NIC, you were dropping the packets anyway.
+> > >
+> > > It makes no difference at all, adding a cushion might make you feel
+> > > better, but its really not worth it.
+> > > 
+> > > Under memory stress, it makes better sense to drop a super big GRO
+> > > packet (The one needing frag_list extension ...)
+> > > 
+> > > It gives a better signal to the sender to reduce its pressure, and gives
+> > > opportunity to free more of your memory.
+> > > 
+> > 
+> > OK, but in that case one wonders whether we should do more to free memory?
+> > 
+> > E.g. imagine that we dropped a packet of a specific TCP flow
+> > because we couldn't allocate a new packet.
+> > 
+> > What happens now is that the old packet is freed as well.
+> > 
+> > So quite likely the next packet in queue will get processed
+> > since it will reuse the memory we have just freed.
+> > 
+> > The next packet and the next after it etc all will have to go through
+> > the net stack until they get at the socket and are dropped then
+> > because we missed a segment.  Even worse, GRO gets disabled so the load
+> > on receiver goes up instead of down.
+> > 
+> > Sounds like a problem doesn't it?
+> 
+> I see no problem at all. GRO is a hint for high rates (and obviously
+> when there is enough memory)
+> 
+> > 
+> > GRO actually detects it's the same flow and can see packet is
+> > out of sequence. Why doesn't it drop the packet then?
+> > Alternatively, we could (for example using the pre-allocated skb
+> > like I suggested) notify GRO that it should start dropping packets
+> > of this flow.
+> > 
+> > What do you think?
+> > 
+> 
+> I think we disagree a lot on memory management on networking stacks.
+> 
+> We did a lot of work in TCP stack and Qdisc layers to lower memory
+> pressure (and bufferbloat), an you seem to try hard to introduce yet
+> another layer of buffer bloat in virtio_net.
+> 
+> So add whatever you want to proudly state to your management :
+> 
+> "Look how smart we are : we drop no packets in our layer"
+> 
 
-> When booting my system, remaining space of efi variable storage is about
-> 5KB. So there is no room that sets a new variable to the storage. On my
-> system, trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS
-> environment with UEFI. So if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte
-> threshold, nvram storage cannot be used until EFI_OUT_OF_RESOURCES occurs
-> on pre OS environment with UEFI.
+Hmm some kind of disconnect here.
+I got you rmanagement about bufferbloat.
 
-By "remaining space is about 5KB", do you mean that the rest of the
-space is filled with variables or do you mean that there is more free
-space but it hasn't been garbage collected?
+What I am saying is that maybe we should drop packets more
+aggressively: when we drop one packet of a flow, why not
+drop everything that's queued and is for the same flow?
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
