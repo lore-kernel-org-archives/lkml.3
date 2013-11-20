@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab3KTKe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:34:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab3KTKeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:34:20 -0500
-Date: Wed, 20 Nov 2013 12:37:29 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net 2/3] virtio-net: fix num calculation on frag skb
- allocation failure
-Message-ID: <20131120103729.GG19341@redhat.com>
-References: <1384938447-3775-1-git-send-email-jasowang@redhat.com>
- <1384938447-3775-2-git-send-email-jasowang@redhat.com>
+	id S1752199Ab3KTKne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:43:34 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:39313 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KTKnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 05:43:32 -0500
+Message-ID: <528C924E.50206@atmel.com>
+Date: Wed, 20 Nov 2013 11:43:26 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384938447-3775-2-git-send-email-jasowang@redhat.com>
+To: <linux-arm-kernel@lists.infradead.org>, <herbert@gondor.hengli.com.au>,
+        <linux-crypto@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <eric@eukrea.com>
+Subject: Re: [PATCH RESEND 0/7] crypto: at91/atmel: add Device Tree support
+References: <cover.1383922546.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1383922546.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 05:07:26PM +0800, Jason Wang wrote:
-> We need decrease the rq->num after we can get a buf through
-> virtqueue_get_buf() even if we could not allocate frag skb. Otherwise, the
-> refill routine won't be triggered under heavy memory stress since the driver may
-> still think there's enough room.
-> 
-> This bug was introduced by commit 2613af0ed18a11d5c566a81f9a6510b73180660a
-> (virtio_net: migrate mergeable rx buffers to page frag allocators).
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Michael Dalton <mwdalton@google.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On 08/11/2013 16:08, Nicolas Ferre :
+> This series adds Device Tree support to the Atmel crypto drivers
+> (AES/[T]DES/SHA). The Device Tree entries are very simple and only
+> declare the reg/irq values and the link to DMA.
 
-So let's wrap virtqueue_get_buf to make sure we get it right?
+Herbert,
 
-> ---
-> The patch was needed for 3.12 stable.
-> ---
->  drivers/net/virtio_net.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 24fd502..de1d6ca 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -333,6 +333,7 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
->  			head_skb->dev->stats.rx_length_errors++;
->  			return -EINVAL;
->  		}
-> +		--rq->num;
->  		if (unlikely(len > MERGE_BUFFER_LEN)) {
->  			pr_debug("%s: rx error: merge buffer too long\n",
->  				 head_skb->dev->name);
-> @@ -367,7 +368,6 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
->  			skb_add_rx_frag(curr_skb, num_skb_frags, page,
->  					offset, len, MERGE_BUFFER_LEN);
->  		}
-> -		--rq->num;
->  	}
->  	return 0;
->  }
-> -- 
-> 1.8.3.2
+ping?
+
+Could I have your "Acked-by" for taking these patches through the 
+arm-soc git tree, or do you want that we split this series so that you 
+can take the driver part of it?
+
+Best regards,
+
+
+> Some trivial patches are preceding this move to Device Tree to clean
+> things up beforehand.
+>
+> The series has already been sent but a little bit scattered. So I collect
+> everything, this time.
+>
+> Nicolas Ferre (7):
+>    ARM: at91/dt/trivial: use macro for AES irq type
+>    ARM: at91/dt/trivial: before sama5d3, Atmel MPU were using at91 prefix
+>    ARM: at91/dt/sama5d3: add DMA information to SHA/AES/TDES nodes
+>    crypto: atmel-aes - add support for Device Tree
+>    crypto: atmel-tdes - add support for Device Tree
+>    crypto: atmel-sha - add support for Device Tree
+>    crypto: atmel-sha - add sha information to the log
+>
+>   .../devicetree/bindings/crypto/atmel-crypto.txt    |  68 ++++++++++
+>   arch/arm/boot/dts/sama5d3.dtsi                     |  16 ++-
+>   drivers/crypto/atmel-aes.c                         | 143 ++++++++++++++-------
+>   drivers/crypto/atmel-sha.c                         | 103 +++++++++++----
+>   drivers/crypto/atmel-tdes.c                        | 143 ++++++++++++++-------
+>   5 files changed, 346 insertions(+), 127 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/crypto/atmel-crypto.txt
+>
+
+
+-- 
+Nicolas Ferre
