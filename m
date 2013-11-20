@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab3KTQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:38:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22714 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab3KTQix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:38:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="438620390"
-Message-ID: <528CE59C.1040600@linux.intel.com>
-Date: Wed, 20 Nov 2013 08:38:52 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shaohua.li@intel.com,
-        rui.zhang@intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86, acpi, idle: Restructure the mwait idle routines
-References: <20131119090019.GJ3866@twins.programming.kicks-ass.net> <20131119090859.GC3694@twins.programming.kicks-ass.net> <20131119113153.GD3694@twins.programming.kicks-ass.net> <528B7433.7020507@linux.intel.com> <20131119145143.GK10022@twins.programming.kicks-ass.net> <20131119151338.GF3694@twins.programming.kicks-ass.net> <20131119130630.487da962@ultegra> <20131120102803.GO10022@twins.programming.kicks-ass.net> <20131120105837.GH3694@twins.programming.kicks-ass.net> <528CE24F.5000604@linux.intel.com> <20131120163313.GR10022@twins.programming.kicks-ass.net>
-In-Reply-To: <20131120163313.GR10022@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754437Ab3KTQjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:39:24 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:59662 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab3KTQjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:39:23 -0500
+From: Dan Streetman <ddstreet@ieee.org>
+To: linux-mm@kvack.org, Seth Jennings <sjennings@variantweb.net>
+Cc: Dan Streetman <ddstreet@ieee.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Subject: [PATCH] mm/zswap: change params from hidden to ro
+Date: Wed, 20 Nov 2013 11:38:42 -0500
+Message-Id: <1384965522-5788-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 8:33 AM, Peter Zijlstra wrote:
-> On Wed, Nov 20, 2013 at 08:24:47AM -0800, Arjan van de Ven wrote:
->> On 11/20/2013 2:58 AM, Peter Zijlstra wrote:
->>> So pretty silly actually; you cannot do a store (any store) in between
->>> monitor and mwait.
->>
->> you can
->> just not to the cacheline you are watching (or things that alias with that)
->
-> Ah indeed, the thread_info::status is in the same cacheline.
->
+The "compressor" and "enabled" params are currently hidden,
+this changes them to read-only, so userspace can tell if
+zswap is enabled or not and see what compressor is in use.
 
-you told it to wake on any write to that cacheline
-and then you write to it ;-)
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+---
+ mm/zswap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/zswap.c b/mm/zswap.c
+index d93510c..36b268b 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -77,12 +77,12 @@ static u64 zswap_duplicate_entry;
+ **********************************/
+ /* Enable/disable zswap (disabled by default, fixed at boot for now) */
+ static bool zswap_enabled __read_mostly;
+-module_param_named(enabled, zswap_enabled, bool, 0);
++module_param_named(enabled, zswap_enabled, bool, 0444);
+ 
+ /* Compressor to be used by zswap (fixed at boot for now) */
+ #define ZSWAP_COMPRESSOR_DEFAULT "lzo"
+ static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
+-module_param_named(compressor, zswap_compressor, charp, 0);
++module_param_named(compressor, zswap_compressor, charp, 0444);
+ 
+ /* The maximum percentage of memory that the compressed pool can occupy */
+ static unsigned int zswap_max_pool_percent = 20;
+-- 
+1.8.3.1
 
