@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab3KTH71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 02:59:27 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60687 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3KTH7X (ORCPT
+	id S1752308Ab3KTIC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:02:26 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:46056 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3KTICY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 02:59:23 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, horms@verge.net.au,
-        linux-sh@vger.kernel.org
-Date: Wed, 20 Nov 2013 17:00:05 +0900
-Message-Id: <20131120080005.23557.61686.sendpatchset@w520>
-In-Reply-To: <20131120075921.23557.23231.sendpatchset@w520>
-References: <20131120075921.23557.23231.sendpatchset@w520>
-Subject: [PATCH 05/05] ARM: shmobile: Add r8a7791 clocks for thermal devices
+	Wed, 20 Nov 2013 03:02:24 -0500
+Date: Wed, 20 Nov 2013 00:02:20 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+In-Reply-To: <20131119134007.GD20655@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Tue, 19 Nov 2013, Michal Hocko wrote:
 
-Add the r8a7791 thermal device as legacy clocks.
+> > We have basically ended up with 3 options AFAIR:
+> > 	1) allow memcg approach (memcg.oom_control) on the root level
+> >            for both OOM notification and blocking OOM killer and handle
+> >            the situation from the userspace same as we can for other
+> > 	   memcgs.
+> 
+> This looks like a straightforward approach as the similar thing is done
+> on the local (memcg) level. There are several problems though.
+> Running userspace from within OOM context is terribly hard to do
+> right.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+Not sure it's hard if you have per-memcg memory reserves which I've 
+brought up in the past with true and complete kmem accounting.  Even if 
+you don't allocate slab, it guarantees that there will be at least a 
+little excess memory available so that the userspace oom handler isn't oom 
+itself.
 
- arch/arm/mach-shmobile/clock-r8a7791.c |    4 ++++
- 1 file changed, 4 insertions(+)
+This involves treating processes waiting on memory.oom_control to be 
+treated as a special class so that they are allowed to allocate an 
+additional pre-configured amount of memory.  For non-root memcgs, this 
+would simply be a dummy usage that would be charged to the memcg when the 
+oom notification is registered and actually accessible only by the oom 
+handler itself while memcg->under_oom.  For root memcgs, this would simply 
+be a PF_MEMALLOC type behavior that dips into per-zone memory reserves.
 
---- 0001/arch/arm/mach-shmobile/clock-r8a7791.c
-+++ work/arch/arm/mach-shmobile/clock-r8a7791.c	2013-11-20 15:52:07.000000000 +0900
-@@ -124,6 +124,7 @@ static struct clk *main_clks[] = {
- enum {
- 	MSTP726, MSTP724, MSTP723, MSTP721, MSTP720,
- 	MSTP719, MSTP718, MSTP715, MSTP714,
-+	MSTP522,
- 	MSTP216, MSTP207, MSTP206,
- 	MSTP204, MSTP203, MSTP202, MSTP1105, MSTP1106, MSTP1107,
- 	MSTP124,
-@@ -140,6 +141,7 @@ static struct clk mstp_clks[MSTP_NR] = {
- 	[MSTP718] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 18, 0), /* SCIF3 */
- 	[MSTP715] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 15, 0), /* SCIF4 */
- 	[MSTP714] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 14, 0), /* SCIF5 */
-+	[MSTP522] = SH_CLK_MSTP32(&extal_clk, SMSTPCR5, 22, 0), /* Thermal */
- 	[MSTP216] = SH_CLK_MSTP32(&mp_clk, SMSTPCR2, 16, 0), /* SCIFB2 */
- 	[MSTP207] = SH_CLK_MSTP32(&mp_clk, SMSTPCR2, 7, 0), /* SCIFB1 */
- 	[MSTP206] = SH_CLK_MSTP32(&mp_clk, SMSTPCR2, 6, 0), /* SCIFB0 */
-@@ -188,6 +190,8 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("sh-sci.13", &mstp_clks[MSTP1106]), /* SCIFA4 */
- 	CLKDEV_DEV_ID("sh-sci.14", &mstp_clks[MSTP1107]), /* SCIFA5 */
- 	CLKDEV_DEV_ID("sh_cmt.0", &mstp_clks[MSTP124]),
-+	CLKDEV_DEV_ID("e61f0000.thermal", &mstp_clks[MSTP522]),
-+	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
- };
- 
- #define R8A7791_CLOCK_ROOT(e, m, p0, p1, p30, p31)		\
+> This is true even in the memcg case and we strongly discurage
+> users from doing that. The global case has nothing like outside of OOM
+> context though. So any hang would blocking the whole machine.
+
+Why would there be a hang if the userspace oom handlers aren't actually 
+oom themselves as described above?
+
+I'd suggest against the other two suggestions because hierarchical 
+per-memcg userspace oom handlers are very powerful and can be useful 
+without actually killing anything at all, and parent oom handlers can 
+signal child oom handlers to free memory in oom conditions (in other 
+words, defer a parent oom condition to a child's oom handler upon 
+notification).  I was planning on writing a liboom library that would lay 
+the foundation for how this was supposed to work and some generic 
+functions that make use of the per-memcg memory reserves.
+
+So my plan for the complete solution was:
+
+ - allow userspace notification from the root memcg on system oom 
+   conditions,
+
+ - implement a memory.oom_delay_millisecs timeout so that the kernel 
+   eventually intervenes if userspace fails to respond, including for
+   system oom conditions, for whatever reason which would be set to 0
+   if no userspace oom handler is registered for the notification, and
+
+ - implement per-memcg reserves as described above so that userspace oom 
+   handlers have access to memory even in oom conditions as an upfront
+   charge and have the ability to free memory as necessary.
+
+We already have the ability to do the actual kill from userspace, both the 
+system oom killer and the memcg oom killer grants access to memory 
+reserves for any process needing to allocate memory if it has a pending 
+SIGKILL which we can send from userspace.
