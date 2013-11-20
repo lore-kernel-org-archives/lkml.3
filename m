@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab3KTQA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 11:00:26 -0500
-Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:35278 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751373Ab3KTQAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 11:00:22 -0500
-Message-ID: <528CDC75.1010404@overkiz.com>
-Date: Wed, 20 Nov 2013 16:59:49 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754134Ab3KTQDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 11:03:05 -0500
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:10619
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753830Ab3KTQDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 11:03:01 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>
+CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "jlee@suse.com" <jlee@suse.com>,
+        "matt@console-pimps.org" <matt@console-pimps.org>,
+        "richard@nod.at" <richard@nod.at>, "cxie@redhat.com" <cxie@redhat.com>
+Subject: Re: [PATCH] x86, efi: add no_bricked_efi whitelist
+Thread-Topic: [PATCH] x86, efi: add no_bricked_efi whitelist
+Thread-Index: AQHO5ctsbQuFm47B1katHCc9ePY1AJouSFwA
+Date: Wed, 20 Nov 2013 16:02:57 +0000
+Message-ID: <1384963376.20536.3.camel@x230>
+References: <528C740A.6010407@jp.fujitsu.com>
+In-Reply-To: <528C740A.6010407@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 0036736630
+x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(24454002)(377424004)(31966008)(47736001)(50986001)(47976001)(74662001)(49866001)(4396001)(53806001)(69226001)(74366001)(19580395003)(80976001)(19580405001)(87266001)(46102001)(83072001)(54316002)(51856001)(56776001)(54356001)(81342001)(2656002)(65816001)(77096001)(80022001)(74876001)(77982001)(81816001)(56816003)(59766001)(87936001)(76482001)(47446002)(74502001)(83322001)(81542001)(33716001)(76796001)(74706001)(63696002)(33646001)(85306002)(76786001)(81686001)(79102001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <EF699C1FFAC7AD4885B63996E56B9E61@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/9] ARM: at91/dt: add rm9200 spi0 chip select pins definitions
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com> <1377687742-10618-1-git-send-email-b.brezillon@overkiz.com> <20131120145609.GC14627@ns203013.ovh.net>
-In-Reply-To: <20131120145609.GC14627@ns203013.ovh.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 15899395536437278892
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAKG39Rv010549
 
-On 20/11/2013 15:56, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 13:02 Wed 28 Aug     , Boris BREZILLON wrote:
->> Add spi0 cs pinctrl pins definitions.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   arch/arm/boot/dts/at91rm9200.dtsi |   20 ++++++++++++++++++++
->>   1 file changed, 20 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
->> index f770655..69b76c7 100644
->> --- a/arch/arm/boot/dts/at91rm9200.dtsi
->> +++ b/arch/arm/boot/dts/at91rm9200.dtsi
->> @@ -486,6 +486,26 @@
->>   							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA1 periph A SPI0_MOSI pin */
->>   							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PA2 periph A SPI0_SPCK pin */
->>   					};
->> +
->> +					pinctrl_spi0_cs0: spi0_cs0-0 {
->> +						atmel,pins =
->> +							<AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PA3 periph A SPI0_NPCS0 pin */
->> +					};
->> +
->> +					pinctrl_spi0_cs1: spi0_cs1-0 {
->> +						atmel,pins =
->> +							<AT91_PIOA 4 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;	/* PA4 GPIO SPI0_NPCS1 pin */
->> +					};
->> +
->> +					pinctrl_spi0_cs2: spi0_cs2-0 {
->> +						atmel,pins =
->> +							<AT91_PIOA 5 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;	/* PA5 GPIO SPI0_NPCS2 pin */
->> +					};
->> +
->> +					pinctrl_spi0_cs3: spi0_cs3-0 {
->> +						atmel,pins =
->> +							<AT91_PIOA 6 AT91_PERIPH_GPIO AT91_PINCTRL_MULTI_DRIVE>;	/* PA6 GPIO SPI0_NPCS3 pin */
->> +					};
-> nack the pin are not multidrive there is only one master
-Right, this is a mistake.
+On Wed, 2013-11-20 at 17:34 +0900, Yasuaki Ishimatsu wrote:
 
-But the pins should be configured as OUTPUT with HIGH level
-(see 
-http://lxr.free-electrons.com/source/arch/arm/mach-at91/at91rm9200_devices.c#L589).
+> When booting my system, remaining space of efi variable storage is about
+> 5KB. So there is no room that sets a new variable to the storage. On my
+> system, trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS
+> environment with UEFI. So if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte
+> threshold, nvram storage cannot be used until EFI_OUT_OF_RESOURCES occurs
+> on pre OS environment with UEFI.
 
->
-> Best Regards,
-> J.
->>   				};
->>   
->>   				pioA: gpio@fffff400 {
->> -- 
->> 1.7.9.5
->>
+By "remaining space is about 5KB", do you mean that the rest of the
+space is filled with variables or do you mean that there is more free
+space but it hasn't been garbage collected?
 
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
