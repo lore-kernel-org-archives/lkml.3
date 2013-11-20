@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3KTSHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 13:07:00 -0500
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:56960 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752998Ab3KTSG6 (ORCPT
+	id S1754586Ab3KTSJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 13:09:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29593 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154Ab3KTSJt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 13:06:58 -0500
-X-Greylist: delayed 697 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 13:06:58 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=UKm+Gfhny59ZZW7V6sk1nt3TG+K+SSq392izOhRJXBFgGBCO9VR0bufVC70+6fW1;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Jeff Layton'" <jlayton@redhat.com>, <linux-fsdevel@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>
-References: <1384965906-27327-1-git-send-email-jlayton@redhat.com> <1384965906-27327-6-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1384965906-27327-6-git-send-email-jlayton@redhat.com>
-Subject: RE: [RFC PATCH v2 5/5] locks: report l_pid as -1 for FL_FILP_PRIVATE locks
-Date: Wed, 20 Nov 2013 09:55:18 -0800
-Message-ID: <0d1101cee619$ad866500$08932f00$@mindspring.com>
+	Wed, 20 Nov 2013 13:09:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQHlugm2INdiPnZSZTPL4xrfW02UgAJKrwdFme5pBIA=
-Content-Language: en-us
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d24e0f1495a6cee8c4f268a5e97554bfa350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+Message-ID: <25bef391-380b-486a-b06f-8be210e8abb7@default>
+Date: Wed, 20 Nov 2013 10:09:39 -0800 (PST)
+From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+To: Honggang LI <honli@redhat.com>, Josh Hunt <joshhunt00@gmail.com>
+Cc: David Miller <davem@davemloft.net>, jjolly@suse.com,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
+References: <20120921213239.GJ14393@linux-tkdk.sfcn.org>
+ <20120922.152524.1294103117346567757.davem@davemloft.net>
+ <CAKA=qzac9=UhLF_Z4FnnH+sR7xvkDux4oayC6dPYe=hMLsDxRg@mail.gmail.com>
+ <CAKA=qzYpd7Wo9XdU16TEhnbm5dPJjOZMhAY1jA7N+YFBWz5pzw@mail.gmail.com>
+ <23964ca1-e7cb-41c3-9da2-5bc1b2b0c014@default>
+ <CAKA=qzbK1YX5OrVQbwM=1xM6Si=GKv0UDofULkOC7RNo08zZPw@mail.gmail.com>
+ <52841F95.7040204@redhat.com> <41aa904c-6707-4c74-ae72-96e401c68e13@default>
+ <528587D0.5060105@redhat.com> <8744a6a4-d7a8-4e6f-8934-48a4fd4da0ce@default>
+In-Reply-To: <8744a6a4-d7a8-4e6f-8934-48a4fd4da0ce@default>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
+ 12.0.6680.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> FL_FILP_PRIVATE locks are no longer tied to a particular PID, and are
-instead
-> inheritable by child processes. Report a l_pid of '-1' for these sorts of
-locks
-> since the pid is somewhat meaningless for them.
 
-Hmm, I suppose in the case of a process that acquires a private lock, forks
-(passing the lock to the child process) and then exits, pid would be
-meaningless, but I wonder how common that case is compared to a
-multi-threaded process (especially a file server) that will hold many
-private locks, and not pass them to child processes (and exit)?
 
-I.e. as a future user of this feature, I wonder if I'm going to want to know
-that THESE private locks are owned by Ganesha and THOSE are owned by Samba?
+-----Original Message-----
+From: Venkat Venkatsubra 
+Sent: Tuesday, November 19, 2013 5:33 PM
+To: Honggang LI; Josh Hunt
+Cc: David Miller; jjolly@suse.com; LKML; netdev@vger.kernel.org
+Subject: RE: [PATCH] rds: Error on offset mismatch if not loopback
 
-Frank
+We now have lot more information than we did before.
+When sending a "congestion update" in rds_ib_xmit() we are now returning an incorrect number as bytes sent:
 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index d5fb853..8a4d4e4 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -1889,7 +1889,7 @@ EXPORT_SYMBOL_GPL(vfs_test_lock);
-> 
->  static int posix_lock_to_flock(struct flock *flock, struct file_lock *fl)
-{
-> -	flock->l_pid = fl->fl_pid;
-> +	flock->l_pid = IS_FILP_PVT(fl) ? -1 : fl->fl_pid;
->  #if BITS_PER_LONG == 32
->  	/*
->  	 * Make sure we can represent the posix lock via @@ -1911,7 +1911,7
-> @@ static int posix_lock_to_flock(struct flock *flock, struct file_lock
-*fl)  #if
-> BITS_PER_LONG == 32  static void posix_lock_to_flock64(struct flock64
-> *flock, struct file_lock *fl)  {
-> -	flock->l_pid = fl->fl_pid;
-> +	flock->l_pid = IS_FILP_PVT(fl) ? -1 : fl->fl_pid;
->  	flock->l_start = fl->fl_start;
->  	flock->l_len = fl->fl_end == OFFSET_MAX ? 0 :
->  		fl->fl_end - fl->fl_start + 1;
-> --
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
-in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+        BUG_ON(off % RDS_FRAG_SIZE);
+        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
 
+        /* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                scat = &rm->data.op_sg[sg];
+                ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+                ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
+                return ret;
+        }
+
+It returns min(8240, 4096-0) i.e. 4096 bytes.
+The caller rds_send_xmit() is made to think a partial message (4096 out of 8240) was sent.
+It calls rds_ib_xmit() again with a data offset "off" of 4096-48 (rds header) (=4048 bytes). And we hit the BUG_ON.
+
+The reason I didn't hit the panic on my test on Oracle UEK2 which is based on 2.6.39 kernel is it had it like this:
+        BUG_ON(off % RDS_FRAG_SIZE);
+        BUG_ON(hdr_off != 0 && hdr_off != sizeof(struct rds_header));
+
+        /* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+        }
+(So it wasn't 100% 2.6.39 ;-). )
+It returned 8240 bytes. The caller rds_send_xmit decides the full message was sent (48 byte header + 4096 data + 4096 data).
+And it worked.
+
+Then I found this info on the change that was done upstream which now causes the panic:
+http://marc.info/?l=linux-netdev&m=129908332903057
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6094628bfd94323fc1cea05ec2c6affd98c18f7f 
+
+Will investigate more into which problem the above change addressed.
+
+Venkat
+--
+
+Looks like the fix pointed to by the above link is for a panic on a PPC system with a PAGE_SIZE of 64Kbytes.
+I think the sequence it was going through before that fix was:
+/* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+        }
+rds_ib_xmit returns 8240
+rds_send_xmit : c_xmit_data_off = 0 + 8240 - 48 (rds header the first time) = 8196
+                c_xmit_data_off < 65536 (sg->length)
+                calls rds_ib_xmit again
+rds_ib_xmit returns 8240
+rds_send_xmit: c_xmit_data_off = 8192+8240 = 16432 and calls rds_ib_xmit
+rds_ib_xmit : returns 8240
+rds_send_xmit: c_xmit_data_off 24672 and calls rds_ib_xmit
+...
+...
+and so on till
+rds_send_xmit: c_xmit_data_off 57632 and calls rds_ib_xmit
+rds_ib_xmit: returns 8240
+
+On the last iteration it hits the below BUG_ON in rds_send_xmit.
+while (ret) {
+    tmp = min_t(int, ret, sg->length -
+                         conn->c_xmit_data_off);
+[tmp = 7904]
+    conn->c_xmit_data_off += tmp;
+[c_xmit_data_off = 65536]
+    ret -= tmp;
+[ret = 8240-7904 = 336]
+    if (conn->c_xmit_data_off == sg->length) {
+         conn->c_xmit_data_off = 0;
+         sg++;
+         conn->c_xmit_sg++;
+         BUG_ON(ret != 0 &&
+             conn->c_xmit_sg == rm->data.op_nents);
+    }
+}
+
+Since the congestion update over loopback is not actually transmitted as a message,
+the multiple iterations we see in the case of ppc is unnecessary.
+All that rds_ib_xmit needs to do is return a number of bytes that will tell the caller that
+we are done with this message.
+  
+This might fix the original problem without introducing the current panic:
+/* Do not send cong updates to IB loopback */
+        if (conn->c_loopback
+            && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+                rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+                scat = &rm->data.op_sg[sg];
+                ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
+                return ret + sizeof(struct rds_header);
+        }
+It will return 8240 when PAGE_SIZE is 4k and 64k+48 in case of ppc when scat->length is 64k and
+be done with one iteration of rds_send_xmit/rds_ib_xmit loop.
+
+Venkat
