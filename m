@@ -1,639 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3KTVsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:48:52 -0500
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:32790
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752311Ab3KTVss (ORCPT
+	id S1755359Ab3KTVuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:50:35 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:36624 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab3KTVuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:48:48 -0500
-X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(z551bizea8Nc8kzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6h1082kzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-gpio@vger.kernel.org>, Linus Walleij <linus.walleij@stericsson.com>,
-        <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>,
-        delicious quinoa <delicious.quinoa@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: [PATCH v7] gpio: add a driver for the Synopsys DesignWare APB GPIO block
-Date: Wed, 20 Nov 2013 15:48:10 -0600
-Message-ID: <1384984090-6772-1-git-send-email-delicious.quinoa@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 20 Nov 2013 16:50:32 -0500
+Date: Wed, 20 Nov 2013 13:50:26 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>, linux-aio@kvack.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [GIT PULL] direct IO support for loop driver
+Message-ID: <20131120215026.GA21515@kmo>
+References: <528A648F.1030007@oracle.com>
+ <CA+55aFyF-Za7B=1kVDodbn942hETsWixAHCsh_wBA1b6pnUigQ@mail.gmail.com>
+ <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: altera.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jamie Iles <jamie@jamieiles.com>
+On Wed, Nov 20, 2013 at 01:38:19PM -0800, Linus Torvalds wrote:
+> On Wed, Nov 20, 2013 at 1:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > At that point, I just couldn't take it any more.
+> 
+> Just to clarify, I think it might be fixable. But it does need fixing,
+> because I really feel dirty from reading it. And I may not care all
+> that deeply about what random drivers or low-level filesystems do, but
+> I *do* care about generic code in mm/ and fs/, so making those iovec
+> functions uglier makes me go all "Hulk angry! Hulk smash" on the code.
+> 
+> The whole "separate out checking from user copy" needs to go away.
+> There's no excuse for it.
+> 
+> The whole "if (atomic) do_atomic_ops() else do_regular_ops()" crap
+> needs to go away. You can do it either by just duplicating the
+> function, or by having it use a indirect function for the copy (and
+> that indirect function acts like copy_from/to_user() and checks the
+> address range - and you can obviously then also have it be a "copy
+> from kernel" thing too if you want/need it). And no, you don't then
+> make it do *both* the conditional *and* the function pointer like you
+> did in that discusting commit that mixes the two with the struct
+> iov_iter_ops).
+> 
+> The "__" versions that don't check the user address range needs to die entirely.
+> 
+> The whole crazy "ii_iov_xyz" naming needs to go away. It doesn't even
+> make sense (one of the "i"s is for "iov".
+> 
+> That "unsigned long data" that contains an iovec *? WTF? How did that
+> ever start making sense?
+> 
+> IOW, there are many many details that just make me absolutely detest
+> this series. Enough that there's no way in hell I feel comfortable
+> pulling it. But they are likely fixable.
 
-The Synopsys DesignWare block is used in some ARM devices (picoxcell)
-and can be configured to provide multiple banks of GPIO pins.
+To be honest, I'm skeptical that this approach (adding methods and a bunch of
+complexity to iov_iter for backing them with biovecs) is necessary for fixing
+the loop driver. 
 
-Signed-off-by: Alan Tull <atull@altera.com>
+I've been working on an alternate approach that in the process cleans a bunch of
+stuff up - the idea is basically, 1) refactor and massage a bunch of stuff in
+the block layer so bios can be created and submitting without caring about the
+constraints of the underlying device, and then 2) rewrite the dio code to start
+out by pinning pages directly into bios, then query the filesystem to map those
+bios wherever - splitting as needed.
 
-v7:	- use irq_generic_chip
-	- support one irq per gpio line or one irq for many
-	- s/bank/port/ and other cleanup
-v6:	- (atull) squash the set of patches
-	- use linear irq domain
-	- build fixes. Original driver was reviewed on v3.2.
-	- Fix setting irq edge type for 'rising' and 'both'.
-	- Support as a loadable module.
-	- Use bgpio_chip's spinlock during register access.
-	- Clean up register names to match spec
-	- s/bank/port/ because register names use the word 'port'
-	- s/nr-gpio/nr-gpios/
-	- don't get/put the of_node
-	- remove signoffs/acked-by's because of changes
-	- other cleanup
-v5:	- handle sparse bank population correctly
-v3:	- depend on rather than select IRQ_DOMAIN
-	- split IRQ support into a separate patch
-v2:	- use Rob Herring's irqdomain in generic irq chip patches
-	- use reg property to indicate bank index
-	- support irqs on both edges based on LinusW's u300 driver
----
- .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   57 +++
- arch/arm/boot/dts/socfpga.dtsi                     |    6 +-
- drivers/gpio/Kconfig                               |    9 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/gpio-dwapb.c                          |  426 ++++++++++++++++++++
- 5 files changed, 496 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
- create mode 100644 drivers/gpio/gpio-dwapb.c
+What this gets us is a nice clean split where (with some more handwaving; Zach
+had some ideas about how to handle some annoying details) we can just submit
+bios to some sort of new DIO method - and then the loop driver could just use
+that directly.
 
-diff --git a/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
-new file mode 100644
-index 0000000..131129b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
-@@ -0,0 +1,57 @@
-+* Synopsys DesignWare APB GPIO controller
-+
-+Required properties:
-+- compatible : Should be "snps,dw-apb-gpio"
-+- reg : Address and length of the register set for the device
-+
-+The GPIO controller has a configurable number of ports, each of which are
-+represented as child nodes with the following properties:
-+
-+Required properties:
-+- compatible : "snps,dw-apb-gpio-port"
-+- gpio-controller : Marks the device node as a gpio controller.
-+- #gpio-cells : Should be two.  The first cell is the pin number and
-+  the second cell is used to specify optional parameters (currently
-+  unused).
-+- reg : The integer port index of the port, a single cell.
-+
-+Optional properties:
-+- interrupt-controller : The first port may be configured to be an interrupt
-+controller.
-+- #interrupt-cells : Specifies the number of cells needed to encode an
-+interrupt.  Shall be set to 2.  The first cell defines the interrupt number,
-+the second encodes the triger flags encoded as described in
-+Documentation/devicetree/bindings/interrupts.txt
-+- interrupt-parent : The parent interrupt controller.
-+- interrupts : The interrupts to the parent controller raised when GPIOs
-+generate the interrupts.
-+- snps,nr-gpios : The number of pins in the port, a single cell.
-+
-+Example:
-+
-+gpio: gpio@20000 {
-+	compatible = "snps,dw-apb-gpio";
-+	reg = <0x20000 0x1000>;
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	porta: gpio-controller@0 {
-+		compatible = "snps,dw-apb-gpio-port";
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		nr-gpio = <8>;
-+		reg = <0>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+		interrupt-parent = <&vic1>;
-+		interrupts = <0 1 2 3 4 5 6 7>;
-+	};
-+
-+	portb: gpio-controller@1 {
-+		compatible = "snps,dw-apb-gpio-port";
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		nr-gpio = <8>;
-+		reg = <1>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 1c32140..1914350 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -470,7 +470,7 @@
- 				compatible = "snps,dw-apb-gpio-port";
- 				gpio-controller;
- 				#gpio-cells = <2>;
--				nr-gpios = <29>;
-+				snps,nr-gpios = <29>;
- 				reg = <0>;
- 				interrupt-controller;
- 				interrupts = <0 164 4>;
-@@ -489,7 +489,7 @@
- 				compatible = "snps,dw-apb-gpio-port";
- 				gpio-controller;
- 				#gpio-cells = <2>;
--				nr-gpios = <29>;
-+				snps,nr-gpios = <29>;
- 				reg = <0>;
- 				interrupt-controller;
- 				interrupts = <0 165 4>;
-@@ -508,7 +508,7 @@
- 				compatible = "snps,dw-apb-gpio-port";
- 				gpio-controller;
- 				#gpio-cells = <2>;
--				nr-gpios = <27>;
-+				snps,nr-gpios = <27>;
- 				reg = <0>;
- 				interrupt-controller;
- 				interrupts = <0 166 4>;
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index b6ed304..14ec4e4 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -121,6 +121,15 @@ config GPIO_GENERIC_PLATFORM
- 	help
- 	  Say yes here to support basic platform_device memory-mapped GPIO controllers.
- 
-+config GPIO_DWAPB
-+	tristate "Synopsys DesignWare APB GPIO driver"
-+	select GPIO_GENERIC
-+	select GENERIC_IRQ_CHIP
-+	depends on OF_GPIO && IRQ_DOMAIN
-+	help
-+	  Say Y or M here to build support for the Synopsys DesignWare APB
-+	  GPIO block.
-+
- config GPIO_IT8761E
- 	tristate "IT8761E GPIO support"
- 	depends on X86  # unconditional access to IO space.
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 98e23eb..8de041a 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -22,6 +22,7 @@ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
- obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
-+obj-$(CONFIG_GPIO_DWAPB)	+= gpio-dwapb.o
- obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
- obj-$(CONFIG_GPIO_F7188X)	+= gpio-f7188x.o
-diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-new file mode 100644
-index 0000000..e6dc61f
---- /dev/null
-+++ b/drivers/gpio/gpio-dwapb.c
-@@ -0,0 +1,426 @@
-+/*
-+ * Copyright (c) 2011 Jamie Iles
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * All enquiries to support@picochip.com
-+ */
-+#include <linux/basic_mmio_gpio.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+
-+#define GPIO_SWPORTA_DR		0x00
-+#define GPIO_SWPORTA_DDR	0x04
-+#define GPIO_SWPORTB_DR		0x0c
-+#define GPIO_SWPORTB_DDR	0x10
-+#define GPIO_SWPORTC_DR		0x18
-+#define GPIO_SWPORTC_DDR	0x1c
-+#define GPIO_SWPORTD_DR		0x24
-+#define GPIO_SWPORTD_DDR	0x28
-+#define GPIO_INTEN		0x30
-+#define GPIO_INTMASK		0x34
-+#define GPIO_INTTYPE_LEVEL	0x38
-+#define GPIO_INT_POLARITY	0x3c
-+#define GPIO_INTSTATUS		0x40
-+#define GPIO_PORTA_EOI		0x4c
-+#define GPIO_EXT_PORTA		0x50
-+#define GPIO_EXT_PORTB		0x54
-+#define GPIO_EXT_PORTC		0x58
-+#define GPIO_EXT_PORTD		0x5c
-+
-+#define DWAPB_MAX_PORTS		4
-+#define GPIO_EXT_PORT_SIZE	(GPIO_EXT_PORTB - GPIO_EXT_PORTA)
-+#define GPIO_SWPORT_DR_SIZE	(GPIO_SWPORTB_DR - GPIO_SWPORTA_DR)
-+#define GPIO_SWPORT_DDR_SIZE	(GPIO_SWPORTB_DDR - GPIO_SWPORTA_DDR)
-+
-+struct dwapb_gpio;
-+
-+struct dwapb_gpio_port {
-+	struct bgpio_chip	bgc;
-+	bool			is_registered;
-+	struct dwapb_gpio	*gpio;
-+};
-+
-+struct dwapb_gpio {
-+	struct	device		*dev;
-+	void __iomem		*regs;
-+	struct dwapb_gpio_port	*ports;
-+	unsigned int		nr_ports;
-+	struct irq_domain	*domain;
-+};
-+
-+static unsigned int dwapb_gpio_nr_ports(struct device_node *of_node)
-+{
-+	unsigned int nr_ports = 0;
-+	struct device_node *np;
-+
-+	for_each_child_of_node(of_node, np)
-+		++nr_ports;
-+
-+	return nr_ports;
-+}
-+
-+static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	struct dwapb_gpio_port *port = container_of(bgc, struct
-+						    dwapb_gpio_port, bgc);
-+	struct dwapb_gpio *gpio = port->gpio;
-+
-+	return irq_create_mapping(gpio->domain, offset);
-+}
-+
-+static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
-+{
-+	u32 v = readl(gpio->regs + GPIO_INT_POLARITY);
-+
-+	if (gpio_get_value(gpio->ports[0].bgc.gc.base + offs))
-+		v &= ~BIT(offs);
-+	else
-+		v |= BIT(offs);
-+
-+	writel(v, gpio->regs + GPIO_INT_POLARITY);
-+}
-+
-+static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
-+{
-+	struct dwapb_gpio *gpio = irq_get_handler_data(irq);
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
-+	u32 irq_status = readl_relaxed(gpio->regs + GPIO_INTSTATUS);
-+
-+	while (irq_status) {
-+		int hwirq = fls(irq_status) - 1;
-+		int gpio_irq = irq_find_mapping(gpio->domain, hwirq);
-+
-+		generic_handle_irq(gpio_irq);
-+		irq_status &= ~BIT(hwirq);
-+
-+		if ((irq_get_trigger_type(gpio_irq) & IRQ_TYPE_SENSE_MASK)
-+			== IRQ_TYPE_EDGE_BOTH)
-+			dwapb_toggle_trigger(gpio, hwirq);
-+	}
-+
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(irq_desc_get_irq_data(desc));
-+}
-+
-+static void dwapb_irq_enable(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct dwapb_gpio *gpio = gc->private;
-+	struct bgpio_chip *bgc = &gpio->ports[0].bgc;
-+	unsigned long flags;
-+	u32 val;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+	val = readl(gpio->regs + GPIO_INTEN);
-+	val |= BIT(d->hwirq);
-+	writel(val, gpio->regs + GPIO_INTEN);
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
-+static void dwapb_irq_disable(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct dwapb_gpio *gpio = gc->private;
-+	struct bgpio_chip *bgc = &gpio->ports[0].bgc;
-+	unsigned long flags;
-+	u32 val;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+	val = readl(gpio->regs + GPIO_INTEN);
-+	val &= ~BIT(d->hwirq);
-+	writel(val, gpio->regs + GPIO_INTEN);
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
-+static int dwapb_irq_set_type(struct irq_data *d, u32 type)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct dwapb_gpio *gpio = gc->private;
-+	struct bgpio_chip *bgc = &gpio->ports[0].bgc;
-+	int bit = d->hwirq;
-+	unsigned long level, polarity, flags;
-+
-+	if (type & ~(IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING |
-+		     IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW))
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+	level = readl(gpio->regs + GPIO_INTTYPE_LEVEL);
-+	polarity = readl(gpio->regs + GPIO_INT_POLARITY);
-+
-+	switch (type) {
-+	case IRQ_TYPE_EDGE_BOTH:
-+		level |= BIT(bit);
-+		dwapb_toggle_trigger(gpio, bit);
-+		break;
-+	case IRQ_TYPE_EDGE_RISING:
-+		level |= BIT(bit);
-+		polarity |= BIT(bit);
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		level |= BIT(bit);
-+		polarity &= ~BIT(bit);
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		level &= ~BIT(bit);
-+		polarity |= BIT(bit);
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		level &= ~BIT(bit);
-+		polarity &= ~BIT(bit);
-+		break;
-+	}
-+
-+	writel(level, gpio->regs + GPIO_INTTYPE_LEVEL);
-+	writel(polarity, gpio->regs + GPIO_INT_POLARITY);
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+
-+	return 0;
-+}
-+
-+static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
-+				 struct dwapb_gpio_port *port)
-+{
-+	struct gpio_chip *gc = &port->bgc.gc;
-+	struct device_node *node =  gc->of_node;
-+	struct irq_chip_generic	*irq_gc;
-+	unsigned int hwirq, ngpio = gc->ngpio;
-+	struct irq_chip_type *ct;
-+	int reg, err, irq;
-+
-+	if (of_get_property(node, "interrupts", &reg) == NULL)
-+		return;
-+
-+	gpio->domain = irq_domain_add_linear(node, ngpio, &irq_generic_chip_ops,
-+					     gpio);
-+	if (!gpio->domain)
-+		return;
-+
-+	err = irq_alloc_domain_generic_chips(gpio->domain, ngpio, 1,
-+					     "gpio-dwapb", handle_level_irq,
-+					     IRQ_NOREQUEST, 0,
-+					     IRQ_GC_INIT_NESTED_LOCK);
-+	if (err) {
-+		dev_info(gpio->dev, "irq_alloc_domain_generic_chips failed\n");
-+		irq_domain_remove(gpio->domain);
-+		gpio->domain = NULL;
-+		return;
-+	}
-+
-+	for (hwirq = 0 ; hwirq < ngpio ; hwirq++) {
-+		irq_gc = irq_get_domain_generic_chip(gpio->domain, hwirq);
-+		if (!irq_gc) {
-+			irq_domain_remove(gpio->domain);
-+			gpio->domain = NULL;
-+			return;
-+		}
-+
-+		irq_gc->reg_base = gpio->regs;
-+		irq_gc->private = gpio;
-+
-+		ct = irq_gc->chip_types;
-+		ct->chip.irq_ack = irq_gc_ack_set_bit;
-+		ct->chip.irq_mask = irq_gc_mask_set_bit;
-+		ct->chip.irq_unmask = irq_gc_mask_clr_bit;
-+		ct->chip.irq_set_type = dwapb_irq_set_type;
-+		ct->chip.irq_enable = dwapb_irq_enable;
-+		ct->chip.irq_disable = dwapb_irq_disable;
-+		ct->regs.ack = GPIO_PORTA_EOI;
-+		ct->regs.mask = GPIO_INTMASK;
-+
-+		irq_setup_generic_chip(irq_gc, IRQ_MSK(port->bgc.gc.ngpio),
-+				IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
-+
-+		irq = irq_of_parse_and_map(node, hwirq);
-+		if (!irq && (hwirq == 0)) {
-+			dev_warn(gpio->dev, "no irq for bank %s\n",
-+				port->bgc.gc.of_node->full_name);
-+			return;
-+		} else if (!irq)
-+			break;
-+
-+		irq_set_chained_handler(irq, dwapb_irq_handler);
-+		irq_set_handler_data(irq, gpio);
-+	}
-+	port->bgc.gc.to_irq = dwapb_gpio_to_irq;
-+}
-+
-+static void dwapb_irq_teardown(struct dwapb_gpio *gpio)
-+{
-+	struct dwapb_gpio_port *port = &gpio->ports[0];
-+	struct gpio_chip *gc = &port->bgc.gc;
-+	unsigned int ngpio = gc->ngpio;
-+	irq_hw_number_t hwirq;
-+
-+	if (!gpio->domain)
-+		return;
-+
-+	for (hwirq = 0 ; hwirq < ngpio ; hwirq++)
-+		irq_dispose_mapping(irq_find_mapping(gpio->domain, hwirq));
-+
-+	irq_domain_remove(gpio->domain);
-+	gpio->domain = NULL;
-+}
-+
-+static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
-+			       struct device_node *port_np,
-+			       unsigned int offs)
-+{
-+	struct dwapb_gpio_port *port;
-+	u32 port_idx, ngpio;
-+	void __iomem *dat, *set, *dirout;
-+	int err;
-+
-+	if (of_property_read_u32(port_np, "reg", &port_idx) ||
-+		port_idx >= DWAPB_MAX_PORTS) {
-+		dev_err(gpio->dev, "missing/invalid port index for %s\n",
-+			port_np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	port = &gpio->ports[offs];
-+	port->gpio = gpio;
-+
-+	if (of_property_read_u32(port_np, "snps,nr-gpios", &ngpio)) {
-+		dev_info(gpio->dev, "failed to get number of gpios for %s\n",
-+			 port_np->full_name);
-+		ngpio = 32;
-+	}
-+
-+	dat = gpio->regs + GPIO_EXT_PORTA + (port_idx * GPIO_EXT_PORT_SIZE);
-+	set = gpio->regs + GPIO_SWPORTA_DR + (port_idx * GPIO_SWPORT_DR_SIZE);
-+	dirout = gpio->regs + GPIO_SWPORTA_DDR +
-+		(port_idx * GPIO_SWPORT_DDR_SIZE);
-+
-+	err = bgpio_init(&port->bgc, gpio->dev, 4, dat, set, NULL, dirout,
-+			 NULL, false);
-+	if (err) {
-+		dev_err(gpio->dev, "failed to init gpio chip for %s\n",
-+			port_np->full_name);
-+		return err;
-+	}
-+
-+	port->bgc.gc.ngpio = ngpio;
-+	port->bgc.gc.of_node = port_np;
-+
-+	/*
-+	 * Only port A can provide interrupts in all configurations of the IP.
-+	 */
-+	if (port_idx == 0 &&
-+	    of_property_read_bool(port_np, "interrupt-controller"))
-+		dwapb_configure_irqs(gpio, port);
-+
-+	err = gpiochip_add(&port->bgc.gc);
-+	if (err)
-+		dev_err(gpio->dev, "failed to register gpiochip for %s\n",
-+			port_np->full_name);
-+	else
-+		port->is_registered = true;
-+
-+	return err;
-+}
-+
-+static void dwapb_gpio_unregister(struct dwapb_gpio *gpio)
-+{
-+	unsigned int m;
-+
-+	for (m = 0; m < gpio->nr_ports; ++m)
-+		if (gpio->ports[m].is_registered)
-+			WARN_ON(gpiochip_remove(&gpio->ports[m].bgc.gc));
-+}
-+
-+static int dwapb_gpio_probe(struct platform_device *pdev)
-+{
-+	struct resource *res;
-+	struct dwapb_gpio *gpio;
-+	struct device_node *np;
-+	int err;
-+	unsigned int offs = 0;
-+
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
-+	if (!gpio)
-+		return -ENOMEM;
-+	gpio->dev = &pdev->dev;
-+
-+	gpio->nr_ports = dwapb_gpio_nr_ports(pdev->dev.of_node);
-+	if (!gpio->nr_ports) {
-+		err = -EINVAL;
-+		goto out_err;
-+	}
-+	gpio->ports = devm_kzalloc(&pdev->dev, gpio->nr_ports *
-+				   sizeof(*gpio->ports), GFP_KERNEL);
-+	if (!gpio->ports) {
-+		err = -ENOMEM;
-+		goto out_err;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	gpio->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(gpio->regs)) {
-+		err = PTR_ERR(gpio->regs);
-+		goto out_err;
-+	}
-+
-+	for_each_child_of_node(pdev->dev.of_node, np) {
-+		err = dwapb_gpio_add_port(gpio, np, offs++);
-+		if (err)
-+			goto out_unregister;
-+	}
-+	platform_set_drvdata(pdev, gpio);
-+
-+	return 0;
-+
-+out_unregister:
-+	dwapb_gpio_unregister(gpio);
-+	dwapb_irq_teardown(gpio);
-+
-+out_err:
-+	return err;
-+}
-+
-+static int dwapb_gpio_remove(struct platform_device *pdev)
-+{
-+	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
-+
-+	dwapb_gpio_unregister(gpio);
-+	dwapb_irq_teardown(gpio);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id dwapb_of_match[] = {
-+	{ .compatible = "snps,dw-apb-gpio" },
-+	{ /* Sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, dwapb_of_match);
-+
-+static struct platform_driver dwapb_gpio_driver = {
-+	.driver		= {
-+		.name	= "gpio-dwapb",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(dwapb_of_match),
-+	},
-+	.probe		= dwapb_gpio_probe,
-+	.remove		= dwapb_gpio_remove,
-+};
-+
-+module_platform_driver(dwapb_gpio_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Jamie Iles");
-+MODULE_DESCRIPTION("Synopsys DesignWare APB GPIO driver");
--- 
-1.7.9.5
+IMO this would be vastly cleaner; we'd have one data structure - the iov_iter -
+for memory that isn't pinned, and another data structure - struct bio - for
+iterating over pinned pages. Most of the aforementioned block layer massaging
+I've been doing was creating a real iterator for bios (that doesn't modify the
+biovecs).
 
+I've also done the DIO rewrite - awhile ago - and it's definitely not ready to
+go upstream (various prereqs still aren't in), but it at least shows that the
+approach is viable and my rewrite cuts fs/direct-io.c in _half_ while
+significantly improving performance:
 
+http://evilpiepirate.org/git/linux-bcache.git/commit/?h=block_stuff&id=caf18e8ec531daea29f61c9aa486443026a343c7
