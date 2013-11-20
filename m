@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3KTVJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 16:09:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50531 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3KTVJd (ORCPT
+	id S1755442Ab3KTVJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 16:09:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49225 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab3KTVJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 16:09:33 -0500
-Date: Wed, 20 Nov 2013 22:09:31 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        will.deacon@arm.com, catalin.marinas@arm.com, olof@lixom.net,
-        sudeep.karkadanagesha@arm.com
-Subject: Re: [PATCH] drivers: clocksource: Hide arm_arch_timer eventstream
- Kconfig on non-ARM
-Message-ID: <20131120210931.GA1782@amd.pavel.ucw.cz>
-References: <20131120192100.GA11723@amd.pavel.ucw.cz>
- <1384977723-32344-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 20 Nov 2013 16:09:50 -0500
+Message-ID: <528D258C.1020102@oracle.com>
+Date: Wed, 20 Nov 2013 16:11:40 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384977723-32344-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        david.vrabel@citrix.com
+Subject: Re: [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is
+ not yet up.
+References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-11-20 12:02:03, Stephen Boyd wrote:
-> Pavel Machek reports that this config is exposed on x86 where the
-> ARM architected timers aren't even present. Make it depend on the
-> ARM architected timers being selected so that non-ARM builds
-> aren't asked about it.
-> 
-> Reported-by: Pavel Machek <pavel@ucw.cz>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On 11/08/2013 12:38 PM, Konrad Rzeszutek Wilk wrote:
+> The user can launch the guest in this sequence:
+>
+> xl create -p /vm.cfg	[launch, but pause it]
+> xl shutdown latest	[sets control/shutdown=poweroff]
+> xl unpause latest
+> xl console latest	[and see that the guest has completely
+> ignored the shutdown request]
+>
+> In reality the guest hasn't ignored it. It registers a watch
+> and gets a notification that there is value. It then calls
+> the shutdown_handler which ends up calling orderly_shutdown.
+>
+> Unfortunately that is so early in the bootup that there
+> are no user-space. Which means that the orderly_shutdown fails.
+> But since the force flag was set to false it continues on without
+> reporting.
+>
+> We check if the system is still in the booting stage and if so
+> enable the force option (which will shutdown in early bootup
+> process). If in normal running case we don't force it.
+>
+> Fixes-Bug: http://bugs.xenproject.org/xen/bug/6
+> Reported-by:  Alex Bligh <alex@alex.org.uk>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> [v2: Add switch statement]
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-Thanks!
-								Pavel
-								
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> ---
+>   drivers/xen/manage.c | 13 ++++++++++++-
+>   1 file changed, 12 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> index 624e8dc..3f8496c 100644
+> --- a/drivers/xen/manage.c
+> +++ b/drivers/xen/manage.c
+> @@ -185,7 +185,18 @@ struct shutdown_handler {
+>   static void do_poweroff(void)
+>   {
+>   	shutting_down = SHUTDOWN_POWEROFF;
+> -	orderly_poweroff(false);
+> +	switch (system_state) {
+> +	case SYSTEM_BOOTING:
+> +		orderly_poweroff(true);
+> +		break;
+> +	case SYSTEM_RUNNING:
+> +		orderly_poweroff(false);
+> +		break;
+> +	default:
+> +		/* Don't do it when we are halting/rebooting. */
+> +		pr_info("Ignoring Xen toolstack shutdown.\n");
+> +		break;
+> +	}
+>   }
+>   
+>   static void do_reboot(void)
+
