@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3KTPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 10:23:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59526 "EHLO arroyo.ext.ti.com"
+	id S1754165Ab3KTPYD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 10:24:03 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39918 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab3KTPXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753521Ab3KTPXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Nov 2013 10:23:52 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -18,9 +18,9 @@ CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH 2/7] mtd: nand: davinci: return ENOMEM if memory allocation is failed
-Date: Wed, 20 Nov 2013 17:22:20 +0200
-Message-ID: <1384960945-14528-3-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH 1/7] mtd: nand: davinci: fix driver registration
+Date: Wed, 20 Nov 2013 17:22:19 +0200
+Message-ID: <1384960945-14528-2-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1384960945-14528-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1384960945-14528-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -30,37 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case when memory allocation is failed the driver should return
-ENOMEM instead of ENODEV.
+When kernel is booted using DT, there is no guarantee that Davinci
+NAND device has been created already at the time when driver init
+function is executed. Therefore, platform_driver_probe() can't be used
+because this may result the Davinci NAND driver will never be probed.
+The driver probing has to be made with core mechanism.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/mtd/nand/davinci_nand.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/davinci_nand.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index d87213f..ddcd7c8 100644
+index b77a01e..d87213f 100644
 --- a/drivers/mtd/nand/davinci_nand.c
 +++ b/drivers/mtd/nand/davinci_nand.c
-@@ -541,7 +541,7 @@ static struct davinci_nand_pdata
- 				GFP_KERNEL);
- 		pdev->dev.platform_data = pdata;
- 		if (!pdata)
--			return NULL;
-+			return ERR_PTR(-ENOMEM);
- 		if (!of_property_read_u32(pdev->dev.of_node,
- 			"ti,davinci-chipselect", &prop))
- 			pdev->id = prop;
-@@ -598,6 +598,9 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 	nand_ecc_modes_t		ecc_mode;
+@@ -877,6 +877,7 @@ static int __exit nand_davinci_remove(struct platform_device *pdev)
+ }
  
- 	pdata = nand_davinci_get_pdata(pdev);
-+	if (IS_ERR(pdata))
-+		return PTR_ERR(pdata);
-+
- 	/* insist on board-specific configuration */
- 	if (!pdata)
- 		return -ENODEV;
+ static struct platform_driver nand_davinci_driver = {
++	.probe		= nand_davinci_probe,
+ 	.remove		= __exit_p(nand_davinci_remove),
+ 	.driver		= {
+ 		.name	= "davinci_nand",
+@@ -886,7 +887,7 @@ static struct platform_driver nand_davinci_driver = {
+ };
+ MODULE_ALIAS("platform:davinci_nand");
+ 
+-module_platform_driver_probe(nand_davinci_driver, nand_davinci_probe);
++module_platform_driver(nand_davinci_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Texas Instruments");
 -- 
 1.7.9.5
 
