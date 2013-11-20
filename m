@@ -1,748 +1,496 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3KTIoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:44:39 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:57158 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3KTIoe (ORCPT
+	id S1752522Ab3KTIow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:44:52 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:44384 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab3KTIoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:44:34 -0500
+	Wed, 20 Nov 2013 03:44:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <3003098.ST2aP1uk4M@flatron>
-References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
-	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
-	<3003098.ST2aP1uk4M@flatron>
-Date: Wed, 20 Nov 2013 14:14:33 +0530
-Message-ID: <CAFp+6iFO7d+zYuwUEhK2fquG5gmaTY+gMi48vYAOLbNHxmdWJw@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-doc@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, Tomasz Figa <t.figa@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Julius Werner <jwerner@chromium.org>
+In-Reply-To: <1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1381428359-14843-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1381428359-14843-35-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Wed, 20 Nov 2013 12:44:44 +0400
+Message-ID: <CANaxB-x3k8DPEaDCtCzhkuyPcwR1YcRJZwXW777+q+y2KBvzHg@mail.gmail.com>
+Subject: Re: [PATCH 34/34] mm: dynamically allocate page->ptl if it cannot be
+ embedded to struct page
+From: Andrey Wagin <avagin@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
-
-
-On Sun, Nov 10, 2013 at 7:38 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Vivek,
->
-> On Thursday 31 of October 2013 13:15:41 Vivek Gautam wrote:
->> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
->> The new driver uses the generic PHY framework and will interact
->> with DWC3 controller present on Exynos5 series of SoCs.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  .../devicetree/bindings/phy/samsung-phy.txt        |   20 +
->>  drivers/phy/Kconfig                                |    7 +
->>  drivers/phy/Makefile                               |    1 +
->>  drivers/phy/phy-exynos5-usb3.c                     |  562 ++++++++++++++++++++
->>  4 files changed, 590 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/phy/phy-exynos5-usb3.c
->>
->> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> index c0fccaa..9b5c111 100644
->> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> @@ -20,3 +20,23 @@ Required properties:
->>  - compatible : should be "samsung,exynos5250-dp-video-phy";
->>  - reg : offset and length of the Display Port PHY register set;
->>  - #phy-cells : from the generic PHY bindings, must be 0;
->> +
->> +Samsung Exynos5 SoC seiries USB 3.0 PHY controller
->
-> typo: s/seiries/series/
-will correct it.
-
->
->> +--------------------------------------------------
->> +
->> +Required properties:
->> +- compatible :
->> +     should be "samsung,exynos5250-usb3phy" for exynos5250 SoC
->> +     should be "samsung,exynos5420-usb3phy" for exynos5420 SoC
->
-> I'd slightly change this into something like this:
->
-> - compatible: Should be set to one of following supported values:
->         - "samsung,exynos5250-usb3phy" - for Exynos5250 SoC,
->         - "samsung,exynos5420-usb3phy" - for Exynos5420 SoC.
-
-sure, will make it as suggested.
-
->
->> +- reg : Register offset and length array
->> +     - first field corresponds to USB 3.0 PHY register set;
->> +     - second field corresponds to PHY power isolation register
->> +       present in PMU;
->
-> For consistency and to make things more future-proof, you should consider
-> using the PMU indirectly, through the syscon interface, as done in Leela
-> Krishna Amudala's series[1] in case of watchdog driver.
-
-Right that's a better way to do.
-But this will again introduce the register offset arithmetic once again.
-And in case of multiple USB 3.0 PHY controllers (like for Exynos5420),
-we would need to take extra care of each such offset, by having
-provision for aliases
-for the usb3phy nodes and then setting required offset before doing isolation.
-
-For Exynos5420 USB3.0 PHY channel 0 is controlled by 0x10040704; and
-USB3.0 PHY channel 1 is controlled by 0x10040708.
-
->
-> I will tell Kamil to do the same for USB 2.0 PHY as well.
->
-> [1] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/24652
->
->> +- clocks: Clock IDs array as required by the controller
->> +- clock-names: names of clocks correseponding to IDs in the clock property;
->> +     Required clocks:
->> +     - first clock is main PHY clock (same as USB 3.0 controller IP clock)
->> +     - second clock is reference clock (usually crystal clock)
->> +     optional clock:
->> +     - third clock is special clock used by PHY for operation
->
-> Is this clock really optional? It looks like it's required for Exynos5420.
-
-Yes, this clock is an additional clock for Exynos5420 rather then
-being just optional
-
-> If so, you should instead change this to:
->
-> "Additional clocks required for Exynos5420:"
-
-Ok will change this.
-
->
-> Also you have not specified names of the clocks, just what they are.
-> Please remember that those are input names, so you can imagine them as
-> names of clock input pins of the IP block, not SoC-level clock names.
-
-So you mean, similar to what driver requests (clocks with their input names) ?
-will add clock names.
-
->
->> +- #phy-cells : from the generic PHY bindings, must be 0;
->
-> I'd also add an example of correct USB 3.0 PHY device tree node here.
-
-Sorry, forgot to add an example of the device node :-)
-will add one.
-
->
->> diff --git a/drivers/phy/phy-exynos5-usb3.c b/drivers/phy/phy-exynos5-usb3.c
->> new file mode 100644
->> index 0000000..b9a2674
->> --- /dev/null
->> +++ b/drivers/phy/phy-exynos5-usb3.c
->> @@ -0,0 +1,562 @@
-> [snip]
->> +#define EXYNOS5_DRD_PHYRESUME                        (0x34)
->> +#define EXYNOS5_DRD_LINKPORT                 (0x44)
->> +
->> +
->
-> nit: Duplicate blank line.
-will remove it.
-
->
->> +/* Isolation, configured in the power management unit */
->> +#define EXYNOS5_USB_ISOL_DRD         (1 << 0)
->> +
->> +#define CLKSEL_ERROR                       -1
->
-> What's this?
-Hmm..i shouldn't be defining error codes out of blue, will remove it.
-
->
->> +
->> +#ifndef KHZ
->> +#define KHZ 1000
->> +#endif
->> +
->> +#ifndef MHZ
->> +#define MHZ (KHZ * KHZ)
->> +#endif
->
-> Do you really need the #ifndef's above?
-
-You are right. #ifndef not really needed, since no header included
-here have these definitions.
-Although for samsung i can see they are defined in
-arch/arm/plat-samsung/include/plat/cpu.h;
-and i am sure we don't want to include that here.
-
->
->> +
->> +enum samsung_cpu_type {
->> +     TYPE_EXYNOS5250,
->> +     TYPE_EXYNOS5420,
->> +};
->
-> Instead of using this kind of enumeration, I'd rather introduce a struct
-> that describes the differences between all supported types.
-
-Will drop these, anyways they are not being used anywhere.
-
->
->> +
->> +enum usb3phy_state {
->> +     STATE_OFF,
->> +     STATE_ON,
->> +};
->
-> Hmm, isn't it a simple boolean value - false and true?
-Right :-)
-
->
->> +
->> +struct usb3phy_config {
->> +     enum samsung_cpu_type cpu;
->> +     bool has_sclk_usbphy30;
->> +};
->
-> Oh, you already have such struct, so there is even a bigger reason to drop
-> the samsung_cpu_type enum above.
-
-Right, i created this structure to make distinction between various cpu types.
-And moreover the "samsung_cpu_type" enumerations are not being used
-anywhere right now.
-I will drop the same.
-
->
->> +
->> +struct usb3phy_instance {
->> +     char *label;
->> +     struct usb3phy_driver *drv;
->> +     struct phy *phy;
->> +     enum usb3phy_state state;
->> +     u32 clk;
->> +     unsigned long rate;
->> +};
->
-> You seem to have just one instance in this driver. Do you really
-> need this struct?
-
-Right, i was hoping to get a comment on this ;-)
-Will move the field to "usb3phy_driver" structure.
-
->
->> +
->> +struct usb3phy_driver {
->> +     struct device *dev;
->> +     void __iomem *reg_phy;
->> +     void __iomem *reg_isol;
->> +     struct clk *clk;
->> +     struct clk *sclk_usbphy30;
->> +     struct usb3phy_instance instance;
->
-> Fields from that struct could be simply moved here.
-Hmm, will move them here.
-
->
->> +};
->> +
->> +/*
->> + * exynos5_rate_to_clk() converts the supplied clock rate to the value that
->> + * can be written to the phy register.
->> + */
->> +static u32 exynos5_rate_to_clk(unsigned long rate)
->> +{
->> +     unsigned int clksel;
->> +
->> +     /* EXYNOS5_FSEL_MASK */
->> +
->> +     switch (rate) {
->> +     case 9600 * KHZ:
->> +             clksel = EXYNOS5_FSEL_9MHZ6;
->> +             break;
->> +     case 10 * MHZ:
->> +             clksel = EXYNOS5_FSEL_10MHZ;
->> +             break;
->> +     case 12 * MHZ:
->> +             clksel = EXYNOS5_FSEL_12MHZ;
->> +             break;
->> +     case 19200 * KHZ:
->> +             clksel = EXYNOS5_FSEL_19MHZ2;
->> +             break;
->> +     case 20 * MHZ:
->> +             clksel = EXYNOS5_FSEL_20MHZ;
->> +             break;
->> +     case 24 * MHZ:
->> +             clksel = EXYNOS5_FSEL_24MHZ;
->> +             break;
->> +     case 50 * MHZ:
->> +             clksel = EXYNOS5_FSEL_50MHZ;
->> +             break;
->> +     default:
->> +             clksel = CLKSEL_ERROR;
->> +     }
->> +
->> +     return clksel;
->> +}
->> +
->> +static void exynos5_usb3phy_isol(struct usb3phy_instance *inst, bool on)
->> +{
->> +     struct usb3phy_driver *drv = inst->drv;
->> +     u32 tmp;
->> +
->> +     if (!drv->reg_isol)
->> +             return;
->> +
->> +     tmp = readl(drv->reg_isol);
->> +     if (on)
->> +             tmp &= ~EXYNOS5_USB_ISOL_DRD;
->> +     else
->> +             tmp |= EXYNOS5_USB_ISOL_DRD;
->> +     writel(tmp, drv->reg_isol);
->> +}
->> +
->> +/*
->> + * Sets the phy clk as EXTREFCLK (XXTI) which is internal clock from clock core.
->> + */
->> +static u32 exynos5_usb3phy_set_refclk(struct usb3phy_instance *inst)
->> +{
->> +     u32 reg;
->> +     u32 refclk;
->> +
->> +     refclk = inst->clk;
->> +
->> +     reg = PHYCLKRST_REFCLKSEL_EXT_REFCLK |
->> +             PHYCLKRST_FSEL(refclk);
->> +
->> +     switch (refclk) {
->
-> If I'm reading this correctly, you are switching a value returned by
-> another switch before (in exynos5_rate_to_clk()), which is only used in
-> this function.
-
-We are not only switching the refclk but also setting "PHYCLKRST_FSEL(__x)".
-Below i have given a brief explanation about the PHYCLKRST register
-settings required by PHY
-for different input reference clock frequencies.
-
->
-> You could instead drop the exynos5_rate_to_clk() function completely and
-> simply make a switch over the real clock frequency here.
->
->> +     case EXYNOS5_FSEL_50MHZ:
->> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_50M_REF |
->> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
->> +             break;
->> +     case EXYNOS5_FSEL_20MHZ:
->> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF |
->> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
->> +             break;
->> +     case EXYNOS5_FSEL_19MHZ2:
->> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF |
->> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
->> +             break;
->> +     case EXYNOS5_FSEL_24MHZ:
->> +     default:
->
-> This switch does not seem to handle all the cases handled by
-> exynos5_rate_to_clk(). Does it mean that the value for 24 MHz refclk can
-> be used for all the remaining cases or they are not supported?
-
-I got the PHY databook from our H/w team.
-Looking into that i can find that there are two ways the operational
-clocks are generated by PHY block from input reference clock
-for super-speed and high-speed operations :
-1) either using shared reference clock for HS and SS operations (when
-refclksel [3:2] = 0x10 in PHYCLKRST register of USB 3.0 PHY of
-Exynos5250)
-2) or using separate reference clock for HS and SS operations (when
-refclksel [3:2] = 0x11 in PHYCLKRST register of USB 3.0 PHY of
-Exynos5250)
-
-Both approaches have different settings for PHYCLKRST register.
-Right now we are using the second approach.
-So, as given in databook
-- the bit settings used for High-speed are defined for input reference
-clock freq ranging from 9.6 MHz to 50MHz,
-  as given by exynos5_rate_to_clk() function. Only bit setting needs
-to be done in this case is PHYCLKRST_FSEL(__x).
-- And, for super-speed the bit settings are defined for input
-reference clock freq ranging from 19.2 MHz to 200MHz.
-  Bit settings to be done in this case are
-PHYCLKRST_MPLL_MULTIPLIER_** and PHYCLKRST_SSC_REFCLKSEL(__x).
-
-So basically exynos5_usb3phy_set_refclk() function includes a subset
-of input reference clock freq as defined by exynos5_rate_to_clk()
-function.
-Hope this explanation makes things a bit clear.
-
->
->> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF |
->> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
->> +             break;
->> +     }
->> +
->> +     return reg;
->> +}
-> [snip]
->> +static int exynos5_usb3phy_power_on(struct phy *phy)
->> +{
->> +     struct usb3phy_instance *inst = phy_get_drvdata(phy);
->> +     struct usb3phy_driver *drv = inst->drv;
->> +     int ret;
->> +
->> +     dev_info(drv->dev, "Request to power_on \"%s\" usb phy\n",
->> +                                                     inst->label);
->
-> dev_dbg()
-sure
-
->
->> +
->> +     if (drv->sclk_usbphy30)
->
-> This check is incorrect. A NULL pointer is a correct value for a clock
-> as defined by Common Clock Framework, so IS_ERR() must be used here
-> instead.
-
-Right, will instead check of IS_ERR(drv->sclk_usbphy30), and act accrodingly.
-
->
->> +             clk_prepare_enable(drv->sclk_usbphy30);
->
-> Missing error check.
-
-Hmm, will add one.
-
->
->> +
->> +     ret = clk_prepare_enable(drv->clk);
->> +     if (ret)
->> +             return ret;
->> +
->
-> All the code starting here...
->
->> +     if (inst->state == STATE_ON) {
->> +             dev_err(drv->dev, "usb phy \"%s\" already on",
->> +                                                     inst->label);
->> +             ret = -ENODEV;
->> +             goto err0;
->> +     }
->> +
->> +     inst->state = STATE_ON;
->
-> ...and ending here, can be safely removed, since the PHY framework already
-> provides reference counting for PHYs.
-
-Sure will remove this chunk of code for state checking.
-
->
->> +
->> +     /* Initialize the PHY and power it ON */
->> +     exynos5_usb3phy_init(inst);
->> +     exynos5_usb3phy_isol(inst, 0);
->> +
->> +err0:
->> +     clk_disable_unprepare(drv->clk);
->
-> Is this clock needed for USB PHY operation or just for register accesses?
-
-This clock is required for register accesses. The operational clocks
-are derived out of reference clock
-given to PHY block, which comes from XXTI (FIN_PLL).
-
->
->> +
->> +     return ret;
->> +}
->> +
->> +static int exynos5_usb3phy_power_off(struct phy *phy)
->> +{
->> +     struct usb3phy_instance *inst = phy_get_drvdata(phy);
->> +     struct usb3phy_driver *drv = inst->drv;
->> +     int ret;
->> +
->> +     dev_info(drv->dev, "Request to power_off \"%s\" usb phy\n",
->> +                                                     inst->label);
->
-> dev_dbg()
-ok
-
->
->> +     ret = clk_prepare_enable(drv->clk);
->> +     if (ret)
->> +             return ret;
->> +
->> +     if (inst->state == STATE_OFF) {
->> +             dev_err(drv->dev, "usb phy \"%s\" already off",
->> +                                                     inst->label);
->> +             ret = -ENODEV;
->> +             goto err0;
->> +     }
->> +
->> +     inst->state = STATE_OFF;
->
-> Same comment about the PHY framework already doing reference counting.
-
-Sure will remove this chunk of code for state checking.
-
->
->> +
->> +     /* Power-off the PHY and de-initialize it */
->> +     exynos5_usb3phy_isol(inst, 1);
->> +     exynos5_usb3phy_exit(inst);
->> +
->> +err0:
->> +     clk_disable_unprepare(drv->clk);
->> +     if (drv->sclk_usbphy30)
->> +             clk_disable_unprepare(drv->sclk_usbphy30);
->> +
->> +     return ret;
->> +}
->> +
->> +static struct phy_ops exynos5_usb3phy_ops = {
->> +     .power_on       = exynos5_usb3phy_power_on,
->> +     .power_off      = exynos5_usb3phy_power_off,
->> +     .owner          = THIS_MODULE,
->> +};
->> +
->> +static const struct of_device_id exynos5_usb3phy_of_match[];
->
-> What about simply moving the definition here instead using a forward
-> declaration?
-
-Ok, will move the of_device_id struct definition here. I just thought
-i would be cleaner to place it below probe () ;-)
-
->
->> +
->> +static int exynos5_usb3phy_probe(struct platform_device *pdev)
->> +{
->> +     struct device *dev = &pdev->dev;
->> +     struct usb3phy_driver *drv;
->> +     struct usb3phy_instance *inst;
->> +     struct phy_provider *phy_provider;
->> +     struct resource *res;
->> +     struct clk *clk;
->> +     const struct of_device_id *match;
->> +     const struct usb3phy_config *cfg;
->> +
->
-> Just to be safe, you should check if pdev->dev.of_node is not NULL here,
-> to make sure that the driver got instantiated from device tree.
-
-Sure will add check for pdev->dev.of_node; and will return from probe
-with -ENODEV in case
-we don't find any node since Exynos5 and above are anyways DT enabled systems.
-
->
->> +     match = of_match_node(exynos5_usb3phy_of_match, pdev->dev.of_node);
->> +     if (!match) {
->> +             dev_err(dev, "of_match_node() failed\n");
->> +             return -EINVAL;
->> +     }
->> +     cfg = match->data;
->> +     if (!cfg) {
->
-> I don't think this is possible.
-Hmm, will remove this check completely.
-
->
->> +             dev_err(dev, "Failed to get configuration\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     drv = devm_kzalloc(dev, sizeof(struct usb3phy_driver), GFP_KERNEL);
->
-> sizeof(*drv)
-
-sure
-
->
->> +     if (!drv) {
->> +             dev_err(dev, "Failed to allocate memory\n");
->
-> kmalloc() and friends already print an error message for you.
-
-sorry i could not find the referred error message, can you please
-point me to that ?
-AFAICS most of the people print error messages if kmalloc() and friends failed.
-I tried finding until include/linux/slab.h.
->
->> +             return -ENOMEM;
->> +     }
->> +
->> +     dev_set_drvdata(dev, drv);
->> +     drv->dev = dev;
->> +
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +     drv->reg_phy = devm_ioremap_resource(dev, res);
->> +     if (IS_ERR(drv->reg_phy)) {
->> +             dev_err(dev, "Failed to map register memory (phy)\n");
->> +             return PTR_ERR(drv->reg_phy);
->> +     }
->> +
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> +     drv->reg_isol = devm_ioremap_resource(dev, res);
->> +     if (IS_ERR(drv->reg_isol)) {
->> +             dev_err(dev, "Failed to map register memory (isolation)\n");
->> +             return PTR_ERR(drv->reg_isol);
->> +     }
->> +
->> +     phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
->> +     if (IS_ERR(phy_provider)) {
->> +             dev_err(drv->dev, "Failed to register phy provider\n");
->> +             return PTR_ERR(phy_provider);
->> +     }
->
-> The provider should be registered as the last thing in the sequence, as
-> the driver must be ready for handling PHY requests as soon as
-> of_phy_provider_register() returns.
-
-Sure, will move this at the end of probe().
-
->
->> +
->> +     drv->clk = devm_clk_get(dev, "phy");
->> +     if (IS_ERR(drv->clk)) {
->> +             dev_err(dev, "Failed to get clock of phy controller\n");
->> +             return PTR_ERR(drv->clk);
->> +     }
->> +
->> +     /*
->> +      * Exysno5420 SoC has an additional special clock, used for
->> +      * for USB 3.0 PHY operation, this clock goes to the PHY block
->> +      * as a reference clock to clock generation block of the controller.
->> +      */
->> +     if (cfg->has_sclk_usbphy30) {
->> +             drv->sclk_usbphy30 = devm_clk_get(dev, "sclk_usbphy30");
->> +             if (IS_ERR(drv->clk)) {
->> +                     dev_err(dev, "Failed to get phy reference clock\n");
->> +                     return PTR_ERR(drv->clk);
->> +             }
->
-> Seems like this clock is required for Exynos5420 indeed, as opposed to
-> what the DT binding documentation says.
-
-Yes, this is clock is required for Exynos5420. I will modify the
-device tree documentation
-further to avoid any confusion.
-
->
->> +     }
->> +
->> +     inst            = &drv->instance;
->> +     inst->drv       = drv;
->
-> This pointer does not seem to be needed.
-Ok will drop it. In fact i am going  to drop the instance thing
-entirely, so this makes sense.
-
->
->> +     inst->label     = "usb3drd";
->
-> Do you need this label at all?
-
-not really when we use phy's name string directly. ;-)
-will drop this.
-
->
->> +
->> +     dev_info(dev, "Creating phy \"%s\"\n", inst->label);
->
-> dev_dbg()
-sure
-
->
->> +     inst->phy = devm_phy_create(dev, &exynos5_usb3phy_ops, NULL);
->> +     if (IS_ERR(inst->phy)) {
->> +             dev_err(drv->dev, "Failed to create usb3phy \"%s\"\n",
->> +                                     inst->label);
->> +             return PTR_ERR(inst->phy);
->> +     }
->> +
->> +     phy_set_drvdata(inst->phy, inst);
->> +
->> +     clk = clk_get(dev, inst->label);
->
-> Since this driver provides only a single PHY, I think you should simply
-> use the clock name directly.
-
-Ok will use the name string directly.
-
->
->> +     if (IS_ERR(clk)) {
->> +             dev_err(dev, "Failed to get clock of \"%s\" phy\n",
->> +                                                     inst->label);
->> +             return PTR_ERR(clk);
->> +     }
->> +
->> +     inst->rate = clk_get_rate(clk);
->> +
->> +     inst->clk = exynos5_rate_to_clk(inst->rate);
->> +     if (inst->clk == CLKSEL_ERROR) {
->> +             dev_err(dev, "Clock rate (%ld) not supported\n",
->> +                                             inst->rate);
->> +             clk_put(clk);
->> +             return -EINVAL;
->> +     }
->> +     clk_put(clk);
->
-> Technically this should happen at the time of calling PHY enable, while
-> a reference to the clock should be kept through the whole PHY lifetime.
-> In addition, the clock should be prepare_enabled before it is used.
-
-This is actually the FIN_PLL (XXTI) clock which is being used as
-reference clock to
-the PHY block, which has its own clock generator.
-On knowing the rate of this FIN_PLL, the driver would like to program
-the PHY registers
-(PHYCLKRST in particular), which contain settings for generating
-different operational clocks used by PHY
-for high-speed and super-speed operations.
-
->
-> So, to recall, here you could call devm_clk_get(...). Then in
-> exynos5_usb3phy_power_on(), call clk_prepare_enable() on it, in
-> exynos5_usb3phy_set_refclk() call clk_get_rate() to get its frequency
-> and finally clk_disable_unprepare() it in exynos5_usb3phy_power_off().
-
-So do we really need to call prepare_enable() and disable_unprepare()
-over this Fin_PLL clock ?
-I can move this to the place where PHY is enabled.
-
->
-> Best regards,
-> Tomasz
-
-Thanks Tomasz for reviewing this. I will address your comments and
-update the new patch-set soon.
-
+Hi Kirill,
+
+Looks like this patch adds memory leaks.
+[  116.188310] kmemleak: 15672 new suspected memory leaks (see
+/sys/kernel/debug/kmemleak)
+unreferenced object 0xffff8800da45a350 (size 96):
+  comm "dracut-initqueu", pid 93, jiffies 4294671391 (age 362.277s)
+  hex dump (first 32 bytes):
+    07 00 07 00 ad 4e ad de ff ff ff ff 6b 6b 6b 6b  .....N......kkkk
+    ff ff ff ff ff ff ff ff 80 24 b4 82 ff ff ff ff  .........$......
+  backtrace:
+    [<ffffffff817152fe>] kmemleak_alloc+0x5e/0xc0
+    [<ffffffff811c34f3>] kmem_cache_alloc_trace+0x113/0x290
+    [<ffffffff811920f7>] __ptlock_alloc+0x27/0x50
+    [<ffffffff81192849>] __pmd_alloc+0x59/0x170
+    [<ffffffff81195ffa>] copy_page_range+0x38a/0x3e0
+    [<ffffffff8105a013>] dup_mm+0x313/0x540
+    [<ffffffff8105b9da>] copy_process+0x161a/0x1880
+    [<ffffffff8105c01b>] do_fork+0x8b/0x360
+    [<ffffffff8105c306>] SyS_clone+0x16/0x20
+    [<ffffffff81727b79>] stub_clone+0x69/0x90
+    [<ffffffffffffffff>] 0xffffffffffffffff
+
+It's quite serious, because my test host went to panic in a few hours.
+
+[12000.632734] kmemleak: 74155 new suspected memory leaks (see
+/sys/kernel/debug/kmemleak)
+[12080.734075] zombie00[29282]: segfault at 0 ip 0000000000401862 sp
+00007fffc509bc20 error 6 in zombie00[400000+5000]
+[12619.799052] BUG: unable to handle kernel paging request at 000000007aa9e3a0
+[12619.800044] IP: [<ffffffff810b2c07>] cpuacct_charge+0x97/0x1e0
+[12619.800044] PGD 0
+[12619.800044] Thread overran stack, or stack corrupted
+[12619.800044] Oops: 0000 [#1] SMP
+[12619.800044] Modules linked in: binfmt_misc ip6table_filter
+ip6_tables tun netlink_diag af_packet_diag udp_diag tcp_diag inet_diag
+unix_diag joydev microcode pcspkr i2c_piix4 virtio_balloon virtio_net
+i2c_core virtio_blk floppy
+[12619.800044] CPU: 1 PID: 1324 Comm: kworker/u4:2 Not tainted 3.12.0+ #142
+[12619.800044] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[12619.800044] Workqueue: writeback bdi_writeback_workfn (flush-252:0)
+[12619.800044] task: ffff88001f1a8000 ti: ffff880096f26000 task.ti:
+ffff880096f26000
+[12619.800044] RIP: 0010:[<ffffffff810b2c07>]  [<ffffffff810b2c07>]
+cpuacct_charge+0x97/0x1e0
+[12619.800044] RSP: 0018:ffff88011b403ce8  EFLAGS: 00010002
+[12619.800044] RAX: 000000000000d580 RBX: 00000000000f11b1 RCX: 0000000000000003
+[12619.800044] RDX: ffffffff81c49e40 RSI: ffffffff81c4bb00 RDI: ffff88001f1a8c68
+[12619.800044] RBP: ffff88011b403d18 R08: 0000000000000001 R09: 0000000000000001
+[12619.800044] R10: 0000000000000001 R11: 0000000000000007 R12: ffff88001f1a8000
+[12619.800044] R13: 000000001f1a8000 R14: ffffffff82a86320 R15: 000006b1bda1e433
+[12619.800044] FS:  0000000000000000(0000) GS:ffff88011b400000(0000)
+knlGS:0000000000000000
+[12619.800044] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[12619.800044] CR2: 000000007aa9e3a0 CR3: 0000000001c0b000 CR4: 00000000000006e0
+[12619.800044] Stack:
+[12619.800044]  ffffffff810b2b70 0000000000000002 ffff88011b5d40c0
+00000000000f11b1
+[12619.800044]  ffff88001f1a8068 ffff88001f1a8000 ffff88011b403d58
+ffffffff810a108f
+[12619.800044]  ffff88011b403d88 ffff88001f1a8068 ffff88011b5d40c0
+ffff88011b5d4000
+[12619.800044] Call Trace:
+[12619.800044]  <IRQ>
+[12619.800044]  [<ffffffff810b2b70>] ? cpuacct_css_alloc+0xb0/0xb0
+[12619.800044]  [<ffffffff810a108f>] update_curr+0x13f/0x230
+[12619.800044]  [<ffffffff810a9e57>] task_tick_fair+0x2d7/0x650
+[12619.800044]  [<ffffffff8109dcc8>] ? sched_clock_cpu+0xb8/0x120
+[12619.800044]  [<ffffffff8109482d>] scheduler_tick+0x6d/0xf0
+[12619.800044]  [<ffffffff8106afd1>] update_process_times+0x61/0x80
+[12619.800044]  [<ffffffff810e38c7>] tick_sched_handle+0x37/0x80
+[12619.800044]  [<ffffffff810e3e74>] tick_sched_timer+0x54/0x90
+[12619.800044]  [<ffffffff8108bd21>] __run_hrtimer+0x71/0x2d0
+[12619.800044]  [<ffffffff810e3e20>] ? tick_nohz_handler+0xc0/0xc0
+[12619.800044]  [<ffffffff8108c246>] hrtimer_interrupt+0x116/0x2a0
+[12619.800044]  [<ffffffff81062959>] ? __local_bh_enable+0x49/0x70
+[12619.800044]  [<ffffffff81033dcb>] local_apic_timer_interrupt+0x3b/0x60
+[12619.800044]  [<ffffffff81727c05>] smp_apic_timer_interrupt+0x45/0x60
+[12619.800044]  [<ffffffff8172686f>] apic_timer_interrupt+0x6f/0x80
+[12619.800044]  <EOI>
+[12619.800044]  [<ffffffff810b8e10>] ? mark_held_locks+0x90/0x150
+[12619.800044]  [<ffffffff8171c6f2>] ? _raw_spin_unlock_irqrestore+0x42/0x70
+[12619.800044]  [<ffffffffa001b71b>] virtio_queue_rq+0xdb/0x1b0 [virtio_blk]
+[12619.800044]  [<ffffffff8134647a>] __blk_mq_run_hw_queue+0x1ca/0x520
+[12619.800044]  [<ffffffff81346b35>] blk_mq_run_hw_queue+0x35/0x40
+[12619.800044]  [<ffffffff813470f2>] blk_mq_insert_requests+0xe2/0x190
+[12619.800044]  [<ffffffff813472d4>] blk_mq_flush_plug_list+0x134/0x150
+[12619.800044]  [<ffffffff8133d0cd>] blk_flush_plug_list+0xbd/0x220
+[12619.800044]  [<ffffffff81346f1a>] blk_mq_make_request+0x3da/0x4d0
+[12619.800044]  [<ffffffff813397aa>] generic_make_request+0xca/0x100
+[12619.800044]  [<ffffffff81339856>] submit_bio+0x76/0x160
+[12619.800044]  [<ffffffff81173c66>] ? test_set_page_writeback+0x36/0x2b0
+[12619.800044]  [<ffffffff811a9ae0>] ? end_swap_bio_read+0xc0/0xc0
+[12619.800044]  [<ffffffff811a96c8>] __swap_writepage+0x198/0x230
+[12619.800044]  [<ffffffff8171c74b>] ? _raw_spin_unlock+0x2b/0x40
+[12619.800044]  [<ffffffff811aaf93>] ? page_swapcount+0x53/0x70
+[12619.800044]  [<ffffffff811a97a3>] swap_writepage+0x43/0x90
+[12619.800044]  [<ffffffff8117c3df>] shrink_page_list+0x6cf/0xaa0
+[12619.800044]  [<ffffffff8117d452>] shrink_inactive_list+0x1c2/0x5b0
+[12619.800044]  [<ffffffff810b976f>] ? __lock_acquire+0x23f/0x1810
+[12619.800044]  [<ffffffff8117dea5>] shrink_lruvec+0x335/0x600
+[12619.800044]  [<ffffffff811d24f5>] ? mem_cgroup_iter+0x1f5/0x510
+[12619.800044]  [<ffffffff8117e206>] shrink_zone+0x96/0x1d0
+[12619.800044]  [<ffffffff8117ec83>] do_try_to_free_pages+0x103/0x600
+[12619.800044]  [<ffffffff8109dba5>] ? sched_clock_local+0x25/0x90
+[12619.800044]  [<ffffffff8117f692>] try_to_free_pages+0x222/0x440
+[12619.800044]  [<ffffffff8117233f>] __alloc_pages_nodemask+0x8af/0xc70
+[12619.800044]  [<ffffffff811b7fce>] alloc_pages_current+0x10e/0x1e0
+[12619.800044]  [<ffffffff81167077>] ? __page_cache_alloc+0x127/0x160
+[12619.800044]  [<ffffffff81167077>] __page_cache_alloc+0x127/0x160
+[12619.800044]  [<ffffffff8116864f>] find_or_create_page+0x4f/0xb0
+[12619.800044]  [<ffffffff8121c369>] __getblk+0x109/0x300
+[12619.800044]  [<ffffffff8121c572>] __breadahead+0x12/0x40
+[12619.800044]  [<ffffffff8127cf7d>] __ext4_get_inode_loc+0x30d/0x430
+[12619.800044]  [<ffffffff8127d1ef>] ext4_get_inode_loc+0x1f/0x30
+[12619.800044]  [<ffffffff8127d22d>] ext4_reserve_inode_write+0x2d/0xa0
+[12619.800044]  [<ffffffff8127d305>] ext4_mark_inode_dirty+0x65/0x2b0
+[12619.800044]  [<ffffffff812a3d7b>] __ext4_ext_dirty+0x7b/0x80
+[12619.800044]  [<ffffffff812a4c97>] ext4_ext_insert_extent+0x417/0x12d0
+[12619.800044]  [<ffffffff811c3eaf>] ? __kmalloc+0x1bf/0x2e0
+[12619.800044]  [<ffffffff812a758b>] ext4_ext_map_blocks+0x57b/0xfb0
+[12619.800044]  [<ffffffff8127a5e6>] ? ext4_map_blocks+0x126/0x470
+[12619.800044]  [<ffffffff8127a624>] ext4_map_blocks+0x164/0x470
+[12619.800044]  [<ffffffff8127fba5>] ext4_writepages+0x6a5/0xc80
+[12619.800044]  [<ffffffff8109dba5>] ? sched_clock_local+0x25/0x90
+[12619.800044]  [<ffffffff8109dd7f>] ? local_clock+0x4f/0x60
+[12619.800044]  [<ffffffff81175313>] do_writepages+0x23/0x40
+[12619.800044]  [<ffffffff81210995>] __writeback_single_inode+0x45/0x3c0
+[12619.800044]  [<ffffffff81213c9f>] writeback_sb_inodes+0x28f/0x520
+[12619.800044]  [<ffffffff8171c74b>] ? _raw_spin_unlock+0x2b/0x40
+[12619.800044]  [<ffffffff81213fce>] __writeback_inodes_wb+0x9e/0xd0
+[12619.800044]  [<ffffffff8121429b>] wb_writeback+0x29b/0x540
+[12619.800044]  [<ffffffff810b918d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+[12619.800044]  [<ffffffff8121459d>] ? wb_do_writeback+0x5d/0x290
+[12619.800044]  [<ffffffff812145b2>] wb_do_writeback+0x72/0x290
+[12619.800044]  [<ffffffff8109dcc8>] ? sched_clock_cpu+0xb8/0x120
+[12619.800044]  [<ffffffff81214840>] bdi_writeback_workfn+0x70/0x320
+[12619.800044]  [<ffffffff8107eea6>] ? process_one_work+0x176/0x610
+[12619.800044]  [<ffffffff8107ef0e>] process_one_work+0x1de/0x610
+[12619.800044]  [<ffffffff8107eea6>] ? process_one_work+0x176/0x610
+[12619.800044]  [<ffffffff81080e40>] worker_thread+0x120/0x3a0
+[12619.800044]  [<ffffffff81080d20>] ? manage_workers+0x2c0/0x2c0
+[12619.800044]  [<ffffffff81087f26>] kthread+0xf6/0x120
+[12619.800044]  [<ffffffff8109dd7f>] ? local_clock+0x4f/0x60
+[12619.800044]  [<ffffffff81087e30>] ? __init_kthread_worker+0x70/0x70
+[12619.800044]  [<ffffffff81725b6c>] ret_from_fork+0x7c/0xb0
+[12619.800044]  [<ffffffff81087e30>] ? __init_kthread_worker+0x70/0x70
+[12619.800044] Code: 00 00 e8 fd 03 02 00 85 c0 74 0d 80 3d 51 e5 c8
+00 00 0f 84 d4 00 00 00 49 8b 56 48 4d 63 ed 0f 1f 44 00 00 48 8b 82
+b8 00 00 00 <4a> 03 04 ed a0 e3 d5 81 48 01 18 48 8b 52 40 48 85 d2 75
+e5 e8
+[12619.800044] RIP  [<ffffffff810b2c07>] cpuacct_charge+0x97/0x1e0
+[12619.800044]  RSP <ffff88011b403ce8>
+[12619.800044] CR2: 000000007aa9e3a0
+
+2013/10/10 Kirill A. Shutemov <kirill.shutemov@linux.intel.com>:
+> If split page table lock is in use, we embed the lock into struct page
+> of table's page. We have to disable split lock, if spinlock_t is too big
+> be to be embedded, like when DEBUG_SPINLOCK or DEBUG_LOCK_ALLOC enabled.
+>
+> This patch add support for dynamic allocation of split page table lock
+> if we can't embed it to struct page.
+>
+> page->ptl is unsigned long now and we use it as spinlock_t if
+> sizeof(spinlock_t) <= sizeof(long), otherwise it's pointer to
+> spinlock_t.
+>
+> The spinlock_t allocated in pgtable_page_ctor() for PTE table and in
+> pgtable_pmd_page_ctor() for PMD table. All other helpers converted to
+> support dynamically allocated page->ptl.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  Documentation/vm/split_page_table_lock | 90 ++++++++++++++++++++++++++++++++++
+>  arch/x86/xen/mmu.c                     |  2 +-
+>  include/linux/mm.h                     | 72 +++++++++++++++++++--------
+>  include/linux/mm_types.h               |  5 +-
+>  mm/Kconfig                             |  2 -
+>  mm/memory.c                            | 19 +++++++
+>  6 files changed, 166 insertions(+), 24 deletions(-)
+>  create mode 100644 Documentation/vm/split_page_table_lock
+>
+> diff --git a/Documentation/vm/split_page_table_lock b/Documentation/vm/split_page_table_lock
+> new file mode 100644
+> index 0000000000..e2f617b732
+> --- /dev/null
+> +++ b/Documentation/vm/split_page_table_lock
+> @@ -0,0 +1,90 @@
+> +Split page table lock
+> +=====================
+> +
+> +Originally, mm->page_table_lock spinlock protected all page tables of the
+> +mm_struct. But this approach leads to poor page fault scalability of
+> +multi-threaded applications due high contention on the lock. To improve
+> +scalability, split page table lock was introduced.
+> +
+> +With split page table lock we have separate per-table lock to serialize
+> +access to the table. At the moment we use split lock for PTE and PMD
+> +tables. Access to higher level tables protected by mm->page_table_lock.
+> +
+> +There are helpers to lock/unlock a table and other accessor functions:
+> + - pte_offset_map_lock()
+> +       maps pte and takes PTE table lock, returns pointer to the taken
+> +       lock;
+> + - pte_unmap_unlock()
+> +       unlocks and unmaps PTE table;
+> + - pte_alloc_map_lock()
+> +       allocates PTE table if needed and take the lock, returns pointer
+> +       to taken lock or NULL if allocation failed;
+> + - pte_lockptr()
+> +       returns pointer to PTE table lock;
+> + - pmd_lock()
+> +       takes PMD table lock, returns pointer to taken lock;
+> + - pmd_lockptr()
+> +       returns pointer to PMD table lock;
+> +
+> +Split page table lock for PTE tables is enabled compile-time if
+> +CONFIG_SPLIT_PTLOCK_CPUS (usually 4) is less or equal to NR_CPUS.
+> +If split lock is disabled, all tables guaded by mm->page_table_lock.
+> +
+> +Split page table lock for PMD tables is enabled, if it's enabled for PTE
+> +tables and the architecture supports it (see below).
+> +
+> +Hugetlb and split page table lock
+> +---------------------------------
+> +
+> +Hugetlb can support several page sizes. We use split lock only for PMD
+> +level, but not for PUD.
+> +
+> +Hugetlb-specific helpers:
+> + - huge_pte_lock()
+> +       takes pmd split lock for PMD_SIZE page, mm->page_table_lock
+> +       otherwise;
+> + - huge_pte_lockptr()
+> +       returns pointer to table lock;
+> +
+> +Support of split page table lock by an architecture
+> +---------------------------------------------------
+> +
+> +There's no need in special enabling of PTE split page table lock:
+> +everything required is done by pgtable_page_ctor() and pgtable_page_dtor(),
+> +which must be called on PTE table allocation / freeing.
+> +
+> +PMD split lock only makes sense if you have more than two page table
+> +levels.
+> +
+> +PMD split lock enabling requires pgtable_pmd_page_ctor() call on PMD table
+> +allocation and pgtable_pmd_page_dtor() on freeing.
+> +
+> +Allocation usually happens in pmd_alloc_one(), freeing in pmd_free(), but
+> +make sure you cover all PMD table allocation / freeing paths: i.e X86_PAE
+> +preallocate few PMDs on pgd_alloc().
+> +
+> +With everything in place you can set CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK.
+> +
+> +NOTE: pgtable_page_ctor() and pgtable_pmd_page_ctor() can fail -- it must
+> +be handled properly.
+> +
+> +page->ptl
+> +---------
+> +
+> +page->ptl is used to access split page table lock, where 'page' is struct
+> +page of page containing the table. It shares storage with page->private
+> +(and few other fields in union).
+> +
+> +To avoid increasing size of struct page and have best performance, we use a
+> +trick:
+> + - if spinlock_t fits into long, we use page->ptr as spinlock, so we
+> +   can avoid indirect access and save a cache line.
+> + - if size of spinlock_t is bigger then size of long, we use page->ptl as
+> +   pointer to spinlock_t and allocate it dynamically. This allows to use
+> +   split lock with enabled DEBUG_SPINLOCK or DEBUG_LOCK_ALLOC, but costs
+> +   one more cache line for indirect access;
+> +
+> +The spinlock_t allocated in pgtable_page_ctor() for PTE table and in
+> +pgtable_pmd_page_ctor() for PMD table.
+> +
+> +Please, never access page->ptl directly -- use appropriate helper.
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 455c873ce0..49c962fe7e 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -797,7 +797,7 @@ static spinlock_t *xen_pte_lock(struct page *page, struct mm_struct *mm)
+>         spinlock_t *ptl = NULL;
+>
+>  #if USE_SPLIT_PTE_PTLOCKS
+> -       ptl = __pte_lockptr(page);
+> +       ptl = ptlock_ptr(page);
+>         spin_lock_nest_lock(ptl, &mm->page_table_lock);
+>  #endif
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index f6467032a9..658e8b317f 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1233,32 +1233,64 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
+>  #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+>
+>  #if USE_SPLIT_PTE_PTLOCKS
+> -/*
+> - * We tuck a spinlock to guard each pagetable page into its struct page,
+> - * at page->private, with BUILD_BUG_ON to make sure that this will not
+> - * overflow into the next struct page (as it might with DEBUG_SPINLOCK).
+> - * When freeing, reset page->mapping so free_pages_check won't complain.
+> - */
+> -#define __pte_lockptr(page)    &((page)->ptl)
+> -#define pte_lock_init(_page)   do {                                    \
+> -       spin_lock_init(__pte_lockptr(_page));                           \
+> -} while (0)
+> -#define pte_lock_deinit(page)  ((page)->mapping = NULL)
+> -#define pte_lockptr(mm, pmd)   ({(void)(mm); __pte_lockptr(pmd_page(*(pmd)));})
+> +bool __ptlock_alloc(struct page *page);
+> +void __ptlock_free(struct page *page);
+> +static inline bool ptlock_alloc(struct page *page)
+> +{
+> +       if (sizeof(spinlock_t) > sizeof(page->ptl))
+> +               return __ptlock_alloc(page);
+> +       return true;
+> +}
+> +static inline void ptlock_free(struct page *page)
+> +{
+> +       if (sizeof(spinlock_t) > sizeof(page->ptl))
+> +               __ptlock_free(page);
+> +}
+> +
+> +static inline spinlock_t *ptlock_ptr(struct page *page)
+> +{
+> +       if (sizeof(spinlock_t) > sizeof(page->ptl))
+> +               return (spinlock_t *) page->ptl;
+> +       else
+> +               return (spinlock_t *) &page->ptl;
+> +}
+> +
+> +static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+> +{
+> +       return ptlock_ptr(pmd_page(*pmd));
+> +}
+> +
+> +static inline bool ptlock_init(struct page *page)
+> +{
+> +       if (!ptlock_alloc(page))
+> +               return false;
+> +       spin_lock_init(ptlock_ptr(page));
+> +       return true;
+> +}
+> +
+> +/* Reset page->mapping so free_pages_check won't complain. */
+> +static inline void pte_lock_deinit(struct page *page)
+> +{
+> +       page->mapping = NULL;
+> +       ptlock_free(page);
+> +}
+> +
+>  #else  /* !USE_SPLIT_PTE_PTLOCKS */
+>  /*
+>   * We use mm->page_table_lock to guard all pagetable pages of the mm.
+>   */
+> -#define pte_lock_init(page)    do {} while (0)
+> -#define pte_lock_deinit(page)  do {} while (0)
+> -#define pte_lockptr(mm, pmd)   ({(void)(pmd); &(mm)->page_table_lock;})
+> +static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+> +{
+> +       return &mm->page_table_lock;
+> +}
+> +static inline bool ptlock_init(struct page *page) { return true; }
+> +static inline void pte_lock_deinit(struct page *page) {}
+>  #endif /* USE_SPLIT_PTE_PTLOCKS */
+>
+>  static inline bool pgtable_page_ctor(struct page *page)
+>  {
+> -       pte_lock_init(page);
+>         inc_zone_page_state(page, NR_PAGETABLE);
+> -       return true;
+> +       return ptlock_init(page);
+>  }
+>
+>  static inline void pgtable_page_dtor(struct page *page)
+> @@ -1299,16 +1331,15 @@ static inline void pgtable_page_dtor(struct page *page)
+>
+>  static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
+>  {
+> -       return &virt_to_page(pmd)->ptl;
+> +       return ptlock_ptr(virt_to_page(pmd));
+>  }
+>
+>  static inline bool pgtable_pmd_page_ctor(struct page *page)
+>  {
+> -       spin_lock_init(&page->ptl);
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>         page->pmd_huge_pte = NULL;
+>  #endif
+> -       return true;
+> +       return ptlock_init(page);
+>  }
+>
+>  static inline void pgtable_pmd_page_dtor(struct page *page)
+> @@ -1316,6 +1347,7 @@ static inline void pgtable_pmd_page_dtor(struct page *page)
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>         VM_BUG_ON(page->pmd_huge_pte);
+>  #endif
+> +       ptlock_free(page);
+>  }
+>
+>  #define pmd_huge_pte(mm, pmd) (virt_to_page(pmd)->pmd_huge_pte)
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index bacc15f078..257ac12fac 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -147,7 +147,10 @@ struct page {
+>                                                  * system if PG_buddy is set.
+>                                                  */
+>  #if USE_SPLIT_PTE_PTLOCKS
+> -               spinlock_t ptl;
+> +               unsigned long ptl; /* It's spinlock_t if it fits to long,
+> +                                   * otherwise it's pointer to dynamicaly
+> +                                   * allocated spinlock_t.
+> +                                   */
+>  #endif
+>                 struct kmem_cache *slab_cache;  /* SL[AU]B: Pointer to slab */
+>                 struct page *first_page;        /* Compound tail pages */
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index d19f7d380b..9e8c8ae3b6 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -211,8 +211,6 @@ config SPLIT_PTLOCK_CPUS
+>         int
+>         default "999999" if ARM && !CPU_CACHE_VIPT
+>         default "999999" if PARISC && !PA20
+> -       default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
+> -       default "999999" if !64BIT && GENERIC_LOCKBREAK
+>         default "4"
+>
+>  config ARCH_ENABLE_SPLIT_PMD_PTLOCK
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 1200d6230c..7e11f745bc 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -4330,3 +4330,22 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+>         }
+>  }
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+> +
+> +#if USE_SPLIT_PTE_PTLOCKS
+> +bool __ptlock_alloc(struct page *page)
+> +{
+> +       spinlock_t *ptl;
+> +
+> +       ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
+> +       if (!ptl)
+> +               return false;
+> +       page->ptl = (unsigned long)ptl;
+> +       return true;
+> +}
+> +
+> +void __ptlock_free(struct page *page)
+> +{
+> +       if (sizeof(spinlock_t) > sizeof(page->ptl))
+> +               kfree((spinlock_t *)page->ptl);
+> +}
+> +#endif
+> --
+> 1.8.4.rc3
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+> Please read the FAQ at  http://www.tux.org/lkml/
