@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab3KTUhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:37:41 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55478 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab3KTUhg (ORCPT
+	id S1755220Ab3KTUjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:39:36 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59228 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab3KTUjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:37:36 -0500
+	Wed, 20 Nov 2013 15:39:33 -0500
+Message-ID: <528D1DD6.9010808@ti.com>
+Date: Wed, 20 Nov 2013 22:38:46 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1384978913-8052-3-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1384978913-8052-3-git-send-email-sebastian.hesselbarth@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 20 Nov 2013 12:36:55 -0800
-Message-ID: <CAGVrzcZ9uDK9X-K86Esxb=93tkHuV4-RXxZ8Us-vNJ9UxcTFpQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v1 2/7] net: phy: provide phy_resume/phy_suspend helpers
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH 0/3] Reuse davinci-nand driver for Keystone arch
+References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com> <528D18EC.6000501@ti.com> <528D1C94.7010100@ti.com>
+In-Reply-To: <528D1C94.7010100@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/20 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> This adds helper functions to resume and suspend a given phy_device
-> by calling the corresponding driver callbacks if available.
+On 11/20/2013 10:33 PM, Santosh Shilimkar wrote:
+> On Wednesday 20 November 2013 03:17 PM, Grygorii Strashko wrote:
+>> On 11/20/2013 06:24 PM, Ivan Khoronzhuk wrote:
+>>> This series contains updates of Davinci nand driver, in order to be
+>>> reused for Keystone platform.
+>>>
+>>> Depends on:
+>>> - Davinci nand driver fixes and updates:
+>>>     https://lkml.org/lkml/2013/11/20/271
+>>
+>> ^^^^ I suggest to merge this series with above one as it
+>> should not break anything.
+>>
+> I agree. That way the mtd patch series can go
+> together nicely.
 >
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Regards,
+> Santosh
+>
 
-Looks good, thanks Sebastian:
-
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-
-> ---
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/phy_device.c |   19 +++++++++++++++++++
->  include/linux/phy.h          |    2 ++
->  2 files changed, 21 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index 74630e9..2442895 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -625,6 +625,25 @@ void phy_detach(struct phy_device *phydev)
->  }
->  EXPORT_SYMBOL(phy_detach);
->
-> +int phy_suspend(struct phy_device *phydev)
-> +{
-> +       struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
-> +
-> +       if (phydrv->suspend)
-> +               return phydrv->suspend(phydev);
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL(phy_suspend);
-> +
-> +int phy_resume(struct phy_device *phydev)
-> +{
-> +       struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
-> +
-> +       if (phydrv->resume)
-> +               return phydrv->resume(phydev);
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL(phy_resume);
->
->  /* Generic PHY support and helper functions */
->
-> diff --git a/include/linux/phy.h b/include/linux/phy.h
-> index 64ab823..ed0d6d8 100644
-> --- a/include/linux/phy.h
-> +++ b/include/linux/phy.h
-> @@ -552,6 +552,8 @@ void phy_detach(struct phy_device *phydev);
->  void phy_start(struct phy_device *phydev);
->  void phy_stop(struct phy_device *phydev);
->  int phy_start_aneg(struct phy_device *phydev);
-> +int phy_suspend(struct phy_device *phydev);
-> +int phy_resume(struct phy_device *phydev);
->
->  int phy_stop_interrupts(struct phy_device *phydev);
->
-> --
-> 1.7.2.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Ok, I will combine them
 
 -- 
-Florian
+Regards,
+Ivan Khoronzhuk
