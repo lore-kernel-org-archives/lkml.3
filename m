@@ -1,131 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab3KTFiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 00:38:51 -0500
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:62795 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab3KTFiu convert rfc822-to-8bit (ORCPT
+	id S1751886Ab3KTFi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 00:38:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43745 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab3KTFi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 00:38:50 -0500
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: "bhe@redhat.com" <bhe@redhat.com>,
-        "chaowang@redhat.com" <chaowang@redhat.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "dyoung@redhat.com" <dyoung@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: /proc/vmcore mmap() failure issue
-Thread-Topic: /proc/vmcore mmap() failure issue
-Thread-Index: AQHO5Q1z18hsX/7760SqeZbh92xDy5otk3zQ
-Date: Wed, 20 Nov 2013 05:27:59 +0000
-Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
-References: <20131113204130.GD7613@redhat.com>
- <5284A689.70903@jp.fujitsu.com> <20131114151359.GA3913@redhat.com>
- <5285EC60.1060906@jp.fujitsu.com> <20131115142617.GC6637@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp>
- <528B3585.5080606@jp.fujitsu.com>
-In-Reply-To: <528B3585.5080606@jp.fujitsu.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.40.240]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Nov 2013 00:38:56 -0500
+Date: Tue, 19 Nov 2013 21:39:19 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, devel@driverdev.osuosl.org,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH] staging: imx-drm: Fix modular build of DRM_IMX_IPUV3
+Message-ID: <20131120053919.GB367@kroah.com>
+References: <20131112171544.GR20328@hansolo.jdub.homelinux.org>
+ <20131118090309.GU24559@pengutronix.de>
+ <20131120015659.GF1908@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120015659.GF1908@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/19 18:56:21, kexec <kexec-bounces@lists.infradead.org> wrote:
-> (2013/11/18 9:51), Atsushi Kumagai wrote:
-> > (2013/11/15 23:26), Vivek Goyal wrote:
-> >> On Fri, Nov 15, 2013 at 06:41:52PM +0900, HATAYAMA Daisuke wrote:
-> >>
-> >> [..]
-> >>>> Given the fact that hpa does not like fixing it in kernel. We are 
-> >>>> left with option of fixing it in following places.
-> >>>>
-> >>>> - Drop partial pages in kexec-tools
-> >>>> - Drop partial pages in makeudmpfile.
-> >>>> - Read partial pages using read() interface in makedumpfile
-> >>>> - Modify /proc/vmcore to copy partial pages in second kernel's memory.
-> >>>>
-> >>>> It is not clear to me that partial pages are really useful.  So I 
-> >>>> want to avoid modifying /proc/vmcore to deal with partial pages and 
-> >>>> increase complexity.
-> >>>>
-> >>>> So fixing makedumpfile (either option2 or option 3) seems least 
-> >>>> risky to me. In fact I would say let us keep it simple and truncate 
-> >>>> partial pages in makedumpfile to keep it simple. And look at option 
-> >>>> 3 once we have a strong use case for partial pages.
-> >>>>
-> >>>> What do you think?
-> >>>>
-> >>>
-> >>> As you say, it's not clear that partial pages are really useful, but 
-> >>> on the other hand, it seems to me not clear that they are really useless.
-> >>> I think we should get them as long as we have access to them.
-> >>>
-> >>> It seems best to me the option 3). Switching between read and mmap 
-> >>> would be not so complex and also it's by far flexible in 
-> >>> makedumpfile than in kernel.
-> >>
-> >> Ok, I am fine with option 3. It is more complicated option but safe 
-> >> option.
+On Tue, Nov 19, 2013 at 08:56:59PM -0500, Josh Boyer wrote:
+> On Mon, Nov 18, 2013 at 10:03:10AM +0100, Sascha Hauer wrote:
+> > On Tue, Nov 12, 2013 at 12:15:45PM -0500, Josh Boyer wrote:
+> > > commit b8d181e408af (staging: drm/imx: add drm plane support) added a file
+> > > to the make target for DRM_IMX_IPUV3 but didn't adjust the objs required
+> > > to actually build that as a module.  Kbuild got confused and this lead to
+> > > link errors like:
+> > > 
+> > > ERROR: "ipu_plane_disable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+> > > ERROR: "ipu_plane_enable" [drivers/staging/imx-drm/ipuv3-crtc.ko] undefined!
+> > > 
+> > > Additionally, it added a call to imx_drm_crtc_id which also fails with a
+> > > link error as above.  To fix this, we adjust the make target with the proper
+> > > objs, which will change the name of the resulting .ko.  We also add an
+> > > EXPORT_SYMBOL_GPL for imx_drm_crtc_id.
+> > > 
+> > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
 > > 
-> > It sounds reasonable also to me.
 > > 
-> >> Is there any chance that you could look into fixing this. I have no 
-> >> experience writing code for makedumpfile.
+> > Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 > > 
-> > I'll send a patch to fix this soon.
-> > 
+> > Sascha
 > 
-> Thanks.
-> 
-> BTW, now the following patch has been applied on top of makedumpfile in kexec-tools package on fedora in order to avoid the issue.
-> 
-> https://lists.fedoraproject.org/pipermail/kexec/2013-November/000254.html
-> 
-> I remember prototype version of mmap patch implemented a kind of --no-mmap option and we could use it to disable mmap() use and use read() instead, I think which is useful when we face this kind of issue.
+> Thanks.  So who picks this fix up?  Greg, is that you?
 
-How about this fail back structure instead of such an extra option ?
+Yes, I will once 3.13-rc1 is out.
 
-Thanks
-Atsushi Kumagai
-
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Date: Wed, 20 Nov 2013 14:10:19 +0900
-Subject: [PATCH] Fall back to read() when mmap() fails.
-
-Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
----
- makedumpfile.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/makedumpfile.c b/makedumpfile.c
-index ca03440..f583602 100644
---- a/makedumpfile.c
-+++ b/makedumpfile.c
-@@ -324,7 +324,15 @@ read_from_vmcore(off_t offset, void *bufptr, unsigned long size)
- 		if (!read_with_mmap(offset, bufptr, size)) {
- 			ERRMSG("Can't read the dump memory(%s) with mmap().\n",
- 			       info->name_memory);
--			return FALSE;
-+
-+			ERRMSG("This kernel might have some problems about mmap().\n");
-+			ERRMSG("read() will be used instead of mmap() from now.\n");
-+
-+			/*
-+			 * Fall back to read().
-+			 */
-+			info->flag_usemmap = FALSE;
-+			read_from_vmcore(offset, bufptr, size);
- 		}
- 	} else {
- 		if (lseek(info->fd_memory, offset, SEEK_SET) == failed) {
--- 
-1.8.0.2
+greg k-h
