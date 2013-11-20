@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab3KTNCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 08:02:12 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64551 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab3KTNCF (ORCPT
+	id S1753948Ab3KTNC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 08:02:28 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36303 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab3KTNCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 08:02:05 -0500
+	Wed, 20 Nov 2013 08:02:15 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, hch@infradead.org,
         akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
         jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: [PATCH 05/11] vfs: add RENAME_NOREPLACE flag
-Date: Wed, 20 Nov 2013 14:01:46 +0100
-Message-Id: <1384952512-21600-6-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 10/11] ext4: rename: split out helper functions
+Date: Wed, 20 Nov 2013 14:01:51 +0100
+Message-Id: <1384952512-21600-11-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
 References: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
@@ -25,105 +25,258 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-If this flag is specified and the target of the rename exists then the
-rename syscall fails with EEXIST.
+Cross rename (exchange source and dest) will need to call some of these
+helpers for both source and dest, while overwriting rename currently only
+calls them for one or the other.  This also makes the code easier to
+follow.
 
-The VFS does the existence checking, so it is trivial to enable for most
-local filesystems.  This patch only enables it in ext4.
-
-For network filesystems the VFS check is not enough as there may be a race
-between a remote create and the rename, so these filesystems need to handle
-this flag in their ->rename() implementations to ensure atomicity.
-
-Suggested-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/ext4/namei.c         |  2 +-
- fs/namei.c              | 21 +++++++++++++--------
- include/uapi/linux/fs.h |  2 ++
- 3 files changed, 16 insertions(+), 9 deletions(-)
+ fs/ext4/namei.c | 199 +++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 126 insertions(+), 73 deletions(-)
 
 diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 08c40f4e7eed..e0129b6e74cf 100644
+index 94583a4bd875..d258b354b937 100644
 --- a/fs/ext4/namei.c
 +++ b/fs/ext4/namei.c
-@@ -3021,7 +3021,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	int inlined = 0, new_inlined = 0;
- 	struct ext4_dir_entry_2 *parent_de;
+@@ -3017,6 +3017,125 @@ struct ext4_renament {
+ 	int dir_inlined;
+ };
  
--	if (flags)
-+	if (flags & ~RENAME_NOREPLACE)
- 		return -EOPNOTSUPP;
- 
- 	dquot_initialize(old_dir);
-diff --git a/fs/namei.c b/fs/namei.c
-index 9efeb16f685c..042f83acd28e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -4128,7 +4128,7 @@ SYSCALL_DEFINE5(renameat2, int, olddfd, const char __user *, oldname,
- 	bool should_retry = false;
- 	int error;
- 
--	if (flags)
-+	if (flags & ~RENAME_NOREPLACE)
- 		return -EOPNOTSUPP;
- 
- retry:
-@@ -4154,6 +4154,8 @@ retry:
- 		goto exit2;
- 
- 	new_dir = newnd.path.dentry;
-+	if (flags & RENAME_NOREPLACE)
-+		error = -EEXIST;
- 	if (newnd.last_type != LAST_NORM)
- 		goto exit2;
- 
-@@ -4176,22 +4178,25 @@ retry_deleg:
- 	error = -ENOENT;
- 	if (d_is_negative(old_dentry))
- 		goto exit4;
-+	new_dentry = lookup_hash(&newnd);
-+	error = PTR_ERR(new_dentry);
-+	if (IS_ERR(new_dentry))
-+		goto exit4;
-+	error = -EEXIST;
-+	if ((flags & RENAME_NOREPLACE) && d_is_positive(new_dentry))
-+		goto exit5;
- 	/* unless the source is a directory trailing slashes give -ENOTDIR */
- 	if (!d_is_dir(old_dentry)) {
- 		error = -ENOTDIR;
- 		if (oldnd.last.name[oldnd.last.len])
--			goto exit4;
-+			goto exit5;
- 		if (newnd.last.name[newnd.last.len])
--			goto exit4;
-+			goto exit5;
- 	}
- 	/* source should not be ancestor of target */
- 	error = -EINVAL;
- 	if (old_dentry == trap)
--		goto exit4;
--	new_dentry = lookup_hash(&newnd);
--	error = PTR_ERR(new_dentry);
--	if (IS_ERR(new_dentry))
--		goto exit4;
-+		goto exit5;
- 	/* target should not be an ancestor of source */
- 	error = -ENOTEMPTY;
- 	if (new_dentry == trap)
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 6c28b61bb690..9250f4dd7d96 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -35,6 +35,8 @@
- #define SEEK_HOLE	4	/* seek to the next hole */
- #define SEEK_MAX	SEEK_HOLE
- 
-+#define RENAME_NOREPLACE	(1 << 0)	/* Don't overwrite target */
++static int ext4_rename_dir_prepare(handle_t *handle, struct ext4_renament *ent)
++{
++	int retval;
 +
- struct fstrim_range {
- 	__u64 start;
- 	__u64 len;
++	ent->dir_bh = ext4_get_first_dir_block(handle, ent->inode,
++					      &retval, &ent->parent_de,
++					      &ent->dir_inlined);
++	if (!ent->dir_bh)
++		return retval;
++	if (le32_to_cpu(ent->parent_de->inode) != ent->dir->i_ino)
++		return -EIO;
++	BUFFER_TRACE(ent->dir_bh, "get_write_access");
++	return ext4_journal_get_write_access(handle, ent->dir_bh);
++}
++
++static int ext4_rename_dir_finish(handle_t *handle, struct ext4_renament *ent,
++				  unsigned dir_ino)
++{
++	int retval;
++
++	ent->parent_de->inode = cpu_to_le32(dir_ino);
++	BUFFER_TRACE(ent->dir_bh, "call ext4_handle_dirty_metadata");
++	if (!ent->dir_inlined) {
++		if (is_dx(ent->inode)) {
++			retval = ext4_handle_dirty_dx_node(handle,
++							   ent->inode,
++							   ent->dir_bh);
++		} else {
++			retval = ext4_handle_dirty_dirent_node(handle,
++							       ent->inode,
++							       ent->dir_bh);
++		}
++	} else {
++		retval = ext4_mark_inode_dirty(handle, ent->inode);
++	}
++	if (retval) {
++		ext4_std_error(ent->dir->i_sb, retval);
++		return retval;
++	}
++	return 0;
++}
++
++static int ext4_setent(handle_t *handle, struct ext4_renament *ent,
++		       unsigned ino, unsigned file_type)
++{
++	int retval;
++
++	BUFFER_TRACE(ent->bh, "get write access");
++	retval = ext4_journal_get_write_access(handle, ent->bh);
++	if (retval)
++		return retval;
++	ent->de->inode = cpu_to_le32(ino);
++	if (EXT4_HAS_INCOMPAT_FEATURE(ent->dir->i_sb,
++				      EXT4_FEATURE_INCOMPAT_FILETYPE))
++		ent->de->file_type = file_type;
++	ent->dir->i_version++;
++	ent->dir->i_ctime = ent->dir->i_mtime =
++		ext4_current_time(ent->dir);
++	ext4_mark_inode_dirty(handle, ent->dir);
++	BUFFER_TRACE(ent->bh, "call ext4_handle_dirty_metadata");
++	if (!ent->inlined) {
++		retval = ext4_handle_dirty_dirent_node(handle,
++						       ent->dir, ent->bh);
++		if (unlikely(retval)) {
++			ext4_std_error(ent->dir->i_sb, retval);
++			return retval;
++		}
++	}
++	brelse(ent->bh);
++	ent->bh = NULL;
++
++	return 0;
++}
++
++static int ext4_find_delete_entry(handle_t *handle, struct inode *dir,
++				  const struct qstr *d_name)
++{
++	int retval = -ENOENT;
++	struct buffer_head *bh;
++	struct ext4_dir_entry_2 *de;
++
++	bh = ext4_find_entry(dir, d_name, &de, NULL);
++	if (bh) {
++		retval = ext4_delete_entry(handle, dir, de, bh);
++		brelse(bh);
++	}
++	return retval;
++}
++
++static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
++{
++	int retval;
++	/*
++	 * ent->de could have moved from under us during htree split, so make
++	 * sure that we are deleting the right entry.  We might also be pointing
++	 * to a stale entry in the unused part of ent->bh so just checking inum
++	 * and the name isn't enough.
++	 */
++	if (le32_to_cpu(ent->de->inode) != ent->inode->i_ino ||
++	    ent->de->name_len != ent->dentry->d_name.len ||
++	    strncmp(ent->de->name, ent->dentry->d_name.name,
++		    ent->de->name_len)) {
++		retval = ext4_find_delete_entry(handle, ent->dir,
++						&ent->dentry->d_name);
++	} else {
++		retval = ext4_delete_entry(handle, ent->dir, ent->de, ent->bh);
++		if (retval == -ENOENT) {
++			retval = ext4_find_delete_entry(handle, ent->dir,
++							&ent->dentry->d_name);
++		}
++	}
++
++	if (retval) {
++		ext4_warning(ent->dir->i_sb,
++				"Deleting old file (%lu), %d, error=%d",
++				ent->dir->i_ino, ent->dir->i_nlink, retval);
++	}
++}
++
+ /*
+  * Anybody can rename anything with this: the permission checks are left to the
+  * higher-level routines.
+@@ -3094,16 +3213,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			if (new.dir != old.dir && EXT4_DIR_LINK_MAX(new.dir))
+ 				goto end_rename;
+ 		}
+-		retval = -EIO;
+-		old.dir_bh = ext4_get_first_dir_block(handle, old.inode,
+-						  &retval, &old.parent_de,
+-						  &old.dir_inlined);
+-		if (!old.dir_bh)
+-			goto end_rename;
+-		if (le32_to_cpu(old.parent_de->inode) != old.dir->i_ino)
+-			goto end_rename;
+-		BUFFER_TRACE(old.dir_bh, "get_write_access");
+-		retval = ext4_journal_get_write_access(handle, old.dir_bh);
++		retval = ext4_rename_dir_prepare(handle, &old);
+ 		if (retval)
+ 			goto end_rename;
+ 	}
+@@ -3112,29 +3222,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		if (retval)
+ 			goto end_rename;
+ 	} else {
+-		BUFFER_TRACE(new.bh, "get write access");
+-		retval = ext4_journal_get_write_access(handle, new.bh);
++		retval = ext4_setent(handle, &new,
++				     old.inode->i_ino, old.de->file_type);
+ 		if (retval)
+ 			goto end_rename;
+-		new.de->inode = cpu_to_le32(old.inode->i_ino);
+-		if (EXT4_HAS_INCOMPAT_FEATURE(new.dir->i_sb,
+-					      EXT4_FEATURE_INCOMPAT_FILETYPE))
+-			new.de->file_type = old.de->file_type;
+-		new.dir->i_version++;
+-		new.dir->i_ctime = new.dir->i_mtime =
+-					ext4_current_time(new.dir);
+-		ext4_mark_inode_dirty(handle, new.dir);
+-		BUFFER_TRACE(new.bh, "call ext4_handle_dirty_metadata");
+-		if (!new.inlined) {
+-			retval = ext4_handle_dirty_dirent_node(handle,
+-							       new.dir, new.bh);
+-			if (unlikely(retval)) {
+-				ext4_std_error(new.dir->i_sb, retval);
+-				goto end_rename;
+-			}
+-		}
+-		brelse(new.bh);
+-		new.bh = NULL;
+ 	}
+ 
+ 	/*
+@@ -3147,31 +3238,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	/*
+ 	 * ok, that's it
+ 	 */
+-	if (le32_to_cpu(old.de->inode) != old.inode->i_ino ||
+-	    old.de->name_len != old.dentry->d_name.len ||
+-	    strncmp(old.de->name, old.dentry->d_name.name, old.de->name_len) ||
+-	    (retval = ext4_delete_entry(handle, old.dir,
+-					old.de, old.bh)) == -ENOENT) {
+-		/* old.de could have moved from under us during htree split, so
+-		 * make sure that we are deleting the right entry.  We might
+-		 * also be pointing to a stale entry in the unused part of
+-		 * old.bh so just checking inum and the name isn't enough. */
+-		struct buffer_head *old_bh2;
+-		struct ext4_dir_entry_2 *old_de2;
+-
+-		old_bh2 = ext4_find_entry(old.dir, &old.dentry->d_name,
+-					  &old_de2, NULL);
+-		if (old_bh2) {
+-			retval = ext4_delete_entry(handle, old.dir,
+-						   old_de2, old_bh2);
+-			brelse(old_bh2);
+-		}
+-	}
+-	if (retval) {
+-		ext4_warning(old.dir->i_sb,
+-				"Deleting old file (%lu), %d, error=%d",
+-				old.dir->i_ino, old.dir->i_nlink, retval);
+-	}
++	ext4_rename_delete(handle, &old);
+ 
+ 	if (new.inode) {
+ 		ext4_dec_count(handle, new.inode);
+@@ -3180,24 +3247,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
+ 	ext4_update_dx_flag(old.dir);
+ 	if (old.dir_bh) {
+-		old.parent_de->inode = cpu_to_le32(new.dir->i_ino);
+-		BUFFER_TRACE(old.dir_bh, "call ext4_handle_dirty_metadata");
+-		if (!old.dir_inlined) {
+-			if (is_dx(old.inode)) {
+-				retval = ext4_handle_dirty_dx_node(handle,
+-								   old.inode,
+-								   old.dir_bh);
+-			} else {
+-				retval = ext4_handle_dirty_dirent_node(handle,
+-							old.inode, old.dir_bh);
+-			}
+-		} else {
+-			retval = ext4_mark_inode_dirty(handle, old.inode);
+-		}
+-		if (retval) {
+-			ext4_std_error(old.dir->i_sb, retval);
++		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
++		if (retval)
+ 			goto end_rename;
+-		}
++
+ 		ext4_dec_count(handle, old.dir);
+ 		if (new.inode) {
+ 			/* checked empty_dir above, can't have another parent,
 -- 
 1.8.1.4
 
