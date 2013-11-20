@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab3KTTug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:50:36 -0500
-Received: from fieldses.org ([174.143.236.118]:57434 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab3KTTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:50:35 -0500
-Date: Wed, 20 Nov 2013 14:50:32 -0500
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [RFC PATCH v2 3/5] locks: add new "private" lock type that is
- owned by the filp
-Message-ID: <20131120195032.GA7387@fieldses.org>
-References: <1384965906-27327-1-git-send-email-jlayton@redhat.com>
- <1384965906-27327-4-git-send-email-jlayton@redhat.com>
+	id S1754995Ab3KTTxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:53:17 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41208 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab3KTTxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 14:53:12 -0500
+Message-ID: <528D1327.7080205@codeaurora.org>
+Date: Wed, 20 Nov 2013 11:53:11 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384965906-27327-4-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: santosh.shilimkar@ti.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME
+ is set
+References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com> <528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com>
+In-Reply-To: <528D082C.3040405@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 11:45:04AM -0500, Jeff Layton wrote:
-> Due to some unfortunate history, POSIX locks have very strange and
-> unhelpful semantics. The thing that usually catches people by surprise
-> is that they are dropped whenever the process closes any file descriptor
-> associated with the inode.
-> 
-> This is extremely problematic for people developing file servers that
-> need to implement byte-range locks. Developers often need a "lock
-> management" facility to ensure that file descriptors are not closed
-> until all of the locks associated with the inode are finished.
-> 
-> This patchset adds a new type of lock that attempts to address this
-> issue. These locks work just like "normal" POSIX read/write locks, but
-> have semantics that are more like BSD locks with respect to inheritance
-> and behavior on close.
-> 
-> This is implemented primarily by changing how fl_owner field is set for
-> these locks. Instead of having them owned by the files_struct of the
-> process, they are instead owned by the filp on which they were acquired.
-> Thus, they are inherited across fork() and are only released when the
-> last reference to a filp is put.
-> 
-> These new semantics prevent them from being merged with "classic" POSIX
-> locks, even if they are acquired by the same process. These locks will
-> also conflict with "classic" POSIX locks even if they are acquired by
-> the same process or on the same file descriptor.
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c                       | 22 +++++++++++++++++++++-
->  include/uapi/asm-generic/fcntl.h | 15 +++++++++++++++
->  2 files changed, 36 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 86cafc3..3b278a6 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -348,6 +348,26 @@ static int posix_assign_type(struct file_lock *fl, long type)
->  {
->  	int err;
->  
-> +	/*
-> +	 * FL_FILP_PRIVATE locks are "owned" by the filp upon which they were
-> +	 * acquired, regardless of what task is dealing with them. Set the
-> +	 * fl_owner appropriately.
-> +	 */
-> +	switch (type) {
-> +	case F_RDLCKP:
-> +		type = F_RDLCK;
-> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> +		break;
-> +	case F_WRLCKP:
-> +		type = F_WRLCK;
-> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> +		break;
-> +	case F_UNLCKP:
-> +		type = F_UNLCK;
-> +		fl->fl_owner = (fl_owner_t)fl->fl_file;
-> +		break;
-> +	}
-> +
+On 11/20/13 11:06, Grygorii Strashko wrote:
+> On 11/20/2013 08:42 PM, Stephen Boyd wrote:
+>> On 11/20/13 05:31, Grygorii Strashko wrote:
+>>> @@ -230,7 +230,7 @@ int pm_clk_suspend(struct device *dev)
+>>>   	list_for_each_entry_reverse(ce, &psd->clock_list, node) {
+>>>   		if (ce->status < PCE_STATUS_ERROR) {
+>>>   			if (ce->status == PCE_STATUS_ENABLED)
+>>> -				clk_disable(ce->clk);
+>>> +				clk_disable_unprepare(ce->clk);
+>>>   			ce->status = PCE_STATUS_ACQUIRED;
+>>>   		}
+>>>   	}
+>>> @@ -259,7 +259,7 @@ int pm_clk_resume(struct device *dev)
+>>>   
+>>>   	list_for_each_entry(ce, &psd->clock_list, node) {
+>>>   		if (ce->status < PCE_STATUS_ERROR) {
+>>> -			clk_enable(ce->clk);
+>>> +			clk_prepare_enable(ce->clk);
+>>>   			ce->status = PCE_STATUS_ENABLED;
+>>>   		}
+>>>   	}
+>> This is inside a spin_lock_irqsave(). You should be getting scheduling
+>> while atomic warnings with this change. Are you testing with
+>> DEBUG_ATOMIC_SLEEP=y?
+> Ops, thanks. No, It's not tested with DEBUG_ATOMIC_SLEEP and 
+> I agree with you.
+>
+> So, I see two option here:
+> 1) split above loops on two
+> 2) add calls of clk_prepare()/clk_unprepare() in pm_clk_notify()
+>
+> In my opinion option [2] is better.
+>
 
-After this fl_owner gets set to current->files in
-flock{64}_to_posix_lock and then reset here.  That seems like a trap for
-the unwary reader.
+Doesn't that mean the clock will always be prepared as long as the
+device is present? That doesn't sound good. I would like the clocks to
+be disabled and unprepared as long as the device is suspended.
 
-Could you do something like rename this flock_to_posix_lock_common and
-move all the 32/64-bit-independent initialization here?
+What is the lock protecting? The linked list or something more? Can we
+remove the locks?
 
-Looks like there's way more duplication than necessary between those two
-cases.
+It looks like even if you just remove the locks here, the PM core is
+free to call this function with irqs disabled if pm_runtime_irq_safe()
+has been called on the device. Perhaps runtime PM can only do the
+clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
+calls should happen in the system suspend callbacks?
 
-(Also, why do we have an fl_owner_t instead of using a void?)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
---b.
-
->  	err = assign_type(fl, type);
->  	if (err)
->  		return err;
-> @@ -2225,7 +2245,7 @@ void locks_remove_filp(struct file *filp)
->  
->  	while ((fl = *before) != NULL) {
->  		if (fl->fl_file == filp) {
-> -			if (IS_FLOCK(fl)) {
-> +			if (IS_FLOCK(fl) || IS_POSIX(fl)) {
->  				locks_delete_lock(before);
->  				continue;
->  			}
-> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-> index 95e46c8..6b7b68a 100644
-> --- a/include/uapi/asm-generic/fcntl.h
-> +++ b/include/uapi/asm-generic/fcntl.h
-> @@ -151,6 +151,21 @@ struct f_owner_ex {
->  #define F_UNLCK		2
->  #endif
->  
-> +/*
-> + * fd "private" POSIX locks.
-> + *
-> + * Usually POSIX locks held by a process are released on *any* close and are
-> + * not inherited across a fork().
-> + *
-> + * These lock types will conflict with normal POSIX locks, but are "owned"
-> + * by the fd, not the process. This means that they are inherited across
-> + * fork() like BSD (flock) locks, and they are only closed when the last
-> + * reference to the the filp against which were acquired is closed.
-> + */
-> +#define F_RDLCKP	5
-> +#define F_WRLCKP	6
-> +#define F_UNLCKP	7
-> +
->  /* for old implementation of bsd flock () */
->  #ifndef F_EXLCK
->  #define F_EXLCK		4	/* or 3 */
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
