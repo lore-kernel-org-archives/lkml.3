@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3KTRmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 12:42:45 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:55355 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab3KTRmn (ORCPT
+	id S1754065Ab3KTRnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 12:43:47 -0500
+Received: from 4.mo5.mail-out.ovh.net ([178.33.111.247]:53106 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750906Ab3KTRnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 12:42:43 -0500
+	Wed, 20 Nov 2013 12:43:46 -0500
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 12:43:46 EST
+Date: Wed, 20 Nov 2013 18:27:22 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 8/9] ARM: at91/dt: add new at91rm9200ek_mmc board
+Message-ID: <20131120172722.GJ14627@ns203013.ovh.net>
+References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
+ <1377693456-11133-1-git-send-email-b.brezillon@overkiz.com>
+ <20131120150255.GH14627@ns203013.ovh.net>
+ <528CE3E6.1040802@overkiz.com>
 MIME-Version: 1.0
-In-Reply-To: <20131120.004026.2013972041095203460.davem@davemloft.net>
-References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
-	<20131120.004026.2013972041095203460.davem@davemloft.net>
-Date: Wed, 20 Nov 2013 09:42:42 -0800
-Message-ID: <CANEJEGtBmvFNcFzOW9ZnOFd=ZMnz82ajcN52YqW3+n0+=rhxBA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B under ChromeOS
-From: Grant Grundler <grundler@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: Freddy Xin <freddy@asix.com.tw>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        davemloft@davemloft.net,
-        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>, Daniel_ASIX <daniel@asix.com.tw>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528CE3E6.1040802@overkiz.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 17324503342588078969
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 9:40 PM, David Miller <davem@davemloft.net> wrote:
-> From: freddy@asix.com.tw
-> Date: Wed, 20 Nov 2013 10:11:36 +0800
->
->> From: Freddy Xin <freddy@asix.com.tw>
->>
->> This patch adds a workaroud to solve Suspend/Resume issue that AX88772B turns
->> off its Ethernet PHY power in the case that REMOTE_WAKEUP feature doesn't
->> be set when system suspend. In this case, the PHY power will not be turned
->> on again when system resume, so the HW reset must be added in the resume function.
->>
->> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
->> Tested-by: Grant Grundler <grundler@chromium.org>
->
-> Like many similar patches I've seen recently, you cannot do this.
->
-> Now the the configuration that software things the PHY has is no
-> longer accurate.
+On 17:31 Wed 20 Nov     , boris brezillon wrote:
+> On 20/11/2013 16:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >On 14:37 Wed 28 Aug     , Boris BREZILLON wrote:
+> >>Add a new at91rm9200ek_mmc board (based on at91rm9200ek board) which enables
+> >>mmc0/slot0.
+> >no for multiple dts
+> >
+> >this need to handle at user space level
+> 
+> You mean, by controlling the regulator using the sysfs interface, or
+> by loading
+> only the appropriate driver ?
+load the partial dts via userspace
+> 
+> What if both drivers are loaded (or not compiled as modules) ?
+> This will lead to one device being unusable (and maybe even worst)...
+> 
+this will never be the case
 
-Dave,
-Sorry - I didn't think of that.  I agree the phy settings should be
-reprograming in the phy.
-
-The kernel state of the phy is not accurate in any case since the phy
-was powered off and left powered off.
-While this patch raises a new issue, can you apply this patch anyway
-since in most cases (default settings) it improves "the user
-experience" for most users?
-
-> If you absolutely must reset the chip on resume, you have to reprogram
-> the PHY with whatever settings were existed at the time of the suspend.
-
-AFAICT, the reset is required.
-
-Since you've seen so many of these patches that do NOT reprogram the
-phy on reset, would you consider a patch that added "reprogram phy" to
-usbnet_resume() code path?
-
-thanks!
-grant
+Best Regards,
+J.
+> Please explain what you had in mind ?
+> 
+> >
+> >Best Regards,
+> >J.
+> >>Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> >>---
+> >>  arch/arm/boot/dts/at91rm9200ek_mmc.dts |   23 +++++++++++++++++++++++
+> >>  1 file changed, 23 insertions(+)
+> >>  create mode 100644 arch/arm/boot/dts/at91rm9200ek_mmc.dts
+> >>
+> >>diff --git a/arch/arm/boot/dts/at91rm9200ek_mmc.dts b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
+> >>new file mode 100644
+> >>index 0000000..c87a861
+> >>--- /dev/null
+> >>+++ b/arch/arm/boot/dts/at91rm9200ek_mmc.dts
+> >>@@ -0,0 +1,23 @@
+> >>+/*
+> >>+ * at91rm9200ek.dts - Device Tree file for Atmel AT91RM9200 evaluation kit with
+> >>+ *                    an MMC slot
+> >>+ *
+> >>+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+> >>+ *
+> >>+ * Licensed under GPLv2 only
+> >>+ */
+> >>+/dts-v1/;
+> >>+#include "at91rm9200ek.dts"
+> >>+
+> >>+/ {
+> >>+	model = "Atmel AT91RM9200 evaluation kit with MMC slot";
+> >>+	compatible = "atmel,at91rm9200ek-mmc", "atmel,at91rm9200ek", "atmel,at91rm9200";
+> >>+
+> >>+	ahb {
+> >>+		apb {
+> >>+			mmc0: mmc@fffb4000 {
+> >>+				status = "okay";
+> >>+			};
+> >>+		};
+> >>+	};
+> >>+};
+> >>-- 
+> >>1.7.9.5
+> >>
+> 
