@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab3KTI51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 03:57:27 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:48712 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3KTI5Y (ORCPT
+	id S1752949Ab3KTI7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 03:59:08 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:51556 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3KTI7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 03:57:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <5280BB65.5040305@ti.com>
-References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
-	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
-	<527744B2.4090303@ti.com>
-	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
-	<52779D28.9000905@ti.com>
-	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
-	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
-	<000001ceda17$f41c2030$dc546090$%han@samsung.com>
-	<000101ceda1f$04ca6f20$0e5f4d60$%han@samsung.com>
-	<CAFp+6iFAZab35F-MOOZHcHpzSEOL=51gWBK2KZbOJS+0731GJQ@mail.gmail.com>
-	<000301ceda84$1d648bf0$582da3d0$%han@samsung.com>
-	<5280BB65.5040305@ti.com>
-Date: Wed, 20 Nov 2013 14:27:23 +0530
-Message-ID: <CAFp+6iGKpzOHjwnSMvSgTehzPLQMB8madoYqMk5JPSAZfSGSTg@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Nov 2013 03:59:03 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] clksrc-of: warn if no clock sources are found
+Date: Wed, 20 Nov 2013 09:58:56 +0100
+Message-Id: <1384937936-14267-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+Many platforms rely on clocksource_of_init() being implicitly
+called for registering clock sources and will get zero warnings
+if no working clock source is available. Let's print a critical
+error message if no clock source is found.
 
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/clocksource/clksrc-of.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-On Mon, Nov 11, 2013 at 4:41 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
-sorry for the delayed response.
-
->
-> On Wednesday 06 November 2013 05:37 AM, Jingoo Han wrote:
->> On Wednesday, November 06, 2013 2:58 AM, Vivek Gautam wrote:
->>> On Tue, Nov 5, 2013 at 5:33 PM, Jingoo Han <jg1.han@samsung.com> wrote:
->>
->> [.....]
->>
->>>> USB3.0 PHY consists of two blocks such as 3.0 block and 2.0 block.
->>>> This USB3.0 PHY can support UTMI+ and PIPE3 interface for 3.0 block
->>>> and 2.0 block, respectively.
->>>>
->>>> Conclusion:
->>>>
->>>>    1) USB2.0 PHY: USB2.0 HOST, USB2.0 Device
->>>>                        Base address: 0x1213 0000
->>>>
->>>>    2) USB3.0 PHY: USB3.0 DRD (3.0 HOST & 3.0 Device)
->>>>                        Base address: 0x1210 0000
->>>>                        2.0 block(UTMI+) & 3.0 block(PIPE3)
->>>
->>> And this is of course the PHY used by DWC3 controller, which works at
->>> both High speed as well as Super Speed.
->>> Right ?
->>
->> Right.
->>
->> While 3.0 block(PIPE3) can be used for Super Speed, 2.0 block(UTMI+)
->> can be used for High speed.
->
-> It should then come under *single IP muliple PHY* category similar to what
-> Sylwester has done.
-
-Do you mean that i should be including PHY IDs for UTMI+ phy and PIPE3
-phy present in this PHY block ?
-AFAICS the two phys (UTMI+ and PIPE3) do not really have separate
-registers to program, and that's the reason
-we program the entire PHY in a shot.
-
->
-> Thanks
-> Kishon
-
-
-
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+index 35639cf4e5a2..a30b42c3ac3b 100644
+--- a/drivers/clocksource/clksrc-of.c
++++ b/drivers/clocksource/clksrc-of.c
+@@ -28,6 +28,7 @@ void __init clocksource_of_init(void)
+ 	struct device_node *np;
+ 	const struct of_device_id *match;
+ 	clocksource_of_init_fn init_func;
++	unsigned clocksources = 0;
+ 
+ 	for_each_matching_node_and_match(np, __clksrc_of_table, &match) {
+ 		if (!of_device_is_available(np))
+@@ -36,5 +37,8 @@ void __init clocksource_of_init(void)
+ 		init_func = match->data;
+ 		init_func(np);
+ 		of_node_put(np);
++		clocksources++;
+ 	}
++	if (!clocksources)
++		pr_crit("%s: no matching clocksources found\n", __func__);
+ }
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.8.3.1
+
