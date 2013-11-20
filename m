@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab3KTUwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 15:52:45 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37486 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027Ab3KTUwm (ORCPT
+	id S1755379Ab3KTUyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 15:54:25 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:40991 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140Ab3KTUyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 15:52:42 -0500
-Date: Wed, 20 Nov 2013 20:52:12 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Rob Landley <rob@landley.net>
-Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131120205212.2509cb8b@alan.etchedpixels.co.uk>
-In-Reply-To: <1384881423.1974.277@driftwood>
-References: <20131030120152.GM2400@suse.de>
-	<1384881423.1974.277@driftwood>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Nov 2013 15:54:23 -0500
+Message-ID: <528D217B.5020500@gmail.com>
+Date: Wed, 20 Nov 2013 21:54:19 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v1 0/7] net: phy: Ethernet PHY powerdown optimization
+References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131120.153642.2045230991917379052.davem@davemloft.net>
+In-Reply-To: <20131120.153642.2045230991917379052.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is assuming your hard drive _itself_ doesn't have bufferbloat, but  
-> http://spritesmods.com/?art=hddhack&f=rss implies they don't, and  
-> tagged command queueing lets you see through that anyway so your  
-> "actually committed" numbers could presumably still be accurate if the  
-> manufacturers aren't totally lying.
+On 11/20/2013 09:36 PM, David Miller wrote:
+> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Date: Wed, 20 Nov 2013 21:21:46 +0100
+>
+>> Ethernet PHYs consume a significant amount of power when link is detected.
+>> Especially, for embedded systems it can be easily 20-40% of total system
+>> power. Now, currently most likely all ethernet drivers leave PHYs powered
+>> on, even if the device is taken down. Also, some stupid boot loaders power
+>> on all PHYs available.
+>>
+>> This RFC deals with saving power consumed by ethernet PHYs, that have no
+>> corresponding ethernet device driver or are attached to ethernet devices
+>> which are taken down by user request, i.e. ifconfig ethN down. Ports with
+>> no link, i.e. cable removed, are already quite good at power saving due to
+>> PHY internal link detection.
+>
+> The idea is sound and the goal is of course valuable, but it brings up
+> a chronically reoccurring issue as of late.
+>
+> You cannot reset the PHY or take it down without somehow retaining the
+> settings the PHY had when you bring it back up.
 
-They don't but they do have wildly variable completion rates and times.
-Nothing like a drive having a seven second hiccup to annoy people but
-they can do that at times.
+Right, as far as I understand BMCR powerdown, i.e. what is called in
+genphy_suspend/resume, powers down the PHY but _does_ retain PHY config.
+It is not resetting the device.
 
-There are two problems though
+I haven't checked a lot of datasheets but [1] notes that "registers will
+preserve their configuration". Even if we have PHYs that do not preserve
+it, they should have a device specific callback for suspend/resume that
+takes care of preserving it.
 
-1. Disk performance particularly in the rotating rust world is
-operations/second which is rarely related to volume
+[1] http://www.ti.com/lit/an/snoa463a/snoa463a.pdf
 
-2. If the block layer is trying to decide whether the drive is busy
-you've got it the wrong way up IMHO. Busy-ness is a property of the
-device and often very device and subsystem specific, so the device end of
-the chain should figure out how loaded it feels
-
-
-Beyond that the entire problem is well understood and there isn't any
-real difference between an IPv4 network and a storage layer. In fact in
-some cases like NFS, DRBD, AoE, and remote block device stuff it's even
-more so.
-
-(TCP based remote block devices btw are a prime example of why you need
-device end of chain figuring out busy state.. you'll otherwise end up
-doing double backoff)
-
-Alan
+> If I ifdown/ifup a device, my ethtool link configuration better be
+> retained.
+>
+> This means the PHY layer must have a way to reprogram the device when
+> it is brought back up, with whatever settings the software state
+> things are there.
+>
 
