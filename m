@@ -1,69 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab3KTK5t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:57:49 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57008 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab3KTK5q (ORCPT
+	id S1752899Ab3KTK6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:58:31 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46383 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab3KTK6a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:57:46 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        horms@verge.net.au
-Subject: Re: [PATCH 00/05] gpio: R-Car and EM GPIO update V2
-Date: Wed, 20 Nov 2013 11:58:32 +0100
-Message-ID: <18469590.Iog5Xntpc3@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131120002259.27342.35575.sendpatchset@w520>
-References: <20131120002259.27342.35575.sendpatchset@w520>
+	Wed, 20 Nov 2013 05:58:30 -0500
+Message-ID: <528C95D2.5090200@arm.com>
+Date: Wed, 20 Nov 2013 10:58:26 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Feng Kan <fkan@apm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
+References: <1384897358-22940-1-git-send-email-fkan@apm.com>
+In-Reply-To: <1384897358-22940-1-git-send-email-fkan@apm.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 20 Nov 2013 10:58:26.0737 (UTC) FILETIME=[7072EA10:01CEE5DF]
+X-MC-Unique: 113112010582801001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+[dropping <patches@apm.com> from the CC list, as someone seems to have
+ tripped on the config file, and I'm tired of getting bounces]
 
-Thank you for the patch.
+Feng,
 
-On Wednesday 20 November 2013 09:22:59 Magnus Damm wrote:
-> gpio: R-Car and EM GPIO update V2
-> 
-> [PATCH 01/05 v2] gpio: rcar: Use lazy disable
-> [PATCH 02/05 v2] gpio: rcar: Enable mask on suspend
-> [PATCH 03/05] gpio: em: Setup gpiochip->dev
-> [PATCH 04/05 v2] gpio: em: Use lazy disable
-> [PATCH 05/05 v2] gpio: em: Enable mask on suspend
-> 
-> Update the R-Car GPIO driver and the GPIO driver used on EMEV2 to use lazy
-> disable and mask on suspend. This fixes the Suspend-to-RAM behavior to make
-> sure wakeup sources are left enabled while suspending. Also include a small
-> fix for gpio-em that fixes the DT use case.
-> 
-> Thanks to Laurent and Linus for feedback.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+On 19/11/13 21:42, Feng Kan wrote:
+> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
+> X-Gene implementation, the FIQ bypass must be enabled at all time.
+> Otherwise, some PPI will appear as FIQ and cause kernel problem.
 
-For the whole series,
+How comes? Are only PPIs affected? When you say "some PPIs", can you be
+more specific?
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
+> Signed-off-by: Feng Kan <fkan@apm.com>
 > ---
+>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
+>  include/linux/irqchip/arm-gic.h |    4 ++--
+>  2 files changed, 13 insertions(+), 6 deletions(-)
 > 
->  Written against renesas.git tag renesas-devel-v3.12-20131119
-> 
->  Changes since V1:
->  - Split lazy disable and mask on suspend patches
->  - Improved commit messages
-> 
->  drivers/gpio/gpio-em.c   |    5 ++---
->  drivers/gpio/gpio-rcar.c |    5 ++---
->  2 files changed, 4 insertions(+), 6 deletions(-)
--- 
-Regards,
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index d0e9480..aa7342e 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -65,6 +65,7 @@ struct gic_chip_data {
+>  #endif
+>  	struct irq_domain *domain;
+>  	unsigned int gic_irqs;
+> +	unsigned int bypass_flag;
+>  #ifdef CONFIG_GIC_NON_BANKED
+>  	void __iomem *(*get_base)(union gic_base *);
+>  #endif
+> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>  
+>  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, base + GIC_CPU_CTRL);
+> +	writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
+>  }
+>  
+>  void gic_cpu_if_down(void)
+> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>  
+>  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+> +	writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
+>  }
+>  
+>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
+>  
+>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>  			   void __iomem *dist_base, void __iomem *cpu_base,
+> -			   u32 percpu_offset, struct device_node *node)
+> +			   u32 percpu_offset, u32 bypass_val,
+> +			   struct device_node *node)
+>  {
+>  	irq_hw_number_t hwirq_base;
+>  	struct gic_chip_data *gic;
+> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>  
+>  	set_handle_irq(gic_handle_irq);
+>  
+> +	gic->bypass_flag = (bypass_val & 0xf) << 4;
 
-Laurent Pinchart
+Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
+
+>  	gic_chip.flags |= gic_arch_extn.flags;
+>  	gic_dist_init(gic);
+>  	gic_cpu_init(gic);
+> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>  	void __iomem *cpu_base;
+>  	void __iomem *dist_base;
+>  	u32 percpu_offset;
+> +	u32 bypass_val;
+>  	int irq;
+>  
+>  	if (WARN_ON(!node))
+> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>  	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+>  		percpu_offset = 0;
+>  
+> -	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
+> +	if (of_property_read_u32(node, "bypass-flags", &bypass_val))
+> +		bypass_val = 0;
+
+[adding Mark on Cc, so he can comment on the DT parts]
+
+Where's the DT documentation update? Also, as this is an
+implementation-specific quirk, you should consider using a separate
+compatible string and move the handling of this issue into some X-Gene
+specific code.
+
+> +	gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, bypass_val, node);
+>  
+>  	if (parent) {
+>  		irq = irq_of_parse_and_map(node, 0);
+> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+> index 0e5d9ec..999515b 100644
+> --- a/include/linux/irqchip/arm-gic.h
+> +++ b/include/linux/irqchip/arm-gic.h
+> @@ -64,14 +64,14 @@ struct device_node;
+>  extern struct irq_chip gic_arch_extn;
+>  
+>  void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
+> -		    u32 offset, struct device_node *);
+> +		    u32 offset, u32 bypass_val, struct device_node *);
+>  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+>  void gic_cpu_if_down(void);
+>  
+>  static inline void gic_init(unsigned int nr, int start,
+>  			    void __iomem *dist , void __iomem *cpu)
+>  {
+> -	gic_init_bases(nr, start, dist, cpu, 0, NULL);
+> +	gic_init_bases(nr, start, dist, cpu, 0, 0, NULL);
+>  }
+>  
+>  #endif /* __ASSEMBLY */
+> 
+
+Cheers,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
