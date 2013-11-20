@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab3KTKne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 05:43:34 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:39313 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3KTKnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 05:43:32 -0500
-Message-ID: <528C924E.50206@atmel.com>
-Date: Wed, 20 Nov 2013 11:43:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752649Ab3KTKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 05:44:16 -0500
+Received: from ra.se.axis.com ([195.60.68.13]:58587 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752328Ab3KTKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 05:44:14 -0500
+Date: Wed, 20 Nov 2013 11:44:12 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipc,shm: Correct error return value in shmctl (SHM_UNLOCK)
+Message-ID: <20131120104411.GA15831@axis.com>
 MIME-Version: 1.0
-To: <linux-arm-kernel@lists.infradead.org>, <herbert@gondor.hengli.com.au>,
-        <linux-crypto@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <eric@eukrea.com>
-Subject: Re: [PATCH RESEND 0/7] crypto: at91/atmel: add Device Tree support
-References: <cover.1383922546.git.nicolas.ferre@atmel.com>
-In-Reply-To: <cover.1383922546.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2013 16:08, Nicolas Ferre :
-> This series adds Device Tree support to the Atmel crypto drivers
-> (AES/[T]DES/SHA). The Device Tree entries are very simple and only
-> declare the reg/irq values and the link to DMA.
+Commit 2caacaa82a51b78fc0c800e206473874094287ed restructured
+the ipc shm to shorten critical region, but introduced a path
+where the return value could be -EPERM, even if the operation
+actually was performed.
 
-Herbert,
+Before the commit, the err return value was reset by the return value
+from security_shm_shmctl() after the if (!ns_capable(...)) statement.
 
-ping?
+Now, we still exit the if statement with err set to -EPERM,
+and in the case of SHM_UNLOCK, it is not reset at all,
+and used as the return value from shmctl.
 
-Could I have your "Acked-by" for taking these patches through the 
-arm-soc git tree, or do you want that we split this series so that you 
-can take the driver part of it?
+To fix this, we only set err when errors occur, leaving the
+fallthrough case alone.
 
-Best regards,
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: stable@vger.kernel.org
+---
+ ipc/shm.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-
-> Some trivial patches are preceding this move to Device Tree to clean
-> things up beforehand.
->
-> The series has already been sent but a little bit scattered. So I collect
-> everything, this time.
->
-> Nicolas Ferre (7):
->    ARM: at91/dt/trivial: use macro for AES irq type
->    ARM: at91/dt/trivial: before sama5d3, Atmel MPU were using at91 prefix
->    ARM: at91/dt/sama5d3: add DMA information to SHA/AES/TDES nodes
->    crypto: atmel-aes - add support for Device Tree
->    crypto: atmel-tdes - add support for Device Tree
->    crypto: atmel-sha - add support for Device Tree
->    crypto: atmel-sha - add sha information to the log
->
->   .../devicetree/bindings/crypto/atmel-crypto.txt    |  68 ++++++++++
->   arch/arm/boot/dts/sama5d3.dtsi                     |  16 ++-
->   drivers/crypto/atmel-aes.c                         | 143 ++++++++++++++-------
->   drivers/crypto/atmel-sha.c                         | 103 +++++++++++----
->   drivers/crypto/atmel-tdes.c                        | 143 ++++++++++++++-------
->   5 files changed, 346 insertions(+), 127 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/crypto/atmel-crypto.txt
->
-
-
+diff --git a/ipc/shm.c b/ipc/shm.c
+index d697396..4076f9e 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -974,12 +974,15 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 		ipc_lock_object(&shp->shm_perm);
+ 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+ 			kuid_t euid = current_euid();
+-			err = -EPERM;
+ 			if (!uid_eq(euid, shp->shm_perm.uid) &&
+-			    !uid_eq(euid, shp->shm_perm.cuid))
++			    !uid_eq(euid, shp->shm_perm.cuid)) {
++				err = -EPERM;
+ 				goto out_unlock0;
+-			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
++			}
++			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK)) {
++				err = -EPERM;
+ 				goto out_unlock0;
++			}
+ 		}
+ 
+ 		shm_file = shp->shm_file;
 -- 
-Nicolas Ferre
+1.8.4
+
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
