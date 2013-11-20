@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab3KTExv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 23:53:51 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53700 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab3KTExt (ORCPT
+	id S1752560Ab3KTEyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 23:54:15 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:57656 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab3KTExu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 23:53:49 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <528C405B.3020705@roeck-us.net>
-Date: Tue, 19 Nov 2013 20:53:47 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 19 Nov 2013 23:53:50 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: David Daney <david.daney@cavium.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: Re: [PATCH] ARC: extable: Enable sorting at build time
+Thread-Topic: [PATCH] ARC: extable: Enable sorting at build time
+Thread-Index: AQHO4c5X1HJl6ervyUaskT5jY/KJ8w==
+Date: Wed, 20 Nov 2013 04:53:35 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075156AAE@IN01WEMBXA.internal.synopsys.com>
+References: <1384497942-26810-1-git-send-email-vgupta@synopsys.com>
+ <C2D7FE5348E1B147BCA15975FBA23075156936@IN01WEMBXA.internal.synopsys.com>
+ <528B7D17.7000509@suse.cz>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.4 01/12] cxgb3: Fix length calculation in write_ofld_wr()
- on 32-bit architectures
-References: <20131118184130.257996039@linuxfoundation.org> <20131118184130.528352245@linuxfoundation.org> <20131119105000.GA3943@hercules.my.domain> <20131119230910.GA13667@kroah.com>
-In-Reply-To: <20131119230910.GA13667@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 03:09 PM, Greg Kroah-Hartman wrote:
-> On Tue, Nov 19, 2013 at 10:50:00AM +0000, Luis Henriques wrote:
->> Hi Greg,
->>
->> On Mon, Nov 18, 2013 at 10:41:34AM -0800, Greg Kroah-Hartman wrote:
->>> 3.4-stable review patch.  If anyone has any objections, please let me know.
->>>
->>
->> I guess you can drop this commit because, as Ben has already pointed
->> out, it is required for kernels >= 3.11.
->
-> Good point, now dropped, thanks.
->
+On 11/19/2013 08:30 PM, Michal Marek wrote:
+> Dne 19.11.2013 12:08, Vineet Gupta napsal(a):
+>> Ping ? people OK if I take this via arc tree (after baking it in linux-next for
+>> some time).
+> It makes more sense to add it to the arc tree than kbuild. If that's
+> what you are asking?
 
-No negative impact on builds:
-	total: 103 pass: 89 skipped: 10 fail: 4
+Yep, that's what I was asking (and fishing for a ACK or two which I now have
+thanks to David).
+Patch added to ARC for-curr so it gets a decent -next exposure before sending over
+to Linus in 3.13 cycle.
 
-qemu tests still pass.
-
-Guenter
-
+Thx,
+-Vineet
