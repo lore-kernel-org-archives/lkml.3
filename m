@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3KTAnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Nov 2013 19:43:15 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:36136 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab3KTAnK (ORCPT
+	id S1753247Ab3KTAxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Nov 2013 19:53:23 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49827 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab3KTAxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Nov 2013 19:43:10 -0500
+	Tue, 19 Nov 2013 19:53:22 -0500
+X-AuditID: 85900ec0-d0927b9000001514-f0-528c07fd779b
+Message-ID: <528C07FB.4090904@hitachi.com>
+Date: Wed, 20 Nov 2013 09:53:15 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <20131120003032.GA27825@kroah.com>
-References: <20131017211236.GA6155@kroah.com>
-	<1383850796-24300-1-git-send-email-peter@hurleysoftware.com>
-	<CA+55aFwYps=q14pQ04yWYThFwi3NnR__MeggU8N3M4Q0vrk+nQ@mail.gmail.com>
-	<20131120003032.GA27825@kroah.com>
-Date: Tue, 19 Nov 2013 16:43:10 -0800
-X-Google-Sender-Auth: -_P0A2HvE1W8fA4DgmaTOeBk0QI
-Message-ID: <CA+55aFzbOsV_3JGV5LQe957TJ1rnEckv+e7qQNLp9ctOYa6EHg@mail.gmail.com>
-Subject: Re: [PATCH] n_tty: Ensure reader restarts worker for next reader
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mikael Pettersson <mikpelinux@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-serial@vger.kernel.org, "# .39.x" <stable@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, masami.hiramatsu.pt@hitachi.com,
+        hidehiro.kawai.ez@hitachi.com, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip 0/2] ftrace: Introduce the new I/F "nr_saved_cmdlines"
+References: <20131108042652.26950.32013.stgit@yunodevel>
+In-Reply-To: <20131108042652.26950.32013.stgit@yunodevel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 4:30 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
+Hi,
+
+Would you review this patch set?
+
+Thanks,
+Yoshihiro YUNOMAE
+
+(2013/11/08 13:26), Yoshihiro YUNOMAE wrote:
+> Hi,
 >
-> I was waiting for 3.13-rc1 to be out to populate my trees and then send
-> it on to you.
+> This patch set introduces the new I/F "nr_saved_cmdlines" for increasing
+> the number of saved cmdlines. Current saved_cmdlines can store just 128 command
+> names and PIDs, but process names are often lost like <...> when we read trace
+> data. If the process exists, we can get the name by using ps command. However,
+> if the process already has not existed, we cannot get the name.
 >
-> But if you want to take it now, great, I have no objection, otherwise I
-> was going to wait till next week.
+> To solve this issue, we introduce the new I/F "nr_saved_cmdlines" to expand
+> the max number of saved command line names. This I/F is very simple.
+> If we write a number to nr_saved_cmdlines, the number of command name will be
+> stored. And, if we read the I/F, we can get current maximum number of command
+> name. The default number is 128 which is current default number, so this patch
+> does not change the usage of memory for saved_cmdlines when we boot kernel.
+>
+> Thanks!
+>
+> ---
+>
+> Yoshihiro YUNOMAE (2):
+>        ftrace: Make saved_cmdlines use seq_read
+>        ftrace: Introduce nr_saved_cmdlines I/F
+>
+>
+>   kernel/trace/trace.c |  296 +++++++++++++++++++++++++++++++++++++++++---------
+>   1 file changed, 241 insertions(+), 55 deletions(-)
+>
 
-I don't care deeply - it's marled for stable, but the race it fixes is
-so unlikely as to be almost irrelevant, so it's not like I need it
-now.
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
-I was just going through emails that came in during travel, and making
-sure it's not lost.
 
-So I'll happily forget about it, knowing that it is in your queue.
-
-                 Linus
