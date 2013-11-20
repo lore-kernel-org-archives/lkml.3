@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3KTWrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 17:47:15 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23369 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3KTWrN (ORCPT
+	id S1755143Ab3KTWrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 17:47:49 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:57735 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab3KTWrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 17:47:13 -0500
-Message-ID: <528D3BCE.2060703@oracle.com>
-Date: Wed, 20 Nov 2013 16:46:38 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 20 Nov 2013 17:47:46 -0500
+Date: Wed, 20 Nov 2013 16:47:37 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Markus Blank-Burian <burian@muenster.de>
+Subject: Re: 3.10.16 cgroup_mutex deadlock
+Message-ID: <20131120224737.GA12883@sbohrermbp13-local.rgmadvisors.com>
+References: <52820030.6000806@huawei.com>
+ <20131112143147.GB6049@dhcp22.suse.cz>
+ <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
+ <20131112165504.GF6049@dhcp22.suse.cz>
+ <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
+ <20131115062458.GA9755@mtj.dyndns.org>
+ <20131115075401.GB9755@mtj.dyndns.org>
+ <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
+ <20131118201025.GA2747@sbohrermbp13-local.rgmadvisors.com>
+ <528AD316.10001@huawei.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>, linux-aio@kvack.org,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] direct IO support for loop driver
-References: <528A648F.1030007@oracle.com>	<CA+55aFyF-Za7B=1kVDodbn942hETsWixAHCsh_wBA1b6pnUigQ@mail.gmail.com> <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
-In-Reply-To: <CA+55aFwgGg2yzoUukVuAz2Feo4kU4=8CNBGY7phUHGSBDt8xwA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528AD316.10001@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 03:38 PM, Linus Torvalds wrote:
-> On Wed, Nov 20, 2013 at 1:19 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> At that point, I just couldn't take it any more.
+On Tue, Nov 19, 2013 at 10:55:18AM +0800, Li Zefan wrote:
+> > Thanks Tejun and Hugh.  Sorry for my late entry in getting around to
+> > testing this fix. On the surface it sounds correct however I'd like to
+> > test this on top of 3.10.* since that is what we'll likely be running.
+> > I've tried to apply Hugh's patch above on top of 3.10.19 but it
+> > appears there are a number of conflicts.  Looking over the changes and
+> > my understanding of the problem I believe on 3.10 only the
+> > cgroup_free_fn needs to be run in a separate workqueue.  Below is the
+> > patch I've applied on top of 3.10.19, which I'm about to start
+> > testing.  If it looks like I botched the backport in any way please
+> > let me know so I can test a propper fix on top of 3.10.19.
+> > 
 > 
-> Just to clarify, I think it might be fixable. But it does need fixing,
-> because I really feel dirty from reading it. And I may not care all
-> that deeply about what random drivers or low-level filesystems do, but
-> I *do* care about generic code in mm/ and fs/, so making those iovec
-> functions uglier makes me go all "Hulk angry! Hulk smash" on the code.
+> You didn't move css free_work to the dedicate wq as Tejun's patch does.
+> css free_work won't acquire cgroup_mutex, but when destroying a lot of
+> cgroups, we can have a lot of css free_work in the workqueue, so I'd
+> suggest you also use cgroup_destroy_wq for it.
 
-Okay, fair enough. This patchset started out as a bit of a hack, but it
-ended up working well and I had multiple other developers wanting the
-function in mainline. I didn't get too much critical feedback, but I
-should have been more critical myself.
-
-> The whole "separate out checking from user copy" needs to go away.
-> There's no excuse for it.
-> 
-> The whole "if (atomic) do_atomic_ops() else do_regular_ops()" crap
-> needs to go away. You can do it either by just duplicating the
-> function, or by having it use a indirect function for the copy (and
-> that indirect function acts like copy_from/to_user() and checks the
-> address range - and you can obviously then also have it be a "copy
-> from kernel" thing too if you want/need it). And no, you don't then
-> make it do *both* the conditional *and* the function pointer like you
-> did in that discusting commit that mixes the two with the struct
-> iov_iter_ops).
-
-I'll fix those.
-
-> The "__" versions that don't check the user address range needs to die entirely.
-> 
-> The whole crazy "ii_iov_xyz" naming needs to go away. It doesn't even
-> make sense (one of the "i"s is for "iov".
-
-okay
-
-> That "unsigned long data" that contains an iovec *? WTF? How did that
-> ever start making sense?
-
-In a later patch, it could also be a biovec. It'd probably be better to
-make it a union at that point, or at least add a comment.
-
-> IOW, there are many many details that just make me absolutely detest
-> this series. Enough that there's no way in hell I feel comfortable
-> pulling it. But they are likely fixable.
-
-Yeah, I'll work on something cleaner. The vital piece is some container
-that can either contain an iovec or or an array of kernel pages to be
-passed to the filesystems. The iov_iter structure was a reasonable
-choice, but the implementation is a bit sloppy. Kent wants to pass the
-bio structure itself, while this patchset used the biovec array. As long
-as I'm reworking the patchset, I'll see if I can accommodate his
-requirements.
+Well, I didn't move the css free_work, but I did test the patch I
+posted on top of 3.10.19 and I am unable to reproduce the lockup so it
+appears my patch was sufficient for 3.10.*.  Hopefully we can get this
+fix applied and backported into stable.
 
 Thanks,
-Dave
+Shawn
