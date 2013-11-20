@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3KTTOC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 14:14:02 -0500
-Received: from smtp-66.nebula.fi ([83.145.220.66]:33942 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754803Ab3KTTN7 (ORCPT
+	id S1754835Ab3KTTSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 14:18:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52547 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428Ab3KTTSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 14:13:59 -0500
-Date: Wed, 20 Nov 2013 21:13:30 +0200
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v2] video: add OpenCores VGA/LCD framebuffer driver
-Message-ID: <20131120191328.GA30494@chokladfabriken.org>
-References: <1384920820-18740-1-git-send-email-stefan.kristiansson@saunalahti.fi>
- <000701cee5b8$9b61e3b0$d225ab10$%han@samsung.com>
+	Wed, 20 Nov 2013 14:18:50 -0500
+Date: Wed, 20 Nov 2013 20:18:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 7/7] preempt: Take away preempt_enable_no_resched() from
+ modules
+Message-ID: <20131120191841.GY16796@laptop.programming.kicks-ass.net>
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.760865926@infradead.org>
+ <20131120105457.04f6e51e@ultegra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <000701cee5b8$9b61e3b0$d225ab10$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131120105457.04f6e51e@ultegra>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 03:20:28PM +0900, Jingoo Han wrote:
-> On Wednesday, November 20, 2013 1:14 PM, Stefan Kristiansson wrote:
+On Wed, Nov 20, 2013 at 10:54:57AM -0800, Jacob Pan wrote:
+> run into a couple of compile issues.
 > 
-> > +static int ocfb_probe(struct platform_device *pdev)
-> > +{
-> > +	int ret = 0;
-> > +	struct ocfb_dev *fbdev;
-> > +	struct ocfb_par *par = &ocfb_par_priv;
-> > +	struct resource *res;
-> > +	struct resource *mmio;
-> > +	int fbsize;
-> > +
-> > +	fbdev = kzalloc(sizeof(*fbdev), GFP_KERNEL);
+> 1)
+> include/linux/rcupdate.h: In function ‘rcu_read_unlock_sched_notrace’:
+> include/linux/rcupdate.h:889:2: error: implicit declaration of function
+> ‘preempt_enable_no_resched_notrace’ [-Werror=implicit-function-declaration]
 > 
-> Please use devm_kzalloc() instead of kzalloc().
-> In this case, kfree() can be removed from ocfb_probe()
-> and ocfb_remove(). Thus, it will make the code smaller.
+> 2)
+> In file included from drivers/cpufreq/acpi-cpufreq.c:41:0:
+> include/linux/uaccess.h: In function ‘pagefault_enable’:
+> include/linux/uaccess.h:34:2: error: implicit declaration of function
+> ‘preempt_check_resched’ [-Werror=implicit-function-declaration]
 > 
+> 1) happens when CONFIG_PREEMPT is not set, perhaps add a dummy function?
+> 2) I am not sure if we should take pagefault_enable away from modules
 
-Nice, thanks for the hint!
-Consider it done.
+I think the below will cure both -- will fold in the proper patches
+tomorrow, need to get away from the computer noaw.
 
-> [.....]
-> 
-> > +
-> > +#ifdef MODULE
-> 
-> I don't think that '#ifdef MODULE' is necessary.
-> Is there any reason?
-> 
+---
+ include/linux/preempt.h | 6 +++++-
+ include/linux/uaccess.h | 5 ++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-You're right, that's not necessary, I'll remove that.
-
-Thanks alot for taking the time to review it!
-
-Stefan
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index a3d9dc8c2c00..41bc3fc4cdc5 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -93,7 +93,11 @@ do { \
+ 		__preempt_schedule_context(); \
+ } while (0)
+ #else
+-#define preempt_enable_notrace() preempt_enable_no_resched_notrace()
++#define preempt_enable_notrace() \
++do { \
++	barrier(); \
++	__preempt_count_dec(); \
++} while (0)
+ #endif
+ 
+ #else /* !CONFIG_PREEMPT_COUNT */
+diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
+index 9d8cf056e661..ecd3319dac33 100644
+--- a/include/linux/uaccess.h
++++ b/include/linux/uaccess.h
+@@ -25,13 +25,16 @@ static inline void pagefault_disable(void)
+ 
+ static inline void pagefault_enable(void)
+ {
++#ifndef CONFIG_PREEMPT
+ 	/*
+ 	 * make sure to issue those last loads/stores before enabling
+ 	 * the pagefault handler again.
+ 	 */
+ 	barrier();
+ 	preempt_count_dec();
+-	preempt_check_resched();
++#else
++	preempt_enable();
++#endif
+ }
+ 
+ #ifndef ARCH_HAS_NOCACHE_UACCESS
