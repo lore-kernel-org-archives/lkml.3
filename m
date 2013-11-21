@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab3KUKzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:55:45 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44702 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3KUKzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:55:43 -0500
-Message-ID: <528DE731.6040200@gmail.com>
-Date: Thu, 21 Nov 2013 18:57:53 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753910Ab3KUK4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:56:51 -0500
+Received: from [203.199.213.4] ([203.199.213.4]:39122 "EHLO smail.iitm.ac.in"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab3KUK4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 05:56:50 -0500
+X-Greylist: delayed 1632 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 05:56:50 EST
+From: "Webmail Technical Team" <info@webmaster.org>
+Reply-To: no-reply@admin.com
+Subject: Email Alert
+Date: Thu, 21 Nov 2013 15:54:47 +0530
+Message-Id: <20131121102427.M46434@yahoo.com>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 41.203.69.1 (me11b059)
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: linux-kernel@vger.kernel.org,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] ARC: Add guard macro to uapi/asm/unistd.h
-References: <1385029778-26092-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1385029778-26092-1-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=utf-8
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 06:29 PM, Vineet Gupta wrote:
-> Chen originally proposed this as "right thing to do" however I
-> actually ran into this when building perf tools. Some of the utils
-> include unistd.h as well as linux/unistd.h. Since -I includes kernel
-> headers too, we end up including the ARC unistd.h twice, leading to
-> redefinition nwarnings.
-> 
-> ------------------>8-------------------
->     CC bench/sched-pipe.o
-> In file included from ~/kernel/arch/arc/include/uapi/asm/unistd.h:21:0,
->                  from ~/kernel/include/uapi/linux/unistd.h:7,
->                  from bench/sched-pipe.c:24:
-> ~/kernel/include/uapi/asm-generic/unistd.h:889:0: error: "__NR_fcntl64"
-> redefined [-Werror]
->  #define __NR_fcntl64 __NR3264_fcntl
->  ^
-> In file included from
-> ~/gnu/arc-linux-uclibc/sys-include/sys/syscall.h:24:0,
->                  from bench/../perf.h:112,
->                  from bench/sched-pipe.c:13:
-> ~/gnu/arc-linux-uclibc/include/bits/sysnum.h:761:0: note: this is the
-> location of the previous definition
-> ------------------>8-------------------
-> 
-> Verified that make headers_install works fine with this.
-> 
-> Suggested-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: David Howells <dhowells@redhat.com>
-> ---
-> I will be adding this to arc tree for 3.13
-> ---
->  arch/arc/include/uapi/asm/unistd.h | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
-> index 6f30484f34b7..68125dd766c6 100644
-> --- a/arch/arc/include/uapi/asm/unistd.h
-> +++ b/arch/arc/include/uapi/asm/unistd.h
-> @@ -8,6 +8,9 @@
->  
->  /******** no-legacy-syscalls-ABI *******/
->  
-> +#ifndef _UAPI_ASM_ARC_UNISTD_H
-> +#define _UAPI_ASM_ARC_UNISTD_H
-> +
->  #define __ARCH_WANT_SYS_EXECVE
->  #define __ARCH_WANT_SYS_CLONE
->  #define __ARCH_WANT_SYS_VFORK
-> @@ -32,3 +35,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
->  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
->  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
->  __SYSCALL(__NR_sysfs, sys_sysfs)
-> +
-> +#endif
-> 
+Webmail Technical Team
 
-Is it better to append comment for "#endif"?
+Your Web-mail Quota Has Exceeded The Set Quota/Limit Which Is 20 GB.
+You Are Currently Running On 23GB Due To Hidden Files And Folder On Your 
+Mailbox.
+Please Click the Link Below To Validate Your Mailbox And Increase Your 
+Quota.
 
-e.g. "#endif /* _UAPI_ASM_ARC_UNISTD_H */"
+==>>http://b5.caspio.com/dp.asp?AppKey=4a153000bb041ff785054ae18c6a
 
+Failure To Click This Link And Validate Your Quota May Result In Loss Of 
+Important Information In Your Mailbox/Or Cause Limited Access To It.
 
-Thanks.
--- 
-Chen Gang
+Thanks
+Copyright 2013
+Webmail Technical Upgrading Department
+
