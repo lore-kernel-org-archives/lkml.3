@@ -1,237 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3KUAOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 19:14:14 -0500
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:40132 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3KUAOJ (ORCPT
+	id S1754189Ab3KUAT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 19:19:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57301 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751680Ab3KUATx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 19:14:09 -0500
-Subject: mmotm 2013-11-20-16-13 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Wed, 20 Nov 2013 16:14:07 -0800
-Message-Id: <20131121001408.17DC85A41C6@corp2gmr1-2.hot.corp.google.com>
+	Wed, 20 Nov 2013 19:19:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sysfs, acpi, tables: Set file size for each ACPI table
+Date: Thu, 21 Nov 2013 01:32:33 +0100
+Message-ID: <1579156.ZV84FQEURS@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1384987135.1791.153.camel@misato.fc.hp.com>
+References: <528B2757.6010406@jp.fujitsu.com> <1384987135.1791.153.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2013-11-20-16-13 has been uploaded to
+On Wednesday, November 20, 2013 03:38:55 PM Toshi Kani wrote:
+> On Tue, 2013-11-19 at 17:54 +0900, HATAYAMA Daisuke wrote:
+> > Currently, each of the ACPI tables exported from
+> > /sys/firmware/acpi/tables is of zero size:
+> > 
+> > $ LANG=C ls -ld /sys/firmware/acpi/tables/*
+> > -r-------- 1 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/APIC
+> > -r-------- 1 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/BOOT
+> > -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/DSDT
+> > -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/FACP
+> > -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/FACS
+> > -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/MCFG
+> > -r-------- 1 root root 0 Nov 19 14:25 /sys/firmware/acpi/tables/SRAT
+> > drwxr-xr-x 2 root root 0 Nov 19 09:48 /sys/firmware/acpi/tables/dynamic/
+> > 
+> > due to which, user-land tools fail reading each table. For example:
+> > 
+> > $ acpidump -f /sys/firmware/acpi/tables/SRAT
+> > Could not get input file size: /sys/firmware/acpi/tables/SRAT
+> > 
+> > To deal with the issue, this patch assigns size of each ACPI table to
+> > the corresponding sysfs file.
+> > 
+> > $ LANG=C ls -hld /sys/firmware/acpi/tables/*
+> > -r-------- 1 root root  94 Nov 19 16:45 /sys/firmware/acpi/tables/APIC
+> > -r-------- 1 root root  40 Nov 19 16:45 /sys/firmware/acpi/tables/BOOT
+> > -r-------- 1 root root 58K Nov 19 16:55 /sys/firmware/acpi/tables/DSDT
+> > -r-------- 1 root root 244 Nov 19 16:55 /sys/firmware/acpi/tables/FACP
+> > -r-------- 1 root root  64 Nov 19 16:55 /sys/firmware/acpi/tables/FACS
+> > -r-------- 1 root root  60 Nov 19 16:55 /sys/firmware/acpi/tables/MCFG
+> > -r-------- 1 root root 168 Nov 19 16:45 /sys/firmware/acpi/tables/SRAT
+> > drwxr-xr-x 2 root root   0 Nov 19 16:55 /sys/firmware/acpi/tables/dynamic/
+> > 
+> > Then, user-land tools work well like:
+> > 
+> > $ acpidump -f /sys/firmware/acpi/tables/SRAT
+> > SRAT @ 0x0000000000000000
+> >   0000: 53 52 41 54 A8 00 00 00 02 65 56 4D 57 41 52 45  SRAT.....eVMWARE
+> >   0010: 4D 45 4D 50 4C 55 47 20 00 00 04 06 56 4D 57 20  MEMPLUG ....VMW
+> >   0020: 01 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00  ................
+> >   0030: 01 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00  .(..............
+> >   0040: 00 00 0A 00 00 00 00 00 00 00 00 00 01 00 00 00  ................
+> >   0050: 00 00 00 00 00 00 00 00 01 28 00 00 00 00 00 00  .........(......
+> >   0060: 00 00 10 00 00 00 00 00 00 00 F0 BF 00 00 00 00  ................
+> >   0070: 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00  ................
+> >   0080: 01 28 00 00 00 00 00 00 00 00 00 00 01 00 00 00  .(..............
+> >   0090: 00 00 00 40 00 00 00 00 00 00 00 00 01 00 00 00  ...@............
+> >   00A0: 00 00 00 00 00 00 00 00                          ........
+> > 
+> > Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> 
+> Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-   http://www.ozlabs.org/~akpm/mmotm/
+Thanks!
 
-mmotm-readme.txt says
+I've queued up the patch for the next ACPI pull request.
 
-README for mm-of-the-moment:
-
-http://www.ozlabs.org/~akpm/mmotm/
-
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
-
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
-
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
-
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
-
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
-
-
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
-
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.12:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  i-need-old-gcc.patch
-* configfs-fix-race-between-dentry-put-and-lookup.patch
-* checkpatch-fix-use-of-uninitialized-value-warnings.patch
-* mm-thp-give-transparent-hugepage-code-a-separate-copy_page.patch
-* mm-thp-give-transparent-hugepage-code-a-separate-copy_page-fix.patch
-* ipcshm-fix-shm_file-deletion-races.patch
-* kernel-remove-config_use_generic_smp_helpers-cleanly.patch
-* mm-hugetlbfs-fix-hugetlbfs-optimization.patch
-* arm-drivers-rtc-rtc-at91rm9200c-disable-interrupts-at-shutdown.patch
-* block-partitions-efic-fix-bound-check.patch
-* mm-mempolicy-silence-gcc-warning.patch
-* ipcshm-correct-error-return-value-in-shmctl-shm_unlock.patch
-* x86-mm-do-not-leak-page-ptl-for-pmd-page-tables.patch
-* maintainers-add-keyboard-driver-to-hyper-v-file-list.patch
-* drivers-rtc-rtc-at91rm9200c-correct-alarm-over-day-month-wrap.patch
-* drivers-rtc-rtc-s5mc-fix-info-rtc-assignment.patch
-* arch-x86-mnify-pte_to_pgoff-and-pgoff_to_pte-helpers.patch
-* x86-mm-get-aslr-work-for-hugetlb-mappings.patch
-* dma-debug-enhance-dma_debug_device_change-to-check-for-mapping-errors.patch
-* drm-fb-helper-dont-sleep-for-screen-unblank-when-an-oopps-is-in-progress.patch
-* drm-cirrus-correct-register-values-for-16bpp.patch
-* drm-nouveau-make-vga_switcheroo-code-depend-on-vga_switcheroo.patch
-* drivers-gpu-drm-drm_edid_loadc-make-edid_load-return-a-void.patch
-* genirq-correct-fuzzy-and-fragile-irq_retval-definition.patch
-* sched_clock-document-4mhz-vs-1mhz-decision.patch
-* kernel-timerc-convert-kmalloc_nodegfp_zero-to-kzalloc_node.patch
-* kernel-time-tick-commonc-document-tick_do_timer_cpu.patch
-* input-remove-unnecessary-work-pending-test.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* ocfs2-o2net-incorrect-to-terminate-accepting-connections-loop-upon-rejecting-an-invalid-one.patch
-* add-clustername-to-cluster-connection.patch
-* add-dlm-recovery-callbacks.patch
-* shift-allocation-ocfs2_live_connection-to-user_connect.patch
-* pass-ocfs2_cluster_connection-to-ocfs2_this_node.patch
-* framework-for-version-lvb.patch
-* framework-for-version-lvb-remove-some-impossible-checks.patch
-* use-the-new-dlm-operation-callbacks-while-requesting-new-lockspace.patch
-* ocfs2-should-call-ocfs2_journal_access_di-before-ocfs2_delete_entry-in-ocfs2_orphan_del.patch
-* ocfs2-llseek-requires-ocfs2-inode-lock-for-the-file-in-seek_end.patch
-* ocfs2-fix-issue-that-ocfs2_setattr-does-not-deal-with-new_i_size==i_size.patch
-* ocfs2-update-inode-size-after-zeronig-the-hole.patch
-* scsi-do-not-call-do_div-with-a-64-bit-divisor.patch
-* drivers-cdrom-gdromc-remove-deprecated-irqf_disabled.patch
-* drivers-block-sx8c-use-module_pci_driver.patch
-* drivers-block-sx8c-remove-unnecessary-pci_set_drvdata.patch
-* drivers-block-paride-pgc-underflow-bug-in-pg_write.patch
-* hpsa-return-0-from-driver-probe-function-on-success-not-1.patch
-* drivers-block-ccissc-cciss_init_one-use-proper-errnos.patch
-* blk-mq-use-__smp_call_function_single-directly.patch
-* block-blk-mq-cpuc-use-hotcpu_notifier.patch
-* block-remove-unrelated-header-files-and-export-symbol.patch
-* mtd-cmdlinepart-use-cmdline-partition-parser-lib.patch
-* mtd-cmdlinepart-use-cmdline-partition-parser-lib-fix.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-* posix_acl-uninlining.patch
-* watchdog-trigger-all-cpu-backtrace-when-locked-up-and-going-to-panic.patch
-* xfs-underflow-bug-in-xfs_attrlist_by_handle.patch
-  mm.patch
-* mm-hugetlbfs-add-some-vm_bug_ons-to-catch-non-hugetlbfs-pages.patch
-* mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
-* mm-hugetlb-use-get_page_foll-in-follow_hugetlb_page.patch
-* mm-hugetlbfs-move-the-put-get_page-slab-and-hugetlbfs-optimization-in-a-faster-path.patch
-* mm-hugetlbfs-move-the-put-get_page-slab-and-hugetlbfs-optimization-in-a-faster-path-fix.patch
-* mm-thp-optimize-compound_trans_huge.patch
-* mm-tail-page-refcounting-optimization-for-slab-and-hugetlbfs.patch
-* mm-hugetlbc-simplify-pageheadhuge-and-pagehuge.patch
-* mm-swapc-reorganize-put_compound_page.patch
-* mm-hugetlbc-defer-pageheadhuge-symbol-export.patch
-* proc-meminfo-provide-estimated-available-memory.patch
-* mm-get-rid-of-unnecessary-pageblock-scanning-in-setup_zone_migrate_reserve.patch
-* mm-get-rid-of-unnecessary-pageblock-scanning-in-setup_zone_migrate_reserve-fix.patch
-* swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
-* swap-add-a-simple-detector-for-inappropriate-swapin-readahead.patch
-* swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix.patch
-* kernel-use-lockless-list-for-smp_call_function_single.patch
-* asm-typesh-remove-include-asm-generic-int-l64h.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* lib-parserc-add-match_wildcard-function.patch
-* lib-parserc-put-export_symbols-in-the-conventional-place.patch
-* dynamic_debug-add-wildcard-support-to-filter-files-functions-modules.patch
-* dynamic-debug-howtotxt-update-since-new-wildcard-support.patch
-* printk-cache-mark-printk_once-test-variable-__read_mostly.patch
-* printk-cache-mark-printk_once-test-variable-__read_mostly-fix.patch
-* get_maintainer-add-commit-author-information-to-rolestats.patch
-* maintainers-add-an-entry-for-the-macintosh-hfsplus-filesystem.patch
-* kstrtox-remove-redundant-cleanup.patch
-* cmdline-fix-style-issues.patch
-* lib-cmdlinec-declare-exported-symbols-immediately.patch
-* kernel-paramsc-improve-standard-definitions.patch
-* kernel-paramsc-improve-standard-definitions-checkpatch-fixes.patch
-* lib-add-crc64-ecma-module.patch
-* checkpatchpl-check-for-function-declarations-without-arguments.patch
-* binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
-* fs-ramfs-file-nommuc-make-ramfs_nommu_get_unmapped_area-and-ramfs_nommu_mmap-static.patch
-* autofs4-allow-autofs-to-work-outside-the-initial-pid-namespace.patch
-* autofs4-translate-pids-to-the-right-namespace-for-the-daemon.patch
-* drivers-rtc-rtc-at91sam9c-include-mach-hardwareh-explicitly.patch
-* fat-add-i_disksize-to-represent-uninitialized-size.patch
-* fat-add-fat_fallocate-operation.patch
-* fat-zero-out-seek-range-on-_fat_get_block.patch
-* fat-fallback-to-buffered-write-in-case-of-fallocatded-region-on-direct-io.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-fix.patch
-* kmod-run-usermodehelpers-only-on-cpus-allowed-for-kthreadd-v2-checkpatch-fixes.patch
-* coredump-set_dumpable-fix-the-theoretical-race-with-itself.patch
-* coredump-kill-mmf_dumpable-and-mmf_dump_securely.patch
-* coredump-make-__get_dumpable-get_dumpable-inline-kill-fs-coredumph.patch
-* exit_state-kill-task_is_dead.patch
-* proc-cleanup-simplify-get_task_state-task_state_array.patch
-* proc-fix-the-potential-use-after-free-in-first_tid.patch
-* proc-change-first_tid-to-use-while_each_thread-rather-than-next_thread.patch
-* proc-dont-abuse-group_leader-in-proc_task_readdir-paths.patch
-* proc-fix-f_pos-overflows-in-first_tid.patch
-* fork-no-need-to-initialize-child-exit_state.patch
-* lib-cpumask-make-cpumask_offstack-usable-without-debug-dependency.patch
-* kernel-kexecc-use-vscnprintf-instead-of-vsnprintf-in-vmcoreinfo_append_str.patch
-* kexec-migrate-to-reboot-cpu.patch
-* pps-add-non-blocking-option-to-pps_fetch-ioctl.patch
-* lib-decompress_unlz4c-always-set-an-error-return-code-on-failures.patch
-  linux-next.patch
-* rbtree-test-move-rb_node-to-the-middle-of-the-test-struct.patch
-* rbtree-test-test-rbtree_postorder_for_each_entry_safe.patch
-* net-netfilter-ipset-ip_set_hash_netifacec-use-rbtree-postorder-iteration-instead-of-opencoding.patch
-* fs-ubifs-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
-* fs-ext4-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
-* fs-jffs2-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
-* fs-ext3-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
-* drivers-mtd-ubi-use-rbtree-postorder-iteration-helper-instead-of-opencoding.patch
-* arch-sh-kernel-dwarfc-use-rbtree-postorder-iteration-helper-instead-of-solution-using-repeated-rb_erase.patch
-  debugging-keep-track-of-page-owners.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
