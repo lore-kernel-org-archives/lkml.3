@@ -1,222 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3KUJuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 04:50:07 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:38116 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab3KUJuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 04:50:03 -0500
-Message-ID: <528DD669.6050903@synopsys.com>
-Date: Thu, 21 Nov 2013 15:16:17 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Chen Gang <gang.chen@asianux.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Jonas Bonn" <jonas@southpole.se>
-CC: "dhowells@redhat.com" <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: arc: uapi: be sure of "_UAPI" prefix for all
- guard macros
-References: <527C4E10.4070408@asianux.com> <527C50E4.3020009@asianux.com>
-In-Reply-To: <527C50E4.3020009@asianux.com>
-X-Enigmail-Version: 1.6
+	id S1753984Ab3KUJyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 04:54:24 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:46586 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3KUJyV (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 21 Nov 2013 04:54:21 -0500
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia
+ parameter to efi_storage_paranoia
+From: joeyli <jlee@suse.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt@console-pimps.org>,
+        Richard Weinberger <richard@nod.at>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        matthew.garrett@nebula.com
+In-Reply-To: <528DCED7.5070806@jp.fujitsu.com>
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
+	 <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at>
+	 <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at>
+	 <527CBDD3.2020609@jp.fujitsu.com>
+	 <20131108143421.GB22636@console-pimps.org>
+	 <52809AEB.9080100@jp.fujitsu.com>
+	 <20131111105424.GD22636@console-pimps.org>
+	 <528AD50D.6060503@jp.fujitsu.com> <87siutqdwv.fsf@redhat.com>
+	 <528C562B.3070008@jp.fujitsu.com>
+	 <1384934881.6516.4082.camel@linux-s257.site>
+	 <528DCED7.5070806@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.99]
+Date: Thu, 21 Nov 2013 17:53:43 +0800
+Message-ID: <1385027623.6516.4090.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
-
-On 11/08/2013 08:18 AM, Chen Gang wrote:
-> For all uapi headers, need use "_UAPI" prefix for its guard macro
-> (which will be stripped by "scripts/headers_installer.sh").
+於 四，2013-11-21 於 18:13 +0900，Yasuaki Ishimatsu 提到：
+> (2013/11/20 17:08), joeyli wrote:
+> > 於 三，2013-11-20 於 15:26 +0900，Yasuaki Ishimatsu 提到：
+> >> (2013/11/19 12:16), Madper Xie wrote:
+> >>>
+> >>> isimatu.yasuaki@jp.fujitsu.com writes:
+> >>>
+> >>>> Hi Matt,
+> >>>>
+> >>>> Sorry for late the reply.
+> >>>>
+> >>>>
+> >>>> (2013/11/11 19:54), Matt Fleming wrote:
+> >>>>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+> >>>>>> Hi Matt,
+> >>>>>>
+> >>>>>> I uses FUJITSU's x86 box.
+> >>>>>> This does not become bricked even if I use all efi variable storage.
+> >>>>>> Thus I want a way to not need to specify efi_no_storage_paranoia
+> >>>>>> parameter.
+> >>>>>
+> >>>>> The efi_no_storage_paranoia parameter was introduced because some
+> >>>>> machines do not initiate garbage collection of the NVRAM until you
+> >>>>> allocate all space - basically it's a switch to turn off the "save 5KB
+> >>>>> of stoarge at all times" workaround that is needed to avoid bricking
+> >>>>> some machines.
+> >>>>>
+> >>>>> The intention of the switch is not to allow you to fill your NVRAM just
+> >>>>> because you can. If that is something you want to do then I think it's
+> >>>>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+> >>>>> I'm assuming here that you are doing something like writing lots and
+> >>>>> lots of pstore entries and just want to write as many as your variable
+> >>>>> storage will allow? Or are you doing something more fundamental like
+> >>>>> creating BootXXXX entries?
+> >>>>>
+> >>>>> What are you doing to run into the 5KB reserve? How much NVRAM does your
+> >>>>> machine come with?
+> >>>>
+> >>>> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+> >>>> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
+> >>>>
+> >>> Howdy Yasuaki,
+> >>>     If the remaining NVRAM is less than 5Kb, your writing will trigger a
+> >>>     NVRAM storage reclamation. However you still failed creating entry. So
+> >>>     I'm just curious what itmes occupy lots of nvram storage space.
+> >>
+> >> Even if we got EFI_OUT_OF_RESOURCES while running Linux, gc does not run.
+> >> Trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS environment with
+> >> UEFI. So on my system, if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte threshold,
+> >> we cannot use nvram storage until EFI_OUT_OF_RESOURCES occurs on pre OS
+> >> environment with UEFI.
+> >>
+> >> Thanks,
+> >> Yasuaki Ishimatsu
+> >
+> > Can we try to trigger gc by EFI_OUT_OF_RESOURCE in EFI stub kernel or
+> > EFI boot loader to recover NVRAM space? Does work with the BIOS on this
+> > machine?
 > 
-> And be sure that all "endif" need append (or have correct) related
-> comment, and all normal uapi header files need content guard macro.
+> Yes. I can trigger gc by EFI_OUT_OF_RESOUCE in EFI shell on my machine.
 > 
-> Also reserve guard macro in empty file, since some "usr/include/*"
-> header files may check guard macro to know whether content related
-> header file.
+> Thanks,
+> Yasuaki Ishimatu
 > 
-> 
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/include/uapi/asm/byteorder.h  |    6 +++---
->  arch/arc/include/uapi/asm/cachectl.h   |    6 +++---
->  arch/arc/include/uapi/asm/elf.h        |    2 +-
->  arch/arc/include/uapi/asm/setup.h      |    9 +++++++--
->  arch/arc/include/uapi/asm/sigcontext.h |    6 +++---
->  arch/arc/include/uapi/asm/signal.h     |    6 +++---
->  arch/arc/include/uapi/asm/swab.h       |    6 +++---
->  arch/arc/include/uapi/asm/unistd.h     |    4 ++++
 
-Form this patch, I'm picking up the hunk for unistd.h as it is missing a gaurd
-altogether. Although the guard is generated by installed headers, some of perf
-utils (e.g. sched-pipe.c) include kernel headers directly too, causing redef errors.
+OK, then maybe can try to trigger gc in EFI stub before
+ExitBootService(). 
 
-I'm dropping rest of the patch.
-
--Vineet
+Another problem is what's the reasonable threshold. The threshold should
+bigger then 5Kbyte, then we write a dummy BootTime NV variable to
+trigger gc.
 
 
->  8 files changed, 27 insertions(+), 18 deletions(-)
-> 
-> diff --git a/arch/arc/include/uapi/asm/byteorder.h b/arch/arc/include/uapi/asm/byteorder.h
-> index 9da71d4..859fde2 100644
-> --- a/arch/arc/include/uapi/asm/byteorder.h
-> +++ b/arch/arc/include/uapi/asm/byteorder.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef __ASM_ARC_BYTEORDER_H
-> -#define __ASM_ARC_BYTEORDER_H
-> +#ifndef _UAPI__ASM_ARC_BYTEORDER_H
-> +#define _UAPI__ASM_ARC_BYTEORDER_H
->  
->  #ifdef CONFIG_CPU_BIG_ENDIAN
->  #include <linux/byteorder/big_endian.h>
-> @@ -15,4 +15,4 @@
->  #include <linux/byteorder/little_endian.h>
->  #endif
->  
-> -#endif /* ASM_ARC_BYTEORDER_H */
-> +#endif /* _UAPI__ASM_ARC_BYTEORDER_H */
-> diff --git a/arch/arc/include/uapi/asm/cachectl.h b/arch/arc/include/uapi/asm/cachectl.h
-> index 51c73f0..2437fc6 100644
-> --- a/arch/arc/include/uapi/asm/cachectl.h
-> +++ b/arch/arc/include/uapi/asm/cachectl.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef __ARC_ASM_CACHECTL_H
-> -#define __ARC_ASM_CACHECTL_H
-> +#ifndef _UAPI__ARC_ASM_CACHECTL_H
-> +#define _UAPI__ARC_ASM_CACHECTL_H
->  
->  /*
->   * ARC ABI flags defined for Android's finegrained cacheflush requirements
-> @@ -25,4 +25,4 @@
->  #define DCACHE	CF_D_FLUSH
->  #define BCACHE	(CF_I_INV | CF_D_FLUSH)
->  
-> -#endif
-> +#endif /* _UAPI__ARC_ASM_CACHECTL_H */
-> diff --git a/arch/arc/include/uapi/asm/elf.h b/arch/arc/include/uapi/asm/elf.h
-> index 0f99ac8..4e82dc6 100644
-> --- a/arch/arc/include/uapi/asm/elf.h
-> +++ b/arch/arc/include/uapi/asm/elf.h
-> @@ -23,4 +23,4 @@ typedef unsigned long elf_fpregset_t;
->  
->  typedef elf_greg_t elf_gregset_t[ELF_NGREG];
->  
-> -#endif
-> +#endif /* _UAPI__ASM_ARC_ELF_H */
-> diff --git a/arch/arc/include/uapi/asm/setup.h b/arch/arc/include/uapi/asm/setup.h
-> index a6d4e44..09a8df7 100644
-> --- a/arch/arc/include/uapi/asm/setup.h
-> +++ b/arch/arc/include/uapi/asm/setup.h
-> @@ -1,6 +1,11 @@
->  /*
->   * setup.h is part of userspace header ABI so UAPI scripts have to generate it
->   * even if there's nothing to export - causing empty <uapi/asm/setup.h>
-> - * However to prevent "patch" from discarding it we add this placeholder
-> - * comment
-> + *
-> + * And some user programs may check guard macro to know whether content related
-> + * header file (e.g. some of "/usr/include/ *" header files check guard macro),
-> + * so recommend to still reserve guard macro in empty file.
->   */
-> +#ifndef _UAPI__ASM_ARC_SETUP_H
-> +#define _UAPI__ASM_ARC_SETUP_H
-> +#endif /* _UAPI__ASM_ARC_SETUP_H */
-> diff --git a/arch/arc/include/uapi/asm/sigcontext.h b/arch/arc/include/uapi/asm/sigcontext.h
-> index 9678a11..b2063ff 100644
-> --- a/arch/arc/include/uapi/asm/sigcontext.h
-> +++ b/arch/arc/include/uapi/asm/sigcontext.h
-> @@ -6,8 +6,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> -#ifndef _ASM_ARC_SIGCONTEXT_H
-> -#define _ASM_ARC_SIGCONTEXT_H
-> +#ifndef _UAPI_ASM_ARC_SIGCONTEXT_H
-> +#define _UAPI_ASM_ARC_SIGCONTEXT_H
->  
->  #include <asm/ptrace.h>
->  
-> @@ -19,4 +19,4 @@ struct sigcontext {
->  	struct user_regs_struct regs;
->  };
->  
-> -#endif /* _ASM_ARC_SIGCONTEXT_H */
-> +#endif /* _UAPI_ASM_ARC_SIGCONTEXT_H */
-> diff --git a/arch/arc/include/uapi/asm/signal.h b/arch/arc/include/uapi/asm/signal.h
-> index fad62f7..f212d83 100644
-> --- a/arch/arc/include/uapi/asm/signal.h
-> +++ b/arch/arc/include/uapi/asm/signal.h
-> @@ -8,8 +8,8 @@
->   * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
->   */
->  
-> -#ifndef _ASM_ARC_SIGNAL_H
-> -#define _ASM_ARC_SIGNAL_H
-> +#ifndef _UAPI_ASM_ARC_SIGNAL_H
-> +#define _UAPI_ASM_ARC_SIGNAL_H
->  
->  /*
->   * This is much needed for ARC sigreturn optimization.
-> @@ -24,4 +24,4 @@
->  
->  #include <asm-generic/signal.h>
->  
-> -#endif /* _ASM_ARC_SIGNAL_H */
-> +#endif /* _UAPI_ASM_ARC_SIGNAL_H */
-> diff --git a/arch/arc/include/uapi/asm/swab.h b/arch/arc/include/uapi/asm/swab.h
-> index 095599a..7237a21 100644
-> --- a/arch/arc/include/uapi/asm/swab.h
-> +++ b/arch/arc/include/uapi/asm/swab.h
-> @@ -13,8 +13,8 @@
->   *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
->   */
->  
-> -#ifndef __ASM_ARC_SWAB_H
-> -#define __ASM_ARC_SWAB_H
-> +#ifndef _UAPI__ASM_ARC_SWAB_H
-> +#define _UAPI__ASM_ARC_SWAB_H
->  
->  #include <linux/types.h>
->  
-> @@ -95,4 +95,4 @@
->  #define __SWAB_64_THRU_32__
->  #endif
->  
-> -#endif
-> +#endif /* _UAPI__ASM_ARC_SWAB_H */
-> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
-> index 6f30484..109f32c 100644
-> --- a/arch/arc/include/uapi/asm/unistd.h
-> +++ b/arch/arc/include/uapi/asm/unistd.h
-> @@ -7,6 +7,8 @@
->   */
->  
->  /******** no-legacy-syscalls-ABI *******/
-> +#ifndef _UAPI_ASM_ARC_UNISTD_H
-> +#define _UAPI_ASM_ARC_UNISTD_H
->  
->  #define __ARCH_WANT_SYS_EXECVE
->  #define __ARCH_WANT_SYS_CLONE
-> @@ -32,3 +34,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
->  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
->  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
->  __SYSCALL(__NR_sysfs, sys_sysfs)
-> +
-> +#endif /* _UAPI_ASM_ARC_UNISTD_H */
-> 
+Thanks
+Joey Lee
 
