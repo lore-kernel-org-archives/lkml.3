@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab3KUFNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 00:13:33 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55947 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab3KUFNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 00:13:31 -0500
-Date: Wed, 20 Nov 2013 21:13:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Denis Carikli <denis@eukrea.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: tsc2007 - remove unused poll_delay from platform data
-Message-ID: <20131121051319.GA6131@core.coreip.homeip.net>
+	id S1751942Ab3KUFOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 00:14:05 -0500
+Received: from ozlabs.org ([203.10.76.45]:52983 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab3KUFOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 00:14:01 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Levente Kurusa <levex@linux.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 5/5] params: improve standard definitions
+In-Reply-To: <1384623151-31302-6-git-send-email-felipe.contreras@gmail.com>
+References: <1384623151-31302-1-git-send-email-felipe.contreras@gmail.com> <1384623151-31302-6-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 21 Nov 2013 12:13:35 +1030
+Message-ID: <878uwibkc8.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-****
-Dmitry Torokhov <dmitry.torokhov@gmail.com> (maintainer:INPUT (KEYBOARD,...,commit_signer:7/7=100%,commit_signer:2/2=100%)
-Bill Pemberton <wfp5p@virginia.edu> (commit_signer:3/7=43%)
-Mark Brown <broonie@opensource.wolfsonmicro.com> (commit_signer:2/7=29%)
-Javier Martinez Canillas <javier@dowhile0.org> (commit_signer:1/7=14%)
-Russell King <rmk+kernel@arm.linux.org.uk> (commit_signer:1/7=14%)
-linux-input@vger.kernel.org (open list:INPUT (KEYBOARD,...)
-linux-kernel@vger.kernel.org (open list)
-****
-Authors
-drivers/input/touchscreen/tsc2007.c: Kwangwoo Lee <kwangwoo.lee@gmail.com>
-include/linux/i2c/tsc2007.h: Kwangwoo Lee <kwangwoo.lee@gmail.com>
-****
-The driver does not use poll_delay parameter, so let's remove it.
+Felipe Contreras <felipe.contreras@gmail.com> writes:
+> We are repeating the functionality of kstrtol in param_set_long, and the
+> same for kstrtoint. We can get rid of the extra code by using the right
+> functions.
+>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/touchscreen/tsc2007.c | 2 --
- include/linux/i2c/tsc2007.h         | 2 --
- 2 files changed, 4 deletions(-)
+Thanks, they're new since this code was written.  I didn't know about them...
 
-diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
-index 390148c..48a165a 100644
---- a/drivers/input/touchscreen/tsc2007.c
-+++ b/drivers/input/touchscreen/tsc2007.c
-@@ -75,7 +75,6 @@ struct tsc2007 {
- 	u16			model;
- 	u16			x_plate_ohms;
- 	u16			max_rt;
--	unsigned long		poll_delay;
- 	unsigned long		poll_period;
- 	int			fuzzx;
- 	int			fuzzy;
-@@ -352,7 +351,6 @@ static int tsc2007_probe_pdev(struct i2c_client *client, struct tsc2007 *ts,
- 	ts->model             = pdata->model;
- 	ts->x_plate_ohms      = pdata->x_plate_ohms;
- 	ts->max_rt            = pdata->max_rt ? : MAX_12BIT;
--	ts->poll_delay        = pdata->poll_delay ? : 1;
- 	ts->poll_period       = pdata->poll_period ? : 1;
- 	ts->get_pendown_state = pdata->get_pendown_state;
- 	ts->clear_penirq      = pdata->clear_penirq;
-diff --git a/include/linux/i2c/tsc2007.h b/include/linux/i2c/tsc2007.h
-index 041c8e8..4f35b6a 100644
---- a/include/linux/i2c/tsc2007.h
-+++ b/include/linux/i2c/tsc2007.h
-@@ -7,8 +7,6 @@ struct tsc2007_platform_data {
- 	u16	model;				/* 2007. */
- 	u16	x_plate_ohms;	/* must be non-zero value */
- 	u16	max_rt; /* max. resistance above which samples are ignored */
--	unsigned long poll_delay; /* delay (in ms) after pen-down event
--				     before polling starts */
- 	unsigned long poll_period; /* time (in ms) between samples */
- 	int	fuzzx; /* fuzz factor for X, Y and pressure axes */
- 	int	fuzzy;
--- 
-1.8.3.1
+Applied!
+Rusty.
 
-
--- 
-Dmitry
+> ---
+>  kernel/params.c | 25 +++++++++----------------
+>  1 file changed, 9 insertions(+), 16 deletions(-)
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index c00d5b5..48e1a81 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -227,17 +227,10 @@ int parse_args(const char *doing,
+>  }
+>  
+>  /* Lazy bastard, eh? */
+> -#define STANDARD_PARAM_DEF(name, type, format, tmptype, strtolfn)      	\
+> +#define STANDARD_PARAM_DEF(name, type, format, strtolfn)      		\
+>  	int param_set_##name(const char *val, const struct kernel_param *kp) \
+>  	{								\
+> -		tmptype l;						\
+> -		int ret;						\
+> -									\
+> -		ret = strtolfn(val, 0, &l);				\
+> -		if (ret < 0 || ((type)l != l))				\
+> -			return ret < 0 ? ret : -EINVAL;			\
+> -		*((type *)kp->arg) = l;					\
+> -		return 0;						\
+> +		return strtolfn(val, 0, (type *)kp->arg);		\
+>  	}								\
+>  	int param_get_##name(char *buffer, const struct kernel_param *kp) \
+>  	{								\
+> @@ -253,13 +246,13 @@ int parse_args(const char *doing,
+>  	EXPORT_SYMBOL(param_ops_##name)
+>  
+>  
+> -STANDARD_PARAM_DEF(byte, unsigned char, "%hhu", unsigned long, kstrtoul);
+> -STANDARD_PARAM_DEF(short, short, "%hi", long, kstrtol);
+> -STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", unsigned long, kstrtoul);
+> -STANDARD_PARAM_DEF(int, int, "%i", long, kstrtol);
+> -STANDARD_PARAM_DEF(uint, unsigned int, "%u", unsigned long, kstrtoul);
+> -STANDARD_PARAM_DEF(long, long, "%li", long, kstrtol);
+> -STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, kstrtoul);
+> +STANDARD_PARAM_DEF(byte, unsigned char, "%hhu", kstrtou8);
+> +STANDARD_PARAM_DEF(short, short, "%hi", kstrtos16);
+> +STANDARD_PARAM_DEF(ushort, unsigned short, "%hu", kstrtou16);
+> +STANDARD_PARAM_DEF(int, int, "%i", kstrtoint);
+> +STANDARD_PARAM_DEF(uint, unsigned int, "%u", kstrtouint);
+> +STANDARD_PARAM_DEF(long, long, "%li", kstrtol);
+> +STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", kstrtoul);
+>  
+>  int param_set_charp(const char *val, const struct kernel_param *kp)
+>  {
+> -- 
+> 1.8.4.2+fc1
