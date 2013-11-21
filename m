@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3KUNtz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:49:55 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:30264 "EHLO multi.imgtec.com"
+	id S1754321Ab3KUNuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:50:00 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50065 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab3KUNty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:49:54 -0500
-Message-ID: <528E0F7F.7010901@imgtec.com>
-Date: Thu, 21 Nov 2013 13:49:51 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754001Ab3KUNt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 08:49:57 -0500
+Date: Thu, 21 Nov 2013 14:49:49 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131121134949.GE26009@pd.tnic>
+References: <1384984585-24300-1-git-send-email-bp@alien8.de>
+ <20131121073410.GA16971@gmail.com>
+ <20131121100722.GA25459@pd.tnic>
+ <20131121111744.GA27513@gmail.com>
+ <20131121113014.GA26009@pd.tnic>
+ <20131121114224.GA27704@gmail.com>
+ <20131121120605.GC26009@pd.tnic>
+ <20131121123954.GA8044@home.goodmis.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, <devicetree@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] of: unflatten_and_copy: handle NULL initial_boot_params
-References: <1385041454-32385-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1385041454-32385-1-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_11_21_13_49_53
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131121123954.GA8044@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/13 13:44, James Hogan wrote:
-> Check whether initial_boot_params is NULL before dereferencing it in
-> unflatten_and_copy_device_tree() for the case where no device tree is
-> available but the arch can still boot to a minimal usable system without
-> it. In this case also log a warning for when the kernel log buffer is
-> obtainable.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
+On Thu, Nov 21, 2013 at 07:39:55AM -0500, Steven Rostedt wrote:
+> Should we put libtraceevent here too? Have all kapi functionality live
+> here?
+>
+> As libtraceevent is getting mature, we need to get it out as a real
+> library soon. There is already three utilities that use it: perf,
+> trace-cmd and powertop. And I've heard of others that want that
+> functionatity.
 
-Hmm, sorry, I forgot to add Grant's:
-Acked-by: Grant Likely <grant.likely@linaro.org>
+Right, my intention was to have topic libraries like libtraceevent,
+libkapi and libperfevent (this is the one that's following by exporting
+evlist/evsel to other tools).
 
-(from v1)
+But I certainly see your angle of lumping *all* kernel-related
+functionality together in one lib.
 
-Cheers
-James
+I dunno, I feel like leaving them split for now is better. Why? Not
+polluting namespaces unnecessarily and why would tools who don't need
+tracing functionality link against it.
 
-> ---
-> v2:
->  * Log a warning for those who can obtain the kernel log buffer (Grant
->    Likely).
-> ---
->  drivers/of/fdt.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 2fa024b97c43..758b4f8b30b7 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -922,8 +922,16 @@ void __init unflatten_device_tree(void)
->   */
->  void __init unflatten_and_copy_device_tree(void)
->  {
-> -	int size = __be32_to_cpu(initial_boot_params->totalsize);
-> -	void *dt = early_init_dt_alloc_memory_arch(size,
-> +	int size;
-> +	void *dt;
-> +
-> +	if (!initial_boot_params) {
-> +		pr_warn("No valid device tree found, continuing without\n");
-> +		return;
-> +	}
-> +
-> +	size = __be32_to_cpu(initial_boot_params->totalsize);
-> +	dt = early_init_dt_alloc_memory_arch(size,
->  		__alignof__(struct boot_param_header));
->  
->  	if (dt) {
-> 
+Anyway, arguments can be made for both, but I personally prefer leaving
+them separate. Unless there's a really compelling reason to have a
+single lib - a reason which I cannot think of right now...
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
