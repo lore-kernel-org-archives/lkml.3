@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab3KUMj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:39:59 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:47509 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751491Ab3KUMj5 (ORCPT
+	id S1753443Ab3KUMng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:43:36 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:55679 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3KUMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:39:57 -0500
-Date: Thu, 21 Nov 2013 07:39:55 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131121123954.GA8044@home.goodmis.org>
-References: <1384984585-24300-1-git-send-email-bp@alien8.de>
- <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121120605.GC26009@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 21 Nov 2013 07:43:34 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCHv5 1/9] of: introduce of_property_for_earch_phandle_with_args()
+To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
+        thierry.reding@gmail.com, swarren@wwwdotorg.org, galak@codeaurora.org
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1384853593-32202-2-git-send-email-hdoyu@nvidia.com>
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-2-git-send-email-hdoyu@nvidia.com>
+Date: Thu, 21 Nov 2013 12:43:28 +0000
+Message-Id: <20131121124328.46BC1C40A2C@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 01:06:05PM +0100, Borislav Petkov wrote:
+On Tue, 19 Nov 2013 11:33:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> The following pattern of code is tempting:
 > 
-> No, I absolutely don't think it is a bikeshedding exercise too. We
-> really need that lib because people have started growing their own
-> facilities in tools/ and outside so having a lib which implements
-> generic functionality for interfacing with the kernel right is going to
-> save everyone a lot of time and energy.
+>   for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 
-Should we put libtraceevent here too? Have all kapi functionality live here?
+That's a very minimal commit message. Can you elaborate please.
 
-As libtraceevent is getting mature, we need to get it out as a real library
-soon. There is already three utilities that use it: perf, trace-cmd and 
-powertop. And I've heard of others that want that functionatity.
+> ---
+> v5:
+> New patch for v5.
+> ---
+>  include/linux/of.h | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 276c546..131fef5 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -613,6 +613,9 @@ static inline int of_property_read_u32(const struct device_node *np,
+>  		s;						\
+>  		s = of_prop_next_string(prop, s))
+>  
+> +#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
+> +	for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+> +
 
--- Steve
+That works, but pretty darn inefficient. We need an iterator version of
+of_parse_phandle_with_args() to loop over all the entries.
+
+>  #if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
+>  extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
+>  extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
+> -- 
+> 1.8.1.5
+> 
 
