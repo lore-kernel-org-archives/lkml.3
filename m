@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab3KUSmV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:42:21 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38712 "EHLO
+	id S1755335Ab3KUSn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:43:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65433 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751569Ab3KUSmT (ORCPT
+	by vger.kernel.org with ESMTP id S1754767Ab3KUSmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:42:19 -0500
-Message-Id: <20131121184218.345194664@goodmis.org>
+	Thu, 21 Nov 2013 13:42:20 -0500
+Message-Id: <20131121184218.502653733@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 21 Nov 2013 13:42:02 -0500
+Date: Thu, 21 Nov 2013 13:42:03 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Yang Shi <yang.shi@windriver.com>
-Subject: [PATCH RT 3/5] mm/memcontrol: Dont call schedule_work_on in preemption disabled
- context
+        John Kacur <jkacur@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: [PATCH RT 4/5] drm: remove preempt_disable() from
+ drm_calc_vbltimestamp_from_scanoutpos()
 References: <20131121184159.676777537@goodmis.org>
-Content-Disposition: inline; filename=0003-mm-memcontrol-Don-t-call-schedule_work_on-in-preempt.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0004-drm-remove-preempt_disable-from-drm_calc_vbltimestam.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,74 +32,82 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yang Shi <yang.shi@windriver.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-The following trace is triggered when running ltp oom test cases:
+Luis captured the following:
 
-BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
-in_atomic(): 1, irqs_disabled(): 0, pid: 17188, name: oom03
-Preemption disabled at:[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
+| BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+| in_atomic(): 1, irqs_disabled(): 0, pid: 517, name: Xorg
+| 2 locks held by Xorg/517:
+|  #0:
+|  (
+| &dev->vbl_lock
+| ){......}
+| , at:
+| [<ffffffffa0024c60>] drm_vblank_get+0x30/0x2b0 [drm]
+|  #1:
+|  (
+| &dev->vblank_time_lock
+| ){......}
+| , at:
+| [<ffffffffa0024ce1>] drm_vblank_get+0xb1/0x2b0 [drm]
+| Preemption disabled at:
+| [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+| CPU: 3 PID: 517 Comm: Xorg Not tainted 3.10.10-rt7+ #5
+| Call Trace:
+|  [<ffffffff8164b790>] dump_stack+0x19/0x1b
+|  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
+|  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
+|  [<ffffffffa0084e67>] i915_read32+0x27/0x170 [i915]
+|  [<ffffffffa008a591>] i915_pipe_enabled+0x31/0x40 [i915]
+|  [<ffffffffa008a6be>] i915_get_crtc_scanoutpos+0x3e/0x1b0 [i915]
+|  [<ffffffffa00245d4>] drm_calc_vbltimestamp_from_scanoutpos+0xf4/0x430 [drm]
+|  [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+|  [<ffffffffa0024998>] drm_get_last_vbltimestamp+0x48/0x70 [drm]
+|  [<ffffffffa0024db5>] drm_vblank_get+0x185/0x2b0 [drm]
+|  [<ffffffffa0025d03>] drm_wait_vblank+0x83/0x5d0 [drm]
+|  [<ffffffffa00212a2>] drm_ioctl+0x552/0x6a0 [drm]
+|  [<ffffffff811a0095>] do_vfs_ioctl+0x325/0x5b0
+|  [<ffffffff811a03a1>] SyS_ioctl+0x81/0xa0
+|  [<ffffffff8165a342>] tracesys+0xdd/0xe2
 
-CPU: 2 PID: 17188 Comm: oom03 Not tainted 3.10.10-rt3 #2
-Hardware name: Intel Corporation Calpella platform/MATXM-CORE-411-B, BIOS 4.6.3 08/18/2010
-ffff88007684d730 ffff880070df9b58 ffffffff8169918d ffff880070df9b70
-ffffffff8106db31 ffff88007688b4a0 ffff880070df9b88 ffffffff8169d9c0
-ffff88007688b4a0 ffff880070df9bc8 ffffffff81059da1 0000000170df9bb0
-Call Trace:
-[<ffffffff8169918d>] dump_stack+0x19/0x1b
-[<ffffffff8106db31>] __might_sleep+0xf1/0x170
-[<ffffffff8169d9c0>] rt_spin_lock+0x20/0x50
-[<ffffffff81059da1>] queue_work_on+0x61/0x100
-[<ffffffff8112b361>] drain_all_stock+0xe1/0x1c0
-[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
-[<ffffffff8112beda>] __mem_cgroup_try_charge+0x41a/0xc40
-[<ffffffff810f1c91>] ? release_pages+0x1b1/0x1f0
-[<ffffffff8106f200>] ? sched_exec+0x40/0xb0
-[<ffffffff8112cc87>] mem_cgroup_charge_common+0x37/0x70
-[<ffffffff8112e2c6>] mem_cgroup_newpage_charge+0x26/0x30
-[<ffffffff8110af68>] handle_pte_fault+0x618/0x840
-[<ffffffff8103ecf6>] ? unpin_current_cpu+0x16/0x70
-[<ffffffff81070f94>] ? migrate_enable+0xd4/0x200
-[<ffffffff8110cde5>] handle_mm_fault+0x145/0x1e0
-[<ffffffff810301e1>] __do_page_fault+0x1a1/0x4c0
-[<ffffffff8169c9eb>] ? preempt_schedule_irq+0x4b/0x70
-[<ffffffff8169e3b7>] ? retint_kernel+0x37/0x40
-[<ffffffff8103053e>] do_page_fault+0xe/0x10
-[<ffffffff8169e4c2>] page_fault+0x22/0x30
-
-So, to prevent schedule_work_on from being called in preempt disabled context,
-replace the pair of get/put_cpu() to get/put_cpu_light().
+After a longer thread it was decided to drop the preempt_disable()/
+enable() invocations which were meant for -RT and Mario Kleiner looks
+for a replacement.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Yang Shi <yang.shi@windriver.com>
+Reported-By: Luis Claudio R. Goncalves <lclaudio@uudg.org>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/memcontrol.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_irq.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9c36442..107c0ba 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2082,7 +2082,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index dc33ba5..07dfb99 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -619,11 +619,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 	 * code gets preempted or delayed for some reason.
+ 	 */
+ 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
+-		/* Disable preemption to make it very likely to
+-		 * succeed in the first iteration even on PREEMPT_RT kernel.
+-		 */
+-		preempt_disable();
+-
+ 		/* Get system timestamp before query. */
+ 		do_gettimeofday(&stime);
  
- 	/* Notify other cpus that system-wide "drain" is running */
- 	get_online_cpus();
--	curcpu = get_cpu();
-+	curcpu = get_cpu_light();
- 	for_each_online_cpu(cpu) {
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
- 		struct mem_cgroup *memcg;
-@@ -2099,7 +2099,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 				schedule_work_on(cpu, &stock->work);
- 		}
- 	}
--	put_cpu();
-+	put_cpu_light();
+@@ -633,8 +628,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 		/* Get system timestamp after query. */
+ 		do_gettimeofday(&raw_time);
  
- 	if (!sync)
- 		goto out;
+-		preempt_enable();
+-
+ 		/* Return as no-op if scanout query unsupported or failed. */
+ 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+ 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
 -- 
 1.8.4.rc3
 
