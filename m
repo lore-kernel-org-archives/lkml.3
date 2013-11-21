@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab3KUBsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 20:48:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62652 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab3KUBso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 20:48:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,740,1378882800"; 
-   d="scan'208";a="437008416"
-Message-ID: <528D6665.60809@linux.intel.com>
-Date: Wed, 20 Nov 2013 17:48:21 -0800
-From: sathyanarayanan kuppuswamy 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
-Reply-To: sathyanarayanan.kuppuswamy@linux.intel.com
-Organization: Intel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754757Ab3KUBwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 20:52:55 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:42188 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab3KUBwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 20:52:53 -0500
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "david.a.cohen@linux.intel.com" <david.a.cohen@linux.intel.com>,
-        "eric.ernst@linux.intel.com" <eric.ernst@linux.intel.com>
-Subject: Re: [PATCH v2.2] ipc: Added support for IPC interrupt mode
-References: <1384561314-11210-1-git-send-email-david.a.cohen@linux.intel.com>	 <1384998333-141121-1-git-send-email-sathyanarayanan.kuppuswamy@linux.intel.com> <1384998432.20536.14.camel@x230>
-In-Reply-To: <1384998432.20536.14.camel@x230>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Nov 2013 17:52:52 -0800
+Message-ID: <CAHNPk65U3gaNGs74VGpiOJCaR_n0mdj53LLe=M-6cVnoKRHK5w@mail.gmail.com>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+From: Luis Lozano <llozano@chromium.org>
+To: linux-kernel@vger.kernel.org,
+        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
+        Han Shen <shenhan@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have been monitoring this thread and trying to understand how could
+this happen.
 
-On 11/20/2013 05:47 PM, Matthew Garrett wrote:
-> On Wed, 2013-11-20 at 17:45 -0800, Kuppuswamy Sathyanarayanan wrote:
->
->>   - Changed INIT_COMPLETION to reinit_completion.
-> Thanks, I've already folded that fix into the patch and re-pushed.
->
-Thanks.
+I noticed that the definition for ARM of current_thread_info looks like this:
 
---
-Sathyanarayanan Kuppuswamy
-Android kernel developer
+/*
+ * how to get the thread information struct from C
+ */
+static inline struct thread_info *current_thread_info(void) __attribute_const__;
 
+static inline struct thread_info *current_thread_info(void)
+{
+register unsigned long sp asm ("sp");
+return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
+}
+
+Notice this has the __attribute_const__ marking which corresponds to
+the __const__ gcc attribute described in:
+
+http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html
+
+This attribute marking seems wrong to me. This function depends on
+global state (depends on SP).
+This seems to go against the definition of what a "const" function is
+(according to GCC)
+I noticed this attribute marking is not set for the x86 definition.
+
+Could this be confusing the compiler and causing the problem?
+Can you try this?
+
+It would be nice if you could point to the exact location in the code
+where one could see the reordering happening. I tried to reproduce
+with a small test case and I couldn't. Do you have a small test case?
+
+Luis
