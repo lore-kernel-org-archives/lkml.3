@@ -1,165 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3KUVKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:10:14 -0500
-Received: from claw.goop.org ([74.207.240.146]:59590 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab3KUVKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:10:11 -0500
-Message-ID: <528E76AE.5020204@goop.org>
-Date: Thu, 21 Nov 2013 13:10:06 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754277Ab3KUVLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:11:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60085 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751680Ab3KUVLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 16:11:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ben Widawsky <benjamin.widawsky@intel.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, bjackson0971@gmail.com
+Subject: [Regression] Fwd: [Bug 64841] Linux hangs when suspending to disk
+Date: Thu, 21 Nov 2013 22:24:03 +0100
+Message-ID: <1669934.XNTsQyvtko@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-To: Ben Guthro <ben@guthro.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Xen S3 host resume: "Interrupts enabled after xen_acpi_processor_resume+0x0/0x34"
-References: <528BA6A6.9050403@goop.org>	<CAOvdn6V5vpWgTiY3Q5Ccv8ZaDLBh4YGQom4OtrDBPGgeepToxQ@mail.gmail.com>	<20131119194456.GB7824@phenom.dumpdata.com> <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
-In-Reply-To: <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="nextPart5299676.f5K04xX14b"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 11:52 AM, Ben Guthro wrote:
->
->
->
-> On Tue, Nov 19, 2013 at 2:44 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com <mailto:konrad.wilk@oracle.com>> wrote:
->
->     On Tue, Nov 19, 2013 at 02:34:21PM -0500, Ben Guthro wrote:
->     > On Tue, Nov 19, 2013 at 12:57 PM, Jeremy Fitzhardinge
->     <jeremy@goop.org <mailto:jeremy@goop.org>>wrote:
->     >
->     > > After an S3 host resume, I'm seeing:
->     > >
->     > > [48002.772629] ACPI: Low-level resume complete
->     > > [48002.772802] PM: Restoring platform NVS memory
->     > > [48002.776143] xen_acpi_processor: Uploading Xen processor PM info
->     > > [48002.776691] ------------[ cut here ]------------
->     > > [48002.776712] WARNING: CPU: 0 PID: 10235 at
->     drivers/base/syscore.c:104
->     > > syscore_resume+0x9a/0xe0()
->     > > [48002.776751] Interrupts enabled after
->     xen_acpi_processor_resume+0x0/0x34
->     > > [xen_acpi_processor]
->     > > [48002.776836] Modules linked in: tcp_lp btrfs zlib_deflate
->     raid6_pq xor
->     > > ufs hfsplus hfs
->     > >  minix vfat msdos fat jfs xfs libcrc32c reiserfs xt_CHECKSUM
->     tun hidp fuse
->     > > nf_conntrack_
->     > > netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT
->     xt_conntrack
->     > > ebtable_nat eb
->     > > table_broute bridge stp llc ebtable_filter ebtables ip6table_nat
->     > > nf_conntrack_ipv6 nf_de
->     > > frag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security
->     ip6table_raw
->     > > ip6table_filter ip6
->     > > _tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
->     nf_nat_ipv4 nf_nat
->     > > nf_conntrack ipt
->     > > able_mangle iptable_security iptable_raw rfcomm bnep
->     snd_hda_codec_hdmi
->     > > snd_hda_codec_co
->     > > nexant iTCO_wdt iTCO_vendor_support arc4 x86_pkg_temp_thermal
->     coretemp
->     > > iwldvm microcode
->     > > btusb snd_hda_intel mac80211 bluetooth joydev snd_hda_codec
->     snd_hwdep
->     > > snd_seq serio_raw
->     > > iwlwifi i2c_i801 snd_seq_device
->     > > [48002.776894]  snd_pcm cfg80211 sdhci_pci sdhci mmc_core
->     thinkpad_acpi
->     > > wmi tpm_tis e100
->     > > 0e rfkill snd_page_alloc tpm tpm_bios snd_timer ptp snd mei_me mei
->     > > soundcore shpchp lpc_
->     > > ich pps_core mfd_core mperf xen_acpi_processor xen_netback
->     xen_blkback
->     > > xen_gntdev xen_ev
->     > > tchn xenfs xen_privcmd uinput binfmt_misc nfsd auth_rpcgss
->     nfs_acl lockd
->     > > sunrpc dm_crypt
->     > >  crc32_pclmul crc32c_intel i915 ghash_clmulni_intel i2c_algo_bit
->     > > drm_kms_helper drm i2c_
->     > > core video
->     > > [48002.776903] CPU: 0 PID: 10235 Comm: systemd-sleep Not tainted
->     > > 3.11.7-200.fc19.x86_64 #1
->     > > [48002.776905] Hardware name: LENOVO 4286CTO/4286CTO, BIOS
->     8DET59WW (1.29
->     > > ) 04/02/2012
->     > > [48002.776917]  0000000000000009 ffff8801c7697d30 ffffffff8164777b
->     > > ffff8801c7697d78
->     > > [48002.776924]  ffff8801c7697d68 ffffffff8106715d ffffffffa01f6000
->     > > 0000000000000003
->     > > [48002.776931]  ffff8801c7697e08 ffff8801fd970000 0000000000000000
->     > > ffff8801c7697dc8
->     > > [48002.776933] Call Trace:
->     > > [48002.776949]  [<ffffffff8164777b>] dump_stack+0x45/0x56
->     > > [48002.776959]  [<ffffffff8106715d>]
->     warn_slowpath_common+0x7d/0xa0
->     > > [48002.776972]  [<ffffffff810671cc>] warn_slowpath_fmt+0x4c/0x50
->     > > [48002.776989]  [<ffffffffa01f4bb0>] ?
->     > > xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
->     > > [48002.776996]  [<ffffffff813f252a>] syscore_resume+0x9a/0xe0
->     > > [48002.777006]  [<ffffffff810abd7c>]
->     suspend_devices_and_enter+0x40c/0x480
->     > > [48002.777014]  [<ffffffff810abf68>] pm_suspend+0x178/0x260
->     > > [48002.777020]  [<ffffffff810aae19>] state_store+0x79/0xf0
->     > > [48002.777033]  [<ffffffff812fc4af>] kobj_attr_store+0xf/0x20
->     > > [48002.777043]  [<ffffffff8121a226>] sysfs_write_file+0xc6/0x140
->     > > [48002.777054]  [<ffffffff811a819d>] vfs_write+0xbd/0x1e0
->     > > [48002.777062]  [<ffffffff811a8bd9>] SyS_write+0x49/0xa0
->     > > [48002.777073]  [<ffffffff81656999>]
->     system_call_fastpath+0x16/0x1b
->     > > [48002.777077] ---[ end trace 15c5658c596be9f3 ]---
->     > > [48002.777081] Enabling non-boot CPUs ...
->     > >
->     > >
->     > > I wonder if this is a result of upload_pm_data()'s use of
->     mutexes, which
->     > > being a sleeping synchronization operation, shouldn't be done
->     in an
->     > > interrupt-off context.
->     > >
->     > > I'm also having the machine hang in the suspended state on resume
->     > > sometimes (that is, I open the lid/hit a key/press power to
->     resume the
->     > > laptop, but the sleep light keeps pulsing and I can't get it
->     out of that
->     > > state without a forced power-off. I wonder if these are related.
->     > >
->     > > This is with the stock Fedora 19 kernel, but I don't think
->     there are any
->     > > differences from upstream in this area?
->     > >
->     >
->     > There was a commit in 3.12 to handle systems with reduced
->     hardware sleep -
->     > but that would be a failure 100% of the time - not intermittent.
->     > What version of Xen are you running?
->
->     I saw that on Xen 4.3 (or Xen 4.2) but when I upgraded to Xen 4.4
->     I didn't see
->     it anymore. Hence I was thinking it was Xen related.
->
->
-> The following xen commits were done in this timeframe that could be
-> related, depending on what Xen version you are running:
->
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=6e96c186d23873597896051b043cfeb119c4a7d5
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9aa356bc9f7533c3cb7f02c823f532532876d444
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9e2c5938246546a5b3f698b7421640d85602b994
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=529d5731e40e179e396397c633e10316a850044e
->
+This is a multi-part message in MIME format.
 
-OK, I'm running with current git master Xen, so we'll see how that goes...
+--nextPart5299676.f5K04xX14b
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 
-    J
+Hi,
+
+Unfortunately, your commit 828c79087cec (drm/i915: Disable GGTT PTEs on GEN6+
+suspend) introduced a confirmed regression that seems to have made it into
+stable.
+
+Any chance to look into that?
+
+Rafael
+
+--nextPart5299676.f5K04xX14b
+Content-Type: message/rfc822
+Content-Disposition: inline; filename="forwarded message"
+Content-Description: bugzilla-daemon@bugzilla.kernel.org: [Bug 64841] Linux hangs when suspending to disk
+
+Return-Path: <bugzilla-daemon@bugzilla.kernel.org>
+Received: from mail.kernel.org [198.145.19.201] (HELO mail.kernel.org) by serwer1319399.home.pl [79.96.170.134] with SMTP (IdeaSmtpServer v0.80) id 642e5487567a591a; Thu, 21 Nov 2013 17:09:29 +0100
+Received: from mail.kernel.org (localhost [127.0.0.1]) by mail.kernel.org (Postfix) with ESMTP id 3E3F120791 for <rjw@rjwysocki.net>; Thu, 21 Nov 2013 16:09:27 +0000 (UTC)
+Received: from bugzilla1.web.kernel.org (bugzilla1.web.kernel.org [172.20.200.51]) by mail.kernel.org (Postfix) with ESMTP id 4F02A2078A for <rjw@rjwysocki.net>; Thu, 21 Nov 2013 16:09:18 +0000 (UTC)
+Received: by bugzilla1.web.kernel.org (Postfix, from userid 48) id 4788A400C5; Thu, 21 Nov 2013 16:09:18 +0000 (UTC)
+From: bugzilla-daemon@bugzilla.kernel.org
+To: rjw@rjwysocki.net
+Subject: [Bug 64841] Linux hangs when suspending to disk
+Date: Thu, 21 Nov 2013 16:09:18 +0000
+X-Bugzilla-Reason: AssignedTo
+X-Bugzilla-Type: changed
+X-Bugzilla-Watch-Reason: None
+X-Bugzilla-Product: Power Management
+X-Bugzilla-Component: Hibernation/Suspend
+X-Bugzilla-Version: 2.5
+X-Bugzilla-Severity: normal
+X-Bugzilla-Who: bjackson0971@gmail.com
+X-Bugzilla-Status: NEEDINFO
+X-Bugzilla-Priority: P1
+X-Bugzilla-Assigned-To: rjw@rjwysocki.net
+X-Bugzilla-Target-Milestone: ---
+Message-ID: <bug-64841-76231-ZjstPiWo92@https.bugzilla.kernel.org/>
+In-Reply-To: <bug-64841-76231@https.bugzilla.kernel.org/>
+References: <bug-64841-76231@https.bugzilla.kernel.org/>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Bugzilla-URL: https://bugzilla.kernel.org/
+Auto-Submitted: auto-generated
+MIME-Version: 1.0
+X-Spam-Status: No, score=-2.4 required=5.0 tests=BAYES_00,RP_MATCHES_RCVD, UNPARSEABLE_RELAY autolearn=unavailable version=3.3.1
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on mail.kernel.org
+X-Virus-Scanned: ClamAV using ClamSMTP
+
+https://bugzilla.kernel.org/show_bug.cgi?id=64841
+
+--- Comment #4 from Brad  Jackson <bjackson0971@gmail.com> ---
+828c79087cec61eaf4c76bb32c222fbe35ac3930 is the first bad commit
+commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
+Author: Ben Widawsky <benjamin.widawsky@intel.com>
+Date:   Wed Oct 16 09:21:30 2013 -0700
+
+    drm/i915: Disable GGTT PTEs on GEN6+ suspend
+
+-- 
+You are receiving this mail because:
+You are the assignee for the bug.
+
+--nextPart5299676.f5K04xX14b--
 
