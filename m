@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab3KUUnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:43:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4111 "EHLO mx1.redhat.com"
+	id S1754981Ab3KUUot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:44:49 -0500
+Received: from imp01.mtu.ru ([62.5.255.10]:57266 "EHLO imp01.mtu.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866Ab3KUUng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:43:36 -0500
-Message-ID: <1385066603.2879.414.camel@ul30vt.home>
-Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "agraf@suse.de" <agraf@suse.de>, Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Nov 2013 13:43:23 -0700
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753892Ab3KUUop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 15:44:45 -0500
+X-Spam-Flag: NO
+Message-ID: <528E70B5.5010603@pavlinux.ru>
+Date: Fri, 22 Nov 2013 00:44:37 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+MIME-Version: 1.0
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.2.52-rt73
+References: <20131116194633.GD11518@linutronix.de>
+In-Reply-To: <20131116194633.GD11518@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="GaQnvvUubM9dwd0RACl7iJW3wDmPm7U4r"
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Thursday, November 21, 2013 12:17 AM
-> > To: Bhushan Bharat-R65777
-> > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood Scott-B07421;
-> > Yoder Stuart-B08248; iommu@lists.linux-foundation.org; linux-
-> > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > kernel@vger.kernel.org; Bhushan Bharat-R65777
-> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-> > 
-> > On Tue, 2013-11-19 at 10:47 +0530, Bharat Bhushan wrote:
-> > > From: Bharat Bhushan <bharat.bhushan@freescale.com>
-> > >
-> > > PAMU (FSL IOMMU) has a concept of primary window and subwindows.
-> > > Primary window corresponds to the complete guest iova address space
-> > > (including MSI space), with respect to IOMMU_API this is termed as
-> > > geometry. IOVA Base of subwindow is determined from the number of
-> > > subwindows (configurable using iommu API).
-> > > MSI I/O page must be within the geometry and maximum supported
-> > > subwindows, so MSI IO-page is setup just after guest memory iova space.
-> > >
-> > > So patch 1/9-4/9(inclusive) are for defining the interface to get:
-> > >   - Number of MSI regions (which is number of MSI banks for powerpc)
-> > >   - MSI-region address range: Physical page which have the
-> > >     address/addresses used for generating MSI interrupt
-> > >     and size of the page.
-> > >
-> > > Patch 5/9-7/9(inclusive) is defining the interface of setting up MSI
-> > > iova-base for a msi region(bank) for a device. so that when
-> > > msi-message will be composed then this configured iova will be used.
-> > > Earlier we were using iommu interface for getting the configured iova
-> > > which was not currect and Alex Williamson suggeested this type of interface.
-> > >
-> > > patch 8/9 moves some common functions in a separate file so that these
-> > > can be used by FSL_PAMU implementation (next patch uses this).
-> > > These will be used later for iommu-none implementation. I believe we
-> > > can do more of this but will take step by step.
-> > >
-> > > Finally last patch actually adds the support for FSL-PAMU :)
-> > 
-> > Patches 1-3: msi_get_region needs to return an error an error (probably
-> > -EINVAL) if called on a path where there's no backend implementation.
-> > Otherwise the caller doesn't know that the data in the region pointer isn't
-> > valid.
-> 
-> will correct.
-> 
-> > 
-> > Patches 5&6: same as above for msi_set_iova, return an error if no backend
-> > implementation.
-> 
-> Ok
-> 
-> > 
-> > Patch 7: Why does fsl_msi_del_iova_device bother to return anything if it's
-> > always zero?  Return -ENODEV when not found?
-> 
-> Will make -ENODEV.
-> 
-> > 
-> > Patch 9:
-> > 
-> > vfio_handle_get_attr() passes random kernel data back to userspace in the event
-> > of iommu_domain_get_attr() error.
-> 
-> Will correct.
-> 
-> > 
-> > vfio_handle_set_attr(): I don't see any data validation happening, is
-> > iommu_domain_set_attr() really that safe?
-> 
-> We do not need any data validation here and iommu driver does whatever needed.
-> So yes,  iommu_domain_set_attr() is safe.
-> 
-> > 
-> > For both of those, drop the pr_err on unknown attribute, it's sufficient to
-> > return error.
-> 
-> ok
-> 
-> > 
-> > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each vfio user has
-> > $COUNT regions at their disposal exclusively)?
-> 
-> Number of msi-bank count is system wide and not per aperture, But will be setting windows for banks in the device aperture.
-> So say if we are direct assigning 2 pci device (both have different iommu group, so 2 aperture in iommu) to VM.
-> Now qemu can make only one call to know how many msi-banks are there but it must set sub-windows for all banks for both pci device in its respective aperture.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--GaQnvvUubM9dwd0RACl7iJW3wDmPm7U4r
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I'm still confused.  What I want to make sure of is that the banks are
-independent per aperture.  For instance, if we have two separate
-userspace processes operating independently and they both chose to use
-msi bank zero for their device, that's bank zero within each aperture
-and doesn't interfere.  Or another way to ask is can a malicious user
-interfere with other users by using the wrong bank.  Thanks,
 
-Alex
+Fine, killed 3.12 now decided to finish 3.2.x. Good job guys!
 
+Not configuration, not hardware, not software has not been updated or cha=
+nged.
+
+BUG: scheduling while atomic: irq/74-sata_nv/57/0x00000002
+Modules linked in: cls_u32 sch_sfq sch_htb
+Pid: 57, comm: irq/74-sata_nv Tainted: G           O 3.2.52-rt73 #10
+Call Trace:
+ [<ffffffff814bdef4>] ? __schedule+0x314/0x344
+ [<ffffffff81081b77>] ? task_blocks_on_rt_mutex+0x1e7/0x280
+ [<ffffffff814be741>] ? schedule+0x21/0xa0
+ [<ffffffff814c0d88>] ? rt_spin_lock_slowlock+0x128/0x280
+ [<ffffffff81204d01>] ? blk_update_request+0x11/0x450
+ [<ffffffff812a6976>] ? add_timer_randomness+0x86/0x1e0
+ [<ffffffff81206eac>] ? blk_end_request+0x9c/0xc0
+ [<ffffffff812c629a>] ? scsi_io_completion+0x9a/0x770
+ [<ffffffff8120d4ab>] ? blk_done_softirq+0x6b/0x80
+ [<ffffffff8104a805>] ? __do_softirq_common+0xa5/0x1d0
+ [<ffffffff81094ec0>] ? irq_thread_fn+0x50/0x50
+ [<ffffffff8104ad77>] ? local_bh_enable+0x127/0x150
+ [<ffffffff81094f08>] ? irq_forced_thread_fn+0x48/0x70
+ [<ffffffff81094d80>] ? irq_thread+0x150/0x240
+ [<ffffffff81094c30>] ? disable_irq_nosync+0x60/0x60
+ [<ffffffff81067150>] ? kthread+0x80/0x90
+ [<ffffffff814c3174>] ? kernel_thread_helper+0x4/0x10
+ [<ffffffff810670d0>] ? kthread_bind+0x80/0x80
+ [<ffffffff814c3170>] ? gs_change+0xb/0xb
+
+
+BUG: scheduling while atomic: ksoftirqd/3/27/0x00000002
+Pid: 3, comm: ksoftirqd/0 Tainted: G           O 3.2.52-rt73 #10
+=2E..
+BUG: scheduling while atomic: ksoftirqd/0/3/0x00000002
+Pid: 27, comm: ksoftirqd/3 Tainted: G           O 3.2.52-rt73 #10
+=2E...
+BUG: scheduling while atomic: ksoftirqd/0/3/0x00000002
+Pid: 27, comm: ksoftirqd/3 Tainted: G           O 3.2.52-rt73 #10
+
+
+
+--=20
+
+                                                         Pavel.
+
+
+
+
+--GaQnvvUubM9dwd0RACl7iJW3wDmPm7U4r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCgAGBQJSjnC2AAoJEPtok08Dny2hUmMP/jn+54ifyiHlijInPspgF/75
+eAd8IHi33BF5RwhHagUR2bUSZ7O5cI9Z350mVetbijbuoFtXsMlZpayvIY/PIy9V
+x0GYlmvwbL1Sh+9Jo0Rgij6ePDQDwptXFfz/re+oE2qFddcnUQURfiEEEHO6JP1B
+VV52xA8wXVnhg01QKB1m8GXiCgJfzvdhVxL4G47ezwu8R80Vr1A950F/5pPbFoHt
+TnBCUKdV3qImHyc0EzMUAWz4UAjS4pd42XYVV2Qjyp9Ja4Rkcq5LZi5DAouGFRxz
+qBR0J85jhRdWP9LV2Of7/qUoLPGHHs0LWWrboNUXvfcneN3I1Q4u0nSa1rrNhrJV
+Qm/94NllM2asA9eGMGMa6Lk3kMkah1fXFbtEdYQshVE7Oc1zZ2XMcqKgX9U/tS6L
+k51pn5uQz0EGA2I7G/4VS7EAXyhsezKYLuj3q29mA5/rY6uJGjUB038j9NmM0hoK
+OuMrG6iuV1h0n3Ik0RT+aaKm9zex70UyFDtf64uG8ts+2dUa0G47m8NVIAmbDmxA
+aENUgZ0kBFGzqYE37YsV21Z7BlJ5mqcCSaSr4vqCjoWLJoBf2rMEeNiHaVxkAEPZ
+9Hn9BYixctug+n9cXsfnhfgrbYedWPXH7Q+V7fFdolVvoigBTWHFAIOzM6YlnUJF
+Z/zu9vLOELuhWK6Mz3m1
+=9eAD
+-----END PGP SIGNATURE-----
+
+--GaQnvvUubM9dwd0RACl7iJW3wDmPm7U4r--
