@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab3KURwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:52:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:5058 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750858Ab3KURwQ (ORCPT
+	id S1754979Ab3KURwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:52:32 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44870 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab3KURwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:52:16 -0500
-Date: Thu, 21 Nov 2013 12:52:12 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: [PATCH] rtmutex: Fix compare of waiter prio and task prio
-Message-ID: <20131121125212.142f2786@gandalf.local.home>
-In-Reply-To: <1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
-	<1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 21 Nov 2013 12:52:31 -0500
+X-IronPort-AV: E=Sophos;i="4.93,746,1378857600"; 
+   d="scan'208";a="74452635"
+Message-ID: <528E485C.5030906@citrix.com>
+Date: Thu, 21 Nov 2013 17:52:28 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
+        <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 4/4] xen/xenbus: Avoid synchronous wait on
+ XenBus stalling shutdown/restart.
+References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-5-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1383932286-25080-5-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conversion of the rt_mutex from using plist to rbtree eliminated
-the use of the waiter->list_entry.prio, and instead used directly the
-waiter->task->prio.
+On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
+> The 'read_reply' works with 'process_msg' to read of a reply in XenBus.
+> 'process_msg' is running from within the 'xenbus' thread. Whenever
+> a message shows up in XenBus it is put on a xs_state.reply_list list
+> and 'read_reply' picks it up.
+> 
+> The problem is if the backend domain or the xenstored process is killed.
+> In which case 'xenbus' is still awaiting - and 'read_reply' if called -
+> stuck forever waiting for the reply_list to have some contents.
+> 
+> This is normally not a problem - as the backend domain can come back
+> or the xenstored process can be restarted. However if the domain
+> is in process of being powered off/restarted/halted - there is no
+> point of waiting on it coming back - as we are effectively being
+> terminated and should not impede the progress.
+> 
+> This patch solves this problem by checking the 'system_state' value
+> to see if we are in heading towards death. We also make the wait
+> mechanism a bit more asynchronous.
 
-The problem with this is that the priority inheritance code relies on
-the prio of the waiter being stored is different from the task's prio.
-The change didn't take into account waiter->task == task, which makes
-the compares of:
+This seems to be checking the wrong thing conceptually.  We should abort
+the wait if xenstored is dead not if our domain is dying.
 
-	if (waiter->task->prio == task->prio)
+I think you can consider xenstored as dead if:
 
-rather pointless, since they will always be the same:
+a) it's local and we're dying.
+b) it's remote and the remote domain is dead.
 
-	task->pi_blocked_on = waiter;
-	waiter->task = task;
+> Fixes-Bug: http://bugs.xenproject.org/xen/bug/8
 
-When deadlock detection is not being used (for internal users of
-rt_mutex_lock(); things other than futex), the code relies on
-the prio associated to the waiter being different than the prio
-associated to the task.
+This bug link has no useful information in it.
 
-Another use case where this is critical, is when a task that is
-blocked on an rt_mutex has its priority increased by a separate task.
-Then the compare in rt_mutex_adjust_pi() (called from
-sched_setscheduler()), returns without doing anything. This is because
-it checks if the priority of the task is different than the priority of
-its waiter.
+> --- a/drivers/xen/xenbus/xenbus_xs.c
+> +++ b/drivers/xen/xenbus/xenbus_xs.c
+> @@ -148,9 +148,24 @@ static void *read_reply(enum xsd_sockmsg_type *type, unsigned int *len)
+>  
+>  	while (list_empty(&xs_state.reply_list)) {
+>  		spin_unlock(&xs_state.reply_lock);
+> -		/* XXX FIXME: Avoid synchronous wait for response here. */
+> -		wait_event(xs_state.reply_waitq,
+> -			   !list_empty(&xs_state.reply_list));
+> +		wait_event_timeout(xs_state.reply_waitq,
+> +				   !list_empty(&xs_state.reply_list),
+> +				   msecs_to_jiffies(500));
 
-The simple solution is to add a prio member to the rt_mutex_waiter
-structure that associates the priority to the waiter that is separate
-from the task.
+This is still a synchronous wait.  Is the removal of the FIXME comment
+correct?
 
-I created a test program that tests this case:
+> +
+> +		/*
+> +		 * If we are in the process of being shut-down there is
+> +		 * no point of trying to contact XenBus - it is either
+> +		 * killed (xenstored application) or the other domain
+> +		 * has been killed or is unreachable.
 
-  http://rostedt.homelinux.com/code/pi_mutex_test.c
+Not necessarily, xenstore could just be slow.
 
-(too big to include in a change log) I'll work on getting this test
-into other projects like LTP and the kernel (perf test?)
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-Index: linux-rt.git/kernel/rtmutex.c
-===================================================================
---- linux-rt.git.orig/kernel/rtmutex.c
-+++ linux-rt.git/kernel/rtmutex.c
-@@ -197,7 +197,7 @@ int rt_mutex_getprio(struct task_struct
- 	if (likely(!task_has_pi_waiters(task)))
- 		return task->normal_prio;
- 
--	return min(task_top_pi_waiter(task)->task->prio,
-+	return min(task_top_pi_waiter(task)->prio,
- 		   task->normal_prio);
- }
- 
-@@ -336,7 +336,7 @@ static int rt_mutex_adjust_prio_chain(st
- 	 * When deadlock detection is off then we check, if further
- 	 * priority adjustment is necessary.
- 	 */
--	if (!detect_deadlock && waiter->task->prio == task->prio)
-+	if (!detect_deadlock && waiter->prio == task->prio)
- 		goto out_unlock_pi;
- 
- 	lock = waiter->lock;
-@@ -358,7 +358,7 @@ static int rt_mutex_adjust_prio_chain(st
- 
- 	/* Requeue the waiter */
- 	rt_mutex_dequeue(lock, waiter);
--	waiter->task->prio = task->prio;
-+	waiter->prio = task->prio;
- 	rt_mutex_enqueue(lock, waiter);
- 
- 	/* Release the task */
-@@ -456,7 +456,7 @@ static int try_to_take_rt_mutex(struct r
- 	 * 3) it is top waiter
- 	 */
- 	if (rt_mutex_has_waiters(lock)) {
--		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
-+		if (task->prio >= rt_mutex_top_waiter(lock)->prio) {
- 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
- 				return 0;
- 		}
-@@ -516,7 +516,8 @@ static int task_blocks_on_rt_mutex(struc
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
- 	waiter->lock = lock;
--	
-+	waiter->prio = task->prio;
-+
- 	/* Get the top priority waiter on the lock */
- 	if (rt_mutex_has_waiters(lock))
- 		top_waiter = rt_mutex_top_waiter(lock);
-@@ -661,7 +662,7 @@ void rt_mutex_adjust_pi(struct task_stru
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 
- 	waiter = task->pi_blocked_on;
--	if (!waiter || (waiter->task->prio == task->prio &&
-+	if (!waiter || (waiter->prio == task->prio &&
- 			!dl_prio(task->prio))) {
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
-Index: linux-rt.git/kernel/rtmutex_common.h
-===================================================================
---- linux-rt.git.orig/kernel/rtmutex_common.h
-+++ linux-rt.git/kernel/rtmutex_common.h
-@@ -54,6 +54,7 @@ struct rt_mutex_waiter {
- 	struct pid		*deadlock_task_pid;
- 	struct rt_mutex		*deadlock_lock;
- #endif
-+	int			prio;
- };
- 
- /*
+David
