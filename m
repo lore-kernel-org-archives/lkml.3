@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3KUCwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:52:04 -0500
-Received: from blu0-omc1-s15.blu0.hotmail.com ([65.55.116.26]:5858 "EHLO
-	blu0-omc1-s15.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750827Ab3KUCwA (ORCPT
+	id S1752828Ab3KUCw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:52:57 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:51056 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab3KUCw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:52:00 -0500
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 21:52:00 EST
-X-TMN: [rtUYxAn5iF75IuZf7D9eTqJse2VvDlzT]
-X-Originating-Email: [gancuimian@hotmail.com]
-Message-ID: <BLU171-DS35B00C010728ACFB2F8DF9D3E10@phx.gbl>
-From: YuLicheng <gancuimian@hotmail.com>
-To: <linux-doc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <roel.kluin@gmail.com>
-Subject: kref doc: Why kref kernel doc omits kref_put when kthread_run fail
-Date: Thu, 21 Nov 2013 10:42:18 +0800
+	Wed, 20 Nov 2013 21:52:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="gb2312"; reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 16.4.3505.912
-X-MimeOLE: Produced By Microsoft MimeOLE V16.4.3505.912
-X-OriginalArrivalTime: 21 Nov 2013 02:42:18.0285 (UTC) FILETIME=[4B7B5DD0:01CEE663]
+In-Reply-To: <1384976824-32624-1-git-send-email-ddstreet@ieee.org>
+References: <1384976824-32624-1-git-send-email-ddstreet@ieee.org>
+Date: Thu, 21 Nov 2013 10:52:55 +0800
+Message-ID: <CAL1ERfNNAZCS58K9mT85wxQfH8B3AyR4aLE8r745me1dJRmPfg@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: remove unneeded zswap_rb_erase calls
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The document is /Documentation/kerf.txt, and I'm referring to v3.12:
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/Documentation/kref.txt?id=v3.12
+Hello Dan
 
-Part of the first example in the document is attached below.
-In my_data_handler(), kref_init() already put 1 to refcount, and kref_get()
-next made the refcount 2. But if kthread_run() fails, only one kref_put() 
-will
-take place (right after the out tag), it renders the refcount to be 1 at 
-last,
-and the data will never be freed.
+On Thu, Nov 21, 2013 at 3:47 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+> Since zswap_rb_erase was added to the final (when refcount == 0)
+> zswap_put_entry, there is no need to call zswap_rb_erase before
+> calling zswap_put_entry.
+>
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> ---
+>  mm/zswap.c | 5 -----
+>  1 file changed, 5 deletions(-)
+>
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index e154f1e..f4fbbd5 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -711,8 +711,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>                 ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
+>                 if (ret == -EEXIST) {
+>                         zswap_duplicate_entry++;
+> -                       /* remove from rbtree */
+> -                       zswap_rb_erase(&tree->rbroot, dupentry);
+>                         zswap_entry_put(tree, dupentry);
+>                 }
+>         } while (ret == -EEXIST);
 
-int my_data_handler(void)
-{
-        int rv = 0;
-        struct my_data *data;
-        struct task_struct *task;
-        data = kmalloc(sizeof(*data), GFP_KERNEL);
-        if (!data)
-                return -ENOMEM;
-        kref_init(&data->refcount);
+If remove zswap_rb_erase, it would loop until free this dupentry. This
+would cause 2 proplems:
+1.  zswap_duplicate_entry counter is not correct
+2. trigger BUG_ON in zswap_entry_put when this dupentry is being writeback,
+   because zswap_writeback_entry will call zswap_entry_put either.
 
-        kref_get(&data->refcount);
-        task = kthread_run(more_data_handling, data, "more_data_handling");
-        if (task == ERR_PTR(-ENOMEM)) {
-                rv = -ENOMEM;
-                goto out;
-        }
+So, I don't think it is a good idea to remove zswap_rb_erase call.
 
-        .
-        . do stuff with data here
-        .
-out:
-        kref_put(&data->refcount, data_release);
-        return rv;
-}
+> @@ -787,9 +785,6 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>                 return;
+>         }
+>
+> -       /* remove from rbtree */
+> -       zswap_rb_erase(&tree->rbroot, entry);
+> -
+>         /* drop the initial reference from entry creation */
+>         zswap_entry_put(tree, entry);
 
-I also noticed that there once was a kref_put() before "goto out" in the doc
-before some point of 2009, but it was removed by a patch that claimed that 
-this
-kref_put() was redudent.
-The patch commit is:
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/Documentation/kref.txt?id=8f1ecc9fbc5b223e4f5d5bb8bcd6f5672c4bc4b6
+I think it is better not to remove the zswap_rb_erase call.
 
-Is this a bug or maybe I missed something?
+>From frontswap interface view, if invalidate is called, the page(and
+entry) should never visible to upper.
+If remove the zswap_rb_erase call, it is not fit this semantic.
 
+Consider the following scenario:
+1. thread 0: entry A is being writeback
+2. thread 1: invalidate entry A, as refcount != 0, it will still exist
+on rbtree.
+3. thread 1: reuse  entry A 's swp_entry_t, do a frontswap_store
+   it will conflict with the  entry A on the rbtree, it is not a
+normal duplicate store.
 
-        Licheng 
+If we place the zswap_rb_erase call in zswap_frontswap_invalidate_page,
+we can avoid the above scenario.
 
+So, I don't think it is a good idea to remove zswap_rb_erase call.
+
+Regards,
+
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
