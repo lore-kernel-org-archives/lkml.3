@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab3KUTDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:03:54 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48885 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753177Ab3KUTDx (ORCPT
+	id S1755193Ab3KUTEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:04:24 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37686 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3KUTEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:03:53 -0500
-X-Sasl-enc: ntlQUSdxIt7xXEYK2Pa/Lpn//+Z8BG6EBIf4VtwAyrgJ 1385060631
-Date: Thu, 21 Nov 2013 11:03:50 -0800
-From: Greg KH <greg@kroah.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20131121190350.GC17070@kroah.com>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+	Thu, 21 Nov 2013 14:04:23 -0500
+Message-ID: <528E5932.1070105@wwwdotorg.org>
+Date: Thu, 21 Nov 2013 12:04:18 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@linaro.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        swarren@nvidia.com, will.deacon@arm.com, thierry.reding@gmail.com,
+        galak@codeaurora.org
+CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-3-git-send-email-hdoyu@nvidia.com> <20131121131558.E5B82C40A2C@trevor.secretlab.ca>
+In-Reply-To: <20131121131558.E5B82C40A2C@trevor.secretlab.ca>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 12:50:49PM -0500, Vivek Goyal wrote:
-> This patch implements the in kernel kexec functionality. It implements a
-> new system call kexec_file_load. I think parameter list of this system
-> call will change as I have not done the kernel image signature handling
-> yet. I have been told that I might have to pass the detached signature
-> and size as part of system call.
+On 11/21/2013 06:15 AM, Grant Likely wrote:
+> On Tue, 19 Nov 2013 11:33:06 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+>> IOMMU devices on the bus need to be poplulated first, then iommu
+>> master devices are done later.
+>>
+>> With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+>> whether a device can be an iommu msater or not. If a device can, we'll
+>> defer to populate that device till an iommu device is populated. Once
+>> an iommu device is populated, "dev->bus->iommu_ops" is set in the
+>> bus. Then, those defered iommu master devices are populated and
+>> configured for IOMMU with help of the already populated iommu device
+>> via iommu_ops->add_device(). Multiple IOMMUs can be listed on this
+>> "iommus" binding so that a device can have multiple IOMMUs attached.
+>>
+>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>> ---
+>> v5:
+>> Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
+>>
+>> v4:
+>> This is newly added, and the successor of the following RFC:
+>>   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
+>>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+>> ---
+>>  drivers/base/dd.c        |  5 +++++
+>>  drivers/iommu/of_iommu.c | 22 ++++++++++++++++++++++
+>>  include/linux/of_iommu.h |  7 +++++++
+>>  3 files changed, 34 insertions(+)
+>>
+>> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+>> index 35fa368..6e892d4 100644
+>> --- a/drivers/base/dd.c
+>> +++ b/drivers/base/dd.c
+>> @@ -25,6 +25,7 @@
+>>  #include <linux/async.h>
+>>  #include <linux/pm_runtime.h>
+>>  #include <linux/pinctrl/devinfo.h>
+>> +#include <linux/of_iommu.h>
+>>  
+>>  #include "base.h"
+>>  #include "power/power.h"
+>> @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+>>  
+>>  	dev->driver = drv;
+>>  
+>> +	ret = of_iommu_attach(dev);
+>> +	if (ret)
+>> +		goto probe_failed;
+>> +
+>>  	/* If using pinctrl, bind pins now before probing */
+>>  	ret = pinctrl_bind_pins(dev);
+>>  	if (ret)
+> 
+> I'm very concerned about this approach. Hooking into the core probe
+> path for things like this is not going to scale well. I'm not thrilled
+> with the pinctrl hook being here either, but that is already merged. :-(
+> Also, hooking in here is going affect every single device device driver
+> probe path, and a large number of them are never, ever, going to have
+> iommu interactions.
+> 
+> There needs to be a less invasive way of doing what you want. I still
+> feel like the individual device drivers themselves need to be aware that
+> they might be hooking through an IOMMU. Or, if they are hooking through
+> a bus like PCIe, then have the PCIe bus defer creating child devices
+> until the IOMMU is configured and in place.
 
-This could be done as we do with modules, and just tack the signature
-onto the end of the 'blob' of the image.  That way we could use the same
-tool to sign the binary as we do for modules, and save the need for
-extra parameters in the syscall.
+I general though, couldn't any MMIO on-SoC device potentially be
+affected by an IOMMU? The point of putting the call to of_iommu_attach()
+here rather than inside individual driver's probe() is to avoid
+requiring "every" driver having to paste more boiler-plate into probe().
 
-> +/*
-> + * Free up tempory buffers allocated which are not needed after image has
-> + * been loaded.
-> + *
-> + * Free up memory used by kernel, initrd, and comand line. This is temporary
-> + * memory allocation which is not needed any more after these buffers have
-> + * been loaded into separate segments and have been copied elsewhere
-> + */
-> +static void kimage_file_post_load_cleanup(struct kimage *image)
-> +{
-> +	if (image->kernel_buf) {
-> +		vfree(image->kernel_buf);
-> +		image->kernel_buf = NULL;
-> +	}
-> +
-> +	if (image->initrd_buf) {
-> +		vfree(image->initrd_buf);
-> +		image->initrd_buf = NULL;
-> +	}
-> +
-> +	if (image->cmdline_buf) {
-> +		vfree(image->cmdline_buf);
-> +		image->cmdline_buf = NULL;
-> +	}
+Perhaps what we need is a flag in struct device to indicate that the
+driver/device is MMIO, and hence potentially affected by an IOMMU. would
+the following work better for you?
 
-No need to check the buffer before calling vfree(), it can handle NULL
-just fine.
++	if (drv->is_mmio) { // let's bikeshed on the field name:-)
++		ret = of_iommu_attach(dev);
++		if (ret)
++			goto probe_failed;
++	}
 
-thanks,
-
-greg k-h
+I've often thought that struct device_driver (or similar) should declare
+the set of resources that a device needs (e.g. a list of GPIO names,
+regulator names, etc.), so that the driver core can parse all these
+standard properties from DT/... before calling the custom probe()
+function for all the non-standard stuff. This "is_mmio" flag would fit
+into that model well.
