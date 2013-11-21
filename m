@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3KUCAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:00:37 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38033 "EHLO
+	id S1755161Ab3KUCAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:00:44 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38041 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab3KUCAg (ORCPT
+	with ESMTP id S1755010Ab3KUCAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:00:36 -0500
-Subject: [PATCH v6 0/3] x86, apic,
- kexec: Add disable_cpu_apic kernel parameter
+	Wed, 20 Nov 2013 21:00:41 -0500
+Subject: [PATCH v6 1/3] x86, apic: add bios_bsp_physical_apicid
 To: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
         akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Date: Thu, 21 Nov 2013 11:00:33 +0900
-Message-ID: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
+Date: Thu, 21 Nov 2013 11:00:39 +0900
+Message-ID: <20131121020039.2748.72482.stgit@localhost6.localdomain6>
+In-Reply-To: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
+References: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,118 +24,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is to allow kdump 2nd kernel to wake up multiple CPUs,
-a continueing work from:
+Add bios_bsp_physical_apicid variable. This variable is initialized
+with the value reported by BIOS tables such as ACPI MADT or MP table.
 
-  [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
-  https://lkml.org/lkml/2013/10/16/300.
+Without this variable, boot_cpu_physical_apicid temporarilly has the
+value around MP table related codes such as kernel/mpparse.c,
+mm/amdtopology.c and platform/visws/visws_quirks.c until it is
+rewritten back in init_apic_mappings() to the initial APIC ID for the
+processor that is doing boot up.
 
-At v4, basic design has changed. Now users need to figure out initial
-APIC ID of BSP in the 1st kernel and configures kernel parameter for
-the 2nd kernel manually using disable_cpu_apic kernel parameter, which
-is newly introduced by this patch set. This design is more flexible
-than the previous version in that we no longer have to rely on ACPI/MP
-table to get initial APIC ID of BSP.
+This change is also required by the next commit introducing new
+disable_cpu_apicid kernel parameter, where the value specified via
+disable_cpu_apicid is compared with boot_cpu_physical_apicid in
+generic_processor_info(), but in case of using MP table, the
+boot_cpu_physical_apicid is rewiriten by MP_processor_info() to the
+initial APIC ID of the BSP reported by BIOS, which is problematic if
+some AP is specified in disable_cpu_apic.
 
-Sorry, this patch set have not include in-source documentation
-requested by Borislav Petkov yet, but I'll post it later separately,
-which would be better to focus on documentation reviewing.
+There's no functional change intended on kernel/mpparse.c,
+mm/amdtopology.c and platform/visws/visws_quirks.c by the introduction
+of bios_bsp_physical_apicid.
 
-ChangeLog
+The reason why we don't use cpuid is that we cannot use IA32_APIC_BASE
+MSR to determine if the booting up cpu is BSP since rdmsr() to the MSR
+could not work well even if it exists on some system, e.g. some
+cluster system.
 
-v5 => v6)
-
-- Remove use of rdmsr(IA32_APIC_BASE) to initialize
-  bsp_physical_apicid since the MSR doesn't work well on some cluster
-  systems, suggested by HPA. Also, current users of the variable
-  expects the initial apicid reported through MP table only; removing
-  the use of the MSR is not problematic.
-
-- Rename bsp_physical_apicid as bios_bsp_physical_apicid to make it
-  clear that the apidid contained there is the one reported from some
-  BIOS table. Also, initialize it not only by MP table but also by
-  ACPI MADT.
-
-- Change message displayed when specified cpu is disabled from:
-
-  ACPI: Disable specified CPU. Processor 0/0x0 ignored.
-
-  to:
-
-  ACPI: Disabling requested cpu. Processor 0/0x0 ignored.
-
-v4 => v5)
-
-- Rebased on top of v3.12
-
-- Introduce bsp_physical_apicid that has the initial APIC ID for the
-  processor with BSP flag on IA32_APIC_BASE MSR. Without this,
-  boot_cpu_physical_apicid has temporarilly the value around MP table
-  related codes, although it's designed to have the initial APIC ID
-  for the processor that is doing the boot up. Use the
-  bsp_physical_apicid in MP table related codes; no impact on
-  semantics at runtime there.
-
-v3 => v4)
-
-- Rebased on top of v3.12-rc6
-
-- Basic design has been changed. Now users need to figure out initial
-  APIC ID of BSP in the 1st kernel and configures kernel parameter for
-  the 2nd kernel manually using disable_cpu_apic kernel parameter to
-  be newly introduced in this patch set. This design is more flexible
-  than the previous version in that we no longer have to rely on
-  ACPI/MP table to get initial APIC ID of BSP.
-
-v2 => v3)
-
-- Change default value of boot_cpu_is_bsp to true.
-
-- Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
-  processor family is larger than or equal to 6 in order to avoid
-  invalid opcode exception on processors where MSR_IA32_APICBASE is
-  not supported.
-
-v1 => v2)
-
-- Rebased on top of v3.12-rc5.
-
-- Fix linking time error of boot_cpu_is_bsp_init() in case of
-  CONFIG_LOCAL_APIC disabled by adding empty static inline function
-  instead.
-
-- Fix missing feature check by means of cpu_has_apic macro in
-  boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
-
-  NOTE: I've checked local apic-present case only; I don't have any
-  x86 processor without local apic.
-
-- Add __init annotation to boot_cpu_is_bsp_init().
-
-Test
-
-- built with and without CONFIG_LOCAL_APIC
-- tested x86_64 in case of acpi and MP table
-- tested disable_cpu_apicid=<n> to disable both AP and BSP
-
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
-
-HATAYAMA Daisuke (3):
-      x86, apic: add bios_bsp_physical_apicid
-      x86, apic: Add disable_cpu_apicid kernel parameter
-      Documentation, x86, apic, kexec: Add disable_cpu_apicid kernel parameter
-
-
- Documentation/kernel-parameters.txt    |    9 ++++++++
  arch/x86/include/asm/mpspec.h          |    1 +
- arch/x86/kernel/acpi/boot.c            |    8 +++++++
- arch/x86/kernel/apic/apic.c            |   38 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/acpi/boot.c            |    8 ++++++++
+ arch/x86/kernel/apic/apic.c            |    9 +++++++++
  arch/x86/kernel/mpparse.c              |    2 +-
- arch/x86/mm/amdtopology.c              |    6 +++--
+ arch/x86/mm/amdtopology.c              |    6 +++---
  arch/x86/platform/visws/visws_quirks.c |    2 +-
- 7 files changed, 61 insertions(+), 5 deletions(-)
+ 6 files changed, 23 insertions(+), 5 deletions(-)
 
--- 
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 626cf70..3f9f94b 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -47,6 +47,7 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
+ extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
+ 
+ extern unsigned int boot_cpu_physical_apicid;
++extern unsigned int bios_bsp_physical_apicid;
+ extern unsigned int max_physical_apicid;
+ extern int mpc_default_type;
+ extern unsigned long mp_lapic_addr;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 40c7660..f62226a 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -206,6 +206,14 @@ static void acpi_register_lapic(int id, u8 enabled)
+ 	if (boot_cpu_physical_apicid != -1U)
+ 		ver = apic_version[boot_cpu_physical_apicid];
+ 
++	/*
++	 * ACPI specification describes that platform firmware should
++	 * list the BSP processor as the first LAPIC entry in the
++	 * MADT.
++	 */
++	if (!num_processors && !disabled_cpus)
++		bios_bsp_physical_apicid = id;
++
+ 	generic_processor_info(id, ver);
+ }
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index a7eb82d..cff8d71 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -63,6 +63,15 @@ unsigned disabled_cpus;
+ /* Processor that is doing the boot up */
+ unsigned int boot_cpu_physical_apicid = -1U;
+ 
++/* Processor with BP flag on IA32_APIC_BASE MSR to be initialized with
++ * the value reported by BIOS tables such as ACPI MADT or MP table,
++ * not with the value obtained by rdmsr(IA32_APIC_MSR) since it
++ * possibly doesn't work well on some clustered system.
++ *
++ * In case of kexec, this can differ from the processor that is doing
++ * the boot up. */
++unsigned int bios_bsp_physical_apicid = BAD_APICID;
++
+ /*
+  * The highest APIC ID seen during enumeration.
+  */
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index d2b5648..5bb5220 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -64,7 +64,7 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ 
+ 	if (m->cpuflag & CPU_BOOTPROCESSOR) {
+ 		bootup_cpu = " (Bootup-CPU)";
+-		boot_cpu_physical_apicid = m->apicid;
++		bios_bsp_physical_apicid = m->apicid;
+ 	}
+ 
+ 	printk(KERN_INFO "Processor #%d%s\n", m->apicid, bootup_cpu);
+diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
+index 2ca15b5..788012e 100644
+--- a/arch/x86/mm/amdtopology.c
++++ b/arch/x86/mm/amdtopology.c
+@@ -183,9 +183,9 @@ int __init amd_numa_init(void)
+ 
+ 	/* get the APIC ID of the BSP early for systems with apicid lifting */
+ 	early_get_boot_cpu_id();
+-	if (boot_cpu_physical_apicid > 0) {
+-		pr_info("BSP APIC ID: %02x\n", boot_cpu_physical_apicid);
+-		apicid_base = boot_cpu_physical_apicid;
++	if (bios_bsp_physical_apicid > 0) {
++		pr_info("BSP APIC ID: %02x\n", bios_bsp_physical_apicid);
++		apicid_base = bios_bsp_physical_apicid;
+ 	}
+ 
+ 	for_each_node_mask(i, numa_nodes_parsed)
+diff --git a/arch/x86/platform/visws/visws_quirks.c b/arch/x86/platform/visws/visws_quirks.c
+index 94d8a39..5a91e50 100644
+--- a/arch/x86/platform/visws/visws_quirks.c
++++ b/arch/x86/platform/visws/visws_quirks.c
+@@ -166,7 +166,7 @@ static void __init MP_processor_info(struct mpc_cpu *m)
+ 	       (m->cpufeature & CPU_MODEL_MASK) >> 4, m->apicver);
+ 
+ 	if (m->cpuflag & CPU_BOOTPROCESSOR)
+-		boot_cpu_physical_apicid = m->apicid;
++		bios_bsp_physical_apicid = m->apicid;
+ 
+ 	ver = m->apicver;
+ 	if ((ver >= 0x14 && m->apicid >= 0xff) || m->apicid >= 0xf) {
 
-Thanks.
-HATAYAMA, Daisuke
