@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3KUCBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:01:48 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:50196 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab3KUCBp (ORCPT
+	id S1754942Ab3KUCOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:14:10 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:54051 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3KUCOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:01:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo4ReYw5koMrwcuNQj7yfFXvDnuZGiRc70mekv6L40KjWw@mail.gmail.com>
-References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
-	<CAErSpo5bYwgK618AOgvD=mgbfjcLLGE3CVw1SN3sP3PqRaCk5A@mail.gmail.com>
-	<CAErSpo4ReYw5koMrwcuNQj7yfFXvDnuZGiRc70mekv6L40KjWw@mail.gmail.com>
-Date: Thu, 21 Nov 2013 10:01:44 +0800
-Message-ID: <CABawtvNHbRKdCXcfa-fOcS-7kA1TqBey+h+8QFFUtfYWwVRW8w@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yu Zhao <yu.zhao@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Nov 2013 21:14:05 -0500
+From: mark.doffman@codethink.co.uk
+To: ceph-devel@vger.kernel.org
+Cc: Mark Doffman <mark.doffman@codethink.co.uk>, sage@inktank.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, rob.taylor@codethink.co.uk
+Subject: [PATCH 0/4] Add ceph root filesystem functionality and documentation.
+Date: Wed, 20 Nov 2013 20:13:40 -0600
+Message-Id: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn,
-    I revised the description part with the original bug material as
-below, help to take a look, will send V2 back to home, SMTP blocked by
-company network.
+From: Mark Doffman <mark.doffman@codethink.co.uk>
 
-    PCI: Init NumVFs register to zero in sriov_init()
+Hi All,
 
-    Though no specification about NumVFs register initial value after
-POST, to void the confusion
-    lspci output as following before VF was enabled, we should clear
-the NumVFs value left by BIOS
-    to zero:
+The following patch series adds the ability to use a ceph distributed
+file system as the root device. The functionality is similar to
+NFS root but for the ceph filesystem.
 
-    #lspci -vvvxxx -s 13:00.0
-   13:00.0 Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+
-    Network Connection (rev 01)  Subsystem: Oracle/SUN Ethernet Server
-Adapter X520-2
-    ~
-    Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
-            IOVCap: Migration-, Interrupt Message Number: 000
-            IOVCtl: Enable- Migration- Interrupt- MSE- ARIHierarchy+
-            IOVSta: Migration-
-            Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function
-            Dependency Link: 00
-                                                                     ^dazed !
-    140: 03 00 01 15 c4 24 c8 ff ff 21 1b 00 00 00 00 00
-    150: 0e 00 01 16 00 01 00 00 00 00 00 00 00 00 00 00
-    160: 10 00 01 00 00 00 00 00 10 00 00 00 40 00 40 00
+The patch series adds a new root device option '/dev/ceph'.
+Configuration is passed either via a new kernel parameter 'cephroot'
+or DHCP option 17.
 
-          ^        ^Total VFs
+The patch series applies to v3.12-10714-gd085eb6
 
-          Initial VFs
-    170: 40 00 00 00 80 00 02 00 00 00 ed 10 53 05 00 00
-             ^Number of VFs
+Thanks
 
+Mark
 
-Thanks,
-Ethan
+Mark Doffman (3):
+  init: Add a new root device option, the Ceph file system
+  cephroot: Add DHCP option 17 configuration to ceph root fs.
+  Reuse root_nfs_parse_addr() for NFS and CEPH
 
+Rob Taylor (1):
+  Documentation: Document the cephroot functionality
 
-On Wed, Nov 20, 2013 at 8:07 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Nov 19, 2013 at 3:24 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> [+cc linux-pci]
->>
->> On Wed, Nov 6, 2013 at 7:49 AM, ethan.zhao <ethan.kernel@gmail.com> wrote:
->>> Though no specification about NumVFs register initial value after POST, to void the confusion
->>> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
->>> to zero:
->>>
->>> $lspci -vvv -s 03:00.0
->>> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
->>> ~
->>> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
->>>                 IOVCap: Migration-, Interrupt Message Number: 000
->>>                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
->>>                 IOVSta: Migration-
->>>                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
->>>                                                               ^dazed !
->
-> Did you mean to show lspci output from before SR-IOV was enabled?  It
-> looks like SR-IOV is enabled here, so I don't think your patch would
-> change this output at all.
->
-> Bjorn
+ Documentation/filesystems/{ => ceph}/ceph.txt |   0
+ Documentation/filesystems/ceph/cephroot.txt   |  85 +++++++++++++
+ fs/ceph/Kconfig                               |  10 ++
+ fs/ceph/Makefile                              |   1 +
+ fs/ceph/root.c                                | 165 ++++++++++++++++++++++++++
+ fs/nfs/nfsroot.c                              |   4 +-
+ include/linux/ceph/ceph_root.h                |  10 ++
+ include/linux/nfs_fs.h                        |   2 +-
+ include/linux/root_dev.h                      |   1 +
+ init/do_mounts.c                              |  32 ++++-
+ net/ipv4/ipconfig.c                           |  16 ++-
+ 11 files changed, 317 insertions(+), 9 deletions(-)
+ rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
+ create mode 100644 Documentation/filesystems/ceph/cephroot.txt
+ create mode 100644 fs/ceph/root.c
+ create mode 100644 include/linux/ceph/ceph_root.h
+
+-- 
+1.8.4
+
