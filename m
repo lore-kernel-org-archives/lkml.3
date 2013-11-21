@@ -1,228 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3KUNmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:42:12 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17655 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3KUNl7 (ORCPT
+	id S1755026Ab3KUNmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:42:31 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:46028 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab3KUNm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:41:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 21 Nov 2013 05:39:53 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
-        <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
-        <robherring2@gmail.com>, <joro@8bytes.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lorenzo.pieralisi@arm.com>, <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCHv6 13/13] [FOR TEST] ARM: dt: tegra30: add "iommus" binding
-Date: Thu, 21 Nov 2013 15:40:49 +0200
-Message-ID: <1385041249-7705-14-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
-References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
+	Thu, 21 Nov 2013 08:42:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131121122148.1B43DC40A2C@trevor.secretlab.ca>
+References: <5283A000.8090007@gmail.com>
+	<1384859554-27268-1-git-send-email-geert@linux-m68k.org>
+	<20131121122148.1B43DC40A2C@trevor.secretlab.ca>
+Date: Thu, 21 Nov 2013 14:42:27 +0100
+X-Google-Sender-Auth: t3SseaeVqMbf0JImldqYUUQDvak
+Message-ID: <CAMuHMdXfsB_Ewz9sUPZaAjFaQGTGeqMiD8mJ0tCoH1uFLYGoxw@mail.gmail.com>
+Subject: Re: [PATCH 1/9] dt: Handle passed/built-in DT selection in early_init_dt_scan()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"iommus" binding implies that a device can be attached to IOMMU
-devices. An iommu device needs to set #iommus-cells in it. "iommus"
-can have multiple iommu device phandles as below if needed.
+On Thu, Nov 21, 2013 at 1:21 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>  bool __init early_init_dt_scan(void *params)
+>>  {
+>> -     if (!params)
+>> -             return false;
+>> -
+>>       /* Setup flat device-tree pointer */
+>>       initial_boot_params = params;
+>>
+>> -     /* check device tree validity */
+>> -     if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
+>> -             initial_boot_params = NULL;
+>> -             return false;
+>> +     /* check passed device tree validity */
+>> +     if (initial_boot_params &&
+>> +         be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+>> +             pr_info("FDT at %p\n", initial_boot_params);
+>> +             goto found;
+>> +     }
+>> +
+>> +     /* check built-in device tree validity */
+>> +     initial_boot_params = &__dtb_start;
+>> +     if (__dtb_end != (void *)&__dtb_start &&
+>> +         be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+>> +             pr_info("Compiled-in FDT at %p\n", initial_boot_params);
+>> +             goto found;
+>
+> __dtb_start is in an init section which is discarded after initcalls.
+> For this to work, the dtb needs to be copied into a region of allocated
 
-  iommus = <&smmu arg1 arg2>,
-  	   <&gart arg1 arg2>;
+My changes don't change the current behavior much: currently
+early_init_dt_scan() is already called with &__dtb_start in several places.
+If this is broken, it's already broken.
 
-Not yet ready for merge. Need to add iommus for other devices.
+> memory. The dtb section can also potentially contain multiple .dtb
+> blobs. In the use case that you care about you are probably only
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
-v5:
-Use "iommus=" instead of "mmu-masters".
+Multiple dtb blobs are currently handled in platform-specific code, which
+passes the right dtb to early_init_dt_scan().
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/boot/dts/tegra30.dtsi | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+> thinking about one, but it is entirely possible for device drivers to
+> have a dtb linked in which may break this if it gets linked in a
+> different order. The specific example I'm thinking about is I want to
+> have the DT selftest code load an overlay to get testcase data from a
+> dtb blob.
+>
+> The other concern I have here is that I don't really want this to be the
+> default on a lot of platforms. ARM and PowerPC for instance should only
+> get the default dtb from the boot wrapper. It needs to be configurable
+> in some way.
 
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index 2bd55cf..03b7887 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -1,6 +1,7 @@
- #include <dt-bindings/clock/tegra30-car.h>
- #include <dt-bindings/gpio/tegra-gpio.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/memory/tegra-swgroup.h>
- 
- #include "skeleton.dtsi"
- 
-@@ -92,6 +93,7 @@
- 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>, /* syncpt */
- 			     <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>; /* general */
- 		clocks = <&tegra_car TEGRA30_CLK_HOST1X>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(HC)>;
- 
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -103,6 +105,7 @@
- 			reg = <0x54040000 0x00040000>;
- 			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
- 			clocks = <&tegra_car TEGRA30_CLK_MPE>;
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(MPE)>;
- 		};
- 
- 		vi {
-@@ -110,6 +113,7 @@
- 			reg = <0x54080000 0x00040000>;
- 			interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
- 			clocks = <&tegra_car TEGRA30_CLK_VI>;
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(VI)>;
- 		};
- 
- 		epp {
-@@ -117,6 +121,7 @@
- 			reg = <0x540c0000 0x00040000>;
- 			interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
- 			clocks = <&tegra_car TEGRA30_CLK_EPP>;
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(EPP)>;
- 		};
- 
- 		isp {
-@@ -124,6 +129,7 @@
- 			reg = <0x54100000 0x00040000>;
- 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
- 			clocks = <&tegra_car TEGRA30_CLK_ISP>;
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(ISP)>;
- 		};
- 
- 		gr2d {
-@@ -131,6 +137,7 @@
- 			reg = <0x54140000 0x00040000>;
- 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
- 			clocks = <&tegra_car TEGRA30_CLK_GR2D>;
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(G2)>;
- 		};
- 
- 		gr3d {
-@@ -139,6 +146,8 @@
- 			clocks = <&tegra_car TEGRA30_CLK_GR3D
- 				  &tegra_car TEGRA30_CLK_GR3D2>;
- 			clock-names = "3d", "3d2";
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(NV)
-+						TEGRA_SWGROUP_CELLS(NV2)>;
- 		};
- 
- 		dc@54200000 {
-@@ -148,6 +157,7 @@
- 			clocks = <&tegra_car TEGRA30_CLK_DISP1>,
- 				 <&tegra_car TEGRA30_CLK_PLL_P>;
- 			clock-names = "disp1", "parent";
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(DC)>;
- 
- 			rgb {
- 				status = "disabled";
-@@ -161,6 +171,7 @@
- 			clocks = <&tegra_car TEGRA30_CLK_DISP2>,
- 				 <&tegra_car TEGRA30_CLK_PLL_P>;
- 			clock-names = "disp2", "parent";
-+			iommus = <&smmu TEGRA_SWGROUP_CELLS(DCB)>;
- 
- 			rgb {
- 				status = "disabled";
-@@ -317,6 +328,7 @@
- 		interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 8>;
- 		clocks = <&tegra_car TEGRA30_CLK_UARTA>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -327,6 +339,7 @@
- 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 9>;
- 		clocks = <&tegra_car TEGRA30_CLK_UARTB>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -337,6 +350,7 @@
- 		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 10>;
- 		clocks = <&tegra_car TEGRA30_CLK_UARTC>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -347,6 +361,7 @@
- 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 19>;
- 		clocks = <&tegra_car TEGRA30_CLK_UARTD>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -357,6 +372,7 @@
- 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
- 		nvidia,dma-request-selector = <&apbdma 20>;
- 		clocks = <&tegra_car TEGRA30_CLK_UARTE>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -525,7 +541,7 @@
- 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
- 	};
- 
--	iommu {
-+	smmu: iommu {
- 		compatible = "nvidia,tegra30-smmu";
- 		reg = <0x7000f010 0x02c
- 		       0x7000f1f0 0x010
-@@ -533,6 +549,7 @@
- 		nvidia,#asids = <4>;		/* # of ASIDs */
- 		dma-window = <0 0x40000000>;	/* IOVA start & length */
- 		nvidia,ahb = <&ahb>;
-+		#iommu-cells = <2>;
- 	};
- 
- 	ahub {
-@@ -605,6 +622,7 @@
- 		reg = <0x78000000 0x200>;
- 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&tegra_car TEGRA30_CLK_SDMMC1>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -613,6 +631,7 @@
- 		reg = <0x78000200 0x200>;
- 		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&tegra_car TEGRA30_CLK_SDMMC2>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -621,6 +640,7 @@
- 		reg = <0x78000400 0x200>;
- 		interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&tegra_car TEGRA30_CLK_SDMMC3>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
-@@ -629,6 +649,7 @@
- 		reg = <0x78000600 0x200>;
- 		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&tegra_car TEGRA30_CLK_SDMMC4>;
-+		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
- 		status = "disabled";
- 	};
- 
--- 
-1.8.1.5
+On ARM and PowerPC, the section is empty, hence &__dbt_start ==
+&__dtb_end.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
