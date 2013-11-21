@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3KUTA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:00:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35650 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755240Ab3KUTA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:00:27 -0500
-Date: Thu, 21 Nov 2013 20:00:19 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131121190019.GP26009@pd.tnic>
-References: <1384984585-24300-1-git-send-email-bp@alien8.de>
- <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
- <20131121152804.GI26009@pd.tnic>
- <20131121173714.GD24806@ghostprotocols.net>
+	id S1755266Ab3KUTBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:01:12 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43255 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab3KUTBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 14:01:09 -0500
+Date: Thu, 21 Nov 2013 19:00:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Alex Courbot <acourbot@nvidia.com>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 0/7] ARM: support for Trusted Foundations secure
+	monitor
+Message-ID: <20131121190051.GY16735@n2100.arm.linux.org.uk>
+References: <1383819106-1400-1-git-send-email-acourbot@nvidia.com> <52828EF5.6090909@wwwdotorg.org> <CAOesGMhatp9ZQr=eTCtQ_9a_E9LXKdTCzJd+P7Sy9Ut9wtvnsA@mail.gmail.com> <5282E068.1070608@nvidia.com> <CAOesGMgcvTFD4u9b7T5HNhuJe_PQyV25Ei++v8hG8AsY_rOdyw@mail.gmail.com> <528E5596.7090606@wwwdotorg.org> <CAOesGMgB_FUDkD9=wgZgreaspEyKoSqpkpGZtzuUjb=G6m_nEg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131121173714.GD24806@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMgB_FUDkD9=wgZgreaspEyKoSqpkpGZtzuUjb=G6m_nEg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 02:37:14PM -0300, Arnaldo Carvalho de Melo wrote:
-> But "libkapi" seems the wrong name for a library with those utilities :-\
+On Thu, Nov 21, 2013 at 10:51:09AM -0800, Olof Johansson wrote:
+> An ack from Russell would be appreciated, or we'd need to set up a
+> shared branch given the Tegra dependencies that would go on top.
+> Either is ok with me.
 
-Yeah, I know.
-
-However, since we're keeping the library internal, we can take that name
-for now and later, when we expose it outside, we can decide what to call
-it or to split it.
-
-I have the feeling we will come up with a proper name when we least
-expect it. :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Note that I'm *not* looking at anything new until after the merge window
+has closed, so I'm not acking or reviewing anything at the moment.
