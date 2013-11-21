@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab3KUHDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 02:03:35 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36741 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab3KUHDd (ORCPT
+	id S1751963Ab3KUHJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 02:09:15 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:59525 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab3KUHJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 02:03:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz>
-	<20131119134007.GD20655@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
-	<20131120152251.GA18809@dhcp22.suse.cz>
-	<CAA25o9S5EQBvyk=HP3obdCaXKjoUVtzeb4QsNmoLMq6NnOYifA@mail.gmail.com>
-	<alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
-Date: Wed, 20 Nov 2013 23:03:33 -0800
-Message-ID: <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
-Subject: Re: user defined OOM policies
-From: Luigi Semenzato <semenzato@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Nov 2013 02:09:12 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net, nm@ti.com
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org, ceh@ti.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
+Date: Thu, 21 Nov 2013 12:39:02 +0530
+Message-Id: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 7:36 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 20 Nov 2013, Luigi Semenzato wrote:
->
->> Chrome OS uses a custom low-memory notification to minimize OOM kills.
->>  When the notifier triggers, the Chrome browser tries to free memory,
->> including by shutting down processes, before the full OOM occurs.  But
->> OOM kills cannot always be avoided, depending on the speed of
->> allocation and how much CPU the freeing tasks are able to use
->> (certainly they could be given higher priority, but it get complex).
->>
->> We may end up using memcg so we can use the cgroup
->> memory.pressure_level file instead of our own notifier, but we have no
->> need for finer control over OOM kills beyond the very useful kill
->> priority.  One process at a time is good enough for us.
->>
->
-> Even with your own custom low-memory notifier or memory.pressure_level,
-> it's still possible that all memory is depleted and you run into an oom
-> kill before your userspace had a chance to wakeup and prevent it.  I think
-> what you'll want is either your custom notifier of memory.pressure_level
-> to do pre-oom freeing but fallback to a userspace oom handler that
-> prevents kernel oom kills until it ensures userspace did everything it
-> could to free unneeded memory, do any necessary logging, etc, and do so
-> over a grace period of memory.oom_delay_millisecs before the kernel
-> eventually steps in and kills.
+Sometimes boot loaders set CPU frequency to a value outside of frequency table
+present with cpufreq core. In such cases CPU might be unstable if it has to run
+on that frequency for long duration of time and so its better to set it to a
+frequency which is specified in freq-table. This also makes cpufreq stats
+inconsistent as cpufreq-stats would fail to register because current frequency
+of CPU isn't found in freq-table.
 
-Yes, I agree that we can't always prevent OOM situations, and in fact
-we tolerate OOM kills, although they have a worse impact on the users
-than controlled freeing does.
+Because we don't want this change to effect boot process badly, we go for the
+next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
+end up setting freq to lowest of the table as 'cur' is initialized to zero).
 
-Well OK here it goes.  I hate to be a party-pooper, but the notion of
-a user-level OOM-handler scares me a bit for various reasons.
+In case where CPU is already running on one of the frequencies present in
+freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
+return early.
 
-1. Our custom notifier sends low-memory warnings well ahead of memory
-depletion.  If we don't have enough time to free memory then, what can
-the last-minute OOM handler do?
+Reported-by: Carlos Hernandez <ceh@ti.com>
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+After lots of discussion with Nishanth and others, I feel something like this..
 
-2. In addition to the time factor, it's not trivial to do anything,
-including freeing memory, without allocating memory first, so we'll
-need a reserve, but how much, and who is allowed to use it?
+@Nishanth: Please see if this works for you and I hope we don't need any of
+these patches anymore:
 
-3. How does one select the OOM-handler timeout?  If the freeing paths
-in the code are swapped out, the time needed to bring them in can be
-highly variable.
+- https://lkml.org/lkml/2013/11/15/569 : cpufreq: cpufreq-cpu0: Use a sane boot
+frequency when booting with a mismatched bootloader configuration
+- https://lkml.org/lkml/2013/11/15/503 : cpufreq: stats: Do not populate stats
+  when policy->cur has no exact match
+- https://lkml.org/lkml/2013/11/19/16 : cpufreq/stats: Add "unknown" frequency
+  field in stats tables
 
-4. Why wouldn't the OOM-handler also do the killing itself?  (Which is
-essentially what we do.)  Then all we need is a low-memory notifier
-which can predict how quickly we'll run out of memory.
+ drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-5. The use case mentioned earlier (the fact that the killing of one
-process can make an entire group of processes useless) can be dealt
-with using OOM priorities and user-level code.
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..d55c843 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1038,6 +1038,32 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		}
+ 	}
+ 
++	/*
++	 * Sometimes boot loaders set CPU frequency to a value outside of
++	 * frequency table present with cpufreq core. In such cases CPU might be
++	 * unstable if it has to run on that frequency for long duration of time
++	 * and so its better to set it to a frequency which is specified in
++	 * freq-table. This also makes cpufreq stats inconsistent as
++	 * cpufreq-stats would fail to register because current frequency of CPU
++	 * isn't found in freq-table.
++	 *
++	 * Because we don't want this change to effect boot process badly, we go
++	 * for the next freq which is >= policy->cur ('cur' must be set by now,
++	 * otherwise we will end up setting freq to lowest of the table as 'cur'
++	 * is initialized to zero).
++	 *
++	 * In case where CPU is already running on one of the frequencies
++	 * present in freq-table, this would turn into a dummy call as
++	 * __cpufreq_driver_target() would return early.
++	 */
++	if (has_target()) {
++		ret = __cpufreq_driver_target(policy, policy->cur,
++				CPUFREQ_RELATION_L);
++		if (ret)
++			pr_err("%s: Unable to set frequency from table: %d\n",
++					__func__, ret);
++	}
++
+ 	/* related cpus should atleast have policy->cpus */
+ 	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+ 
+-- 
+1.7.12.rc2.18.g61b472e
 
-I confess I am surprised that the OOM killer works as well as I think
-it does.  Adding a user-level component would bring a whole new level
-of complexity to code that's already hard to fully comprehend, and
-might not really address the fundamental issues.
