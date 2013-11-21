@@ -1,198 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3KURD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:03:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64854 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752736Ab3KURBS (ORCPT
+	id S1755002Ab3KURFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:05:41 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5661 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab3KURFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:01:18 -0500
-Message-Id: <20131121170117.059705744@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 21 Nov 2013 11:59:52 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 4/7] mm/slub: do not rely on slab_cached passed to free_delayed()
-References: <20131121165948.354971355@goodmis.org>
-Content-Disposition: inline; filename=0004-mm-slub-do-not-rely-on-slab_cached-passed-to-free_de.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 21 Nov 2013 12:05:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 21 Nov 2013 09:03:33 -0800
+Message-ID: <528E3D5E.20907@nvidia.com>
+Date: Thu, 21 Nov 2013 12:05:34 -0500
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] net: rfkill: gpio: convert to descriptor-based GPIO
+ interface
+References: <1385045153-25160-1-git-send-email-mika.westerberg@linux.intel.com> <1385045153-25160-2-git-send-email-mika.westerberg@linux.intel.com> <20131121152425.GA5557@xps8300>
+In-Reply-To: <20131121152425.GA5557@xps8300>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.13-rt25-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On 11/21/2013 10:24 AM, Heikki Krogerus wrote:
+> Hi Rhyland,
+> 
+> On Thu, Nov 21, 2013 at 04:45:49PM +0200, Mika Westerberg wrote:
+>> +static int rfkill_gpio_convert_to_desc(struct platform_device *pdev,
+>> +				       struct rfkill_gpio_data *rfkill)
+>> +{
+>> +	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+>> +	int ret = 0;
+>> +
+>> +	if (gpio_is_valid(pdata->reset_gpio)) {
+>> +		ret = devm_gpio_request_one(&pdev->dev, pdata->reset_gpio,
+>> +					    0, rfkill->reset_name);
+>> +		if (ret) {
+>> +			pr_warn("%s: failed to get reset gpio.\n", __func__);
+>> +			return ret;
+>> +		}
+>> +		rfkill->reset_gpio = gpio_to_desc(pdata->reset_gpio);
+>> +	}
+>> +
+>> +	if (gpio_is_valid(pdata->shutdown_gpio)) {
+>> +		ret = devm_gpio_request_one(&pdev->dev, pdata->shutdown_gpio,
+>> +					    0, rfkill->shutdown_name);
+>> +		if (ret) {
+>> +			pr_warn("%s: failed to get shutdown gpio.\n", __func__);
+>> +			return ret;
+>> +		}
+>> +		rfkill->shutdown_gpio = gpio_to_desc(pdata->shutdown_gpio);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+> 
+> We could drop this conversion if you guys added gpiod_lookup table to
+> your platform code. I think something like this is enough. Please note
+> that I have not even tried compile it but you get the idea from it.
+> 
+> diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+> index 06f0240..19bce88 100644
+> --- a/arch/arm/mach-tegra/board-paz00.c
+> +++ b/arch/arm/mach-tegra/board-paz00.c
+> @@ -18,13 +18,12 @@
+>   */
+>  
+>  #include <linux/platform_device.h>
+> +#include <linux/gpio/driver.h>
+>  #include <linux/rfkill-gpio.h>
+>  #include "board.h"
+>  
+>  static struct rfkill_gpio_platform_data wifi_rfkill_platform_data = {
+>         .name           = "wifi_rfkill",
+> -       .reset_gpio     = 25, /* PD1 */
+> -       .shutdown_gpio  = 85, /* PK5 */
+>         .type   = RFKILL_TYPE_WLAN,
+>  };
+>  
+> @@ -36,7 +35,13 @@ static struct platform_device wifi_rfkill_device = {
+>         },
+>  };
+>  
+> +static struct gpiod_lookup wifi_gpio_lookup[] = {
+> +       GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio", NULL, 0, NULL),
+> +       GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio", NULL, 1, NULL),
+> +};
+> +
+>  void __init tegra_paz00_wifikill_init(void)
+>  {
+> +       gpiod_add_table(wifi_lookup, ARRAY_SIZE(wifi_gpio_lookup));
+>         platform_device_register(&wifi_rfkill_device);
+>  }
+> 
+> 
 
-------------------
+This seems like a reasonable patch, and likely a good way to go. I don't
+have a AC100 to test this with though, so I can't verify this
+personally. Also, would the paz00 patch become a dependency of this
+patchset? Mika, maybe you can therefore include a patch for paz00 in
+your patchset?
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+-rhyland
 
-You can get this backtrace:
-| =============================================================================
-| BUG dentry (Not tainted): Padding overwritten. 0xf15e1ec0-0xf15e1f1f
-| -----------------------------------------------------------------------------
-|
-| Disabling lock debugging due to kernel taint
-| INFO: Slab 0xf6f10b00 objects=21 used=0 fp=0xf15e0480 flags=0x2804080
-| CPU: 6 PID: 1 Comm: systemd Tainted: G    B        3.10.17-rt12+ #197
-| Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-|  f6f10b00 f6f10b00 f20a3be8 c149da9e f20a3c74 c110b0d6 c15e010c f6f10b00
-|  00000015 00000000 f15e0480 02804080 64646150 20676e69 7265766f 74697277
-|  2e6e6574 66783020 31653531 2d306365 31667830 66316535 00006631 00000046
-| Call Trace:
-|  [<c149da9e>] dump_stack+0x16/0x18
-|  [<c110b0d6>] slab_err+0x76/0x80
-|  [<c110c231>] ? deactivate_slab+0x3f1/0x4a0
-|  [<c110c231>] ? deactivate_slab+0x3f1/0x4a0
-|  [<c110b56f>] slab_pad_check.part.54+0xbf/0x150
-|  [<c110ba04>] __free_slab+0x124/0x130
-|  [<c149bb79>] ? __slab_alloc.constprop.69+0x27b/0x5d3
-|  [<c110ba39>] free_delayed+0x29/0x40
-|  [<c149bec5>] __slab_alloc.constprop.69+0x5c7/0x5d3
-|  [<c1126062>] ? __d_alloc+0x22/0x150
-|  [<c1126062>] ? __d_alloc+0x22/0x150
-|  [<c11265b0>] ? __d_lookup_rcu+0x160/0x160
-|  [<c110d912>] kmem_cache_alloc+0x162/0x190
-|  [<c112668b>] ? __d_lookup+0xdb/0x1d0
-|  [<c1126062>] ? __d_alloc+0x22/0x150
-|  [<c1126062>] __d_alloc+0x22/0x150
-|  [<c11261a5>] d_alloc+0x15/0x60
-|  [<c111aec1>] lookup_dcache+0x71/0xa0
-|  [<c111af0e>] __lookup_hash+0x1e/0x40
-|  [<c111b374>] lookup_slow+0x34/0x90
-|  [<c111c3c7>] link_path_walk+0x737/0x780
-|  [<c111a3d4>] ? path_get+0x24/0x40
-|  [<c111a3df>] ? path_get+0x2f/0x40
-|  [<c111bfb2>] link_path_walk+0x322/0x780
-|  [<c111e3ed>] path_openat.isra.54+0x7d/0x400
-|  [<c111f32b>] do_filp_open+0x2b/0x70
-|  [<c11110a2>] do_sys_open+0xe2/0x1b0
-|  [<c14a319f>] ? restore_all+0xf/0xf
-|  [<c102bb80>] ? vmalloc_sync_all+0x10/0x10
-|  [<c1111192>] SyS_open+0x22/0x30
-|  [<c14a393e>] sysenter_do_call+0x12/0x36
-| Padding f15e1de0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-| Padding f15e1df0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-| Padding f15e1e00: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e10: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e20: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e30: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e40: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e50: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e60: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-| Padding f15e1e70: 6b 6b 6b 6b 6b 6b 6b a5 bb bb bb bb 80 01 5e f1  kkkkkkk.......^.
-| Padding f15e1e80: 53 7e 0d c1 c3 bd 49 c1 12 d9 10 c1 53 7e 0d c1  S~....I.....S~..
-| Padding f15e1e90: 60 7f 0d c1 e0 05 14 c1 ce d1 13 c1 96 d4 13 c1  `...............
-| Padding f15e1ea0: e9 e0 13 c1 f7 48 17 c1 13 6a 17 c1 41 fb 17 c1  .....H...j..A...
-| Padding f15e1eb0: 07 a4 11 c1 22 af 11 c1 74 b3 11 c1 06 d2 11 c1  ...."...t.......
-| Padding f15e1ec0: c6 d2 11 c1 06 00 00 00 01 00 00 00 f3 dc fe ff  ................
-| Padding f15e1ed0: 73 7e 0d c1 5d b4 49 c1 ec c4 10 c1 73 7e 0d c1  s~..].I.....s~..
-| Padding f15e1ee0: 50 83 0d c1 79 09 14 c1 fd b9 13 c1 5a f2 13 c1  P...y.......Z...
-| Padding f15e1ef0: 7b 1c 28 c1 03 20 28 c1 9e 25 28 c1 b3 26 28 c1  {.(.. (..%(..&(.
-| Padding f15e1f00: f4 ab 34 c1 bc 89 30 c1 e5 0d 0a c1 c1 0f 0a c1  ..4...0.........
-| Padding f15e1f10: ae 34 0a c1 00 00 00 00 00 00 00 00 f3 dc fe ff  .4..............
-| FIX dentry: Restoring 0xf15e1de0-0xf15e1f1f=0x5a
-|
-| =============================================================================
-| BUG dentry (Tainted: G    B       ): Redzone overwritten
-| -----------------------------------------------------------------------------
-|
-| INFO: 0xf15e009c-0xf15e009f. First byte 0x96 instead of 0xbb
-| INFO: Allocated in __ext4_get_inode_loc+0x3b7/0x460 age=1054261382 cpu=3239295485 pid=-1055657382
-|  ext4_iget+0x63/0x9c0
-|  ext4_lookup+0x71/0x180
-|  lookup_real+0x17/0x40
-|  do_last.isra.53+0x72b/0xbc0
-|  path_openat.isra.54+0x9d/0x400
-|  do_filp_open+0x2b/0x70
-|  do_sys_open+0xe2/0x1b0
-|  0x7
-|  0x1
-|  0xfffedcf2
-|  mempool_free_slab+0x13/0x20
-|  __slab_free+0x3d/0x3ae
-|  kmem_cache_free+0x1bc/0x1d0
-|  mempool_free_slab+0x13/0x20
-|  mempool_free+0x40/0x90
-|  bio_put+0x59/0x70
-| INFO: Freed in blk_update_bidi_request+0x13/0x70 age=2779021993 cpu=1515870810 pid=1515870810
-|  __blk_end_bidi_request+0x1e/0x50
-|  __blk_end_request_all+0x23/0x40
-|  virtblk_done+0xf4/0x260
-|  vring_interrupt+0x2c/0x50
-|  handle_irq_event_percpu+0x45/0x1f0
-|  handle_irq_event+0x31/0x50
-|  handle_edge_irq+0x6e/0x130
-|  0x5
-| INFO: Slab 0xf6f10b00 objects=21 used=0 fp=0xf15e0480 flags=0x2804080
-| INFO: Object 0xf15e0000 @offset=0 fp=0xc113e0e9
-
-If you try to free memory in irqs_disabled(). This is then added to the
-slub_free_list list. The following allocation then might be from a
-different kmem_cache. If the two caches have a different SLAB_DEBUG_FLAGS
-then one might complain about bad bad marker which are actually not
-used.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- mm/slub.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index f6871c5..7c925ae 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1427,13 +1427,13 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 	__free_memcg_kmem_pages(page, order);
- }
- 
--static void free_delayed(struct kmem_cache *s, struct list_head *h)
-+static void free_delayed(struct list_head *h)
- {
- 	while(!list_empty(h)) {
- 		struct page *page = list_first_entry(h, struct page, lru);
- 
- 		list_del(&page->lru);
--		__free_slab(s, page);
-+		__free_slab(page->slab_cache, page);
- 	}
- }
- 
-@@ -2004,7 +2004,7 @@ static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				list_splice_init(&f->list, &tofree);
- 				raw_spin_unlock(&f->lock);
- 				local_irq_restore(flags);
--				free_delayed(s, &tofree);
-+				free_delayed(&tofree);
- 				oldpage = NULL;
- 				pobjects = 0;
- 				pages = 0;
-@@ -2081,7 +2081,7 @@ static void flush_all(struct kmem_cache *s)
- 		raw_spin_lock_irq(&f->lock);
- 		list_splice_init(&f->list, &tofree);
- 		raw_spin_unlock_irq(&f->lock);
--		free_delayed(s, &tofree);
-+		free_delayed(&tofree);
- 	}
- }
- 
-@@ -2329,7 +2329,7 @@ out:
- 	list_splice_init(&f->list, &tofree);
- 	raw_spin_unlock(&f->lock);
- 	local_irq_restore(flags);
--	free_delayed(s, &tofree);
-+	free_delayed(&tofree);
- 	return freelist;
- 
- new_slab:
 -- 
-1.8.4.rc3
-
-
+nvpublic
