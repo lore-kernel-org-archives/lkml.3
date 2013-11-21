@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3KUP2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:28:14 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58453 "EHLO mail.skyhub.de"
+	id S1753845Ab3KUPba (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:31:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46802 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab3KUP2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 10:28:13 -0500
-Date: Thu, 21 Nov 2013 16:28:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131121152804.GI26009@pd.tnic>
-References: <1384984585-24300-1-git-send-email-bp@alien8.de>
- <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
+	id S1751226Ab3KUPb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 10:31:29 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH] clk: keystone: gate: don't use reserved bits
+Date: Thu, 21 Nov 2013 17:30:51 +0200
+Message-ID: <1385047851-14407-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131121150524.GA24806@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 12:05:24PM -0300, Arnaldo Carvalho de Melo wrote:
-> "To offers various helper methods to interface with the Linux kernel:
->  debugfs, procfs, sysfs handling routines with no policy, just pure,
->  obvious helpers to use kernel functionality."
+According to TRM http://www.ti.com/lit/ug/sprugv4b/sprugv4b.pdf
+the Power Domain Status Register (PDSTAT) has 0-1 bits for power
+domain status, but PDSTAT_STATE_MASK is defined with 0x1F. In that
+case we operate with reserved bits. So correct PDSTAT_STATE_MASK
+to be 0x03.
 
-Exactly.
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/clk/keystone/gate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Naming is a bit hard, to keep it small, descriptive, as API can lead
-> people to think about other kinds of kernel APIs (syscalls?), "fskapi"
-> to mean "fs based kernel API" would perhaps be more descriptive? A
-> longer (more descriptive) possibility would be "linux-fskapi".
-
-Yeah, you can't have fskapi because we'll add other stuff to it (see
-the diffstat I sent you last week) so not filesystem stuff only. So I
-think "kapi" is as generic and as fitting as it gets. We can use the
-"kernel-api" variant but I think the "k" is enough.
-
-:-)
-
+diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
+index 1f333bc..995ae80 100644
+--- a/drivers/clk/keystone/gate.c
++++ b/drivers/clk/keystone/gate.c
+@@ -35,7 +35,7 @@
+ 
+ #define MDSTAT_STATE_MASK	0x3f
+ #define MDSTAT_MCKOUT		BIT(12)
+-#define PDSTAT_STATE_MASK	0x1f
++#define PDSTAT_STATE_MASK	0x03
+ #define MDCTL_FORCE		BIT(31)
+ #define MDCTL_LRESET		BIT(8)
+ #define PDCTL_NEXT		BIT(0)
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
