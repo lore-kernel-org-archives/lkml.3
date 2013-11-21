@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3KUMjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:39:14 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:38590 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3KUMjM (ORCPT
+	id S1754040Ab3KUMjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:39:33 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:38342 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab3KUMjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:39:12 -0500
-Date: Thu, 21 Nov 2013 13:39:08 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
-Message-ID: <20131121123906.GA20114@localhost.localdomain>
-References: <20130917082838.218329307@infradead.org>
- <20130917182350.449685712@linutronix.de>
- <20130917183628.857145384@linutronix.de>
- <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
- <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Nov 2013 07:39:31 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: unflatten_and_copy: handle NULL initial_boot_params
+To: James Hogan <james.hogan@imgtec.com>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
+In-Reply-To: <1384865892-28659-1-git-send-email-james.hogan@imgtec.com>
+References: <1384865892-28659-1-git-send-email-james.hogan@imgtec.com>
+Date: Thu, 21 Nov 2013 12:39:27 +0000
+Message-Id: <20131121123927.34EAEC40A2C@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 12:41:44PM +0100, Thomas Gleixner wrote:
-> On Wed, 20 Nov 2013, Thomas Gleixner wrote:
-> > On Wed, 20 Nov 2013, Tony Luck wrote:
-> > > asmlinkage void __sched preempt_schedule_irq(void)
-> > > {
-> > >            schedule();
-> > > }
-> > > 
-> > > Or is life more complicated than that?
-> > 
-> > Hmm, I think I fubared that and you decided to ignore my patch :) 
-> > 
-> > Let me look at it tomorrow morning with full awake brain cells.
+On Tue, 19 Nov 2013 12:58:12 +0000, James Hogan <james.hogan@imgtec.com> wrote:
+> Check whether initial_boot_params is NULL before dereferencing it in
+> unflatten_and_copy_device_tree() for the case where no device tree is
+> available but the arch can still boot to a minimal usable system without
+> it.
 > 
-> Ok, wrapped my brain around it. I tripped over the magic asm foo which
-> has a single need_resched check and schedule point for both sys call
-> return and interrupt return.
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arch@vger.kernel.org
+> ---
+>  drivers/of/fdt.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 > 
-> So you need the schedule_preempt_irq() for kernel preemption from
-> interrupt return while on a normal syscall preemption a schedule would
-> be sufficient. But using schedule_preempt_irq() is not harmful here in
-> any way. It just sets the preempt_active bit also in cases where it
-> would not be required. 
-> 
-> Even on preempt=n kernels adding the preempt_active bit is completely
-> harmless. So instead of having an extra function, moving the existing
-> one out of the ifdef PREEMPT looks like the sanest thing to do.
-> 
-> Peter, Ingo ?
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index 2fa024b97c43..ac4983955e6d 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -922,8 +922,14 @@ void __init unflatten_device_tree(void)
+>   */
+>  void __init unflatten_and_copy_device_tree(void)
+>  {
+> -	int size = __be32_to_cpu(initial_boot_params->totalsize);
+> -	void *dt = early_init_dt_alloc_memory_arch(size,
+> +	int size;
+> +	void *dt;
+> +
+> +	if (!initial_boot_params)
+> +		return;
 
-So that's because the schedule point is on a common user and kernel return path?
+Worth logging a message for those who can obtain the kernel log
+buffer?
 
-If necessary, why not having a SCHEDULE_IRQ macro in ia64 that maps to either schedule or
-preempt_schedule_irq() instead?
+Otherwise:
 
-Unless that problem happens elsewhere as well?
+Acked-by: Grant Likely <grant.likely@linaro.org>
+
+But see my comments on Geert's "dt: Handle passed/built-in DT selection
+in early_init_dt_scan()" patch.
+
+g.
