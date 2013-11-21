@@ -1,134 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3KULR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:17:58 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:51795 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3KULRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:17:54 -0500
-X-AuditID: cbfee68d-b7fa16d0000029b0-08-528debdbc557
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Borislav Petkov'" <bp@alien8.de>,
-        "'Francis Moreau'" <francis.moro@gmail.com>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20131117195358.GO27323@pd.tnic>
- <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com>
- <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com>
- <20131118133210.GG24851@pd.tnic> <528B36EA.20301@gmail.com>
- <20131119101521.GA3515@pd.tnic> <528C84A1.5030707@gmail.com>
- <20131120111541.GA30147@pd.tnic> <528DC2AA.4070202@gmail.com>
- <20131121101234.GB25459@pd.tnic>
-In-reply-to: <20131121101234.GB25459@pd.tnic>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Date: Thu, 21 Nov 2013 20:17:47 +0900
-Message-id: <000801cee6ab$4e9f9380$ebdeba80$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7mojgQZsd0KbyeSx+9+m8DXUMWtQAA7QnQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t8zfd3br3uDDLb8UbH4vOEfm8X21xvZ
-	LF72/WG1uLzwEpDYNYfNon9hL5PF6W5Wi82bpjJbrFx3ms2B0+N7ax+Lx85Zd9k9Dl1Zy+jx
-	7tw5do95JwM9fmx4x+jRt2UVo8ejxS2MHp83yQVwRnHZpKTmZJalFunbJXBltLw5y1ywWKCi
-	41lEA+Njni5GTg4JAROJjU+bWCBsMYkL99azgdhCAssYJfYd14apab2zk7WLkQsovohR4v/X
-	LYwQzi9GiXc7NrODVLEJqEl8+XIYzBYRKJe40PyPCaSIWeA5o0TzulVQHROZJbY1b2YGqeIU
-	0JW4fbcBrENYwEvi7a1ZYDaLgKrEpWP9TCA2r4CtxMGWH+wQtqDEj8n3gG7lAJqqLjFlSi5I
-	mFlAXmLzmrfMIGEJoPCjv7oQNxhJTJr5lR2iRERi34t3YCdICEzlkHi29zULxCoBiW+TD7FA
-	9MpKbDrADPGxpMTBFTdYJjBKzEKyeBbC4llIFs9CsmEBI8sqRtHUguSC4qT0IkO94sTc4tK8
-	dL3k/NxNjJCY793BePuA9SHGZKDtE5mlRJPzgSkjryTe0NjMyMLUxNTYyNzSjDRhJXHepIdJ
-	QUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYM1PWKGV5WgUFZmr1GzQKKD69Lyv76NDaMPnO
-	TTLWTe93iL9Z8WaJwpIXl57MefO9+ObtggKxo9OO913X3dBQ/z9YofhZwK7gdSu8lssZ8Ajv
-	8lmUr2+WVMyd2n/Q6/enTVsv//9WzBh69je71rUZBz3ilyyoOnO8e2HE9le/n756o71wViXf
-	aSWW4oxEQy3mouJEAE2FPi4PAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFKsWRmVeSWpSXmKPExsVy+t9jAd3br3uDDDZclLf4vOEfm8X21xvZ
-	LF72/WG1uLzwEpDYNYfNon9hL5PF6W5Wi82bpjJbrFx3ms2B0+N7ax+Lx85Zd9k9Dl1Zy+jx
-	7tw5do95JwM9fmx4x+jRt2UVo8ejxS2MHp83yQVwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfH
-	O8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA3aikUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC
-	1zckCK7HyAANJKxjzGh5c5a5YLFARceziAbGxzxdjJwcEgImEq13drJC2GISF+6tZ+ti5OIQ
-	EljEKPH/6xZGCOcXo8S7HZvZQarYBNQkvnw5DGaLCJRLXGj+xwRSxCzwnFGied0qqI6JzBLb
-	mjczg1RxCuhK3L7bANYhLOAl8fbWLDCbRUBV4tKxfiYQm1fAVuJgyw92CFtQ4sfkeyxdjBxA
-	U9UlpkzJBQkzC8hLbF7zlhkkLAEUfvRXF+IGI4lJM7+yQ5SISOx78Y5xAqPQLCSDZiEMmoVk
-	0CwkHQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeUZ1I7GFc2WBxiFOBgVOLh7Xjc
-	EyTEmlhWXJl7iFGCg1lJhPfV894gId6UxMqq1KL8+KLSnNTiQ4zJQG9OZJYSTc4Hpru8knhD
-	YxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamDs1D5StnznotopN63u
-	8k3YuVDQ9XXi79UKEgxxD5Q/8+rflUnZ+jzn4pk1gXPD1mibf1gvmOlckWH2KI1f5NdHlb0n
-	395dNbXhbs4O9wwH6VVVR+Yf6TcTcklYxfPmYd6srj1JEQrsvWe5k6577I75Hxjqy6xmEnli
-	d8ahPzOqVVMOCqs9yFypxFKckWioxVxUnAgAdcE26G0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754149Ab3KULT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:19:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35937 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753350Ab3KULT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:19:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,743,1378882800"; 
+   d="scan'208";a="439129400"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-mm@kvack.org
+In-Reply-To: <20131120144014.386293ce24e7b298ebab7b8e@linux-foundation.org>
+References: <20131120174211.GF10323@ZenIV.linux.org.uk>
+ <20131120174712.GG10323@ZenIV.linux.org.uk>
+ <CA+55aFw_SuTAtTM0YTgiGf1pq4v4j5jbB1af=ExxjyFRbAJ4Ow@mail.gmail.com>
+ <20131120144014.386293ce24e7b298ebab7b8e@linux-foundation.org>
+Subject: Re: [git pull] vfs.git bits and pieces
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131121111906.B97AEE0090@blue.fi.intel.com>
+Date: Thu, 21 Nov 2013 13:19:06 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 21, 2013 7:13 PM, Borislav Petkov wrote:
-> On Thu, Nov 21, 2013 at 09:22:02AM +0100, Francis Moreau wrote:
-> > Hmm, I think it's more than that because if I'm removing both
-> > rtsx_pci_ms and memstick modules, then suspending and resuming doesn't
-> > oops anymore.
+Andrew Morton wrote:
+> On Wed, 20 Nov 2013 14:33:35 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-> Interesting - so this is a good datapoint. Sounds like those modules
-> can't stomach suspend-to-ram. So let's add a couple more people for
-> comment.
-
-Thank you for inviting me. :-)
-It is very interesting.
-
+> > On Wed, Nov 20, 2013 at 9:47 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > BTW, something odd happened to mm/memory.c - either a mangled patch
+> > > or a lost followup:
+> > >
+> > >     commit ea1e7ed33708
+> > >     mm: create a separate slab for page->ptl allocation
+> > >
+> > > Fair enough, and yes, it does create that separate slab.  The problem is,
+> > > it's still using kmalloc/kfree for those beasts - page_ptl_cachep isn't
+> > > used at all...
+> > 
+> > Ok, it looks straightforward enough to just replace the kmalloc/kfree
+> > with using a slab allocation using the page_ptl_cachep pointer. I'd do
+> > it myself, but I would like to know how it got lost? Also, much
+> > testing to make sure the cachep is initialized early enough.
 > 
-> To the newly-CCed, guys, thread starts here:
-> 
-> http://marc.info/?l=linux-kernel&m=138468134321335
-> 
-> > Also I took a look at the changes between v3.11 and v3.12 in this area
-> > and those changes match the issue I'm facing:
-> >
-> > $ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
-> > 09fd867 mfd: rtsx: Copyright modifications
-> > eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
-> > 7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
-> > extra_init_hw
-> > 5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
-> > 773ccdf mfd: rtsx: Read vendor setting from config space
+> agh, I went through hell keeping that patch alive and it appears I lost
+> some of it.
 
-In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
-reader driver may make the kernel panic.
+Actually, I've lost it while adding BLOATED_SPINLOCKS :(
 
-I think that the commit "mfd: rtsx: Configure to enter a deeper
-power-saving mode in S3" may be the culprit.
-
-Francis Moreau,
-Let us know the exact model name of rts52xx PCIe card reader
-in your laptop? According to the commit, Wei WANG added S3 mode
-to rts5227 driver ,and rts5249 driver.
-
-Wei Wang,
-Would you confirm that the S3 mode works properly in rts52xx PCIe
-card reader devices?
-
-Best regards,
-Jingoo Han
-
-> >
-> > I'll try to bisect one more time those changes tonight to see if I can
-> > find out if one of those commits is the culprit.
+> > Or should we just revert the commit that added the pointless/unused
+> > slab pointer?
+> > 
+> > Andrew, Kirill, comments?
 > 
-> Good idea.
-> 
-> > Sorry for not answering the first time, but yes my bios is uptodate.
-> 
-> Ok, good.
-> 
-> --
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+> Let's just kill it please.  We can try again for 3.14.
 
+I'm okay with that.
+Only side note: it's useful not only for debug case, but also for
+PREEMPT_RT where spinlock_t is always bloated.
+
+Fixed patch:
+
+>From e624075b47caa2a15998225df7cec953d271b9ac Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Thu, 14 Nov 2013 14:31:53 -0800
+Subject: [PATCH] mm: create a separate slab for page->ptl allocation, try two
+
+If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
+is 72 bytes.  For page->ptl they will be allocated from kmalloc-96 slab,
+so we loose 24 on each.  An average system can easily allocate few tens
+thousands of page->ptl and overhead is significant.
+
+Let's create a separate slab for page->ptl allocation to solve this.
+
+To make sure that it really works this time, some numbers from my test
+machine (just booted, no load):
+
+Before:
+  # grep '^\(kmalloc-96\|page->ptl\)' /proc/slabinfo
+  kmalloc-96         31987  32190    128   30    1 : tunables  120   60    8 : slabdata   1073   1073     92
+After:
+  # grep '^\(kmalloc-96\|page->ptl\)' /proc/slabinfo
+  page->ptl          27516  28143     72   53    1 : tunables  120   60    8 : slabdata    531    531      9
+  kmalloc-96          3853   5280    128   30    1 : tunables  120   60    8 : slabdata    176    176      0
+
+Note that the patch is useful not only for debug case, but also for
+PREEMPT_RT, where spinlock_t is always bloated.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm.h |  9 +++++++++
+ init/main.c        |  2 +-
+ mm/memory.c        | 11 +++++++++--
+ 3 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd000cf29..0548eb201e05 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1318,6 +1318,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
+ 
+ #if USE_SPLIT_PTE_PTLOCKS
+ #if BLOATED_SPINLOCKS
++void __init ptlock_cache_init(void);
+ extern bool ptlock_alloc(struct page *page);
+ extern void ptlock_free(struct page *page);
+ 
+@@ -1326,6 +1327,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
+ 	return page->ptl;
+ }
+ #else /* BLOATED_SPINLOCKS */
++static inline void ptlock_cache_init(void) {}
+ static inline bool ptlock_alloc(struct page *page)
+ {
+ 	return true;
+@@ -1378,10 +1380,17 @@ static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ {
+ 	return &mm->page_table_lock;
+ }
++static inline void ptlock_cache_init(void) {}
+ static inline bool ptlock_init(struct page *page) { return true; }
+ static inline void pte_lock_deinit(struct page *page) {}
+ #endif /* USE_SPLIT_PTE_PTLOCKS */
+ 
++static inline void pgtable_init(void)
++{
++	ptlock_cache_init();
++	pgtable_cache_init();
++}
++
+ static inline bool pgtable_page_ctor(struct page *page)
+ {
+ 	inc_zone_page_state(page, NR_PAGETABLE);
+diff --git a/init/main.c b/init/main.c
+index febc511e078a..01573fdfa186 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -476,7 +476,7 @@ static void __init mm_init(void)
+ 	mem_init();
+ 	kmem_cache_init();
+ 	percpu_init_late();
+-	pgtable_cache_init();
++	pgtable_init();
+ 	vmalloc_init();
+ }
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 5d9025f3b3e1..cf6098c10084 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4272,11 +4272,18 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+ 
+ #if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
++static struct kmem_cache *page_ptl_cachep;
++void __init ptlock_cache_init(void)
++{
++	page_ptl_cachep = kmem_cache_create("page->ptl", sizeof(spinlock_t), 0,
++			SLAB_PANIC, NULL);
++}
++
+ bool ptlock_alloc(struct page *page)
+ {
+ 	spinlock_t *ptl;
+ 
+-	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
++	ptl = kmem_cache_alloc(page_ptl_cachep, GFP_KERNEL);
+ 	if (!ptl)
+ 		return false;
+ 	page->ptl = ptl;
+@@ -4285,6 +4292,6 @@ bool ptlock_alloc(struct page *page)
+ 
+ void ptlock_free(struct page *page)
+ {
+-	kfree(page->ptl);
++	kmem_cache_free(page_ptl_cachep, page->ptl);
+ }
+ #endif
+-- 
+ Kirill A. Shutemov
