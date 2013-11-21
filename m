@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab3KULJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:09:56 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:25785 "EHLO SMTP.CITRIX.COM"
+	id S1754062Ab3KULQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:16:45 -0500
+Received: from ozlabs.org ([203.10.76.45]:34832 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754307Ab3KULJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:09:55 -0500
-X-IronPort-AV: E=Sophos;i="4.93,743,1378857600"; 
-   d="scan'208";a="76742784"
-Message-ID: <528DEA00.7070505@citrix.com>
-Date: Thu, 21 Nov 2013 11:09:52 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1751250Ab3KULQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:16:43 -0500
+Date: Thu, 21 Nov 2013 22:16:39 +1100
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>
+Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
+Message-ID: <20131121111638.GA15913@concordia>
+References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com>
+ <20131118143059.afe17d2faced16171a05eb10@linux-foundation.org>
+ <528A9F24.1000206@akamai.com>
+ <20131119070905.GF32367@gmail.com>
+ <528BE05E.8090501@akamai.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated poweroff
- and XenBus.
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528BE05E.8090501@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> There is a race case where the user does 'poweroff'
-> and at the same time the system admin does 'xl shutdown'.
+On Tue, Nov 19, 2013 at 05:04:14PM -0500, Jason Baron wrote:
+> On 11/19/2013 02:09 AM, Ingo Molnar wrote:
+> > 
+> > * Jason Baron <jbaron@akamai.com> wrote:
+> > 
+> >> On 11/18/2013 05:30 PM, Andrew Morton wrote:
+> >>> On Mon, 18 Nov 2013 21:04:36 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
+> >>>
+> >>>> The panic_timeout value can be set via the command line option 'panic=x', or via
+> >>>> /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
+> >>>> before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
+> >>>> so that we can set the desired value from the .config.
+> >>>>
+> >>>> The default panic_timeout value continues to be 0 - wait forever, 
+> >>>> except for powerpc and mips, which have been defaulted to 180 and 
+> >>>> 5 respectively. This is in keeping with the fact that these 
+> >>>> arches already set panic_timeout in their arch init code. 
+> >>>> However, I found three exceptions- two in mips and one in powerpc 
+> >>>> where the settings didn't match these default values. In those 
+> >>>> cases, I left the arch code so it continues to override, in case 
+> >>>> the user has not changed from the default. It would nice if these 
+> >>>> arches had one default value, or if we could determine the 
+> >>>> correct setting at compile-time.
+...
+> 
+> Sure, I can round up all the related patches in this area that make
+> sense and re-submit as a series.
+> 
+> Felipe, would the CONFIG_PANIC_TIMEOUT=xx .config parameter work for your
+> needs, or would you still like to see the command-line processing moved
+> up?
+> 
+> I'd also like to hear from the PowerPC folks about the arch defaults
+> there. Now, that mips is ok with CONFIG_PANIC_TIMEOUT, PowerPC is the
+> only arch doing specific initialization of 'panic_timeout'.
 
-This isn't a Xen-specific problem is it?  Wouldn't it be better to fix
-this in generic code?
+Hi Jason,
 
-Especially since I don't think this patch actually fixes the race
-completely.
+I think we'd like to choose the value at runtime, as we do now. The
+powerpc arch supports a wide spread of different hardware, so it's nice
+to be able to customise the value based on the platform. Also we build a
+single kernel that boots on many platforms, and so we can't pick the
+value at compile time.
 
-> --- a/drivers/xen/manage.c
-> +++ b/drivers/xen/manage.c
-[...]
-> @@ -222,7 +230,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
->  	};
->  	static struct shutdown_handler *handler;
->  
-> -	if (shutting_down != SHUTDOWN_INVALID)
-> +	if (atomic_read(&shutting_down) != SHUTDOWN_INVALID)
->  		return;
-
-In guest initiated poweroff at this time will still race with this
-toolstack initiated poweroff.
-
-David
+cheers
