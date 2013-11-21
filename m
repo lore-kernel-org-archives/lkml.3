@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab3KUWqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:46:10 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:48542 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3KUWqG (ORCPT
+	id S1755378Ab3KUWsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:48:38 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:52088 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3KUWsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:46:06 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Aditya Kali <adityakali@google.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1382737870-12792-1-git-send-email-adityakali@google.com>
-	<20131029153610.GB32008@mail.hallyn.com> <87a9heqwkg.fsf@xmission.com>
-	<20131121215035.GA9773@mail.hallyn.com>
-Date: Thu, 21 Nov 2013 14:46:00 -0800
-In-Reply-To: <20131121215035.GA9773@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Thu, 21 Nov 2013 21:50:35 +0000")
-Message-ID: <87r4a974rb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 21 Nov 2013 17:48:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18PmnE45LkH8Z4fK6uo+aj8ulMoXqURUuY=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0030]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] proc: Fix namespace mountpoint path in /proc/mounts
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <CANEJEGtXOjxj+85QVfWFGH6WuxxCz6uAfEuUo7bv9YEwh_8OAw@mail.gmail.com>
+References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
+	<20131120.004026.2013972041095203460.davem@davemloft.net>
+	<CANEJEGtBmvFNcFzOW9ZnOFd=ZMnz82ajcN52YqW3+n0+=rhxBA@mail.gmail.com>
+	<20131120.135413.920731121262719289.davem@davemloft.net>
+	<CANEJEGtXOjxj+85QVfWFGH6WuxxCz6uAfEuUo7bv9YEwh_8OAw@mail.gmail.com>
+Date: Thu, 21 Nov 2013 14:48:35 -0800
+Message-ID: <CANEJEGu_2YdVOjcnzh30RPMiP0KC5bL6JasxMS_+1xV9poxgQw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B under ChromeOS
+From: Grant Grundler <grundler@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: Freddy Xin <freddy@asix.com.tw>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        davemloft@davemloft.net,
+        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>, Daniel_ASIX <daniel@asix.com.tw>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+On Wed, Nov 20, 2013 at 11:32 AM, Grant Grundler <grundler@google.com> wrote:
+> Seems like this should be part of usbnet_resume code based on whether
+> the driver provides mdio_write hook (most USBNET drivers do).
 
-> Aditya, is this something you'd have time to write a patch for?
+Just to be clear: I don't think this is feasible for the now obvious
+reason that not all device lose phy stat on resume. :/
 
-I have a tested patch that fixes when we call ns_dname.  Give me a day
-and I will push out my pending pile of fixes for review.
+Freddy sent me a patch that saves/restores MII_ADVERTISE and MII_BMCR
+registers. Testing that now and he'll post if that all works out.
 
-Eric
+thanks,
+grant
