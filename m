@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab3KUVdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:33:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2659 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754059Ab3KUVdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:33:47 -0500
-Date: Thu, 21 Nov 2013 16:33:00 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v6 2/3] x86, apic: Add disable_cpu_apicid kernel parameter
-Message-ID: <20131121213300.GR16208@redhat.com>
-References: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
- <20131121020044.2748.70221.stgit@localhost6.localdomain6>
+	id S1754964Ab3KUVgH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:36:07 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:52338 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab3KUVgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 16:36:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121020044.2748.70221.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131121.192051.747601347584525020.hdoyu@nvidia.com>
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com>
+	<20131121151218.befbb483c0cf09cdcd4cd4dd@nvidia.com>
+	<20131121155649.48C96C406A3@trevor.secretlab.ca>
+	<20131121.192051.747601347584525020.hdoyu@nvidia.com>
+Date: Thu, 21 Nov 2013 15:36:03 -0600
+Message-ID: <CAL_JsqK_TRjt9KigRA4yXcvEq0XriGxCy+50CY-BdJd62vHLCg@mail.gmail.com>
+Subject: Re: [PATCHv5 1/9] of: introduce of_property_for_earch_phandle_with_args()
+From: Rob Herring <robherring2@gmail.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:00:44AM +0900, HATAYAMA Daisuke wrote:
+On Thu, Nov 21, 2013 at 11:20 AM, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> Grant Likely <grant.likely@linaro.org> wrote @ Thu, 21 Nov 2013 16:56:49 +0100:
+>
+>> On Thu, 21 Nov 2013 15:12:18 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+>> > On Thu, 21 Nov 2013 13:43:28 +0100
+>> > Grant Likely <grant.likely@linaro.org> wrote:
+>> >
+>> > > On Tue, 19 Nov 2013 11:33:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+>> > > > The following pattern of code is tempting:
+>> > > >
+>> > > >   for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+>> > > >
+>> > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>> > >
+>> > > That's a very minimal commit message. Can you elaborate please.
+>> >
+>> > The above can be:
+>> >
+>> > "
+>> >   The following pattern of code is tempting to add a new member for
+>> >   of_property_for_each_*() family as an idiom.
+>> >
+>> >     for (i = 0;
+>> >         !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+>> >                   <do something with "args">;
+>> > "
+>>
+>> I really do like commit messages to be full enough that a future reader
+>> can figure out why a patch was written. ie:
+>
+> Updated as:
+>
+>   [PATCHv6+ 01/13] of: introduce of_property_for_earch_phandle_with_args()
 
-[..]
-> @@ -2122,6 +2129,19 @@ void generic_processor_info(int apicid, int version)
->  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
->  				phys_cpu_present_map);
->  
-> +	if (disabled_cpu_apicid != BAD_APICID &&
-> +	    disabled_cpu_apicid != boot_cpu_physical_apicid &&
+You also have a typo in the subject.
 
-Hi Hatayama,
+s/earch/each/
 
-So we are comparing disabled_cpu_apicid with boot_cpu_physical_apicid
-to make sure that one can not disable the cpu we are booting on. Can
-we just read the apic id of booting cpu in local variable and compare
-against that?
-
-Something like as follows.
-
-	if (disabled_cpu_apicid != BAD_APICID &&
-	    disabled_cpu_apicid == apicid &&
-	    disabled_cpu_apicid != read_apic_id()) {
-		/* Disable cpu */	
-	}
-
-If above works, you will not need first patch in the series?
-
-Thanks
-Vivek
+Rob
