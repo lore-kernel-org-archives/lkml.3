@@ -1,75 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab3KUCPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:15:17 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53811 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab3KUCPL (ORCPT
+	id S1755501Ab3KUCPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:15:40 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:54075 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab3KUCOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:15:11 -0500
-X-Greylist: delayed 78796 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Nov 2013 21:15:10 EST
-Message-ID: <528D6C9F.8050809@hitachi.com>
-Date: Thu, 21 Nov 2013 11:14:55 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v3 00/23] kprobes: introduce NOKPROBE_SYMBOL() and
- general cleaning of kprobe blacklist
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <y0mvbznxi6k.fsf@fche.csb> <20131120153801.GA9743@gmail.com> <20131120173600.GK8993@redhat.com>
-In-Reply-To: <20131120173600.GK8993@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Nov 2013 21:14:19 -0500
+From: mark.doffman@codethink.co.uk
+To: ceph-devel@vger.kernel.org
+Cc: Rob Taylor <rob.taylor@codethink.co.uk>, sage@inktank.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Mark Doffman <mark.doffman@codethink.co.uk>
+Subject: [PATCH 2/4] Documentation: Document the cephroot functionality
+Date: Wed, 20 Nov 2013 20:13:42 -0600
+Message-Id: <1385000024-23463-3-git-send-email-mark.doffman@codethink.co.uk>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
+References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/21 2:36), Frank Ch. Eigler wrote:
-> Hi -
-> 
->>> Does this new blacklist cover enough that the kernel now survives a 
->>> broadly wildcarded perf-probe, e.g. over e.g. all of its kallsyms?
->>
->> That's generally the purpose of the annotations - if it doesn't then 
->> that's a bug.
-> 
-> AFAIK, no kernel since kprobes was introduced has ever stood up to
-> that test.  perf probe lacks the wildcarding powers of systemtap, so
-> one needs to resort to something like:
-> 
-> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
->    perf probe $symbol
-> done
-> 
-> then wait for a few hours for that to finish. Then, or while the loop
-> is still running, run
-> 
-> # perf record -e 'probe:*' -aR sleep 1
-> 
-> to take a kernel down.
+From: Rob Taylor <rob.taylor@codethink.co.uk>
 
-Um, indeed, current blacklist is not perfect. As I reported in this
-series, I've found 2 more patterns. I guess there still have some
-others.
+Document using the cephfs as a root device, its purpose,
+functionality and use.
 
-But anyway, I don't think it is good to fix all such bugs
-in this series.
-This is just the first step to do it. :)
+Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
+Signed-off-by: Rob Taylor <rob.taylor@codethink.co.uk>
+Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+---
+ Documentation/filesystems/{ => ceph}/ceph.txt |  0
+ Documentation/filesystems/ceph/cephroot.txt   | 81 +++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
+ rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
+ create mode 100644 Documentation/filesystems/ceph/cephroot.txt
 
-Thank you,
-
+diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph/ceph.txt
+similarity index 100%
+rename from Documentation/filesystems/ceph.txt
+rename to Documentation/filesystems/ceph/ceph.txt
+diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
+new file mode 100644
+index 0000000..ae0f5bb
+--- /dev/null
++++ b/Documentation/filesystems/ceph/cephroot.txt
+@@ -0,0 +1,81 @@
++Mounting the root filesystem via Ceph (cephroot)
++===============================================
++
++Written 2013 by Rob Taylor <rob.taylor@codethink.co.uk>
++
++derived from nfsroot.txt:
++
++Written 1996 by Gero Kuhlmann <gero@gkminix.han.de>
++Updated 1997 by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
++Updated 2006 by Nico Schottelius <nico-kernel-nfsroot@schottelius.org>
++Updated 2006 by Horms <horms@verge.net.au>
++
++
++
++In order to use a diskless system, such as an X-terminal or printer server
++for example, it is necessary for the root filesystem to be present on a
++non-disk device. This may be an initramfs (see Documentation/filesystems/
++ramfs-rootfs-initramfs.txt), a ramdisk (see Documentation/initrd.txt), a
++filesystem mounted via NFS or a filesystem mounted via Ceph. The following
++text describes on how to use Ceph for the root filesystem.
++
++For the rest of this text 'client' means the diskless system, and 'server'
++means the Ceph server.
++
++
++1.) Enabling cephroot capabilities
++    -----------------------------
++
++In order to use cephroot, CEPH_FS needs to be selected as
++built-in during configuration. Once this has been selected, the cephroot
++option will become available, which should also be selected.
++
++In the networking options, kernel level autoconfiguration can be selected,
++along with the types of autoconfiguration to support. Selecting all of
++DHCP, BOOTP and RARP is safe.
++
++
++2.) Kernel command line
++    -------------------
++
++When the kernel has been loaded by a boot loader (see below) it needs to be
++told what root fs device to use. And in the case of cephroot, where to find
++both the server and the name of the directory on the server to mount as root.
++This can be established using the following kernel command line parameters:
++
++root=/dev/ceph
++
++This is necessary to enable the pseudo-Ceph-device. Note that it's not a
++real device but just a synonym to tell the kernel to use Ceph instead of
++a real device.
++
++cephroot=<monaddr>:/[<subdir>],<ceph-opts>
++
++  <monaddr>     Monitor address. Each takes the form host[:port]. If the port
++		is not specified, the Ceph default of 6789 is assumed.
++
++  <subdir>	A subdirectory subdir may be specified if a subset of the file
++		system is to be mounted
++
++  <ceph-opts>	Standard Ceph options. All options are separated by commas.
++		See Documentation/filesystems/ceph/ceph.txt for options and
++		their defaults.
++
++4.) References
++    ----------
++
++
++5.) Credits
++    -------
++
++  cephroot was derived from nfsroot by Rob Taylor <rob.taylor@codethink.co.uk>
++  and Mark Doffman <mark.doffman@codethink.co.uk>
++
++  The nfsroot code in the kernel and the RARP support have been written
++  by Gero Kuhlmann <gero@gkminix.han.de>.
++
++  The rest of the IP layer autoconfiguration code has been written
++  by Martin Mares <mj@atrey.karlin.mff.cuni.cz>.
++
++  In order to write the initial version of nfsroot I would like to thank
++  Jens-Uwe Mager <jum@anubis.han.de> for his help.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.4
 
