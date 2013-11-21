@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3KUObk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 09:31:40 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41258 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab3KUObj (ORCPT
+	id S1754774Ab3KUObo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 09:31:44 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:56277 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab3KUObm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 09:31:39 -0500
+	Thu, 21 Nov 2013 09:31:42 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 00/10] staging/lustre/libcfs: cleanup linux-fs.h and kp30.h
-Date: Thu, 21 Nov 2013 22:28:21 +0800
-Message-Id: <1385044111-3129-1-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 01/10] staging/lustre/libcfs: remove filp_size/filp_poff
+Date: Thu, 21 Nov 2013 22:28:22 +0800
+Message-Id: <1385044111-3129-2-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385044111-3129-1-git-send-email-bergwolf@gmail.com>
+References: <1385044111-3129-1-git-send-email-bergwolf@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg and Andreas,
-
-Following patches remove linux-fs.h and clean up kp30.h a bit.
-
-Thanks,
-Tao
-
 Cc: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+---
+ .../lustre/include/linux/libcfs/linux/linux-fs.h   |    5 -----
+ drivers/staging/lustre/lustre/libcfs/tracefile.c   |    6 +++---
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
-Peng Tao (10):
-  staging/lustre/libcfs: remove filp_size/filp_poff
-  staging/lustre/libcfs: remove filp_fsync
-  staging/lustre/libcfs: remove filp_read
-  staging/lustre/libcfs: remove filp_write
-  staging/lustre: move IFTODT/DTTOIF to lustre_idl.h
-  staging/lustre/libcfs: remove flock wrappers
-  staging/lustre/libcfs: remove linux-fs.h
-  staging/lustre/libcfs: remove lwt code
-  staging/lustre: remove CFS_MODULE_PARM
-  staging/lustre/libcfs: remove LI_POISON
-
- .../lustre/include/linux/libcfs/libcfs_ioctl.h     |    3 -
- .../lustre/include/linux/libcfs/linux/kp30.h       |  113 ---------
- .../lustre/include/linux/libcfs/linux/libcfs.h     |    1 -
- .../lustre/include/linux/libcfs/linux/linux-fs.h   |   92 -------
- .../lustre/lnet/klnds/o2iblnd/o2iblnd_modparams.c  |   96 +++----
- .../lustre/lnet/klnds/socklnd/socklnd_modparams.c  |  112 ++++-----
- drivers/staging/lustre/lnet/lnet/acceptor.c        |   16 +-
- drivers/staging/lustre/lnet/lnet/api-ni.c          |   16 +-
- drivers/staging/lustre/lnet/lnet/lib-move.c        |    4 +-
- drivers/staging/lustre/lnet/lnet/lib-ptl.c         |    4 +-
- drivers/staging/lustre/lnet/lnet/module.c          |    4 +-
- drivers/staging/lustre/lnet/lnet/router.c          |   44 ++--
- drivers/staging/lustre/lnet/selftest/brw_test.c    |    7 +-
- drivers/staging/lustre/lnet/selftest/framework.c   |    8 +-
- drivers/staging/lustre/lnet/selftest/ping_test.c   |    3 +-
- .../lustre/lustre/include/lustre/lustre_idl.h      |   12 +
- drivers/staging/lustre/lustre/ldlm/ldlm_flock.c    |   17 +-
- drivers/staging/lustre/lustre/ldlm/ldlm_lockd.c    |    8 +-
- drivers/staging/lustre/lustre/ldlm/ldlm_request.c  |    4 +-
- drivers/staging/lustre/lustre/libcfs/debug.c       |   42 ++--
- drivers/staging/lustre/lustre/libcfs/hash.c        |    4 +-
- .../staging/lustre/lustre/libcfs/linux/linux-cpu.c |    6 +-
- drivers/staging/lustre/lustre/libcfs/lwt.c         |  266 --------------------
- drivers/staging/lustre/lustre/libcfs/module.c      |   53 +---
- drivers/staging/lustre/lustre/libcfs/tracefile.c   |   22 +-
- drivers/staging/lustre/lustre/llite/lloop.c        |    3 +-
- .../lustre/lustre/obdclass/lprocfs_status.c        |    4 +-
- drivers/staging/lustre/lustre/obdclass/lu_object.c |    4 +-
- drivers/staging/lustre/lustre/ptlrpc/pinger.c      |    3 +-
- drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c     |    8 +-
- drivers/staging/lustre/lustre/ptlrpc/service.c     |   26 +-
- 31 files changed, 253 insertions(+), 752 deletions(-)
- delete mode 100644 drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
- delete mode 100644 drivers/staging/lustre/lustre/libcfs/lwt.c
-
+diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h b/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
+index eebf138..8fabe4b 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
++++ b/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
+@@ -52,11 +52,6 @@
+ #include <linux/backing-dev.h>
+ #include <linux/posix_acl_xattr.h>
+ 
+-#define filp_size(f)					\
+-	(i_size_read((f)->f_dentry->d_inode))
+-#define filp_poff(f)					\
+-	(&(f)->f_pos)
+-
+ # define do_fsync(fp, flag)				\
+ 	((fp)->f_op->fsync(fp, 0, LLONG_MAX, flag))
+ 
+diff --git a/drivers/staging/lustre/lustre/libcfs/tracefile.c b/drivers/staging/lustre/lustre/libcfs/tracefile.c
+index f71a3cc..0ce4aac 100644
+--- a/drivers/staging/lustre/lustre/libcfs/tracefile.c
++++ b/drivers/staging/lustre/lustre/libcfs/tracefile.c
+@@ -709,7 +709,7 @@ int cfs_tracefile_dump_all_pages(char *filename)
+ 		__LASSERT_TAGE_INVARIANT(tage);
+ 
+ 		rc = filp_write(filp, page_address(tage->page),
+-				tage->used, filp_poff(filp));
++				tage->used, &filp->f_pos);
+ 		if (rc != (int)tage->used) {
+ 			printk(KERN_WARNING "wanted to write %u but wrote "
+ 			       "%d\n", tage->used, rc);
+@@ -1020,8 +1020,8 @@ static int tracefiled(void *arg)
+ 
+ 			if (f_pos >= (off_t)cfs_tracefile_size)
+ 				f_pos = 0;
+-			else if (f_pos > (off_t)filp_size(filp))
+-				f_pos = filp_size(filp);
++			else if (f_pos > i_size_read(filp->f_dentry->d_inode))
++				f_pos = i_size_read(filp->f_dentry->d_inode);
+ 
+ 			rc = filp_write(filp, page_address(tage->page),
+ 					tage->used, &f_pos);
 -- 
 1.7.9.5
 
