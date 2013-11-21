@@ -1,31 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab3KUNvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:51:31 -0500
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.101]:6247
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751154Ab3KUNva convert rfc822-to-8bit (ORCPT
+	id S1754499Ab3KUNxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:53:31 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:60187 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab3KUNx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:51:30 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 21 Nov 2013 08:53:29 -0500
+References: <87ppqk6qvx.fsf@redhat.com> <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com> <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com> <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com> <52740A3A.70202@nod.at> <87r4abmnfb.fsf@redhat.com> <A5ED84D3BB3A384992CBB9C77DEDA4D47FA0B6EF@USINDEM103.corp.hds.com>
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Madper Xie <bbboson@gmail.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Madper Xie <cxie@redhat.com>, Richard Weinberger <richard@nod.at>,
+        Tony Luck <tony.luck@gmail.com>,
+        "matt.fleming\@intel.com" <matt.fleming@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        =?utf-8?B?6LCi5oiQ6aqP?= <bbboson@gmail.com>
+Subject: Re: [PATCH] Make efi-pstore return a unique id
+In-reply-to: <A5ED84D3BB3A384992CBB9C77DEDA4D47FA0B6EF@USINDEM103.corp.hds.com>
+Date: Thu, 21 Nov 2013 21:53:07 +0800
+Message-ID: <87txf5n9oc.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: 
-To: Recipients <info1t@loanoffer697.onmicrosoft.com>
-From: <info1t@loanoffer697.onmicrosoft.com>
-Date: Thu, 21 Nov 2013 19:20:53 +0530
-Reply-To: <jerrysmith13@rediffmail.com>
-Message-ID: <cc175d19-b114-48ff-bbb9-4fc1b589bd98@HKNPR04MB050.apcprd04.prod.outlook.com>
-X-Originating-IP: [101.58.204.148]
-X-ClientProxiedBy: HKXPR06CA010.apcprd06.prod.outlook.com (10.242.96.50) To
- HKNPR04MB050.apcprd04.prod.outlook.com (10.242.118.148)
-X-Forefront-PRVS: 0037FD6480
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(54316002)(23756003)(76576001)(47446002)(74502001)(76786001)(56776001)(76796001)(56816003)(69226001)(64872005)(87976001)(25636003)(80022001)(74662001)(77096001)(85306002)(87266001)(558084003)(66066001)(76176001)(43066001)(65816001)(42186004)(63696002)(47776003)(54356001)(19580405001)(19580395003)(83322001)(74316001)(53256004)(31686002)(76482001)(50466002)(33646001)(83072001)(81342001)(46102001)(51856001)(74706001)(74876001)(47976001)(50986001)(81686001)(81542001)(77982001)(80976001)(49866001)(47736001)(59766001)(81816001)(4396001)(74366001)(79102001)(5406001)(416774004);DIR:OUT;SFP:1501;SCL:5;SRVR:HKNPR04MB050;H:[101.58.204.148];CLIP:101.58.204.148;FPR:;RD:InfoNoRecords;A:0;MX:3;LANG:en;
-X-OriginatorOrg: loanoffer697.onmicrosoft.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do You Need A Loan? Email Us Now At jerrysmith13@rediffmail.com With Amount Needed As Loan And Phone Number.
+
+seiji.aguchi@hds.com writes:
+
+>> Then will lost the sequence of our log. We will get lots of entries like
+>> "dmesg-efi-`unique but meaningless number here`" in pstore fs. Who will
+>> know which file is the latest record?
+>
+> Ah, that's good point.
+>
+>> And another side, the combin of timestamp, count and part is unique. Why
+>> we generate a unique number from a unique number?
+>> if you think "making a string from three ints and then a parse it to a
+>> int again" is odd, i'd like to use ((timestamp * 100 + part) * 100 +
+>> count.
+>
+> How about calculating the number of digit of part /count, instead of using fixed "100"?
+> We can ensure the uniqueness of each id by doing it.
+>
+> digit_num = log2(part)/log2(10) + 1
+> timestamp * 10^(digit_num + 1)
+>
+Then we must implement a log10 and a pow func...
+And reverting id to timestamp, part and count will hard if we using
+unfixed length of count and id.
+
+So i'd like to using fixed length. My dell xps has 128kb nvram
+space. and it at most store 126 pstore entries. So I think 1000 will be
+a safe value for count. For part, 100 should be okay. I don't think
+there will be a large kmsg and we must split it into more than 100 parts.
+
+> Seiji
+
