@@ -1,112 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3KUNju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:39:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47499 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab3KUNjs (ORCPT
+	id S1754272Ab3KUNlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:41:09 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17597 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab3KUNlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:39:48 -0500
-Date: Thu, 21 Nov 2013 14:39:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-Message-ID: <20131121133936.GF10022@twins.programming.kicks-ass.net>
-References: <20131120160450.072555619@infradead.org>
- <20131120162736.691879744@infradead.org>
- <528CF94E.8020300@linux.intel.com>
- <20131121101018.GX10022@twins.programming.kicks-ass.net>
- <528E09F9.9030501@linux.intel.com>
+	Thu, 21 Nov 2013 08:41:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 05:35:04 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
+        <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
+        <robherring2@gmail.com>, <joro@8bytes.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <lorenzo.pieralisi@arm.com>, <galak@codeaurora.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCHv6 00/13] Unifying SMMU driver among Tegra SoCs
+Date: Thu, 21 Nov 2013 15:40:36 +0200
+Message-ID: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528E09F9.9030501@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 03:26:17PM +0200, Eliezer Tamir wrote:
-> On 21/11/2013 12:10, Peter Zijlstra wrote:
-> > On Wed, Nov 20, 2013 at 08:02:54PM +0200, Eliezer Tamir wrote:
-> >> IMHO This has been reviewed thoroughly.
-> >>
-> >> When Ben Hutchings voiced concerns I rewrote the code to use time_after,
-> >> so even if you do get switched over to a CPU where the time is random
-> >> you will at most poll another full interval.
-> >>
-> >> Linus asked me to remove this since it makes us use two time values
-> >> instead of one. see https://lkml.org/lkml/2013/7/8/345.
-> > 
-> > I'm not sure I see how this would be true.
-> > 
-> > So the do_select() code basically does:
-> > 
-> >   for (;;) {
-> > 
-> >     /* actual poll loop */
-> > 
-> >     if (!need_resched()) {
-> >       if (!busy_end) {
-> > 	busy_end = now() + busypoll;
-> > 	continue;
-> >       }
-> >       if (!((long)(busy_end - now()) < 0))
-> > 	continue;
-> >     }
-> > 
-> >     /* go sleep */
-> > 
-> >   }
-> > 
-> > So imagine our CPU0 timebase is 1 minute ahead of CPU1 (60e9 vs 0), and we start by:
-> > 
-> >   busy_end = now() + busypoll; /* CPU0: 60e9 + d */
-> > 
-> > but then we migrate to CPU1 and do:
-> > 
-> >   busy_end - now() /* CPU1: 60e9 + d' */
-> > 
-> > and find we're still a minute out; and in fact we'll keep spinning for
-> > that entire minute barring a need_resched().
-> 
-> not exactly, poll will return if there are any events to report of if
-> a signal is pending.
+Hi,
 
-Sure, but lacking any of those, you're now busy waiting for a minute.
+This series provide:
 
-> > Surely that's not intended and desired?
-> 
-> This limit is an extra safety net, because busy polling is expensive,
-> we limit the time we are willing to do it.
+(0) IOMMU standard DT binding("iommus")
+(1) Unified IOMMU(SMMU) driver among Tegra SoCs
+(2) Multiple Address Space support(MASID) in IOMMU(SMMMU)
+(3) Tegra IOMMU'able devices, most of platform devices are IOMMU'able.
 
-I just said your limit 'sysctl_net_busy_poll' isn't meaningful in any
-way shape or fashion.
+There's been some discussion[1] about device population order, and for
+the solution I implemented an IOMMU hook in driver core:
 
-> We don't override any limit the user has put on the system call.
+  [PATCHv6 04/13] driver/core: populate devices in order for IOMMUs
 
-You are in fact, note how the normal select @endtime argument is only
-set up _after_ you're done polling. So if the syscall had a timeout of 5
-seconds, you just blew it by 55.
+which is based on:
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006933.html
 
-> A signal or having events to report will also stop the looping.
-> So we are mostly capping the resources an _idle_ system will waste
-> on busy polling.
+The main problem here is,
 
-Repeat, you're not actually capping anything.
+IOMMU devices on the bus need to be poplulated first, then iommu
+master devices are done later.
 
-> We want to globally cap the amount of time the system busy polls, on
-> average. Nothing catastrophic will happen in the extremely rare occasion
-> that we miss.
-> 
-> The alternative is to use one more int on every poll/select all the
-> time, this seems like a bigger cost.
+With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+whether a device can be an iommu msater or not. If a device can, we'll
+defer to populate that device till an iommu device is populated. Then,
+those defered iommu master devices are populated and configured with
+help of the already populated iommu device via a new IOMMU API
+iommu_ops->driver_bound().
 
-No, 'int' has nothing to do with it, using a semi-sane timesource does.
+This "iommus=" binding is expected used as the global/standard binding.
+
+Tested IOMMU functionality with T30 SD/MMC. Any further testing with
+T114 and/or other devices would be really appreciated.
+
+v5:
+Use "iommus=" DT bindings as a standard IOMMU binding.
+
+v4:
+Add a hook in driver core to control device populatin order.
+Introduced arm,smmu "mmu-master" binding instead of tegra own.
+Removed DT patches from this series.
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006931.html
+
+v3:
+Updated based on Stephen Warren's feedback
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-October/006724.html
+
+v2:
+Updated based on Thierry Reding's and Stephen Warren's feedback
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/181888.html
+
+v1:
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/180267.html
+
+Available in the git repository at:
+
+  git://git@nv-tegra.nvidia.com/user/hdoyu/linux.git smmu-upstreaming@20131121
+
+
+Hiroshi Doyu (13):
+  of: introduce of_property_for_earch_phandle_with_args()
+  iommu/of: introduce a global iommu device list
+  iommu/of: check if dependee iommu is ready or not
+  driver/core: populate devices in order for IOMMUs
+  iommu/core: add ops->{bound,unbind}_driver()
+  ARM: tegra: create a DT header defining SWGROUP ID
+  iommu/tegra: smmu: register device to iommu dynamically
+  iommu/tegra: smmu: calculate ASID register offset by ID
+  iommu/tegra: smmu: get swgroups from DT "iommus="
+  iommu/tegra: smmu: allow duplicate ASID wirte
+  iommu/tegra: smmu: Rename hwgrp -> swgroups
+  iommu/tegra: smmu: add SMMU to an global iommu list
+  [FOR TEST] ARM: dt: tegra30: add "iommus" binding
+
+ .../bindings/iommu/nvidia,tegra30-smmu.txt         |  30 +-
+ arch/arm/boot/dts/tegra30.dtsi                     |  23 +-
+ drivers/base/dd.c                                  |   5 +
+ drivers/iommu/Kconfig                              |   1 +
+ drivers/iommu/iommu.c                              |  13 +-
+ drivers/iommu/of_iommu.c                           |  53 +++
+ drivers/iommu/tegra-smmu.c                         | 383 +++++++++++++--------
+ include/dt-bindings/memory/tegra-swgroup.h         |  50 +++
+ include/linux/iommu.h                              |   4 +
+ include/linux/of.h                                 |   3 +
+ include/linux/of_iommu.h                           |  22 ++
+ 11 files changed, 436 insertions(+), 151 deletions(-)
+ create mode 100644 include/dt-bindings/memory/tegra-swgroup.h
+
+-- 
+1.8.1.5
+
