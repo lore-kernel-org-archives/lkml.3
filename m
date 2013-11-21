@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3KUOxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 09:53:08 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:58714 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483Ab3KUOwg (ORCPT
+	id S1754718Ab3KUOys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 09:54:48 -0500
+Received: from mail.vm.ouaza.com ([88.190.240.227]:57297 "EHLO
+	mail.vm.ouaza.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab3KUOyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 09:52:36 -0500
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>
-Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 1/2] perf: add per-feature check flags
-Date: Thu, 21 Nov 2013 15:52:18 +0100
-Message-Id: <1385045539-24537-2-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1385045539-24537-1-git-send-email-jean.pihet@linaro.org>
-References: <1385045539-24537-1-git-send-email-jean.pihet@linaro.org>
+	Thu, 21 Nov 2013 09:54:47 -0500
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 09:54:47 EST
+Date: Thu, 21 Nov 2013 15:47:58 +0100
+From: Raphael Hertzog <hertzog@debian.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Some kernel module options not showing up in modinfo
+Message-ID: <20131121144758.GA6515@x230-buxy.home.ouaza.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CFLAGS and LDFLAGS for each feature to be checked. This allows
-to pass flags and parameters to the feature checks compilation.
-Also simplifies the feature check makefile, to come in a subsequent patch.
+Hello,
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
----
- tools/perf/config/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I noticed that some options are not visible in the modinfo output. For
+instance "modinfo lockd" reports this on my Debian sid system:
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f7d11a8..c551495 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -102,7 +102,7 @@ endif
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
+$ modinfo lockd
+filename:       /lib/modules/3.11-1-amd64/kernel/fs/lockd/lockd.ko
+license:        GPL
+description:    NFS file locking service version 0.5.
+author:         Olaf Kirch <okir@monad.swb.de>
+depends:        sunrpc
+intree:         Y
+vermagic:       3.11-1-amd64 SMP mod_unload modversions 
+parm:           nsm_use_hostnames:bool
+parm:           nlm_max_connections:uint
+$
+
+Yet I know that there are more options and the kernel source code confirms
+this:
+http://lxr.free-electrons.com/source/fs/lockd/svc.c#L569
+
+Multiple other options are defined by way of module_param_call(...) like
+nlm_grace_period, nlm_timeout, nlm_updport, nlm_tcpport.
+
+Ben Hutchings (one of the Debian kernel maintainers) confirmed me that
+this was unexpected and suggested me to report it to you. If you have any
+questions, just ask.
+
+Cheers,
 -- 
-1.7.11.7
+Raphaël Hertzog ◈ Debian Developer
 
+Discover the Debian Administrator's Handbook:
+→ http://debian-handbook.info/get/
