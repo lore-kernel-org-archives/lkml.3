@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3KUMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:49:59 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:21738 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab3KUMt5 (ORCPT
+	id S1754245Ab3KUMuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:50:09 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:59447 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab3KUMuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:49:57 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-bf-528e01743c64
+	Thu, 21 Nov 2013 07:50:04 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-52-528e017793a4
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
@@ -15,63 +15,75 @@ Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         m.szyprowski@samsung.com, andrzej.p@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/2] USB: gadget: s3c-hsotg: fix spinlock locking
-Date: Thu, 21 Nov 2013 13:49:17 +0100
-Message-id: <1385038158-20151-2-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 2/2] USB: gadget: s3c-hsotg: fix disconnect handling
+Date: Thu, 21 Nov 2013 13:49:18 +0100
+Message-id: <1385038158-20151-3-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1385038158-20151-1-git-send-email-r.baldyga@samsung.com>
 References: <1385038158-20151-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t9jQd0Sxr4gg7+tGhazXrazWGycsZ7V
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jQd0Kxr4ggwPt7BazXrazWGycsZ7V
 	4uD9eovmxevZLM42vWG3uLxrDpvFomWtzBZrj9xlt3hweCe7A6fH/rlr2D36tqxi9Dh+YzuT
-	x+dNcgEsUVw2Kak5mWWpRfp2CVwZ91Z+YypYx1lxq/kuUwPjPfYuRk4OCQETiZPH1rBA2GIS
-	F+6tZ+ti5OIQEpjOKNHwZjMbSEJIoJ1Jom+/MYjNJqAjseX7BEYQW0RAQGL9i0vsIA3MAn8Z
-	JW4/7ARq4OAQFnCU2POmHMRkEVCVmNzkClLOK+AqsWfvUnaQsISAgsScSTYgYU4BN4mpp56y
-	Q2xyldh6+jHLBEbeBYwMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCA+uZ1A7GlQ0WhxgF
-	OBiVeHg7HvcECbEmlhVX5h5ilOBgVhLhjfzYGyTEm5JYWZValB9fVJqTWnyIUZqDRUmc90Cr
-	daCQQHpiSWp2ampBahFMlomDU6qBkTnjW/+5P8ulZn0ueOBh6XVObJHq59yKv98LGJSkNfS5
-	Y2ftPNfDrOIi5nCYYW5uR5amRKnfRpkDXx8wfMmwtJu65tvTfc4r1m9MLPoV5GUqZ1nzctps
-	E6MffHM99x/NnHRD7OQilhaVwKqnP+WrNaJmLOe+l2mlwtgr4swrYb3igUHrNIaFSizFGYmG
-	WsxFxYkAIlJghSgCAAA=
+	x+dNcgEsUVw2Kak5mWWpRfp2CVwZtz5vYCm4yV+x6NBh5gbG6bxdjJwcEgImEjtXNDBC2GIS
+	F+6tZ+ti5OIQEpjOKDF9wnQmCKedSeLU403sIFVsAjoSW75PAOsQERCQWP/iEjtIEbPAX0aJ
+	2w872UASwgIuEi//rgEq4uBgEVCVuPsxDMTkFXCV2LZBCMSUEFCQmDPJBqSYU8BNYuqpp2DT
+	hYAqtp5+zDKBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODQeia9g3FVg8UhRgEO
+	RiUe3gdPe4KEWBPLiitzDzFKcDArifBGfuwNEuJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6
+	UEggPbEkNTs1tSC1CCbLxMEp1cDIyd23Oix3VjKra/ylCYv38HR8TNE75Jzm9engjSWCB4X6
+	JePaz3+d/HTFBq+MyZyiR74ufPrhkKr62cDYf8K9BQk34iXPiZgwO21tC181yX7bBZvs2hV5
+	kWaX2t/NU3vicpeJZacNr9GUjgid8oy285vqWWKCY+xlL2ycw6Mk/+v+BZWUsAYlluKMREMt
+	5qLiRAAx2d/6KQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing spinlock locking in s3c_hsotg_complete_setup function,
-and unlocking for gadget setup call.
+This patch moves s3c_hsotg_disconnect function call from USBSusp interrupt
+handler to SET_ADDRESS request handler.
+
+It's because disconnected state can't be detected directly, because this
+hardware doesn't support Disconnected interrupt for device mode. For both
+Suspend and Disconnect events there is one interrupt USBSusp, but calling
+s3c_hsotg_disconnect from this interrupt handler causes config reset in
+composite layer, which is not undesirable for Suspended state.
+
+For this reason s3c_hsotg_disconnect is called from SET_ADDRESS request
+handler, which occurs always after disconnection, so we do disconnect
+immediately before we are connected again. It's probably only way we
+can do handle disconnection correctly.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/s3c-hsotg.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/gadget/s3c-hsotg.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 0646587..f709b13 100644
+index f709b13..1a74a3d 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -1245,7 +1245,9 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
- 	/* as a fallback, try delivering it to the driver to deal with */
- 
- 	if (ret == 0 && hsotg->driver) {
-+		spin_unlock(&hsotg->lock);
- 		ret = hsotg->driver->setup(&hsotg->gadget, ctrl);
-+		spin_lock(&hsotg->lock);
- 		if (ret < 0)
- 			dev_dbg(hsotg->dev, "driver->setup() ret %d\n", ret);
- 	}
-@@ -1308,10 +1310,12 @@ static void s3c_hsotg_complete_setup(struct usb_ep *ep,
- 		return;
- 	}
- 
-+	spin_lock(&hsotg->lock);
- 	if (req->actual == 0)
- 		s3c_hsotg_enqueue_setup(hsotg);
- 	else
- 		s3c_hsotg_process_control(hsotg, req->buf);
-+	spin_unlock(&hsotg->lock);
+@@ -1180,6 +1180,7 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
  }
  
+ static void s3c_hsotg_enqueue_setup(struct s3c_hsotg *hsotg);
++static void s3c_hsotg_disconnect(struct s3c_hsotg *hsotg);
+ 
  /**
+  * s3c_hsotg_process_control - process a control request
+@@ -1221,6 +1222,7 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
+ 	if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD) {
+ 		switch (ctrl->bRequest) {
+ 		case USB_REQ_SET_ADDRESS:
++			s3c_hsotg_disconnect(hsotg);
+ 			dcfg = readl(hsotg->regs + DCFG);
+ 			dcfg &= ~DCFG_DevAddr_MASK;
+ 			dcfg |= ctrl->wValue << DCFG_DevAddr_SHIFT;
+@@ -2535,7 +2537,6 @@ irq_retry:
+ 		writel(GINTSTS_USBSusp, hsotg->regs + GINTSTS);
+ 
+ 		call_gadget(hsotg, suspend);
+-		s3c_hsotg_disconnect(hsotg);
+ 	}
+ 
+ 	if (gintsts & GINTSTS_WkUpInt) {
 -- 
 1.7.9.5
 
