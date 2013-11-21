@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3KUTGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:06:05 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:37976 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab3KUTGD (ORCPT
+	id S1755312Ab3KUTG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:06:26 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:35466 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab3KUTGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:06:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+	Thu, 21 Nov 2013 14:06:24 -0500
+Date: Thu, 21 Nov 2013 19:06:20 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Greg KH <greg@kroah.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+Message-ID: <20131121190620.GA25951@srcf.ucam.org>
 References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
-Date: Thu, 21 Nov 2013 20:06:02 +0100
-X-Google-Sender-Auth: 9zV6Y4jtoz8h5vD_aRcKv7efLUI
-Message-ID: <CAMuHMdVoGC3+q2UKvogL=BjkXO3k3Dq9+gGF+7CczG-PJcQPxw@mail.gmail.com>
-Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+ <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
+ <20131121190350.GC17070@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121190350.GC17070@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 6:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> Now a new system call kexec_file_load() is implemented which takes
-> kernel fd and initrd fd as parameters. Now kernel should be able
-> to verify signature of newly loaded kernel.
+On Thu, Nov 21, 2013 at 11:03:50AM -0800, Greg KH wrote:
 
-Only kernel fd and initrd fd?
-What about other fds (e.g. device tree, bootinfo)?
+> This could be done as we do with modules, and just tack the signature
+> onto the end of the 'blob' of the image.  That way we could use the same
+> tool to sign the binary as we do for modules, and save the need for
+> extra parameters in the syscall.
 
-Gr{oetje,eeting}s,
+That would require a certain degree of massaging from userspace if we 
+want to be able to use the existing Authenticode signatures. Otherwise 
+we need to sign kernels twice.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
