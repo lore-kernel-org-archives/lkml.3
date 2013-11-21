@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3KURU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:20:57 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14484 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554Ab3KURUz convert rfc822-to-8bit (ORCPT
+	id S1754704Ab3KURW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:22:27 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48043 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KURWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:20:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 09:14:52 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "grant.likely@linaro.org" <grant.likely@linaro.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Nov 2013 18:20:51 +0100
-Subject: Re: [PATCHv5 1/9] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Topic: [PATCHv5 1/9] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Index: Ac7m3gd6oBWYFtrzRdSJxmXRaLMZQA==
-Message-ID: <20131121.192051.747601347584525020.hdoyu@nvidia.com>
-References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com><20131121151218.befbb483c0cf09cdcd4cd4dd@nvidia.com><20131121155649.48C96C406A3@trevor.secretlab.ca>
-In-Reply-To: <20131121155649.48C96C406A3@trevor.secretlab.ca>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 21 Nov 2013 12:22:25 -0500
 MIME-Version: 1.0
+In-Reply-To: <20131121150344.GG10022@twins.programming.kicks-ass.net>
+References: <20131113151718.GN21461@twins.programming.kicks-ass.net>
+	<tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org>
+	<CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
+	<20131121150344.GG10022@twins.programming.kicks-ass.net>
+Date: Thu, 21 Nov 2013 09:22:24 -0800
+X-Google-Sender-Auth: D0hF5X6cFt_CmPXoGOQxlpn_uJs
+Message-ID: <CAE9FiQUHQ7jQfpxi+s7yeef17-+ApGjU2X1iRnm=azJ0+BFWZw@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
+ group power
+From: Yinghai Lu <yinghai@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@linaro.org> wrote @ Thu, 21 Nov 2013 16:56:49 +0100:
+On Thu, Nov 21, 2013 at 7:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>> This one seems fix NULL reference in compute_group_power.
+>>
+>> but get following on current Linus tree plus tip/sched/urgent.
+>>
+>> divide error: 0000 [#1]  SMP
+>> [   28.190477] Modules linked in:
+>> [   28.192012] CPU: 11 PID: 484 Comm: kworker/u324:0 Not tainted
+>> 3.12.0-yh-10487-g4b94e59-dirty #2044
+>> [   28.210488] Hardware name: Oracle Corporation  Sun Fire
+>> [   28.229877] task: ffff88ff25205140 ti: ffff88ff2520a000 task.ti:
+>> ffff88ff2520a000
+>> [   28.236139] RIP: 0010:[<ffffffff810d9ff4>]  [<ffffffff810d9ff4>]
+>> find_busiest_group+0x2b4/0x8a0
+>
+> Hurmph.. what kind of hardware is that? and is there anything funny you
+> do to make it do this?
 
-> On Thu, 21 Nov 2013 15:12:18 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> > On Thu, 21 Nov 2013 13:43:28 +0100
-> > Grant Likely <grant.likely@linaro.org> wrote:
-> > 
-> > > On Tue, 19 Nov 2013 11:33:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> > > > The following pattern of code is tempting:
-> > > > 
-> > > >   for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
-> > > > 
-> > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > > 
-> > > That's a very minimal commit message. Can you elaborate please.
-> > 
-> > The above can be:
-> > 
-> > "
-> >   The following pattern of code is tempting to add a new member for
-> >   of_property_for_each_*() family as an idiom.
-> >   
-> >     for (i = 0;
-> >         !of_parse_phandle_with_args(np, list, cells, i, args); i++)
-> >                   <do something with "args">;
-> > "
-> 
-> I really do like commit messages to be full enough that a future reader
-> can figure out why a patch was written. ie:
+intel nehanem-ex or westmere-ex 8 sockets system.
 
-Updated as:
+I tried without my local patches, the problem is still there.
 
-  [PATCHv6+ 01/13] of: introduce of_property_for_earch_phandle_with_args()
-    http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007063.html
-
-This doesn't depend on anything and this can be merged
-independetly. Thanks for your help.
+Yinghai
