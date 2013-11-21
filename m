@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab3KUIfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 03:35:12 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:2435 "EHLO mms3.broadcom.com"
+	id S1753842Ab3KUIgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 03:36:14 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53656 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab3KUIfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 03:35:10 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Date: Thu, 21 Nov 2013 14:14:18 +0530
-From: "Jayachandran C." <jchandra@broadcom.com>
-To: "Ralf Baechle" <ralf@linux-mips.org>
-cc: "Jason Baron" <jbaron@akamai.com>, mingo@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        "Florian Fainelli" <florian@openwrt.org>,
-        "Shinya Kuribayashi" <skuribay@ruby.dti.ne.jp>,
-        "Ganesan Ramalingam" <ganesanr@broadcom.com>
-Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
-Message-ID: <20131121084417.GA26218@jayachandranc.netlogicmicro.com>
-References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com>
- <20131119090211.GN10382@linux-mips.org>
+	id S1750941Ab3KUIgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 03:36:12 -0500
+Message-ID: <528DC5DD.8040801@ti.com>
+Date: Thu, 21 Nov 2013 14:05:41 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131119090211.GN10382@linux-mips.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-WSS-ID: 7E931AF61SC9875092-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v1 7/7] net: cpsw: resume/suspend PHY on port start/stop
+References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1384978913-8052-8-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1384978913-8052-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 10:02:11AM +0100, Ralf Baechle wrote:
-> On Mon, Nov 18, 2013 at 09:04:36PM +0000, Jason Baron wrote:
-> 
-> > The panic_timeout value can be set via the command line option 'panic=x', or via
-> > /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
-> > before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
-> > so that we can set the desired value from the .config.
-> > 
-> > The default panic_timeout value continues to be 0 - wait forever, except for
-> > powerpc and mips, which have been defaulted to 180 and 5 respectively. This
-> > is in keeping with the fact that these arches already set panic_timeout in
-> > their arch init code. However, I found three exceptions- two in mips and one in
-> > powerpc where the settings didn't match these default values. In those cases, I
-> > left the arch code so it continues to override, in case the user has not changed
-> > from the default. It would nice if these arches had one default value, or if we
-> > could determine the correct setting at compile-time.
-> 
-> It's more complicated - MIPS was using the global default with five MIPS
-> platforms overriding the default.
-> 
-> I propose to kill these overrides for sanity unless somebody comes up
-> with a good argument.  Patch below.
-> 
->   Ralf
-> 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> 
->  arch/mips/ar7/setup.c           | 1 -
->  arch/mips/emma/markeins/setup.c | 3 ---
->  arch/mips/netlogic/xlp/setup.c  | 1 -
->  arch/mips/netlogic/xlr/setup.c  | 1 -
->  arch/mips/sibyte/swarm/setup.c  | 2 --
->  5 files changed, 8 deletions(-)
-> 
-> diff --git a/arch/mips/ar7/setup.c b/arch/mips/ar7/setup.c
-> index 9a357ff..820b7a3 100644
-> --- a/arch/mips/ar7/setup.c
-> +++ b/arch/mips/ar7/setup.c
-> @@ -92,7 +92,6 @@ void __init plat_mem_setup(void)
->  	_machine_restart = ar7_machine_restart;
->  	_machine_halt = ar7_machine_halt;
->  	pm_power_off = ar7_machine_power_off;
-> -	panic_timeout = 3;
+On Thursday 21 November 2013 01:51 AM, Sebastian Hesselbarth wrote:
+> Network PHYs consume a noticable amount of power. This adds phy_resume
+> on slave_open and phy_suspend on slave_stop to save this power if the
+> port is down anyway.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/ethernet/ti/cpsw.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+> index 90d41d2..f1dc54f 100644
+> --- a/drivers/net/ethernet/ti/cpsw.c
+> +++ b/drivers/net/ethernet/ti/cpsw.c
+> @@ -1013,6 +1013,7 @@ static void cpsw_slave_open(struct cpsw_slave *slave, struct cpsw_priv *priv)
+>  	} else {
+>  		dev_info(priv->dev, "phy found : id is : 0x%x\n",
+>  			 slave->phy->phy_id);
+> +		phy_resume(slave->phy);
+>  		phy_start(slave->phy);
 >  
->  	io_base = (unsigned long)ioremap(AR7_REGS_BASE, 0x10000);
->  	if (!io_base)
-> diff --git a/arch/mips/emma/markeins/setup.c b/arch/mips/emma/markeins/setup.c
-> index d710058..9100122 100644
-> --- a/arch/mips/emma/markeins/setup.c
-> +++ b/arch/mips/emma/markeins/setup.c
-> @@ -111,9 +111,6 @@ void __init plat_mem_setup(void)
->  	iomem_resource.start = EMMA2RH_IO_BASE;
->  	iomem_resource.end = EMMA2RH_ROM_BASE - 1;
->  
-> -	/* Reboot on panic */
-> -	panic_timeout = 180;
-> -
->  	markeins_sio_setup();
+>  		/* Configure GMII_SEL register */
+> @@ -1081,6 +1082,7 @@ static void cpsw_slave_stop(struct cpsw_slave *slave, struct cpsw_priv *priv)
+>  	if (!slave->phy)
+>  		return;
+>  	phy_stop(slave->phy);
+> +	phy_suspend(slave->phy);
+>  	phy_disconnect(slave->phy);
+>  	slave->phy = NULL;
 >  }
->  
-> diff --git a/arch/mips/netlogic/xlp/setup.c b/arch/mips/netlogic/xlp/setup.c
-> index 6d981bb..54e75c7 100644
-> --- a/arch/mips/netlogic/xlp/setup.c
-> +++ b/arch/mips/netlogic/xlp/setup.c
-> @@ -92,7 +92,6 @@ static void __init xlp_init_mem_from_bars(void)
->  
->  void __init plat_mem_setup(void)
->  {
-> -	panic_timeout	= 5;
->  	_machine_restart = (void (*)(char *))nlm_linux_exit;
->  	_machine_halt	= nlm_linux_exit;
->  	pm_power_off	= nlm_linux_exit;
-> diff --git a/arch/mips/netlogic/xlr/setup.c b/arch/mips/netlogic/xlr/setup.c
-> index 214d123..921be5f 100644
-> --- a/arch/mips/netlogic/xlr/setup.c
-> +++ b/arch/mips/netlogic/xlr/setup.c
-> @@ -92,7 +92,6 @@ static void nlm_linux_exit(void)
->  
->  void __init plat_mem_setup(void)
->  {
-> -	panic_timeout	= 5;
->  	_machine_restart = (void (*)(char *))nlm_linux_exit;
->  	_machine_halt	= nlm_linux_exit;
->  	pm_power_off	= nlm_linux_exit;
-> diff --git a/arch/mips/sibyte/swarm/setup.c b/arch/mips/sibyte/swarm/setup.c
-> index 41707a2..3462c83 100644
-> --- a/arch/mips/sibyte/swarm/setup.c
-> +++ b/arch/mips/sibyte/swarm/setup.c
-> @@ -134,8 +134,6 @@ void __init plat_mem_setup(void)
->  #error invalid SiByte board configuration
->  #endif
->  
-> -	panic_timeout = 5;  /* For debug.  */
-> -
->  	board_be_handler = swarm_be_handler;
->  
->  	if (xicor_probe())
 
+Can these be called from phy_start and phy_stop itself so that it
+reduces the effort of patching all drivers and also applies to all
+etherent drivers.
 
-Acked-by: Jayachandran C <jchandra@broadcom.com>
-
-For the arch/mips/netlogic changes, thanks for fixing this.
-
-JC.
-
+Regards
+Mugunthan V N
