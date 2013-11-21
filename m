@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab3KUXBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:01:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49548 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3KUXBI (ORCPT
+	id S1755285Ab3KUXHQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:07:16 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:33420 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3KUXHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:01:08 -0500
-Date: Thu, 21 Nov 2013 15:01:07 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Michael Marineau <michael.marineau@coreos.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname
- without taking rename_lock 232d2d60
-Message-ID: <20131121230107.GA15179@kroah.com>
-References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
- <20131113123947.GB13318@ZenIV.linux.org.uk>
- <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
+	Thu, 21 Nov 2013 18:07:14 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+Date: Thu, 21 Nov 2013 15:07:04 -0800
+In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Wed, 20 Nov 2013 12:50:45 -0500")
+Message-ID: <8761rl73s7.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+SZEh702SNNnMH1H+xByySHZqEPV4uu/Y=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0391]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 13, 2013 at 02:51:59PM -0800, Michael Marineau wrote:
-> On Wed, Nov 13, 2013 at 4:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
-> >> Greetings,
-> >>
-> >> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
-> >> errors in /proc/*/fd/* where readlink returns "/" instead of the
-> >> correct path. This can be reproduced by the script below which copies
-> >> the kernel source directory structure while obsessively looking up
-> >> directory fds in proc from another process. Reverting
-> >> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
-> >> 48f5ec21d9c67e881ff35343988e290ef5cf933f
-> >> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
-> >
-> > Looking into it...  It seems that we are getting to the end of
-> > prepend_path() with non-negative error and bptr == *buffer.
-> > What the...
-> >
-> > OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
-> > if we decide to restart.  See if the following helps:
-> >
-> > diff --git a/fs/dcache.c b/fs/dcache.c
-> > index ae6ebb8..89f9671 100644
-> > --- a/fs/dcache.c
-> > +++ b/fs/dcache.c
-> > @@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
-> >                         const struct path *root,
-> >                         char **buffer, int *buflen)
-> >  {
-> > -       struct dentry *dentry = path->dentry;
-> > -       struct vfsmount *vfsmnt = path->mnt;
-> > -       struct mount *mnt = real_mount(vfsmnt);
-> > +       struct dentry *dentry;
-> > +       struct vfsmount *vfsmnt;
-> > +       struct mount *mnt;
-> >         int error = 0;
-> >         unsigned seq = 0;
-> >         char *bptr;
-> > @@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
-> >  restart:
-> >         bptr = *buffer;
-> >         blen = *buflen;
-> > +       dentry = path->dentry;
-> > +       vfsmnt = path->mnt;
-> > +       mnt = real_mount(vfsmnt);
-> >         read_seqbegin_or_lock(&rename_lock, &seq);
-> >         while (dentry != root->dentry || vfsmnt != root->mnt) {
-> >                 struct dentry * parent;
-> 
-> That appears to do the trick! I've tried my test case against that
-> patch on both Linus' git tree (as of last night) and the 3.12 release.
-> I'm now running the long build job that initially stumbled across this
-> bug now but it looks good so far.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Al, did this fix end up in Linus's tree yet?  I'd like to pull it into
-the next 3.12-stable release, but will wait until Linus has it of
-course.
+> Current proposed secureboot implementation disables kexec/kdump because
+> it can allow unsigned kernel to run on a secureboot platform. Intial
+> idea was to sign /sbin/kexec binary and let that binary do the kernel
+> signature verification. I had posted RFC patches for this apparoach
+> here.
+>
+> https://lkml.org/lkml/2013/9/10/560
+>
+> Later we had discussion at Plumbers and most of the people thought
+> that signing and trusting /sbin/kexec is becoming complex. So a 
+> better idea might be let kernel do the signature verification of
+> new kernel being loaded. This calls for implementing a new system call
+> and moving lot of user space code in kernel.
+>
+> kexec_load() system call allows loading a kexec/kdump kernel and jump
+> to that kernel at right time. Though a lot of processing is done in
+> user space which prepares a list of segments/buffers to be loaded and
+> kexec_load() works on that list of segments. It does not know what's
+> contained in those segments.
+>
+> Now a new system call kexec_file_load() is implemented which takes
+> kernel fd and initrd fd as parameters. Now kernel should be able
+> to verify signature of newly loaded kernel. 
+>
+> This is an early RFC patchset. I have not done signature handling
+> part yet. This is more of a minimal patch to show how new system
+> call and functionality will look like. Right now it can only handle
+> bzImage with 64bit entry point on x86_64. No EFI, no x86_32  or any
+> other architecture. Rest of the things can be added slowly as need
+> arises. In first iteration, I have tried to address most common use case
+> for us.
+>
+> Any feedback is welcome.
 
-thanks,
+Before you are done we need an ELF loader.  bzImage really is very
+uninteresting.  To the point I am not at all convinced that an in kernel
+loader should support it.
 
-greg k-h
+There is also a huge missing piece of this in that your purgatory is not
+checking a hash of the loaded image before jumping too it.  Without that
+this is a huge regression at least for the kexec on panic case.  We
+absolutely need to check that the kernel sitting around in memory has
+not been corrupted before we let it run very far.
+
+Eric
