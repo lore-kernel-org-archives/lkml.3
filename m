@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3KUQVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 11:21:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22010 "EHLO mga02.intel.com"
+	id S1754203Ab3KUQZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 11:25:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44984 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab3KUQVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 11:21:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,745,1378882800"; 
-   d="scan'208";a="439294736"
-Message-ID: <528E32EF.2050300@linux.intel.com>
-Date: Thu, 21 Nov 2013 08:21:03 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751971Ab3KUQZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 11:25:43 -0500
+Date: Thu, 21 Nov 2013 17:25:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] i915, debugfs: Fix uninitialized warning
+Message-ID: <20131121162535.GK26009@pd.tnic>
+References: <1385048986-14478-1-git-send-email-bp@alien8.de>
+ <CAFLxGvzcAYwdcdNmZt4stTSCueRmStFYt+MqvNAS3BJX7CnUoQ@mail.gmail.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle implementations
-References: <20131120160450.072555619@infradead.org> <20131120162736.508462614@infradead.org> <20131120165406.14fa0f09@ultegra> <20131121082151.GU10022@twins.programming.kicks-ass.net> <20131121160716.GT4138@linux.vnet.ibm.com>
-In-Reply-To: <20131121160716.GT4138@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvzcAYwdcdNmZt4stTSCueRmStFYt+MqvNAS3BJX7CnUoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 8:07 AM, Paul E. McKenney wrote:
-> As long as RCU has some reliable way to identify an idle task, I am
-> good.  But I have to ask -- why can't idle injection coordinate with
-> the existing idle tasks rather than temporarily making alternative
-> idle tasks?
+On Thu, Nov 21, 2013 at 05:10:30PM +0100, Richard Weinberger wrote:
+> > diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+> > index 6ed45a984230..1191aa47adc9 100644
+> > --- a/drivers/gpu/drm/i915/i915_debugfs.c
+> > +++ b/drivers/gpu/drm/i915/i915_debugfs.c
+> > @@ -2347,7 +2347,7 @@ static int pipe_crc_set_source(struct drm_device *dev, enum pipe pipe,
+> >  {
+> >         struct drm_i915_private *dev_priv = dev->dev_private;
+> >         struct intel_pipe_crc *pipe_crc = &dev_priv->pipe_crc[pipe];
+> > -       u32 val;
+> > +       u32 val = 0; /* shut up gcc */
+> 
+> Wouldn't it be better to use uninitialized_var() here?
 
-it's not a real idle. that's the whole problem of the situation.
-to the rest of the OS, this is being BUSY (busy saving power using
-a CPU instruction, but it might as well have been an mdelay() operation)
-and it's also what end users expect; they want to be able to see
-where there performance (read: cpu time in "top") is going.
+I remember Linus' rant about this macro so that's why I don't use it
+anymore.
 
+In this specific case, it doesn't matter whichever we do so I'll let the
+maintainer make a wish :)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
