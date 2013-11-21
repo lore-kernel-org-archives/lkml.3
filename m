@@ -1,250 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab3KUT0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:26:20 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44097 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab3KUT0S convert rfc822-to-8bit (ORCPT
+	id S1755173Ab3KUT1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:27:21 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53264 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab3KUT1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:26:18 -0500
-Date: Thu, 21 Nov 2013 14:26:16 -0500 (EST)
-Message-Id: <20131121.142616.1651417691142591081.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 21 Nov 2013 11:26:17 -0800 (PST)
+	Thu, 21 Nov 2013 14:27:19 -0500
+Date: Thu, 21 Nov 2013 11:19:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
+ implementations
+Message-ID: <20131121191916.GZ4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.508462614@infradead.org>
+ <20131120165406.14fa0f09@ultegra>
+ <20131121082151.GU10022@twins.programming.kicks-ass.net>
+ <20131121160716.GT4138@linux.vnet.ibm.com>
+ <528E32EF.2050300@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528E32EF.2050300@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112119-0928-0000-0000-000003A91B95
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 21, 2013 at 08:21:03AM -0800, Arjan van de Ven wrote:
+> On 11/21/2013 8:07 AM, Paul E. McKenney wrote:
+> >As long as RCU has some reliable way to identify an idle task, I am
+> >good.  But I have to ask -- why can't idle injection coordinate with
+> >the existing idle tasks rather than temporarily making alternative
+> >idle tasks?
+> 
+> it's not a real idle. that's the whole problem of the situation.
+> to the rest of the OS, this is being BUSY (busy saving power using
+> a CPU instruction, but it might as well have been an mdelay() operation)
+> and it's also what end users expect; they want to be able to see
+> where there performance (read: cpu time in "top") is going.
 
-1) Fix memory leaks and other issues in mwifiex driver, from Amitkumar
-   Karwar.
+My concern is keeping RCU's books straight.  Suppose that there is a need
+to call for idle in the middle of a preemptible RCU read-side critical
+section.  Now, if that call for idle involves a context switch, all is
+well -- RCU will see the task as still being in its RCU read-side critical
+section, which means that it is OK for RCU to see the CPU as idle.
 
-2) skb_segment() can choke on packets using frag lists, fix from
-   Herbert Xu with help from Eric Dumazet and others.
+However, if there is no context switch and RCU sees the CPU as idle,
+preemptible RCU could prematurely end the grace period.  If there is no
+context switch and RCU sees the CPU as non-idle for too long, we start
+getting RCU CPU stall warning splats.
 
-3) IPv4 output cached route instantiation properly handles races
-   involving two threads trying to install the same route, but we
-   forgot to propagate this logic to input routes as well.  Fix
-   from Alexei Starovoitov.
+Another approach would be to only inject idle when the CPU is not
+doing anything that could possibly be in an RCU read-side critical
+section.  But things might get a bit hot in case of an overly
+long RCU read-side critical section.
 
-4) Put protections in place to make sure that recvmsg() paths never
-   accidently copy uninitialized memory back into userspace and also
-   make sure that we never try to use more that sockaddr_storage for
-   building the on-kernel-stack copy of a sockaddr.  Fixes from Hannes
-   Frederic Sowa.
+One approach that might work would be to hook into RCU's context-switch
+code going in and coming out, then telling RCU that the CPU is idle,
+even though top and friends see it as non-idle.  This last is in fact
+similar to how RCU handles userspace execution for NO_HZ_FULL.
 
-5) R8152 driver transmit flow bug fixes from Hayes Wang.
+Or were you thinking of yet another possible approach for this?
 
-6) Fix some minor fallouts from genetlink changes, from Johannes Berg
-   and Michael Opdenacker.
+							Thanx, Paul
 
-7) AF_PACKET sendmsg path can race with netdevice unregister notifier,
-   fix by using RCU to make sure the network device doesn't go away
-   from under us.  Fix from Daniel Borkmann.
-
-Please pull, thanks a lot!
-
-The following changes since commit b4789b8e6be3151a955ade74872822f30e8cd914:
-
-  aacraid: prevent invalid pointer dereference (2013-11-19 16:27:39 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 9d8506cc2d7ea1f911c72c100193a3677f6668c3:
-
-  gso: handle new frag_list of frags GRO packets (2013-11-21 14:11:50 -0500)
-
-----------------------------------------------------------------
-Alexei Starovoitov (1):
-      ipv4: fix race in concurrent ip_route_input_slow()
-
-Amitkumar Karwar (5):
-      mwifiex: use return value of mwifiex_add_virtual_intf() correctly
-      mwifiex: failure path handling in mwifiex_add_virtual_intf()
-      mwifiex: fix NULL pointer dereference in mwifiex_fw_dpc
-      mwifiex: fix potential mem leak in .del_virtual_intf
-      mwifiex: fix memory leak issue for sdio and pcie cards
-
-Andy Fleming (1):
-      net/phy: Add VSC8234 support
-
-Daniel Borkmann (1):
-      packet: fix use after free race in send path when dev is released
-
-David S. Miller (3):
-      Merge branch 'r8152'
-      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-
-David Vrabel (1):
-      xen-netback: stop the VIF thread before unbinding IRQs
-
-Ding Tianhong (1):
-      bridge: flush br's address entry in fdb when remove the
-
-Felix Fietkau (1):
-      rt2x00: fix a crash bug in the HT descriptor handling fix
-
-Geyslan G. Bem (1):
-      brcmfmac: fix possible memory leak
-
-Hannes Frederic Sowa (2):
-      net: rework recvmsg handler msg_name and msg_namelen logic
-      net: add BUG_ON if kernel advertises msg_namelen > sizeof(struct sockaddr_storage)
-
-Herbert Xu (1):
-      gso: handle new frag_list of frags GRO packets
-
-Johan Hedberg (1):
-      Bluetooth: Fix rejecting SMP security request in slave role
-
-Johannes Berg (2):
-      genetlink: fix genlmsg_multicast() bug
-      genetlink: fix genl_set_err() group ID
-
-John W. Linville (2):
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Larry Finger (1):
-      rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
-
-Luis R. Rodriguez (1):
-      ath: fix dynamic user regulatory settings
-
-Luís Fernando Cornachioni Estrozi (1):
-      netfilter: ebt_ip6: fix source and destination matching
-
-Madalin Bucur (1):
-      net/phy: Add the autocross feature for forced links on VSC82x4
-
-Marcel Holtmann (1):
-      Bluetooth: Fix issue with RFCOMM getsockopt operation
-
-Martin Topholm (2):
-      netfilter: synproxy: send mss option to backend
-      netfilter: synproxy: correct wscale option passing
-
-Michael Opdenacker (1):
-      wimax: remove dead code
-
-Pablo Neira Ayuso (2):
-      netfilter: nft_compat: fix error path in nft_parse_compat()
-      netfilter: nf_conntrack: decrement global counter after object release
-
-Phil Oester (1):
-      netfilter: fix wrong byte order in nf_ct_seqadj_set internal information
-
-Randy Dunlap (1):
-      netfilter: fix connlimit Kconfig prompt string
-
-Sandeep Singh (1):
-      net/phy: Add VSC8662 support
-
-Seung-Woo Kim (3):
-      Bluetooth: Fix RFCOMM bind fail for L2CAP sock
-      Bluetooth: Fix to set proper bdaddr_type for RFCOMM connect
-      Bluetooth: Fix crash in l2cap_chan_send after l2cap_chan_del
-
-Sujith Manoharan (2):
-      ath9k: Update AR9462 2.1 initvals
-      ath9k: Fix issue with MCS15
-
-Ujjal Roy (1):
-      mwifiex: fix issues in driver unload path for USB chipsets
-
-Vlad Yasevich (1):
-      net: core: Always propagate flag changes to interfaces
-
-hayeswang (4):
-      r8152: fix tx/rx memory overflow
-      r8152: modify the tx flow
-      r8152: support stopping/waking tx queue
-      r8152: fix incorrect type in assignment
-
-shaohui xie (1):
-      net/phy: Add VSC8574 support
-
- crypto/algif_hash.c                                  |   2 -
- crypto/algif_skcipher.c                              |   1 -
- drivers/isdn/mISDN/socket.c                          |  13 ++-----
- drivers/net/phy/phy_device.c                         |   4 +-
- drivers/net/phy/vitesse.c                            | 117 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- drivers/net/ppp/pppoe.c                              |   2 -
- drivers/net/usb/r8152.c                              | 114 +++++++++++++++++++++++++-------------------------------
- drivers/net/wireless/ath/ath9k/ar9003_phy.c          |  50 +++++++++++++++++++++++++
- drivers/net/wireless/ath/ath9k/ar9003_phy.h          |  11 ++++++
- drivers/net/wireless/ath/ath9k/ar9462_2p1_initvals.h |   6 +--
- drivers/net/wireless/ath/regd.c                      |   3 +-
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c        |   1 +
- drivers/net/wireless/mwifiex/cfg80211.c              |  23 ++++++++++--
- drivers/net/wireless/mwifiex/main.c                  |  28 ++++----------
- drivers/net/wireless/mwifiex/pcie.c                  |   2 +-
- drivers/net/wireless/mwifiex/sdio.c                  |   7 ++--
- drivers/net/wireless/mwifiex/usb.c                   |  27 ++++++++------
- drivers/net/wireless/rt2x00/rt2x00dev.c              |   3 +-
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c         |   6 +--
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c         |   6 +--
- drivers/net/xen-netback/interface.c                  |   6 +--
- include/linux/net.h                                  |   8 ++++
- include/linux/phy.h                                  |   1 +
- include/net/genetlink.h                              |   8 ++--
- net/appletalk/ddp.c                                  |  16 ++++----
- net/atm/common.c                                     |   2 -
- net/ax25/af_ax25.c                                   |   4 +-
- net/bluetooth/af_bluetooth.c                         |   9 +----
- net/bluetooth/hci_sock.c                             |   2 -
- net/bluetooth/l2cap_core.c                           |   3 ++
- net/bluetooth/rfcomm/core.c                          |   3 ++
- net/bluetooth/rfcomm/sock.c                          |   7 +++-
- net/bluetooth/sco.c                                  |   1 -
- net/bluetooth/smp.c                                  |   3 ++
- net/bridge/br_if.c                                   |   2 +
- net/bridge/netfilter/ebt_ip6.c                       |   8 ++--
- net/caif/caif_socket.c                               |   4 --
- net/compat.c                                         |   3 +-
- net/core/dev.c                                       |   2 +-
- net/core/iovec.c                                     |   3 +-
- net/core/skbuff.c                                    |  75 ++++++++++++++++++++++++-------------
- net/ipv4/netfilter/ipt_SYNPROXY.c                    |   1 +
- net/ipv4/route.c                                     |   8 +++-
- net/ipv6/netfilter/ip6t_SYNPROXY.c                   |   1 +
- net/ipx/af_ipx.c                                     |   3 +-
- net/irda/af_irda.c                                   |   4 --
- net/iucv/af_iucv.c                                   |   2 -
- net/key/af_key.c                                     |   1 -
- net/l2tp/l2tp_ppp.c                                  |   2 -
- net/llc/af_llc.c                                     |   2 -
- net/netfilter/Kconfig                                |   2 +-
- net/netfilter/nf_conntrack_core.c                    |   3 +-
- net/netfilter/nf_conntrack_seqadj.c                  |   4 +-
- net/netfilter/nf_synproxy_core.c                     |   7 ++--
- net/netfilter/nft_compat.c                           |  19 +++++++---
- net/netlink/af_netlink.c                             |   2 -
- net/netlink/genetlink.c                              |   4 +-
- net/netrom/af_netrom.c                               |   3 +-
- net/nfc/llcp_sock.c                                  |   2 -
- net/nfc/rawsock.c                                    |   2 -
- net/packet/af_packet.c                               |  91 +++++++++++++++++++++++++--------------------
- net/packet/internal.h                                |   1 +
- net/rds/recv.c                                       |   2 -
- net/rose/af_rose.c                                   |   8 ++--
- net/rxrpc/ar-recvmsg.c                               |   9 +++--
- net/socket.c                                         |  22 ++++++-----
- net/tipc/socket.c                                    |   6 ---
- net/unix/af_unix.c                                   |   5 ---
- net/vmw_vsock/af_vsock.c                             |   2 -
- net/vmw_vsock/vmci_transport.c                       |   2 -
- net/wimax/stack.c                                    |   1 -
- net/x25/af_x25.c                                     |   3 +-
- 72 files changed, 504 insertions(+), 316 deletions(-)
