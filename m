@@ -1,108 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3KUNo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:44:28 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:6094 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab3KUNl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:41:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 05:35:23 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
-        <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
-        <robherring2@gmail.com>, <joro@8bytes.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lorenzo.pieralisi@arm.com>, <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCHv6 05/13] iommu/core: add ops->{bound,unbind}_driver()
-Date: Thu, 21 Nov 2013 15:40:41 +0200
-Message-ID: <1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
-References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
+	id S1755166Ab3KUNot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:44:49 -0500
+Received: from sam.nabble.com ([216.139.236.26]:53365 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab3KUNor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 08:44:47 -0500
+Date: Thu, 21 Nov 2013 05:44:46 -0800 (PST)
+From: "dbaservice@in.com" <dbaservice@in.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1385041486022-756701.post@n7.nabble.com>
+Subject: Hadoop Training Hadoop Online Training
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ops->{bound,unbind}_driver() functions are called at
-BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
+RS Trainings is the best Hadoop online training provider from Hyderabad,
+India. Our Hadoop Online Training faculty is very much experianced and
+dedicated. Our Hadoop online training faculty is realtime and faculty is
+working for MNC's. Our Hadoop Online Training Course content designed as job
+oriented and as per the IT industry requirement.
 
-This is necessary to control the device population order. IOMMU master
-devices depend on an IOMMU device instanciation. IOMMU master devices
-can be registered to an IOMMU only after it's successfully
-populated. This IOMMU registration is done via
-ops->bound_driver(). Currently this population can be deferred if
-depending IOMMU device hasn't yet been populated in driver core. This
-cannot be done via ops->add_device() since after add_device() device's
-population/instanciation can be still deferred via probe().
+Skypeid: rsonlinehyd
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
-v6:
-New for v6.
----
- drivers/iommu/iommu.c | 13 +++++++++++--
- include/linux/iommu.h |  4 ++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
+Please contact us India:+91 9052699906, USA :+1 909-666-5386
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index e5555fc..5469d36 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -540,14 +540,23 @@ static int iommu_bus_notifier(struct notifier_block *nb,
- 	 * ADD/DEL call into iommu driver ops if provided, which may
- 	 * result in ADD/DEL notifiers to group->notifier
- 	 */
--	if (action == BUS_NOTIFY_ADD_DEVICE) {
-+	switch (action) {
-+	case BUS_NOTIFY_ADD_DEVICE:
- 		if (ops->add_device)
- 			return ops->add_device(dev);
--	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
-+	case BUS_NOTIFY_DEL_DEVICE:
- 		if (ops->remove_device && dev->iommu_group) {
- 			ops->remove_device(dev);
- 			return 0;
- 		}
-+	case BUS_NOTIFY_BOUND_DRIVER:
-+		if (ops->bound_driver)
-+			ops->bound_driver(dev);
-+		break;
-+	case BUS_NOTIFY_UNBIND_DRIVER:
-+		if (ops->unbind_driver)
-+			ops->unbind_driver(dev);
-+		break;
- 	}
- 
- 	/*
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index a444c79..a0e92be 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -96,6 +96,8 @@ enum iommu_attr {
-  * @domain_has_cap: domain capabilities query
-  * @add_device: add device to iommu grouping
-  * @remove_device: remove device from iommu grouping
-+ * @bound_driver: called at BUS_NOTIFY_BOUND_DRIVER
-+ * @unbind_driver: called at BUS_NOTIFY_UNBIND_DRIVER
-  * @domain_get_attr: Query domain attributes
-  * @domain_set_attr: Change domain attributes
-  * @pgsize_bitmap: bitmap of supported page sizes
-@@ -114,6 +116,8 @@ struct iommu_ops {
- 			      unsigned long cap);
- 	int (*add_device)(struct device *dev);
- 	void (*remove_device)(struct device *dev);
-+	int (*bound_driver)(struct device *dev);
-+	void (*unbind_driver)(struct device *dev);
- 	int (*device_group)(struct device *dev, unsigned int *groupid);
- 	int (*domain_get_attr)(struct iommu_domain *domain,
- 			       enum iommu_attr attr, void *data);
--- 
-1.8.1.5
+Email:contact@rstrainings.com
+http://www.rstrainings.com/hadoop-online-training.html
 
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/Hadoop-Training-Hadoop-Online-Training-tp756701.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
