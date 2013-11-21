@@ -1,107 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3KUScY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:32:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:61600 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab3KUScX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:32:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,746,1378882800"; 
-   d="scan'208";a="431653497"
-Message-ID: <528E52C8.5000508@linux.intel.com>
-Date: Thu, 21 Nov 2013 10:36:56 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1754761Ab3KUSf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:35:27 -0500
+Received: from dkim1.fusionio.com ([66.114.96.53]:42683 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab3KUSfZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 13:35:25 -0500
+X-ASG-Debug-ID: 1385058924-0421b529bb2bfe0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-CC: linux-kbuild@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mmarek@suse.cz, rostedt@goodmis.org
-Subject: Re: make oldnoconfig fix?
-References: <52811DDD.3030609@linux.intel.com> <20131111181304.GB3510@free.fr> <52812829.4080508@linux.intel.com>
-In-Reply-To: <52812829.4080508@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Message-ID: <20131121183508.5312.64818@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Thu, 21 Nov 2013 13:35:08 -0500
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1385058924
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142504
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2013 10:55 AM, David Cohen wrote:
-> On 11/11/2013 10:13 AM, Yann E. MORIN wrote:
->> David, All,
-> 
-> Hi Yann,
-> 
->>
->> On 2013-11-11 10:11 -0800, David Cohen spake thusly:
->>> Is there a plan to fix 'make oldnoconfig' option?
->>> I currently have need to it :)
->>> I've tracked a thread fixing 'make olddefconfig' where 'oldnoconfig'
->>> option is reported as a known bug, right?
->>
->> Sorry, I don't understand what your problem is.
-> 
-> Maybe I assumed it was more 'known' then it actually is :)
-> 
->>
->> Care to explain in details what problem you have:
->>    - what you start with
->>    - what you do
->>    - what you get
->>    - what you expected
-> 
-> The bug with 'oldnoconfig' is: 'make oldnoconfig' is just an alias to
-> 'olddefconfig'. Any non-existent config is defined with its default
-> value instead of 'N'.
-> 
-> I work with embedded platforms. I need to maintain a set of defconfigs
-> for different products (customers some times want tailored configs, so
-> creating a generic one isn't an option always).
-> 
-> In order to have full control of the .config generated out of
-> defconfigs, I don't allow any CONFIG_ to be selected implicitly. So
-> everytime a Kconfig is changed in our internal tree, we need to update
-> all defconfigs either with CONFIG_... = [y|n] or # CONFIG_... is not set
-> 
-> If I managed to get 'make oldnoconfig' working, I could not care about
-> # CONFIG_... is not set and internal and changes to defconfigs would be
-> easily to understand and review.
-> 
->>
->> So we can try to reproduce the issue and investigate what is wrong.
-> 
-> All we need to know is explained in this commit:
-> 
-> commit fb16d8912db5268f29706010ecafff74b971c58d
-> Author: Adam Lee <adam8157@gmail.com>
-> Date:   Sat Sep 1 01:05:17 2012 +0800
-> 
->     kconfig: replace 'oldnoconfig' with 'olddefconfig', and keep the old
-> name as an alias
-> 
->     As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
->     set new symbols to 'n', but instead sets it to their default values.
-> 
->     So, this patch replaces 'oldnoconfig' with 'olddefconfig', stop making
->     people confused, and keep the old name 'oldnoconfig' as an alias,
->     because people already are dependent on its behavior with the
->     counter-intuitive name.
-> 
->     Signed-off-by: Adam Lee <adam8157@gmail.com>
->     Signed-off-by: Michal Marek <mmarek@suse.cz>
-> 
-> 
->>
->> Since you mention an existing thread, please add a pointer (URL) to
->> this thread in the archives (Use: http://marc.info/?l=linux-kbuild ).
-> 
-> This is the thread I was talking about:
-> http://comments.gmane.org/gmane.linux.kbuild.devel/8560
-> 
-> Master Yoda promised to fix it when the problem gets bigger :)
+Hi Linus,
 
-Any comments here? :)
+Please pull my for-linus branch:
 
-Br, David Cohen
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+You'll notice the last two commits were recently rebased, these were
+just fixing a typo in the new documentation.
+
+Almost all of these are bug fixes.  Dave Sterba's documentation update
+is the big exception because he removed our promises to set any machine
+running Btrfs on fire.
+
+Ilya Dryomov (3) commits (+13/-5):
+    Btrfs: do not inc uncorrectable_errors counter on ro scrubs (+4/-2)
+    Btrfs: disable online raid-repair on ro mounts (+8/-3)
+    Btrfs: fix __btrfs_start_workers retval (+1/-0)
+
+Josef Bacik (3) commits (+5/-3):
+    Btrfs: only drop modified extents if we logged the whole inode (+1/-1)
+    Btrfs: don't BUG_ON() if we get an error walking backrefs (+2/-1)
+    Btrfs: make sure to copy everything if we rename (+2/-1)
+
+David Sterba (3) commits (+27/-22):
+    Documentation: filesystems: add new btrfs mount options (+11/-1)
+    Documentation: filesystems: update btrfs tools section (+6/-16)
+    btrfs: update kconfig help text (+10/-5)
+
+Liu Bo (2) commits (+3/-22):
+    Btrfs: avoid heavy operations in btrfs_commit_super (+1/-20)
+    Btrfs: fix lockdep error in async commit (+2/-2)
+
+Stefan Behrens (1) commits (+17/-8):
+    Btrfs: print bytenr instead of page pointer in check-int
+
+Anand Jain (1) commits (+1/-1):
+    btrfs: fix typo in the log message
+
+Filipe David Borba Manana (1) commits (+1/-1):
+    Btrfs: don't wait for ordered data outside desired range
+
+Wang Shilong (1) commits (+0/-6):
+    Btrfs: remove dead codes from ctree.h
+
+Akinobu Mita (1) commits (+1/-1):
+    btrfs: fix bio_size_ok() for max_sectors > 0xffff
+
+Miao Xie (1) commits (+1/-0):
+    Btrfs: fix list delete warning when removing ordered root from the list
+
+Steven Rostedt (1) commits (+4/-3):
+    btrfs: Use trace condition for get_extent tracepoint
+
+Total: (18) commits (+73/-72)
+
+ Documentation/filesystems/btrfs.txt | 34 +++++++++++++++++-----------------
+ fs/btrfs/Kconfig                    | 15 ++++++++++-----
+ fs/btrfs/async-thread.c             |  1 +
+ fs/btrfs/check-integrity.c          | 25 +++++++++++++++++--------
+ fs/btrfs/ctree.h                    |  6 ------
+ fs/btrfs/dev-replace.c              |  2 +-
+ fs/btrfs/disk-io.c                  | 21 +--------------------
+ fs/btrfs/extent_io.c                | 11 ++++++++---
+ fs/btrfs/inode.c                    |  6 +++---
+ fs/btrfs/ordered-data.c             |  3 ++-
+ fs/btrfs/scrub.c                    |  6 ++++--
+ fs/btrfs/transaction.c              |  4 ++--
+ fs/btrfs/tree-log.c                 |  5 +++--
+ fs/btrfs/volumes.c                  |  2 +-
+ include/trace/events/btrfs.h        |  4 +++-
+ 15 files changed, 73 insertions(+), 72 deletions(-)
