@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab3KUIMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 03:12:40 -0500
-Received: from vistrem1.vector-informatik.com ([217.89.139.138]:53580 "EHLO
-	vistrem1.vector-informatik.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750860Ab3KUIMi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 03:12:38 -0500
-From: "Frederich, Jens" <Jens.Frederich@vector.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Kernel Panic] 3.10.10-rt7
-Thread-Topic: [Kernel Panic] 3.10.10-rt7
-Thread-Index: Ac7l66BMdAdPuzbGTZONTbGkPOT5y///8ZsAgAA1n4D//t8WoA==
-Date: Thu, 21 Nov 2013 08:12:33 +0000
-Message-ID: <9B7F15AA4177464A8FAB5BE79B14288B88968EAB@vistrex3.vi.vector.int>
-References: <9B7F15AA4177464A8FAB5BE79B14288B88967CEF@vistrex3.vi.vector.int>
- <528CAC42.1060706@siemens.com> <528CD93D.4060609@windriver.com>
-In-Reply-To: <528CD93D.4060609@windriver.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.49.46.146]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752494Ab3KUIPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 03:15:46 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751833Ab3KUIPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 03:15:44 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: mmotm 2013-11-20-16-13 uploaded (arch/um/kernel/sysrq.c)
+Date: Thu, 21 Nov 2013 09:15:38 +0100
+Message-ID: <4049956.nmFOrVzcI3@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <528D5935.6070907@infradead.org>
+References: <20131121001408.17DC85A41C6@corp2gmr1-2.hot.corp.google.com> <528D5935.6070907@infradead.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Paul Gortmaker [mailto:paul.gortmaker@windriver.com]
->Sent: Wednesday, November 20, 2013 4:46 PM
->To: Jan Kiszka; Frederich, Jens; linux-rt-users@vger.kernel.org
->Cc: linux-kernel@vger.kernel.org
->Subject: Re: [Kernel Panic] 3.10.10-rt7
->
->On 13-11-20 07:34 AM, Jan Kiszka wrote:
->> On 2013-11-20 13:26, Frederich, Jens wrote:
->>> Hello,
->>>
->>> I got a Kernel panic by some long time stress tests. Look here:
->http://dy.cx/pqP7M.
->>
->> Ah, that should be
->http://thread.gmane.org/gmane.linux.kernel/1564783
->>
->> Paul, was there any follow-up patch on this topic?
->
->Yeah, from the rt-summit [ http://lwn.net/Articles/572740/ ] it is on
->me
->to get those simple wait queue patches mainlined (and then the
->local_bh
->stuff).  Once I've got that done, I'll look at spending some time on
->3.12-rt
->kvm patches -- in the meantime, you are right, the screenshot shows
->that his
->3.10-rt needs the straightforward conversion of vpcu->wq to simple
->wait.
->
+Am Mittwoch, 20. November 2013, 16:52:05 schrieb Randy Dunlap:
+> On 11/20/13 16:14, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2013-11-20-16-13 has been uploaded to
+> > 
+> >    http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > mmotm-readme.txt says
+> > 
+> > README for mm-of-the-moment:
+> > 
+> > http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+> 
+> on i386:
+> (with um i386 defconfig)
+> 
+> arch/um/kernel/sysrq.c:22:13: error: expected identifier or '(' before 'do'
+> um/kernel/sysrq.c:22:13: error: expected identifier or '(' before 'while'
+> 
+> 
+> so sysrq.c is picking up <linux/stacktrace.h> somehow and not liking it.
 
-It's good to hear.
+um/kernel/sysrq.c has
+static void print_stack_trace(unsigned long *sp, unsigned long bp)
+and linux/stracktrace.h has
+# define print_stack_trace(trace, spaces)               do { } while (0)
 
-Paul, can you estimate when the kvm patches is ready, so that I can test it? 
+So um's print_stack_trace needs to be renamed.
+Thanks a lot for reporting!
 
-thanks
-Jens
+Thanks,
+//richard
 
->Paul.
->--
->
->>
->> Jan
->>
->>>
->>> Furthermore I got sporadic some BUG messages:
->>>
->>> [ 1128.358971] BUG: scheduling while atomic: swapper/0/0/0x00010002
->>> [ 1128.358982] Preemption disabled at:[<ffffffff810dfb8a>]
->cpu_startup_entry+0x17a/0x300
->>>
->>> Hardware
->>> --------
->>>
->>> My system is a i7 with 4 GB RAM congatec evalboard.
->>>
->>> Setup
->>> -----
->>>
->>> On the system runs Linux RT (text mode) 3.10.10-rt7 with 1 GB RAM
->and a
->>> Windows 7 KVM/QEMU (Qemu 1.6.1) guest with 3 GB RAM. Each system
->has it own
->>> ethernet card. The Win 7 guest uses it per pci pass-through. The
->Win 7 is
->>> pinned to core 2,3.
->>>
->>> Scenario
->>> --------
->>>
->>> We sending UDP packages every 1 msec on the Linux side. The UDP
->sender process
->>> has real time prio 80 and the ethernet driver 90. At the same time
->we are
->>> stressing Win 7. Memory stress - allocate as much as possible and
->do memset(),
->>> then CPU stress - high CPU load, then Kernel DPC stress - high load
->thread at
->>> DPC level and ethernet stress - send UDP packages every
->milliseconds. I got the
->>> panic after 45 minutes. It seems that is correlates with the
->ethernet stress.
->>>
->>> Can anybody help me?
->>>
->>> thanks
->>> Jens
->>
