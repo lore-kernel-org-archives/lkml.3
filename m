@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab3KURRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:17:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13812 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab3KURRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:17:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,745,1378882800"; 
-   d="scan'208";a="412521494"
-Date: Thu, 21 Nov 2013 19:22:17 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	id S1754678Ab3KURRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:17:39 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5693 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab3KURRh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 12:17:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 21 Nov 2013 09:15:31 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "grant.likely@linaro.org" <grant.likely@linaro.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "Hiroshi Doyu" <hdoyu@nvidia.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] net: rfkill: gpio: convert to descriptor-based GPIO
- interface
-Message-ID: <20131121172217.GE2281@intel.com>
-References: <1385045153-25160-1-git-send-email-mika.westerberg@linux.intel.com>
- <1385045153-25160-2-git-send-email-mika.westerberg@linux.intel.com>
- <20131121152425.GA5557@xps8300>
- <528E3D5E.20907@nvidia.com>
+Date: Thu, 21 Nov 2013 18:17:20 +0100
+Subject: [PATCHv6+ 01/13] of: introduce
+ of_property_for_earch_phandle_with_args()
+Thread-Topic: [PATCHv6+ 01/13] of: introduce
+ of_property_for_earch_phandle_with_args()
+Thread-Index: Ac7m3Y0omhyIdEQOSF+DLZsVvfgeXg==
+Message-ID: <20131121.191720.1487772262083864095.hdoyu@nvidia.com>
+References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com><1385041249-7705-2-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1385041249-7705-2-git-send-email-hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528E3D5E.20907@nvidia.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 12:05:34PM -0500, Rhyland Klein wrote:
-> This seems like a reasonable patch, and likely a good way to go. I don't
-> have a AC100 to test this with though, so I can't verify this
-> personally. Also, would the paz00 patch become a dependency of this
-> patchset? Mika, maybe you can therefore include a patch for paz00 in
-> your patchset?
+Iterating over a property containing a list of phandles with arguments
+is a common operation for device drivers. This patch adds a new
+of_property_for_each_phandle_with_args() macro to make the iteration
+simpler.
 
-Sure I can, if everyone is OK with that.
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+v6+:
+Use the description, which Grant Likely proposed, to be full enough
+that a future reader can figure out why a patch was written.
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007062.html
+
+v5:
+New patch for v5.
+---
+ include/linux/of.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 276c546..131fef5 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -613,6 +613,9 @@ static inline int of_property_read_u32(const struct device_node *np,
+ 		s;						\
+ 		s = of_prop_next_string(prop, s))
+ 
++#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
++	for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
++
+ #if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
+ extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
+ extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
+-- 
+1.8.1.5
