@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3KUWOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:14:09 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:47307 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754333Ab3KUWOF (ORCPT
+	id S1754462Ab3KUWSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:18:46 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60850 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KUWSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:14:05 -0500
-Message-ID: <528E85A9.3000703@gmail.com>
-Date: Thu, 21 Nov 2013 17:14:01 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 21 Nov 2013 17:18:43 -0500
 MIME-Version: 1.0
-To: Chang Xiangzhong <changxiangzhong@gmail.com>, nhorman@tuxdriver.com,
-        davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: sctp: find the correct highest_new_tsn in sack
-References: <1385070988-29554-1-git-send-email-changxiangzhong@gmail.com>
-In-Reply-To: <1385070988-29554-1-git-send-email-changxiangzhong@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALZtONByWEv-vyx8+HMn+o53hPO4L_UY-+BbLRrBoWx-u2UejA@mail.gmail.com>
+References: <1384976909-32671-1-git-send-email-ddstreet@ieee.org>
+ <CAL1ERfPcAbNyt9hTYKMj9OGK2=ynLrTVm9udEn=hF+bFptC16Q@mail.gmail.com> <CALZtONByWEv-vyx8+HMn+o53hPO4L_UY-+BbLRrBoWx-u2UejA@mail.gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 21 Nov 2013 17:18:21 -0500
+X-Google-Sender-Auth: hGxsckQZJN9t3__v_C9TYexx5DQ
+Message-ID: <CALZtONDH1naq7uKOfcqCz+5bREYYd3A5-DN72wJ5TOpZEcaygw@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: don't allow entry eviction if in use by load
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 04:56 PM, Chang Xiangzhong wrote:
-> Function sctp_check_transmitted(transport t, ...) would iterate all of
-> transport->transmitted queue and looking for the highest __newly__ acked tsn.
-> The original algorithm would depend on the order of the assoc->transport_list
-> (in function sctp_outq_sack line 1215 - 1226). The result might not be the
-> expected due to the order of the tranport_list.
-> 
-> Solution: checking if the exising is smaller than the new one before assigning
-> 
-> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+On Thu, Nov 21, 2013 at 4:44 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+> On Wed, Nov 20, 2013 at 8:59 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+>> Hello Dan
+>>
+>> On Thu, Nov 21, 2013 at 3:48 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>>> The changes in commit 0ab0abcf511545d1fddbe72a36b3ca73388ac937
+>>> introduce a bug in writeback, if an entry is in use by load
+>>> it will be evicted anyway, which isn't correct (technically,
+>>> the code currently in zbud doesn't actually care much what the
+>>> zswap evict function returns, but that could change).
+>>
+>> Thanks for your work. Howerver it is not a bug.
+>>
+>> I have thought about this situation, and it will never happen.
+>> If entry is being loaded, its corresponding page must be in swapcache
+>> so zswap_get_swap_cache_page() will return ZSWAP_SWAPCACHE_EXIST
+>
+>
+> Can I also ask why you do a rb_search instead of just checking the
+> entry->refcount?  Doing the search is going to take longer than just
+> checking the refcount; is there some case where the entry will not be
+> in the rb but will have a nonzero refcount?
 
-Good find.  This has been around for since day 1.  It doesn't so much
-depend on the order of the transport list, but on the order the
-transports been used.  I agree it is a problem if chunks have been
-distributed across multiple transports and a singe SACK acking them all.
-
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-
--vlad
-
-> ---
->  net/sctp/outqueue.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-> index ef9e2bb..1b494fa 100644
-> --- a/net/sctp/outqueue.c
-> +++ b/net/sctp/outqueue.c
-> @@ -1397,7 +1397,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->  			 */
->  			if (!tchunk->tsn_gap_acked) {
->  				tchunk->tsn_gap_acked = 1;
-> -				*highest_new_tsn_in_sack = tsn;
-> +				if (TSN_lt(*highest_new_tsn_in_sack, tsn))
-> +					*highest_new_tsn_in_sack = tsn;
->  				bytes_acked += sctp_data_size(tchunk);
->  				if (!tchunk->transport)
->  					migrate_bytes += sctp_data_size(tchunk);
-> 
-
+Never mind; I realized the entry will have been free'd once it's
+refcount is 0 so that can't be checked.
