@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3KUKFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:05:45 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42640 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab3KUKFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:05:43 -0500
-Date: Thu, 21 Nov 2013 02:06:09 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>, linux-aio@kvack.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] direct IO support for loop driver
-Message-ID: <20131121100609.GB17871@kmo-pixel>
-References: <528A648F.1030007@oracle.com>
- <CA+55aFyF-Za7B=1kVDodbn942hETsWixAHCsh_wBA1b6pnUigQ@mail.gmail.com>
- <20131121095837.GB18232@infradead.org>
+	id S1753456Ab3KUKHb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:07:31 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56672 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab3KUKH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 05:07:29 -0500
+Date: Thu, 21 Nov 2013 11:07:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131121100722.GA25459@pd.tnic>
+References: <1384984585-24300-1-git-send-email-bp@alien8.de>
+ <20131121073410.GA16971@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131121095837.GB18232@infradead.org>
+In-Reply-To: <20131121073410.GA16971@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 01:58:37AM -0800, Christoph Hellwig wrote:
-> On Wed, Nov 20, 2013 at 01:19:33PM -0800, Linus Torvalds wrote:
-> > I really don't see the point of all this crap. All this for the loop
-> > driver? If so, it had better at least be prettier than it is.
-> 
-> It's for anyone trying to to direct I/O from kernel space.  I have
-> patches that speed up ecryptfs and allow sane operation for the file
-> backed scsi target based on this that have been collecting dust for a
-> while.
+On Thu, Nov 21, 2013 at 08:34:10AM +0100, Ingo Molnar wrote:
+> Ouch, the naming is horrible, what does 'lk' stand for?
 
-Can you post those patches somewhere? If that's the end goal of this
-patch series, we should be able to look at them too.
+"linux kernel" :-)
+
+> Please rename it to something sensible before it spreads.
+> 
+> libkernel.so and tools/lib/kernel/ would be perfect I think.
+
+However, now that I think of it, the naming is kinda imprecise having
+only "kernel" in it - it only denotes that it is a library of stuff that
+has grown in the kernel.
+
+So how about
+
+tools/lib/ktools/
+tools/lib/kutils/
+tools/lib/kernel-tools/
+tools/lib/kernel-utils/
+...
+
+and
+
+libktools.so
+libkutils.so
+...
+
+?
+
+I'd prefer ktools as in the tools/ directory of the kernel repo.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
