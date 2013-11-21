@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3KUXjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:39:06 -0500
-Received: from ring0.de ([91.143.88.219]:35697 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755424Ab3KUXjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:39:01 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Fri, 22 Nov 2013 00:38:48 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?iso-8859-1?Q?'Beno=EEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
-Message-ID: <20131121233847.GB9772@earth.universe>
-Mail-Followup-To: Tony Lindgren <tony@atomide.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-	Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Grant Likely <grant.likely@linaro.org>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>,
-	=?iso-8859-1?Q?'Beno=EEt?= Cousson' <bcousson@baylibre.com>,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-omap@vger.kernel.org
-References: <1379277856-24571-1-git-send-email-sre@debian.org>
- <1379277856-24571-4-git-send-email-sre@debian.org>
- <20131121013858.GK10317@atomide.com>
- <20131121022125.GA2445@earth.universe>
- <20131121204654.GB10023@atomide.com>
+	id S1753970Ab3KUXpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:45:38 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:33806 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3KUXpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 18:45:36 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="4SFOXa2GPu3tIq4H"
-Content-Disposition: inline
-In-Reply-To: <20131121204654.GB10023@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528E94E2.3080102@ahsoftware.de>
+References: <52803E5D.3050109@mentor.com>
+	<52851395.3010306@mentor.com>
+	<67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+	<1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+	<CA+55aFw923sA0E1RQNxFF0OWFtAfcaG-dBUc-0YYZGDSAsaQyg@mail.gmail.com>
+	<528E2E8E.8080004@ahsoftware.de>
+	<CA+55aFyNZun07BLoD2KQFT7cN1xsiQ2gE6hYwRvOGa3tCap4CQ@mail.gmail.com>
+	<528E94E2.3080102@ahsoftware.de>
+Date: Thu, 21 Nov 2013 15:45:35 -0800
+Message-ID: <CANxoKds1iLpXK0yb1qW_Z4tLSRccrf69nYUV7mLSJBMwSrjwmQ@mail.gmail.com>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+From: Luis Lozano <llozano@google.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
+        Han Shen <shenhan@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I think we need a reproducer. Without this we may all be going on the
+wrong path. This whole conversation started on an *assumption* that
+some accesses were being reordered.
 
---4SFOXa2GPu3tIq4H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+evidence of the reorder or reproducer please?
 
-On Thu, Nov 21, 2013 at 12:46:55PM -0800, Tony Lindgren wrote:
-> * Sebastian Reichel <sre@debian.org> [131120 18:22]:
-> > On Wed, Nov 20, 2013 at 05:38:59PM -0800, Tony Lindgren wrote:
-> >=20
-> > In the public documentation of the omaps all SSI related stuff is
-> > missing and memory areas are marked as reserved. I could not find
-> > out how to receive the NDA version, so the following is purely
-> > speculation based on the code.
-> >=20
-> > If I understand it right the HW looks like this:
-> >=20
-> > +-----------------+
-> > |    GDD (DMA)    | <- this one is currently called ssi-controller
-> > +--------+--------+
-> > | Port 1 | Port 2 | <- these are currently called ssi-port
-> > +--------+--------+
-> >=20
-> > I think the GDD part must be enabled while Port 1 or Port 2 is
-> > enabled. The last RFC driver from Carlos did not even split up the
-> > irq/memory areas into different platform devices, but just requested
-> > all of them in one ssi platform device.
->=20
-> Might be worth checking. If these blocks have the revision and SYSC
-> register in the beginning of their address space like all omap modules,
-> then they are completely separate blocks and can idle independently.
+Luis
 
-This does not seem to be the case.
-I think this is just one big IP-Core, which provides two ports.
 
-> The fact that they have separate interrutps makes me think that's the
-> case, otherwise there would be just interrupt(s) at the ssi-controllel
-> level.
+On Thu, Nov 21, 2013 at 3:18 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>
+> Am 21.11.2013 23:32, schrieb Linus Torvalds:
+>
+>> On Thu, Nov 21, 2013 at 8:02 AM, Alexander Holler <holler@ahsoftware.de>
+>> wrote:
+>
+>
+>> The bug is not that gcc can re-order or combine the accesses to "sp".
+>> WE WANT THAT TO HAPPEN.
+>
+>
+> Sure, and I don't disagree on that.
+>
+>
+>>
+>> The bug is *outside* that "current_thread_info()" macro/inline
+>> function. It's the *dereference* of the pointer that gcc re-orders.
+>> AND THAT IS WRONG.
+>>
+>> Gcc seems to mess up the alias analysis, and decide that the
+>> deferences cannot alias. Which is wrong. They clearly *can* alias,
+>> exactly because the value of "sp & ~(THREAD_SIZE - 1)" ends up having
+>> the same value all the time.
+>
+>
+> Sorry, that I still disagree.
+>
+> I try to describe it more clearly why I still think that the problem might
+> be because of that const declaration.
+>
+> (...)
+>
+> foobar1 = current_thread_info() __attribute_const__ {
+>         return sp->somewhere_local;
+> }
+>
+> (...)
+>
+> foobar2 = current_thread_info() __attribute_const__ {
+>         return sp->somewhere_local;
+> }
+>
+> So, even if sp is the same in both cases, that const states that wherever sp
+> points to is local to current_thread_info(), so it can't be the same for
+> both cases.
+>
+> Regards,
+>
+> Alexander Holler
 
-The original driver from Carlos had all IRQs in one big platform
-device. I created the ports subdevices, since it looked cleaner
-than naming resources "port1_mpu_irq0".
 
--- Sebastian
 
---4SFOXa2GPu3tIq4H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSjpmHAAoJENju1/PIO/qafX0P/RthfLl7kCxXOEZT11RLuyrh
-uf49kagc8yNjtRaOK25ft8EYbmQbxCyZtrqEm+Xnv3PF/us9EjTYeTrDmVJ7Sh/0
-1mLtDZHyS4yq11m1u3z1xfQtOwdJWTHmLeWNBGvOfaFHa0xa7AaVK8D/4FBes2tA
-/7NHh2oEU4SzJCyHtQLWUOxJ7tONoNZxdhQZD5g9FiJ+kpQuqSICnJ1LuFaOjaVd
-VPFH1/OTzOrDp8XW+l7AcRPHH5FYBUKR8fkebpivTH2b+Ayg+MV9EPVwaAlcFBxw
-pfHh+Y8eMOX+HJoVb80OHldqN5YdSKmUGPByn3meFsEiriMWLtcp1hU0w9o3qQ6r
-h9Vu7jn+Fw7FCpdf10VsL7b/4Xn+mHV+dFuM+BH5vYnmpAkfMxZl+SoGAAh2E+/N
-8CUV51InahaZ5SGdTbCygMxB5mCIIxj+hUEd8TfK6m2EKZhUXv2CZ28PfRcEQV8m
-ZxdWy5WLXbCITNBZFzhQCzz5LniFDqG9sPma0+pahRw4axM1CRUeGIcgKsiWKZtz
-YRVd07t2xDamVJT8uJFLdJLysBmRPp/bcx+hiLqTV/wM2g6zV9y6dEsX8zheXXxM
-CHUkS+5bzxaBZXowlxu4zx1Vsfiyp/1654UiIQAjaT2EYDh22r7DJ+HjYPUx+821
-5Sb+nl6ZAKuqR68xf5d6
-=+LA4
------END PGP SIGNATURE-----
-
---4SFOXa2GPu3tIq4H--
+Luis A. Lozano | Software Engineer | llozano@google.com | +1 (408)431-5164
