@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab3KUWdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:33:18 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:56202 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab3KUWdP (ORCPT
+	id S1755317Ab3KUWeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:34:13 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38842 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3KUWeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:33:15 -0500
+	Thu, 21 Nov 2013 17:34:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131121124736.6EBEBC40A2C@trevor.secretlab.ca>
-References: <1383113571-13029-1-git-send-email-robherring2@gmail.com>
-	<1383113571-13029-2-git-send-email-robherring2@gmail.com>
-	<20131121124736.6EBEBC40A2C@trevor.secretlab.ca>
-Date: Thu, 21 Nov 2013 16:33:13 -0600
-Message-ID: <CAL_JsqLK_ivSphWq3xLpQqUjF1nEvPjf2WQ4hJ+hThcTFae-Kg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] driver core: introduce module_platform_driver_match_and_probe
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAL1ERfNNAZCS58K9mT85wxQfH8B3AyR4aLE8r745me1dJRmPfg@mail.gmail.com>
+References: <1384976824-32624-1-git-send-email-ddstreet@ieee.org> <CAL1ERfNNAZCS58K9mT85wxQfH8B3AyR4aLE8r745me1dJRmPfg@mail.gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 21 Nov 2013 17:33:49 -0500
+X-Google-Sender-Auth: vtayzjzeWM-kD9FUGIM5ndbEqXc
+Message-ID: <CALZtOND62CZTM-SHNrD3-wwZ=XZz4AAMg9GtrbW1gD6i7LqA-w@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: remove unneeded zswap_rb_erase calls
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 6:47 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Wed, 30 Oct 2013 01:12:50 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Introduce a helper to match, create and probe a platform device. This
->> is for drivers such as cpuidle or cpufreq that typically don't have a
->> bus device node and need to match on a system-level compatible property.
->>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+On Wed, Nov 20, 2013 at 9:52 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+> Hello Dan
 >
-> Oh, ick. Please no. If a platform_device isn't getting created for a
-> device tree node, then we should be asking why it isn't getting created
-> and fix the core logic rather than trying to bodge it in the driver init
-> code.
+> On Thu, Nov 21, 2013 at 3:47 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>> Since zswap_rb_erase was added to the final (when refcount == 0)
+>> zswap_put_entry, there is no need to call zswap_rb_erase before
+>> calling zswap_put_entry.
+>>
+>> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+>> ---
+>>  mm/zswap.c | 5 -----
+>>  1 file changed, 5 deletions(-)
+>>
+>> diff --git a/mm/zswap.c b/mm/zswap.c
+>> index e154f1e..f4fbbd5 100644
+>> --- a/mm/zswap.c
+>> +++ b/mm/zswap.c
+>> @@ -711,8 +711,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>>                 ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
+>>                 if (ret == -EEXIST) {
+>>                         zswap_duplicate_entry++;
+>> -                       /* remove from rbtree */
+>> -                       zswap_rb_erase(&tree->rbroot, dupentry);
+>>                         zswap_entry_put(tree, dupentry);
+>>                 }
+>>         } while (ret == -EEXIST);
 >
-> We should never be creating and registering devices in module init code.
-> We've spent the last 4 years trying to get away from that.
+> If remove zswap_rb_erase, it would loop until free this dupentry. This
+> would cause 2 proplems:
 
-This is for devices that have no DT device node to be associated with
-and therefore will never have a device created by the core DT code.
-Instead the devices are created based off of the root compatible
-property. cpuidle drivers are one such example [1]. We already do this
-today by putting the platform device creation in the
-machine_desc.init_machine function which is a conditional initcall.
-The motivation for changing this is how to support drivers like this
-on arm64 which doesn't want any platform code or machine_desc. At
-least historically, we didn't want DT nodes of Linux specific devices
-in the DT. So, how would you propose to solve this problem?
+I need to get more familiar with when it's possible to hit a duplicate
+entry, it seems strange to me that higher level swap code would be
+trying to store a page with an already used offset.
 
-Rob
+> 1.  zswap_duplicate_entry counter is not correct
+> 2. trigger BUG_ON in zswap_entry_put when this dupentry is being writeback,
+>    because zswap_writeback_entry will call zswap_entry_put either.
+>
+> So, I don't think it is a good idea to remove zswap_rb_erase call.
+>
+>> @@ -787,9 +785,6 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>>                 return;
+>>         }
+>>
+>> -       /* remove from rbtree */
+>> -       zswap_rb_erase(&tree->rbroot, entry);
+>> -
+>>         /* drop the initial reference from entry creation */
+>>         zswap_entry_put(tree, entry);
+>
+> I think it is better not to remove the zswap_rb_erase call.
+>
+> From frontswap interface view, if invalidate is called, the page(and
+> entry) should never visible to upper.
+> If remove the zswap_rb_erase call, it is not fit this semantic.
+>
+> Consider the following scenario:
+> 1. thread 0: entry A is being writeback
+> 2. thread 1: invalidate entry A, as refcount != 0, it will still exist
+> on rbtree.
+> 3. thread 1: reuse  entry A 's swp_entry_t, do a frontswap_store
+>    it will conflict with the  entry A on the rbtree, it is not a
+> normal duplicate store.
+>
+> If we place the zswap_rb_erase call in zswap_frontswap_invalidate_page,
+> we can avoid the above scenario.
+>
+> So, I don't think it is a good idea to remove zswap_rb_erase call.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/robh/linux.git/commit/?h=highbank-rm-mach-desc&id=f4c00839748688c480c56952cfc06d49aebe1162
+It seems to me that zswap_rb_erase shouldn't have been folded into
+zswap_entry_put; if it was removed now, the only place it would need
+to be added back is into the success path of writeback, i.e.:
+
+  if (entry == zswap_rb_search(&tree->rbroot, offset)) {
+   zswap_rb_erase(&tree->rbroot, entry);
+   zswap_entry_put(tree, entry);
+  }
