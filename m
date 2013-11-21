@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab3KUKZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:25:33 -0500
-Received: from smtp208.alice.it ([82.57.200.104]:45000 "EHLO smtp208.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab3KUKZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:25:31 -0500
-Date: Thu, 21 Nov 2013 11:25:02 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, simon@mungewell.org,
-        case@corpsmoderne.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Only process ABS_MT_SLOT where there are slots
- available
-Message-Id: <20131121112502.44e5fda717c28516e7808e5d@studenti.unina.it>
-In-Reply-To: <20131121045620.GA4702@core.coreip.homeip.net>
-References: <1384983141-31019-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1384983141-31019-2-git-send-email-benjamin.tissoires@redhat.com>
-	<20131121045620.GA4702@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1753354Ab3KUK1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:27:53 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:42355 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3KUK1v (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 21 Nov 2013 05:27:51 -0500
+Subject: Re: [PATCH] x86, efi: change name of efi_no_storage_paranoia
+ parameter to efi_storage_paranoia
+From: joeyli <jlee@suse.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Madper Xie <cxie@redhat.com>, Matt Fleming <matt@console-pimps.org>,
+        Richard Weinberger <richard@nod.at>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
+        matthew.garrett@nebula.com
+In-Reply-To: <1385027623.6516.4090.camel@linux-s257.site>
+References: <527C93B5.7010407@jp.fujitsu.com> <527C9B5C.6040509@nod.at>
+	 <527CB013.30200@jp.fujitsu.com> <527CB0F4.8080606@nod.at>
+	 <527CBC05.6080505@jp.fujitsu.com> <527CBD01.1000908@nod.at>
+	 <527CBDD3.2020609@jp.fujitsu.com>
+	 <20131108143421.GB22636@console-pimps.org>
+	 <52809AEB.9080100@jp.fujitsu.com>
+	 <20131111105424.GD22636@console-pimps.org>
+	 <528AD50D.6060503@jp.fujitsu.com> <87siutqdwv.fsf@redhat.com>
+	 <528C562B.3070008@jp.fujitsu.com>
+	 <1384934881.6516.4082.camel@linux-s257.site>
+	 <528DCED7.5070806@jp.fujitsu.com>
+	 <1385027623.6516.4090.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Nov 2013 18:27:13 +0800
+Message-ID: <1385029633.6516.4097.camel@linux-s257.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013 20:56:21 -0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> Hi Benjamin, Antonio,
-> 
-> On Wed, Nov 20, 2013 at 04:32:19PM -0500, Benjamin Tissoires wrote:
-> > From: Antonio Ospite <ospite@studenti.unina.it>
+於 四，2013-11-21 於 17:53 +0800，joeyli 提到：
+> 於 四，2013-11-21 於 18:13 +0900，Yasuaki Ishimatsu 提到：
+> > (2013/11/20 17:08), joeyli wrote:
+> > > 於 三，2013-11-20 於 15:26 +0900，Yasuaki Ishimatsu 提到：
+> > >> (2013/11/19 12:16), Madper Xie wrote:
+> > >>>
+> > >>> isimatu.yasuaki@jp.fujitsu.com writes:
+> > >>>
+> > >>>> Hi Matt,
+> > >>>>
+> > >>>> Sorry for late the reply.
+> > >>>>
+> > >>>>
+> > >>>> (2013/11/11 19:54), Matt Fleming wrote:
+> > >>>>> On Mon, 11 Nov, at 05:52:59PM, Yasuaki Ishimatsu wrote:
+> > >>>>>> Hi Matt,
+> > >>>>>>
+> > >>>>>> I uses FUJITSU's x86 box.
+> > >>>>>> This does not become bricked even if I use all efi variable storage.
+> > >>>>>> Thus I want a way to not need to specify efi_no_storage_paranoia
+> > >>>>>> parameter.
+> > >>>>>
+> > >>>>> The efi_no_storage_paranoia parameter was introduced because some
+> > >>>>> machines do not initiate garbage collection of the NVRAM until you
+> > >>>>> allocate all space - basically it's a switch to turn off the "save 5KB
+> > >>>>> of stoarge at all times" workaround that is needed to avoid bricking
+> > >>>>> some machines.
+> > >>>>>
+> > >>>>> The intention of the switch is not to allow you to fill your NVRAM just
+> > >>>>> because you can. If that is something you want to do then I think it's
+> > >>>>> fair to require you to explicitly turn on efi_no_storage_paranoia. But
+> > >>>>> I'm assuming here that you are doing something like writing lots and
+> > >>>>> lots of pstore entries and just want to write as many as your variable
+> > >>>>> storage will allow? Or are you doing something more fundamental like
+> > >>>>> creating BootXXXX entries?
+> > >>>>>
+> > >>>>> What are you doing to run into the 5KB reserve? How much NVRAM does your
+> > >>>>> machine come with?
+> > >>>>
+> > >>>> I just add boot entry to NVRAM by efibootmgr command. But when Linux boots up,
+> > >>>> the remaining NVRAM is less than 5Kbyte. So I cannnot add new entry.
+> > >>>>
+> > >>> Howdy Yasuaki,
+> > >>>     If the remaining NVRAM is less than 5Kb, your writing will trigger a
+> > >>>     NVRAM storage reclamation. However you still failed creating entry. So
+> > >>>     I'm just curious what itmes occupy lots of nvram storage space.
+> > >>
+> > >> Even if we got EFI_OUT_OF_RESOURCES while running Linux, gc does not run.
+> > >> Trigger of gc is when EFI_OUT_OF_RESOURCES occurs on pre OS environment with
+> > >> UEFI. So on my system, if EFI_OUT_OF_RESOURCES occurs by the 5Kbyte threshold,
+> > >> we cannot use nvram storage until EFI_OUT_OF_RESOURCES occurs on pre OS
+> > >> environment with UEFI.
+> > >>
+> > >> Thanks,
+> > >> Yasuaki Ishimatsu
+> > >
+> > > Can we try to trigger gc by EFI_OUT_OF_RESOURCE in EFI stub kernel or
+> > > EFI boot loader to recover NVRAM space? Does work with the BIOS on this
+> > > machine?
 > > 
-> > This fixes the case when a non-multitouch device happens to have a HID
-> > code equal to ABS_MT_SLOT, like the Sony Sixaxis has for the left dpad
-> > analog control.
+> > Yes. I can trigger gc by EFI_OUT_OF_RESOUCE in EFI shell on my machine.
 > > 
-> > Updated to latest tree by Benjamin Tissoires.
+> > Thanks,
+> > Yasuaki Ishimatu
+> > 
 > 
-> I do not think this is a proper way to address the issue. Generic HID
-> driver should not encroach onto multitouch ABS range and either stop
-> mapping absolute axis or map them properly.
+> OK, then maybe can try to trigger gc in EFI stub before
+> ExitBootService(). 
 > 
-> Thanks.
+> Another problem is what's the reasonable threshold. The threshold should
+> bigger then 5Kbyte, then we write a dummy BootTime NV variable to
+> trigger gc.
+> 
+> 
+> Thanks
+> Joey Lee
 
-Dmitry I'd agree with you in principle, and I trusted your judgment on
-that in 2011 too when I first came up with this "hack", and in fact I
-didn't insist to have it merged, but then I failed to properly address
-the issue and users were left with a non functional device for a long
-time.
+hm... after review your mail, if the free NVRAM space of issue machine
+is REALLY less then 5K even after gc. Then there have no way to write
+any variable unless user remove some NV variable.
 
-Now I've got some more experience, I know how to do it, and if you
-decide to drop Benjamin's _defensive_ solution I will be more than
-happy to remap the axes of the joypad to fix the issue the way you like
-it, the way _we_ like it.
 
-But there were some concerns about backward compatibility:
-http://www.spinics.net/lists/linux-input/msg28280.html and following.
+Thanks
+Joey Lee
 
-My position is egoistical here:
-
-  - if you will accept a patch which remaps the keys to match the
-    gamepad API, even breaking the current interface I'd say we go for
-    that (the current keymap is not fully working anyway because of
-    the ABS_MT issue).
-
-  - if really "we do not break user space" no matter what, then
-    Benjamin's patch is OK by me.
-
-I think I see what your fear is here: if there is such defensive
-fallback mechanism in place there will be no motivation to enforce
-proper fixes by driver authors at the HID level, am I right?
-
-So Benjamin, an alternative could be to spit out warnings when a non MT
-device uses MT codes and curse at lazy developers like me in the logs.
-What about that?
-
-Ciao,
-   Antonio
-
--- 
-Antonio Ospite
-http://ao2.it
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
