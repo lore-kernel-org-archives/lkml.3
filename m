@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab3KUNlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:41:13 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:6062 "EHLO
+	id S1754594Ab3KUNlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:41:21 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:6075 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3KUNlK (ORCPT
+	with ESMTP id S1754560Ab3KUNlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:41:10 -0500
+	Thu, 21 Nov 2013 08:41:18 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 05:35:08 -0800
+	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 05:35:15 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
         <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
@@ -18,9 +18,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lorenzo.pieralisi@arm.com>, <galak@codeaurora.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCHv6 01/13] of: introduce of_property_for_earch_phandle_with_args()
-Date: Thu, 21 Nov 2013 15:40:37 +0200
-Message-ID: <1385041249-7705-2-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCHv6 03/13] iommu/of: check if dependee iommu is ready or not
+Date: Thu, 21 Nov 2013 15:40:39 +0200
+Message-ID: <1385041249-7705-4-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
 References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
@@ -30,35 +30,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following pattern of code is tempting to add a new member for
-of_property_for_each_*() family as an idiom.
+IOMMU devices on the bus need to be poplulated first, then iommu
+master devices are done later.
 
-  for (i = 0;
-      !of_parse_phandle_with_args(np, list, cells, i, args); i++)
-		<do something with "args">;
+With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+whether a device can be an iommu msater or not. If a device can, we'll
+defer to populate that device till an depending iommu device is
+populated.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 ---
-v5:
-New patch for v5.
----
- include/linux/of.h | 3 +++
- 1 file changed, 3 insertions(+)
+v6:
+Spinned off only of_iommu part from:
+  [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 276c546..131fef5 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -613,6 +613,9 @@ static inline int of_property_read_u32(const struct device_node *np,
- 		s;						\
- 		s = of_prop_next_string(prop, s))
- 
-+#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
-+	for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+v5:
+Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
+
+v4:
+This is newly added, and the successor of the following RFC:
+  [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+---
+ drivers/iommu/of_iommu.c | 16 ++++++++++++++++
+ include/linux/of_iommu.h |  6 ++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+index 5d1aeb9..6ad4997e 100644
+--- a/drivers/iommu/of_iommu.c
++++ b/drivers/iommu/of_iommu.c
+@@ -125,3 +125,19 @@ int of_get_dma_window(struct device_node *dn, const char *prefix, int index,
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(of_get_dma_window);
 +
- #if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
- extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
- extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
++int of_iommu_attach(struct device *dev)
++{
++	int i;
++	struct of_phandle_args args;
++
++	of_property_for_each_phandle_with_args(dev->of_node, "iommus",
++					       "#iommu-cells", i, &args) {
++		pr_debug("%s(i=%d) %s\n", __func__, i, dev_name(dev));
++
++		if (!of_find_iommu_by_node(args.np))
++			return -EPROBE_DEFER;
++	}
++
++	return 0;
++}
+diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
+index a0aa9d4..14c9a5c 100644
+--- a/include/linux/of_iommu.h
++++ b/include/linux/of_iommu.h
+@@ -14,6 +14,7 @@ extern int of_get_dma_window(struct device_node *dn, const char *prefix,
+ 
+ extern void iommu_add(struct iommu *iommu);
+ extern void iommu_del(struct iommu *iommu);
++extern int of_iommu_attach(struct device *dev);
+ 
+ #else
+ 
+@@ -32,6 +33,11 @@ static inline void iommu_del(struct iommu *iommu)
+ {
+ }
+ 
++static inline int of_iommu_attach(struct device *dev)
++{
++	return 0;
++}
++
+ #endif	/* CONFIG_OF_IOMMU */
+ 
+ #endif /* __OF_IOMMU_H */
 -- 
 1.8.1.5
 
