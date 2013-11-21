@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3KUCOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:14:37 -0500
-Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:54090 "EHLO
+	id S1755333Ab3KUCOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:14:33 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:54099 "EHLO
 	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab3KUCO0 (ORCPT
+	with ESMTP id S1754964Ab3KUCO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:14:26 -0500
+	Wed, 20 Nov 2013 21:14:28 -0500
 From: mark.doffman@codethink.co.uk
 To: ceph-devel@vger.kernel.org
 Cc: Mark Doffman <mark.doffman@codethink.co.uk>, sage@inktank.com,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, rob.taylor@codethink.co.uk
-Subject: [PATCH 3/4] cephroot: Add DHCP option 17 configuration to ceph root fs.
-Date: Wed, 20 Nov 2013 20:13:43 -0600
-Message-Id: <1385000024-23463-4-git-send-email-mark.doffman@codethink.co.uk>
+Subject: [PATCH 4/4] Reuse root_nfs_parse_addr() for NFS and CEPH
+Date: Wed, 20 Nov 2013 20:13:44 -0600
+Message-Id: <1385000024-23463-5-git-send-email-mark.doffman@codethink.co.uk>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
 References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
@@ -24,114 +24,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark Doffman <mark.doffman@codethink.co.uk>
 
-When not configured via kernel parameters add to cephroot
-the ability to configure server address, path and options
-from DHCP option 17.
+Rename function root_nfs_parse_addr to root_parse_server_addr
+to reflect its use in parsing an address for both
+NFS and CEPH root.
 
 Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
 Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
 ---
- Documentation/filesystems/ceph/cephroot.txt |  4 ++++
- fs/ceph/root.c                              | 12 +++++++-----
- net/ipv4/ipconfig.c                         | 10 ++++++++--
- 3 files changed, 19 insertions(+), 7 deletions(-)
+ fs/ceph/root.c         | 6 +++---
+ fs/nfs/nfsroot.c       | 4 ++--
+ include/linux/nfs_fs.h | 2 +-
+ net/ipv4/ipconfig.c    | 6 +++---
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
-index ae0f5bb..4f12573 100644
---- a/Documentation/filesystems/ceph/cephroot.txt
-+++ b/Documentation/filesystems/ceph/cephroot.txt
-@@ -49,6 +49,9 @@ This is necessary to enable the pseudo-Ceph-device. Note that it's not a
- real device but just a synonym to tell the kernel to use Ceph instead of
- a real device.
- 
-+If cephroot is not specified, it is expected that that a valid mount will be
-+found via DHCP option 17, Root Path [1]
-+
- cephroot=<monaddr>:/[<subdir>],<ceph-opts>
- 
-   <monaddr>     Monitor address. Each takes the form host[:port]. If the port
-@@ -64,6 +67,7 @@ cephroot=<monaddr>:/[<subdir>],<ceph-opts>
- 4.) References
-     ----------
- 
-+[1] http://tools.ietf.org/html/rfc2132
- 
- 5.) Credits
-     -------
 diff --git a/fs/ceph/root.c b/fs/ceph/root.c
-index bff67fb..24b8dcf 100644
+index 24b8dcf..17a942f 100644
 --- a/fs/ceph/root.c
 +++ b/fs/ceph/root.c
-@@ -37,9 +37,6 @@ static char ceph_root_options[256] __initdata;
- /* server:path string passed to mount */
- static char ceph_root_device[MAXPATHLEN + 1] __initdata;
+@@ -18,7 +18,7 @@
+ #include <linux/ceph/ceph_root.h>
  
--/* Address of CEPH server */
--static __be32 root_ceph_server_addr = htonl(INADDR_NONE);
--
- /*
-  * Parse out root export path and mount options from
-  * passed-in string @incoming.
-@@ -97,7 +94,7 @@ static int __init ceph_root_setup(char *line)
- 	 * Note: root_nfs_parse_addr() removes the server-ip from
+ /* linux/net/ipv4/ipconfig.c: trims ip addr off front of name, too. */
+-extern __be32 root_nfs_parse_addr(char *name); /*__init*/
++extern __be32 root_parse_server_addr(char *name); /*__init*/
+ 
+ #define MAXPATHLEN 1024
+ 
+@@ -91,10 +91,10 @@ static int __init ceph_root_setup(char *line)
+ 	strlcpy(ceph_root_params, line, sizeof(ceph_root_params));
+ 
+ 	/*
+-	 * Note: root_nfs_parse_addr() removes the server-ip from
++	 * root_parse_server_addr() removes the server-ip from
  	 * ceph_root_params, if it exists.
  	 */
--	root_ceph_server_addr = root_nfs_parse_addr(ceph_root_params);
-+	root_server_addr = root_nfs_parse_addr(ceph_root_params);
+-	root_server_addr = root_nfs_parse_addr(ceph_root_params);
++	root_server_addr = root_parse_server_addr(ceph_root_params);
  
  	return 1;
  }
-@@ -120,7 +117,7 @@ int __init ceph_root_data(char **root_device, char **root_data)
- 	int len;
- 	int ret = -E2BIG;
+diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+index cd3c910..4e21716 100644
+--- a/fs/nfs/nfsroot.c
++++ b/fs/nfs/nfsroot.c
+@@ -144,10 +144,10 @@ static int __init nfs_root_setup(char *line)
+ 	 * Extract the IP address of the NFS server containing our
+ 	 * root file system, if one was specified.
+ 	 *
+-	 * Note: root_nfs_parse_addr() removes the server-ip from
++	 * Note: root_parse_server_addr() removes the server-ip from
+ 	 *	 nfs_root_parms, if it exists.
+ 	 */
+-	root_server_addr = root_nfs_parse_addr(nfs_root_parms);
++	root_server_addr = root_parse_server_addr(nfs_root_parms);
  
--	servaddr = root_ceph_server_addr;
-+	servaddr = root_server_addr;
- 	if (servaddr == htonl(INADDR_NONE))
- 		return -ENOENT;
+ 	return 1;
+ }
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index 14a4820..0d1fb6e 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -414,7 +414,7 @@ static inline void nfs_display_fhandle(const struct nfs_fh *fh,
+  */
+ extern int  nfs_root_data(char **root_device, char **root_data); /*__init*/
+ /* linux/net/ipv4/ipconfig.c: trims ip addr off front of name, too. */
+-extern __be32 root_nfs_parse_addr(char *name); /*__init*/
++extern __be32 root_parse_server_addr(char *name); /*__init*/
  
-@@ -128,6 +125,11 @@ int __init ceph_root_data(char **root_device, char **root_data)
- 	if (tmp == NULL)
- 		return -ENOMEM;
- 
-+	if (root_server_path[0] != '\0') {
-+		if (root_ceph_parse_options(root_server_path, tmp, tmplen))
-+			goto out;
-+	}
-+
- 	if (ceph_root_params[0] != '\0') {
- 		if (root_ceph_parse_options(ceph_root_params, tmp, tmplen))
- 			goto out;
+ /*
+  * linux/fs/nfs/file.c
 diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index efa1138..765eea4 100644
+index 765eea4..55a2864 100644
 --- a/net/ipv4/ipconfig.c
 +++ b/net/ipv4/ipconfig.c
-@@ -1435,10 +1435,10 @@ static int __init ip_auto_config(void)
- 	 * missing values.
- 	 */
- 	if (ic_myaddr == NONE ||
--#ifdef CONFIG_ROOT_NFS
-+#if defined(CONFIG_ROOT_NFS) || defined(CONFIG_ROOT_CEPH)
- 	    (root_server_addr == NONE &&
- 	     ic_servaddr == NONE &&
--	     ROOT_DEV == Root_NFS) ||
-+	     (ROOT_DEV == Root_NFS || ROOT_DEV == Root_CEPH)) ||
- #endif
- 	    ic_first_dev->next) {
- #ifdef IPCONFIG_DYNAMIC
-@@ -1465,6 +1465,12 @@ static int __init ip_auto_config(void)
- 				goto try_try_again;
- 			}
- #endif
-+#ifdef CONFIG_ROOT_CEPH
-+			if (ROOT_DEV ==  Root_CEPH) {
-+				pr_err("IP-Config: Retrying forever (CEPH root)...\n");
-+				goto try_try_again;
-+			}
-+#endif
+@@ -140,7 +140,7 @@ __be32 ic_addrservaddr = NONE;	/* IP Address of the IP addresses'server */
  
- 			if (--retries) {
- 				pr_err("IP-Config: Reopening network devices...\n");
+ __be32 ic_servaddr = NONE;	/* Boot server IP address */
+ 
+-__be32 root_server_addr = NONE;	/* Address of NFS server */
++__be32 root_server_addr = NONE;	/* Address of NFS or CEPH server */
+ u8 root_server_path[256] = { 0, };	/* Path to mount as root */
+ 
+ __be32 ic_dev_xid;		/* Device under configuration */
+@@ -1337,7 +1337,7 @@ static const struct file_operations pnp_seq_fops = {
+  *  need to have root_server_addr set _before_ IPConfig gets called as it
+  *  can override it.
+  */
+-__be32 __init root_nfs_parse_addr(char *name)
++__be32 __init root_parse_server_addr(char *name)
+ {
+ 	__be32 addr;
+ 	int octets = 0;
+@@ -1491,7 +1491,7 @@ static int __init ip_auto_config(void)
+ 		ic_dev = ic_first_dev->dev;
+ 	}
+ 
+-	addr = root_nfs_parse_addr(root_server_path);
++	addr = root_parse_server_addr(root_server_path);
+ 	if (root_server_addr == NONE)
+ 		root_server_addr = addr;
+ 
 -- 
 1.8.4
 
