@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3KUMGO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:06:14 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54109 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab3KUMGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:06:13 -0500
-Date: Thu, 21 Nov 2013 13:06:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131121120605.GC26009@pd.tnic>
-References: <1384984585-24300-1-git-send-email-bp@alien8.de>
- <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131121114224.GA27704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754131Ab3KUMJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:09:49 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:48571 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3KUMJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 07:09:47 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-4e-528df80a546f
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <len.brown@intel.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] intel_idle: shrink avn_cstates table and mark it with
+ __initdata tag
+Date: Thu, 21 Nov 2013 13:09:38 +0100
+Message-id: <7374737.rFhOp5HKV7@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jQV2uH71BBlsncFucbXrDbjFryl4m
+	i8u75rBZfO49wmhx5vQlVgdWj8V7XjJ5bLnazuLRt2UVo8fnTXIBLFFcNimpOZllqUX6dglc
+	GY3vD7IVvGav+D/jHHMD4zG2LkZODgkBE4nni1+zQthiEhfurQeKc3EICUxnlLh/sAvKaWGS
+	ODt5BVgHm4CVxMT2VYwgtoiAtsTcnlPMIEXMAh2MEnee/GIHSQgLhEvcaFoFZrMIqEr8vDEb
+	rIFXQFPi4eV2MFtUwFNix/aVbBBxQYkfk++xgNjMAvIS+/ZPZYWwtSTW7zzONIGRbxaSsllI
+	ymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzg0n0nvYFzVYHGIUYCDUYmH98HT
+	niAh1sSy4srcQ4wSHMxKIryRH3uDhHhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJ
+	zU5NLUgtgskycXBKNTAume920OCd3/+Fu575/npxkGO3x5KbB+/GiStNf/O/kSFYzlrj7uLH
+	z85onnFK91tn8Tzwt9LPfXv45ilvMDebPX8998cXQr/WvtvUWvf6xjlTn4z17358ESvNN1zw
+	5VtZyxVNv6c8x5OzZqyc2STJv8D82p5Py95/twq5Nv3g1Y8e2R8XHLl1P0qJpTgj0VCLuag4
+	EQAZ+O4jSQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 12:42:24PM +0100, Ingo Molnar wrote:
-> Ok - so why not call it tools/lib/kernel/ or tools/lib/kernelapi/ or
-> tools/lib/kapi/?
+This is a fixup for commit fab04b2 ("intel_idle: Support Intel Atom
+Processor C2000 Product Family") which didn't take into account
+changes done in commits eba682a ("intel_idle: shrink states tables")
+and 00f3e75 ("intel_idle: mark states tables with __initdata tag").
 
-I like short names so "kapi" it is.
+Cc: Len Brown <len.brown@intel.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/idle/intel_idle.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> That's really what is common about it: it offers various helper
-> methods to interface with the Linux kernel: debugfs, procfs, sysfs
-> handling routines with no policy, just pure, obvious helpers to use
-> kernel functionality.
-
-Yes.
-
-> [ Naming it 'ktools' is not optimal because these are already tools/
-> ... the secondary meaning of 'tools' in that context is easily lost.
-> Same goes for 'kutils', the secondary meaning is confusing (to me). ]
-
-Ok.
-
-> ... and just in case you are wondering why I'm making a fuss about it:
-> a naming discussion for something fundamental as this isn't bikeshed
-> painting, we really want people to look at that place to readily
-> stuff kernel related helpers into, and the name should make that very
-> obvious.
-
-No, I absolutely don't think it is a bikeshedding exercise too. We
-really need that lib because people have started growing their own
-facilities in tools/ and outside so having a lib which implements
-generic functionality for interfacing with the kernel right is going to
-save everyone a lot of time and energy.
-
-So kapi it is, I'm gonna convert what we have to it but leave time for
-acme to wake up and smell the coffee ... and the change :-)
-
-Thanks.
-
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index cbd4e9a..f4bdf72 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -329,7 +329,8 @@ static struct cpuidle_state atom_cstates[] __initdata = {
+ 	{
+ 		.enter = NULL }
+ };
+-static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
++
++static struct cpuidle_state avn_cstates[] __initdata = {
+ 	{
+ 		.name = "C1-AVN",
+ 		.desc = "MWAIT 0x00",
 -- 
-Regards/Gruss,
-    Boris.
+1.8.2.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
