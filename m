@@ -1,397 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab3KUUae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:30:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3KUUa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:30:29 -0500
-Message-ID: <1385065816.2879.411.camel@ul30vt.home>
-Subject: Re: [PATCH v3] KVM: PPC: vfio kvm device: support spapr tce
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Date: Thu, 21 Nov 2013 13:30:16 -0700
-In-Reply-To: <528D6065.3030400@ozlabs.ru>
-References: <1384924730-22762-1-git-send-email-aik@ozlabs.ru>
-	 <1384981031.2879.389.camel@ul30vt.home> <528D6065.3030400@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754614Ab3KUUmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:42:23 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:47223 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab3KUUmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 15:42:21 -0500
+Date: Thu, 21 Nov 2013 15:42:21 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf/poll: another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.10.1311211346000.16856@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1311211536580.16856@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1311211346000.16856@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-21 at 12:22 +1100, Alexey Kardashevskiy wrote:
-> On 11/21/2013 07:57 AM, Alex Williamson wrote:
-> > On Wed, 2013-11-20 at 16:18 +1100, Alexey Kardashevskiy wrote:
-> >> In addition to the external VFIO user API, a VFIO KVM device
-> >> has been introduced recently.
-> >>
-> >> sPAPR TCE IOMMU is para-virtualized and the guest does map/unmap
-> >> via hypercalls which take a logical bus id (LIOBN) as a target IOMMU
-> >> identifier. LIOBNs are made up and linked to IOMMU groups by the user
-> >> space. In order to accelerate IOMMU operations in the KVM, we need
-> >> to tell KVM the information about LIOBN-to-group mapping.
-> >>
-> >> For that, a new KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN parameter
-> >> is added. It accepts a pair of a VFIO group fd and LIOBN.
-> >>
-> >> This also adds a new kvm_vfio_find_group_by_liobn() function which
-> >> receives kvm struct, LIOBN and a callback. As it increases the IOMMU
-> >> group use counter, the KVMr is required to pass a callback which
-> >> called when the VFIO group is about to be removed VFIO-KVM tracking so
-> >> the KVM is able to call iommu_group_put() to release the IOMMU group.
-> >>
-> >> The KVM uses kvm_vfio_find_group_by_liobn() once per KVM run and caches
-> >> the result in kvm_arch. iommu_group_put() for all groups will be called
-> >> when KVM finishes (in the SPAPR TCE in KVM enablement patch).
-> >>
-> >> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >> ---
-> >> Changes:
-> >> v3:
-> >> * total rework
-> >> * added a release callback into kvm_vfio_find_group_by_liobn so now
-> >> the user of the API can get a notification if the group is about to
-> >> disappear
-> >> ---
-> >>  Documentation/virtual/kvm/devices/vfio.txt |  19 ++++-
-> >>  arch/powerpc/kvm/Kconfig                   |   1 +
-> >>  arch/powerpc/kvm/Makefile                  |   3 +
-> >>  include/linux/kvm_host.h                   |  18 +++++
-> >>  include/uapi/linux/kvm.h                   |   7 ++
-> >>  virt/kvm/vfio.c                            | 116 ++++++++++++++++++++++++++++-
-> >>  6 files changed, 161 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
-> >> index ef51740..7ecb3b2 100644
-> >> --- a/Documentation/virtual/kvm/devices/vfio.txt
-> >> +++ b/Documentation/virtual/kvm/devices/vfio.txt
-> >> @@ -16,7 +16,22 @@ Groups:
-> >>  
-> >>  KVM_DEV_VFIO_GROUP attributes:
-> >>    KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
-> >> +	kvm_device_attr.addr points to an int32_t file descriptor
-> >> +	for the VFIO group.
-> >> +
-> >>    KVM_DEV_VFIO_GROUP_DEL: Remove a VFIO group from VFIO-KVM device tracking
-> >> +	kvm_device_attr.addr points to an int32_t file descriptor
-> >> +	for the VFIO group.
-> >> +
-> >> +  KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN: sets a liobn for a VFIO group
-> >> +	kvm_device_attr.addr points to a struct:
-> >> +		struct kvm_vfio_spapr_tce_liobn {
-> >> +			__u32	argsz;
-> >> +			__u32	fd;
-> > 
-> > fds are signed, __s32
-> > 
-> >> +			__u32	liobn;
-> >> +		};
-> >> +		where
-> >> +		@argsz is a struct size;
-> >> +		@fd is a file descriptor for a VFIO group;
-> >> +		@liobn is a logical bus id to be associated with the group.
-> >>  
-> >> -For each, kvm_device_attr.addr points to an int32_t file descriptor
-> >> -for the VFIO group.
-> >> diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
-> >> index 61b3535..d1b7f64 100644
-> >> --- a/arch/powerpc/kvm/Kconfig
-> >> +++ b/arch/powerpc/kvm/Kconfig
-> >> @@ -60,6 +60,7 @@ config KVM_BOOK3S_64
-> >>  	select KVM_BOOK3S_64_HANDLER
-> >>  	select KVM
-> >>  	select SPAPR_TCE_IOMMU
-> >> +	select KVM_VFIO
-> >>  	---help---
-> >>  	  Support running unmodified book3s_64 and book3s_32 guest kernels
-> >>  	  in virtual machines on book3s_64 host processors.
-> >> diff --git a/arch/powerpc/kvm/Makefile b/arch/powerpc/kvm/Makefile
-> >> index 6646c95..2438d2e 100644
-> >> --- a/arch/powerpc/kvm/Makefile
-> >> +++ b/arch/powerpc/kvm/Makefile
-> >> @@ -87,6 +87,9 @@ kvm-book3s_64-builtin-objs-$(CONFIG_KVM_BOOK3S_64_HV) := \
-> >>  kvm-book3s_64-objs-$(CONFIG_KVM_XICS) += \
-> >>  	book3s_xics.o
-> >>  
-> >> +kvm-book3s_64-objs-$(CONFIG_KVM_VFIO) += \
-> >> +	$(KVM)/vfio.o \
-> >> +
-> >>  kvm-book3s_64-module-objs := \
-> >>  	$(KVM)/kvm_main.o \
-> >>  	$(KVM)/eventfd.o \
-> >> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> >> index 88ff96a..1d2ad5e 100644
-> >> --- a/include/linux/kvm_host.h
-> >> +++ b/include/linux/kvm_host.h
-> >> @@ -1112,5 +1112,23 @@ static inline bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
-> >>  }
-> >>  
-> >>  #endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
-> >> +
-> >> +typedef void (*kvm_vfio_release_group_callback)(struct kvm *kvm,
-> >> +		unsigned long liobn);
-> > 
-> > liobn was said to be __u32 in kvm_vfio_spapr_tce_liobn above, here it's
-> > unsigned long?
+On Thu, 21 Nov 2013, Vince Weaver wrote:
 > 
-> 
-> PAPR spec says it is 32 bit and kvm_vfio_spapr_tce_liobn is a binary
-> interface (ABI?) so I want it to be precise.
-> 
-> However kvmppc_get_gpr() (used to parse hypercall parameters such as liobn)
-> return unsigned long. So inside the kernel I use unsigned long.
-> 
-> So what does make sense to change here?
+> This is with 3.12 on a core2 machine.
 
-Perhaps nothing if that's clear to those familiar with PAPR.  Thanks,
+> [  199.784001]  <<EOE>>  [<ffffffff81069ed5>] load_balance+0x2f2/0x609          
+> [  199.784001]  [<ffffffff8106a3d8>] idle_balance+0x9a/0x10c                    
+> [  199.784001]  [<ffffffff8151f5a6>] __schedule+0x290/0x54b                     
+> [  199.784001]  [<ffffffff8105beae>] ? __hrtimer_start_range_ns+0x2ed/0x2ff     
+> [  199.784001]  [<ffffffff8151fbbf>] schedule+0x64/0x66                         
+> [  199.784001]  [<ffffffff8151ed18>] schedule_hrtimeout_range_clock+0xed/0x134  
+> [  199.784001]  [<ffffffff8105b659>] ? update_rmtp+0x65/0x65                    
+> [  199.784001]  [<ffffffff8105beee>] ? hrtimer_start_range_ns+0x14/0x16         
+> [  199.784001]  [<ffffffff8151ed72>] schedule_hrtimeout_range+0x13/0x15         
+> [  199.784001]  [<ffffffff8112274d>] poll_schedule_timeout+0x48/0x64            
+> [  199.784001]  [<ffffffff81123453>] do_sys_poll+0x437/0x4d5                    
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
+> [  199.784001]  [<ffffffff81123544>] SyS_poll+0x53/0xbc                         
+> [  199.784001]  [<ffffffff81527b56>] system_call_fastpath+0x1a/0x1f             
+> [  199.784001] ---[ end trace 1de1e48ddacc5178 ]---                             
 
-Alex
+So I wasn't able to reproduce this, but here's a list of events that were 
+active at the time of the crash.  Not sure if that's useful or not.
 
-
-> > 
-> >> +
-> >> +#if defined(CONFIG_KVM_VFIO) && defined(CONFIG_SPAPR_TCE_IOMMU)
-> >> +
-> >> +extern struct iommu_group *kvm_vfio_find_group_by_liobn(struct kvm *kvm,
-> >> +		unsigned long liobn, kvm_vfio_release_group_callback cb);
-> >> +
-> >> +#else
-> >> +
-> >> +static inline struct iommu_group *kvm_vfio_find_group_by_liobn(struct kvm *kvm,
-> >> +		unsigned long liobn, ikvm_vfio_release_group_callback cb)
-> >> +{
-> >> +	return NULL;
-> >> +}
-> >> +#endif /* CONFIG_KVM_VFIO && CONFIG_SPAPR_TCE_IOMMU */
-> >> +
-> >>  #endif
-> >>  
-> >> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-> >> index 7c1a349..3d77dde 100644
-> >> --- a/include/uapi/linux/kvm.h
-> >> +++ b/include/uapi/linux/kvm.h
-> >> @@ -847,6 +847,13 @@ struct kvm_device_attr {
-> >>  #define  KVM_DEV_VFIO_GROUP			1
-> >>  #define   KVM_DEV_VFIO_GROUP_ADD			1
-> >>  #define   KVM_DEV_VFIO_GROUP_DEL			2
-> >> +#define   KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN	3
-> >> +
-> >> +struct kvm_vfio_spapr_tce_liobn {
-> >> +	__u32	argsz;
-> >> +	__u32	fd;
-> >> +	__u32	liobn;
-> >> +};
-> >>  
-> >>  /*
-> >>   * ioctls for VM fds
-> >> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-> >> index ca4260e..448910d 100644
-> >> --- a/virt/kvm/vfio.c
-> >> +++ b/virt/kvm/vfio.c
-> >> @@ -22,6 +22,12 @@
-> >>  struct kvm_vfio_group {
-> >>  	struct list_head node;
-> >>  	struct vfio_group *vfio_group;
-> >> +#ifdef CONFIG_SPAPR_TCE_IOMMU
-> >> +	struct {
-> >> +		unsigned long liobn;
-> >> +		kvm_vfio_release_group_callback cb;
-> >> +	} spapr_tce;
-> >> +#endif
-> >>  };
-> >>  
-> >>  struct kvm_vfio {
-> >> @@ -59,6 +65,51 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
-> >>  	symbol_put(vfio_group_put_external_user);
-> >>  }
-> >>  
-> >> +#ifdef CONFIG_SPAPR_TCE_IOMMU
-> >> +struct iommu_group *kvm_vfio_find_group_by_liobn(struct kvm *kvm,
-> >> +		unsigned long liobn, kvm_vfio_release_group_callback cb)
-> >> +{
-> >> +	struct kvm_vfio_group *kvg;
-> >> +	int group_id;
-> >> +	struct iommu_group *grp;
-> >> +	struct kvm_vfio *kv = NULL;
-> >> +	struct kvm_device *tmp;
-> >> +
-> >> +	if (!cb)
-> >> +		return NULL;
-> > 
-> > Is it worthwhile to use ERR_PTR(-EINVAL) here and the caller can use
-> > IS_ERR()?
-> > 
-> >> +
-> >> +	/* Find a VFIO KVM device */
-> >> +	list_for_each_entry(tmp, &kvm->devices, vm_node) {
-> >> +		if (tmp->ops != &kvm_vfio_ops)
-> >> +			continue;
-> >> +
-> >> +		kv = tmp->private;
-> >> +		break;
-> >> +	}
-> >> +
-> >> +	if (!kv)
-> >> +		return NULL;
-> > 
-> > ERR_PTR(-EFAULT)?  EIO?
-> > 
-> >> +
-> >> +	/* Find a group */
-> > 
-> > Still ignoring kv->lock
-> > 
-> >> +	list_for_each_entry(kvg, &kv->group_list, node) {
-> >> +		if (kvg->spapr_tce.liobn != liobn)
-> >> +			continue;
-> >> +
-> >> +		if (kvg->spapr_tce.cb)
-> >> +			return NULL;
-> > 
-> > ERR_PTR(-EBUSY)?
-> > 
-> >> +
-> >> +		kvg->spapr_tce.cb = cb;
-> >> +		group_id = vfio_external_user_iommu_id(kvg->vfio_group);
-> >> +		grp = iommu_group_get_by_id(group_id);
-> >> +
-> >> +		return grp;
-> >> +	}
-> >> +
-> >> +	return NULL;
-> > 
-> > ERR_PTR(-ENODEV)?
-> > 
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(kvm_vfio_find_group_by_liobn);
-> >> +#endif
-> >> +
-> >>  /*
-> >>   * Groups can use the same or different IOMMU domains.  If the same then
-> >>   * adding a new group may change the coherency of groups we've previously
-> >> @@ -170,6 +221,11 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
-> >>  				continue;
-> >>  
-> >>  			list_del(&kvg->node);
-> >> +#ifdef CONFIG_SPAPR_TCE_IOMMU
-> >> +			if (kvg->spapr_tce.cb)
-> >> +				kvg->spapr_tce.cb(dev->kvm,
-> >> +						kvg->spapr_tce.liobn);
-> >> +#endif
-> >>  			kvm_vfio_group_put_external_user(kvg->vfio_group);
-> >>  			kfree(kvg);
-> >>  			ret = 0;
-> >> @@ -183,6 +239,62 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
-> >>  		kvm_vfio_update_coherency(dev);
-> >>  
-> >>  		return ret;
-> >> +
-> >> +#ifdef CONFIG_SPAPR_TCE_IOMMU
-> >> +	case KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN: {
-> >> +		struct kvm_vfio_spapr_tce_liobn param;
-> >> +		unsigned long minsz;
-> >> +		struct kvm_vfio *kv = dev->private;
-> >> +		struct vfio_group *vfio_group;
-> >> +		struct kvm_vfio_group *kvg;
-> >> +		struct fd f;
-> >> +
-> >> +		minsz = offsetofend(struct kvm_vfio_spapr_tce_liobn, liobn);
-> >> +
-> >> +		if (copy_from_user(&param, (void __user *)arg, minsz))
-> >> +			return -EFAULT;
-> >> +
-> >> +		if (param.argsz < minsz)
-> >> +			return -EINVAL;
-> >> +
-> >> +		if (copy_from_user(&param, (void __user *)arg, minsz))
-> >> +			return -EFAULT;
-> > 
-> > copy_from_user twice?  Extra copy here?
-> 
-> 
-> Oh. All I wanted was to read minsz first but I cut-n-pasted too blindely :)
-> 
-> > 
-> >> +
-> >> +		f = fdget(param.fd);
-> >> +		if (!f.file)
-> >> +			return -EBADF;
-> >> +
-> >> +		vfio_group = kvm_vfio_group_get_external_user(f.file);
-> >> +		fdput(f);
-> >> +
-> >> +		if (IS_ERR(vfio_group))
-> >> +			return PTR_ERR(vfio_group);
-> >> +
-> >> +		ret = -ENOENT;
-> >> +
-> >> +		mutex_lock(&kv->lock);
-> >> +
-> >> +		list_for_each_entry(kvg, &kv->group_list, node) {
-> >> +			if (kvg->vfio_group != vfio_group)
-> >> +				continue;
-> >> +
-> >> +			if (kvg->spapr_tce.liobn) {
-> >> +				ret = -EBUSY;
-> >> +				break;
-> >> +			}
-> > 
-> > Is zero not an liobn that can be used by userspace?
-> 
-> Good point, thanks. I thought zero cannot be used but by spec -1 is reserved
-> 
-> 
-> >  Is it intentional
-> > that there's no way to unset or change the group/liobn mapping?  Thanks,
-> 
-> 
-> I do not see why we would want to disable once enabled acceleration. Group
-> removal should clear it though so we are good.
-> 
-> Thanks for the review and patience :)
-> 
-> 
-> > 
-> > Alex
-> > 
-> >> +
-> >> +			kvg->spapr_tce.liobn = param.liobn;
-> >> +			ret = 0;
-> >> +			break;
-> >> +		}
-> >> +
-> >> +		mutex_unlock(&kv->lock);
-> >> +
-> >> +		kvm_vfio_group_put_external_user(vfio_group);
-> >> +
-> >> +		return ret;
-> >> +	}
-> >> +#endif /* CONFIG_SPAPR_TCE_IOMMU */
-> >>  	}
-> >>  
-> >>  	return -ENXIO;
-> >> @@ -207,9 +319,11 @@ static int kvm_vfio_has_attr(struct kvm_device *dev,
-> >>  		switch (attr->attr) {
-> >>  		case KVM_DEV_VFIO_GROUP_ADD:
-> >>  		case KVM_DEV_VFIO_GROUP_DEL:
-> >> +#ifdef CONFIG_SPAPR_TCE_IOMMU
-> >> +		case KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN:
-> >> +#endif
-> >>  			return 0;
-> >>  		}
-> >> -
-> >>  		break;
-> >>  	}
-> >>  
-> > 
-> > 
-> > 
-> 
-> 
-
-
-
+148:	PERF_TYPE_TRACEPOINT, 0x126; /* 294 ext4/ext4_mark_inode_dirty */
+92:	PERF_TYPE_TRACEPOINT, 0x1b; /* 27 irq_vectors/x86_platform_ipi_entry */
+169:	PERF_TYPE_TRACEPOINT, 0x1cd; /* 461 random/extract_entropy */
+139:	PERF_TYPE_TRACEPOINT, 0x21; /* 33 irq_vectors/reschedule_entry */
+211:	PERF_TYPE_TRACEPOINT, 0x25; /* 37 vsyscall/emulate_vsyscall */
+196:	PERF_TYPE_TRACEPOINT, 0x2b; /* 43 irq/softirq_raise */
+75:	PERF_TYPE_TRACEPOINT, 0x2e; /* 46 irq/irq_handler_exit */
+16:	PERF_TYPE_TRACEPOINT, 0x31; /* 49 timer/itimer_expire */
+105:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
+81:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
+174:	PERF_TYPE_TRACEPOINT, 0x39; /* 57 timer/timer_expire_exit */
+138:	PERF_TYPE_TRACEPOINT, 0x3a; /* 58 timer/timer_expire_entry */
+215:	PERF_TYPE_TRACEPOINT, 0x3b; /* 59 timer/timer_start */
+129:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
+87:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
+55:	PERF_TYPE_TRACEPOINT, 0x3d; /* 61 signal/signal_deliver */
+32:	PERF_TYPE_TRACEPOINT, 0x3e; /* 62 signal/signal_generate */
+114:	PERF_TYPE_TRACEPOINT, 0x71; /* 113 rpm/rpm_resume */
+54:	PERF_TYPE_TRACEPOINT, 0xe2; /* 226 ext4/ext4_get_reserved_cluster_alloc */
+10:	PERF_TYPE_BREAKPOINT, HW_BREAKPOINT_W, addr=0xffee, len=0x2
+165:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+202:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+22:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+68:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+6:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+99:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+115:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+173:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+183:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+184:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+27:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+93:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+97:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+121:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
+180:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
+12:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+133:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+166:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+20:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES;
+11:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+137:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+155:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+18:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+210:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+64:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+73:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+84:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+88:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+90:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+111:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+125:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+153:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+154:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+160:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+164:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+189:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+42:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+44:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+70:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+79:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+82:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+100:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+51:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+46:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+149:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_WRITE << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+50:	PERF_TYPE_RAW, 0x0;
+85:	PERF_TYPE_RAW, 0x0;
+35:	PERF_TYPE_RAW, 0x100000000;
+156:	PERF_TYPE_RAW, 0x1000800af;
+118:	PERF_TYPE_RAW, 0x2000040001081;
+58:	PERF_TYPE_RAW, 0x200800000;
+94:	PERF_TYPE_RAW, 0x26;
+130:	PERF_TYPE_RAW, 0x3c;
+37:	PERF_TYPE_RAW, 0x40000000004800;
+53:	PERF_TYPE_RAW, 0x4f2e;
+117:	PERF_TYPE_RAW, 0x80000;
+158:	PERF_TYPE_RAW, 0x80000000;
+108:	PERF_TYPE_RAW, 0x8000000000000002;
+41:	PERF_TYPE_RAW, 0x8000000000000020;
+8:	PERF_TYPE_RAW, 0x800000000000007f;
+135:	PERF_TYPE_RAW, 0x80000000000000a9;
+193:	PERF_TYPE_RAW, 0x8000000008000004;
+101:	PERF_TYPE_RAW, 0x80000000088800ff;
+214:	PERF_TYPE_RAW, 0x800000805f5f5f5f;
+59:	PERF_TYPE_RAW, 0x804000000000a000;
+15:	PERF_TYPE_RAW, 0xc5;
+40:	PERF_TYPE_RAW, 0xc5;
+188:	PERF_TYPE_RAW, 0xdf;
+5:	PERF_TYPE_RAW, 0xffffffffd3cb7fa3;
+185:	PERF_TYPE_RAW, 0xffffffffe8dfa2d0;
+14:	PERF_TYPE_RAW, 0xffffffffff092c99;
+102:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+103:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+104:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+106:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+107:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+109:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+110:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+112:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+113:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+116:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+119:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+120:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+122:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+124:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+126:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+127:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+128:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+131:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+132:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+134:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+136:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+13:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+140:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+141:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+142:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+143:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+144:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+145:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+146:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+150:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+152:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+157:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+159:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+162:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+167:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+168:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+171:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+177:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+178:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+179:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+17:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+181:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+186:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+187:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+191:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+192:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+194:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+198:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+199:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+19:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+200:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+201:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+206:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+207:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+208:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+209:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+212:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+213:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+21:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+23:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+24:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+25:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+26:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+28:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+29:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+30:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+31:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+33:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+34:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+36:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+38:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+39:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+3:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+43:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+45:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+47:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+48:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+49:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+4:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+52:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+56:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+57:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+60:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+61:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+62:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+63:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+65:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+66:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+67:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+69:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+71:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+72:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+74:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+76:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+77:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+78:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+7:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+80:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+83:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+86:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+89:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+91:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+95:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+96:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+98:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+9:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
