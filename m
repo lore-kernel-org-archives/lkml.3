@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3KUU1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:27:09 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:52114 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab3KUU1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:27:06 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20131121104911.GM2674@sirena.org.uk>
-References: <20131120175814.GC27423@saruman.home>
-	<20131120203400.GL2674@sirena.org.uk>
-	<20131120205143.GA9182@saruman.home>
-	<20131121024840.GA22970@saruman.home>
-	<20131121104911.GM2674@sirena.org.uk>
-Date: Thu, 21 Nov 2013 12:27:06 -0800
-Message-ID: <CAOesGMi2wDz2PB7GJbfg3i4bRU+qgT+ubTa+WurQ96biyjaLsw@mail.gmail.com>
-Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-From: Olof Johansson <olof@lixom.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Felipe Balbi <balbi@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754154Ab3KUU3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:29:42 -0500
+Received: from mta01.ornl.gov ([128.219.177.14]:60772 "EHLO mta01.ornl.gov"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751923Ab3KUU3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 15:29:41 -0500
+X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 15:29:40 EST
+X-SG: RELAYLIST
+X-IronPort-AV: E=Sophos;i="4.93,746,1378872000"; 
+   d="scan'208";a="73437234"
+Message-ID: <1385065186.18238.0.camel@frustration.ornl.gov>
+Subject: Re: [PATCH 0/4] Add ceph root filesystem functionality and
+ documentation.
+From: David Dillow <dave@thedillows.org>
+To: mark.doffman@codethink.co.uk
+Cc: ceph-devel@vger.kernel.org, sage@inktank.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        rob.taylor@codethink.co.uk
+Date: Thu, 21 Nov 2013 15:19:46 -0500
+In-Reply-To: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
+References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19dad) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 2:49 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Nov 20, 2013 at 08:48:41PM -0600, Felipe Balbi wrote:
->
->> actually, I didn't miss you at all. your broonie@linaro.org was in Cc
->> of original email thread. The same email which was used to sign-off on
->> original commit.
->
-> It's not what's advertised in MAINTAINERS, you should be sending stuff
-> to that address.  My work account is completely separate and for various
-> reasons (including the fact that a lot of the mails for upstream sent
-> there are duplicates of mails sent here) non-automatic upstream stuff
-> has a good chance of getting dropped on the floor and at the very least
-> will be dealt with more slowly.
+On Wed, 2013-11-20 at 20:13 -0600, mark.doffman@codethink.co.uk wrote:
+> The following patch series adds the ability to use a ceph distributed
+> file system as the root device. The functionality is similar to
+> NFS root but for the ceph filesystem.
 
-If you have one email address listed in MAINTAINERS, and do all your
-actual work with another identity, you might want to look at your
-workflow a bit. I suggest either signing off with the MAINTAINERS
-email address, or changing the entries of that file. People should
-expect to be able to email you on the address you sign off with.
+Why do this in the kernel vs in the initramfs? Dracut would be a more
+appropriate place, I think, as it has support for other network root
+devices already.
 
-
--Olof
