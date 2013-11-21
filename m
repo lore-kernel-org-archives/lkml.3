@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab3KUM7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:59:19 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64078 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752662Ab3KUM7R (ORCPT
+	id S1754370Ab3KUM7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:59:55 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53895 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab3KUM7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:59:17 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: nm@ti.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org, ceh@ti.com
-Subject: Re: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Thu, 21 Nov 2013 14:11:57 +0100
-Message-ID: <3577662.BKCLJdcf18@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
-References: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
+	Thu, 21 Nov 2013 07:59:54 -0500
+Date: Thu, 21 Nov 2013 12:59:47 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20131121125947.GP2674@sirena.org.uk>
+References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1384877043-5640-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131120091636.GA30012@lee--X1>
+ <20131120102045.GW2674@sirena.org.uk>
+ <20131120104526.GA30524@lee--X1>
+ <20131120113400.GY2674@sirena.org.uk>
+ <20131121090724.GB19368@lee--X1>
+ <20131121114105.GO2674@sirena.org.uk>
+ <20131121122700.GF23067@lee--X1>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T6OnZCvW5HcnivXR"
+Content-Disposition: inline
+In-Reply-To: <20131121122700.GF23067@lee--X1>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] mfd: Immutable branch for ASoC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 21, 2013 12:39:02 PM Viresh Kumar wrote:
-> Sometimes boot loaders set CPU frequency to a value outside of frequency table
-> present with cpufreq core. In such cases CPU might be unstable if it has to run
-> on that frequency for long duration of time and so its better to set it to a
-> frequency which is specified in freq-table. This also makes cpufreq stats
-> inconsistent as cpufreq-stats would fail to register because current frequency
-> of CPU isn't found in freq-table.
-> 
-> Because we don't want this change to effect boot process badly, we go for the
-> next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
-> end up setting freq to lowest of the table as 'cur' is initialized to zero).
-> 
-> In case where CPU is already running on one of the frequencies present in
-> freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
-> return early.
-> 
-> Reported-by: Carlos Hernandez <ceh@ti.com>
-> Reported-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> After lots of discussion with Nishanth and others, I feel something like this..
-> 
-> @Nishanth: Please see if this works for you and I hope we don't need any of
-> these patches anymore:
-> 
-> - https://lkml.org/lkml/2013/11/15/569 : cpufreq: cpufreq-cpu0: Use a sane boot
-> frequency when booting with a mismatched bootloader configuration
-> - https://lkml.org/lkml/2013/11/15/503 : cpufreq: stats: Do not populate stats
->   when policy->cur has no exact match
-> - https://lkml.org/lkml/2013/11/19/16 : cpufreq/stats: Add "unknown" frequency
->   field in stats tables
-> 
->  drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 02d534d..d55c843 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1038,6 +1038,32 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  		}
->  	}
->  
-> +	/*
-> +	 * Sometimes boot loaders set CPU frequency to a value outside of
-> +	 * frequency table present with cpufreq core. In such cases CPU might be
-> +	 * unstable if it has to run on that frequency for long duration of time
-> +	 * and so its better to set it to a frequency which is specified in
-> +	 * freq-table. This also makes cpufreq stats inconsistent as
-> +	 * cpufreq-stats would fail to register because current frequency of CPU
-> +	 * isn't found in freq-table.
-> +	 *
-> +	 * Because we don't want this change to effect boot process badly, we go
-> +	 * for the next freq which is >= policy->cur ('cur' must be set by now,
-> +	 * otherwise we will end up setting freq to lowest of the table as 'cur'
-> +	 * is initialized to zero).
-> +	 *
-> +	 * In case where CPU is already running on one of the frequencies
-> +	 * present in freq-table, this would turn into a dummy call as
-> +	 * __cpufreq_driver_target() would return early.
-> +	 */
-> +	if (has_target()) {
-> +		ret = __cpufreq_driver_target(policy, policy->cur,
-> +				CPUFREQ_RELATION_L);
-> +		if (ret)
-> +			pr_err("%s: Unable to set frequency from table: %d\n",
-> +					__func__, ret);
 
-Should we continue in that case?
+--T6OnZCvW5HcnivXR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +	}
-> +
->  	/* related cpus should atleast have policy->cpus */
->  	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Thu, Nov 21, 2013 at 12:27:00PM +0000, Lee Jones wrote:
+
+> The following changes since commit 5e01dc7b26d9f24f39abace5da98ccbd6a5ceb=
+52:
+>=20
+>   Linux 3.12 (2013-11-03 15:41:51 -0800)
+>=20
+> are available in the git repository at:
+>=20
+>   git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-1
+
+Pulled, thanks.
+
+--T6OnZCvW5HcnivXR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjgO/AAoJELSic+t+oim9+oEP/RkRKyAwfZLF9Co5ctraA9Z4
+gMVOkSVu+6N/yKAdMyUKnAkoiTtHdMw8Wh8LKEeNNokcU9Za04Y/9BxW5YUMR6sQ
+oRvPTDyow0ciOZ8KcD9ifNY6aKaKXIjwzMGIRan9Sfq9zC5inqiJPg7njfigrgR7
+GR0hFMBwEeQjiDFwLD/GN2VOXo4U6PNZrhUai+ESkoGDoFFgaJ0wikn7iPNKo98J
+dYQB0LRi6aoEKOqoX4acRsz4PrigFqHGlB40LWeEidwO2GiHH3BKnGWJeRrRMm+v
+ngGHhQLcSidlGlk/ZeV2D1c7NrohRY0XryVufgXCxxFNYYiq7FUTe/BZzFt8oPig
+a/iPbsSJHFXOlJxr8U582YXfPcNmtStWgqpgpo4/dfhjCGhBdcml3qrdrvVgOrbH
+WWdfz3ecMVUO89TTZgB7CHa1LYBgl+dBlZXgZRnpE33zrcuTQ1d7MkeBEA4lazqX
+AXDdz39i4NJu89OkFLtX4Kh0ifnaK//VH/dmAcLJbqt1ZtJSbu8J6eZsK6Vz/kNi
+E5kPDf0j2YVBFGq17OQxYLVdG/oSB15pncLYrHS4uqRbHnOlWmNQZLJqUe5ONzKG
+1xMzfQNcCDr19f6hEAdI+Ha/L2cNb8883kc6jfPsUbWPr46qZ4Znlsil9EYVhj8j
+47RudsV7JEbtxdHgasce
+=VPrv
+-----END PGP SIGNATURE-----
+
+--T6OnZCvW5HcnivXR--
