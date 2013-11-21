@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3KUXpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:45:38 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:33806 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3KUXpg (ORCPT
+	id S1754627Ab3KUXyC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:54:02 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63933 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab3KUXyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:45:36 -0500
+	Thu, 21 Nov 2013 18:54:00 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Olof Johansson <olof@lixom.net>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/17] Convert ARM sched_clock users to sched_clock_register()
+References: <1384557985-9414-1-git-send-email-sboyd@codeaurora.org>
+	<87li0h8i70.fsf@linaro.org> <528E955C.7090205@codeaurora.org>
+Date: Thu, 21 Nov 2013 15:53:57 -0800
+In-Reply-To: <528E955C.7090205@codeaurora.org> (Stephen Boyd's message of
+	"Thu, 21 Nov 2013 15:21:00 -0800")
+Message-ID: <87a9gx8g6i.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <528E94E2.3080102@ahsoftware.de>
-References: <52803E5D.3050109@mentor.com>
-	<52851395.3010306@mentor.com>
-	<67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
-	<1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
-	<CA+55aFw923sA0E1RQNxFF0OWFtAfcaG-dBUc-0YYZGDSAsaQyg@mail.gmail.com>
-	<528E2E8E.8080004@ahsoftware.de>
-	<CA+55aFyNZun07BLoD2KQFT7cN1xsiQ2gE6hYwRvOGa3tCap4CQ@mail.gmail.com>
-	<528E94E2.3080102@ahsoftware.de>
-Date: Thu, 21 Nov 2013 15:45:35 -0800
-Message-ID: <CANxoKds1iLpXK0yb1qW_Z4tLSRccrf69nYUV7mLSJBMwSrjwmQ@mail.gmail.com>
-Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
-From: Luis Lozano <llozano@google.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
-        Han Shen <shenhan@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think we need a reproducer. Without this we may all be going on the
-wrong path. This whole conversation started on an *assumption* that
-some accesses were being reordered.
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-evidence of the reorder or reproducer please?
-
-Luis
-
-
-On Thu, Nov 21, 2013 at 3:18 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->
-> Am 21.11.2013 23:32, schrieb Linus Torvalds:
->
->> On Thu, Nov 21, 2013 at 8:02 AM, Alexander Holler <holler@ahsoftware.de>
->> wrote:
->
->
->> The bug is not that gcc can re-order or combine the accesses to "sp".
->> WE WANT THAT TO HAPPEN.
->
->
-> Sure, and I don't disagree on that.
->
->
+> On 11/21/13 15:10, Kevin Hilman wrote:
+>> Hi Stephen,
 >>
->> The bug is *outside* that "current_thread_info()" macro/inline
->> function. It's the *dereference* of the pointer that gcc re-orders.
->> AND THAT IS WRONG.
+>> Stephen Boyd <sboyd@codeaurora.org> writes:
 >>
->> Gcc seems to mess up the alias analysis, and decide that the
->> deferences cannot alias. Which is wrong. They clearly *can* alias,
->> exactly because the value of "sp & ~(THREAD_SIZE - 1)" ends up having
->> the same value all the time.
+>>> Olof,
+>>>
+>>> Please consider picking up these simple conversion patches. They
+>>> were sent a few months back[1] but I didn't keep pushing them due
+>>> to the complex path to mainline that the core patches took. I've
+>>> picked up the acks and resent. Now that the core kernel changes have
+>>> landed in Linus' tree it's much easier to pull these changes in.
+>> Just to clarify, are the dependencies in v3.12? or were they merged for
+>> the v3.13 merge window and just recently it Linus' tree.
 >
->
-> Sorry, that I still disagree.
->
-> I try to describe it more clearly why I still think that the problem might
-> be because of that const declaration.
->
-> (...)
->
-> foobar1 = current_thread_info() __attribute_const__ {
->         return sp->somewhere_local;
-> }
->
-> (...)
->
-> foobar2 = current_thread_info() __attribute_const__ {
->         return sp->somewhere_local;
-> }
->
-> So, even if sp is the same in both cases, that const states that wherever sp
-> points to is local to current_thread_info(), so it can't be the same for
-> both cases.
->
-> Regards,
->
-> Alexander Holler
+> The dependencies are not in 3.12. They just hit Linus' tree this merge
+> window (3.13). Ingo brought it into tip at commit
+> 68e90740284c69292881cd38c7ece6f09a18a58f and Linus took it at commit
+> 87093826aa0172d9135ca1f301c4298a258ceee6.
 
+OK, thanks for the clarification.
 
+I've applied these to an soc/sched_clock branch which is based on
+tip/timers-core-for-linus and merged it into our to-build branch so it
+gets some early boot/build coverage.  Once -rc1 is out, we'll start
+adding non-fixes to for-next and this will be among the first branches
+there (assuming the build/boot doesn't show any problems.)
 
--- 
-
-Luis A. Lozano | Software Engineer | llozano@google.com | +1 (408)431-5164
+Kevin
