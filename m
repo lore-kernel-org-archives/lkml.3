@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3KUXyC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:54:02 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:63933 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3KUXyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:54:00 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Olof Johansson <olof@lixom.net>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/17] Convert ARM sched_clock users to sched_clock_register()
-References: <1384557985-9414-1-git-send-email-sboyd@codeaurora.org>
-	<87li0h8i70.fsf@linaro.org> <528E955C.7090205@codeaurora.org>
-Date: Thu, 21 Nov 2013 15:53:57 -0800
-In-Reply-To: <528E955C.7090205@codeaurora.org> (Stephen Boyd's message of
-	"Thu, 21 Nov 2013 15:21:00 -0800")
-Message-ID: <87a9gx8g6i.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755107Ab3KUX7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:59:23 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:39234 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab3KUX7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 18:59:21 -0500
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH linux-next] hisax: disable build for big-endian arm
+Date: Fri, 22 Nov 2013 00:49:54 +0100
+Message-Id: <1385077794-17022-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.8.4.2
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Boyd <sboyd@codeaurora.org> writes:
+Teles PCI and HFC PCI-bus refuse to build on big-endian ARM; disable them in
+Kconfig.
 
-> On 11/21/13 15:10, Kevin Hilman wrote:
->> Hi Stephen,
->>
->> Stephen Boyd <sboyd@codeaurora.org> writes:
->>
->>> Olof,
->>>
->>> Please consider picking up these simple conversion patches. They
->>> were sent a few months back[1] but I didn't keep pushing them due
->>> to the complex path to mainline that the core patches took. I've
->>> picked up the acks and resent. Now that the core kernel changes have
->>> landed in Linus' tree it's much easier to pull these changes in.
->> Just to clarify, are the dependencies in v3.12? or were they merged for
->> the v3.13 merge window and just recently it Linus' tree.
->
-> The dependencies are not in 3.12. They just hit Linus' tree this merge
-> window (3.13). Ingo brought it into tip at commit
-> 68e90740284c69292881cd38c7ece6f09a18a58f and Linus took it at commit
-> 87093826aa0172d9135ca1f301c4298a258ceee6.
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+---
 
-OK, thanks for the clarification.
+Hi,
 
-I've applied these to an soc/sched_clock branch which is based on
-tip/timers-core-for-linus and merged it into our to-build branch so it
-gets some early boot/build coverage.  Once -rc1 is out, we'll start
-adding non-fixes to for-next and this will be among the first branches
-there (assuming the build/boot doesn't show any problems.)
+This can be seen on e.g. linux next-20131121 with arm allyesconfig.
 
-Kevin
+Best regards,
+
+V.
+
+ drivers/isdn/hisax/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
+index d9edcc9..53dbb75 100644
+--- a/drivers/isdn/hisax/Kconfig
++++ b/drivers/isdn/hisax/Kconfig
+@@ -109,7 +109,7 @@ config HISAX_16_3
+ 
+ config HISAX_TELESPCI
+ 	bool "Teles PCI"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
+ 	help
+ 	  This enables HiSax support for the Teles PCI.
+ 	  See <file:Documentation/isdn/README.HiSax> on how to configure it.
+@@ -318,7 +318,7 @@ config HISAX_GAZEL
+ 
+ config HISAX_HFC_PCI
+ 	bool "HFC PCI-Bus cards"
+-	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
++	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
+ 	help
+ 	  This enables HiSax support for the HFC-S PCI 2BDS0 based cards.
+ 
+-- 
+1.8.4.2
+
