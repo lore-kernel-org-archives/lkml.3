@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3KURhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:37:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53696 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab3KURhc (ORCPT
+	id S1755167Ab3KURib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:38:31 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:47716 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab3KURi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:37:32 -0500
-Date: Thu, 21 Nov 2013 14:37:14 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131121173714.GD24806@ghostprotocols.net>
-References: <1384984585-24300-1-git-send-email-bp@alien8.de>
- <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
- <20131121152804.GI26009@pd.tnic>
+	Thu, 21 Nov 2013 12:38:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121152804.GI26009@pd.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CAMuHMdXfsB_Ewz9sUPZaAjFaQGTGeqMiD8mJ0tCoH1uFLYGoxw@mail.gmail.com>
+References: <5283A000.8090007@gmail.com>
+	<1384859554-27268-1-git-send-email-geert@linux-m68k.org>
+	<20131121122148.1B43DC40A2C@trevor.secretlab.ca>
+	<CAMuHMdXfsB_Ewz9sUPZaAjFaQGTGeqMiD8mJ0tCoH1uFLYGoxw@mail.gmail.com>
+Date: Thu, 21 Nov 2013 11:38:26 -0600
+Message-ID: <CAL_JsqJVteJuaD0PRMHSR9cVcMJTSNj4wXtYiftG=-pYSR9vsQ@mail.gmail.com>
+Subject: Re: [PATCH 1/9] dt: Handle passed/built-in DT selection in early_init_dt_scan()
+From: Rob Herring <robherring2@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Nov 21, 2013 at 04:28:04PM +0100, Borislav Petkov escreveu:
-> On Thu, Nov 21, 2013 at 12:05:24PM -0300, Arnaldo Carvalho de Melo wrote:
-> > "To offers various helper methods to interface with the Linux kernel:
-> >  debugfs, procfs, sysfs handling routines with no policy, just pure,
-> >  obvious helpers to use kernel functionality."
- 
-> Exactly.
- 
-> > Naming is a bit hard, to keep it small, descriptive, as API can lead
-> > people to think about other kinds of kernel APIs (syscalls?), "fskapi"
-> > to mean "fs based kernel API" would perhaps be more descriptive? A
-> > longer (more descriptive) possibility would be "linux-fskapi".
- 
-> Yeah, you can't have fskapi because we'll add other stuff to it (see
-> the diffstat I sent you last week) so not filesystem stuff only. So I
-> think "kapi" is as generic and as fitting as it gets. We can use the
-> "kernel-api" variant but I think the "k" is enough.
+On Thu, Nov 21, 2013 at 7:42 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Thu, Nov 21, 2013 at 1:21 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>>  bool __init early_init_dt_scan(void *params)
+>>>  {
+>>> -     if (!params)
+>>> -             return false;
+>>> -
+>>>       /* Setup flat device-tree pointer */
+>>>       initial_boot_params = params;
+>>>
+>>> -     /* check device tree validity */
+>>> -     if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
+>>> -             initial_boot_params = NULL;
+>>> -             return false;
+>>> +     /* check passed device tree validity */
+>>> +     if (initial_boot_params &&
+>>> +         be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+>>> +             pr_info("FDT at %p\n", initial_boot_params);
+>>> +             goto found;
+>>> +     }
+>>> +
+>>> +     /* check built-in device tree validity */
+>>> +     initial_boot_params = &__dtb_start;
+>>> +     if (__dtb_end != (void *)&__dtb_start &&
+>>> +         be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER) {
+>>> +             pr_info("Compiled-in FDT at %p\n", initial_boot_params);
+>>> +             goto found;
+>>
+>> __dtb_start is in an init section which is discarded after initcalls.
+>> For this to work, the dtb needs to be copied into a region of allocated
+>
+> My changes don't change the current behavior much: currently
+> early_init_dt_scan() is already called with &__dtb_start in several places.
+> If this is broken, it's already broken.
 
-I think is that it is too generic, the other stuff you mention is not
-really "kapi" at all.
+Agreed. The early scan is already done in the init section.
 
-The rest, things like util.c, usage.c, rbtree.c, hash, strlist, etc are
-all, well, utilities that we got from the kernel, from git, or that were
-created for perf, could get a tools/lib/util/ generic name and be
-outside the one with the description agreed above.
+>> memory. The dtb section can also potentially contain multiple .dtb
+>> blobs. In the use case that you care about you are probably only
+>
+> Multiple dtb blobs are currently handled in platform-specific code, which
+> passes the right dtb to early_init_dt_scan().
+>
 
-But they are not "helper methods to interface with the Linux kernel" at
-all.
+Agreed. Arches can still do however complicated dtb search they want.
+This handles the common, default case.
 
-If "libc" is the "library that comes with the C language" we could have
-liblk for the "library that came from the Linux kernel".
+>> thinking about one, but it is entirely possible for device drivers to
+>> have a dtb linked in which may break this if it gets linked in a
+>> different order. The specific example I'm thinking about is I want to
+>> have the DT selftest code load an overlay to get testcase data from a
+>> dtb blob.
+>>
+>> The other concern I have here is that I don't really want this to be the
+>> default on a lot of platforms. ARM and PowerPC for instance should only
+>> get the default dtb from the boot wrapper. It needs to be configurable
+>> in some way.
+>
+> On ARM and PowerPC, the section is empty, hence &__dbt_start ==
+> &__dtb_end.
 
-But "libkapi" seems the wrong name for a library with those utilities :-\
+The build rules for built-in dtbs are architecture specific already,
+so I don't see a need to make this code configurable at this point.
 
-- Arnaldo
+I really don't like saying one arch can have built-in dtb and another
+one can't. Either we allow it or we don't. If this is a bad feature,
+then why did we let multiple arches implement it.
+
+Rob
