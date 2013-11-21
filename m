@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3KUWeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:34:13 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:38842 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3KUWeK (ORCPT
+	id S1755384Ab3KUWga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:36:30 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:63455 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab3KUWg1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:34:10 -0500
+	Thu, 21 Nov 2013 17:36:27 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Julien DELACOU <julien.delacou@st.com>,
+        Matthijs Kooijman <matthijs@stdin.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Grant Likely" <grant.likely@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: RE: [PATCH] staging: dwc2: add check on dwc2_core_reset return
+Thread-Topic: [PATCH] staging: dwc2: add check on dwc2_core_reset return
+Thread-Index: AQHO5g3gtNblcQfpR02PEFil3RI5PZowR79A
+Date: Thu, 21 Nov 2013 22:36:21 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E293B5@US01WEMBX2.internal.synopsys.com>
+References: <1384964989-28760-1-git-send-email-julien.delacou@st.com>
+In-Reply-To: <1384964989-28760-1-git-send-email-julien.delacou@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfNNAZCS58K9mT85wxQfH8B3AyR4aLE8r745me1dJRmPfg@mail.gmail.com>
-References: <1384976824-32624-1-git-send-email-ddstreet@ieee.org> <CAL1ERfNNAZCS58K9mT85wxQfH8B3AyR4aLE8r745me1dJRmPfg@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 21 Nov 2013 17:33:49 -0500
-X-Google-Sender-Auth: vtayzjzeWM-kD9FUGIM5ndbEqXc
-Message-ID: <CALZtOND62CZTM-SHNrD3-wwZ=XZz4AAMg9GtrbW1gD6i7LqA-w@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: remove unneeded zswap_rb_erase calls
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 9:52 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> Hello Dan
->
-> On Thu, Nov 21, 2013 at 3:47 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->> Since zswap_rb_erase was added to the final (when refcount == 0)
->> zswap_put_entry, there is no need to call zswap_rb_erase before
->> calling zswap_put_entry.
->>
->> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->> ---
->>  mm/zswap.c | 5 -----
->>  1 file changed, 5 deletions(-)
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index e154f1e..f4fbbd5 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -711,8 +711,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->>                 ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
->>                 if (ret == -EEXIST) {
->>                         zswap_duplicate_entry++;
->> -                       /* remove from rbtree */
->> -                       zswap_rb_erase(&tree->rbroot, dupentry);
->>                         zswap_entry_put(tree, dupentry);
->>                 }
->>         } while (ret == -EEXIST);
->
-> If remove zswap_rb_erase, it would loop until free this dupentry. This
-> would cause 2 proplems:
+> From: Julien DELACOU [mailto:julien.delacou@st.com]
+> Sent: Wednesday, November 20, 2013 8:30 AM
+> 
+> If the GRSTCTL_CSFTRST self-clearing bit never comes
+> back to 0 for any reason, the controller is under reset
+> state and cannot be used. It's preferable to abort
+> initialization in such case.
+> 
+> Signed-off-by: Julien Delacou <julien.delacou@st.com>
+> ---
+>  drivers/staging/dwc2/core.c |   58 +++++++++++++++++++++++++++++++++----------
+>  1 file changed, 45 insertions(+), 13 deletions(-)
 
-I need to get more familiar with when it's possible to hit a duplicate
-entry, it seems strange to me that higher level swap code would be
-trying to store a page with an already used offset.
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-> 1.  zswap_duplicate_entry counter is not correct
-> 2. trigger BUG_ON in zswap_entry_put when this dupentry is being writeback,
->    because zswap_writeback_entry will call zswap_entry_put either.
->
-> So, I don't think it is a good idea to remove zswap_rb_erase call.
->
->> @@ -787,9 +785,6 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
->>                 return;
->>         }
->>
->> -       /* remove from rbtree */
->> -       zswap_rb_erase(&tree->rbroot, entry);
->> -
->>         /* drop the initial reference from entry creation */
->>         zswap_entry_put(tree, entry);
->
-> I think it is better not to remove the zswap_rb_erase call.
->
-> From frontswap interface view, if invalidate is called, the page(and
-> entry) should never visible to upper.
-> If remove the zswap_rb_erase call, it is not fit this semantic.
->
-> Consider the following scenario:
-> 1. thread 0: entry A is being writeback
-> 2. thread 1: invalidate entry A, as refcount != 0, it will still exist
-> on rbtree.
-> 3. thread 1: reuse  entry A 's swp_entry_t, do a frontswap_store
->    it will conflict with the  entry A on the rbtree, it is not a
-> normal duplicate store.
->
-> If we place the zswap_rb_erase call in zswap_frontswap_invalidate_page,
-> we can avoid the above scenario.
->
-> So, I don't think it is a good idea to remove zswap_rb_erase call.
-
-It seems to me that zswap_rb_erase shouldn't have been folded into
-zswap_entry_put; if it was removed now, the only place it would need
-to be added back is into the success path of writeback, i.e.:
-
-  if (entry == zswap_rb_search(&tree->rbroot, offset)) {
-   zswap_rb_erase(&tree->rbroot, entry);
-   zswap_entry_put(tree, entry);
-  }
