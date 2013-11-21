@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3KUSUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:20:12 -0500
-Received: from plane.gmane.org ([80.91.229.3]:41934 "EHLO plane.gmane.org"
+	id S1755393Ab3KUSUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:20:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29558 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab3KUSUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:20:09 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Raphael Vazami Neto <raphael.vazami@foseco.com>
-Subject: Re: Confirm Mail Receipt Asap.
-Date: Thu, 21 Nov 2013 18:13:55 +0000 (UTC)
-Message-ID: <loom.20131121T191213-453@post.gmane.org>
-References: <20131121082342.2A3A919CA9E@mail.mowi.go.tz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755144Ab3KUSUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 13:20:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,746,1378882800"; 
+   d="scan'208";a="439365682"
+Message-ID: <528E5005.8000300@linux.intel.com>
+Date: Thu, 21 Nov 2013 10:25:09 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: Re: [PATCH v1.1] x86: intel-mid: add test module for sfi_device()
+References: <1384370961-30847-1-git-send-email-david.a.cohen@linux.intel.com> <1384560558-10462-1-git-send-email-david.a.cohen@linux.intel.com> <20131118152806.GB19649@infradead.org> <528A4FED.3030709@linux.intel.com> <528A5058.40505@linux.intel.com>
+In-Reply-To: <528A5058.40505@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 200.155.187.194 (Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qatar Foundation <donations <at> email.com> writes:
+Any comments on this?
 
-> 
-> Congratulations!!! This is to inform you that you were among the 3 lucky 
-beneficiary selected to receive
-> this award sum of $1,000,000.00 USD, as charity donations/aid from the Qatar 
-Foundation held in Doha,
-> Qatar, to promote your business and personal Interest. For verification & 
-claims reply to: QF11 <at> mail2consultant.com
-> 
-> Yours Sincerely,
-> Dr. Salman Fathy Saoud.
-> Reply To: QF11 <at> mail2consultant.com
-> 
-> IMPORTANT: If you receive this message in your spam or junk its due to your 
-network provider.
-> 
+Br, David
 
-
-
+On 11/18/2013 09:37 AM, David Cohen wrote:
+> On 11/18/2013 09:35 AM, David Cohen wrote:
+>> On 11/18/2013 07:28 AM, Christoph Hellwig wrote:
+>>> On Fri, Nov 15, 2013 at 04:09:18PM -0800, David Cohen wrote:
+>>>> This patch adds a test module to validate sfi_device() when used from a
+>>>> driver module.
+>>>
+>>> I don't think this is all that useful.  How about you prepeare a few
+>>> of the more useful drivers from your tree for submission instead?
+>>
+>> One of these drivers you can track here:
+>> https://patchwork.kernel.org/patch/3109791/
+>> This is necessary to enable serial console on Saltbay (Merrifield based
+>> platform). But the driver is still being reworked to be upstreamed.
+>>
+>> Anyway, upstream those drivers won't work to validate this patch set
+>> we're discussion here. All platform codes are bool (can't be module).
+> 
+> I meant: all upstreamed platform codes are bool.
+> 
+>> The real purpose of these patches is to make my internal tree to be
+>> equal to upstream. My intention is to upstream *all* internal patches
+>> of Intel MID and temporarily move away from arch/x86/platform/intel-
+>> mid/device_libs/ the platform code from still-on-staging-state drivers.
+>>
+>> So, we need a dummy module on upstream to make this code testable.
+>>
+>> In case this code is not accepted, I'll will have to maintain 2
+>> official public branches: one with these patches and one without them.
+>>
+>> Br, David
+>>
+> 
 
