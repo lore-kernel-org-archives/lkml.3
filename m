@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab3KUWGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:06:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65227 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab3KUWGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:06:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,747,1378882800"; 
-   d="scan'208";a="439489348"
-Message-ID: <528E83B6.5040107@intel.com>
-Date: Thu, 21 Nov 2013 14:05:42 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754444Ab3KUWJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:09:59 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39545 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KUWJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 17:09:58 -0500
+Date: Thu, 21 Nov 2013 14:09:51 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
+ to memory-barriers.txt
+Message-ID: <20131121220950.GG4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131121213055.GA6938@linux.vnet.ibm.com>
+ <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131121215517.GA16796@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Luiz Capitulino <lcapitulino@redhat.com>, linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] mm/bootmem.c: remove unused 'limit' variable
-References: <20131121164335.066fd6aa@redhat.com>
-In-Reply-To: <20131121164335.066fd6aa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121215517.GA16796@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112122-9332-0000-0000-00000241E1FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 01:43 PM, Luiz Capitulino wrote:
-> @@ -655,9 +655,7 @@ restart:
->  void * __init __alloc_bootmem_nopanic(unsigned long size, unsigned long align,
->  					unsigned long goal)
->  {
-> -	unsigned long limit = 0;
-> -
-> -	return ___alloc_bootmem_nopanic(size, align, goal, limit);
-> +	return ___alloc_bootmem_nopanic(size, align, goal, 0);
->  }
+On Thu, Nov 21, 2013 at 10:55:17PM +0100, Peter Zijlstra wrote:
+> On Thu, Nov 21, 2013 at 01:31:27PM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The Documentation/memory-barriers.txt file was written before the need
+> > for ACCESS_ONCE() was fully appreciated.  It therefore contains no
+> > ACCESS_ONCE() calls, which can be a problem when people lift examples
+> > from it.  This commit therefore adds ACCESS_ONCE() calls.
+> 
+> So I find the repeated ACCESS_ONCE() significantly detracts from the
+> readability of the text.
+> 
+> Can't we simply state that all accesses are assumed single-copy atomic
+> and this can be achieved for naturally aligned words using ACCESS_ONCE()
+> in C/C++ ?
 
-FWIW, I like those.  The way you leave it:
+We could, but at the moment I would prefer the decrease in readability
+to the copy-and-paste bugs that omit needed ACCESS_ONCE() calls.
 
-	return ___alloc_bootmem_nopanic(size, align, goal, 0);
+Is there some way to get both ACCESS_ONCE() and readability?  An
+abbreviation such as AO()?  More easily distinguished variable names?
+Something else?
 
-the 0 is a magic number that you have to go look up the declaration of
-___alloc_bootmem_nopanic() to decipher, or you have to add a comment to
-it in some way.
+							Thanx, Paul
 
-I find it much more readable to have an 'unused' variable like that.
