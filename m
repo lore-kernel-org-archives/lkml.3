@@ -1,110 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab3KUQj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 11:39:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44690 "EHLO mail.skyhub.de"
+	id S1754572Ab3KUQka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 11:40:30 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38733 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab3KUQj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 11:39:56 -0500
-Date: Thu, 21 Nov 2013 17:39:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: dyoung@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [patch 2/9 v3] efi: add a wrapper function efi_map_region_fixed
-Message-ID: <20131121163947.GL26009@pd.tnic>
-References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
- <20131121061753.223578092@dhcp-16-126.nay.redhat.com>
+	id S1751609Ab3KUQk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 11:40:28 -0500
+Date: Thu, 21 Nov 2013 11:40:19 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
+Message-ID: <20131121164019.GK3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+ <20131113152412.GH707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
+ <20131114000043.GK707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
+ <20131120160712.GF3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131121061753.223578092@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 02:17:06PM +0800, dyoung@redhat.com wrote:
-> Kexec kernel will use saved runtime virtual mapping, so add a
-> new function efi_map_region_fixed for directly mapping a md
-> to md->virt.
+On Wed, Nov 20, 2013 at 07:08:50PM -0800, David Rientjes wrote:
+> My patch is not in a fastpath, it has extremely minimal overhead, and it 
+> allows an oom killed victim to exit much quicker instead of incurring 
+> O(seconds) stalls because of 700 other allocators grabbing the cpu in a 
+> futile effort to reclaim memory themselves.
 > 
-> The md is passed in from 1st kernel, the virtual addr is
-> saved in md->virt_addr.
-> 
-> Matt: coding style
->       reuse __map_region
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+> Andrew, this fixes a real-world issue that exists and I'm asking that it 
+> be merged so that oom killed processes can quickly allocate and exit to 
+> free its memory.  If a more invasive future patch causes it to no longer 
+> be necessary, that's what we call kernel development.  Thanks.
 
-Except minor nitpick below:
+All I'm trying to do is find the broader root cause for the problem
+you are experiencing and find a solution that will leave us with
+maintainable code.  It does not matter how few instructions your fix
+adds, it changes the outcome of the algorithm and makes every
+developer trying to grasp the complexity of page reclaim think about
+yet another special condition.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+The more specific the code is, the harder it will be to understand in
+the future.  Yes, it's a one-liner, but we've had death by a thousand
+cuts before, many times.  A few cycles ago, kswapd was blowing up left
+and right simply because it was trying to meet too many specific
+objectives from facilitating order-0 allocators, maintaining zone
+health, enabling compaction for higher order allocation, writing back
+dirty pages.  Ultimately, it just got stuck in endless loops because
+of conflicting conditionals.  We've had similar problems in the scan
+count calculation etc where all the checks and special cases left us
+with code that was impossible to reason about.  There really is a
+history of "low overhead one-liner fixes" eating us alive in the VM.
 
-> ---
->  arch/x86/include/asm/efi.h     |    1 +
->  arch/x86/platform/efi/efi_32.c |    2 ++
->  arch/x86/platform/efi/efi_64.c |   10 ++++++++++
->  3 files changed, 13 insertions(+)
-> 
-> --- efi.orig/arch/x86/include/asm/efi.h
-> +++ efi/arch/x86/include/asm/efi.h
-> @@ -128,6 +128,7 @@ extern void efi_call_phys_epilog(void);
->  extern void efi_unmap_memmap(void);
->  extern void efi_memory_uc(u64 addr, unsigned long size);
->  extern void __init efi_map_region(efi_memory_desc_t *md);
-> +extern void __init efi_map_region_fixed(efi_memory_desc_t *md);
->  extern void efi_sync_low_kernel_mappings(void);
->  extern void efi_setup_page_tables(void);
->  extern void __init old_map_region(efi_memory_desc_t *md);
-> --- efi.orig/arch/x86/platform/efi/efi_64.c
-> +++ efi/arch/x86/platform/efi/efi_64.c
-> @@ -199,6 +199,16 @@ void __init efi_map_region(efi_memory_de
->  	md->virt_addr = efi_va;
->  }
->  
-> +/*
-> + * kexec kernel will use efi_map_region_fixed to map efi
-> + * runtime memory ranges. md->virt_addr is the original virtual
-> + * address which had been mapped in kexec 1st kernel.
-> + */
+The solution was always to take a step back and integrate all
+requirements properly.  Not only did this fix the problems, the code
+ended up being much more robust and easier to understand and modify as
+well.
 
-Why not stretch this comment to the full 80 cols?
+If shortening the direct reclaim cycle is an adequate solution to your
+problem, it would be much preferable.  Because
 
-/*
- * kexec kernel will use efi_map_region_fixed to map efi runtime memory ranges.
- * md->virt_addr is the original virtual address which had been mapped in kexec
- * 1st kernel.
- */
+  "checking at a reasonable interval if the work I'm doing is still
+   necessary"
 
-> +void __init efi_map_region_fixed(efi_memory_desc_t *md)
-> +{
-> +	__map_region(md, md->virt_addr);
-> +}
-> +
->  void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
->  				 u32 type, u64 attribute)
->  {
-> --- efi.orig/arch/x86/platform/efi/efi_32.c
-> +++ efi/arch/x86/platform/efi/efi_32.c
-> @@ -47,6 +47,8 @@ void __init efi_map_region(efi_memory_de
->  	old_map_region(md);
->  }
->  
-> +void __init efi_map_region_fixed(efi_memory_desc_t *md) {}
-> +
->  void efi_call_phys_prelog(void)
->  {
->  	struct desc_ptr gdt_descr;
-> 
-> 
+is a much more approachable, generic, and intuitive concept than
 
--- 
-Regards/Gruss,
-    Boris.
+  "the OOM killer has gone off, direct reclaim is futile, I should
+   exit quickly to release memory so that not more tasks get caught
+   doing direct reclaim".
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+and the fix would benefit a much wider audience.
+
+Lastly, as far as I know, you are the only reporter that noticed an
+issue with this loooooong-standing behavior, and you don't even run
+upstream kernels.  There really is no excuse to put up with a quick &
+dirty fix.
