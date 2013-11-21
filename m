@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3KUKh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:37:58 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:22517 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab3KUKh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:37:57 -0500
-X-IronPort-AV: E=Sophos;i="4.93,743,1378857600"; 
-   d="scan'208";a="76735454"
-Message-ID: <528DE282.5060806@citrix.com>
-Date: Thu, 21 Nov 2013 10:37:54 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752790Ab3KUKtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:49:42 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59930 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3KUKtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 05:49:40 -0500
+Date: Thu, 21 Nov 2013 10:49:11 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: ldewangan@nvidia.com, lgirdwood@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Message-ID: <20131121104911.GM2674@sirena.org.uk>
+References: <20131120175814.GC27423@saruman.home>
+ <20131120203400.GL2674@sirena.org.uk>
+ <20131120205143.GA9182@saruman.home>
+ <20131121024840.GA22970@saruman.home>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>, Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH 1/4] xen/mcfg: Call PHYSDEVOP_pci_mmcfg_reserved for MCFG
- areas.
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-2-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+F2yqQIdYdj7GirX"
+Content-Disposition: inline
+In-Reply-To: <20131121024840.GA22970@saruman.home>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> The PCI MMCONFIG area is usually reserved via the E820 so the Xen hypervisor
-> is aware of these regions. But they can also be enumerated in the ACPI
-> DSDT which means the hypervisor won't know of them until the initial
-> domain informs it of via PHYSDEVOP_pci_mmcfg_reserved.
-> 
-> This is what this patch does for all of the MCFG regions that the
-> initial domain is aware of (E820 enumerated and ACPI).
-> 
-> Reported-by:  Santosh Jodh <Santosh.Jodh@citrix.com>
-> CC: Jan Beulich <JBeulich@suse.com>
-> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> CC: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+--+F2yqQIdYdj7GirX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> [v1: Redid it a bit]
-> [v2: Dropped the P2M 1-1 setting]
-> [v3: Check for Xen in-case we are running under baremetal]
-> [v4: Wrap with CONFIG_PCI_MMCONFIG]
+On Wed, Nov 20, 2013 at 08:48:41PM -0600, Felipe Balbi wrote:
 
-This sort of change list isn't useful in the long term. I'd prefer it if
-this was after the --- divider.
+> actually, I didn't miss you at all. your broonie@linaro.org was in Cc
+> of original email thread. The same email which was used to sign-off on
+> original commit.
 
-> --- a/drivers/xen/pci.c
-> +++ b/drivers/xen/pci.c
-> @@ -26,6 +26,7 @@
-> +		default:
-> +			pr_warn("Failed to report MMCONFIG reservation"
-> +				" state for %s to hypervisor"
-> +				" (%d)\n",
+It's not what's advertised in MAINTAINERS, you should be sending stuff
+to that address.  My work account is completely separate and for various
+reasons (including the fact that a lot of the mails for upstream sent
+there are duplicates of mails sent here) non-automatic upstream stuff
+has a good chance of getting dropped on the floor and at the very least
+will be dealt with more slowly.
 
-Message strings shouldn't be split like this.
+--+F2yqQIdYdj7GirX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjeUkAAoJELSic+t+oim9JAwP/it3glLaDwrYG0HpO3LKlmGy
+Wx/wiqP+6BWXZQQcdivAAAOxyEYkJB6ttv+gPwuqv9ISEGh337M30USdOrV1BRFD
+HfTEE2bjUZ9PYG8SlQ5fu0HJQBgRauZ4RIuGO/2dTBVVP39wqEbYINuEKdcDL78v
+qFcW1xu6cl75VvcKT7aBYDDFZhBwWqHRBHoIxXvIGtcZdx2KTfeGQMBq+WKCKfP2
+aBPWtUYYJeWgnfdxwaQvNNLq83fGc0qgdyn4iAywOk17mE3Z8oA5D/UsBBJrKXn+
+r+dcPypYSOMjBOMKw5E1gN0fXcI1Xx6u/B+bPtCjswzzn6kXv3DLbQxnLdbTD7Y8
+/NnIsKdszW17JKVeoyHkxwLaFxKycGdZK6h0nOpvdkDxwu/Fl7Lu3AWra/kFjOAt
+ND6ZVxUyt38Evx2g27XzFM1z3F9MWkFlk+mFVkPrDZn0aEqPSdTkF7vYgoOP/Pcs
+hXyz+W4bcCpBSKAX3prvOn9zn7E1eRtnhDWfxActf/+UF7hBM3K630UByhgyhC4L
+j/hA+k+y4i6PUQ63bmM0pVNv0cnt2alftQOCy9dKnIgk+l3jyETTvKIpxApzyXxr
+GwR60pxJJOVmm7qVhesHUuIlcuenLmcDdVN8jv+wXntkitMOHsnGZL7JjFr0QDxL
+xvzBMMT5ATs8+/WUnIo3
+=JWIh
+-----END PGP SIGNATURE-----
+
+--+F2yqQIdYdj7GirX--
