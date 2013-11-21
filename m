@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3KUKuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:50:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41155 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874Ab3KUKuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:50:35 -0500
-Date: Thu, 21 Nov 2013 11:50:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jbd: Lower severity of aborted journal from EMERG to CRIT
-Message-ID: <20131121105033.GB23049@quack.suse.cz>
-References: <1384527412-23349-1-git-send-email-lkundrak@v3.sk>
- <20131118164533.GF3921@quack.suse.cz>
- <1384794395.28980.14.camel@hobbes.kokotovo>
+	id S1754032Ab3KUKwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:52:16 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:41689 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3KUKwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 05:52:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384794395.28980.14.camel@hobbes.kokotovo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131121013918.GI10323@ZenIV.linux.org.uk>
+References: <1384994071-12283-1-git-send-email-geyslan@gmail.com>
+	<20131121013918.GI10323@ZenIV.linux.org.uk>
+Date: Thu, 21 Nov 2013 08:52:13 -0200
+Message-ID: <CAGG-pUTec1mzz-nXSGVyMHPZ8PQ=hMrbTLnnRoLZ8ju=EKo98g@mail.gmail.com>
+Subject: Re: [PATCH v2] fs: binfmt_elf: Add ELF header consistency checks
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "open list:FILESYSTEMS (VFS...), linux-kernel@vger.kernel.org (open
+	list)" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-11-13 18:06:35, Lubomir Rintel wrote:
-> On Mon, 2013-11-18 at 17:45 +0100, Jan Kara wrote:
-> > On Fri 15-11-13 15:56:52, Lubomir Rintel wrote:
-> > > According to Documentation/kernel-parameters.txt, KERN_EMERG is reserved for
-> > > events that render system unusable.
-> > > 
-> > > This is hardly the case in case of flash memory stick hardware removal without
-> > > umounting. Syslog is often configured to forward messages with EMERG severity
-> > > to all logged-in terminals, often causing unnecessary noise.
-> >   The logic behind using KERN_EMERG in that place is that the filesystem is
-> > dead. If it was an important filesystem in your system, the whole system is
-> > unusable. In kernel, we don't know whether the filesystem was important or
-> > not. So KERN_EMERG isn't adequate in all the cases but KERN_CRIT is
-> > neither. What if we made that message print also device name (it would be
-> > more useful anyway in that case) and you could then filter out messages for
-> > unimportant devices in syslogd?
-> 
-> In case there's a failure on a filesystem, there are other better means
-> in place to communicate the issue than a message in message buffer; in
-> such case the accesses to the filesystem will result in EIO (that is for
-> important filesystems; for the memory sticks that disappear from system
-> I presume userspace would just umount them).
-  Memory stick or your root disk, the application will get EIO in both
-cases. Userspace cannot umount the disk until all applications using the
-disk close their file descriptors. So there is no difference AFAICS.
+2013/11/20 Al Viro <viro@zeniv.linux.org.uk>:
+> On Wed, Nov 20, 2013 at 09:34:31PM -0300, Geyslan G. Bem wrote:
+>> The member 'e_ehsize' that holds the ELF header size is compared
+>> with the elfhdr struct size. If not equal, goes out.
+>> If 'e_phoff' holds 0 the object has no program header table, so
+>> goes out.
+>> Ensures the file being loaded has the correct data encoding, checking
+>> 'e_ident[EI_DATA]' against 'ELF_DATA'.
+>>
+>> Besides the checks being in accordance with the ELF Specifications,
+>> they increase the binary consistency reducing the use of malformed ones.
+>
+> This is completely misguided.  We are allowed to reject such binaries,
+> but what's the point of doing that?
 
-So which better means do you have in mind to communicate root disk
-filesystem is having problems? You could have a system like nagios monitor
-whether the system is alive but then you don't need to bother with kernel
-messages at all.
+Viro, First of all, thanks for reply.
 
-> Therefore I don't think it makes sense to differentiate between
-> important and less important file systems in this particular place and I
-> can't think of a good way do do that either. Even if there were devices
-> for which EMERG level here would make sense I don't think replacing the
-> stock syslog configurations with a quirk for this particular message is
-> feasible; and to my knowledge at least rsyslog is not able to understand
-> structured logs it the way journald does.
-> 
-> That said I don't mind replacing the printk(KERN_*) with dev_*() (maybe
-> even other occurrences, checkpatch.pl suggests that anyway and it seems
-> rather useful) but I'd still like it to be kern_crit().
-> 
-> What do you think about that?
-  Well, my current opinion is that although in some cases having the
-messages KERN_EMERG doesn't make sense, in other case it makes sense. So I
-don't feel a strong reason to change what we have.
+The security (or anti-security) guys are used to mess up with the not checked
+header fields for their "benefits": anti-debugging, injection and so on.
 
-OTOH I wonder if that particular message in log_wait_commit() is useful
-at all. The journal is aborted but we already informed user about that when
-aborting it so there's no good reason to spam logs with information the
-journal is still aborted... So I guess I'll just remove the message and we
-will be both happy :)
+Concerning to 'e_phoff': when it is 0 the check avoids that 'elf_phdr' been read
+from a erroneous offset (ELF header). I know that without this check the binary
+will goes out anyway. But it reduces wasting cpu cycles.
 
-								Honza
+Regarding 'e_ident[EI_DATA]': that check also prevents a farther code reading
+when the binary, although been the correct arch, is compiled with a different
+data encoding (MSB vs LSB).
 
-> > > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> > > ---
-> > >  fs/jbd/journal.c  |    2 +-
-> > >  fs/jbd2/journal.c |    2 +-
-> > >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> > > index 2d04f9a..9dbc1b6 100644
-> > > --- a/fs/jbd/journal.c
-> > > +++ b/fs/jbd/journal.c
-> > > @@ -605,7 +605,7 @@ out_unlock:
-> > >  	spin_unlock(&journal->j_state_lock);
-> > >  
-> > >  	if (unlikely(is_journal_aborted(journal))) {
-> > > -		printk(KERN_EMERG "journal commit I/O error\n");
-> > > +		printk(KERN_CRIT "journal commit I/O error\n");
-> > >  		err = -EIO;
-> > >  	}
-> > >  	return err;
-> > > diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> > > index 5203264..2d1f53c 100644
-> > > --- a/fs/jbd2/journal.c
-> > > +++ b/fs/jbd2/journal.c
-> > > @@ -719,7 +719,7 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
-> > >  	read_unlock(&journal->j_state_lock);
-> > >  
-> > >  	if (unlikely(is_journal_aborted(journal))) {
-> > > -		printk(KERN_EMERG "journal commit I/O error\n");
-> > > +		printk(KERN_CRIT "journal commit I/O error\n");
-> > >  		err = -EIO;
-> > >  	}
-> > >  	return err;
-> > > -- 
-> > > 1.7.1
-> > > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So checking besides increase the binary consistency, guarantee some mislead
+and fewer cpu cycles.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Regards,
+
+Geyslan G. Bem
+hackingbits.com
