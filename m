@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab3KUNQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:16:06 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:36685 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab3KUNQE (ORCPT
+	id S1754526Ab3KUNQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:16:29 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:52942 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182Ab3KUNQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:16:04 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-To: Hiroshi Doyu <hdoyu@nvidia.com>, swarren@nvidia.com, will.deacon@arm.com,
-        thierry.reding@gmail.com, swarren@wwwdotorg.org, galak@codeaurora.org
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lorenzo.pieralisi@arm.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1384853593-32202-3-git-send-email-hdoyu@nvidia.com>
-References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-3-git-send-email-hdoyu@nvidia.com>
-Date: Thu, 21 Nov 2013 13:15:58 +0000
-Message-Id: <20131121131558.E5B82C40A2C@trevor.secretlab.ca>
+	Thu, 21 Nov 2013 08:16:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <528BE8B6.9080007@gmail.com>
+References: <528BE8B6.9080007@gmail.com>
+Date: Thu, 21 Nov 2013 05:16:26 -0800
+Message-ID: <CADTPrLS9iyvDkTLV5YyzJCiuGT2G0kTSbea8ZXzzT=E9RP71-Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/4] Allow Link state changes for Hot-Plug
+From: Rajat Jain <rajatjain.linux@gmail.com>
+To: Linux-PCI <linux-pci@vger.kernel.org>,
+        Linux-hotplug <linux-hotplug@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Rajat Jain <rajatjain.linux@gmail.com>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Nov 2013 11:33:06 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> IOMMU devices on the bus need to be poplulated first, then iommu
-> master devices are done later.
-> 
-> With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
-> whether a device can be an iommu msater or not. If a device can, we'll
-> defer to populate that device till an iommu device is populated. Once
-> an iommu device is populated, "dev->bus->iommu_ops" is set in the
-> bus. Then, those defered iommu master devices are populated and
-> configured for IOMMU with help of the already populated iommu device
-> via iommu_ops->add_device(). Multiple IOMMUs can be listed on this
-> "iommus" binding so that a device can have multiple IOMMUs attached.
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
-> v5:
-> Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
-> 
-> v4:
-> This is newly added, and the successor of the following RFC:
->   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
->   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
-> ---
->  drivers/base/dd.c        |  5 +++++
->  drivers/iommu/of_iommu.c | 22 ++++++++++++++++++++++
->  include/linux/of_iommu.h |  7 +++++++
->  3 files changed, 34 insertions(+)
-> 
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index 35fa368..6e892d4 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -25,6 +25,7 @@
->  #include <linux/async.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/pinctrl/devinfo.h>
-> +#include <linux/of_iommu.h>
->  
->  #include "base.h"
->  #include "power/power.h"
-> @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
->  
->  	dev->driver = drv;
->  
-> +	ret = of_iommu_attach(dev);
-> +	if (ret)
-> +		goto probe_failed;
-> +
->  	/* If using pinctrl, bind pins now before probing */
->  	ret = pinctrl_bind_pins(dev);
->  	if (ret)
+Hello Bjorn / Folks,
 
-I'm very concerned about this approach. Hooking into the core probe
-path for things like this is not going to scale well. I'm not thrilled
-with the pinctrl hook being here either, but that is already merged. :-(
-Also, hooking in here is going affect every single device device driver
-probe path, and a large number of them are never, ever, going to have
-iommu interactions.
+Was wondering if you got a chance to look at this patchset?
 
-There needs to be a less invasive way of doing what you want. I still
-feel like the individual device drivers themselves need to be aware that
-they might be hooking through an IOMMU. Or, if they are hooking through
-a bus like PCIe, then have the PCIe bus defer creating child devices
-until the IOMMU is configured and in place.
+Thanks & Best Regards,
 
-g.
+Rajat Jain
+
+On Tue, Nov 19, 2013 at 2:39 PM, Rajat Jain <rajatjain.linux@gmail.com> wrote:
+>
+> Hello,
+>
+> This patch set enables the use of PCI Express link up and link down events
+> for Hotplug or Unplug. The requirement of such a feature was originally
+> discussed here:
+>
+> http://www.spinics.net/lists/linux-pci/msg05783.html
+> http://www.spinics.net/lists/hotplug/msg05801.html
+>
+> Patch [1/4]: makes a function non-static for use by patch 2.
+> Patch [2/4]: Contains the bulk logic to allow link events to be used
+>              for hotplug and removal.
+> Patch [3/4]: Makes the pciehp_power_thread() lock free by making it
+>              look at a work info->req instead of slot->state.
+> Patch [4/4]: Introduce slot->hotplug_lock to serialize the hotplug
+>              operations.
+>
+> I'd appreciate if you could please review and provide me with any comments.
+>
+> Thanks,
+>
+> Rajat
+>
+> Rajat Jain (4):
+>   pciehp: Make check_link_active() non-static
+>   pciehp: Use link state change notifications for hot-plug and removal
+>   pciehp: Ensure all hotplug events are processed, even very fast ones.
+>   pciehp: Introduce hotplug_lock to serialize HP events on each slot
+>
+>  drivers/pci/hotplug/pciehp.h      |    6 ++
+>  drivers/pci/hotplug/pciehp_core.c |   10 +-
+>  drivers/pci/hotplug/pciehp_ctrl.c |  181 ++++++++++++++++++++++++++++++++++---
+>  drivers/pci/hotplug/pciehp_hpc.c  |   63 +++++++++----
+>  4 files changed, 229 insertions(+), 31 deletions(-)
+>
+> --
+> 1.7.9.5
+>
