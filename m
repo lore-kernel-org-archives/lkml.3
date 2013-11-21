@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3KULlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:41:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38781 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab3KULlt (ORCPT
+	id S1754364Ab3KULm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:42:29 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:33423 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab3KULm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:41:49 -0500
-Date: Thu, 21 Nov 2013 12:41:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tony Luck <tony.luck@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
-In-Reply-To: <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
-References: <20130917082838.218329307@infradead.org> <20130917182350.449685712@linutronix.de> <20130917183628.857145384@linutronix.de> <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
- <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 21 Nov 2013 06:42:28 -0500
+Date: Thu, 21 Nov 2013 12:42:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131121114224.GA27704@gmail.com>
+References: <1384984585-24300-1-git-send-email-bp@alien8.de>
+ <20131121073410.GA16971@gmail.com>
+ <20131121100722.GA25459@pd.tnic>
+ <20131121111744.GA27513@gmail.com>
+ <20131121113014.GA26009@pd.tnic>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121113014.GA26009@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013, Thomas Gleixner wrote:
-> On Wed, 20 Nov 2013, Tony Luck wrote:
-> > asmlinkage void __sched preempt_schedule_irq(void)
-> > {
-> >            schedule();
-> > }
+
+* Borislav Petkov <bp@alien8.de> wrote:
+
+> On Thu, Nov 21, 2013 at 12:17:44PM +0100, Ingo Molnar wrote:
+> > > However, now that I think of it, the naming is kinda imprecise 
+> > > having only "kernel" in it - it only denotes that it is a library of 
+> > > stuff that has grown in the kernel.
+> > > 
+> > > So how about
+> > > 
+> > > tools/lib/ktools/
+> > > tools/lib/kutils/
+> > > tools/lib/kernel-tools/
+> > > tools/lib/kernel-utils/
+> > > ...
+> > > 
+> > > and
+> > > 
+> > > libktools.so
+> > > libkutils.so
+> > > ...
+> > > 
+> > > ?
+> > > 
+> > > I'd prefer ktools as in the tools/ directory of the kernel repo.
 > > 
-> > Or is life more complicated than that?
+> > So what does each name mean, what would they be used for and what's 
+> > the difference between them?
 > 
-> Hmm, I think I fubared that and you decided to ignore my patch :) 
+> Oh no, I'm only proposing multiple libraries but multiple names to 
+> choose *only* *one* from them - the one which we think fits best.
 > 
-> Let me look at it tomorrow morning with full awake brain cells.
+> Basically I wanna say: "this is the library of tools which grew in 
+> the tools/ directory of the kernel repo".
+> 
+> Thus I'm proposing
+> 
+> 	tools/lib/ktools/
+> 
+> as a path and
+> 
+> 	libktools.so
+> 
+> as a library name, because, IMHO, this name is closer to the reality.
+>
+> tools/lib/kernel/ is also ok - it does not describe the collection 
+> of functionality that precisely, IMHO, that's all.
+> 
+> Am I even making sense here?
 
-Ok, wrapped my brain around it. I tripped over the magic asm foo which
-has a single need_resched check and schedule point for both sys call
-return and interrupt return.
+Ok - so why not call it tools/lib/kernel/ or tools/lib/kernelapi/ or 
+tools/lib/kapi/?
 
-So you need the schedule_preempt_irq() for kernel preemption from
-interrupt return while on a normal syscall preemption a schedule would
-be sufficient. But using schedule_preempt_irq() is not harmful here in
-any way. It just sets the preempt_active bit also in cases where it
-would not be required. 
+That's really what is common about it: it offers various helper 
+methods to interface with the Linux kernel: debugfs, procfs, sysfs 
+handling routines with no policy, just pure, obvious helpers to use 
+kernel functionality.
 
-Even on preempt=n kernels adding the preempt_active bit is completely
-harmless. So instead of having an extra function, moving the existing
-one out of the ifdef PREEMPT looks like the sanest thing to do.
+[ Naming it 'ktools' is not optimal because these are already tools/ 
+  ... the secondary meaning of 'tools' in that context is easily lost. 
+  Same goes for 'kutils', the secondary meaning is confusing (to me). ]
 
-Peter, Ingo ?
+... and just in case you are wondering why I'm making a fuss about it: 
+a naming discussion for something fundamental as this isn't bikeshed 
+painting, we really want people to look at that place to readily stuff 
+kernel related helpers into, and the name should make that very 
+obvious.
 
 Thanks,
 
-	tglx
-------
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c180860..0c59642 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2660,6 +2660,7 @@ asmlinkage void __sched notrace preempt_schedule(void)
- 	} while (need_resched());
- }
- EXPORT_SYMBOL(preempt_schedule);
-+#endif /* CONFIG_PREEMPT */
- 
- /*
-  * this is the entry point to schedule() from kernel preemption
-@@ -2693,8 +2694,6 @@ asmlinkage void __sched preempt_schedule_irq(void)
- 	exception_exit(prev_state);
- }
- 
--#endif /* CONFIG_PREEMPT */
--
- int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
- 			  void *key)
- {
-
-
-
-
+	Ingo
