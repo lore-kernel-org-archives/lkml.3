@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3KULCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:02:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55115 "EHLO mx1.redhat.com"
+	id S1754571Ab3KULCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:02:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18547 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab3KULCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:02:45 -0500
+	id S1754498Ab3KULCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:02:53 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,40 +14,20 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 16/22] tools lib traceevent: Harmonize the install messages in lib-traceevent
-Date: Thu, 21 Nov 2013 12:01:14 +0100
-Message-Id: <1385031680-9014-17-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 22/22] perf tools: Overload pr_stat traceevent print function
+Date: Thu, 21 Nov 2013 12:01:20 +0100
+Message-Id: <1385031680-9014-23-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
 References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing the 'to ...' part out of the install message,
-because it does not fit to the rest of the build
-messages we use.
+The traceevent lib uses pr_stat to display all standard
+info. It's defined as __weak. Overloading it with perf
+version plugged into perf output system logic.
 
-Before:
-  INSTALL  plugin_hrtimer.so    to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_jbd2.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_kmem.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_kvm.so        to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_mac80211.so   to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_sched_switch.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_function.so   to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_xen.so        to      /home/jolsa/libexec/perf-core/traceevent/plugins
-  INSTALL  plugin_scsi.so       to      /home/jolsa/libexec/perf-core/traceevent/plugins
-
-Now:
-  INSTALL  plugin_jbd2.so
-  INSTALL  plugin_hrtimer.so
-  INSTALL  plugin_kmem.so
-  INSTALL  plugin_kvm.so
-  INSTALL  plugin_mac80211.so
-  INSTALL  plugin_sched_switch.so
-  INSTALL  plugin_function.so
-  INSTALL  plugin_xen.so
-  INSTALL  plugin_scsi.so
+Displaying the pr_stat stuff under '-v' option.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -60,22 +40,48 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/lib/traceevent/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/debug.c | 16 ++++++++++++++++
+ tools/perf/util/debug.h |  2 ++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index bbb2061..37da4a9 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -156,7 +156,7 @@ else
-   print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
-   print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
-   print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
--  print_install =		echo '  INSTALL  '$1'	to	$(DESTDIR_SQ)$2';
-+  print_install =		echo '  INSTALL  '$1;
- endif
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 399e74c..dc93bc3 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -33,6 +33,22 @@ int eprintf(int level, const char *fmt, ...)
+ 	return ret;
+ }
  
- do_fpic_compile =					\
++/*
++ * Overloading libtraceevent standard info print
++ * function, display with -v in perf.
++ */
++void pr_stat(const char *fmt, ...)
++{
++	va_list args;
++
++	if (verbose >= 1) {
++		va_start(args, fmt);
++		vfprintf(stderr, fmt, args);
++		fprintf(stderr, "\n");
++		va_end(args);
++	}
++}
++
+ int dump_printf(const char *fmt, ...)
+ {
+ 	va_list args;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index efbd988..443694c 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -17,4 +17,6 @@ void trace_event(union perf_event *event);
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ 
++void pr_stat(const char *fmt, ...);
++
+ #endif	/* __PERF_DEBUG_H */
 -- 
 1.8.3.1
 
