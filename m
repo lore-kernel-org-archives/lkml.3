@@ -1,41 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab3KUK4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:56:51 -0500
-Received: from [203.199.213.4] ([203.199.213.4]:39122 "EHLO smail.iitm.ac.in"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab3KUK4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:56:50 -0500
-X-Greylist: delayed 1632 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 05:56:50 EST
-From: "Webmail Technical Team" <info@webmaster.org>
-Reply-To: no-reply@admin.com
-Subject: Email Alert
-Date: Thu, 21 Nov 2013 15:54:47 +0530
-Message-Id: <20131121102427.M46434@yahoo.com>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 41.203.69.1 (me11b059)
+	id S1753993Ab3KULAL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:00:11 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63148 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3KULAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:00:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
-To: undisclosed-recipients:;
+In-Reply-To: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
+References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 21 Nov 2013 11:59:44 +0100
+Message-ID: <CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+To: Hans Zhang <zhanghonghui@innofidei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhouguangming@innofidei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Webmail Technical Team
+2013/11/21 Hans Zhang <zhanghonghui@innofidei.com>:
+>  When read/write the nandblock device, it will abort writing if
+>  there's a bad block, it's reasonable to skip the bad block and
+>  finish the data writing.
+>  The data reading procedure should also skip the bad block since
+>  there's no data write to the block.
+>
+> --v2:
+>  use the wrapped mtd_block_isbad instand of mtd->block_isbad
+>
+> Signed-off-by: Hans Zhang <zhanghonghui@innofidei.com>
+> ---
+>  drivers/mtd/mtdblock.c |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
+> index 485ea75..4f6acd1 100644
+> --- a/drivers/mtd/mtdblock.c
+> +++ b/drivers/mtd/mtdblock.c
+> @@ -124,6 +124,13 @@ static int write_cached_data (struct mtdblk_dev *mtdblk)
+>                         "at 0x%lx, size 0x%x\n", mtd->name,
+>                         mtdblk->cache_offset, mtdblk->cache_size);
+>
+> +retry:
+> +       ret = mtd_block_isbad(mtd, mtdblk->cache_offset);
+> +       if (ret > 0) {
+> +               mtdblk->cache_offset += mtdblk->cache_size;
+> +               goto retry;
+> +       }
+> +
+>         ret = erase_write (mtd, mtdblk->cache_offset,
+>                            mtdblk->cache_size, mtdblk->cache_data);
+>         if (ret)
+> @@ -163,6 +170,11 @@ static int do_cached_write (struct mtdblk_dev *mtdblk, unsigned long pos,
+>                         size = len;
+>
+>                 if (size == sect_size) {
+> +                       ret = mtd_block_isbad(mtd, pos);
+> +                       if (ret > 0) {
+> +                               pos += sect_size;
+> +                               continue;
+> +                       }
+>                         /*
+>                          * We are covering a whole sector.  Thus there is no
+>                          * need to bother with the cache while it may still be
+> @@ -242,6 +254,11 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
+>                     mtdblk->cache_offset == sect_start) {
+>                         memcpy (buf, mtdblk->cache_data + offset, size);
+>                 } else {
+> +                       ret = mtd_block_isbad(mtd, pos);
+> +                       if (ret > 0) {
+> +                               pos += sect_size;
+> +                               continue;
+> +                       }
+>                         ret = mtd_read(mtd, pos, size, &retlen, buf);
+>                         if (ret)
+>                                 return ret;
+> --
+> 1.7.1
+>
+>
 
-Your Web-mail Quota Has Exceeded The Set Quota/Limit Which Is 20 GB.
-You Are Currently Running On 23GB Due To Hidden Files And Folder On Your 
-Mailbox.
-Please Click the Link Below To Validate Your Mailbox And Increase Your 
-Quota.
+I don't think it's a good idea to skip bad blocks at mtd level.
+That will definitely break the userspace.
+The nanddump mtd-tool for instance has a bad block handling argument:
+--bb=METHOD, where METHOD can be `padbad', `dumpbad', or `skipbad':
+    padbad:  dump flash data, substituting 0xFF for any bad blocks
+    dumpbad: dump flash data, including any bad blocks
+    skipbad: dump good data, completely skipping any bad blocks (default)
 
-==>>http://b5.caspio.com/dp.asp?AppKey=4a153000bb041ff785054ae18c6a
+The bad block handling is done by the upper layer (UBI/jffs2...) not by mtd.
 
-Failure To Click This Link And Validate Your Quota May Result In Loss Of 
-Important Information In Your Mailbox/Or Cause Limited Access To It.
+So, if you really need to read/write the mtd layer from userspace and
+jump bad block, you'll have to use the MEMGETBADBLOCK ioctl to check
+if the block is bad before reading/writing.
 
-Thanks
-Copyright 2013
-Webmail Technical Upgrading Department
+But using UBI is usually a better option.
 
+
+Richard.
