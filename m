@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3KUM4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:56:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51520 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754091Ab3KUM4t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:56:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 Resend] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
-Date: Thu, 21 Nov 2013 14:09:29 +0100
-Message-ID: <1500472.jI9SKO09jR@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <8094ec60e0ad37d24ffbf146bc61515bd805c4fe.1385004181.git.viresh.kumar@linaro.org>
-References: <8094ec60e0ad37d24ffbf146bc61515bd805c4fe.1385004181.git.viresh.kumar@linaro.org>
+	id S1754137Ab3KUM7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:59:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39905 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752317Ab3KUM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 07:59:07 -0500
+Date: Thu, 21 Nov 2013 06:58:36 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, <ldewangan@nvidia.com>, <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
+Message-ID: <20131121125836.GB24559@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131120175814.GC27423@saruman.home>
+ <20131120203400.GL2674@sirena.org.uk>
+ <20131120205143.GA9182@saruman.home>
+ <20131121024840.GA22970@saruman.home>
+ <20131121104911.GM2674@sirena.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Disposition: inline
+In-Reply-To: <20131121104911.GM2674@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 21, 2013 08:54:12 AM Viresh Kumar wrote:
-> Loop for states is currently present on callers side and so is replicated at
-> several places. It would be better to move that inside cpuidle_free_state_kobj()
-> instead.
-> 
-> This patch does it.
-> 
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
->  1 file changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> index e918b6d..ade31a9 100644
-> --- a/drivers/cpuidle/sysfs.c
-> +++ b/drivers/cpuidle/sysfs.c
-> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
->  	.release = cpuidle_state_sysfs_release,
->  };
->  
-> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
-> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
-> +		int count)
->  {
-> -	kobject_put(&device->kobjs[i]->kobj);
-> -	wait_for_completion(&device->kobjs[i]->kobj_unregister);
-> -	kfree(device->kobjs[i]);
-> -	device->kobjs[i] = NULL;
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		kobject_put(&device->kobjs[i]->kobj);
-> +		wait_for_completion(&device->kobjs[i]->kobj_unregister);
-> +		kfree(device->kobjs[i]);
-> +		device->kobjs[i] = NULL;
-> +	}
->  }
->  
->  /**
-> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
->  	return 0;
->  
->  error_state:
-> -	for (i = i - 1; i >= 0; i--)
-> -		cpuidle_free_state_kobj(device, i);
-> +	cpuidle_free_state_kobj(device, i);
+--+g7M9IMkV8truYOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, doesn't the ordering actually matter?  Your patch changes the ordering
-here.
+Hi,
 
->  	return ret;
->  }
->  
-> @@ -430,10 +434,7 @@ error_state:
->   */
->  static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
->  {
-> -	int i;
-> -
-> -	for (i = 0; i < device->state_count; i++)
-> -		cpuidle_free_state_kobj(device, i);
-> +	cpuidle_free_state_kobj(device, device->state_count);
->  }
->  
->  #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Thu, Nov 21, 2013 at 10:49:11AM +0000, Mark Brown wrote:
+> On Wed, Nov 20, 2013 at 08:48:41PM -0600, Felipe Balbi wrote:
+>=20
+> > actually, I didn't miss you at all. your broonie@linaro.org was in Cc
+> > of original email thread. The same email which was used to sign-off on
+> > original commit.
+>=20
+> It's not what's advertised in MAINTAINERS, you should be sending stuff
+> to that address.  My work account is completely separate and for various
+> reasons (including the fact that a lot of the mails for upstream sent
+> there are duplicates of mails sent here) non-automatic upstream stuff
+> has a good chance of getting dropped on the floor and at the very least
+> will be dealt with more slowly.
+
+still, your claim that I didn't Cc any maintainer is completely bogus
+
+--=20
+balbi
+
+--+g7M9IMkV8truYOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjgN8AAoJEIaOsuA1yqRE9RIP/jK2YER3P8iovks7NerJXR6a
+L7HMhyv49seTPF0TShPsiFaBpcnoE/UQ7LbayP+xrbA7dgffOCIxpMK8lwKoJVdE
+WFsoFU8d2kOb0F1N/OhJhMN7HNKtvXQyD5/Giw/ep+N/JB7gTqVHMxtRA2n0F1lp
+//5rWoD3RLPtScT+vxpAb/Hm5G5xRyELg91QjBUYSe/n34JCkPVBWIuVcKcrYMPO
+BK0NvzOj1nI1XjWTfky+qdlw+8+0PSSydh5ogNUHSiY0HgeoanGEhEyvg0zIkyfN
+2VdN6uZHtGTiimgJsHSJsopaSr9Tpronuji5rFatcxXuaADFyrd4Roq4NILQaPak
+vN2zFpWVDSrLCwvEruPx4eu9t0Z0AEdBNAR0iQ1ZEDW1n0QEtK1b6j+3ObTXquwz
+QY2rY5SfF7DwRSlE0DUCCqRIg+tEbpxa95TuVDOJh9chl4bRRB0Pybs1x0TnKn7x
+3uzLM2iPdaACv1WQd+UWnvGkrwgI0laBEAHXOOOAY9j+hVjfFk4c5IvYxwcpekTI
+mcfgc/8zoBsECkYEXLRLk9MsTHjR78Ue47mmsGxi3CICdwzfNE1CSfBzHb3TJdUM
+Fd8DP87Ygr8k38QuvyzYV2i6JTx/acDed6qJu5QclaMZ6ybitJ+sfcYXLh2+HIPG
+87XGNUwjx5B6v/4Qk9Fl
+=PbhX
+-----END PGP SIGNATURE-----
+
+--+g7M9IMkV8truYOl--
