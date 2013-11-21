@@ -1,80 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab3KUPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:42:56 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:58193 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab3KUPmu (ORCPT
+	id S1754867Ab3KUPmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:42:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46068 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab3KUPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Nov 2013 10:42:50 -0500
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        catalin.marinas@arm.com, hpa@zytor.com, ak@linux.intel.com,
-        mingo@redhat.com, Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH v2 3/4] x86: align with generic cpu modalias
-Date: Thu, 21 Nov 2013 16:42:31 +0100
-Message-Id: <1385048552-12528-4-git-send-email-ard.biesheuvel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385048552-12528-1-git-send-email-ard.biesheuvel@linaro.org>
-References: <1385048552-12528-1-git-send-email-ard.biesheuvel@linaro.org>
+Date: Thu, 21 Nov 2013 07:43:19 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH-v2 0/3] staging/lustre: sync with external tree
+Message-ID: <20131121154319.GA6710@kroah.com>
+References: <1385043890-3053-1-git-send-email-bergwolf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385043890-3053-1-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Align with the new generic 'cpu:type:...:features:...' modalias
-by moving the 'x86' prefix and the vendor/family/model IDs into
-the 'type' field.
+On Thu, Nov 21, 2013 at 10:24:47PM +0800, Peng Tao wrote:
+> Hi Greg,
+> 
+> The first two patches were updated to fix checkpatch warnings.
+> The third patch is unchanged as I cannot reproduce the build warning even
+> with the specific gcc version. I am resending it in the hope that you can
+> point out what warning it was if it is stil there.
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
----
- arch/x86/kernel/cpu/match.c |  3 +--
- scripts/mod/file2alias.c    | 10 +++++-----
- 2 files changed, 6 insertions(+), 7 deletions(-)
+Odd, I don't see the warning this time anymore, I don't know what was
+up, perhaps an interaction from not having the previous 2 patches
+applied?
 
-diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
-index ab6082a..82e92b2 100644
---- a/arch/x86/kernel/cpu/match.c
-+++ b/arch/x86/kernel/cpu/match.c
-@@ -56,8 +56,7 @@ ssize_t arch_print_cpu_modalias(struct device *dev,
- 	int i, n;
- 	char *buf = bufptr;
- 
--	n = snprintf(buf, size, "x86cpu:vendor:%04X:family:%04X:"
--		     "model:%04X:feature:",
-+	n = snprintf(buf, size, "cpu:type:x86,ven%04Xfam%04Xmod%04X:feature:",
- 		boot_cpu_data.x86_vendor,
- 		boot_cpu_data.x86,
- 		boot_cpu_data.x86_model);
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index efc7abe..856c343 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1110,7 +1110,7 @@ static int do_amba_entry(const char *filename,
- }
- ADD_TO_DEVTABLE("amba", amba_id, do_amba_entry);
- 
--/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
-+/* LOOKS like cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:*,FEAT,*
-  * All fields are numbers. It would be nicer to use strings for vendor
-  * and feature, but getting those out of the build system here is too
-  * complicated.
-@@ -1124,10 +1124,10 @@ static int do_x86cpu_entry(const char *filename, void *symval,
- 	DEF_FIELD(symval, x86_cpu_id, model);
- 	DEF_FIELD(symval, x86_cpu_id, vendor);
- 
--	strcpy(alias, "x86cpu:");
--	ADD(alias, "vendor:",  vendor != X86_VENDOR_ANY, vendor);
--	ADD(alias, ":family:", family != X86_FAMILY_ANY, family);
--	ADD(alias, ":model:",  model  != X86_MODEL_ANY,  model);
-+	strcpy(alias, "cpu:type:x86,");
-+	ADD(alias, "ven", vendor != X86_VENDOR_ANY, vendor);
-+	ADD(alias, "fam", family != X86_FAMILY_ANY, family);
-+	ADD(alias, "mod", model  != X86_MODEL_ANY,  model);
- 	strcat(alias, ":feature:*");
- 	if (feature != X86_FEATURE_ANY)
- 		sprintf(alias + strlen(alias), "%04X*", feature);
--- 
-1.8.3.2
+Anyway, all three now applied, thanks.
 
+greg k-h
