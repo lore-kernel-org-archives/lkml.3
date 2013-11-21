@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3KUUBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:01:50 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:60533 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab3KUUBb (ORCPT
+	id S1754014Ab3KUUH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:07:26 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45025 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742Ab3KUUHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:01:31 -0500
-From: Conrad Gomes <conrad.s.j.gomes@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Conrad Gomes <conrad.s.j.gomes@gmail.com>
-Subject: [PATCH V2 7/7] Staging: comedi: remove MACRO pr_fmt in unioxx5.c
-Date: Fri, 22 Nov 2013 01:27:58 +0530
-Message-Id: <1385063878-10267-8-git-send-email-conrad.s.j.gomes@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385063878-10267-1-git-send-email-conrad.s.j.gomes@gmail.com>
-References: <1385063878-10267-1-git-send-email-conrad.s.j.gomes@gmail.com>
+	Thu, 21 Nov 2013 15:07:23 -0500
+Date: Thu, 21 Nov 2013 12:07:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
+ implementations
+Message-ID: <20131121200717.GB4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.508462614@infradead.org>
+ <20131120165406.14fa0f09@ultegra>
+ <20131121082151.GU10022@twins.programming.kicks-ass.net>
+ <20131121160716.GT4138@linux.vnet.ibm.com>
+ <528E32EF.2050300@linux.intel.com>
+ <20131121191916.GZ4138@linux.vnet.ibm.com>
+ <528E62D0.3010003@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528E62D0.3010003@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112120-6688-0000-0000-000003C05B32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes MACRO definition pr_fmt which was initially
-required by pr_info and pr_err logging functions.
+On Thu, Nov 21, 2013 at 11:45:20AM -0800, Arjan van de Ven wrote:
+> On 11/21/2013 11:19 AM, Paul E. McKenney wrote:
+> >On Thu, Nov 21, 2013 at 08:21:03AM -0800, Arjan van de Ven wrote:
+> >>On 11/21/2013 8:07 AM, Paul E. McKenney wrote:
+> >>>As long as RCU has some reliable way to identify an idle task, I am
+> >>>good.  But I have to ask -- why can't idle injection coordinate with
+> >>>the existing idle tasks rather than temporarily making alternative
+> >>>idle tasks?
+> >>
+> >>it's not a real idle. that's the whole problem of the situation.
+> >>to the rest of the OS, this is being BUSY (busy saving power using
+> >>a CPU instruction, but it might as well have been an mdelay() operation)
+> >>and it's also what end users expect; they want to be able to see
+> >>where there performance (read: cpu time in "top") is going.
+> >
+> >My concern is keeping RCU's books straight.  Suppose that there is a need
+> >to call for idle in the middle of a preemptible RCU read-side critical
+> >section.  Now, if that call for idle involves a context switch, all is
+> >well -- RCU will see the task as still being in its RCU read-side critical
+> >section, which means that it is OK for RCU to see the CPU as idle.
+> >
+> >However, if there is no context switch and RCU sees the CPU as idle,
+> >preemptible RCU could prematurely end the grace period.  If there is no
+> >context switch and RCU sees the CPU as non-idle for too long, we start
+> >getting RCU CPU stall warning splats.
+> >
+> >Another approach would be to only inject idle when the CPU is not
+> >doing anything that could possibly be in an RCU read-side critical
+> >section.  But things might get a bit hot in case of an overly
+> >long RCU read-side critical section.
+> >
+> >One approach that might work would be to hook into RCU's context-switch
+> >code going in and coming out, then telling RCU that the CPU is idle,
+> >even though top and friends see it as non-idle.  This last is in fact
+> >similar to how RCU handles userspace execution for NO_HZ_FULL.
+> >
+> 
+> so powerclamp and such are not "idle".
+> They are "busy" from everything except the lowest level of the CPU hardware.
+> once you start thinking of them as idle, all hell breaks lose in terms of implications
+> (including sysadmin visibility etc).... (hence some of the explosions in this thread
+> as well).
+> 
+> but it's not "idle".
+> 
+> it's "put the cpu in a low power state for a specified amount of time". sure it uses the same
+> instruction to do so that the idle loop uses.
+> 
+> (now to make it messy, the current driver does a bunch of things similar to the idle loop
+> which is a mess and fair to be complained about)
 
-Signed-off-by: Conrad Gomes <conrad.s.j.gomes@gmail.com>
----
- drivers/staging/comedi/drivers/unioxx5.c |    1 -
- 1 file changed, 1 deletion(-)
+Then from an RCU viewpoint, they need to be short in duration.  Otherwise
+you risk getting CPU stall-warning explosions from RCU.  ;-)
 
-diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-index 6bbc934..d6b75d6 100644
---- a/drivers/staging/comedi/drivers/unioxx5.c
-+++ b/drivers/staging/comedi/drivers/unioxx5.c
-@@ -38,7 +38,6 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
- 
- */
- 
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/module.h>
- #include <linux/delay.h>
--- 
-1.7.9.5
+							Thanx, Paul
 
