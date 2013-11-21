@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3KUPp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:45:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:16943 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752381Ab3KUPp4 (ORCPT
+	id S1754298Ab3KUPsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:48:36 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:38342 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab3KUPsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 10:45:56 -0500
-Date: Thu, 21 Nov 2013 10:45:54 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.20-rt17
-Message-ID: <20131121104554.7f41bcb8@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 21 Nov 2013 10:48:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <1500472.jI9SKO09jR@vostro.rjw.lan>
+References: <8094ec60e0ad37d24ffbf146bc61515bd805c4fe.1385004181.git.viresh.kumar@linaro.org>
+	<1500472.jI9SKO09jR@vostro.rjw.lan>
+Date: Thu, 21 Nov 2013 21:18:34 +0530
+Message-ID: <CAKohpon_-QSPOMi4L6WJZL0akXymhRqhkEWpmzuczE6F-=VUBw@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21 November 2013 18:39, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Thursday, November 21, 2013 08:54:12 AM Viresh Kumar wrote:
+>> Loop for states is currently present on callers side and so is replicated at
+>> several places. It would be better to move that inside cpuidle_free_state_kobj()
+>> instead.
+>>
+>> This patch does it.
+>>
+>> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>>  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
+>>  1 file changed, 12 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+>> index e918b6d..ade31a9 100644
+>> --- a/drivers/cpuidle/sysfs.c
+>> +++ b/drivers/cpuidle/sysfs.c
+>> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
+>>       .release = cpuidle_state_sysfs_release,
+>>  };
+>>
+>> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
+>> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
+>> +             int count)
+>>  {
+>> -     kobject_put(&device->kobjs[i]->kobj);
+>> -     wait_for_completion(&device->kobjs[i]->kobj_unregister);
+>> -     kfree(device->kobjs[i]);
+>> -     device->kobjs[i] = NULL;
+>> +     int i;
+>> +
+>> +     for (i = 0; i < count; i++) {
+>> +             kobject_put(&device->kobjs[i]->kobj);
+>> +             wait_for_completion(&device->kobjs[i]->kobj_unregister);
+>> +             kfree(device->kobjs[i]);
+>> +             device->kobjs[i] = NULL;
+>> +     }
+>>  }
+>>
+>>  /**
+>> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>>       return 0;
+>>
+>>  error_state:
+>> -     for (i = i - 1; i >= 0; i--)
+>> -             cpuidle_free_state_kobj(device, i);
+>> +     cpuidle_free_state_kobj(device, i);
+>
+> Well, doesn't the ordering actually matter?  Your patch changes the ordering
+> here.
 
-Dear RT Folks,
+I don't think it matters. And it was done in reverse order earlier to
+save an extra
+variable..
 
-I'm pleased to announce the 3.10.20-rt17 stable release.
-
-
-This release is just an update to the new stable 3.10.20 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.10-rt
-  Head SHA1: 8b0a38c2139faea3cba3ad9c48232dea445da440
-
-
-Or to build 3.10.20-rt17 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.20.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.20-rt17.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
+Daniel??
