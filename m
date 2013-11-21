@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab3KUQoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 11:44:05 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:54775 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752189Ab3KUQoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 11:44:04 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update #2 for 3.13-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20131121164359.EA9BD4266DC@whiskey.americas.sgi.com>
-Date: Thu, 21 Nov 2013 10:43:59 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1754479Ab3KUQr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 11:47:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:27376 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751226Ab3KUQrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 11:47:25 -0500
+Date: Thu, 21 Nov 2013 11:47:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, raistlin@linux.it,
+        insop.song@gmail.com, liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 04/14] sched: SCHED_DEADLINE SMP-related data structures
+ & logic.
+Message-ID: <20131121114718.62cf3bbd@gandalf.local.home>
+In-Reply-To: <20131121162631.GV4138@linux.vnet.ibm.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+	<1383831828-15501-5-git-send-email-juri.lelli@gmail.com>
+	<20131120135134.4c57bcda@gandalf.local.home>
+	<528E1508.7060305@gmail.com>
+	<20131121160849.GU4138@linux.vnet.ibm.com>
+	<528E31F2.7010702@gmail.com>
+	<20131121162631.GV4138@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 21 Nov 2013 08:26:31 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-   Please pull this xfs update for 3.13-rc1.  There are a couple of patches
-   that I wasn't quite sure about in time for our initial 3.13 pull request, a
-   bugfix, and an update to add Dave to MAINTAINERS.
+> > >> I guess "deadline tasks" is too much generic; "SCHED_DEADLINE tasks" too long;
+> > >> "DL" or "-dl" can be associated to "download". Nothing special in the end, just
+> > >> tought it was a reasonable abbreviation.
+> > > 
+> > > My guess was that "-deadline" was an abbreviation for tasks that had
+> > > missed their deadline, just so you know.  ;-)
+> > >
+> > 
+> > Argh! ;)
+> > 
+> > Actually, thinking about it twice: if we call "-rt tasks" things that are
+> > governed by code that resides in sched/rt.c, we could agree on "-deadline
+> > tasks" for things that pass through sched/deadline.c.
+> 
+> Actually, "SCHED_DEADLINE" isn't -that- much longer than "-deadline"
+> and it does have the virtue of being unambiguous.
+> 
 
-Thanks,
-	Ben
+ -sdl ?
 
-The following changes since commit 359d992bcd398273637cd9edde10afca953783c4:
+Unless you are a fan of "Saturday Day Live!" (for the older generation
+that can't stay awake for SNL)
 
-  xfs: simplify kmem_{zone_}zalloc (2013-11-06 16:31:27 -0600)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.13-rc1-2
-
-for you to fetch changes up to 2fe8c1c08b3fbd87dd2641c8f032ff6e965d5803:
-
-  xfs: open code inc_inode_iversion when logging an inode (2013-11-18 09:42:08 -0600)
-
-----------------------------------------------------------------
-xfs: update #2 for v3.13-rc1
-
-Here we have a performance fix for inode iversion, increased inode cluster size
-for v5 superblock filesystems, a fix for error handling in
-xfs_bmap_add_attrfork, and a MAINTAINERS update to add Dave.
-
-----------------------------------------------------------------
-Ben Myers (1):
-      xfs: update maintainers
-
-Dave Chinner (2):
-      xfs: increase inode cluster size for v5 filesystems
-      xfs: open code inc_inode_iversion when logging an inode
-
-Mark Tinguely (1):
-      xfs: fix unlock in xfs_bmap_add_attrfork
-
- MAINTAINERS              |  2 +-
- fs/xfs/xfs_bmap.c        | 38 +++++++++++++++++++++-----------------
- fs/xfs/xfs_mount.c       | 15 +++++++++++++++
- fs/xfs/xfs_mount.h       |  2 +-
- fs/xfs/xfs_trans_inode.c |  8 +++++---
- fs/xfs/xfs_trans_resv.c  |  3 +--
- 6 files changed, 44 insertions(+), 24 deletions(-)
+-- Steve
