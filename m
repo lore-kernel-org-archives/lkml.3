@@ -1,78 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab3KUT2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:28:10 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57718 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab3KUT2I (ORCPT
+	id S1755279Ab3KUT20 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:28:26 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:56644 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3KUT2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:28:08 -0500
-Date: Thu, 21 Nov 2013 19:28:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Felipe Balbi <balbi@ti.com>, ldewangan@nvidia.com, lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Message-ID: <20131121192802.GJ8120@sirena.org.uk>
-References: <20131120175814.GC27423@saruman.home>
- <20131120203400.GL2674@sirena.org.uk>
- <20131120205143.GA9182@saruman.home>
- <20131121024840.GA22970@saruman.home>
- <20131121104911.GM2674@sirena.org.uk>
- <528E3817.1010105@wwwdotorg.org>
- <20131121183632.GE8120@sirena.org.uk>
- <528E5487.8000003@wwwdotorg.org>
+	Thu, 21 Nov 2013 14:28:24 -0500
+Date: Thu, 21 Nov 2013 11:28:18 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [RFC] Control dependencies
+Message-ID: <20131121192818.GA18689@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131121161733.GH10022@twins.programming.kicks-ass.net>
+ <20131121180237.GX4138@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="q5r20fdKX+PFtYHw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528E5487.8000003@wwwdotorg.org>
-X-Cookie: I feel ... JUGULAR ...
+In-Reply-To: <20131121180237.GX4138@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112119-3532-0000-0000-000003382259
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 21, 2013 at 10:02:37AM -0800, Paul E. McKenney wrote:
+> On Thu, Nov 21, 2013 at 05:17:33PM +0100, Peter Zijlstra wrote:
+> > Hey Paul,
+> > 
+> > So on IRC you said you were going to post a patch to clarify/allow
+> > control dependencies -- seeing you didn't get around to it, I thought
+> > I'd take a stab at it.
+> 
+> I do have a prototype queued, but let's see what you have.  Sending mine
+> in parallel anyway, just in case we have a shortage of confusion.  ;-)
+> 
+> I will combine them and keep your Signed-off-by if you are OK with that.
 
---q5r20fdKX+PFtYHw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh, right, and there was this other complication...  Suppose that we
+have something like the following:
 
-On Thu, Nov 21, 2013 at 11:44:23AM -0700, Stephen Warren wrote:
+	q = ACCESS_ONCE(a);
+	if (c)
+		ACCESS_ONCE(b) = q;
 
-> Ah yes. I also have a delivery-time filter that remembers the last n
-> Message-Id headers I've received, and it dumps any duplicates into a
-> separate folder that I ignore. It seems to work pretty well. It looks
-> like n==10000 for me right now.
+Suppose that the compiler figures out that c!=0 always.  Then the
+compiler is free to optimize as follows:
 
-Yeah, that wasn't working great - I think because I was doing it in the
-wrong place and it was catching lists too.
+	q = ACCESS_ONCE(a);
+	ACCESS_ONCE(b) = q;
 
---q5r20fdKX+PFtYHw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Goodbye to the control dependency and associated ordering guarantees!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+One way to deal with this is to restrict the condition to something that
+the compiler is not permitted to predict, for example:
 
-iQIcBAEBAgAGBQJSjl6/AAoJELSic+t+oim9deAP/RxujeAnxRBioT04WYCNofIX
-FTdvQz5Ck5aFBG0b8rTiTiBz2E5ysypYxKPcQyU0WMZNLkI0ta9QhGv6/LnZN0nR
-ueRQ9aYq28o/8MGrQr7owH4syRxOKuYA/um7/GV1UNv2hacFWVeoj9gDg1IxiJy2
-tKnIaRWX3ndS/BEVI0lXNNzoXGJKeGHOGXK5XvQrrpaGdMYZvaVNdX3eSQqKRUx9
-g9IEBFvvTMZISET7AWAOpkbvyDeUHS438SzQ3BkUPLhjmmslK0t/fpuheZS2CqFp
-YlJxLpFzfWeUsNVWmgTVgUQvFz9Wy3U5qu2mD/tjdHHJK/urOqSLsoJXkKsVsWef
-JlpbagLEq45IQ1vtHJLP37z/PADesx6gTAY7xq+hgeBe7Wz5HdZzhrfGEZKQwj9w
-iENqF95oX2DDvMl1fM+efSMBXx2WKEa0pQoJVcgRxxejuxTRYhnKPN6v1FgIM4+q
-KMfBugOqEIqKFJMErjjObaNepfo4njbRaYDqQSDK/qzrN8hlZNa8VYPiowBz5iF5
-BOjefD2ZG/UvhKAT5jX4SQrq0+JtX+g04J32HsWa5wHytpoZdjd2HPu/LEuiF6gX
-v89EK1NH9FBil5a/Bi/HgJ35zChQKPSAtkQVdtZefg6I4iOp3iPQmw7LqJztHhbi
-yHVgHbE0q3UOsSMuEd1a
-=RJ1E
------END PGP SIGNATURE-----
+	q = ACCESS_ONCE(a);
+	if (ACCESS_ONCE(c))
+		ACCESS_ONCE(b) = q;
 
---q5r20fdKX+PFtYHw--
+Of course, you should not even -think- about having a conditional that
+is a constant!  ;-)
+
+Other thoughts?
+
+							Thanx, Paul
+
+> > The below is a patch to the perf code that uses one to get rid of a
+> > pesky full memory barrier. Along with a patch to _the_ Document to
+> > hopefully clarify the issue some. Although I feel there is far more to
+> > say on this subject than I have attempted.
+> > 
+> > Since it now looks like smp_store_release() needs a full memory barrier
+> > that approach isn't actually looking all that attractive for me anymore
+> > (I'll not give up on those patches just yet), but I did want to put this
+> > approach forward.
+> 
+> I am not so sure that smp_store_release() needs a full memory barrier, but
+> please take a look at Message-ID <20131121172558.GA27927@linux.vnet.ibm.com>,
+> sent quite recently.
+> 
+> Please see comments interspersed, thoughts?
+> 
+> 							Thanx, Paul
+> 
+> > ---
+> > --- a/Documentation/memory-barriers.txt
+> > +++ b/Documentation/memory-barriers.txt
+> > @@ -526,21 +526,27 @@ See also the subsection on "Cache Cohere
+> >  CONTROL DEPENDENCIES
+> >  --------------------
+> > 
+> > -A control dependency requires a full read memory barrier, not simply a data
+> > -dependency barrier to make it work correctly.  Consider the following bit of
+> > -code:
+> > +Because CPUs do not allow store speculation -- this would result in values out
+> > +of thin air -- store visibility depends on a linear branch history. Therefore
+> > +we can rely on LOAD -> STORE control dependencies to order things.
+> > 
+> > -	q = &a;
+> > -	if (p) {
+> > -		<data dependency barrier>
+> > -		q = &b;
+> > +	if (x) {
+> > +		y = 1;
+> > +	}
+> > +
+> > +The store to y must happen after the read to x. However C11/C++11 does not
+> > +(yet) prohibit STORE speculation, and therefore we should insert a compiler
+> > +barrier to force our compiler to do as it is told, and the above example
+> > +should read:
+> > +
+> > +	if (x) {
+> > +		barrier();
+> > +		y = 1;
+> >  	}
+> > -	x = *q;
+> 
+> In my draft, I rely on ACCESS_ONCE() rather than barrier(), but clearly
+> we need to call out both.  Both yours and mine need to be more emphatic
+> about the "if" being needed.
+> 
+> There is an odd example in mine where both branches of an "if" statement
+> do identical writes.  This seems vulnerable to compiler "optimizations"
+> that hoist the stores out of the "if" statement, defeating ordering.
+> I had not yet figured out what to say about that, hence my tardiness
+> in sending.  (Plus inertia, of course!)
+> 
+> > -This will not have the desired effect because there is no actual data
+> > -dependency, but rather a control dependency that the CPU may short-circuit by
+> > -attempting to predict the outcome in advance.  In such a case what's actually
+> > -required is:
+> > +On the other hand, CPUs (and compilers) are allowed to aggressively speculate
+> > +on loads, therefore we cannot rely on LOAD -> LOAD control dependencies such
+> > +as:
+> 
+> Your example is better than mine here, because mine fails to make it
+> painfully clear that control dependencies don't apply to subsequent loads.
+> I will pull this point in.
+> 
+> >  	q = &a;
+> >  	if (p) {
+> > @@ -549,6 +555,8 @@ attempting to predict the outcome in adv
+> >  	}
+> >  	x = *q;
+> > 
+> > +And the read barrier as per the above example is indeed required to ensure
+> > +order.
+> > 
+> >  SMP BARRIER PAIRING
+> >  -------------------
+> > --- a/kernel/events/ring_buffer.c
+> > +++ b/kernel/events/ring_buffer.c
+> 
+> My patch does not cover this file.  Wouldn't hurt for them to be
+> separate.
+> 
+> > @@ -62,18 +62,18 @@ static void perf_output_put_handle(struc
+> >  	 *   kernel				user
+> >  	 *
+> >  	 *   READ ->data_tail			READ ->data_head
+> > -	 *   smp_mb()	(A)			smp_rmb()	(C)
+> > +	 *   barrier()	(A)			smp_rmb()	(C)
+> 
+> We need a conditional for this to work.  I know that the required
+> conditional is there in the code, but we need it explicitly in this
+> example as well.
+> 
+> >  	 *   WRITE $data			READ $data
+> >  	 *   smp_wmb()	(B)			smp_mb()	(D)
+> >  	 *   STORE ->data_head			WRITE ->data_tail
+> >  	 *
+> >  	 * Where A pairs with D, and B pairs with C.
+> >  	 *
+> > -	 * I don't think A needs to be a full barrier because we won't in fact
+> > -	 * write data until we see the store from userspace. So we simply don't
+> > -	 * issue the data WRITE until we observe it. Be conservative for now.
+> > +	 * In our case (A) is a control barrier that separates the loading of
+> > +	 * the ->data_tail and the writing of $data.
+> 
+> Actually, we need both a conditional and something to prevent the
+> compiler from hoisting code to precede that conditional.  The barrier()
+> prevents the hoisting, but we need to explicitly call out the conditional.
+> Otherwise, someone will read this and assume that any load followed by
+> barrier() will always be ordered against subsequent stores.
+> 
+> We should call this a "control dependency" rather than a "control
+> barrier" to emphasize that the conditional is part and parcel of the
+> ordering guarantee.
+> 
+> > +	 *                                           In case ->data_tail
+> > +	 * indicates there is no room in the buffer to store $data we bail.
+> >  	 *
+> > -	 * OTOH, D needs to be a full barrier since it separates the data READ
+> > +	 * D needs to be a full barrier since it separates the data READ
+> >  	 * from the tail WRITE.
+> >  	 *
+> >  	 * For B a WMB is sufficient since it separates two WRITEs, and for C
+> > @@ -148,13 +148,15 @@ int perf_output_begin(struct perf_output
+> >  	} while (local_cmpxchg(&rb->head, offset, head) != offset);
+> > 
+> >  	/*
+> > -	 * Separate the userpage->tail read from the data stores below.
+> > +	 * Control barrier separating the @tail read above from the
+> > +	 * data writes below.
+> 
+> Or maybe "control dependency barrier".
+> 
+> > +	 *
+> >  	 * Matches the MB userspace SHOULD issue after reading the data
+> >  	 * and before storing the new tail position.
+> >  	 *
+> >  	 * See perf_output_put_handle().
+> >  	 */
+> > -	smp_mb();
+> > +	barrier();
+> > 
+> >  	if (unlikely(head - local_read(&rb->wakeup) > rb->watermark))
+> >  		local_add(rb->watermark, &rb->wakeup);
+> > 
+
