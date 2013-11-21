@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab3KUPD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:03:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49787 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab3KUPD4 (ORCPT
+	id S1754122Ab3KUPJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:09:19 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:52698 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab3KUPJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 10:03:56 -0500
-Date: Thu, 21 Nov 2013 16:03:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
- group power
-Message-ID: <20131121150344.GG10022@twins.programming.kicks-ass.net>
-References: <20131113151718.GN21461@twins.programming.kicks-ass.net>
- <tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org>
- <CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
+	Thu, 21 Nov 2013 10:09:17 -0500
+Message-ID: <528E221A.6090307@greyhouse.net>
+Date: Thu, 21 Nov 2013 10:09:14 -0500
+From: Andy Gospodarek <andy@greyhouse.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Anton Nayshtut <Anton.Nayshtut@wilocity.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Eric Dumazet <edumazet@google.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/4] bonding: L2DA mode
+References: <1385045738-29726-1-git-send-email-Anton.Nayshtut@wilocity.com>
+In-Reply-To: <1385045738-29726-1-git-send-email-Anton.Nayshtut@wilocity.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 19, 2013 at 03:36:12PM -0800, Yinghai Lu wrote:
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -5379,10 +5379,31 @@ void update_group_power(struct sched_domain *sd, int cpu)
-> >                  */
-> >
-> >                 for_each_cpu(cpu, sched_group_cpus(sdg)) {
-> > -                       struct sched_group *sg = cpu_rq(cpu)->sd->groups;
-> > +                       struct sched_group_power *sgp;
-> > +                       struct rq *rq = cpu_rq(cpu);
-> >
-> > -                       power_orig += sg->sgp->power_orig;
-> > -                       power += sg->sgp->power;
-> > +                       /*
-> > +                        * build_sched_domains() -> init_sched_groups_power()
-> > +                        * gets here before we've attached the domains to the
-> > +                        * runqueues.
-> > +                        *
-> > +                        * Use power_of(), which is set irrespective of domains
-> > +                        * in update_cpu_power().
-> > +                        *
-> > +                        * This avoids power/power_orig from being 0 and
-> > +                        * causing divide-by-zero issues on boot.
-> > +                        *
-> > +                        * Runtime updates will correct power_orig.
-> > +                        */
-> > +                       if (unlikely(!rq->sd)) {
-> > +                               power_orig += power_of(cpu);
-> > +                               power += power_of(cpu);
-> > +                               continue;
-> > +                       }
-> > +
-> > +                       sgp = rq->sd->groups->sgp;
-> > +                       power_orig += sgp->power_orig;
-> > +                       power += sgp->power;
-> >                 }
-> >         } else  {
-> >                 /*
-> 
-> This one seems fix NULL reference in compute_group_power.
-> 
-> but get following on current Linus tree plus tip/sched/urgent.
-> 
-> divide error: 0000 [#1]  SMP
-> [   28.190477] Modules linked in:
-> [   28.192012] CPU: 11 PID: 484 Comm: kworker/u324:0 Not tainted
-> 3.12.0-yh-10487-g4b94e59-dirty #2044
-> [   28.210488] Hardware name: Oracle Corporation  Sun Fire
-> [   28.229877] task: ffff88ff25205140 ti: ffff88ff2520a000 task.ti:
-> ffff88ff2520a000
-> [   28.236139] RIP: 0010:[<ffffffff810d9ff4>]  [<ffffffff810d9ff4>]
-> find_busiest_group+0x2b4/0x8a0
+On 11/21/2013 09:55 AM, Anton Nayshtut wrote:
+> L2 Destination Address based (L2DA) mode allows bonding to send packets using
+> different slaves according to packets L2 Destination Address.
+>
+> In L2DA mode, the bonding maintains a default slave and DA/slave map.
+>
+> Upon a packet transmission, the bonding examines DA of the packet and tries to
+> find a corresponding slave within the map. If found, the slave is used for the
+> packet transmission. Otherwise, the default slave is used. If the default slave
+> is unable to transmit at this moment, the bonding tries to fall back to an
+> arbitrary slave that can transmit.
+>
+> Both the default slave and the map can be controlled via sysfs or by ioctls.
+>
+> Anton Nayshtut (4):
+>    bonding: L2DA mode added
+>    bonding: L2DA mode intergated
+>    bonding: L2DA command IOCTL
+>    bonding: L2DA query IOCTL
+>
+>   drivers/net/bonding/Makefile       |   2 +-
+>   drivers/net/bonding/bond_l2da.c    | 425 +++++++++++++++++++++++++++++++++++++
+>   drivers/net/bonding/bond_l2da.h    |  56 +++++
+>   drivers/net/bonding/bond_main.c    | 172 ++++++++++++++-
+>   drivers/net/bonding/bond_options.c |  17 +-
+>   drivers/net/bonding/bond_sysfs.c   | 223 ++++++++++++++++++-
+>   drivers/net/bonding/bonding.h      |   7 +
+>   include/uapi/linux/if_bonding.h    |  32 +++
+>   include/uapi/linux/sockios.h       |   4 +-
+>   net/core/dev_ioctl.c               |   4 +
+>   net/socket.c                       |   4 +
+>   11 files changed, 937 insertions(+), 9 deletions(-)
+>   create mode 100644 drivers/net/bonding/bond_l2da.c
+>   create mode 100644 drivers/net/bonding/bond_l2da.h
+>
 
-Hurmph.. what kind of hardware is that? and is there anything funny you
-do to make it do this?
+I have not done a full review of this, but I notice right away that 
+there are no patches to Documentation/networking/bonding.txt.  You can 
+wait until there are more comments before submitting a v2 of this 
+series, but please make sure it includes a documentation update when 
+submitted.
