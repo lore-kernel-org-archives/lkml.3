@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab3KUDdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 22:33:38 -0500
-Received: from ozlabs.org ([203.10.76.45]:41076 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab3KUDdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 22:33:35 -0500
-Date: Thu, 21 Nov 2013 14:33:34 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (Linus'
- tree related - powerpc)
-Message-ID: <20131121143334.44be4231@kryten>
-In-Reply-To: <20131121134622.a853064a1b5a8355e5077737@canb.auug.org.au>
-References: <20131121134622.a853064a1b5a8355e5077737@canb.auug.org.au>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752433Ab3KUDjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 22:39:03 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:48677 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab3KUDjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 22:39:00 -0500
+Date: Wed, 20 Nov 2013 19:38:56 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Vladimir Murzin <murzin.v@gmail.com>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+In-Reply-To: <20131120173357.GC18809@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1311201937120.7167@chino.kir.corp.google.com>
+References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <20131120172119.GA1848@hp530> <20131120173357.GC18809@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Nov 2013, Michal Hocko wrote:
 
-Hi,
-
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+> OK, I was a bit vague it seems. I meant to give zonelist, gfp_mask,
+> allocation order and nodemask parameters to the modules. So they have a
+> better picture of what is the OOM context.
+> What everything ould modules need to do an effective work is a matter
+> for discussion.
 > 
-> <stdin>:1:0: error: -mcall-aixdesc must be big endian
 
-Urgh, allyesconfig is building an LE kernel. Ian: do we need to reverse
-the polarity of the option, and call it CONFIG_CPU_BIG_ENDIAN?
-
-Anton
+It's an interesting idea but unfortunately a non-starter for us because 
+our users don't have root, we create their memcg tree and then chown it to 
+the user.  They can freely register for oom notifications but cannot load 
+their own kernel modules for their own specific policy.
