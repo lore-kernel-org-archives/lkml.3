@@ -1,92 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627Ab3KUI4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 03:56:41 -0500
-Received: from mail.wi-flare.com ([203.86.34.34]:55216 "EHLO
-	mail.innofidei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab3KUI4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 03:56:40 -0500
-X-Spam-Processed: mail.innofidei.com, Thu, 21 Nov 2013 16:54:56 +0800
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: zhanghonghui@innofidei.com
-X-MDRemoteIP: 220.178.102.82
-X-Return-Path: zhanghonghui@innofidei.com
-X-Envelope-From: zhanghonghui@innofidei.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: Hans Zhang <zhanghonghui@innofidei.com>
-To: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: zhouguangming@innofidei.com, Hans Zhang <zhanghonghui@innofidei.com>
-Subject: [PATCH] Make the mtdblock read/write skip the bad nand sector
-Date: Thu, 21 Nov 2013 16:54:25 +0800
-Message-Id: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752720Ab3KUI7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 03:59:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37214 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab3KUI7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 03:59:31 -0500
+Date: Thu, 21 Nov 2013 09:59:27 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: James Henstridge <james.henstridge@canonical.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        =?ISO-8859-15?Q?Fabien_Andr=E9?= <fabien.andre@gmail.com>,
+        Bastien Nocera <hadess@hadess.net>
+Subject: Re: [appleir] BUG: unable to handle kernel NULL pointer
+ dereference
+In-Reply-To: <CALcaVOmCAV8XeURJ5UpWfaFXoj+bz6DZ1NgAt7Xiv5pfEynRFQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1311210959170.22082@pobox.suse.cz>
+References: <20131029145139.GA2788@hercules> <alpine.LNX.2.00.1311061635160.835@pobox.suse.cz> <CALcaVO=jOEqCwLCMUgEkFJMcc4H6bMLU4yvjo1fJ7DeXgkZH6A@mail.gmail.com> <527BB695.9040209@redhat.com> <alpine.LNX.2.00.1311191533200.6657@pobox.suse.cz>
+ <CALcaVOmCAV8XeURJ5UpWfaFXoj+bz6DZ1NgAt7Xiv5pfEynRFQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- When read/write the nandblock device, it will abort writing if
- there's a bad block, it's reasonable to skip the bad block and
- finish the data writing.
- The data reading procedure should also skip the bad block since
- there's no data write to the block.
+On Thu, 21 Nov 2013, James Henstridge wrote:
 
---v2:
- use the wrapped mtd_block_isbad instand of mtd->block_isbad
+> Sorry for the delays in testing out the patch.  I have tried a kernel
+> with the patch applied, and can no longer reproduce the oops.  The
+> hid-appleir driver appears to be working correctly, generating key
+> press events in response to the remote, and LIRC functions correctly
+> via hiddev.
+> 
+> Thanks for the everyone's help with this.
 
-Signed-off-by: Hans Zhang <zhanghonghui@innofidei.com>
----
- drivers/mtd/mtdblock.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
-index 485ea75..4f6acd1 100644
---- a/drivers/mtd/mtdblock.c
-+++ b/drivers/mtd/mtdblock.c
-@@ -124,6 +124,13 @@ static int write_cached_data (struct mtdblk_dev *mtdblk)
- 			"at 0x%lx, size 0x%x\n", mtd->name,
- 			mtdblk->cache_offset, mtdblk->cache_size);
- 
-+retry:
-+	ret = mtd_block_isbad(mtd, mtdblk->cache_offset);
-+	if (ret > 0) {
-+		mtdblk->cache_offset += mtdblk->cache_size;
-+		goto retry;
-+	}
-+
- 	ret = erase_write (mtd, mtdblk->cache_offset,
- 			   mtdblk->cache_size, mtdblk->cache_data);
- 	if (ret)
-@@ -163,6 +170,11 @@ static int do_cached_write (struct mtdblk_dev *mtdblk, unsigned long pos,
- 			size = len;
- 
- 		if (size == sect_size) {
-+			ret = mtd_block_isbad(mtd, pos);
-+			if (ret > 0) {
-+				pos += sect_size;
-+				continue;
-+			}
- 			/*
- 			 * We are covering a whole sector.  Thus there is no
- 			 * need to bother with the cache while it may still be
-@@ -242,6 +254,11 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
- 		    mtdblk->cache_offset == sect_start) {
- 			memcpy (buf, mtdblk->cache_data + offset, size);
- 		} else {
-+			ret = mtd_block_isbad(mtd, pos);
-+			if (ret > 0) {
-+				pos += sect_size;
-+				continue;
-+			}
- 			ret = mtd_read(mtd, pos, size, &retlen, buf);
- 			if (ret)
- 				return ret;
 -- 
-1.7.1
-
-
-“This E-mail and its attachments may contain legally privileged or confidential information from Innofidei Corporation. Any unauthorized copy, use, disclosure or distribution of this information is strictly prohibited. If you are not the intended recipient, please notify the sender immediately by E-mail or telephone and delete this E-mail and all its attachments immediately.
-本邮件及其附件内容可能包含创毅公司享有专有法律权利的或者需要保密的信息。严禁任何人未经发件人许可以任何形式复制、使用、披露或者散发此项信息。如果您不是该收件人，请您立即通过邮件或者电话通知发件人并立即删除本邮件及其附件内容.”
-
-
+Jiri Kosina
+SUSE Labs
