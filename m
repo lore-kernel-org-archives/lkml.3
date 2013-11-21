@@ -1,90 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3KUB7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 20:59:22 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:58980 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab3KUB7V (ORCPT
+	id S1754987Ab3KUCAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:00:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38033 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab3KUCAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 20:59:21 -0500
+	Wed, 20 Nov 2013 21:00:36 -0500
+Subject: [PATCH v6 0/3] x86, apic,
+ kexec: Add disable_cpu_apic kernel parameter
+To: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
+        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
+Date: Thu, 21 Nov 2013 11:00:33 +0900
+Message-ID: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <1384976909-32671-1-git-send-email-ddstreet@ieee.org>
-References: <1384976909-32671-1-git-send-email-ddstreet@ieee.org>
-Date: Thu, 21 Nov 2013 09:59:20 +0800
-Message-ID: <CAL1ERfPcAbNyt9hTYKMj9OGK2=ynLrTVm9udEn=hF+bFptC16Q@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: don't allow entry eviction if in use by load
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan
+This patch set is to allow kdump 2nd kernel to wake up multiple CPUs,
+a continueing work from:
 
-On Thu, Nov 21, 2013 at 3:48 AM, Dan Streetman <ddstreet@ieee.org> wrote:
-> The changes in commit 0ab0abcf511545d1fddbe72a36b3ca73388ac937
-> introduce a bug in writeback, if an entry is in use by load
-> it will be evicted anyway, which isn't correct (technically,
-> the code currently in zbud doesn't actually care much what the
-> zswap evict function returns, but that could change).
+  [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
+  https://lkml.org/lkml/2013/10/16/300.
 
-Thanks for your work. Howerver it is not a bug.
+At v4, basic design has changed. Now users need to figure out initial
+APIC ID of BSP in the 1st kernel and configures kernel parameter for
+the 2nd kernel manually using disable_cpu_apic kernel parameter, which
+is newly introduced by this patch set. This design is more flexible
+than the previous version in that we no longer have to rely on ACPI/MP
+table to get initial APIC ID of BSP.
 
-I have thought about this situation, and it will never happen.
-If entry is being loaded, its corresponding page must be in swapcache
-so zswap_get_swap_cache_page() will return ZSWAP_SWAPCACHE_EXIST
+Sorry, this patch set have not include in-source documentation
+requested by Borislav Petkov yet, but I'll post it later separately,
+which would be better to focus on documentation reviewing.
 
-If I miss something, please let me know.
+ChangeLog
 
-Thanks!
+v5 => v6)
 
-> This changes the check in the writeback function to prevent eviction
-> if the entry is still in use (with a nonzero refcount).  The
-> refcount is used instead of searching the rb tree beacuse we're
-> holding the tree lock (which is required for any changes to refcount)
-> and it's faster than a tree search.
->
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> ---
->  mm/zswap.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index e55bab9..e154f1e 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -600,14 +600,18 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
->         zswap_entry_put(tree, entry);
->
->         /*
-> -       * There are two possible situations for entry here:
-> +       * There are three possible situations for entry here:
->         * (1) refcount is 1(normal case),  entry is valid and on the tree
->         * (2) refcount is 0, entry is freed and not on the tree
->         *     because invalidate happened during writeback
-> -       *  search the tree and free the entry if find entry
-> +       * (3) refcount is 2, entry is in use by load, prevent eviction
->         */
-> -       if (entry == zswap_rb_search(&tree->rbroot, offset))
-> +       if (likely(entry->refcount > 0))
->                 zswap_entry_put(tree, entry);
-> +       if (unlikely(entry->refcount > 0)) {
-> +               spin_unlock(&tree->lock);
-> +               return -EAGAIN;
-> +       }
->         spin_unlock(&tree->lock);
->
->         goto end;
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+- Remove use of rdmsr(IA32_APIC_BASE) to initialize
+  bsp_physical_apicid since the MSR doesn't work well on some cluster
+  systems, suggested by HPA. Also, current users of the variable
+  expects the initial apicid reported through MP table only; removing
+  the use of the MSR is not problematic.
+
+- Rename bsp_physical_apicid as bios_bsp_physical_apicid to make it
+  clear that the apidid contained there is the one reported from some
+  BIOS table. Also, initialize it not only by MP table but also by
+  ACPI MADT.
+
+- Change message displayed when specified cpu is disabled from:
+
+  ACPI: Disable specified CPU. Processor 0/0x0 ignored.
+
+  to:
+
+  ACPI: Disabling requested cpu. Processor 0/0x0 ignored.
+
+v4 => v5)
+
+- Rebased on top of v3.12
+
+- Introduce bsp_physical_apicid that has the initial APIC ID for the
+  processor with BSP flag on IA32_APIC_BASE MSR. Without this,
+  boot_cpu_physical_apicid has temporarilly the value around MP table
+  related codes, although it's designed to have the initial APIC ID
+  for the processor that is doing the boot up. Use the
+  bsp_physical_apicid in MP table related codes; no impact on
+  semantics at runtime there.
+
+v3 => v4)
+
+- Rebased on top of v3.12-rc6
+
+- Basic design has been changed. Now users need to figure out initial
+  APIC ID of BSP in the 1st kernel and configures kernel parameter for
+  the 2nd kernel manually using disable_cpu_apic kernel parameter to
+  be newly introduced in this patch set. This design is more flexible
+  than the previous version in that we no longer have to rely on
+  ACPI/MP table to get initial APIC ID of BSP.
+
+v2 => v3)
+
+- Change default value of boot_cpu_is_bsp to true.
+
+- Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
+  processor family is larger than or equal to 6 in order to avoid
+  invalid opcode exception on processors where MSR_IA32_APICBASE is
+  not supported.
+
+v1 => v2)
+
+- Rebased on top of v3.12-rc5.
+
+- Fix linking time error of boot_cpu_is_bsp_init() in case of
+  CONFIG_LOCAL_APIC disabled by adding empty static inline function
+  instead.
+
+- Fix missing feature check by means of cpu_has_apic macro in
+  boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
+
+  NOTE: I've checked local apic-present case only; I don't have any
+  x86 processor without local apic.
+
+- Add __init annotation to boot_cpu_is_bsp_init().
+
+Test
+
+- built with and without CONFIG_LOCAL_APIC
+- tested x86_64 in case of acpi and MP table
+- tested disable_cpu_apicid=<n> to disable both AP and BSP
+
+---
+
+HATAYAMA Daisuke (3):
+      x86, apic: add bios_bsp_physical_apicid
+      x86, apic: Add disable_cpu_apicid kernel parameter
+      Documentation, x86, apic, kexec: Add disable_cpu_apicid kernel parameter
+
+
+ Documentation/kernel-parameters.txt    |    9 ++++++++
+ arch/x86/include/asm/mpspec.h          |    1 +
+ arch/x86/kernel/acpi/boot.c            |    8 +++++++
+ arch/x86/kernel/apic/apic.c            |   38 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/mpparse.c              |    2 +-
+ arch/x86/mm/amdtopology.c              |    6 +++--
+ arch/x86/platform/visws/visws_quirks.c |    2 +-
+ 7 files changed, 61 insertions(+), 5 deletions(-)
+
+-- 
+
+Thanks.
+HATAYAMA, Daisuke
