@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3KUC1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 21:27:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21070 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754314Ab3KUC1G (ORCPT
+	id S1754983Ab3KUCi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 21:38:27 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:13241 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3KUCiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 21:27:06 -0500
-Date: Wed, 20 Nov 2013 21:26:56 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: shuah.kh@samsung.com
-Cc: len.brown@intel.com, pavel@ucw.cz, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, anton@enomsg.org, dwmw2@infradead.org,
-        fweisbec@gmail.com, mingo@redhat.com, keun-o.park@windriver.com,
-        paul.gortmaker@windriver.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] PM: Fix Oops from NULL pointer dereference in
- wakeup_source_activate
-Message-ID: <20131120212656.1df4515e@gandalf.local.home>
-In-Reply-To: <528D6972.9010702@samsung.com>
-References: <cover.1384990612.git.shuah.kh@samsung.com>
-	<43b305b56bbbfc82b2684919e2d1ba2bd50fecae.1384990612.git.shuah.kh@samsung.com>
-	<528D6972.9010702@samsung.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 20 Nov 2013 21:38:23 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 20 Nov 2013 18:32:22 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] clk: tegra: add FUSE clock device
+Date: Thu, 21 Nov 2013 11:38:10 +0900
+Message-ID: <1385001490-18927-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013 19:01:22 -0700
-Shuah Khan <shuah.kh@samsung.com> wrote:
+This clock is needed to ensure the FUSE registers can be accessed
+without freezing the system.
 
-> On 11/20/2013 06:40 PM, Shuah Khan wrote:
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/clk/tegra/clk-tegra114.c | 1 +
+ drivers/clk/tegra/clk-tegra124.c | 1 +
+ drivers/clk/tegra/clk-tegra20.c  | 1 +
+ drivers/clk/tegra/clk-tegra30.c  | 2 +-
+ 4 files changed, 4 insertions(+), 1 deletion(-)
 
-> > ---
-> >   include/trace/events/power.h | 6 ++++--
-> >   1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-> > index cda100d..5ba545a 100644
-> > --- a/include/trace/events/power.h
-> > +++ b/include/trace/events/power.h
-> > @@ -110,12 +110,14 @@ DECLARE_EVENT_CLASS(wakeup_source,
-> >   	TP_ARGS(name, state),
-> >
-> >   	TP_STRUCT__entry(
-> > -		__string(       name,           name            )
-> > +		__string(name,  name ? name : "(no name)")
-> >   		__field(        u64,            state           )
-> >   	),
-> >
-> >   	TP_fast_assign(
-> > -		__assign_str(name, name);
-> > +		const char *tname = name ? name : "(no name)";
-> > +
-> > +		__assign_str(name, tname);
-> >   		__entry->state = state;
-> >   	),
-> >
-> >
-> 
-> Adding tracing maintainers.
-
-Thanks!
-
-This is one solution, but what about just making the tracing facility a
-bit more robust for everyone. Following what glibc printf() does when
-it is passed a NULL, does this patch fix it too?
-
--- Steve
-
-(haven't even compile tested this)
-
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 52594b2..bdac88c 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -372,7 +372,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
- 	__data_size += (len) * sizeof(type);
- 
- #undef __string
--#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
-+#define __string(item, src) __dynamic_array(char, item,			\
-+				    strlen((src) ? (src) : "(null)") + 1)
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -501,7 +502,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
- 
- #undef __assign_str
- #define __assign_str(dst, src)						\
--	strcpy(__get_str(dst), src);
-+	strcpy(__get_str(dst), (src) ? (src) : "(null)");
- 
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index dbab27f773b5..b29d31d94d2e 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -925,6 +925,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA114_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA114_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA114_CLK_PCLK },
++	{ .con_id = "fuse", .dt_id = TEGRA114_CLK_FUSE },
+ 	{ .dev_id = "rtc-tegra", .dt_id = TEGRA114_CLK_RTC },
+ 	{ .dev_id = "timer", .dt_id = TEGRA114_CLK_TIMER },
+ };
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index 266e80b51d38..e123fd218983 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -1007,6 +1007,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA124_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA124_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA124_CLK_PCLK },
++	{ .con_id = "fuse", .dt_id = TEGRA124_CLK_FUSE },
+ 	{ .dev_id = "rtc-tegra", .dt_id = TEGRA124_CLK_RTC },
+ 	{ .dev_id = "timer", .dt_id = TEGRA124_CLK_TIMER },
+ };
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index 58faac5f509e..9dd264886621 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -452,6 +452,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "sclk", .dt_id = TEGRA20_CLK_SCLK },
+ 	{ .con_id = "hclk", .dt_id = TEGRA20_CLK_HCLK },
+ 	{ .con_id = "pclk", .dt_id = TEGRA20_CLK_PCLK },
++	{ .con_id = "fuse", .dt_id = TEGRA20_CLK_FUSE },
+ 	{ .con_id = "twd", .dt_id = TEGRA20_CLK_TWD },
+ 	{ .con_id = "audio", .dt_id = TEGRA20_CLK_AUDIO },
+ 	{ .con_id = "audio_2x", .dt_id = TEGRA20_CLK_AUDIO_2X },
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index 51c093c96657..6d96b307d48c 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -659,7 +659,7 @@ static struct tegra_devclk devclks[] __initdata = {
+ 	{ .con_id = "pcie", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_PCIE },
+ 	{ .con_id = "afi", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_AFI },
+ 	{ .con_id = "pciex", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_PCIEX },
+-	{ .con_id = "fuse", .dev_id = "fuse-tegra", .dt_id = TEGRA30_CLK_FUSE },
++	{ .con_id = "fuse", .dt_id = TEGRA30_CLK_FUSE },
+ 	{ .con_id = "fuse_burn", .dev_id = "fuse-tegra", .dt_id = TEGRA30_CLK_FUSE_BURN },
+ 	{ .con_id = "apbif", .dev_id = "tegra30-ahub", .dt_id = TEGRA30_CLK_APBIF },
+ 	{ .con_id = "hda2hdmi", .dev_id = "tegra30-hda", .dt_id = TEGRA30_CLK_HDA2HDMI },
+-- 
+1.8.4.2
 
