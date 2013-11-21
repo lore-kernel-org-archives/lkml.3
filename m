@@ -1,254 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab3KUUmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:42:23 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:47223 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab3KUUmV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:42:21 -0500
-Date: Thu, 21 Nov 2013 15:42:21 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf/poll: another perf_fuzzer lockup
-In-Reply-To: <alpine.DEB.2.10.1311211346000.16856@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1311211536580.16856@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1311211346000.16856@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754833Ab3KUUnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:43:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4111 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866Ab3KUUng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 15:43:36 -0500
+Message-ID: <1385066603.2879.414.camel@ul30vt.home>
+Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Cc: "joro@8bytes.org" <joro@8bytes.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "agraf@suse.de" <agraf@suse.de>, Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Nov 2013 13:43:23 -0700
+In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013, Vince Weaver wrote:
+On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
 > 
-> This is with 3.12 on a core2 machine.
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Thursday, November 21, 2013 12:17 AM
+> > To: Bhushan Bharat-R65777
+> > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood Scott-B07421;
+> > Yoder Stuart-B08248; iommu@lists.linux-foundation.org; linux-
+> > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> > kernel@vger.kernel.org; Bhushan Bharat-R65777
+> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> > 
+> > On Tue, 2013-11-19 at 10:47 +0530, Bharat Bhushan wrote:
+> > > From: Bharat Bhushan <bharat.bhushan@freescale.com>
+> > >
+> > > PAMU (FSL IOMMU) has a concept of primary window and subwindows.
+> > > Primary window corresponds to the complete guest iova address space
+> > > (including MSI space), with respect to IOMMU_API this is termed as
+> > > geometry. IOVA Base of subwindow is determined from the number of
+> > > subwindows (configurable using iommu API).
+> > > MSI I/O page must be within the geometry and maximum supported
+> > > subwindows, so MSI IO-page is setup just after guest memory iova space.
+> > >
+> > > So patch 1/9-4/9(inclusive) are for defining the interface to get:
+> > >   - Number of MSI regions (which is number of MSI banks for powerpc)
+> > >   - MSI-region address range: Physical page which have the
+> > >     address/addresses used for generating MSI interrupt
+> > >     and size of the page.
+> > >
+> > > Patch 5/9-7/9(inclusive) is defining the interface of setting up MSI
+> > > iova-base for a msi region(bank) for a device. so that when
+> > > msi-message will be composed then this configured iova will be used.
+> > > Earlier we were using iommu interface for getting the configured iova
+> > > which was not currect and Alex Williamson suggeested this type of interface.
+> > >
+> > > patch 8/9 moves some common functions in a separate file so that these
+> > > can be used by FSL_PAMU implementation (next patch uses this).
+> > > These will be used later for iommu-none implementation. I believe we
+> > > can do more of this but will take step by step.
+> > >
+> > > Finally last patch actually adds the support for FSL-PAMU :)
+> > 
+> > Patches 1-3: msi_get_region needs to return an error an error (probably
+> > -EINVAL) if called on a path where there's no backend implementation.
+> > Otherwise the caller doesn't know that the data in the region pointer isn't
+> > valid.
+> 
+> will correct.
+> 
+> > 
+> > Patches 5&6: same as above for msi_set_iova, return an error if no backend
+> > implementation.
+> 
+> Ok
+> 
+> > 
+> > Patch 7: Why does fsl_msi_del_iova_device bother to return anything if it's
+> > always zero?  Return -ENODEV when not found?
+> 
+> Will make -ENODEV.
+> 
+> > 
+> > Patch 9:
+> > 
+> > vfio_handle_get_attr() passes random kernel data back to userspace in the event
+> > of iommu_domain_get_attr() error.
+> 
+> Will correct.
+> 
+> > 
+> > vfio_handle_set_attr(): I don't see any data validation happening, is
+> > iommu_domain_set_attr() really that safe?
+> 
+> We do not need any data validation here and iommu driver does whatever needed.
+> So yes,  iommu_domain_set_attr() is safe.
+> 
+> > 
+> > For both of those, drop the pr_err on unknown attribute, it's sufficient to
+> > return error.
+> 
+> ok
+> 
+> > 
+> > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each vfio user has
+> > $COUNT regions at their disposal exclusively)?
+> 
+> Number of msi-bank count is system wide and not per aperture, But will be setting windows for banks in the device aperture.
+> So say if we are direct assigning 2 pci device (both have different iommu group, so 2 aperture in iommu) to VM.
+> Now qemu can make only one call to know how many msi-banks are there but it must set sub-windows for all banks for both pci device in its respective aperture.
 
-> [  199.784001]  <<EOE>>  [<ffffffff81069ed5>] load_balance+0x2f2/0x609          
-> [  199.784001]  [<ffffffff8106a3d8>] idle_balance+0x9a/0x10c                    
-> [  199.784001]  [<ffffffff8151f5a6>] __schedule+0x290/0x54b                     
-> [  199.784001]  [<ffffffff8105beae>] ? __hrtimer_start_range_ns+0x2ed/0x2ff     
-> [  199.784001]  [<ffffffff8151fbbf>] schedule+0x64/0x66                         
-> [  199.784001]  [<ffffffff8151ed18>] schedule_hrtimeout_range_clock+0xed/0x134  
-> [  199.784001]  [<ffffffff8105b659>] ? update_rmtp+0x65/0x65                    
-> [  199.784001]  [<ffffffff8105beee>] ? hrtimer_start_range_ns+0x14/0x16         
-> [  199.784001]  [<ffffffff8151ed72>] schedule_hrtimeout_range+0x13/0x15         
-> [  199.784001]  [<ffffffff8112274d>] poll_schedule_timeout+0x48/0x64            
-> [  199.784001]  [<ffffffff81123453>] do_sys_poll+0x437/0x4d5                    
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff811228cf>] ? __pollwait+0xcc/0xcc                     
-> [  199.784001]  [<ffffffff81123544>] SyS_poll+0x53/0xbc                         
-> [  199.784001]  [<ffffffff81527b56>] system_call_fastpath+0x1a/0x1f             
-> [  199.784001] ---[ end trace 1de1e48ddacc5178 ]---                             
+I'm still confused.  What I want to make sure of is that the banks are
+independent per aperture.  For instance, if we have two separate
+userspace processes operating independently and they both chose to use
+msi bank zero for their device, that's bank zero within each aperture
+and doesn't interfere.  Or another way to ask is can a malicious user
+interfere with other users by using the wrong bank.  Thanks,
 
-So I wasn't able to reproduce this, but here's a list of events that were 
-active at the time of the crash.  Not sure if that's useful or not.
+Alex
 
-148:	PERF_TYPE_TRACEPOINT, 0x126; /* 294 ext4/ext4_mark_inode_dirty */
-92:	PERF_TYPE_TRACEPOINT, 0x1b; /* 27 irq_vectors/x86_platform_ipi_entry */
-169:	PERF_TYPE_TRACEPOINT, 0x1cd; /* 461 random/extract_entropy */
-139:	PERF_TYPE_TRACEPOINT, 0x21; /* 33 irq_vectors/reschedule_entry */
-211:	PERF_TYPE_TRACEPOINT, 0x25; /* 37 vsyscall/emulate_vsyscall */
-196:	PERF_TYPE_TRACEPOINT, 0x2b; /* 43 irq/softirq_raise */
-75:	PERF_TYPE_TRACEPOINT, 0x2e; /* 46 irq/irq_handler_exit */
-16:	PERF_TYPE_TRACEPOINT, 0x31; /* 49 timer/itimer_expire */
-105:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
-81:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
-174:	PERF_TYPE_TRACEPOINT, 0x39; /* 57 timer/timer_expire_exit */
-138:	PERF_TYPE_TRACEPOINT, 0x3a; /* 58 timer/timer_expire_entry */
-215:	PERF_TYPE_TRACEPOINT, 0x3b; /* 59 timer/timer_start */
-129:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
-87:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
-55:	PERF_TYPE_TRACEPOINT, 0x3d; /* 61 signal/signal_deliver */
-32:	PERF_TYPE_TRACEPOINT, 0x3e; /* 62 signal/signal_generate */
-114:	PERF_TYPE_TRACEPOINT, 0x71; /* 113 rpm/rpm_resume */
-54:	PERF_TYPE_TRACEPOINT, 0xe2; /* 226 ext4/ext4_get_reserved_cluster_alloc */
-10:	PERF_TYPE_BREAKPOINT, HW_BREAKPOINT_W, addr=0xffee, len=0x2
-165:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-202:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-22:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-68:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-6:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-99:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
-115:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-173:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-183:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-184:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-27:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-93:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-97:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
-121:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
-180:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
-12:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
-133:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
-166:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
-20:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES;
-11:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-137:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-155:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-18:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-210:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-64:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-73:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-84:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-88:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-90:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
-111:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-125:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-153:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-154:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-160:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-164:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-189:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-42:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-44:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-70:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-79:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-82:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
-100:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
-51:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
-46:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
-149:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_WRITE << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
-50:	PERF_TYPE_RAW, 0x0;
-85:	PERF_TYPE_RAW, 0x0;
-35:	PERF_TYPE_RAW, 0x100000000;
-156:	PERF_TYPE_RAW, 0x1000800af;
-118:	PERF_TYPE_RAW, 0x2000040001081;
-58:	PERF_TYPE_RAW, 0x200800000;
-94:	PERF_TYPE_RAW, 0x26;
-130:	PERF_TYPE_RAW, 0x3c;
-37:	PERF_TYPE_RAW, 0x40000000004800;
-53:	PERF_TYPE_RAW, 0x4f2e;
-117:	PERF_TYPE_RAW, 0x80000;
-158:	PERF_TYPE_RAW, 0x80000000;
-108:	PERF_TYPE_RAW, 0x8000000000000002;
-41:	PERF_TYPE_RAW, 0x8000000000000020;
-8:	PERF_TYPE_RAW, 0x800000000000007f;
-135:	PERF_TYPE_RAW, 0x80000000000000a9;
-193:	PERF_TYPE_RAW, 0x8000000008000004;
-101:	PERF_TYPE_RAW, 0x80000000088800ff;
-214:	PERF_TYPE_RAW, 0x800000805f5f5f5f;
-59:	PERF_TYPE_RAW, 0x804000000000a000;
-15:	PERF_TYPE_RAW, 0xc5;
-40:	PERF_TYPE_RAW, 0xc5;
-188:	PERF_TYPE_RAW, 0xdf;
-5:	PERF_TYPE_RAW, 0xffffffffd3cb7fa3;
-185:	PERF_TYPE_RAW, 0xffffffffe8dfa2d0;
-14:	PERF_TYPE_RAW, 0xffffffffff092c99;
-102:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-103:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-104:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-106:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-107:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-109:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-110:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-112:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-113:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-116:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-119:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-120:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-122:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-124:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-126:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-127:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-128:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-131:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-132:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-134:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-136:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-13:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-140:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-141:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-142:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-143:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-144:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-145:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-146:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-150:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-152:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-157:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-159:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-162:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-167:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-168:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-171:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-177:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-178:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-179:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-17:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-181:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-186:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-187:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-191:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-192:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-194:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-198:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-199:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-19:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-200:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-201:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-206:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-207:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-208:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-209:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-212:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-213:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-21:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-23:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-24:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-25:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-26:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-28:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-29:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-30:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-31:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-33:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-34:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-36:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-38:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-39:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-3:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-43:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-45:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-47:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-48:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-49:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-4:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-52:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-56:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-57:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-60:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-61:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-62:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-63:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-65:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-66:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-67:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-69:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-71:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-72:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-74:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-76:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-77:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-78:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-7:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-80:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-83:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-86:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-89:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-91:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-95:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-96:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-98:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
-9:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
