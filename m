@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab3KUP44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:56:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62118 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3KUP4y (ORCPT
+	id S1754844Ab3KUP5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:57:54 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:51448 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab3KUP5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 10:56:54 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCHv5 1/9] of: introduce of_property_for_earch_phandle_with_args()
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20131121151218.befbb483c0cf09cdcd4cd4dd@nvidia.com>
-References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-2-git-send-email-hdoyu@nvidia.com> <20131121124328. 46BC1C40A2C@trevor.secretlab.ca> <20131121151218.befbb483c0cf09cdcd4cd4dd@ nvidia.com>
-Date: Thu, 21 Nov 2013 15:56:49 +0000
-Message-Id: <20131121155649.48C96C406A3@trevor.secretlab.ca>
+	Thu, 21 Nov 2013 10:57:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <3577662.BKCLJdcf18@vostro.rjw.lan>
+References: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
+	<3577662.BKCLJdcf18@vostro.rjw.lan>
+Date: Thu, 21 Nov 2013 21:27:51 +0530
+Message-ID: <CAKohpo=fZ8Fr=CMDzCy3daBU+mZBJ+9fOks6L7WLOZzE7WaAaQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nishanth Menon <nm@ti.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sripa Bagadia <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013 15:12:18 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> On Thu, 21 Nov 2013 13:43:28 +0100
-> Grant Likely <grant.likely@linaro.org> wrote:
-> 
-> > On Tue, 19 Nov 2013 11:33:05 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> > > The following pattern of code is tempting:
-> > > 
-> > >   for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
-> > > 
-> > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > 
-> > That's a very minimal commit message. Can you elaborate please.
-> 
-> The above can be:
-> 
-> "
->   The following pattern of code is tempting to add a new member for
->   of_property_for_each_*() family as an idiom.
->   
->     for (i = 0;
->         !of_parse_phandle_with_args(np, list, cells, i, args); i++)
->                   <do something with "args">;
-> "
+On 21 November 2013 18:41, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Thursday, November 21, 2013 12:39:02 PM Viresh Kumar wrote:
 
-I really do like commit messages to be full enough that a future reader
-can figure out why a patch was written. ie:
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> @@ -1038,6 +1038,32 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
 
-	"Iterating over a property containing a list of phandles with
-	arguments is a common operation for device drivers. This patch
-	adds a new of_property_for_each_phandle_with_args() macro to
-	make the iteration simpler."
+>> +     if (has_target()) {
+>> +             ret = __cpufreq_driver_target(policy, policy->cur,
+>> +                             CPUFREQ_RELATION_L);
+>> +             if (ret)
+>> +                     pr_err("%s: Unable to set frequency from table: %d\n",
+>> +                                     __func__, ret);
+>
+> Should we continue in that case?
 
-g.
+I wasn't sure. I thought maybe there are platforms which might not be
+ready for transitions so early and so an error message would be fine,
+as we will fail soon anyway in case there is a bug.
 
-> 
-> Actual usage is here:
-> 
->         int i;
->         struct of_phandle_args args;
-> 
->         of_property_for_each_phandle_with_args(dev->of_node, "iommus",
->                                                "#iommu-cells", i, &args) {
->                 pr_debug("%s(i=%d) %s\n", __func__, i, dev_name(dev));
-> 
->                 if (!of_find_iommu_by_node(args.np))
->                         return -EPROBE_DEFER;
-> 
-> Is this acceptable?
-
+--
+viresh
