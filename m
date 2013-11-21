@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab3KUUrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:47:12 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26069 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752020Ab3KUUrJ (ORCPT
+	id S1755110Ab3KUUr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:47:27 -0500
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:19815
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751508Ab3KUUrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:47:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/J+Birh5sOZ30W6JiCAhKi
-Date: Thu, 21 Nov 2013 12:46:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?utf-8?Q?'Beno=C3=AEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
-Message-ID: <20131121204654.GB10023@atomide.com>
-References: <1379277856-24571-1-git-send-email-sre@debian.org>
- <1379277856-24571-4-git-send-email-sre@debian.org>
- <20131121013858.GK10317@atomide.com>
- <20131121022125.GA2445@earth.universe>
+	Thu, 21 Nov 2013 15:47:25 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h1155h)
+Message-ID: <1385066835.1403.489.camel@snotra.buserror.net>
+Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+From: Scott Wood <scottwood@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Nov 2013 14:47:15 -0600
+In-Reply-To: <1385066603.2879.414.camel@ul30vt.home>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121022125.GA2445@earth.universe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [131120 18:22]:
-> On Wed, Nov 20, 2013 at 05:38:59PM -0800, Tony Lindgren wrote:
+On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
+> On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
+> > 
+> > > -----Original Message-----
+> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > Sent: Thursday, November 21, 2013 12:17 AM
+> > > To: Bhushan Bharat-R65777
+> > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood Scott-B07421;
+> > > Yoder Stuart-B08248; iommu@lists.linux-foundation.org; linux-
+> > > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> > > kernel@vger.kernel.org; Bhushan Bharat-R65777
+> > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> > > 
+> > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each vfio user has
+> > > $COUNT regions at their disposal exclusively)?
+> > 
+> > Number of msi-bank count is system wide and not per aperture, But will be setting windows for banks in the device aperture.
+> > So say if we are direct assigning 2 pci device (both have different iommu group, so 2 aperture in iommu) to VM.
+> > Now qemu can make only one call to know how many msi-banks are there but it must set sub-windows for all banks for both pci device in its respective aperture.
 > 
-> In the public documentation of the omaps all SSI related stuff is
-> missing and memory areas are marked as reserved. I could not find
-> out how to receive the NDA version, so the following is purely
-> speculation based on the code.
-> 
-> If I understand it right the HW looks like this:
-> 
-> +-----------------+
-> |    GDD (DMA)    | <- this one is currently called ssi-controller
-> +--------+--------+
-> | Port 1 | Port 2 | <- these are currently called ssi-port
-> +--------+--------+
-> 
-> I think the GDD part must be enabled while Port 1 or Port 2 is
-> enabled. The last RFC driver from Carlos did not even split up the
-> irq/memory areas into different platform devices, but just requested
-> all of them in one ssi platform device.
+> I'm still confused.  What I want to make sure of is that the banks are
+> independent per aperture.  For instance, if we have two separate
+> userspace processes operating independently and they both chose to use
+> msi bank zero for their device, that's bank zero within each aperture
+> and doesn't interfere.  Or another way to ask is can a malicious user
+> interfere with other users by using the wrong bank.  Thanks,
 
-Might be worth checking. If these blocks have the revision and SYSC
-register in the beginning of their address space like all omap modules,
-then they are completely separate blocks and can idle independently.
+They can interfere.  With this hardware, the only way to prevent that is
+to make sure that a bank is not shared by multiple protection contexts.
+For some of our users, though, I believe preventing this is less
+important than the performance benefit.
 
-The fact that they have separate interrutps makes me think that's the
-case, otherwise there would be just interrupt(s) at the ssi-controllel
-level.
+-Scott
 
-> > The other binding pieces can be added later on as they get are ready.
-> 
-> Sure. They are almost finished btw. I was able to get a gsm network
-> scan.
 
-That's great :)
 
-Regards,
-
-Tony
