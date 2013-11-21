@@ -1,240 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab3KUDIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 22:08:07 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:4405 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750906Ab3KUDIB (ORCPT
+	id S1752621Ab3KUDI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 22:08:56 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:50018 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab3KUDIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 22:08:01 -0500
-Date: Wed, 20 Nov 2013 22:07:57 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: Re: [PATCH 09/14] rtmutex: turn the plist into an rb-tree.
-Message-ID: <20131120220757.2e9cad94@gandalf.local.home>
-In-Reply-To: <1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
-	<1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 20 Nov 2013 22:08:53 -0500
+Date: Wed, 20 Nov 2013 19:08:50 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom
+ killed
+In-Reply-To: <20131120160712.GF3556@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com> <20131113152412.GH707@cmpxchg.org> <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com> <20131114000043.GK707@cmpxchg.org> <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org> <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com> <20131120160712.GF3556@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  7 Nov 2013 14:43:43 +0100
-Juri Lelli <juri.lelli@gmail.com> wrote:
+On Wed, 20 Nov 2013, Johannes Weiner wrote:
 
-> From: Peter Zijlstra <peterz@infradead.org>
+> > "All other tasks" would be defined as though sharing the same mempolicy 
+> > context as the oom kill victim or the same set of cpuset mems, I'm not 
+> > sure what type of method for determining reclaim eligiblity you're 
+> > proposing to avoid pointlessly spinning without making progress.  Until an 
+> > alternative exists, my patch avoids the needless spinning and expedites 
+> > the exit, so I'll ask that it be merged.
 > 
-> Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
-> and provide a proper comparison function for -deadline and
-> -priority tasks.
+> I laid this out in the second half of my email, which you apparently
+> did not read:
 > 
-> This is done mainly because:
->  - classical prio field of the plist is just an int, which might
->    not be enough for representing a deadline;
->  - manipulating such a list would become O(nr_deadline_tasks),
->    which might be to much, as the number of -deadline task increases.
+
+I read it, but your proposal is incomplete, see below.
+
+> "If we have multi-second stalls in direct reclaim then it should be
+>  fixed for all direct reclaimers.  The problem is not only OOM kill
+>  victims getting stuck, it's every direct reclaimer being stuck trying
+>  to do way too much work before retrying the allocation.
 > 
-> Therefore, an rb-tree is used, and tasks are queued in it according
-> to the following logic:
->  - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
->    one with the higher (lower, actually!) prio wins;
->  - among a -priority and a -deadline task, the latter always wins;
->  - among two -deadline tasks, the one with the earliest deadline
->    wins.
+
+I'm addressing oom conditions here, including system, mempolicy, and 
+cpuset ooms.
+
+I'm not addressing a large number of processes that are doing direct 
+reclaim in parallel over the same set of zones.  That would be a more 
+invasive change and could potentially cause regressions because reclaim 
+would be stopped prematurely before reclaiming the given threshold.  I do 
+not have a bug report in front of me that suggests this is an issue 
+outside of oom conditions and the current behavior is actually intuitive: 
+if there are a large number of processes attempting reclaim, the demand 
+for memory from those zones is higher and it is intuitive to have reclaim 
+done in parallel up to a threshold.
+
+>  Kswapd checks the system state after every priority cycle.  Direct
+>  reclaim should probably do the same and retry the allocation after
+>  every priority cycle or every X pages scanned, where X is something
+>  reasonable and not "up to every LRU page in the system"."
 > 
-> Queueing and dequeueing functions are changed accordingly, for both
-> the list of a task's pi-waiters and the list of tasks blocked on
-> a pi-lock.
+> NAK to this incomplete drive-by fix.
+> 
 
-It will be interesting to see if this affects performance of the -rt
-patch, as the pi lists are stressed much more.
+This is a fix for a real-world situation that current exists in reclaim: 
+specifically, preventing unnecessary stalls in reclaim in oom conditions 
+that is known to be futile.  There is no possibility that reclaim itself 
+will be successful because of the oom condition, and that condition is the 
+only condition where reclaim is guaranteed to not be successful.  I'm sure 
+we both agree that there is no use in an oom killed process continually 
+looping in reclaim and yielding the cpu back to another process which just 
+prolongs the duration before the oom killed process can free its memory.
 
-Although this looks like it will remove that nasty hack in the -rt
-patch where the locks have to call "init_lists()" because plists are
-something not initialized easily on static variables.
+You're advocating that the allocation is retried after every priority 
+cycle as an alternative and that seems potentially racy and incomplete: if 
+32 processes enter reclaim all doing order-0 allocations and one process 
+reclaims a page, they would all terminate reclaim and retry the 
+allocation.  31 processes would then loop the page allocator again, and 
+reenter reclaim again at the starting priority.  Much better, in my 
+opinion, would be to reclaim up to a threshold for each and then return to 
+the page allocator since all 32 processes have demand for memory; that 
+threshold is debatable, but SWAP_CLUSTER_MAX is reasonable.
 
+So I would be nervous to carry the classzone_idx into direct reclaim, do 
+an alloc_flags |= ALLOC_NO_WATERMARKS iff TIF_MEMDIE, iterate the 
+zonelist, and do a __zone_watermark_ok_safe() for some watermark that's 
+greater than the low watermark to avoid finding ourselves oom again upon 
+returning to the page allocator without causing regressions in reclaim.
 
+The page allocator already tries to allocate memory between direct reclaim 
+and calling the oom killer specifically for cases where reclaim was 
+unsuccessful for a single process because memory was freed externally.
 
+The situation I'm addressing occurs when reclaim will never be successful 
+and nothing external to it will reclaim anything that the oom kill victim 
+can use.  The non-victim processes will continue to loop through the oom 
+killer and get put to sleep since they aren't victims themselves, but in 
+the case described there are 700 processes competing for cpu all doing 
+memory allocations so that doesn't help as it normally would.  Older 
+kernels used to increase the timeslice that oom kill victims have so they 
+exit as quickly as possible, but that was removed since 341aea2bc48b 
+("oom-kill: remove boost_dying_task_prio()").
 
-> diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-> index 0dd6aec..4ea7eaa 100644
-> --- a/kernel/rtmutex.c
-> +++ b/kernel/rtmutex.c
-> @@ -91,10 +91,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
->  }
->  #endif
->  
-> +static inline int
-> +rt_mutex_waiter_less(struct rt_mutex_waiter *left,
-> +		     struct rt_mutex_waiter *right)
-> +{
-> +	if (left->task->prio < right->task->prio)
-> +		return 1;
-> +
-> +	/*
-> +	 * If both tasks are dl_task(), we check their deadlines.
-> +	 */
-> +	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
-> +		return (left->task->dl.deadline < right->task->dl.deadline);
+My patch is not in a fastpath, it has extremely minimal overhead, and it 
+allows an oom killed victim to exit much quicker instead of incurring 
+O(seconds) stalls because of 700 other allocators grabbing the cpu in a 
+futile effort to reclaim memory themselves.
 
-Hmm, actually you only need to check the left task if it has a
-dl_prio() or not. If it has a dl_prio, then the only way it could have
-not returned with a 1 from the first compare is if the right task also
-has a dl_prio().
-
-
-> +
-> +	return 0;
-> +}
-> +
-> +static void
-> +rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
-> +{
-> +	struct rb_node **link = &lock->waiters.rb_node;
-> +	struct rb_node *parent = NULL;
-> +	struct rt_mutex_waiter *entry;
-> +	int leftmost = 1;
-> +
-> +	while (*link) {
-> +		parent = *link;
-> +		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
-> +		if (rt_mutex_waiter_less(waiter, entry)) {
-> +			link = &parent->rb_left;
-> +		} else {
-> +			link = &parent->rb_right;
-> +			leftmost = 0;
-> +		}
-> +	}
-> +
-> +	if (leftmost)
-> +		lock->waiters_leftmost = &waiter->tree_entry;
-> +
-> +	rb_link_node(&waiter->tree_entry, parent, link);
-> +	rb_insert_color(&waiter->tree_entry, &lock->waiters);
-> +}
-> +
-> +static void
-> +rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
-> +{
-> +	if (RB_EMPTY_NODE(&waiter->tree_entry))
-> +		return;
-> +
-> +	if (lock->waiters_leftmost == &waiter->tree_entry)
-> +		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
-> +
-> +	rb_erase(&waiter->tree_entry, &lock->waiters);
-> +	RB_CLEAR_NODE(&waiter->tree_entry);
-> +}
-> +
-> +static void
-> +rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-> +{
-> +	struct rb_node **link = &task->pi_waiters.rb_node;
-> +	struct rb_node *parent = NULL;
-> +	struct rt_mutex_waiter *entry;
-> +	int leftmost = 1;
-> +
-> +	while (*link) {
-> +		parent = *link;
-> +		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
-> +		if (rt_mutex_waiter_less(waiter, entry)) {
-> +			link = &parent->rb_left;
-> +		} else {
-> +			link = &parent->rb_right;
-> +			leftmost = 0;
-> +		}
-> +	}
-> +
-> +	if (leftmost)
-> +		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
-> +
-> +	rb_link_node(&waiter->pi_tree_entry, parent, link);
-> +	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
-> +}
-> +
-> +static void
-> +rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-> +{
-> +	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
-> +		return;
-> +
-> +	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
-> +		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
-> +
-> +	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
-> +	RB_CLEAR_NODE(&waiter->pi_tree_entry);
-> +}
-> +
->  /*
-> - * Calculate task priority from the waiter list priority
-> + * Calculate task priority from the waiter tree priority
->   *
-> - * Return task->normal_prio when the waiter list is empty or when
-> + * Return task->normal_prio when the waiter tree is empty or when
->   * the waiter is not allowed to do priority boosting
->   */
->  int rt_mutex_getprio(struct task_struct *task)
-> @@ -102,7 +196,7 @@ int rt_mutex_getprio(struct task_struct *task)
->  	if (likely(!task_has_pi_waiters(task)))
->  		return task->normal_prio;
->  
-> -	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
-> +	return min(task_top_pi_waiter(task)->task->prio,
->  		   task->normal_prio);
->  }
->  
-> @@ -233,7 +327,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
->  	 * When deadlock detection is off then we check, if further
->  	 * priority adjustment is necessary.
->  	 */
-> -	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
-> +	if (!detect_deadlock && waiter->task->prio == task->prio)
-
-This will always be true, as waiter->task == task.
-
->  		goto out_unlock_pi;
->  
->  	lock = waiter->lock;
-> @@ -254,9 +348,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
->  	top_waiter = rt_mutex_top_waiter(lock);
->  
->  	/* Requeue the waiter */
-> -	plist_del(&waiter->list_entry, &lock->wait_list);
-> -	waiter->list_entry.prio = task->prio;
-> -	plist_add(&waiter->list_entry, &lock->wait_list);
-> +	rt_mutex_dequeue(lock, waiter);
-> +	waiter->task->prio = task->prio;
-
-This is rather pointless, as waiter->task == task.
-
-We need to add a prio to the rt_mutex_waiter structure, because we need
-a way to know if the prio changed or not. There's a reason we used the
-list_entry.prio and not the task prio.
-
-Then you could substitute all the waiter->task->prio with just
-waiter->prio and that should also work.
-
--- Steve
-
-> +	rt_mutex_enqueue(lock, waiter);
->  
->  	/* Release the task */
->  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-
+Andrew, this fixes a real-world issue that exists and I'm asking that it 
+be merged so that oom killed processes can quickly allocate and exit to 
+free its memory.  If a more invasive future patch causes it to no longer 
+be necessary, that's what we call kernel development.  Thanks.
