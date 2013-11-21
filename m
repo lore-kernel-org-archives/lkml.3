@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab3KUIVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 03:21:30 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44428 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3KUIV3 (ORCPT
+	id S1753154Ab3KUIWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 03:22:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40266 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3KUIWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 03:21:29 -0500
-Message-ID: <528DC2AA.4070202@gmail.com>
-Date: Thu, 21 Nov 2013 09:22:02 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 21 Nov 2013 03:22:10 -0500
+Date: Thu, 21 Nov 2013 09:21:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
+ implementations
+Message-ID: <20131121082151.GU10022@twins.programming.kicks-ass.net>
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.508462614@infradead.org>
+ <20131120165406.14fa0f09@ultegra>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117160126.GG27323@pd.tnic> <CAC9WiBikz8kTAmKs1HVBmeb2Wu6hfHCh2d=w1sQC03EVHa1QOQ@mail.gmail.com> <20131117195358.GO27323@pd.tnic> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com> <20131118133210.GG24851@pd.tnic> <528B36EA.20301@gmail.com> <20131119101521.GA3515@pd.tnic> <528C84A1.5030707@gmail.com> <20131120111541.GA30147@pd.tnic>
-In-Reply-To: <20131120111541.GA30147@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120165406.14fa0f09@ultegra>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2013 12:15 PM, Borislav Petkov wrote:
-> On Wed, Nov 20, 2013 at 10:45:05AM +0100, Francis Moreau wrote:
->> Unfortunately the bisect session didn't give any positive results: I
->> couldn't be sure if a specific revision was good or bad because the
->> bug wasn't reproductible every time.
->>
->> But I got a different kernel oops on my stripped system that may give
->> us a clue: http://imgur.com/zdCknbY
->>
->> Does this help ?
+On Wed, Nov 20, 2013 at 04:54:06PM -0800, Jacob Pan wrote:
+> On Wed, 20 Nov 2013 17:04:53 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> Unfortunately, this is the second oops:
+> > People are starting to grow their own idle implementations in various
+> > disgusting ways. Collapse the lot and use the generic idle code to
+> > provide a proper idle cycle implementation.
+> > 
+> +Paul
 > 
-[...]
+> RCU and others rely on is_idle_task() might be broken with the
+> consolidated idle code since caller of do_idle may have pid != 0.
 > 
-> and judging by the instruction, that's addr in %rdi which we try to read
-> and I'd guess %rdi contains garbage after resume.
+> Should we use TS_POLL or introduce a new flag to identify idle task?
+
+PF_IDLE would be my preference, I checked and we seem to have a grand
+total of 2 unused task_struct::flags left ;-)
+
+> The reason why idle injection code does not inform RCU is that we have
+> known short period of idle time which does not impact RCU grace period.
 > 
-> IOW, this looks like another corruption that happens when you suspend to
-> ram.
-
-Hmm, I think it's more than that because if I'm removing both
-rtsx_pci_ms and memstick modules, then suspending and resuming doesn't
-oops anymore.
-
-Also I took a look at the changes between v3.11 and v3.12 in this area
-and those changes match the issue I'm facing:
-
-$ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
-09fd867 mfd: rtsx: Copyright modifications
-eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
-7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
-extra_init_hw
-5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
-773ccdf mfd: rtsx: Read vendor setting from config space
-
-I'll try to bisect one more time those changes tonight to see if I can
-find out if one of those commits is the culprit.
-
+> On the other side, I see idle injection code is working with this
+> patchset with workaround in s_idle_task() by checking TS_POLL flag.
+> But the efficiency is down by ~30%. i.e.
 > 
-> I asked you already but you didn't say:
+> before: inject 25% time to get 23-24% package idle
+> after: inject 25% time to get 16-17% package idle
 > 
-> "Also, you can check for BIOS updates for your machine and if there are,
-> check their changelogs whether they fix something suspend-related."
-> 
+> Still looking into improvement.
 
-Sorry for not answering the first time, but yes my bios is uptodate.
+So the quick hack is to make acpi_idle/intel_idle use the highest
+possible C-state when pid!=0 && PF_IDLE.
 
-Thanks.
+Ideally though I'd see some of the QoS ramifications explored. Because
+forcing the CPU into the highest C-state basically invalidates the
+entire QoS stack.
+
+So either make QoS and this idle injection stuff mutually exclusive in a
+very explicit way -- disable the QoS interface when you enable one of
+these idle injectors AND fail to engage the idle injectors when an
+incompatible QoS setting is pre-existing.
+
+Or come up with something smarter.
+
+You also have to explore the case of higher priority tasks messing with
+the proper operation of your injectors, this one is harder to deal with.
