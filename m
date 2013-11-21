@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab3KUWhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:37:06 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:65504 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab3KUWhB (ORCPT
+	id S1754908Ab3KUWjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:39:14 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37533 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab3KUWjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:37:01 -0500
+	Thu, 21 Nov 2013 17:39:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfMdOQ+DKiYEVBpP54RZYQWS_-7Xgf2YTA5jAZRxWsE6ag@mail.gmail.com>
-References: <1384965522-5788-1-git-send-email-ddstreet@ieee.org>
- <20131120173347.GA2369@hp530> <CALZtONA81=R4abFMpMMtDZKQe0s-8+JxvEfZO3NEZ910VwRDmw@mail.gmail.com>
- <CAL1ERfMdOQ+DKiYEVBpP54RZYQWS_-7Xgf2YTA5jAZRxWsE6ag@mail.gmail.com>
+In-Reply-To: <528D570D.3020006@oracle.com>
+References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org> <528D570D.3020006@oracle.com>
 From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 21 Nov 2013 17:36:40 -0500
-X-Google-Sender-Auth: _Ds6HdA5XonpwK1X48Bo93fbAXI
-Message-ID: <CALZtONARufrC-S0z8sdZ21LVfauvPiDDn23bO3fMfp5w4o28Qw@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: change params from hidden to ro
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Vladimir Murzin <murzin.v@gmail.com>, linux-mm@kvack.org,
-        Seth Jennings <sjennings@variantweb.net>,
+Date: Thu, 21 Nov 2013 17:38:49 -0500
+X-Google-Sender-Auth: T6PV1JT_Mk2pTwCcMj7nutYXuF0
+Message-ID: <CALZtONDyXdmzF_K7X+GNA0wY1yDn7k3t1FmQq4J=8=smX9XSoA@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Minchan Kim <minchan@kernel.org>,
         Weijie Yang <weijie.yang@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:12 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> On Thu, Nov 21, 2013 at 1:52 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->> On Wed, Nov 20, 2013 at 12:33 PM, Vladimir Murzin <murzin.v@gmail.com> wrote:
->>> Hi Dan!
->>>
->>> On Wed, Nov 20, 2013 at 11:38:42AM -0500, Dan Streetman wrote:
->>>> The "compressor" and "enabled" params are currently hidden,
->>>> this changes them to read-only, so userspace can tell if
->>>> zswap is enabled or not and see what compressor is in use.
->>>
->>> Could you elaborate more why this pice of information is necessary for
->>> userspace?
->>
->> For anyone interested in zswap, it's handy to be able to tell if it's
->> enabled or not ;-)  Technically people can check to see if the zswap
->> debug files are in /sys/kernel/debug/zswap, but I think the actual
->> "enabled" param is more obvious.  And the compressor param is really
->> the only way anyone from userspace can see what compressor's being
->> used; that's helpful to know for anyone that might want to be using a
->> non-default compressor.
->>
->> And of course, eventually we'll want to make the params writable, so
->> the compressor can be changed dynamically, and zswap can be enabled or
->> disabled dynamically (or at least enabled after boot).
+On Wed, Nov 20, 2013 at 7:42 PM, Bob Liu <bob.liu@oracle.com> wrote:
+> Hi Dan,
 >
-> Please do not make them writable.
-
-This patch doesn't make them writable.
-
-> There is no requirement to do that, and it will make zswap more complex.
-
-I can't speak for others, but I personally think being able to at
-least enable zswap after boot will be useful, as well as being able to
-change the compressor after boot.  Obviously it will make zswap more
-complex, but that's the nature of improving software ;-)
-
+> On 11/21/2013 03:49 AM, Dan Streetman wrote:
+>> Currently, zswap is writeback cache; stored pages are not sent
+>> to swap disk, and when zswap wants to evict old pages it must
+>> first write them back to swap cache/disk manually.  This avoids
+>> swap out disk I/O up front, but only moves that disk I/O to
+>> the writeback case (for pages that are evicted), and adds the
+>> overhead of having to uncompress the evicted pages, and adds the
+>> need for an additional free page (to store the uncompressed page)
+>> at a time of likely high memory pressure.  Additionally, being
+>> writeback adds complexity to zswap by having to perform the
+>> writeback on page eviction.
+>>
 >
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Good work!
+>
+>> This changes zswap to writethrough cache by enabling
+>> frontswap_writethrough() before registering, so that any
+>> successful page store will also be written to swap disk.  All the
+>> writeback code is removed since it is no longer needed, and the
+>> only operation during a page eviction is now to remove the entry
+>> from the tree and free it.
+>>
+>
+> Could you do some testing using eg. SPECjbb? And compare the result with
+> original zswap.
+
+Sure, I have a small test program that I used for performance
+comparisions, which I'll send and include some results, and I'll also
+try to find a copy of SPECjbb to get results with.
