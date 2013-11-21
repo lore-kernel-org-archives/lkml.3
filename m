@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3KUKwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:52:16 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:41689 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab3KUKwO (ORCPT
+	id S1752273Ab3KUKzp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:55:45 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:44702 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3KUKzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:52:14 -0500
+	Thu, 21 Nov 2013 05:55:43 -0500
+Message-ID: <528DE731.6040200@gmail.com>
+Date: Thu, 21 Nov 2013 18:57:53 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20131121013918.GI10323@ZenIV.linux.org.uk>
-References: <1384994071-12283-1-git-send-email-geyslan@gmail.com>
-	<20131121013918.GI10323@ZenIV.linux.org.uk>
-Date: Thu, 21 Nov 2013 08:52:13 -0200
-Message-ID: <CAGG-pUTec1mzz-nXSGVyMHPZ8PQ=hMrbTLnnRoLZ8ju=EKo98g@mail.gmail.com>
-Subject: Re: [PATCH v2] fs: binfmt_elf: Add ELF header consistency checks
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "open list:FILESYSTEMS (VFS...), linux-kernel@vger.kernel.org (open
-	list)" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: linux-kernel@vger.kernel.org,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] ARC: Add guard macro to uapi/asm/unistd.h
+References: <1385029778-26092-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1385029778-26092-1-git-send-email-vgupta@synopsys.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/20 Al Viro <viro@zeniv.linux.org.uk>:
-> On Wed, Nov 20, 2013 at 09:34:31PM -0300, Geyslan G. Bem wrote:
->> The member 'e_ehsize' that holds the ELF header size is compared
->> with the elfhdr struct size. If not equal, goes out.
->> If 'e_phoff' holds 0 the object has no program header table, so
->> goes out.
->> Ensures the file being loaded has the correct data encoding, checking
->> 'e_ident[EI_DATA]' against 'ELF_DATA'.
->>
->> Besides the checks being in accordance with the ELF Specifications,
->> they increase the binary consistency reducing the use of malformed ones.
->
-> This is completely misguided.  We are allowed to reject such binaries,
-> but what's the point of doing that?
+On 11/21/2013 06:29 PM, Vineet Gupta wrote:
+> Chen originally proposed this as "right thing to do" however I
+> actually ran into this when building perf tools. Some of the utils
+> include unistd.h as well as linux/unistd.h. Since -I includes kernel
+> headers too, we end up including the ARC unistd.h twice, leading to
+> redefinition nwarnings.
+> 
+> ------------------>8-------------------
+>     CC bench/sched-pipe.o
+> In file included from ~/kernel/arch/arc/include/uapi/asm/unistd.h:21:0,
+>                  from ~/kernel/include/uapi/linux/unistd.h:7,
+>                  from bench/sched-pipe.c:24:
+> ~/kernel/include/uapi/asm-generic/unistd.h:889:0: error: "__NR_fcntl64"
+> redefined [-Werror]
+>  #define __NR_fcntl64 __NR3264_fcntl
+>  ^
+> In file included from
+> ~/gnu/arc-linux-uclibc/sys-include/sys/syscall.h:24:0,
+>                  from bench/../perf.h:112,
+>                  from bench/sched-pipe.c:13:
+> ~/gnu/arc-linux-uclibc/include/bits/sysnum.h:761:0: note: this is the
+> location of the previous definition
+> ------------------>8-------------------
+> 
+> Verified that make headers_install works fine with this.
+> 
+> Suggested-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: David Howells <dhowells@redhat.com>
+> ---
+> I will be adding this to arc tree for 3.13
+> ---
+>  arch/arc/include/uapi/asm/unistd.h | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
+> index 6f30484f34b7..68125dd766c6 100644
+> --- a/arch/arc/include/uapi/asm/unistd.h
+> +++ b/arch/arc/include/uapi/asm/unistd.h
+> @@ -8,6 +8,9 @@
+>  
+>  /******** no-legacy-syscalls-ABI *******/
+>  
+> +#ifndef _UAPI_ASM_ARC_UNISTD_H
+> +#define _UAPI_ASM_ARC_UNISTD_H
+> +
+>  #define __ARCH_WANT_SYS_EXECVE
+>  #define __ARCH_WANT_SYS_CLONE
+>  #define __ARCH_WANT_SYS_VFORK
+> @@ -32,3 +35,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
+>  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
+>  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
+>  __SYSCALL(__NR_sysfs, sys_sysfs)
+> +
+> +#endif
+> 
 
-Viro, First of all, thanks for reply.
+Is it better to append comment for "#endif"?
 
-The security (or anti-security) guys are used to mess up with the not checked
-header fields for their "benefits": anti-debugging, injection and so on.
+e.g. "#endif /* _UAPI_ASM_ARC_UNISTD_H */"
 
-Concerning to 'e_phoff': when it is 0 the check avoids that 'elf_phdr' been read
-from a erroneous offset (ELF header). I know that without this check the binary
-will goes out anyway. But it reduces wasting cpu cycles.
 
-Regarding 'e_ident[EI_DATA]': that check also prevents a farther code reading
-when the binary, although been the correct arch, is compiled with a different
-data encoding (MSB vs LSB).
-
-So checking besides increase the binary consistency, guarantee some mislead
-and fewer cpu cycles.
-
+Thanks.
 -- 
-Regards,
-
-Geyslan G. Bem
-hackingbits.com
+Chen Gang
