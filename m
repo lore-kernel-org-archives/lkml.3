@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab3KUXAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:00:48 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:56923 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3KUXAp (ORCPT
+	id S1755252Ab3KUXBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:01:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49548 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3KUXBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:00:45 -0500
+	Thu, 21 Nov 2013 18:01:08 -0500
+Date: Thu, 21 Nov 2013 15:01:07 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Michael Marineau <michael.marineau@coreos.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname
+ without taking rename_lock 232d2d60
+Message-ID: <20131121230107.GA15179@kroah.com>
+References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+ <20131113123947.GB13318@ZenIV.linux.org.uk>
+ <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfNr+J5gT-s1Qe+RVmNz+CenNFOzAWi86MNCt2ZGLB4ZCA@mail.gmail.com>
-References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
- <528D570D.3020006@oracle.com> <CAL1ERfNr+J5gT-s1Qe+RVmNz+CenNFOzAWi86MNCt2ZGLB4ZCA@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 21 Nov 2013 18:00:24 -0500
-X-Google-Sender-Auth: RXoJDumerogr4E3QJLkej0YkqqU
-Message-ID: <CALZtONBzk4Yh9yHk3320a4x2DfSvUxGik8q+sLV38_cy4cuefg@mail.gmail.com>
-Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Bob Liu <bob.liu@oracle.com>, Seth Jennings <sjennings@variantweb.net>,
-        linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 10:50 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> Hello Dan,
->
-> On Thu, Nov 21, 2013 at 8:42 AM, Bob Liu <bob.liu@oracle.com> wrote:
->> Hi Dan,
->>
->> On 11/21/2013 03:49 AM, Dan Streetman wrote:
->>> Currently, zswap is writeback cache; stored pages are not sent
->>> to swap disk, and when zswap wants to evict old pages it must
->>> first write them back to swap cache/disk manually.  This avoids
->>> swap out disk I/O up front, but only moves that disk I/O to
->>> the writeback case (for pages that are evicted), and adds the
->>> overhead of having to uncompress the evicted pages, and adds the
->>> need for an additional free page (to store the uncompressed page)
->>> at a time of likely high memory pressure.  Additionally, being
->>> writeback adds complexity to zswap by having to perform the
->>> writeback on page eviction.
->>>
->>
->> Good work!
->>
->>> This changes zswap to writethrough cache by enabling
->>> frontswap_writethrough() before registering, so that any
->>> successful page store will also be written to swap disk.  All the
->>> writeback code is removed since it is no longer needed, and the
->>> only operation during a page eviction is now to remove the entry
->>> from the tree and free it.
->>>
->
-> Thanks for your work. I reviewed this patch, and it is good to me.
->
-> However, I am skeptical about it because:
-> 1. it will add more IO than original zswap, how does it result in a
-> performance improvement ?
+On Wed, Nov 13, 2013 at 02:51:59PM -0800, Michael Marineau wrote:
+> On Wed, Nov 13, 2013 at 4:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
+> >> Greetings,
+> >>
+> >> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
+> >> errors in /proc/*/fd/* where readlink returns "/" instead of the
+> >> correct path. This can be reproduced by the script below which copies
+> >> the kernel source directory structure while obsessively looking up
+> >> directory fds in proc from another process. Reverting
+> >> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
+> >> 48f5ec21d9c67e881ff35343988e290ef5cf933f
+> >> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
+> >
+> > Looking into it...  It seems that we are getting to the end of
+> > prepend_path() with non-negative error and bptr == *buffer.
+> > What the...
+> >
+> > OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
+> > if we decide to restart.  See if the following helps:
+> >
+> > diff --git a/fs/dcache.c b/fs/dcache.c
+> > index ae6ebb8..89f9671 100644
+> > --- a/fs/dcache.c
+> > +++ b/fs/dcache.c
+> > @@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
+> >                         const struct path *root,
+> >                         char **buffer, int *buflen)
+> >  {
+> > -       struct dentry *dentry = path->dentry;
+> > -       struct vfsmount *vfsmnt = path->mnt;
+> > -       struct mount *mnt = real_mount(vfsmnt);
+> > +       struct dentry *dentry;
+> > +       struct vfsmount *vfsmnt;
+> > +       struct mount *mnt;
+> >         int error = 0;
+> >         unsigned seq = 0;
+> >         char *bptr;
+> > @@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
+> >  restart:
+> >         bptr = *buffer;
+> >         blen = *buflen;
+> > +       dentry = path->dentry;
+> > +       vfsmnt = path->mnt;
+> > +       mnt = real_mount(vfsmnt);
+> >         read_seqbegin_or_lock(&rename_lock, &seq);
+> >         while (dentry != root->dentry || vfsmnt != root->mnt) {
+> >                 struct dentry * parent;
+> 
+> That appears to do the trick! I've tried my test case against that
+> patch on both Linus' git tree (as of last night) and the 3.12 release.
+> I'm now running the long build job that initially stumbled across this
+> bug now but it looks good so far.
 
-I haven't used SPECjbb yet (I don't have it, I'll have to find someone
-who has it that I can borrow), but my testing with a small test
-program I wrote does show that CPU-bound performance is better with
-writethrough over writeback, once zswap is full, which I think is
-expected since writeback adds cycles for decompressing old pages while
-writethrough simply drops the compressed page.  Now, the additional
-CPU load may be more desirable depending on CPU speed, # of CPUs, swap
-disk speed, etc., so maybe it would be better to make zswap writeback
-or writethrough, with a param to select, depending on the specific hw
-it's being run on.
+Al, did this fix end up in Linus's tree yet?  I'd like to pull it into
+the next 3.12-stable release, but will wait until Linus has it of
+course.
 
-> 2. most embedded device use NAND, more IO will reduce its working life
+thanks,
 
-This is certainly true; but most embedded devices also have tiny cpus
-that might get hit hard when zswap fills up and has to start
-decompressing pages while simultaneously compressing newly swapped out
-pages.  I'd expect for many embedded devices it would be better to
-simply invoke the oom killer and/or reboot than try to run with
-overcommitted memory.  But, having writeback vs writethrough
-selectable by param would allow flexibility based on the specific
-user's needs.
-
-
->
-> Regards
->
->> Could you do some testing using eg. SPECjbb? And compare the result with
->> original zswap.
->>
->> Thanks,
->> -Bob
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+greg k-h
