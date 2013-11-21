@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3KURW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:22:27 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48043 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3KURWZ (ORCPT
+	id S1753916Ab3KUR1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:27:49 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54746 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3KUR1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:22:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131121150344.GG10022@twins.programming.kicks-ass.net>
-References: <20131113151718.GN21461@twins.programming.kicks-ass.net>
-	<tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org>
-	<CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
-	<20131121150344.GG10022@twins.programming.kicks-ass.net>
-Date: Thu, 21 Nov 2013 09:22:24 -0800
-X-Google-Sender-Auth: D0hF5X6cFt_CmPXoGOQxlpn_uJs
-Message-ID: <CAE9FiQUHQ7jQfpxi+s7yeef17-+ApGjU2X1iRnm=azJ0+BFWZw@mail.gmail.com>
-Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
- group power
-From: Yinghai Lu <yinghai@kernel.org>
+	Thu, 21 Nov 2013 12:27:47 -0500
+Date: Thu, 21 Nov 2013 09:27:42 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
+ implementations
+Message-ID: <20131121172742.GW4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.508462614@infradead.org>
+ <20131120165406.14fa0f09@ultegra>
+ <20131121082151.GU10022@twins.programming.kicks-ass.net>
+ <20131121160716.GT4138@linux.vnet.ibm.com>
+ <20131121162956.GI10022@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121162956.GI10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112117-9332-0000-0000-000002411B46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 7:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>
->> This one seems fix NULL reference in compute_group_power.
->>
->> but get following on current Linus tree plus tip/sched/urgent.
->>
->> divide error: 0000 [#1]  SMP
->> [   28.190477] Modules linked in:
->> [   28.192012] CPU: 11 PID: 484 Comm: kworker/u324:0 Not tainted
->> 3.12.0-yh-10487-g4b94e59-dirty #2044
->> [   28.210488] Hardware name: Oracle Corporation  Sun Fire
->> [   28.229877] task: ffff88ff25205140 ti: ffff88ff2520a000 task.ti:
->> ffff88ff2520a000
->> [   28.236139] RIP: 0010:[<ffffffff810d9ff4>]  [<ffffffff810d9ff4>]
->> find_busiest_group+0x2b4/0x8a0
->
-> Hurmph.. what kind of hardware is that? and is there anything funny you
-> do to make it do this?
+On Thu, Nov 21, 2013 at 05:29:56PM +0100, Peter Zijlstra wrote:
+> On Thu, Nov 21, 2013 at 08:07:16AM -0800, Paul E. McKenney wrote:
+> > On Thu, Nov 21, 2013 at 09:21:51AM +0100, Peter Zijlstra wrote:
+> > > On Wed, Nov 20, 2013 at 04:54:06PM -0800, Jacob Pan wrote:
+> > > > On Wed, 20 Nov 2013 17:04:53 +0100
+> > > > Peter Zijlstra <peterz@infradead.org> wrote:
+> > > > 
+> > > > > People are starting to grow their own idle implementations in various
+> > > > > disgusting ways. Collapse the lot and use the generic idle code to
+> > > > > provide a proper idle cycle implementation.
+> > > > > 
+> > > > +Paul
+> > > > 
+> > > > RCU and others rely on is_idle_task() might be broken with the
+> > > > consolidated idle code since caller of do_idle may have pid != 0.
+> > > > 
+> > > > Should we use TS_POLL or introduce a new flag to identify idle task?
+> > > 
+> > > PF_IDLE would be my preference, I checked and we seem to have a grand
+> > > total of 2 unused task_struct::flags left ;-)
+> > 
+> > As long as RCU has some reliable way to identify an idle task, I am
+> > good.  But I have to ask -- why can't idle injection coordinate with
+> > the existing idle tasks rather than temporarily making alternative
+> > idle tasks?
+> 
+> Because that'd completely wreck how the scheduler selects tasks for just
+> these 2 arguably insane drivers.
+> 
+> We'd have to somehow teach it to pick the actual idle task instead of
+> this one task, but keep scheduling the rest of the tasks like normal --
+> we very much should keep higher priority tasks running like normal.
+> 
+> And we'd need a way to make it stop doing this 'proxy' execution.
+> 
+> That said, once we manage to replace the entire PI implementation with a
+> proper proxy execution scheme, the above would be possible by having a
+> resource (rt_mutex) associated with every idle task, and always held by
+> that task.
+> 
+> At that point we can do something like:
+> 
+>   rt_mutex_lock_timeout(cpu_idle_lock(cpu), jiffies);
+> 
+> And get the idle thread executing in our stead.
+> 
+> That said, idle is _special_ and I'd not be surprised we'd find a few
+> 'funnies' along the way of trying to get that to actually work.
+> 
+> For now I'd rather not go there quite yet.
 
-intel nehanem-ex or westmere-ex 8 sockets system.
+Fair enough!
 
-I tried without my local patches, the problem is still there.
+							Thanx, Paul
 
-Yinghai
