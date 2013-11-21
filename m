@@ -1,64 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3KUJsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 04:48:42 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:36894 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3KUJsi (ORCPT
+	id S1753956Ab3KUJuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 04:50:07 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:38116 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab3KUJuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 04:48:38 -0500
+	Thu, 21 Nov 2013 04:50:03 -0500
+Message-ID: <528DD669.6050903@synopsys.com>
+Date: Thu, 21 Nov 2013 15:16:17 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <528CDFFB.1020601@overkiz.com>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
-	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>
-	<20131120145926.GE14627@ns203013.ovh.net>
-	<528CDFFB.1020601@overkiz.com>
-Date: Thu, 21 Nov 2013 10:48:37 +0100
-Message-ID: <CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>
-Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek board
-From: Linus Walleij <linus.walleij@linaro.org>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.kernel
+To: Chen Gang <gang.chen@asianux.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Jonas Bonn" <jonas@southpole.se>
+CC: "dhowells@redhat.com" <dhowells@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] arch: arc: uapi: be sure of "_UAPI" prefix for all
+ guard macros
+References: <527C4E10.4070408@asianux.com> <527C50E4.3020009@asianux.com>
+In-Reply-To: <527C50E4.3020009@asianux.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 5:14 PM, boris brezillon
-<b.brezillon@overkiz.com> wrote:
-> On 20/11/2013 15:59, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 13:06 Wed 28 Aug     , Boris BREZILLON wrote:
+Hi Chen,
 
->>> mmc0_slot0_switch-0 {
->>> +                                               atmel,pins =
->>> +                                                       <AT91_PIOB 22
->>> AT91_PERIPH_GPIO (AT91_PINCTRL_OUTPUT | AT91_PINCTRL_OUTPUT_VAL(1))>;
->>> +                                       };
->>
->> nack this is a regulator the pinctrl API is not done for gpio default
->> value
->
-> I know this can be represented as a regulator, but looking at the datasheet,
-> this looks more like a switch than a regulator.
+On 11/08/2013 08:18 AM, Chen Gang wrote:
+> For all uapi headers, need use "_UAPI" prefix for its guard macro
+> (which will be stripped by "scripts/headers_installer.sh").
+> 
+> And be sure that all "endif" need append (or have correct) related
+> comment, and all normal uapi header files need content guard macro.
+> 
+> Also reserve guard macro in empty file, since some "usr/include/*"
+> header files may check guard macro to know whether content related
+> header file.
+> 
+> 
+> Cc: David Howells <dhowells@redhat.com>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arc/include/uapi/asm/byteorder.h  |    6 +++---
+>  arch/arc/include/uapi/asm/cachectl.h   |    6 +++---
+>  arch/arc/include/uapi/asm/elf.h        |    2 +-
+>  arch/arc/include/uapi/asm/setup.h      |    9 +++++++--
+>  arch/arc/include/uapi/asm/sigcontext.h |    6 +++---
+>  arch/arc/include/uapi/asm/signal.h     |    6 +++---
+>  arch/arc/include/uapi/asm/swab.h       |    6 +++---
+>  arch/arc/include/uapi/asm/unistd.h     |    4 ++++
 
-No matter whether it's a switch or a GPIO regulator it seems we
-are in violent agreement that it should not be controlled by the
-pin control states at least.
+Form this patch, I'm picking up the hunk for unistd.h as it is missing a gaurd
+altogether. Although the guard is generated by installed headers, some of perf
+utils (e.g. sched-pipe.c) include kernel headers directly too, causing redef errors.
 
-Start with making it a GPIO then you can figure out whether
-a GPIO regulator or drivers/extcon/extcon-gpio.c should be
-used.
+I'm dropping rest of the patch.
 
-Yours,
-Linus Walleij
+-Vineet
+
+
+>  8 files changed, 27 insertions(+), 18 deletions(-)
+> 
+> diff --git a/arch/arc/include/uapi/asm/byteorder.h b/arch/arc/include/uapi/asm/byteorder.h
+> index 9da71d4..859fde2 100644
+> --- a/arch/arc/include/uapi/asm/byteorder.h
+> +++ b/arch/arc/include/uapi/asm/byteorder.h
+> @@ -6,8 +6,8 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#ifndef __ASM_ARC_BYTEORDER_H
+> -#define __ASM_ARC_BYTEORDER_H
+> +#ifndef _UAPI__ASM_ARC_BYTEORDER_H
+> +#define _UAPI__ASM_ARC_BYTEORDER_H
+>  
+>  #ifdef CONFIG_CPU_BIG_ENDIAN
+>  #include <linux/byteorder/big_endian.h>
+> @@ -15,4 +15,4 @@
+>  #include <linux/byteorder/little_endian.h>
+>  #endif
+>  
+> -#endif /* ASM_ARC_BYTEORDER_H */
+> +#endif /* _UAPI__ASM_ARC_BYTEORDER_H */
+> diff --git a/arch/arc/include/uapi/asm/cachectl.h b/arch/arc/include/uapi/asm/cachectl.h
+> index 51c73f0..2437fc6 100644
+> --- a/arch/arc/include/uapi/asm/cachectl.h
+> +++ b/arch/arc/include/uapi/asm/cachectl.h
+> @@ -6,8 +6,8 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#ifndef __ARC_ASM_CACHECTL_H
+> -#define __ARC_ASM_CACHECTL_H
+> +#ifndef _UAPI__ARC_ASM_CACHECTL_H
+> +#define _UAPI__ARC_ASM_CACHECTL_H
+>  
+>  /*
+>   * ARC ABI flags defined for Android's finegrained cacheflush requirements
+> @@ -25,4 +25,4 @@
+>  #define DCACHE	CF_D_FLUSH
+>  #define BCACHE	(CF_I_INV | CF_D_FLUSH)
+>  
+> -#endif
+> +#endif /* _UAPI__ARC_ASM_CACHECTL_H */
+> diff --git a/arch/arc/include/uapi/asm/elf.h b/arch/arc/include/uapi/asm/elf.h
+> index 0f99ac8..4e82dc6 100644
+> --- a/arch/arc/include/uapi/asm/elf.h
+> +++ b/arch/arc/include/uapi/asm/elf.h
+> @@ -23,4 +23,4 @@ typedef unsigned long elf_fpregset_t;
+>  
+>  typedef elf_greg_t elf_gregset_t[ELF_NGREG];
+>  
+> -#endif
+> +#endif /* _UAPI__ASM_ARC_ELF_H */
+> diff --git a/arch/arc/include/uapi/asm/setup.h b/arch/arc/include/uapi/asm/setup.h
+> index a6d4e44..09a8df7 100644
+> --- a/arch/arc/include/uapi/asm/setup.h
+> +++ b/arch/arc/include/uapi/asm/setup.h
+> @@ -1,6 +1,11 @@
+>  /*
+>   * setup.h is part of userspace header ABI so UAPI scripts have to generate it
+>   * even if there's nothing to export - causing empty <uapi/asm/setup.h>
+> - * However to prevent "patch" from discarding it we add this placeholder
+> - * comment
+> + *
+> + * And some user programs may check guard macro to know whether content related
+> + * header file (e.g. some of "/usr/include/ *" header files check guard macro),
+> + * so recommend to still reserve guard macro in empty file.
+>   */
+> +#ifndef _UAPI__ASM_ARC_SETUP_H
+> +#define _UAPI__ASM_ARC_SETUP_H
+> +#endif /* _UAPI__ASM_ARC_SETUP_H */
+> diff --git a/arch/arc/include/uapi/asm/sigcontext.h b/arch/arc/include/uapi/asm/sigcontext.h
+> index 9678a11..b2063ff 100644
+> --- a/arch/arc/include/uapi/asm/sigcontext.h
+> +++ b/arch/arc/include/uapi/asm/sigcontext.h
+> @@ -6,8 +6,8 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#ifndef _ASM_ARC_SIGCONTEXT_H
+> -#define _ASM_ARC_SIGCONTEXT_H
+> +#ifndef _UAPI_ASM_ARC_SIGCONTEXT_H
+> +#define _UAPI_ASM_ARC_SIGCONTEXT_H
+>  
+>  #include <asm/ptrace.h>
+>  
+> @@ -19,4 +19,4 @@ struct sigcontext {
+>  	struct user_regs_struct regs;
+>  };
+>  
+> -#endif /* _ASM_ARC_SIGCONTEXT_H */
+> +#endif /* _UAPI_ASM_ARC_SIGCONTEXT_H */
+> diff --git a/arch/arc/include/uapi/asm/signal.h b/arch/arc/include/uapi/asm/signal.h
+> index fad62f7..f212d83 100644
+> --- a/arch/arc/include/uapi/asm/signal.h
+> +++ b/arch/arc/include/uapi/asm/signal.h
+> @@ -8,8 +8,8 @@
+>   * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
+>   */
+>  
+> -#ifndef _ASM_ARC_SIGNAL_H
+> -#define _ASM_ARC_SIGNAL_H
+> +#ifndef _UAPI_ASM_ARC_SIGNAL_H
+> +#define _UAPI_ASM_ARC_SIGNAL_H
+>  
+>  /*
+>   * This is much needed for ARC sigreturn optimization.
+> @@ -24,4 +24,4 @@
+>  
+>  #include <asm-generic/signal.h>
+>  
+> -#endif /* _ASM_ARC_SIGNAL_H */
+> +#endif /* _UAPI_ASM_ARC_SIGNAL_H */
+> diff --git a/arch/arc/include/uapi/asm/swab.h b/arch/arc/include/uapi/asm/swab.h
+> index 095599a..7237a21 100644
+> --- a/arch/arc/include/uapi/asm/swab.h
+> +++ b/arch/arc/include/uapi/asm/swab.h
+> @@ -13,8 +13,8 @@
+>   *  -Hardware assisted single cycle bswap (Use Case of ARC custom instrn)
+>   */
+>  
+> -#ifndef __ASM_ARC_SWAB_H
+> -#define __ASM_ARC_SWAB_H
+> +#ifndef _UAPI__ASM_ARC_SWAB_H
+> +#define _UAPI__ASM_ARC_SWAB_H
+>  
+>  #include <linux/types.h>
+>  
+> @@ -95,4 +95,4 @@
+>  #define __SWAB_64_THRU_32__
+>  #endif
+>  
+> -#endif
+> +#endif /* _UAPI__ASM_ARC_SWAB_H */
+> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
+> index 6f30484..109f32c 100644
+> --- a/arch/arc/include/uapi/asm/unistd.h
+> +++ b/arch/arc/include/uapi/asm/unistd.h
+> @@ -7,6 +7,8 @@
+>   */
+>  
+>  /******** no-legacy-syscalls-ABI *******/
+> +#ifndef _UAPI_ASM_ARC_UNISTD_H
+> +#define _UAPI_ASM_ARC_UNISTD_H
+>  
+>  #define __ARCH_WANT_SYS_EXECVE
+>  #define __ARCH_WANT_SYS_CLONE
+> @@ -32,3 +34,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
+>  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
+>  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
+>  __SYSCALL(__NR_sysfs, sys_sysfs)
+> +
+> +#endif /* _UAPI_ASM_ARC_UNISTD_H */
+> 
+
