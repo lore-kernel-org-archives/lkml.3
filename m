@@ -1,255 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab3KUMNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:13:36 -0500
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:46973 "EHLO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3KUMNd (ORCPT
+	id S1754195Ab3KUMUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:20:23 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:57101 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839Ab3KUMUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:13:33 -0500
-From: Ruslan Ruslichenko <ruslan.ruslichenko@globallogic.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] mfd: twl-core: Clean up module by removing twl603x pdata handling
-Date: Thu, 21 Nov 2013 14:13:28 +0200
-Message-Id: <1385036008-1727-1-git-send-email-ruslan.ruslichenko@globallogic.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 21 Nov 2013 07:20:20 -0500
+Date: Thu, 21 Nov 2013 12:20:11 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 1/5] mfd: max14577: Add max14577 MFD driver core
+Message-ID: <20131121122011.GD23067@lee--X1>
+References: <1384956732-19526-1-git-send-email-k.kozlowski@samsung.com>
+ <1384956732-19526-2-git-send-email-k.kozlowski@samsung.com>
+ <20131121103408.GA22536@lee--X1>
+ <1385034199.748.21.camel@AMDC1943>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385034199.748.21.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since currently nobody uses TWL603x platform data and all new
-users will supply it through device tree, handling of these
-data within twl-core will never be used, so remove it.
+> Thanks for pointing these out however after using regmap_irq_chip whole
+> file won't be needed anymore.
 
-Signed-off-by: Ruslan Ruslichenko <ruslan.ruslichenko@globallogic.com>
----
+That's fine.
 
-Tested on TI SDP/Tablet OMAP4460 board
-Based on:
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-commit 5e01dc7 Linux 3.12
+> > > +static int max14577_i2c_probe(struct i2c_client *i2c,
+> > > +			      const struct i2c_device_id *id)
+> > > +{
+> > > +	struct max14577 *max14577;
+> > > +	struct max14577_platform_data *pdata = dev_get_platdata(&i2c->dev);
+> > > +	u8 reg_data;
+> > > +	int ret = 0;
+> > > +
+> > > +	if (i2c->dev.of_node) {
+> > 
+> > Can you pull this out. It looks neater as the top as:
+> >   struct device_node *np = i2c->dev.of_node;
+> 
+> I am not sure if I understand you correctly. You would like to change
+> this to:
+> -------------------------
+> static int max14577_i2c_probe(struct i2c_client *i2c,
+>                               const struct i2c_device_id *id)
+> {
+>         struct max14577 *max14577;
+>         struct max14577_platform_data *pdata =
+> dev_get_platdata(&i2c->dev);
+>         struct device_node *np = i2c->dev.of_node;
+>         u8 reg_data;
+>         int ret = 0;
+> 
+>         if (np) {
+>                 pdata = devm_kzalloc(&i2c->dev,
+>                                 sizeof(struct max14577_platform_data),
+>                                 GFP_KERNEL);
+> -------------------------
+> The variable 'np' would be used only once.
 
- drivers/mfd/twl-core.c | 198 -------------------------------------------------
- 1 file changed, 198 deletions(-)
+I know, but it's more in keeping with the rest of the subsystem.
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 29473c2..c3c28b9 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -701,62 +701,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
- 			usb3v1[0].dev_name = dev_name(child);
- 		}
- 	}
--	if (IS_ENABLED(CONFIG_TWL6030_USB) && pdata->usb &&
--	    twl_class_is_6030()) {
--
--		static struct regulator_consumer_supply usb3v3;
--		int regulator;
--
--		if (IS_ENABLED(CONFIG_REGULATOR_TWL4030)) {
--			/* this is a template that gets copied */
--			struct regulator_init_data usb_fixed = {
--				.constraints.valid_modes_mask =
--					REGULATOR_MODE_NORMAL
--					| REGULATOR_MODE_STANDBY,
--				.constraints.valid_ops_mask =
--					REGULATOR_CHANGE_MODE
--					| REGULATOR_CHANGE_STATUS,
--			};
--
--			if (features & TWL6032_SUBCLASS) {
--				usb3v3.supply =	"ldousb";
--				regulator = TWL6032_REG_LDOUSB;
--			} else {
--				usb3v3.supply = "vusb";
--				regulator = TWL6030_REG_VUSB;
--			}
--			child = add_regulator_linked(regulator, &usb_fixed,
--							&usb3v3, 1,
--							features);
--			if (IS_ERR(child))
--				return PTR_ERR(child);
--		}
--
--		pdata->usb->features = features;
--
--		child = add_child(TWL_MODULE_USB, "twl6030_usb",
--			pdata->usb, sizeof(*pdata->usb), true,
--			/* irq1 = VBUS_PRES, irq0 = USB ID */
--			irq_base + USBOTG_INTR_OFFSET,
--			irq_base + USB_PRES_INTR_OFFSET);
--
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--		/* we need to connect regulators to this transceiver */
--		if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && child)
--			usb3v3.dev_name = dev_name(child);
--	} else if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) &&
--		   twl_class_is_6030()) {
--		if (features & TWL6032_SUBCLASS)
--			child = add_regulator(TWL6032_REG_LDOUSB,
--						pdata->ldousb, features);
--		else
--			child = add_regulator(TWL6030_REG_VUSB,
--						pdata->vusb, features);
--
--			if (IS_ERR(child))
--					return PTR_ERR(child);
--	}
- 
- 	if (IS_ENABLED(CONFIG_TWL4030_WATCHDOG) && twl_class_is_4030()) {
- 		child = add_child(TWL_MODULE_PM_RECEIVER, "twl4030_wdt", NULL,
-@@ -870,148 +814,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
- 			return PTR_ERR(child);
- 	}
- 
--	/* twl6030 regulators */
--	if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && twl_class_is_6030() &&
--			!(features & TWL6032_SUBCLASS)) {
--		child = add_regulator(TWL6030_REG_VDD1, pdata->vdd1,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VDD2, pdata->vdd2,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VDD3, pdata->vdd3,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_V1V8, pdata->v1v8,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_V2V1, pdata->v2v1,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VMMC, pdata->vmmc,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VPP, pdata->vpp,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VUSIM, pdata->vusim,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VCXIO, pdata->vcxio,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VDAC, pdata->vdac,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VAUX1_6030, pdata->vaux1,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VAUX2_6030, pdata->vaux2,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_VAUX3_6030, pdata->vaux3,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6030_REG_CLK32KG, pdata->clk32kg,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--	}
--
--	/* 6030 and 6025 share this regulator */
--	if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && twl_class_is_6030()) {
--		child = add_regulator(TWL6030_REG_VANA, pdata->vana,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--	}
--
--	/* twl6032 regulators */
--	if (IS_ENABLED(CONFIG_REGULATOR_TWL4030) && twl_class_is_6030() &&
--			(features & TWL6032_SUBCLASS)) {
--		child = add_regulator(TWL6032_REG_LDO5, pdata->ldo5,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO1, pdata->ldo1,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO7, pdata->ldo7,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO6, pdata->ldo6,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDOLN, pdata->ldoln,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO2, pdata->ldo2,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO4, pdata->ldo4,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_LDO3, pdata->ldo3,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_SMPS3, pdata->smps3,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_SMPS4, pdata->smps4,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--		child = add_regulator(TWL6032_REG_VIO, pdata->vio6025,
--					features);
--		if (IS_ERR(child))
--			return PTR_ERR(child);
--
--	}
--
- 	if (IS_ENABLED(CONFIG_CHARGER_TWL4030) && pdata->bci &&
- 			!(features & (TPS_SUBSET | TWL5031))) {
- 		child = add_child(TWL_MODULE_MAIN_CHARGE, "twl4030_bci",
+> > > +
+> > > +	ret = mfd_add_devices(max14577->dev, -1, max14577_devs,
+> > > +			ARRAY_SIZE(max14577_devs), NULL, 0, NULL);
+> > 
+> > You should be passing the irqdomain as the final parameter here.
+> 
+> I replaced the IRQ handling with regmap_irq_chip so this would look like
+> this:
+> -------------------------
+>         ret = mfd_add_devices(max14577->dev, -1, max14577_devs,
+>                         ARRAY_SIZE(max14577_devs), NULL, 0,
+>                         regmap_irq_get_domain(max14577->irq_data));
+> -------------------------
+> Am I correct?
+
+if regmap_irq_get_domain() returns an irqdomain, then yes.
+
+> > > +	return i2c_add_driver(&max14577_i2c_driver);
+> > > +}
+> > > +subsys_initcall(max14577_i2c_init);
+> > > +
+> > > +static void __exit max14577_i2c_exit(void)
+> > > +{
+> > > +	i2c_del_driver(&max14577_i2c_driver);
+> > > +}
+> > > +module_exit(max14577_i2c_exit);
+> > 
+> > >>>>>>>>>>>>>>>>>>>>>>
+> > 
+> > Remove all this and replace with:
+> >   module_i2c_driver(max14577_i2c_driver);
+> 
+> The subsys_initcall is needed. Marek Szyprowski replied to this here:
+> http://thread.gmane.org/gmane.linux.drivers.devicetree/51903/focus=1594651
+
+Okay, but this will need to be changed when USB Gadget starts to
+support -EPROBE_DEFER
+
+> > > +struct max14577_regulator_platform_data {
+> > > +	int id;
+> > > +	struct regulator_init_data *initdata;
+> > > +	struct device_node *of_node;
+> > 
+> > Do you ever set this? What's the point of it is it's set in the device?
+> 
+> Do you mean the whole struct max14577_regulator_platform_data or only
+> some member of it (of_node?)?
+
+Initially only the of_node. Usually MFD children are able to call back
+into their parent to fetch these details. Also mfd_add_device() goes
+out of its way to fill in the child's own of_node.
+
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
