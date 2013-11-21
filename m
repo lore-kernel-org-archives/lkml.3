@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3KUS5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:57:06 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:56722 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3KUS5E (ORCPT
+	id S1755006Ab3KUS5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:57:32 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56180 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab3KUS5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:57:04 -0500
+	Thu, 21 Nov 2013 13:57:05 -0500
+Message-ID: <528E577C.2050506@wwwdotorg.org>
+Date: Thu, 21 Nov 2013 11:57:00 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1311211428450.30673@ionos.tec.linutronix.de>
-References: <20130917082838.218329307@infradead.org>
-	<20130917182350.449685712@linutronix.de>
-	<20130917183628.857145384@linutronix.de>
-	<CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
-	<alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
-	<20131121130605.GE10022@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.02.1311211428450.30673@ionos.tec.linutronix.de>
-Date: Thu, 21 Nov 2013 10:57:03 -0800
-Message-ID: <CA+8MBbL4sBZK26O_+VQizNy-5mWtieDBfAy5CDcNBFxvorEp3g@mail.gmail.com>
-Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
-From: Tony Luck <tony.luck@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv6+ 01/13] of: introduce of_property_for_earch_phandle_with_args()
+References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com><1385041249-7705-2-git-send-email-hdoyu@nvidia.com> <20131121.191720.1487772262083864095.hdoyu@nvidia.com>
+In-Reply-To: <20131121.191720.1487772262083864095.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 5:30 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 21 Nov 2013, Peter Zijlstra wrote:
->> Anyway, I don't object to the patch per se, but it might bloat a few
->> !ia64 kernels for having to carry the extra text.
+On 11/21/2013 10:17 AM, Hiroshi Doyu wrote:
+> Iterating over a property containing a list of phandles with arguments
+> is a common operation for device drivers. This patch adds a new
+> of_property_for_each_phandle_with_args() macro to make the iteration
+> simpler.
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+> v6+:
+> Use the description, which Grant Likely proposed, to be full enough
+> that a future reader can figure out why a patch was written.
+>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007062.html
 
-I tried it out ... if does fix both build & boot for ia64 with
-PREMPT=n and PREMPT=y
+This new version only addresses one of the concerns that Grant had,
+namely the commit message.
 
-Tested-by: Tony Luck <tony.luck@intel.com>
+> diff --git a/include/linux/of.h b/include/linux/of.h
+
+> +#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
+> +	for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
+> +
+
+Grant also wanted the actual implementation fixed so that it wasn't so
+inefficient.
+
+What this current patch does is basically:
+
+for every entry in the property:
+    for every entry in the property before the current index:
+        parse the phandle+specifier
+
+That's roughly O(n^2). (n is # entries in the property)
+
+Instead, what should happen is:
+
+for every entry in the property:
+    parse the phandle+specifier
+    yield the result
+
+That's roughly O(n).
+
+In other words, an implementation more along the lines of
+include/linux/of.h's:
+
+#define of_property_for_each_u32(np, propname, prop, p, u)      \
+        for (prop = of_find_property(np, propname, NULL),       \
+                p = of_prop_next_u32(prop, NULL, &u);           \
+                p;                                              \
+                p = of_prop_next_u32(prop, p, &u))
+
+... so you'd need functions like of_prop_first_specifier() and
+of_prop_next_specifier(), and perhaps some associated set of state
+variables, perhaps with all the state wrapped into a single struct for
+simplicity.
