@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3KUXVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:21:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49954 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab3KUXVC (ORCPT
+	id S1755500Ab3KUXWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:22:47 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48844 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab3KUXWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:21:02 -0500
-Message-ID: <528E955C.7090205@codeaurora.org>
-Date: Thu, 21 Nov 2013 15:21:00 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 21 Nov 2013 18:22:46 -0500
+Date: Thu, 21 Nov 2013 23:22:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Michael Marineau <michael.marineau@coreos.com>,
+        Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname
+ without taking rename_lock 232d2d60
+Message-ID: <20131121232242.GJ10323@ZenIV.linux.org.uk>
+References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+ <20131113123947.GB13318@ZenIV.linux.org.uk>
+ <CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
+ <20131121230107.GA15179@kroah.com>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Olof Johansson <olof@lixom.net>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/17] Convert ARM sched_clock users to sched_clock_register()
-References: <1384557985-9414-1-git-send-email-sboyd@codeaurora.org> <87li0h8i70.fsf@linaro.org>
-In-Reply-To: <87li0h8i70.fsf@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121230107.GA15179@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/13 15:10, Kevin Hilman wrote:
-> Hi Stephen,
->
-> Stephen Boyd <sboyd@codeaurora.org> writes:
->
->> Olof,
->>
->> Please consider picking up these simple conversion patches. They
->> were sent a few months back[1] but I didn't keep pushing them due
->> to the complex path to mainline that the core patches took. I've
->> picked up the acks and resent. Now that the core kernel changes have
->> landed in Linus' tree it's much easier to pull these changes in.
-> Just to clarify, are the dependencies in v3.12? or were they merged for
-> the v3.13 merge window and just recently it Linus' tree.
+On Thu, Nov 21, 2013 at 03:01:07PM -0800, Greg KH wrote:
 
-The dependencies are not in 3.12. They just hit Linus' tree this merge
-window (3.13). Ingo brought it into tip at commit
-68e90740284c69292881cd38c7ece6f09a18a58f and Linus took it at commit
-87093826aa0172d9135ca1f301c4298a258ceee6.
+> Al, did this fix end up in Linus's tree yet?  I'd like to pull it into
+> the next 3.12-stable release, but will wait until Linus has it of
+> course.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Yes - ede4ce.
