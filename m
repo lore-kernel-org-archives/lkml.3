@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3KULEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:04:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39522 "EHLO mx1.redhat.com"
+	id S1754419Ab3KULCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:02:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab3KULCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:02:43 -0500
+	id S1754360Ab3KULCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:02:32 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,24 +14,27 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 17/22] perf tools: Add build and install plugins targets
-Date: Thu, 21 Nov 2013 12:01:15 +0100
-Message-Id: <1385031680-9014-18-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 15/22] tools lib traceevent: Change pevent_parse_event to return event format
+Date: Thu, 21 Nov 2013 12:01:13 +0100
+Message-Id: <1385031680-9014-16-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
 References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding 'plugins' target along with the libtraceevent.a,
-so plugins are built together with traceevent library.
+Changing pevent_parse_event to return 'struct event_format',
+for the parsed event if the return pointer is specified.
 
-Adding 'install-traceevent-plugins' Makefile install target,
-instructing perf to install plugins into:
-  $(HOME)/libexec/perf-core/traceevent/plugins
-    - if installed localy under $HOME
-  $(DESTDIR)/$(prefix)/$(perfexecdir)/traceevent/plugins
-    - if installed globally
+This way we can remove pevent_parse_format which does the
+same stuff just without 'struct pevent' object.
+
+The ultimate goal is to always use pevent object when dealing
+with traceevent library. The reason is that we might need
+additional processing (like plugins), which is not possible
+otherwise.
+
+Patches follow to make this happen completely.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -44,79 +47,134 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile.perf   | 15 ++++++++++-----
- tools/perf/config/Makefile |  2 ++
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ tools/lib/traceevent/event-parse.c  | 32 +++++++++++---------------------
+ tools/lib/traceevent/event-parse.h  |  7 ++++---
+ tools/perf/util/evsel.c             |  2 +-
+ tools/perf/util/trace-event-parse.c |  4 ++--
+ 4 files changed, 18 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index e416ccc..b4f8910 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -105,7 +105,7 @@ ifeq ($(config),1)
- include config/Makefile
- endif
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 74007ab..4baa0a9 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -5130,27 +5130,9 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
+ }
  
--export prefix bindir sharedir sysconfdir
-+export prefix bindir sharedir sysconfdir DESTDIR
+ /**
+- * pevent_parse_format - parse the event format
+- * @buf: the buffer storing the event format string
+- * @size: the size of @buf
+- * @sys: the system the event belongs to
+- *
+- * This parses the event format and creates an event structure
+- * to quickly parse raw data for a given event.
+- *
+- * These files currently come from:
+- *
+- * /sys/kernel/debug/tracing/events/.../.../format
+- */
+-enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
+-				      unsigned long size, const char *sys)
+-{
+-	return __pevent_parse_format(eventp, NULL, buf, size, sys);
+-}
+-
+-/**
+  * pevent_parse_event - parse the event format
+  * @pevent: the handle to the pevent
++ * @format: event format object for passed format
+  * @buf: the buffer storing the event format string
+  * @size: the size of @buf
+  * @sys: the system the event belongs to
+@@ -5158,11 +5140,16 @@ enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *
+  * This parses the event format and creates an event structure
+  * to quickly parse raw data for a given event.
+  *
++ * Returns  event format object in @format parameter if
++ * specified.
++ *
+  * These files currently come from:
+  *
+  * /sys/kernel/debug/tracing/events/.../.../format
+  */
+-enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
++enum pevent_errno pevent_parse_event(struct pevent *pevent,
++				     struct event_format **format,
++				     const char *buf,
+ 				     unsigned long size, const char *sys)
+ {
+ 	struct event_format *event = NULL;
+@@ -5171,7 +5158,7 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 	if (event == NULL)
+ 		return ret;
  
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
-@@ -710,13 +710,18 @@ $(LIB_FILE): $(LIB_OBJS)
- # libtraceevent.a
- TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
+-	if (add_event(pevent, event)) {
++	if (pevent && add_event(pevent, event)) {
+ 		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 		goto event_add_failed;
+ 	}
+@@ -5180,6 +5167,9 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 	if (PRINT_ARGS && event->print_fmt.args)
+ 		print_args(event->print_fmt.args);
  
--$(LIBTRACEEVENT): $(TE_SOURCES)
--	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" libtraceevent.a
-+LIBTRACEEVENT_FLAGS=$(QUIET_SUBDIR1) O=$(OUTPUT) CFLAGS="-g -Wall $(EXTRA_CFLAGS)" plugin_dir=$(plugindir_SQ)
++	if (format)
++		*format = event;
 +
-+$(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) libtraceevent.a plugins
+ 	return 0;
  
- $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
- 	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
+ event_add_failed:
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 0ad7f6b..daafb70 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -559,10 +559,11 @@ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+ int pevent_parse_header_page(struct pevent *pevent, char *buf, unsigned long size,
+ 			     int long_size);
  
-+install-traceevent-plugins:
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
+-enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
++enum pevent_errno pevent_parse_event(struct pevent *pevent,
++				     struct event_format **format,
++				     const char *buf,
+ 				     unsigned long size, const char *sys);
+-enum pevent_errno pevent_parse_format(struct event_format **eventp, const char *buf,
+-				      unsigned long size, const char *sys);
 +
- LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
+ void pevent_free_format(struct event_format *event);
  
- # if subdir is set, we've been called from above so target has been built
-@@ -785,7 +790,7 @@ cscope:
+ void *pevent_get_field_raw(struct trace_seq *s, struct event_format *event,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 77e38ff..599d1780 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -208,7 +208,7 @@ struct event_format *event_format__new(const char *sys, const char *name)
+ 		size += n;
+ 	} while (n > 0);
  
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
--             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
-+             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
+-	pevent_parse_format(&format, bf, size, sys);
++	pevent_parse_event(NULL, &format, bf, size, sys);
  
- $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
- 	@FLAGS='$(TRACK_CFLAGS)'; \
-@@ -849,7 +854,7 @@ endif
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'; \
- 		$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ out_free_bf:
+ 	free(bf);
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 6681f71..c8dae72 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -198,13 +198,13 @@ void parse_ftrace_printk(struct pevent *pevent,
  
--install: install-bin try-install-man
-+install: install-bin try-install-man install-traceevent-plugins
+ int parse_ftrace_file(struct pevent *pevent, char *buf, unsigned long size)
+ {
+-	return pevent_parse_event(pevent, buf, size, "ftrace");
++	return pevent_parse_event(pevent, NULL, buf, size, "ftrace");
+ }
  
- install-python_ext:
- 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f7d11a8..8c8a205 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -578,6 +578,7 @@ else
- lib = lib
- endif
- libdir = $(prefix)/$(lib)
-+plugindir=$(perfexecdir)/traceevent/plugins
+ int parse_event_file(struct pevent *pevent,
+ 		     char *buf, unsigned long size, char *sys)
+ {
+-	return pevent_parse_event(pevent, buf, size, sys);
++	return pevent_parse_event(pevent, NULL, buf, size, sys);
+ }
  
- # Shell quote (do not use $(call) to accommodate ancient setups);
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
-@@ -598,3 +599,4 @@ else
- perfexec_instdir = $(prefix)/$(perfexecdir)
- endif
- perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
-+plugindir_SQ= $(subst ','\'',$(prefix)/$(plugindir))
+ struct event_format *trace_find_next_event(struct pevent *pevent,
 -- 
 1.8.3.1
 
