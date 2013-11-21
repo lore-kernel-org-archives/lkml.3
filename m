@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab3KUV1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:27:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41617 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3KUV1U (ORCPT
+	id S1754750Ab3KUVag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:30:36 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59135 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752640Ab3KUVad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:27:20 -0500
-Date: Thu, 21 Nov 2013 22:27:18 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] irqchip: versatile FPGA: support cascaded interrupts
- from DT
-In-Reply-To: <CACRpkda6XcEA3xri116q=U26Cm3BeMWv4Us40FCyxGj3o+DAFw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311212226280.30673@ionos.tec.linutronix.de>
-References: <1380893106-7550-1-git-send-email-linus.walleij@linaro.org> <CACRpkda6XcEA3xri116q=U26Cm3BeMWv4Us40FCyxGj3o+DAFw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 21 Nov 2013 16:30:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Nishanth Menon <nm@ti.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sripa Bagadia <ceh@ti.com>
+Subject: Re: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
+Date: Thu, 21 Nov 2013 22:43:14 +0100
+Message-ID: <1980582.Pd2pT79ZWp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <528E4950.9030507@gmail.com>
+References: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org> <CAKohpo=fZ8Fr=CMDzCy3daBU+mZBJ+9fOks6L7WLOZzE7WaAaQ@mail.gmail.com> <528E4950.9030507@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus
-
-On Thu, 21 Nov 2013, Linus Walleij wrote:
-
-> On Fri, Oct 4, 2013 at 3:25 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 
-> > The Versatile FPGA interrupt controller supports cascading interrupts,
-> > i.e. that its output is connected to the input of another interrupt
-> > controller. This makes it possible to pass a parent interrupt from
-> > the device tree and print it in the boot log if applicable.
+On Thursday, November 21, 2013 09:56:32 AM Dirk Brandewie wrote:
+> On 11/21/2013 07:57 AM, Viresh Kumar wrote:
+> > On 21 November 2013 18:41, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> On Thursday, November 21, 2013 12:39:02 PM Viresh Kumar wrote:
 > >
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> > ---
-> > TGLX: I can take this through ARM SoC if you're happy with it
-> > and prefer it that way, but it merges just as fine as it is on
-> > the IRQ tree.
+> >>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >>> @@ -1038,6 +1038,32 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+> >
+> >>> +     if (has_target()) {
+> >>> +             ret = __cpufreq_driver_target(policy, policy->cur,
+> >>> +                             CPUFREQ_RELATION_L);
+> >>> +             if (ret)
+> >>> +                     pr_err("%s: Unable to set frequency from table: %d\n",
+> >>> +                                     __func__, ret);
+> >>
+> >> Should we continue in that case?
+> >
+> > I wasn't sure. I thought maybe there are platforms which might not be
+> > ready for transitions so early and so an error message would be fine,
+> > as we will fail soon anyway in case there is a bug.
+> >
 > 
-> Ping on this!
+> The scaling driver for the CPU has already loaded and its .init procedure has 
+> been called so .target better be callable.
+> 
+> Since the scaling driver is responsible maintaining the set of valid frequencies
+> and setting policy->cur I think it is reasonable to have the scaling driver
+> ensure that policy->cur returned from its .init and the operating frequency are
+> in sync and match one of the values in its frequency table.
 
-by all means, I can't find the original patch anywhere in my mail
-folders. Can you bounce it to me please?
+>From that I infer that we should not continue on errors here.  Which also is my
+opinion.
 
-Thanks,
+Rafael
 
-	tglx
