@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab3KUU3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:29:42 -0500
-Received: from mta01.ornl.gov ([128.219.177.14]:60772 "EHLO mta01.ornl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab3KUU3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:29:41 -0500
-X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 15:29:40 EST
-X-SG: RELAYLIST
-X-IronPort-AV: E=Sophos;i="4.93,746,1378872000"; 
-   d="scan'208";a="73437234"
-Message-ID: <1385065186.18238.0.camel@frustration.ornl.gov>
-Subject: Re: [PATCH 0/4] Add ceph root filesystem functionality and
- documentation.
-From: David Dillow <dave@thedillows.org>
-To: mark.doffman@codethink.co.uk
-Cc: ceph-devel@vger.kernel.org, sage@inktank.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        rob.taylor@codethink.co.uk
-Date: Thu, 21 Nov 2013 15:19:46 -0500
-In-Reply-To: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
-References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19dad) 
-Mime-Version: 1.0
+	id S1754429Ab3KUUaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:30:07 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39239 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab3KUUaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 15:30:03 -0500
+Message-ID: <528E6D46.7090406@wwwdotorg.org>
+Date: Thu, 21 Nov 2013 13:29:58 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: tegra: add FUSE clock device
+References: <1385001490-18927-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1385001490-18927-1-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-20 at 20:13 -0600, mark.doffman@codethink.co.uk wrote:
-> The following patch series adds the ability to use a ceph distributed
-> file system as the root device. The functionality is similar to
-> NFS root but for the ceph filesystem.
+On 11/20/2013 07:38 PM, Alexandre Courbot wrote:
+> This clock is needed to ensure the FUSE registers can be accessed
+> without freezing the system.
 
-Why do this in the kernel vs in the initramfs? Dracut would be a more
-appropriate place, I think, as it has support for other network root
-devices already.
-
+Acked-by: Stephen Warren <swarren@nvidia.com>
