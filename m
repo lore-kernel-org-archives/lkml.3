@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab3KUVQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:16:43 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56674 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab3KUVQf (ORCPT
+	id S1755162Ab3KUVSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:18:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50228 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab3KUVSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:16:35 -0500
-Date: Thu, 21 Nov 2013 13:16:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu 1/3] documentation: Add needed
- ACCESS_ONCE() calls to memory-barriers.txt
-Message-ID: <20131121211629.GE4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131121174824.GA6611@linux.vnet.ibm.com>
- <1385056127-6980-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131121194334.GC14144@jtriplet-mobl1>
+	Thu, 21 Nov 2013 16:18:30 -0500
+Date: Thu, 21 Nov 2013 21:18:25 +0000
+From: Mark Einon <mark.einon@gmail.com>
+To: ZHAO Gang <gamerh2o@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH v3 0/5] staging: et131x: patches for et131x driver
+Message-ID: <20131121211822.GA10691@einon.net>
+References: <cover.1384933520.git.gamerh2o@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131121194334.GC14144@jtriplet-mobl1>
+In-Reply-To: <cover.1384933520.git.gamerh2o@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112121-7164-0000-0000-00000388563B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:43:35AM -0800, Josh Triplett wrote:
-> On Thu, Nov 21, 2013 at 09:48:45AM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > The Documentation/memory-barriers.txt file was written before the need
-> > for ACCESS_ONCE() was fully appreciated.  It therefore contains no
-> > ACCESS_ONCE() calls, which can be a problem when people lift examples
-> > from it.  This commit therefore adds ACCESS_ONCE() calls.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: David Howells <dhowells@redhat.com>
-> > ---
-> >  Documentation/memory-barriers.txt | 204 +++++++++++++++++++++++---------------
-> >  1 file changed, 124 insertions(+), 80 deletions(-)
-> > 
-> > diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> > index c8c42e64e953..eccc83a40ce1 100644
-> > --- a/Documentation/memory-barriers.txt
-> > +++ b/Documentation/memory-barriers.txt
-> > @@ -194,18 +194,20 @@ There are some minimal guarantees that may be expected of a CPU:
-> >   (*) On any given CPU, dependent memory accesses will be issued in order, with
-> >       respect to itself.  This means that for:
-> >  
-> > -	Q = P; D = *Q;
-> > +	ACCESS_ONCE(Q) = P; smp_memory_barrier_depends(); D = ACCESS_ONCE(*Q);
+On Wed, Nov 20, 2013 at 03:53:50PM +0800, ZHAO Gang wrote:
+> This patch set should apply to current staging-next tree
 > 
-> That should be smp_read_barrier_depends().
+> ZHAO Gang (5):
+>   staging: et131x: clean up code
+>   staging: et131x: drop packet when error occurs in et131x_tx
+>   staging: et131x: stop read when hit max delay in et131x_phy_mii_read
+>   staging: et131x: remove spinlock adapter->lock
+>   staging: et131x: update TODO list
+> 
+>  drivers/staging/et131x/README   |   5 -
+>  drivers/staging/et131x/et131x.c | 301 +++++++++++++++++-----------------------
+>  2 files changed, 127 insertions(+), 179 deletions(-)
+> 
+> -- 
 
-Good catch!  I guess the smp_memory_barrier_depends() was a barrier in
-my own brain preventing my memory from serving up the correct API.  ;-)
+Hi Zhao,
 
-> Also, most of the time shouldn't that use rcu_dereference rather than a
-> raw smp_read_barrier_depends()?
+Thanks for the patches. A few pointers for the future:
 
-Good point -- I added a later sentence reading:
+- Use scripts/get_maintainer.pl to discover to which mailing lists /
+maintainers patches should be sent. I've cc'd devel@driverdev.osuosl.org
+which was missing from your original submission.
 
-	Please note that you should normally use something
-	like rcu_dereference() instead of open-coding
-	smp_read_barrier_depends().
+- Please don't roll up patches you've previously sent into newer
+patchsets, even if they haven't been applied by the tree maintainer
+yet. This just means that the same lines of code get reviewed twice,
+wasting the reviewer's time.
 
-Using rcu_dereference() in the example itself would obscure the point,
-so I left the smp_read_barrier_depends().
+Cheers,
 
-							Thanx, Paul
-
+Mark
