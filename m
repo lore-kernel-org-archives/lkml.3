@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab3KUNmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:42:00 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17647 "EHLO
+	id S1754952Ab3KUNmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:42:12 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17655 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab3KUNlz (ORCPT
+	with ESMTP id S1754873Ab3KUNl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:41:55 -0500
+	Thu, 21 Nov 2013 08:41:59 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Nov 2013 05:35:52 -0800
+	by hqnvupgp07.nvidia.com on Thu, 21 Nov 2013 05:39:53 -0800
 From: Hiroshi Doyu <hdoyu@nvidia.com>
 To: <swarren@nvidia.com>, <will.deacon@arm.com>, <grant.likely@linaro.org>,
         <thierry.reding@gmail.com>, <swarren@wwwdotorg.org>,
@@ -18,9 +18,9 @@ CC: Hiroshi Doyu <hdoyu@nvidia.com>, <mark.rutland@arm.com>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lorenzo.pieralisi@arm.com>, <galak@codeaurora.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCHv6 12/13] iommu/tegra: smmu: add SMMU to an global iommu list
-Date: Thu, 21 Nov 2013 15:40:48 +0200
-Message-ID: <1385041249-7705-13-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCHv6 13/13] [FOR TEST] ARM: dt: tegra30: add "iommus" binding
+Date: Thu, 21 Nov 2013 15:40:49 +0200
+Message-ID: <1385041249-7705-14-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
 References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
@@ -30,266 +30,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to inquire if SMMU is populated or not.
+"iommus" binding implies that a device can be attached to IOMMU
+devices. An iommu device needs to set #iommus-cells in it. "iommus"
+can have multiple iommu device phandles as below if needed.
 
-Suggested by Thierry Reding and copied his example code.
+  iommus = <&smmu arg1 arg2>,
+  	   <&gart arg1 arg2>;
+
+Not yet ready for merge. Need to add iommus for other devices.
 
 Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>
 ---
-v6:
-New for v6.
----
- drivers/iommu/tegra-smmu.c | 55 +++++++++++++++++++++++++---------------------
- 1 file changed, 30 insertions(+), 25 deletions(-)
+v5:
+Use "iommus=" instead of "mmu-masters".
 
-diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-index 1544f7c..590c9fe 100644
---- a/drivers/iommu/tegra-smmu.c
-+++ b/drivers/iommu/tegra-smmu.c
-@@ -225,6 +225,8 @@ struct smmu_debugfs_info {
-  * Per SMMU device - IOMMU device
-  */
- struct smmu_device {
-+	struct iommu	iommu;
-+
- 	void __iomem	*regbase;	/* register offset base */
- 	void __iomem	**regs;		/* register block start address array */
- 	void __iomem	**rege;		/* register block end address array */
-@@ -234,7 +236,6 @@ struct smmu_device {
- 	unsigned long	page_count;	/* total remappable size */
- 	spinlock_t	lock;
- 	char		*name;
--	struct device	*dev;
- 	struct rb_root	clients;
- 	struct page *avp_vector_page;	/* dummy page shared by all AS's */
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ arch/arm/boot/dts/tegra30.dtsi | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 2bd55cf..03b7887 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -1,6 +1,7 @@
+ #include <dt-bindings/clock/tegra30-car.h>
+ #include <dt-bindings/gpio/tegra-gpio.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/memory/tegra-swgroup.h>
  
-@@ -371,7 +372,7 @@ static int register_smmu_client(struct smmu_device *smmu,
- 		return -EBUSY;
- 	}
+ #include "skeleton.dtsi"
  
--	client = devm_kzalloc(smmu->dev, sizeof(*client), GFP_KERNEL);
-+	client = devm_kzalloc(smmu->iommu.dev, sizeof(*client), GFP_KERNEL);
- 	if (!client)
- 		return -ENOMEM;
+@@ -92,6 +93,7 @@
+ 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>, /* syncpt */
+ 			     <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>; /* general */
+ 		clocks = <&tegra_car TEGRA30_CLK_HOST1X>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(HC)>;
  
-@@ -388,7 +389,7 @@ static int smmu_of_get_swgroups(struct device *dev, unsigned long *swgroups)
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+@@ -103,6 +105,7 @@
+ 			reg = <0x54040000 0x00040000>;
+ 			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_MPE>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(MPE)>;
+ 		};
  
- 	of_property_for_each_phandle_with_args(dev->of_node, "iommus",
- 					       "#iommu-cells", i, &args) {
--		if (args.np != smmu_handle->dev->of_node)
-+		if (args.np != smmu_handle->iommu.dev->of_node)
- 			continue;
+ 		vi {
+@@ -110,6 +113,7 @@
+ 			reg = <0x54080000 0x00040000>;
+ 			interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_VI>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(VI)>;
+ 		};
  
- 		BUG_ON(args.args_count != 2);
-@@ -527,7 +528,7 @@ static void free_ptbl(struct smmu_as *as, dma_addr_t iova)
- 	unsigned long *pdir = (unsigned long *)page_address(as->pdir_page);
+ 		epp {
+@@ -117,6 +121,7 @@
+ 			reg = <0x540c0000 0x00040000>;
+ 			interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_EPP>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(EPP)>;
+ 		};
  
- 	if (pdir[pdn] != _PDE_VACANT(pdn)) {
--		dev_dbg(as->smmu->dev, "pdn: %lx\n", pdn);
-+		dev_dbg(as->smmu->iommu.dev, "pdn: %lx\n", pdn);
+ 		isp {
+@@ -124,6 +129,7 @@
+ 			reg = <0x54100000 0x00040000>;
+ 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_ISP>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(ISP)>;
+ 		};
  
- 		ClearPageReserved(SMMU_EX_PTBL_PAGE(pdir[pdn]));
- 		__free_page(SMMU_EX_PTBL_PAGE(pdir[pdn]));
-@@ -542,7 +543,7 @@ static void free_pdir(struct smmu_as *as)
- {
- 	unsigned addr;
- 	int count;
--	struct device *dev = as->smmu->dev;
-+	struct device *dev = as->smmu->iommu.dev;
+ 		gr2d {
+@@ -131,6 +137,7 @@
+ 			reg = <0x54140000 0x00040000>;
+ 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&tegra_car TEGRA30_CLK_GR2D>;
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(G2)>;
+ 		};
  
- 	if (!as->pdir_page)
- 		return;
-@@ -585,11 +586,11 @@ static unsigned long *locate_pte(struct smmu_as *as,
- 		unsigned long addr = SMMU_PDN_TO_ADDR(pdn);
+ 		gr3d {
+@@ -139,6 +146,8 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_GR3D
+ 				  &tegra_car TEGRA30_CLK_GR3D2>;
+ 			clock-names = "3d", "3d2";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(NV)
++						TEGRA_SWGROUP_CELLS(NV2)>;
+ 		};
  
- 		/* Vacant - allocate a new page table */
--		dev_dbg(as->smmu->dev, "New PTBL pdn: %lx\n", pdn);
-+		dev_dbg(as->smmu->iommu.dev, "New PTBL pdn: %lx\n", pdn);
+ 		dc@54200000 {
+@@ -148,6 +157,7 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_DISP1>,
+ 				 <&tegra_car TEGRA30_CLK_PLL_P>;
+ 			clock-names = "disp1", "parent";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(DC)>;
  
- 		*ptbl_page_p = alloc_page(GFP_ATOMIC);
- 		if (!*ptbl_page_p) {
--			dev_err(as->smmu->dev,
-+			dev_err(as->smmu->iommu.dev,
- 				"failed to allocate smmu_device page table\n");
- 			return NULL;
- 		}
-@@ -649,7 +650,7 @@ static int alloc_pdir(struct smmu_as *as)
- 	/*
- 	 * do the allocation, then grab as->lock
- 	 */
--	cnt = devm_kzalloc(smmu->dev,
-+	cnt = devm_kzalloc(smmu->iommu.dev,
- 			   sizeof(cnt[0]) * SMMU_PDIR_COUNT,
- 			   GFP_KERNEL);
- 	page = alloc_page(GFP_KERNEL | __GFP_DMA);
-@@ -663,7 +664,8 @@ static int alloc_pdir(struct smmu_as *as)
- 	}
+ 			rgb {
+ 				status = "disabled";
+@@ -161,6 +171,7 @@
+ 			clocks = <&tegra_car TEGRA30_CLK_DISP2>,
+ 				 <&tegra_car TEGRA30_CLK_PLL_P>;
+ 			clock-names = "disp2", "parent";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(DCB)>;
  
- 	if (!page || !cnt) {
--		dev_err(smmu->dev, "failed to allocate at %s\n", __func__);
-+		dev_err(smmu->iommu.dev,
-+			"failed to allocate at %s\n", __func__);
- 		err = -ENOMEM;
- 		goto err_out;
- 	}
-@@ -693,7 +695,7 @@ static int alloc_pdir(struct smmu_as *as)
- err_out:
- 	spin_unlock_irqrestore(&as->lock, flags);
+ 			rgb {
+ 				status = "disabled";
+@@ -317,6 +328,7 @@
+ 		interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 8>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTA>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
--	devm_kfree(smmu->dev, cnt);
-+	devm_kfree(smmu->iommu.dev, cnt);
- 	if (page)
- 		__free_page(page);
- 	return err;
-@@ -748,7 +750,7 @@ static int smmu_iommu_map(struct iommu_domain *domain, unsigned long iova,
- 	unsigned long pfn = __phys_to_pfn(pa);
- 	unsigned long flags;
+@@ -327,6 +339,7 @@
+ 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 9>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTB>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
--	dev_info(as->smmu->dev, "[%d] %08lx:%pa\n", as->asid, iova, &pa);
-+	dev_info(as->smmu->iommu.dev, "[%d] %08lx:%pa\n", as->asid, iova, &pa);
+@@ -337,6 +350,7 @@
+ 		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 10>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTC>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
- 	if (!pfn_valid(pfn))
- 		return -ENOMEM;
-@@ -765,7 +767,7 @@ static size_t smmu_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
- 	struct smmu_as *as = domain->priv;
- 	unsigned long flags;
+@@ -347,6 +361,7 @@
+ 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 19>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTD>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
--	dev_dbg(as->smmu->dev, "[%d] %08lx\n", as->asid, iova);
-+	dev_dbg(as->smmu->iommu.dev, "[%d] %08lx\n", as->asid, iova);
+@@ -357,6 +372,7 @@
+ 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
+ 		nvidia,dma-request-selector = <&apbdma 20>;
+ 		clocks = <&tegra_car TEGRA30_CLK_UARTE>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
- 	spin_lock_irqsave(&as->lock, flags);
- 	__smmu_iommu_unmap(as, iova);
-@@ -788,7 +790,7 @@ static phys_addr_t smmu_iommu_iova_to_phys(struct iommu_domain *domain,
- 	pte = locate_pte(as, iova, true, &page, &count);
- 	pfn = *pte & SMMU_PFN_MASK;
- 	WARN_ON(!pfn_valid(pfn));
--	dev_dbg(as->smmu->dev,
-+	dev_dbg(as->smmu->iommu.dev,
- 		"iova:%08llx pfn:%08lx asid:%d\n", (unsigned long long)iova,
- 		 pfn, as->asid);
+@@ -525,7 +541,7 @@
+ 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+ 	};
  
-@@ -822,7 +824,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
- 	spin_lock(&as->client_lock);
- 	list_for_each_entry(c, &as->client, list) {
- 		if (c->dev == dev) {
--			dev_err(smmu->dev,
-+			dev_err(smmu->iommu.dev,
- 				"%s is already attached\n", dev_name(c->dev));
- 			err = -EINVAL;
- 			goto err_client;
-@@ -844,7 +846,7 @@ static int smmu_iommu_attach_dev(struct iommu_domain *domain,
- 		pr_info("Reserve \"page zero\" for AVP vectors using a common dummy\n");
- 	}
+-	iommu {
++	smmu: iommu {
+ 		compatible = "nvidia,tegra30-smmu";
+ 		reg = <0x7000f010 0x02c
+ 		       0x7000f1f0 0x010
+@@ -533,6 +549,7 @@
+ 		nvidia,#asids = <4>;		/* # of ASIDs */
+ 		dma-window = <0 0x40000000>;	/* IOVA start & length */
+ 		nvidia,ahb = <&ahb>;
++		#iommu-cells = <2>;
+ 	};
  
--	dev_dbg(smmu->dev, "%s is attached\n", dev_name(dev));
-+	dev_dbg(smmu->iommu.dev, "%s is attached\n", dev_name(dev));
- 	return 0;
+ 	ahub {
+@@ -605,6 +622,7 @@
+ 		reg = <0x78000000 0x200>;
+ 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC1>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
- err_client:
-@@ -867,12 +869,12 @@ static void smmu_iommu_detach_dev(struct iommu_domain *domain,
- 			smmu_client_disable_swgroups(c);
- 			list_del(&c->list);
- 			c->as = NULL;
--			dev_dbg(smmu->dev,
-+			dev_dbg(smmu->iommu.dev,
- 				"%s is detached\n", dev_name(c->dev));
- 			goto out;
- 		}
- 	}
--	dev_err(smmu->dev, "Couldn't find %s\n", dev_name(dev));
-+	dev_err(smmu->iommu.dev, "Couldn't find %s\n", dev_name(dev));
- out:
- 	spin_unlock(&as->client_lock);
- }
-@@ -899,7 +901,7 @@ static int smmu_iommu_domain_init(struct iommu_domain *domain)
- 			break;
- 	}
- 	if (i == smmu->num_as)
--		dev_err(smmu->dev,  "no free AS\n");
-+		dev_err(smmu->iommu.dev,  "no free AS\n");
- 	return err;
+@@ -613,6 +631,7 @@
+ 		reg = <0x78000200 0x200>;
+ 		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC2>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
- found:
-@@ -920,7 +922,7 @@ found:
- 		smmu->page_count * SMMU_PAGE_SIZE - 1;
- 	domain->geometry.force_aperture = true;
+@@ -621,6 +640,7 @@
+ 		reg = <0x78000400 0x200>;
+ 		interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC3>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
--	dev_dbg(smmu->dev, "smmu_as@%p\n", as);
-+	dev_dbg(smmu->iommu.dev, "smmu_as@%p\n", as);
- 
- 	return 0;
- }
-@@ -953,7 +955,7 @@ static void smmu_iommu_domain_destroy(struct iommu_domain *domain)
- 	spin_unlock_irqrestore(&as->lock, flags);
- 
- 	domain->priv = NULL;
--	dev_dbg(smmu->dev, "smmu_as@%p\n", as);
-+	dev_dbg(smmu->iommu.dev, "smmu_as@%p\n", as);
- }
- 
- /*
-@@ -1085,7 +1087,7 @@ static ssize_t smmu_debugfs_stats_write(struct file *file,
- 		break;
- 	}
- 
--	dev_dbg(smmu->dev, "%s() %08x, %08x @%08x\n", __func__,
-+	dev_dbg(smmu->iommu.dev, "%s() %08x, %08x @%08x\n", __func__,
- 		val, smmu_read(smmu, offs), offs);
- 
- 	return count;
-@@ -1107,7 +1109,7 @@ static int smmu_debugfs_stats_show(struct seq_file *s, void *v)
- 		val = smmu_read(smmu, offs);
- 		seq_printf(s, "%s:%08x ", stats[i], val);
- 
--		dev_dbg(smmu->dev, "%s() %s %08x @%08x\n", __func__,
-+		dev_dbg(smmu->iommu.dev, "%s() %s %08x @%08x\n", __func__,
- 			stats[i], val, offs);
- 	}
- 	seq_printf(s, "\n");
-@@ -1145,7 +1147,7 @@ static void smmu_debugfs_create(struct smmu_device *smmu)
- 	if (!smmu->debugfs_info)
- 		return;
- 
--	root = debugfs_create_dir(dev_name(smmu->dev), NULL);
-+	root = debugfs_create_dir(dev_name(smmu->iommu.dev), NULL);
- 	if (!root)
- 		goto err_out;
- 	smmu->debugfs_root = root;
-@@ -1217,7 +1219,7 @@ static void tegra_smmu_create_default_map(struct smmu_device *smmu)
- 		smmu->map[i] = arm_iommu_create_mapping(&platform_bus_type,
- 							base, size, 0);
- 		if (IS_ERR(smmu->map[i]))
--			dev_err(smmu->dev,
-+			dev_err(smmu->iommu.dev,
- 				"Couldn't create: asid=%d map=%p %pa-%pa\n",
- 				i, smmu->map[i], &base, &base + size - 1);
- 	}
-@@ -1285,7 +1287,7 @@ static int tegra_smmu_probe(struct platform_device *pdev)
- 	if (!smmu->ahb)
- 		return -ENODEV;
- 
--	smmu->dev = dev;
-+	smmu->iommu.dev = dev;
- 	smmu->num_as = asids;
- 	smmu->iovmm_base = base;
- 	smmu->page_count = size;
-@@ -1322,6 +1324,8 @@ static int tegra_smmu_probe(struct platform_device *pdev)
- 	smmu_handle = smmu;
- 	bus_set_iommu(&platform_bus_type, &smmu_iommu_ops);
- 	tegra_smmu_create_default_map(smmu);
-+
-+	iommu_add(&smmu->iommu);
- 	return 0;
- }
- 
-@@ -1337,6 +1341,7 @@ static int tegra_smmu_remove(struct platform_device *pdev)
- 		free_pdir(&smmu->as[i]);
- 	__free_page(smmu->avp_vector_page);
- 	smmu_handle = NULL;
-+	iommu_del(&smmu->iommu);
- 	return 0;
- }
+@@ -629,6 +649,7 @@
+ 		reg = <0x78000600 0x200>;
+ 		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&tegra_car TEGRA30_CLK_SDMMC4>;
++		iommus = <&smmu TEGRA_SWGROUP_CELLS(PPCS)>;
+ 		status = "disabled";
+ 	};
  
 -- 
 1.8.1.5
