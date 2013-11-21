@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3KUWJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 17:09:59 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39545 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3KUWJ6 (ORCPT
+	id S1755017Ab3KUWMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 17:12:34 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:61549 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab3KUWMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 17:09:58 -0500
-Date: Thu, 21 Nov 2013 14:09:51 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
- to memory-barriers.txt
-Message-ID: <20131121220950.GG4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131121213055.GA6938@linux.vnet.ibm.com>
- <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131121215517.GA16796@laptop.programming.kicks-ass.net>
+	Thu, 21 Nov 2013 17:12:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121215517.GA16796@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112122-9332-0000-0000-00000241E1FB
+In-Reply-To: <528E2E8E.8080004@ahsoftware.de>
+References: <52803E5D.3050109@mentor.com>
+	<52851395.3010306@mentor.com>
+	<67652521.68027.1384482849638.JavaMail.zimbra@efficios.com>
+	<1691607547.70809.1384874952002.JavaMail.zimbra@efficios.com>
+	<CA+55aFw923sA0E1RQNxFF0OWFtAfcaG-dBUc-0YYZGDSAsaQyg@mail.gmail.com>
+	<528E2E8E.8080004@ahsoftware.de>
+Date: Thu, 21 Nov 2013 14:12:31 -0800
+X-Google-Sender-Auth: 2wTqHjcmGc9h6eh9EftCNlSOH7s
+Message-ID: <CANxoKdtYye5Vg_6B9RiChCpRj2_mwd_J+q1f-fQyk-JQoAy4hA@mail.gmail.com>
+Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+From: Luis Lozano <llozano@chromium.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
+        Han Shen <shenhan@chromium.org>, gwendal@chromium.org,
+        grundler@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 10:55:17PM +0100, Peter Zijlstra wrote:
-> On Thu, Nov 21, 2013 at 01:31:27PM -0800, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > The Documentation/memory-barriers.txt file was written before the need
-> > for ACCESS_ONCE() was fully appreciated.  It therefore contains no
-> > ACCESS_ONCE() calls, which can be a problem when people lift examples
-> > from it.  This commit therefore adds ACCESS_ONCE() calls.
-> 
-> So I find the repeated ACCESS_ONCE() significantly detracts from the
-> readability of the text.
-> 
-> Can't we simply state that all accesses are assumed single-copy atomic
-> and this can be achieved for naturally aligned words using ACCESS_ONCE()
-> in C/C++ ?
+Thanks for putting my e-mail in the right thread Alexander.
 
-We could, but at the moment I would prefer the decrease in readability
-to the copy-and-paste bugs that omit needed ACCESS_ONCE() calls.
+I also wanted to point out that we recently were hit by the following bug:
 
-Is there some way to get both ACCESS_ONCE() and readability?  An
-abbreviation such as AO()?  More easily distinguished variable names?
-Something else?
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
 
-							Thanx, Paul
+which can mess up the handling of SP and cause strange failures in the kernel.
 
+>From the description of the bug in this thread, we don't think the
+bugs are related but whoever is going to try removing the "const
+attribute" please also make sure that the bug still reproduces after
+applying the fix for the GCC bug above.
+
+Luis
+
+On Thu, Nov 21, 2013 at 8:02 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+> Am 20.11.2013 01:41, schrieb Linus Torvalds:
+>
+>> It seems that some gcc alias analysis completely incorrectly thinks
+>> that they are not the same memory location, and do not alias. My guess
+>> would be that gcc sees that that they are based on the stack pointer
+>> with "different" offsets, and decides that the memory locations must
+>> be different - without noticing that the "& ~(THREAD_SIZE - 1)" will
+>> end up generating the same address for both of them.
+>
+>
+> Luis Lozano just noted (see https://lkml.org/lkml/2013/11/20/625) that
+> current_thread_info() has the prototype
+>
+>
+> static inline struct thread_info *current_thread_info(void)
+> __attribute_const__;
+>
+> on arm (and arm64 and unicore32, something the paste from Mathieu missed so
+> most people here might have missed that detail too). It's a very good
+> finding from Luis.
+>
+> I'm writing this message because his mail doesn't have an in-reply-to
+> header, so it might be missed in this thread.
+>
+> As Luis said, declaring current_thread_info() as a const function is wrong.
+> The gcc manual says:
+>
+> ----
+> const
+>
+> Many functions do not examine any values except their arguments, and have no
+> effects except the return value. Basically this is just slightly more strict
+> class than the pure attribute below, since function is not allowed to read
+> global memory.
+>
+> Note that a function that has pointer arguments and examines the data
+> pointed to must not be declared const. Likewise, a function that calls a
+> non-const function usually must not be const. It does not make sense for a
+> const function to return void.
+> ----
+>
+> So current_thread_info() clearly violates the constrain to not read global
+> memory. Or in other words, that __attribute_const__ tells gcc explicitly
+> that the two reads are pointing to different locations because they are
+> assumed to be local (through the const).
+>
+> So This might be the reason why gcc misses that different calls to
+> current_thread_info() might point to the same memory location.
+>
+>
+> As I've an arm gcc 4.8.1 ready too, I'm joining Luis question where the
+> reordering can be found. If someone would point me to the source/object
+> where this happens, I could have a look if removing the __attribute_const__
+> makes a difference.
+>
+> Regards,
+>
+> Alexander Holler
