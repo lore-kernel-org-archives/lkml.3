@@ -1,98 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab3KUBjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 20:39:22 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60680 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752146Ab3KUBjT (ORCPT
+	id S1754934Ab3KUBjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 20:39:39 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43587 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab3KUBjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 20:39:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19KOoME4OYU6ufRDnKEYz9b
-Date: Wed, 20 Nov 2013 17:38:59 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?utf-8?Q?'Beno=C3=AEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
-Message-ID: <20131121013858.GK10317@atomide.com>
-References: <1379277856-24571-1-git-send-email-sre@debian.org>
- <1379277856-24571-4-git-send-email-sre@debian.org>
+	Wed, 20 Nov 2013 20:39:20 -0500
+Date: Thu, 21 Nov 2013 01:39:19 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-br@googlegroups.com
+Subject: Re: [PATCH v2] fs: binfmt_elf: Add ELF header consistency checks
+Message-ID: <20131121013918.GI10323@ZenIV.linux.org.uk>
+References: <1384994071-12283-1-git-send-email-geyslan@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379277856-24571-4-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1384994071-12283-1-git-send-email-geyslan@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [130915 13:56]:
-> +
-> +Example for Nokia N900:
-> +
-> +ssi-controller@48058000 {
-> +	compatible = "ti,omap3-ssi";
-> +	ti,hwmods = "ssi";
-> +
-> +	reg = <0x48058000 0x1000>,
-> +	      <0x48059000 0x1000>;
-> +	reg-names = "sys",
-> +		    "gdd";
-> +
-> +	interrupts = <55>;
-> +	interrupt-names = "gdd_mpu";
-> +
-> +	#address-cells = <1>;
-> +	#size-cells = <1>;
-> +	ranges;
-> +
-> +	ssi-port@0 {
-> +		compatible = "ti,omap3-ssi-port";
-> +
-> +		reg = <0x4805a000 0x800>,
-> +		      <0x4805a800 0x800>;
-> +		reg-names = "tx",
-> +			    "rx";
-> +
-> +		interrupt-parent = <&intc>;
-> +		interrupts = <51>,
-> +			     <52>;
-> +		interrupt-names = "mpu_irq0",
-> +				  "mpu_irq1";
-> +
-> +		ti,ssi-cawake-gpio = <&gpio5 23 GPIO_ACTIVE_HIGH>; /* 151 */
-> +	}
-> +}
+On Wed, Nov 20, 2013 at 09:34:31PM -0300, Geyslan G. Bem wrote:
+> The member 'e_ehsize' that holds the ELF header size is compared
+> with the elfhdr struct size. If not equal, goes out.
+> If 'e_phoff' holds 0 the object has no program header table, so
+> goes out.
+> Ensures the file being loaded has the correct data encoding, checking
+> 'e_ident[EI_DATA]' against 'ELF_DATA'.
+> 
+> Besides the checks being in accordance with the ELF Specifications,
+> they increase the binary consistency reducing the use of malformed ones.
 
-These should be in the omap3.dtsi file and not nested but separate. I'm almost
-certain that these are completely independent hardware modules and this
-means they can live their own PM life independently.
-
-So can you please do a minimal patch for omap3.dtsi that just sets up
-the standard resources separately for both modules the same way we have
-for other hardware modules in omap3.dtsi do?
-
-One of them should be called ssi, no idea what the other module name should
-be as those register ranges show up as reserved in the docs I have.
-
-The other binding pieces can be added later on as they get are ready.
-
-Regards,
-
-Tony
+This is completely misguided.  We are allowed to reject such binaries,
+but what's the point of doing that?
