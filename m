@@ -1,221 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab3KUOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 09:47:28 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3100 "EHLO mga01.intel.com"
+	id S1754409Ab3KUOvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 09:51:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38710 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab3KUOqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 09:46:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,744,1378882800"; 
-   d="scan'208";a="437341429"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] net: rfkill: gpio: convert to descriptor-based GPIO interface
-Date: Thu, 21 Nov 2013 16:45:49 +0200
-Message-Id: <1385045153-25160-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1385045153-25160-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1385045153-25160-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1751881Ab3KUOve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 09:51:34 -0500
+Date: Thu, 21 Nov 2013 09:51:28 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
+Message-ID: <20131121145128.GJ3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com>
+ <20131113152412.GH707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
+ <20131114000043.GK707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
+ <20131120160712.GF3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+On Wed, Nov 20, 2013 at 07:08:50PM -0800, David Rientjes wrote:
+> On Wed, 20 Nov 2013, Johannes Weiner wrote:
+> 
+> > > "All other tasks" would be defined as though sharing the same mempolicy 
+> > > context as the oom kill victim or the same set of cpuset mems, I'm not 
+> > > sure what type of method for determining reclaim eligiblity you're 
+> > > proposing to avoid pointlessly spinning without making progress.  Until an 
+> > > alternative exists, my patch avoids the needless spinning and expedites 
+> > > the exit, so I'll ask that it be merged.
+> > 
+> > I laid this out in the second half of my email, which you apparently
+> > did not read:
+> > 
+> 
+> I read it, but your proposal is incomplete, see below.
+> 
+> > "If we have multi-second stalls in direct reclaim then it should be
+> >  fixed for all direct reclaimers.  The problem is not only OOM kill
+> >  victims getting stuck, it's every direct reclaimer being stuck trying
+> >  to do way too much work before retrying the allocation.
+> > 
+> 
+> I'm addressing oom conditions here, including system, mempolicy, and 
+> cpuset ooms.
+> 
+> I'm not addressing a large number of processes that are doing direct 
+> reclaim in parallel over the same set of zones.  That would be a more 
+> invasive change and could potentially cause regressions because reclaim 
+> would be stopped prematurely before reclaiming the given threshold.  I do 
+> not have a bug report in front of me that suggests this is an issue 
+> outside of oom conditions and the current behavior is actually intuitive: 
+> if there are a large number of processes attempting reclaim, the demand 
+> for memory from those zones is higher and it is intuitive to have reclaim 
+> done in parallel up to a threshold.
+> 
+> >  Kswapd checks the system state after every priority cycle.  Direct
+> >  reclaim should probably do the same and retry the allocation after
+> >  every priority cycle or every X pages scanned, where X is something
+> >  reasonable and not "up to every LRU page in the system"."
+> > 
+> > NAK to this incomplete drive-by fix.
+> > 
+> 
+> This is a fix for a real-world situation that current exists in reclaim: 
+> specifically, preventing unnecessary stalls in reclaim in oom conditions 
+> that is known to be futile.  There is no possibility that reclaim itself 
+> will be successful because of the oom condition, and that condition is the 
+> only condition where reclaim is guaranteed to not be successful.  I'm sure 
+> we both agree that there is no use in an oom killed process continually 
+> looping in reclaim and yielding the cpu back to another process which just 
+> prolongs the duration before the oom killed process can free its memory.
 
-Convert to the safer gpiod_* family of API functions.
+Yes, but you are actively avoiding the only question I have asked from
+the beginning:
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- net/rfkill/rfkill-gpio.c | 108 +++++++++++++++++++++++++++++------------------
- 1 file changed, 68 insertions(+), 40 deletions(-)
+If there is an OOM kill, direct reclaim for a given memory context has
+failed and every continuation of direct reclaim in this context is
+just pointless burning of cpu cycles.  You said you have 700 processes
+in direct reclaim.  Your patch allows ONE of them to exit prematurely.
+What about the other 699?  There is still nothing to reclaim for them.
 
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index 5620d3c07479..a3e703d9d59b 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -25,15 +25,15 @@
- #include <linux/clk.h>
- #include <linux/slab.h>
- #include <linux/acpi.h>
--#include <linux/acpi_gpio.h>
-+#include <linux/gpio/consumer.h>
- 
- #include <linux/rfkill-gpio.h>
- 
- struct rfkill_gpio_data {
- 	const char		*name;
- 	enum rfkill_type	type;
--	int			reset_gpio;
--	int			shutdown_gpio;
-+	struct gpio_desc	*reset_gpio;
-+	struct gpio_desc	*shutdown_gpio;
- 
- 	struct rfkill		*rfkill_dev;
- 	char			*reset_name;
-@@ -48,19 +48,15 @@ static int rfkill_gpio_set_power(void *data, bool blocked)
- 	struct rfkill_gpio_data *rfkill = data;
- 
- 	if (blocked) {
--		if (gpio_is_valid(rfkill->shutdown_gpio))
--			gpio_set_value(rfkill->shutdown_gpio, 0);
--		if (gpio_is_valid(rfkill->reset_gpio))
--			gpio_set_value(rfkill->reset_gpio, 0);
-+		gpiod_set_value(rfkill->shutdown_gpio, 0);
-+		gpiod_set_value(rfkill->reset_gpio, 0);
- 		if (!IS_ERR(rfkill->clk) && rfkill->clk_enabled)
- 			clk_disable(rfkill->clk);
- 	} else {
- 		if (!IS_ERR(rfkill->clk) && !rfkill->clk_enabled)
- 			clk_enable(rfkill->clk);
--		if (gpio_is_valid(rfkill->reset_gpio))
--			gpio_set_value(rfkill->reset_gpio, 1);
--		if (gpio_is_valid(rfkill->shutdown_gpio))
--			gpio_set_value(rfkill->shutdown_gpio, 1);
-+		gpiod_set_value(rfkill->reset_gpio, 1);
-+		gpiod_set_value(rfkill->shutdown_gpio, 1);
- 	}
- 
- 	rfkill->clk_enabled = blocked;
-@@ -72,6 +68,35 @@ static const struct rfkill_ops rfkill_gpio_ops = {
- 	.set_block = rfkill_gpio_set_power,
- };
- 
-+static int rfkill_gpio_convert_to_desc(struct platform_device *pdev,
-+				       struct rfkill_gpio_data *rfkill)
-+{
-+	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
-+	int ret = 0;
-+
-+	if (gpio_is_valid(pdata->reset_gpio)) {
-+		ret = devm_gpio_request_one(&pdev->dev, pdata->reset_gpio,
-+					    0, rfkill->reset_name);
-+		if (ret) {
-+			pr_warn("%s: failed to get reset gpio.\n", __func__);
-+			return ret;
-+		}
-+		rfkill->reset_gpio = gpio_to_desc(pdata->reset_gpio);
-+	}
-+
-+	if (gpio_is_valid(pdata->shutdown_gpio)) {
-+		ret = devm_gpio_request_one(&pdev->dev, pdata->shutdown_gpio,
-+					    0, rfkill->shutdown_name);
-+		if (ret) {
-+			pr_warn("%s: failed to get shutdown gpio.\n", __func__);
-+			return ret;
-+		}
-+		rfkill->shutdown_gpio = gpio_to_desc(pdata->shutdown_gpio);
-+	}
-+
-+	return 0;
-+}
-+
- static int rfkill_gpio_acpi_probe(struct device *dev,
- 				  struct rfkill_gpio_data *rfkill)
- {
-@@ -83,8 +108,6 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
- 
- 	rfkill->name = dev_name(dev);
- 	rfkill->type = (unsigned)id->driver_data;
--	rfkill->reset_gpio = acpi_get_gpio_by_index(dev, 0, NULL);
--	rfkill->shutdown_gpio = acpi_get_gpio_by_index(dev, 1, NULL);
- 
- 	return 0;
- }
-@@ -109,28 +132,10 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		clk_name = pdata->power_clk_name;
- 		rfkill->name = pdata->name;
- 		rfkill->type = pdata->type;
--		rfkill->reset_gpio = pdata->reset_gpio;
--		rfkill->shutdown_gpio = pdata->shutdown_gpio;
- 	} else {
- 		return -ENODEV;
- 	}
- 
--	/* make sure at-least one of the GPIO is defined and that
--	 * a name is specified for this instance */
--	if ((!gpio_is_valid(rfkill->reset_gpio) &&
--	     !gpio_is_valid(rfkill->shutdown_gpio)) || !rfkill->name) {
--		pr_warn("%s: invalid platform data\n", __func__);
--		return -EINVAL;
--	}
--
--	if (pdata && pdata->gpio_runtime_setup) {
--		ret = pdata->gpio_runtime_setup(pdev);
--		if (ret) {
--			pr_warn("%s: can't set up gpio\n", __func__);
--			return ret;
--		}
--	}
--
- 	len = strlen(rfkill->name);
- 	rfkill->reset_name = devm_kzalloc(&pdev->dev, len + 7, GFP_KERNEL);
- 	if (!rfkill->reset_name)
-@@ -145,20 +150,43 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 
- 	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
- 
--	if (gpio_is_valid(rfkill->reset_gpio)) {
--		ret = devm_gpio_request_one(&pdev->dev, rfkill->reset_gpio,
--					    0, rfkill->reset_name);
--		if (ret) {
--			pr_warn("%s: failed to get reset gpio.\n", __func__);
-+	if (pdata && (pdata->reset_gpio || pdata->shutdown_gpio)) {
-+		ret = rfkill_gpio_convert_to_desc(pdev, rfkill);
-+		if (ret)
- 			return ret;
-+	} else {
-+		struct gpio_desc *gpio;
-+
-+		gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
-+		if (!IS_ERR(gpio)) {
-+			ret = gpiod_direction_output(gpio, 0);
-+			if (ret)
-+				return ret;
-+			rfkill->reset_gpio = gpio;
-+		}
-+
-+		gpio = devm_gpiod_get_index(&pdev->dev,
-+					    rfkill->shutdown_name, 1);
-+		if (!IS_ERR(gpio)) {
-+			ret = gpiod_direction_output(gpio, 0);
-+			if (ret)
-+				return ret;
-+			rfkill->shutdown_gpio = gpio;
- 		}
- 	}
- 
--	if (gpio_is_valid(rfkill->shutdown_gpio)) {
--		ret = devm_gpio_request_one(&pdev->dev, rfkill->shutdown_gpio,
--					    0, rfkill->shutdown_name);
-+	/* Make sure at-least one of the GPIO is defined and that
-+	 * a name is specified for this instance
-+	 */
-+	if ((!rfkill->reset_gpio && !rfkill->shutdown_gpio) || !rfkill->name) {
-+		pr_warn("%s: invalid platform data\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	if (pdata && pdata->gpio_runtime_setup) {
-+		ret = pdata->gpio_runtime_setup(pdev);
- 		if (ret) {
--			pr_warn("%s: failed to get shutdown gpio.\n", __func__);
-+			pr_warn("%s: can't set up gpio\n", __func__);
- 			return ret;
- 		}
- 	}
--- 
-1.8.4.3
+My proposal was: if they would all check back with the allocator more
+frequently, this would properly resolve this problem.  You added an
+OOM victim check after every priority cycle to solve this problem for
+one task, but if we checked the watermarks as well each priority
+cycle, all 700 tasks could quit useless burning of CPU cycles once
+direct reclaim has failed.
 
+> You're advocating that the allocation is retried after every priority 
+> cycle as an alternative and that seems potentially racy and incomplete: if 
+> 32 processes enter reclaim all doing order-0 allocations and one process 
+> reclaims a page, they would all terminate reclaim and retry the 
+> allocation.  31 processes would then loop the page allocator again, and 
+> reenter reclaim again at the starting priority.  Much better, in my 
+> opinion, would be to reclaim up to a threshold for each and then return to 
+> the page allocator since all 32 processes have demand for memory; that 
+> threshold is debatable, but SWAP_CLUSTER_MAX is reasonable.
+
+They would re-enter at the next priority of course, not the same one
+again.  All I suggested is retrying the allocation in between reclaim
+priority cycles, I'm not sure where you are getting the rest from.
+
+> So I would be nervous to carry the classzone_idx into direct reclaim, do 
+> an alloc_flags |= ALLOC_NO_WATERMARKS iff TIF_MEMDIE, iterate the 
+> zonelist, and do a __zone_watermark_ok_safe() for some watermark that's 
+> greater than the low watermark to avoid finding ourselves oom again upon 
+> returning to the page allocator without causing regressions in reclaim.
+> 
+> The page allocator already tries to allocate memory between direct reclaim 
+> and calling the oom killer specifically for cases where reclaim was 
+> unsuccessful for a single process because memory was freed externally.
+
+Lol, but you complain that the direct reclaim part of this cycle is
+too long!  I propose shortening it.  Why are we still having this
+argument?!
+
+> The situation I'm addressing occurs when reclaim will never be successful 
+> and nothing external to it will reclaim anything that the oom kill victim 
+> can use.  The non-victim processes will continue to loop through the oom 
+> killer and get put to sleep since they aren't victims themselves, but in 
+> the case described there are 700 processes competing for cpu all doing 
+> memory allocations so that doesn't help as it normally would.  Older 
+> kernels used to increase the timeslice that oom kill victims have so they 
+> exit as quickly as possible, but that was removed since 341aea2bc48b 
+> ("oom-kill: remove boost_dying_task_prio()").
+
+Yes, the OOM victim should exit direct reclaim.  But so should ALL
+OTHER 699 TASKS, given that there is nothing to reclaim from this
+context!
+
+I just don't get why you are so focussed on this one victim task.  The
+OOM situation is not property of this one task, it's a context-wide
+state.  If a context goes OOM, direct reclaim has failed and should be
+stopped as soon as possible.  It does not make sense for the victim to
+continue, it does not make sense for anybody else to continue.
+
+12 priority cycles is just too long of a stretch before checking back
+with the overall state of affairs, that's the real problem in my view.
