@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab3KUM1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:27:10 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39452 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab3KUM1H (ORCPT
+	id S1753961Ab3KUM25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:28:57 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:43397 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3KUM2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:27:07 -0500
-Date: Thu, 21 Nov 2013 12:27:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] mfd: Immutable branch for ASoC
-Message-ID: <20131121122700.GF23067@lee--X1>
-References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1384877043-5640-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131120091636.GA30012@lee--X1>
- <20131120102045.GW2674@sirena.org.uk>
- <20131120104526.GA30524@lee--X1>
- <20131120113400.GY2674@sirena.org.uk>
- <20131121090724.GB19368@lee--X1>
- <20131121114105.GO2674@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131121114105.GO2674@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Nov 2013 07:28:55 -0500
+Message-ID: <528DFC81.2070000@gmail.com>
+Date: Thu, 21 Nov 2013 13:28:49 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Alan Tull <delicious.quinoa@gmail.com>, linux-kernel@vger.kernel.org
+CC: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>, Heiko Stuebner <heiko@sntech.de>,
+        Alan Tull <atull@altera.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: Re: [PATCH v7] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+References: <1384984090-6772-1-git-send-email-delicious.quinoa@gmail.com>
+In-Reply-To: <1384984090-6772-1-git-send-email-delicious.quinoa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I was expecting patch 1 in the series as well (the DSP stuff won't work
-> properly without the register map updates to go with it).
+On 11/20/2013 10:48 PM, Alan Tull wrote:
+> From: Jamie Iles <jamie@jamieiles.com>
+>
+> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> and can be configured to provide multiple banks of GPIO pins.
+>
+> Signed-off-by: Alan Tull <atull@altera.com>
 
-Try this instead:
+Alan,
 
-The following changes since commit 5e01dc7b26d9f24f39abace5da98ccbd6a5ceb52:
+I haven't looked as close as in the last reviews, but I think it is
+fine to have this version as a start. We can add platform_data and
+CONFIG_REG parsing later.
 
-  Linux 3.12 (2013-11-03 15:41:51 -0800)
+Thanks for the patience, you can add my
 
-are available in the git repository at:
+Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-  git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-1
-
-for you to fetch changes up to 254dc326dbfd23c2678fafad1b84fc0e42ac4374:
-
-  ASoC: wm5110: Expose input high pass filter controls (2013-11-21 12:23:21 +0000)
-
-----------------------------------------------------------------
-Immutable branch for ASoC, as requested by Mark Brown
-
-----------------------------------------------------------------
-Charles Keepax (2):
-      mfd: wm5110: Make DSP memories readable
-      ASoC: wm5110: Expose input high pass filter controls
-
- drivers/mfd/wm5110-tables.c           | 73 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/mfd/arizona/registers.h | 37 +++++++++++++++++++++++++++++++++++++
- sound/soc/codecs/arizona.c            | 10 ++++++++++
- sound/soc/codecs/arizona.h            |  1 +
- sound/soc/codecs/wm5110.c             | 19 +++++++++++++++++++
- 5 files changed, 136 insertions(+), 4 deletions(-)
-
-
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
