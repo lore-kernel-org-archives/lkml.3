@@ -1,156 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab3KUKu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:50:27 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:64608 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3KUKuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:50:25 -0500
-Message-ID: <528DE5F1.20609@gmail.com>
-Date: Thu, 21 Nov 2013 18:52:33 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753962Ab3KUKuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:50:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41155 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3KUKuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 05:50:35 -0500
+Date: Thu, 21 Nov 2013 11:50:33 +0100
+From: Jan Kara <jack@suse.cz>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jbd: Lower severity of aborted journal from EMERG to CRIT
+Message-ID: <20131121105033.GB23049@quack.suse.cz>
+References: <1384527412-23349-1-git-send-email-lkundrak@v3.sk>
+ <20131118164533.GF3921@quack.suse.cz>
+ <1384794395.28980.14.camel@hobbes.kokotovo>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Chen Gang <gang.chen@asianux.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Tim Abbott <tabbott@ksplice.com>, Joe Perches <joe@perches.com>,
-        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v2] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com> <526F149A.3000306@asianux.com> <52733FEC.4010807@synopsys.com> <528DD92E.9070408@synopsys.com>
-In-Reply-To: <528DD92E.9070408@synopsys.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384794395.28980.14.camel@hobbes.kokotovo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 05:58 PM, Vineet Gupta wrote:
-> On 11/01/2013 11:15 AM, Vineet Gupta wrote:
->> +CC Sam, Tim, Joe, Michal, David
->>
->> Guys can you please take a look at this patch and suggest the best way to merge.
->>
->> The root cause is some gas ports (including ARC) use ';' for comment (vs. newline)
->> More background at https://lkml.org/lkml/2013/10/24/365
+On Mon 18-11-13 18:06:35, Lubomir Rintel wrote:
+> On Mon, 2013-11-18 at 17:45 +0100, Jan Kara wrote:
+> > On Fri 15-11-13 15:56:52, Lubomir Rintel wrote:
+> > > According to Documentation/kernel-parameters.txt, KERN_EMERG is reserved for
+> > > events that render system unusable.
+> > > 
+> > > This is hardly the case in case of flash memory stick hardware removal without
+> > > umounting. Syslog is often configured to forward messages with EMERG severity
+> > > to all logged-in terminals, often causing unnecessary noise.
+> >   The logic behind using KERN_EMERG in that place is that the filesystem is
+> > dead. If it was an important filesystem in your system, the whole system is
+> > unusable. In kernel, we don't know whether the filesystem was important or
+> > not. So KERN_EMERG isn't adequate in all the cases but KERN_CRIT is
+> > neither. What if we made that message print also device name (it would be
+> > more useful anyway in that case) and you could then filter out messages for
+> > unimportant devices in syslogd?
 > 
-> Ping ! Any objections to this. Given that this is exception case, it is simpler
-> than defining a Kconfig control.
+> In case there's a failure on a filesystem, there are other better means
+> in place to communicate the issue than a message in message buffer; in
+> such case the accesses to the filesystem will result in EIO (that is for
+> important filesystems; for the memory sticks that disappear from system
+> I presume userspace would just umount them).
+  Memory stick or your root disk, the application will get EIO in both
+cases. Userspace cannot umount the disk until all applications using the
+disk close their file descriptors. So there is no difference AFAICS.
+
+So which better means do you have in mind to communicate root disk
+filesystem is having problems? You could have a system like nagios monitor
+whether the system is alive but then you don't need to bother with kernel
+messages at all.
+
+> Therefore I don't think it makes sense to differentiate between
+> important and less important file systems in this particular place and I
+> can't think of a good way do do that either. Even if there were devices
+> for which EMERG level here would make sense I don't think replacing the
+> stock syslog configurations with a quirk for this particular message is
+> feasible; and to my knowledge at least rsyslog is not able to understand
+> structured logs it the way journald does.
 > 
+> That said I don't mind replacing the printk(KERN_*) with dev_*() (maybe
+> even other occurrences, checkpatch.pl suggests that anyway and it seems
+> rather useful) but I'd still like it to be kern_crit().
+> 
+> What do you think about that?
+  Well, my current opinion is that although in some cases having the
+messages KERN_EMERG doesn't make sense, in other case it makes sense. So I
+don't feel a strong reason to change what we have.
 
-Hmm... I guess your meaning is that define a macro (e.g. ASM_NL) in
-Kconfig instead of in "asm/linkage.h".
+OTOH I wonder if that particular message in log_wait_commit() is useful
+at all. The journal is aborted but we already informed user about that when
+aborting it so there's no good reason to spam logs with information the
+journal is still aborted... So I guess I'll just remove the message and we
+will be both happy :)
 
-For me, I still recommend to define a macro in "asm/linkage.h", "in
-Kconfig" is not quite straight and simple than current way:
+								Honza
 
- - "in Kconfig" need 2 macros for it, but "asm/linkage.h" need 1.
-
- - Kconfig is normally for using configurations (face to downstream)
-   upstream related configurations (e.g. related with compiler) are
-   often in Makefile or specific header files (e.g "linkage.h")
-
-Thanks.
-
-> -Vineet
->>
->>
->> On 10/29/2013 07:21 AM, Chen Gang wrote:
->>> For some assemblers, they use another character as newline in a macro
->>> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
->>> macro) instead of ';' for it.
->>>
->>> Also need notice about code styles ('\t' for each line).
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  arch/arc/include/asm/linkage.h |    2 ++
->>>  include/linux/linkage.h        |   19 ++++++++++++-------
->>>  2 files changed, 14 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
->>> index 0283e9e..66ee552 100644
->>> --- a/arch/arc/include/asm/linkage.h
->>> +++ b/arch/arc/include/asm/linkage.h
->>> @@ -11,6 +11,8 @@
->>>  
->>>  #ifdef __ASSEMBLY__
->>>  
->>> +#define ASM_NL		 `	/* use '`' to mark new line in macro */
->>> +
->>>  /* Can't use the ENTRY macro in linux/linkage.h
->>>   * gas considers ';' as comment vs. newline
->>>   */
->>> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
->>> index d3e8ad2..a6a42dd 100644
->>> --- a/include/linux/linkage.h
->>> +++ b/include/linux/linkage.h
->>> @@ -6,6 +6,11 @@
->>>  #include <linux/export.h>
->>>  #include <asm/linkage.h>
->>>  
->>> +/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
->>> +#ifndef ASM_NL
->>> +#define ASM_NL		 ;
->>> +#endif
->>> +
->>>  #ifdef __cplusplus
->>>  #define CPP_ASMLINKAGE extern "C"
->>>  #else
->>> @@ -75,21 +80,21 @@
->>>  
->>>  #ifndef ENTRY
->>>  #define ENTRY(name) \
->>> -  .globl name; \
->>> -  ALIGN; \
->>> -  name:
->>> +	.globl name ASM_NL \
->>> +	ALIGN ASM_NL \
->>> +	name:
->>>  #endif
->>>  #endif /* LINKER_SCRIPT */
->>>  
->>>  #ifndef WEAK
->>>  #define WEAK(name)	   \
->>> -	.weak name;	   \
->>> +	.weak name ASM_NL   \
->>>  	name:
->>>  #endif
->>>  
->>>  #ifndef END
->>>  #define END(name) \
->>> -  .size name, .-name
->>> +	.size name, .-name
->>>  #endif
->>>  
->>>  /* If symbol 'name' is treated as a subroutine (gets called, and returns)
->>> @@ -98,8 +103,8 @@
->>>   */
->>>  #ifndef ENDPROC
->>>  #define ENDPROC(name) \
->>> -  .type name, @function; \
->>> -  END(name)
->>> +	.type name, @function ASM_NL \
->>> +	END(name)
->>>  #endif
->>>  
->>>  #endif
->>>
->>
+> > > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> > > ---
+> > >  fs/jbd/journal.c  |    2 +-
+> > >  fs/jbd2/journal.c |    2 +-
+> > >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> > > index 2d04f9a..9dbc1b6 100644
+> > > --- a/fs/jbd/journal.c
+> > > +++ b/fs/jbd/journal.c
+> > > @@ -605,7 +605,7 @@ out_unlock:
+> > >  	spin_unlock(&journal->j_state_lock);
+> > >  
+> > >  	if (unlikely(is_journal_aborted(journal))) {
+> > > -		printk(KERN_EMERG "journal commit I/O error\n");
+> > > +		printk(KERN_CRIT "journal commit I/O error\n");
+> > >  		err = -EIO;
+> > >  	}
+> > >  	return err;
+> > > diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> > > index 5203264..2d1f53c 100644
+> > > --- a/fs/jbd2/journal.c
+> > > +++ b/fs/jbd2/journal.c
+> > > @@ -719,7 +719,7 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
+> > >  	read_unlock(&journal->j_state_lock);
+> > >  
+> > >  	if (unlikely(is_journal_aborted(journal))) {
+> > > -		printk(KERN_EMERG "journal commit I/O error\n");
+> > > +		printk(KERN_CRIT "journal commit I/O error\n");
+> > >  		err = -EIO;
+> > >  	}
+> > >  	return err;
+> > > -- 
+> > > 1.7.1
+> > > 
+> 
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
 -- 
-Chen Gang
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
