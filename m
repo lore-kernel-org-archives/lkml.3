@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3KUJg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 04:36:58 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:29445 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3KUJgy (ORCPT
+	id S1753191Ab3KUJpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 04:45:44 -0500
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:41895 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab3KUJpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 04:36:54 -0500
-X-AuditID: cbfee691-b7f866d000001b8c-ed-528dd42b4c4b
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: merge read IOs at ra_nat_pages()
-Date: Thu, 21 Nov 2013 18:35:50 +0900
-Message-id: <1385026550-21055-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ13tK71BBmf3GVlc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfFh/iaWghbuiv1P
-	VzI3MH7i6GLk5JAQMJF49vwhO4QtJnHh3nq2LkYuDiGBZYwSTR3bGGGKWi/uYYVITGeUmHll
-	DzOE08wkcbirm6mLkYODTUBbYvN+A5AGEQFmiQVTzzOC1DALTGCU+L/oPQtIjbCAucTizd4g
-	NSwCqhJ//h5iAbF5Bdwlvi3bCbVMW2Lb84lgvRICj9kkLl3fyAzRICDxbfIhsDkSArISmw4w
-	Q9RLShxccYNlAqPgAkaGVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxghIThxB+P9A9aHGJOB
-	xk1klhJNzgeGcF5JvKGxmZGFqYmpsZG5pRlpwkrivOmPkoKEBNITS1KzU1MLUovii0pzUosP
-	MTJxcEo1MPJyGX+YdNVh/YEyFrbY6RkqHyuFp1n8/nfn8Mk7Dqz7863uhmj+WRv8wj/ajM1p
-	V+jmqd8uzZK9btr0wobr7+9dm22PL0/tk7V3yAxcfeeBZm/DBtlJRr06D/ZpK84V8rffIH3R
-	7ibPT/0i1dObnutoPedkWpa2j33pwpQtO2REJN3nyrb5ZyqxFGckGmoxFxUnAgAvAjo/VwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQV3tK71BBo2P9Syu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8z4MH8TS0ELd8X+pyuZGxg/cXQxcnJICJhItF7cwwphi0lcuLeerYuRi0NI
-	YDqjxMwre5ghnGYmicNd3UxdjBwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAaoQF
-	zCUWb/YGqWERUJX48/cQC4jNK+Au8W3ZTkaIZdoS255PZJzAyL2AkWEVo2hqQXJBcVJ6rpFe
-	cWJucWleul5yfu4mRnCAP5PewbiqweIQowAHoxIP74OnPUFCrIllxZW5hxglOJiVRHiL5/cG
-	CfGmJFZWpRblxxeV5qQWH2JMBto+kVlKNDkfGH15JfGGxiZmRpZGZhZGJubmpAkrifMebLUO
-	FBJITyxJzU5NLUgtgtnCxMEp1cCY/1vDJ3CThtmBN9ZLbK8GdHWE+rlenS+cftyLtzf5da/f
-	4aKA/mMbfFh83p/pDY08WFlyP3jRAlstq23cV1xmXOf1+fLr2TSv/0sm3tCYxSH8v3z6hKbH
-	e96/5j272XFGjEHDnJjT8f801/+x4XP89LlqGq//44Jpe6f9rD2tvDojuY7xd/VuJZbijERD
-	Leai4kQA9nOcc7QCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 21 Nov 2013 04:45:42 -0500
+X-Greylist: delayed 1700 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 04:45:41 EST
+X-SENDER-IP: [85.230.168.69]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As0eAFzPjVJV5qhFPGdsb2JhbAANTItEtUqBMwMBAQEBOIJaAQEBAQIBMgFFAQULCxgJFg8JAwIBAgExFAYBDAEHAQGHdwuubZF3F49rB4QyA61L
+X-IronPort-AV: E=Sophos;i="4.93,743,1378850400"; 
+   d="scan'208";a="358652847"
+Message-ID: <528DD058.4030803@euromail.se>
+Date: Thu, 21 Nov 2013 10:20:24 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?Friedrich?= =?ISO-8859-1?Q?_Sch=F6ller?= 
+	<linux@schoeller.se>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Input: Added thumb detection in BCM5974 multitouch
+ driver
+References: <1384988052-31898-1-git-send-email-linux@schoeller.se> <1384988052-31898-3-git-send-email-linux@schoeller.se> <20131121050549.GC4702@core.coreip.homeip.net>
+In-Reply-To: <20131121050549.GC4702@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the policy of submitting read bios at ra_nat_pages.
+> On Wed, Nov 20, 2013 at 11:54:12PM +0100, Friedrich Schöller wrote:
+>> Trackpads with integrated buttons are hard to use when the driver responds to
+>> movements of the thumb that is resting or clicking on the surface of the
+>> trackpad. This patch adds rudimentary support to filter out these touch events.
+>>
+>> The feature can be turned on via sysfs:
+>> 	/sys/class/input/input[0-9]+/thumb_ignore:
+>> 		Enables thumb detection
+>> 		Values: 0/1
+>> 	/sys/class/input/input[0-9]+/thumb_ratio_on:
+>> 		When the ratio of ABS_MT_TOUCH_MINOR / ABS_MT_TOUCH_MAJOR
+>> 		times 100 is smaller than this value the touch qualifies
+>> 		as a thumb.
+>> 	/sys/class/input/input[0-9]+/thumb_ratio_off:
+>> 		When the ratio of ABS_MT_TOUCH_MINOR / ABS_MT_TOUCH_MAJOR
+>> 		times 100 is bigger than this value the touch no longer
+>> 		qualifies as a thumb.
+>> 	/sys/class/input/input[0-9]+/thumb_y_on:
+>> 		When ABS_MT_POSITION_Y is bigger than this value the touch
+>> 		qualifies as a thumb.
+>> 	/sys/class/input/input[0-9]+/thumb_y_off:
+>> 		When ABS_MT_POSITION_Y is smaller than this value the touch
+>> 		no longer qualifies as a thumb.
+> 
+> I'd rather this been implemented in userspace (synaptics and/or evdev X
+> drivers).
 
-Previously, f2fs submits small read bios with block plugging.
-But, with this patch, f2fs itself merges read bios first and then submits a
-large bio, which can reduce the bio handling overheads.
+And it has been in userland since at least 2008. It can be found in
+input-synaptics, input-multitouch, input-mtrack, possibly more places.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/node.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index b843a5b..c06871f 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -89,13 +89,10 @@ static void ra_nat_pages(struct f2fs_sb_info *sbi, int nid)
- {
- 	struct address_space *mapping = sbi->meta_inode->i_mapping;
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
--	struct blk_plug plug;
- 	struct page *page;
- 	pgoff_t index;
- 	int i;
- 
--	blk_start_plug(&plug);
--
- 	for (i = 0; i < FREE_NID_PAGES; i++, nid += NAT_ENTRY_PER_BLOCK) {
- 		if (nid >= nm_i->max_nid)
- 			nid = 0;
-@@ -108,12 +105,11 @@ static void ra_nat_pages(struct f2fs_sb_info *sbi, int nid)
- 			f2fs_put_page(page, 1);
- 			continue;
- 		}
--		if (f2fs_readpage(sbi, page, index, READ))
--			continue;
-+		submit_read_page(sbi, page, index, READ_SYNC);
- 
- 		f2fs_put_page(page, 0);
- 	}
--	blk_finish_plug(&plug);
-+	f2fs_submit_read_bio(sbi, READ_SYNC);
- }
- 
- static struct nat_entry *__lookup_nat_cache(struct f2fs_nm_info *nm_i, nid_t n)
--- 
-1.8.4.474.g128a96c
+Thanks,
+Henrik
 
