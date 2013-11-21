@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab3KURsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:48:02 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54678 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3KURsA (ORCPT
+	id S1754894Ab3KURsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:48:31 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53714 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab3KURsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:48:00 -0500
-Date: Thu, 21 Nov 2013 09:47:58 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon updates for 3.13-rc1 [#2]
-Message-ID: <20131121174758.GA12141@roeck-us.net>
+	Thu, 21 Nov 2013 12:48:30 -0500
+Date: Thu, 21 Nov 2013 09:48:24 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH RFC tip/core/rcu 0/3] Memory-barrier documentation updates
+Message-ID: <20131121174824.GA6611@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112117-6688-0000-0000-000003BF061E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello!
 
-Please pull hwmon updates for Linux 3.13-rc1 from signed tag:
+This series applies some long-needed updates to memory-barriers.txt:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
+	in code copy-and-pasted from this file.
 
-Thanks,
-Guenter
-------
+2.	Add long atomic examples alongside the existing atomics.
 
-The following changes since commit 2d3c627502f2a9b0a7de06a5a2df2365542a72c9:
+3.	Prohibit architectures supporting the Linux kernel from
+	speculating stores.
 
-  Revert "init/Kconfig: add option to disable kernel compression" (2013-11-17 11:17:36 -0800)
+							Thanx, Paul
 
-are available in the git repository at:
+------------------------------------------------------------------------
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+ Documentation/memory-barriers.txt   |   68 ++++++++++--
+ b/Documentation/memory-barriers.txt |  204 +++++++++++++++++++++---------------
+ 2 files changed, 181 insertions(+), 91 deletions(-)
 
-for you to fetch changes up to 3a4cbc190643d0c6f7ca36a84af8367947f558c7:
-
-  hwmon: (acpi_power_meter) Fix acpi_bus_get_device() return value check (2013-11-20 08:31:01 -0800)
-
-----------------------------------------------------------------
-hwmon updates for 3.13-rc1 [#2]
-
-acpi_power_meter: Fix return value check from call to acpi_bus_get_device
-nct6775: Fix/improve NCT6791 support
-lm75: Add support for GMT G751
-
-----------------------------------------------------------------
-Arnaud Ebalard (1):
-      hwmon: (lm75) Add support for GMT G751 chip
-
-Guenter Roeck (2):
-      hwmon: (nct6775) Monitor additional temperature registers
-      hwmon: (nct6775) NCT6791 supports weight control only for CPUFAN
-
-Yijing Wang (1):
-      hwmon: (acpi_power_meter) Fix acpi_bus_get_device() return value check
-
- .../devicetree/bindings/i2c/trivial-devices.txt    |    1 +
- drivers/hwmon/Kconfig                              |    1 +
- drivers/hwmon/acpi_power_meter.c                   |    5 +-
- drivers/hwmon/lm75.c                               |    3 +
- drivers/hwmon/nct6775.c                            |   91 +++++++++++++++++---
- 5 files changed, 88 insertions(+), 13 deletions(-)
