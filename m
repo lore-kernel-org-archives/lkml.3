@@ -1,239 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab3KUVCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:02:07 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38303 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab3KUVBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:01:43 -0500
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
-        akpm@linux-foundation.org, bp@suse.de, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Cc: penberg@kernel.org, mingo.kernel.org@gmail.com, vgoyal@redhat.com,
-        jerry.hoemann@hp.com
-Subject: [RFC v2 2/2] x86, efi: Early use of boot service memory
-Date: Thu, 21 Nov 2013 14:01:26 -0700
-Message-Id: <1385067686-73500-3-git-send-email-jerry.hoemann@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
-References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
+	id S1754240Ab3KUVKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:10:14 -0500
+Received: from claw.goop.org ([74.207.240.146]:59590 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569Ab3KUVKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 16:10:11 -0500
+Message-ID: <528E76AE.5020204@goop.org>
+Date: Thu, 21 Nov 2013 13:10:06 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ben Guthro <ben@guthro.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel <xen-devel@lists.xenproject.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Xen S3 host resume: "Interrupts enabled after xen_acpi_processor_resume+0x0/0x34"
+References: <528BA6A6.9050403@goop.org>	<CAOvdn6V5vpWgTiY3Q5Ccv8ZaDLBh4YGQom4OtrDBPGgeepToxQ@mail.gmail.com>	<20131119194456.GB7824@phenom.dumpdata.com> <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
+In-Reply-To: <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platform have firmware that violate the UEFI spec and access boot service
-code or data segments after the system has called ExitBootServices().
-The call to efi_reserve_boot_services is a workaround to avoid using
-boot service memory until after the kernel has done SetVirtualAddressMap().
-However, this reservation fragments memory which can cause
-large allocations early in boot (e.g. crash kernel) to fail.
+On 11/19/2013 11:52 AM, Ben Guthro wrote:
+>
+>
+>
+> On Tue, Nov 19, 2013 at 2:44 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com <mailto:konrad.wilk@oracle.com>> wrote:
+>
+>     On Tue, Nov 19, 2013 at 02:34:21PM -0500, Ben Guthro wrote:
+>     > On Tue, Nov 19, 2013 at 12:57 PM, Jeremy Fitzhardinge
+>     <jeremy@goop.org <mailto:jeremy@goop.org>>wrote:
+>     >
+>     > > After an S3 host resume, I'm seeing:
+>     > >
+>     > > [48002.772629] ACPI: Low-level resume complete
+>     > > [48002.772802] PM: Restoring platform NVS memory
+>     > > [48002.776143] xen_acpi_processor: Uploading Xen processor PM info
+>     > > [48002.776691] ------------[ cut here ]------------
+>     > > [48002.776712] WARNING: CPU: 0 PID: 10235 at
+>     drivers/base/syscore.c:104
+>     > > syscore_resume+0x9a/0xe0()
+>     > > [48002.776751] Interrupts enabled after
+>     xen_acpi_processor_resume+0x0/0x34
+>     > > [xen_acpi_processor]
+>     > > [48002.776836] Modules linked in: tcp_lp btrfs zlib_deflate
+>     raid6_pq xor
+>     > > ufs hfsplus hfs
+>     > >  minix vfat msdos fat jfs xfs libcrc32c reiserfs xt_CHECKSUM
+>     tun hidp fuse
+>     > > nf_conntrack_
+>     > > netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT
+>     xt_conntrack
+>     > > ebtable_nat eb
+>     > > table_broute bridge stp llc ebtable_filter ebtables ip6table_nat
+>     > > nf_conntrack_ipv6 nf_de
+>     > > frag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security
+>     ip6table_raw
+>     > > ip6table_filter ip6
+>     > > _tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
+>     nf_nat_ipv4 nf_nat
+>     > > nf_conntrack ipt
+>     > > able_mangle iptable_security iptable_raw rfcomm bnep
+>     snd_hda_codec_hdmi
+>     > > snd_hda_codec_co
+>     > > nexant iTCO_wdt iTCO_vendor_support arc4 x86_pkg_temp_thermal
+>     coretemp
+>     > > iwldvm microcode
+>     > > btusb snd_hda_intel mac80211 bluetooth joydev snd_hda_codec
+>     snd_hwdep
+>     > > snd_seq serio_raw
+>     > > iwlwifi i2c_i801 snd_seq_device
+>     > > [48002.776894]  snd_pcm cfg80211 sdhci_pci sdhci mmc_core
+>     thinkpad_acpi
+>     > > wmi tpm_tis e100
+>     > > 0e rfkill snd_page_alloc tpm tpm_bios snd_timer ptp snd mei_me mei
+>     > > soundcore shpchp lpc_
+>     > > ich pps_core mfd_core mperf xen_acpi_processor xen_netback
+>     xen_blkback
+>     > > xen_gntdev xen_ev
+>     > > tchn xenfs xen_privcmd uinput binfmt_misc nfsd auth_rpcgss
+>     nfs_acl lockd
+>     > > sunrpc dm_crypt
+>     > >  crc32_pclmul crc32c_intel i915 ghash_clmulni_intel i2c_algo_bit
+>     > > drm_kms_helper drm i2c_
+>     > > core video
+>     > > [48002.776903] CPU: 0 PID: 10235 Comm: systemd-sleep Not tainted
+>     > > 3.11.7-200.fc19.x86_64 #1
+>     > > [48002.776905] Hardware name: LENOVO 4286CTO/4286CTO, BIOS
+>     8DET59WW (1.29
+>     > > ) 04/02/2012
+>     > > [48002.776917]  0000000000000009 ffff8801c7697d30 ffffffff8164777b
+>     > > ffff8801c7697d78
+>     > > [48002.776924]  ffff8801c7697d68 ffffffff8106715d ffffffffa01f6000
+>     > > 0000000000000003
+>     > > [48002.776931]  ffff8801c7697e08 ffff8801fd970000 0000000000000000
+>     > > ffff8801c7697dc8
+>     > > [48002.776933] Call Trace:
+>     > > [48002.776949]  [<ffffffff8164777b>] dump_stack+0x45/0x56
+>     > > [48002.776959]  [<ffffffff8106715d>]
+>     warn_slowpath_common+0x7d/0xa0
+>     > > [48002.776972]  [<ffffffff810671cc>] warn_slowpath_fmt+0x4c/0x50
+>     > > [48002.776989]  [<ffffffffa01f4bb0>] ?
+>     > > xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
+>     > > [48002.776996]  [<ffffffff813f252a>] syscore_resume+0x9a/0xe0
+>     > > [48002.777006]  [<ffffffff810abd7c>]
+>     suspend_devices_and_enter+0x40c/0x480
+>     > > [48002.777014]  [<ffffffff810abf68>] pm_suspend+0x178/0x260
+>     > > [48002.777020]  [<ffffffff810aae19>] state_store+0x79/0xf0
+>     > > [48002.777033]  [<ffffffff812fc4af>] kobj_attr_store+0xf/0x20
+>     > > [48002.777043]  [<ffffffff8121a226>] sysfs_write_file+0xc6/0x140
+>     > > [48002.777054]  [<ffffffff811a819d>] vfs_write+0xbd/0x1e0
+>     > > [48002.777062]  [<ffffffff811a8bd9>] SyS_write+0x49/0xa0
+>     > > [48002.777073]  [<ffffffff81656999>]
+>     system_call_fastpath+0x16/0x1b
+>     > > [48002.777077] ---[ end trace 15c5658c596be9f3 ]---
+>     > > [48002.777081] Enabling non-boot CPUs ...
+>     > >
+>     > >
+>     > > I wonder if this is a result of upload_pm_data()'s use of
+>     mutexes, which
+>     > > being a sleeping synchronization operation, shouldn't be done
+>     in an
+>     > > interrupt-off context.
+>     > >
+>     > > I'm also having the machine hang in the suspended state on resume
+>     > > sometimes (that is, I open the lid/hit a key/press power to
+>     resume the
+>     > > laptop, but the sleep light keeps pulsing and I can't get it
+>     out of that
+>     > > state without a forced power-off. I wonder if these are related.
+>     > >
+>     > > This is with the stock Fedora 19 kernel, but I don't think
+>     there are any
+>     > > differences from upstream in this area?
+>     > >
+>     >
+>     > There was a commit in 3.12 to handle systems with reduced
+>     hardware sleep -
+>     > but that would be a failure 100% of the time - not intermittent.
+>     > What version of Xen are you running?
+>
+>     I saw that on Xen 4.3 (or Xen 4.2) but when I upgraded to Xen 4.4
+>     I didn't see
+>     it anymore. Hence I was thinking it was Xen related.
+>
+>
+> The following xen commits were done in this timeframe that could be
+> related, depending on what Xen version you are running:
+>
+> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=6e96c186d23873597896051b043cfeb119c4a7d5
+> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9aa356bc9f7533c3cb7f02c823f532532876d444
+> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9e2c5938246546a5b3f698b7421640d85602b994
+> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=529d5731e40e179e396397c633e10316a850044e
+>
 
-When reserve_crashkernel fails, kdump is disabled.
+OK, I'm running with current git master Xen, so we'll see how that goes...
 
-This patch creates a quirk list that governs when the workaround,
-efi_reserve_boot_services, is called.
-
-For all firmware released prior to 2014, the workaround will be
-called unless an entry for the platform is in the quirk list saying
-not to do the workaround.
-
-For all firmware released 2014 and later,  the workaround will not
-be called unless an entry for the platform is in the quirk list
-saying to call the workaround.
-
-A new kernel parameter is implemented which overrides the default
-handling described above and provides an explicit method to control
-whether or not the workaround is applied.   This argument allows
-developers to determine on new systems whether the quirk needs
-to be applied or not.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
----
- Documentation/kernel-parameters.txt |  5 +++
- arch/x86/kernel/setup.c             |  5 ++-
- arch/x86/platform/efi/efi.c         | 77 ++++++++++++++++++++++++++++++++++++-
- 3 files changed, 84 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fcbb736..9b2be92 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -894,6 +894,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			you are really sure that your UEFI does sane gc and
- 			fulfills the spec otherwise your board may brick.
- 
-+	efi_quirk=	[EFI; X86] Manual override for EFI quirk testing.
-+			Format: { "reserve" | "noreserve" }
-+			"reserve": Force BootService Code/Data to be reserved.
-+			"noreserve": Force BootService Code/Data to not be reserved.
-+
- 	eisa_irq_edge=	[PARISC,HW]
- 			See header of drivers/parisc/eisa.c.
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f0de629..74389f8 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -995,6 +995,9 @@ void __init setup_arch(char **cmdline_p)
- 	dmi_scan_machine();
- 	dmi_set_dump_stack_arch_desc();
- 
-+	if (efi_enabled(EFI_BOOT))
-+		efi_quirks();
-+
- 	/*
- 	 * VMware detection requires dmi to be available, so this
- 	 * needs to be done after dmi_scan_machine, for the BP.
-@@ -1074,7 +1077,7 @@ void __init setup_arch(char **cmdline_p)
- 	 * The EFI specification says that boot service code won't be called
- 	 * after ExitBootServices(). This is, in fact, a lie.
- 	 */
--	if (efi_enabled(EFI_MEMMAP))
-+	if (efi_enabled(EFI_MEMMAP) && efi_enabled(EFI_QUIRK_RESERVE_BSCD))
- 		efi_reserve_boot_services();
- 
- 	/* preallocate 4k for mptable mpc */
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c7e22ab..0e2c46e 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -42,6 +42,7 @@
- #include <linux/io.h>
- #include <linux/reboot.h>
- #include <linux/bcd.h>
-+#include <linux/dmi.h>
- 
- #include <asm/setup.h>
- #include <asm/efi.h>
-@@ -107,6 +108,22 @@ static int __init setup_add_efi_memmap(char *arg)
- }
- early_param("add_efi_memmap", setup_add_efi_memmap);
- 
-+
-+int efi_reserve_quirk = 0;
-+EXPORT_SYMBOL(efi_reserve_quirk);
-+
-+static int __init setup_efi_quirk(char *arg)
-+{
-+	if (arg && strstr(arg, "noreserve"))
-+		efi_reserve_quirk = -1;
-+	else if (arg && strstr(arg, "reserve"))
-+		efi_reserve_quirk = 1;
-+
-+	return 0;
-+}
-+early_param("efi_quirk", setup_efi_quirk);
-+
-+
- static bool efi_no_storage_paranoia;
- 
- static int __init setup_storage_paranoia(char *arg)
-@@ -422,6 +439,8 @@ static void __init print_efi_memmap(void)
- }
- #endif  /*  EFI_DEBUG  */
- 
-+static bool efi_boot_services_reservations;
-+
- void __init efi_reserve_boot_services(void)
- {
- 	void *p;
-@@ -449,8 +468,10 @@ void __init efi_reserve_boot_services(void)
- 			memblock_dbg("Could not reserve boot range "
- 					"[0x%010llx-0x%010llx]\n",
- 						start, start+size-1);
--		} else
-+		} else {
- 			memblock_reserve(start, size);
-+			efi_boot_services_reservations = true;
-+		}
- 	}
- }
- 
-@@ -467,7 +488,7 @@ void __init efi_free_boot_services(void)
- {
- 	void *p;
- 
--	if (!efi_is_native())
-+	if (!efi_is_native() || !efi_boot_services_reservations)
- 		return;
- 
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-@@ -484,6 +505,7 @@ void __init efi_free_boot_services(void)
- 			continue;
- 
- 		free_bootmem_late(start, size);
-+		efi_boot_services_reservations = false;
- 	}
- 
- 	efi_unmap_memmap();
-@@ -704,6 +726,32 @@ static int __init efi_memmap_init(void)
- 	return 0;
- }
- 
-+static int __init clr_reserve_bootservice_cd(const struct dmi_system_id *id)
-+{
-+	clear_bit(EFI_QUIRK_RESERVE_BSCD, &x86_efi_facility);
-+	return 0;
-+}
-+
-+static int __init set_reserve_bootservice_cd(const struct dmi_system_id *id)
-+{
-+	set_bit(EFI_QUIRK_RESERVE_BSCD, &x86_efi_facility);
-+	return 0;
-+}
-+
-+
-+static const struct dmi_system_id efi_fw_quirks[] __initconst = {
-+	{
-+		.callback = clr_reserve_bootservice_cd,
-+		.ident = "HP CB920s x1",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "HP"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "TBD HPServer x1"),
-+		},
-+	},
-+	{}
-+};
-+
-+
- void __init efi_init(void)
- {
- 	efi_char16_t *c16;
-@@ -780,6 +828,31 @@ void __init efi_init(void)
- #endif
- }
- 
-+void __init efi_quirks(void)
-+{
-+	int year;
-+
-+	if (dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL) && year < 2014)
-+		set_bit(EFI_QUIRK_RESERVE_BSCD, &x86_efi_facility);
-+
-+	dmi_check_system(efi_fw_quirks);
-+
-+	/*
-+	 * If user specifies "efi_quirk=reserve" or "efi_quirk=noreserve"
-+	 * explicitly, that takes precedence over anything we figured
-+	 * out above.
-+	 */
-+	switch (efi_reserve_quirk) {
-+	case -1:
-+		clear_bit(EFI_QUIRK_RESERVE_BSCD, &x86_efi_facility);
-+		break;
-+	case  1:
-+		set_bit(EFI_QUIRK_RESERVE_BSCD, &x86_efi_facility);
-+		break;
-+	}
-+}
-+
-+
- void __init efi_late_init(void)
- {
- 	efi_bgrt_init();
--- 
-1.7.11.3
+    J
 
