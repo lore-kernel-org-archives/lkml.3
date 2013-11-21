@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3KUOcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 09:32:07 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:61385 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933Ab3KUOcD (ORCPT
+	id S1755066Ab3KUOcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 09:32:35 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46852 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979Ab3KUOcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 09:32:03 -0500
+	Thu, 21 Nov 2013 09:32:12 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 07/10] staging/lustre/libcfs: remove linux-fs.h
-Date: Thu, 21 Nov 2013 22:28:28 +0800
-Message-Id: <1385044111-3129-8-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH 10/10] staging/lustre/libcfs: remove LI_POISON
+Date: Thu, 21 Nov 2013 22:28:31 +0800
+Message-Id: <1385044111-3129-11-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1385044111-3129-1-git-send-email-bergwolf@gmail.com>
 References: <1385044111-3129-1-git-send-email-bergwolf@gmail.com>
@@ -21,87 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The extactly same definition exitst in lustre_lib.h.
+
 Cc: Andreas Dilger <andreas.dilger@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 ---
- .../lustre/include/linux/libcfs/linux/libcfs.h     |    1 -
- .../lustre/include/linux/libcfs/linux/linux-fs.h   |   55 --------------------
- 2 files changed, 56 deletions(-)
- delete mode 100644 drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
+ .../lustre/include/linux/libcfs/linux/kp30.h       |   10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/libcfs.h b/drivers/staging/lustre/include/linux/libcfs/linux/libcfs.h
-index 60ecaf6..a7bca40 100644
---- a/drivers/staging/lustre/include/linux/libcfs/linux/libcfs.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/linux/libcfs.h
-@@ -49,7 +49,6 @@
- #include <linux/libcfs/linux/linux-mem.h>
- #include <linux/libcfs/linux/linux-prim.h>
- #include <linux/libcfs/linux/linux-lock.h>
--#include <linux/libcfs/linux/linux-fs.h>
- #include <linux/libcfs/linux/linux-tcpip.h>
- #include <linux/libcfs/linux/linux-bitops.h>
- #include <linux/libcfs/linux/linux-types.h>
-diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h b/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
-deleted file mode 100644
-index 71e7594..0000000
---- a/drivers/staging/lustre/include/linux/libcfs/linux/linux-fs.h
-+++ /dev/null
-@@ -1,55 +0,0 @@
--/*
-- * GPL HEADER START
-- *
-- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 only,
-- * as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but
-- * WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- * General Public License version 2 for more details (a copy is included
-- * in the LICENSE file that accompanied this code).
-- *
-- * You should have received a copy of the GNU General Public License
-- * version 2 along with this program; If not, see
-- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
-- *
-- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-- * CA 95054 USA or visit www.sun.com if you need additional information or
-- * have any questions.
-- *
-- * GPL HEADER END
-- */
--/*
-- * Copyright (c) 2008, 2010, Oracle and/or its affiliates. All rights reserved.
-- * Use is subject to license terms.
-- *
-- * Copyright (c) 2012, Intel Corporation.
-- */
--/*
-- * This file is part of Lustre, http://www.lustre.org/
-- * Lustre is a trademark of Sun Microsystems, Inc.
-- *
-- * libcfs/include/libcfs/linux/linux-fs.h
-- *
-- * Basic library routines.
-- */
+diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
+index 8cab09c..5cc7ba0 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
++++ b/drivers/staging/lustre/include/linux/libcfs/linux/kp30.h
+@@ -70,16 +70,6 @@
+ 
+ #include <linux/libcfs/linux/portals_compat25.h>
+ 
+-/* ------------------------------------------------------------------ */
 -
--#ifndef __LIBCFS_LINUX_CFS_FS_H__
--#define __LIBCFS_LINUX_CFS_FS_H__
--
--#ifndef __LIBCFS_LIBCFS_H__
--#error Do not #include this file directly. #include <linux/libcfs/libcfs.h> instead
+-# define LI_POISON 0x5a5a5a5a
+-#if BITS_PER_LONG > 32
+-# define LL_POISON 0x5a5a5a5a5a5a5a5aL
+-#else
+-# define LL_POISON 0x5a5a5a5aL
 -#endif
+-# define LP_POISON ((void *)LL_POISON)
 -
--
--#include <linux/fs.h>
--#include <linux/stat.h>
--#include <linux/mount.h>
--#include <linux/backing-dev.h>
--#include <linux/posix_acl_xattr.h>
--
--#endif
+ /* this is a bit chunky */
+ 
+ # define LPU64 "%llu"
 -- 
 1.7.9.5
 
