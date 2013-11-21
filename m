@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3KUSo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:44:28 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46223 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab3KUSo0 (ORCPT
+	id S1754565Ab3KUSqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:46:37 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:59816 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754583Ab3KUSqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:44:26 -0500
-Message-ID: <528E5487.8000003@wwwdotorg.org>
-Date: Thu, 21 Nov 2013 11:44:23 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, ldewangan@nvidia.com, lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
-References: <20131120175814.GC27423@saruman.home> <20131120203400.GL2674@sirena.org.uk> <20131120205143.GA9182@saruman.home> <20131121024840.GA22970@saruman.home> <20131121104911.GM2674@sirena.org.uk> <528E3817.1010105@wwwdotorg.org> <20131121183632.GE8120@sirena.org.uk>
-In-Reply-To: <20131121183632.GE8120@sirena.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Nov 2013 13:46:30 -0500
+Message-Id: <20131121184629.986503514@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 21 Nov 2013 13:44:01 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: [PATCH RT 4/5] drm: remove preempt_disable() from
+ drm_calc_vbltimestamp_from_scanoutpos()
+References: <20131121184357.391591135@goodmis.org>
+Content-Disposition: inline; filename=0004-drm-remove-preempt_disable-from-drm_calc_vbltimestam.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 11:36 AM, Mark Brown wrote:
-> On Thu, Nov 21, 2013 at 09:43:03AM -0700, Stephen Warren wrote:
-> 
->> FYI, the way I deal with this is that my preferred email account 
->> subscribes to the mailing list, and I have a filter such that
->> anything that's to/cc either *that* email address *or* any of my
->> other email addresses gets handled the same, and dumped in my
->> (list) inbox rather than in a mailing list folder.
-> 
-> I used to do that but I found it tended to create annoying
-> duplicates more often than it was helpful.  It's also a bit of an
-> issue for me that there are other people with the same name who
-> work upstream so I do also find people from time to time picking
-> the wrong Mark Brown to e-mail.
+3.2.52-rt74-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Ah yes. I also have a delivery-time filter that remembers the last n
-Message-Id headers I've received, and it dumps any duplicates into a
-separate folder that I ignore. It seems to work pretty well. It looks
-like n==10000 for me right now.
+------------------
 
-I could post the scripts on github if people think they're useful.
-Hopefully there aren't security bugs:-)
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+
+Luis captured the following:
+
+| BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+| in_atomic(): 1, irqs_disabled(): 0, pid: 517, name: Xorg
+| 2 locks held by Xorg/517:
+|  #0:
+|  (
+| &dev->vbl_lock
+| ){......}
+| , at:
+| [<ffffffffa0024c60>] drm_vblank_get+0x30/0x2b0 [drm]
+|  #1:
+|  (
+| &dev->vblank_time_lock
+| ){......}
+| , at:
+| [<ffffffffa0024ce1>] drm_vblank_get+0xb1/0x2b0 [drm]
+| Preemption disabled at:
+| [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+| CPU: 3 PID: 517 Comm: Xorg Not tainted 3.10.10-rt7+ #5
+| Call Trace:
+|  [<ffffffff8164b790>] dump_stack+0x19/0x1b
+|  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
+|  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
+|  [<ffffffffa0084e67>] i915_read32+0x27/0x170 [i915]
+|  [<ffffffffa008a591>] i915_pipe_enabled+0x31/0x40 [i915]
+|  [<ffffffffa008a6be>] i915_get_crtc_scanoutpos+0x3e/0x1b0 [i915]
+|  [<ffffffffa00245d4>] drm_calc_vbltimestamp_from_scanoutpos+0xf4/0x430 [drm]
+|  [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+|  [<ffffffffa0024998>] drm_get_last_vbltimestamp+0x48/0x70 [drm]
+|  [<ffffffffa0024db5>] drm_vblank_get+0x185/0x2b0 [drm]
+|  [<ffffffffa0025d03>] drm_wait_vblank+0x83/0x5d0 [drm]
+|  [<ffffffffa00212a2>] drm_ioctl+0x552/0x6a0 [drm]
+|  [<ffffffff811a0095>] do_vfs_ioctl+0x325/0x5b0
+|  [<ffffffff811a03a1>] SyS_ioctl+0x81/0xa0
+|  [<ffffffff8165a342>] tracesys+0xdd/0xe2
+
+After a longer thread it was decided to drop the preempt_disable()/
+enable() invocations which were meant for -RT and Mario Kleiner looks
+for a replacement.
+
+Cc: stable-rt@vger.kernel.org
+Reported-By: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/gpu/drm/drm_irq.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 73af885..2b13224 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -619,11 +619,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 	 * code gets preempted or delayed for some reason.
+ 	 */
+ 	for (i = 0; i < DRM_TIMESTAMP_MAXRETRIES; i++) {
+-		/* Disable preemption to make it very likely to
+-		 * succeed in the first iteration even on PREEMPT_RT kernel.
+-		 */
+-		preempt_disable();
+-
+ 		/* Get system timestamp before query. */
+ 		do_gettimeofday(&stime);
+ 
+@@ -633,8 +628,6 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+ 		/* Get system timestamp after query. */
+ 		do_gettimeofday(&raw_time);
+ 
+-		preempt_enable();
+-
+ 		/* Return as no-op if scanout query unsupported or failed. */
+ 		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+ 			DRM_DEBUG("crtc %d : scanoutpos query failed [%d].\n",
+-- 
+1.8.4.rc3
+
+
