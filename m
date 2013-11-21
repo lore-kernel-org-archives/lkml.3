@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3KUT1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:27:21 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53264 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab3KUT1T (ORCPT
+	id S1755234Ab3KUT2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:28:10 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57718 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab3KUT2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:27:19 -0500
-Date: Thu, 21 Nov 2013 11:19:16 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
- implementations
-Message-ID: <20131121191916.GZ4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131120160450.072555619@infradead.org>
- <20131120162736.508462614@infradead.org>
- <20131120165406.14fa0f09@ultegra>
- <20131121082151.GU10022@twins.programming.kicks-ass.net>
- <20131121160716.GT4138@linux.vnet.ibm.com>
- <528E32EF.2050300@linux.intel.com>
+	Thu, 21 Nov 2013 14:28:08 -0500
+Date: Thu, 21 Nov 2013 19:28:02 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Felipe Balbi <balbi@ti.com>, ldewangan@nvidia.com, lgirdwood@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Message-ID: <20131121192802.GJ8120@sirena.org.uk>
+References: <20131120175814.GC27423@saruman.home>
+ <20131120203400.GL2674@sirena.org.uk>
+ <20131120205143.GA9182@saruman.home>
+ <20131121024840.GA22970@saruman.home>
+ <20131121104911.GM2674@sirena.org.uk>
+ <528E3817.1010105@wwwdotorg.org>
+ <20131121183632.GE8120@sirena.org.uk>
+ <528E5487.8000003@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q5r20fdKX+PFtYHw"
 Content-Disposition: inline
-In-Reply-To: <528E32EF.2050300@linux.intel.com>
+In-Reply-To: <528E5487.8000003@wwwdotorg.org>
+X-Cookie: I feel ... JUGULAR ...
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112119-0928-0000-0000-000003A91B95
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: commit c368e5fc2a190923b786f2de3e79430ea3566a25 regresses MMC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 08:21:03AM -0800, Arjan van de Ven wrote:
-> On 11/21/2013 8:07 AM, Paul E. McKenney wrote:
-> >As long as RCU has some reliable way to identify an idle task, I am
-> >good.  But I have to ask -- why can't idle injection coordinate with
-> >the existing idle tasks rather than temporarily making alternative
-> >idle tasks?
-> 
-> it's not a real idle. that's the whole problem of the situation.
-> to the rest of the OS, this is being BUSY (busy saving power using
-> a CPU instruction, but it might as well have been an mdelay() operation)
-> and it's also what end users expect; they want to be able to see
-> where there performance (read: cpu time in "top") is going.
 
-My concern is keeping RCU's books straight.  Suppose that there is a need
-to call for idle in the middle of a preemptible RCU read-side critical
-section.  Now, if that call for idle involves a context switch, all is
-well -- RCU will see the task as still being in its RCU read-side critical
-section, which means that it is OK for RCU to see the CPU as idle.
+--q5r20fdKX+PFtYHw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-However, if there is no context switch and RCU sees the CPU as idle,
-preemptible RCU could prematurely end the grace period.  If there is no
-context switch and RCU sees the CPU as non-idle for too long, we start
-getting RCU CPU stall warning splats.
+On Thu, Nov 21, 2013 at 11:44:23AM -0700, Stephen Warren wrote:
 
-Another approach would be to only inject idle when the CPU is not
-doing anything that could possibly be in an RCU read-side critical
-section.  But things might get a bit hot in case of an overly
-long RCU read-side critical section.
+> Ah yes. I also have a delivery-time filter that remembers the last n
+> Message-Id headers I've received, and it dumps any duplicates into a
+> separate folder that I ignore. It seems to work pretty well. It looks
+> like n==10000 for me right now.
 
-One approach that might work would be to hook into RCU's context-switch
-code going in and coming out, then telling RCU that the CPU is idle,
-even though top and friends see it as non-idle.  This last is in fact
-similar to how RCU handles userspace execution for NO_HZ_FULL.
+Yeah, that wasn't working great - I think because I was doing it in the
+wrong place and it was catching lists too.
 
-Or were you thinking of yet another possible approach for this?
+--q5r20fdKX+PFtYHw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-							Thanx, Paul
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSjl6/AAoJELSic+t+oim9deAP/RxujeAnxRBioT04WYCNofIX
+FTdvQz5Ck5aFBG0b8rTiTiBz2E5ysypYxKPcQyU0WMZNLkI0ta9QhGv6/LnZN0nR
+ueRQ9aYq28o/8MGrQr7owH4syRxOKuYA/um7/GV1UNv2hacFWVeoj9gDg1IxiJy2
+tKnIaRWX3ndS/BEVI0lXNNzoXGJKeGHOGXK5XvQrrpaGdMYZvaVNdX3eSQqKRUx9
+g9IEBFvvTMZISET7AWAOpkbvyDeUHS438SzQ3BkUPLhjmmslK0t/fpuheZS2CqFp
+YlJxLpFzfWeUsNVWmgTVgUQvFz9Wy3U5qu2mD/tjdHHJK/urOqSLsoJXkKsVsWef
+JlpbagLEq45IQ1vtHJLP37z/PADesx6gTAY7xq+hgeBe7Wz5HdZzhrfGEZKQwj9w
+iENqF95oX2DDvMl1fM+efSMBXx2WKEa0pQoJVcgRxxejuxTRYhnKPN6v1FgIM4+q
+KMfBugOqEIqKFJMErjjObaNepfo4njbRaYDqQSDK/qzrN8hlZNa8VYPiowBz5iF5
+BOjefD2ZG/UvhKAT5jX4SQrq0+JtX+g04J32HsWa5wHytpoZdjd2HPu/LEuiF6gX
+v89EK1NH9FBil5a/Bi/HgJ35zChQKPSAtkQVdtZefg6I4iOp3iPQmw7LqJztHhbi
+yHVgHbE0q3UOsSMuEd1a
+=RJ1E
+-----END PGP SIGNATURE-----
+
+--q5r20fdKX+PFtYHw--
