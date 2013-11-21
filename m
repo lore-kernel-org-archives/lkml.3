@@ -1,118 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab3KUTEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:04:24 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37686 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3KUTEX (ORCPT
+	id S1755262Ab3KUTGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:06:05 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:37976 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab3KUTGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:04:23 -0500
-Message-ID: <528E5932.1070105@wwwdotorg.org>
-Date: Thu, 21 Nov 2013 12:04:18 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 21 Nov 2013 14:06:03 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        swarren@nvidia.com, will.deacon@arm.com, thierry.reding@gmail.com,
-        galak@codeaurora.org
-CC: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
-References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-3-git-send-email-hdoyu@nvidia.com> <20131121131558.E5B82C40A2C@trevor.secretlab.ca>
-In-Reply-To: <20131121131558.E5B82C40A2C@trevor.secretlab.ca>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+Date: Thu, 21 Nov 2013 20:06:02 +0100
+X-Google-Sender-Auth: 9zV6Y4jtoz8h5vD_aRcKv7efLUI
+Message-ID: <CAMuHMdVoGC3+q2UKvogL=BjkXO3k3Dq9+gGF+7CczG-PJcQPxw@mail.gmail.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 06:15 AM, Grant Likely wrote:
-> On Tue, 19 Nov 2013 11:33:06 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
->> IOMMU devices on the bus need to be poplulated first, then iommu
->> master devices are done later.
->>
->> With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
->> whether a device can be an iommu msater or not. If a device can, we'll
->> defer to populate that device till an iommu device is populated. Once
->> an iommu device is populated, "dev->bus->iommu_ops" is set in the
->> bus. Then, those defered iommu master devices are populated and
->> configured for IOMMU with help of the already populated iommu device
->> via iommu_ops->add_device(). Multiple IOMMUs can be listed on this
->> "iommus" binding so that a device can have multiple IOMMUs attached.
->>
->> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
->> ---
->> v5:
->> Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
->>
->> v4:
->> This is newly added, and the successor of the following RFC:
->>   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
->>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
->> ---
->>  drivers/base/dd.c        |  5 +++++
->>  drivers/iommu/of_iommu.c | 22 ++++++++++++++++++++++
->>  include/linux/of_iommu.h |  7 +++++++
->>  3 files changed, 34 insertions(+)
->>
->> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
->> index 35fa368..6e892d4 100644
->> --- a/drivers/base/dd.c
->> +++ b/drivers/base/dd.c
->> @@ -25,6 +25,7 @@
->>  #include <linux/async.h>
->>  #include <linux/pm_runtime.h>
->>  #include <linux/pinctrl/devinfo.h>
->> +#include <linux/of_iommu.h>
->>  
->>  #include "base.h"
->>  #include "power/power.h"
->> @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
->>  
->>  	dev->driver = drv;
->>  
->> +	ret = of_iommu_attach(dev);
->> +	if (ret)
->> +		goto probe_failed;
->> +
->>  	/* If using pinctrl, bind pins now before probing */
->>  	ret = pinctrl_bind_pins(dev);
->>  	if (ret)
-> 
-> I'm very concerned about this approach. Hooking into the core probe
-> path for things like this is not going to scale well. I'm not thrilled
-> with the pinctrl hook being here either, but that is already merged. :-(
-> Also, hooking in here is going affect every single device device driver
-> probe path, and a large number of them are never, ever, going to have
-> iommu interactions.
-> 
-> There needs to be a less invasive way of doing what you want. I still
-> feel like the individual device drivers themselves need to be aware that
-> they might be hooking through an IOMMU. Or, if they are hooking through
-> a bus like PCIe, then have the PCIe bus defer creating child devices
-> until the IOMMU is configured and in place.
+On Wed, Nov 20, 2013 at 6:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Now a new system call kexec_file_load() is implemented which takes
+> kernel fd and initrd fd as parameters. Now kernel should be able
+> to verify signature of newly loaded kernel.
 
-I general though, couldn't any MMIO on-SoC device potentially be
-affected by an IOMMU? The point of putting the call to of_iommu_attach()
-here rather than inside individual driver's probe() is to avoid
-requiring "every" driver having to paste more boiler-plate into probe().
+Only kernel fd and initrd fd?
+What about other fds (e.g. device tree, bootinfo)?
 
-Perhaps what we need is a flag in struct device to indicate that the
-driver/device is MMIO, and hence potentially affected by an IOMMU. would
-the following work better for you?
+Gr{oetje,eeting}s,
 
-+	if (drv->is_mmio) { // let's bikeshed on the field name:-)
-+		ret = of_iommu_attach(dev);
-+		if (ret)
-+			goto probe_failed;
-+	}
+                        Geert
 
-I've often thought that struct device_driver (or similar) should declare
-the set of resources that a device needs (e.g. a list of GPIO names,
-regulator names, etc.), so that the driver core can parse all these
-standard properties from DT/... before calling the custom probe()
-function for all the non-standard stuff. This "is_mmio" flag would fit
-into that model well.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
