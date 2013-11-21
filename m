@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3KUN0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:26:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60834 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab3KUN0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:26:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,744,1378882800"; 
-   d="scan'208";a="439187725"
-Message-ID: <528E09F9.9030501@linux.intel.com>
-Date: Thu, 21 Nov 2013 15:26:17 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-References: <20131120160450.072555619@infradead.org> <20131120162736.691879744@infradead.org> <528CF94E.8020300@linux.intel.com> <20131121101018.GX10022@twins.programming.kicks-ass.net>
-In-Reply-To: <20131121101018.GX10022@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754022Ab3KUN2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:28:46 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:22924 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751491Ab3KUN2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 08:28:44 -0500
+Date: Thu, 21 Nov 2013 08:28:41 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 15/22] tools lib traceevent: Change pevent_parse_event
+ to return event format
+Message-ID: <20131121082841.5b709947@gandalf.local.home>
+In-Reply-To: <1385031680-9014-16-git-send-email-jolsa@redhat.com>
+References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
+	<1385031680-9014-16-git-send-email-jolsa@redhat.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/2013 12:10, Peter Zijlstra wrote:
-> On Wed, Nov 20, 2013 at 08:02:54PM +0200, Eliezer Tamir wrote:
->> IMHO This has been reviewed thoroughly.
->>
->> When Ben Hutchings voiced concerns I rewrote the code to use time_after,
->> so even if you do get switched over to a CPU where the time is random
->> you will at most poll another full interval.
->>
->> Linus asked me to remove this since it makes us use two time values
->> instead of one. see https://lkml.org/lkml/2013/7/8/345.
-> 
-> I'm not sure I see how this would be true.
-> 
-> So the do_select() code basically does:
-> 
->   for (;;) {
-> 
->     /* actual poll loop */
-> 
->     if (!need_resched()) {
->       if (!busy_end) {
-> 	busy_end = now() + busypoll;
-> 	continue;
->       }
->       if (!((long)(busy_end - now()) < 0))
-> 	continue;
->     }
-> 
->     /* go sleep */
-> 
->   }
-> 
-> So imagine our CPU0 timebase is 1 minute ahead of CPU1 (60e9 vs 0), and we start by:
-> 
->   busy_end = now() + busypoll; /* CPU0: 60e9 + d */
-> 
-> but then we migrate to CPU1 and do:
-> 
->   busy_end - now() /* CPU1: 60e9 + d' */
-> 
-> and find we're still a minute out; and in fact we'll keep spinning for
-> that entire minute barring a need_resched().
+On Thu, 21 Nov 2013 12:01:13 +0100
+Jiri Olsa <jolsa@redhat.com> wrote:
 
-not exactly, poll will return if there are any events to report of if
-a signal is pending.
+> Changing pevent_parse_event to return 'struct event_format',
+> for the parsed event if the return pointer is specified.
 
-> Surely that's not intended and desired?
+Can we not change the API of pevent_parse_event(), I use it quite a bit.
 
-This limit is an extra safety net, because busy polling is expensive,
-we limit the time we are willing to do it.
+And yes, I'm working hard to keep what's in trace-cmd and the kernel
+identical.
 
-We don't override any limit the user has put on the system call.
-A signal or having events to report will also stop the looping.
-So we are mostly capping the resources an _idle_ system will waste
-on busy polling.
+> 
+> This way we can remove pevent_parse_format which does the
+> same stuff just without 'struct pevent' object.
 
-We want to globally cap the amount of time the system busy polls, on
-average. Nothing catastrophic will happen in the extremely rare occasion
-that we miss.
+Actually, I don't use pevent_parse_format() at all. What about changing
+that one to include the pevent?
 
-The alternative is to use one more int on every poll/select all the
-time, this seems like a bigger cost.
+
+> 
+> The ultimate goal is to always use pevent object when dealing
+> with traceevent library. The reason is that we might need
+> additional processing (like plugins), which is not possible
+> otherwise.
+
+Right, so add a pevent to the pevent_parse_format() and leave the
+pevent_parse_event() alone. That should make everyone happy :-)
+
+Thanks!
+
+-- Steve
