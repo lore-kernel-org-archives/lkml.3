@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3KUXMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 18:12:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55236 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab3KUXMI (ORCPT
+	id S1755240Ab3KUXQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 18:16:15 -0500
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:57556 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3KUXQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 18:12:08 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 1/2] driver core: introduce module_platform_driver_match_and_probe
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <CAL_JsqLK_ivSphWq3xLpQqUjF1nEvPjf2WQ4hJ+hThcTFae-Kg@mail.gmail.com>
-References: <1383113571-13029-1-git-send-email-robherring2@gmail.com> < 1383113571-13029-2-git-send-email-robherring2@gmail.com> <20131121124736. 6EBEBC40A2C@trevor.secretlab.ca> < CAL_JsqLK_ivSphWq3xLpQqUjF1nEvPjf2WQ4hJ+hThcTFae-Kg@mail.gmail.com>
-Date: Thu, 21 Nov 2013 23:11:59 +0000
-Message-Id: <20131121231159.9CB1BC40753@trevor.secretlab.ca>
+	Thu, 21 Nov 2013 18:16:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131121230107.GA15179@kroah.com>
+References: <CAGr1u3vZU_Pxwu1nSab0PExNPQsE0xiSpcoMbUQ7MeGbJzBAjA@mail.gmail.com>
+	<20131113123947.GB13318@ZenIV.linux.org.uk>
+	<CAGr1u3spS2G8r7jCAnFZukE_zGkEGtsk0SSyTj3H39kK9E0_tQ@mail.gmail.com>
+	<20131121230107.GA15179@kroah.com>
+Date: Thu, 21 Nov 2013 15:16:13 -0800
+Message-ID: <CAGr1u3vw3amD2YVidx3sZTJ7D3nEdLA7RaAG2u=KxU8UGWVN0Q@mail.gmail.com>
+Subject: Re: 3.12 Regression: dcache: Translating dentry into pathname without
+ taking rename_lock 232d2d60
+From: Michael Marineau <michael.marineau@coreos.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013 16:33:13 -0600, Rob Herring <robherring2@gmail.com> wrote:
-> On Thu, Nov 21, 2013 at 6:47 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> > On Wed, 30 Oct 2013 01:12:50 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> >> From: Rob Herring <rob.herring@calxeda.com>
-> >>
-> >> Introduce a helper to match, create and probe a platform device. This
-> >> is for drivers such as cpuidle or cpufreq that typically don't have a
-> >> bus device node and need to match on a system-level compatible property.
-> >>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> Cc: Grant Likely <grant.likely@linaro.org>
-> >> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> >
-> > Oh, ick. Please no. If a platform_device isn't getting created for a
-> > device tree node, then we should be asking why it isn't getting created
-> > and fix the core logic rather than trying to bodge it in the driver init
-> > code.
-> >
-> > We should never be creating and registering devices in module init code.
-> > We've spent the last 4 years trying to get away from that.
-> 
-> This is for devices that have no DT device node to be associated with
-> and therefore will never have a device created by the core DT code.
-> Instead the devices are created based off of the root compatible
-> property. cpuidle drivers are one such example [1]. We already do this
-> today by putting the platform device creation in the
-> machine_desc.init_machine function which is a conditional initcall.
-> The motivation for changing this is how to support drivers like this
-> on arm64 which doesn't want any platform code or machine_desc. At
-> least historically, we didn't want DT nodes of Linux specific devices
-> in the DT. So, how would you propose to solve this problem?
+On Thu, Nov 21, 2013 at 3:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Nov 13, 2013 at 02:51:59PM -0800, Michael Marineau wrote:
+>> On Wed, Nov 13, 2013 at 4:39 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> > On Wed, Nov 13, 2013 at 03:34:13AM -0800, Michael Marineau wrote:
+>> >> Greetings,
+>> >>
+>> >> Commit 232d2d60aa5469bb097f55728f65146bd49c1d25 causes intermittent
+>> >> errors in /proc/*/fd/* where readlink returns "/" instead of the
+>> >> correct path. This can be reproduced by the script below which copies
+>> >> the kernel source directory structure while obsessively looking up
+>> >> directory fds in proc from another process. Reverting
+>> >> 232d2d60aa5469bb097f55728f65146bd49c1d25 after two related commits
+>> >> 48f5ec21d9c67e881ff35343988e290ef5cf933f
+>> >> 1812997720ab90d029548778c55d7315555e1fef fixes the issue.
+>> >
+>> > Looking into it...  It seems that we are getting to the end of
+>> > prepend_path() with non-negative error and bptr == *buffer.
+>> > What the...
+>> >
+>> > OK, I see what's going on.  We never reinitialize dentry, vfsmount and mnt
+>> > if we decide to restart.  See if the following helps:
+>> >
+>> > diff --git a/fs/dcache.c b/fs/dcache.c
+>> > index ae6ebb8..89f9671 100644
+>> > --- a/fs/dcache.c
+>> > +++ b/fs/dcache.c
+>> > @@ -2881,9 +2881,9 @@ static int prepend_path(const struct path *path,
+>> >                         const struct path *root,
+>> >                         char **buffer, int *buflen)
+>> >  {
+>> > -       struct dentry *dentry = path->dentry;
+>> > -       struct vfsmount *vfsmnt = path->mnt;
+>> > -       struct mount *mnt = real_mount(vfsmnt);
+>> > +       struct dentry *dentry;
+>> > +       struct vfsmount *vfsmnt;
+>> > +       struct mount *mnt;
+>> >         int error = 0;
+>> >         unsigned seq = 0;
+>> >         char *bptr;
+>> > @@ -2893,6 +2893,9 @@ static int prepend_path(const struct path *path,
+>> >  restart:
+>> >         bptr = *buffer;
+>> >         blen = *buflen;
+>> > +       dentry = path->dentry;
+>> > +       vfsmnt = path->mnt;
+>> > +       mnt = real_mount(vfsmnt);
+>> >         read_seqbegin_or_lock(&rename_lock, &seq);
+>> >         while (dentry != root->dentry || vfsmnt != root->mnt) {
+>> >                 struct dentry * parent;
+>>
+>> That appears to do the trick! I've tried my test case against that
+>> patch on both Linus' git tree (as of last night) and the 3.12 release.
+>> I'm now running the long build job that initially stumbled across this
+>> bug now but it looks good so far.
+>
+> Al, did this fix end up in Linus's tree yet?  I'd like to pull it into
+> the next 3.12-stable release, but will wait until Linus has it of
+> course.
 
-Honestly? With a machine_desc.  :-)
+It did, I was going to poke you about it when I noticed no one got it
+to you before 3.12.1 :)
 
-Actually, I'm totally serious here. That is why machine_desc is still a
-good idea. There are always going to be a few per-platform bits that
-need to be present, although the hope is the per-platform will be at the
-SoC family level instead of the board level.
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/dcache.c?id=ede4cebce16f5643c61aedd6d88d9070a1d23a68
 
-g.
-
+I don't know if there are any other fixes in this code that would also
+be good for 3.12, there appears to be a number of fix-looking commits
+to dcache.c
