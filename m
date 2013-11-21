@@ -1,128 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab3KUGXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 01:23:20 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:2262 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab3KUGXR (ORCPT
+	id S1751488Ab3KUGjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 01:39:03 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:21658 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3KUGjB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 01:23:17 -0500
-Message-ID: <528DA672.9020707@huawei.com>
-Date: Thu, 21 Nov 2013 14:21:38 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>, Bjorn Helgaas <bhelgaas@google.com>
-CC: Vinod Koul <vinod.koul@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <dmaengine@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH 1/1] IOMMU: Save pci device id instead of pci_dev* pointer
- for DMAR devices
-References: <1383639898-48776-1-git-send-email-wangyijing@huawei.com>	 <1383639898-48776-2-git-send-email-wangyijing@huawei.com>	 <20131107180713.GA2955@google.com> <527C5D36.7050206@huawei.com>	 <CAErSpo73N2Th-4D5G8-60tMuGwqthfu-VNHVf3LF9+s2mQp53w@mail.gmail.com> <1384963192.15487.76.camel@shinybook.infradead.org>
-In-Reply-To: <1384963192.15487.76.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Thu, 21 Nov 2013 01:39:01 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-42-528daa775da7
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+References: <001d01cee5bc$779c2fe0$66d48fa0$@samsung.com>
+ <1384997517.26319.60.camel@kjgkr>
+ <000001cee668$872ec6a0$958c53e0$@samsung.com> <1385009132.26319.71.camel@kjgkr>
+In-reply-to: <1385009132.26319.71.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH V2 2/2 RESEND] f2fs: read contiguous sit entry
+ pages by merging for mount performance
+Date: Thu, 21 Nov 2013 14:37:57 +0800
+Message-id: <000201cee684$550e11a0$ff2a34e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIJ19KASf8zRPdVedlp8ddtfrYm2AK+Dn7CAcqcVCkBpqPD+ZmH0ErA
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t9jQd3yVb1BBl9uG1tc3/WXyeLSIneL
+	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxt3bW1gL
+	eqUrjrxsYmxgnCHaxcjJISFgIjGr4TIThC0mceHeejYQW0hgOqPEn//pXYxcQPYPRomJN68x
+	giTYBFQklnf8B2sQEZCWmPVpHguIzSwwm1Fi82xHiIb1jBJNnw+AJTgF9CQeLz3GDmILC5RJ
+	fFn6jBnEZhFQlXh15D3YIF4BS4m9i3vYIGxBiR+T70ENVZeYNG8RM4StLfHk3QVWiEsVJHac
+	fc0IcYSbxM/T09ghasQlNh65xTKBUWgWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn
+	5haX5qXrJefnbmIER8EzqR2MKxssDjEKcDAq8fB2PO4JEmJNLCuuzD3EKMHBrCTCWzy/N0iI
+	NyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QDY9H2fY8mR6fa
+	doUsntfcsID5y1WVmKT3RWwpHN4PJPTb3TbvEjzxIJH57KVi29QHN/e+farUeYd99fk/FrKX
+	Z1/1KVwuJjTX87eYZsqh2/cupQkW/7RcMLHLJsSZNU9hrtWTwAcFllbLM5RLTzRFtvsdetO/
+	l3nnxS1uXGvlTm1UXbXktejKt0osxRmJhlrMRcWJAGA8Pep+AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/20 23:59, David Woodhouse wrote:
-> On Fri, 2013-11-08 at 08:46 -0700, Bjorn Helgaas wrote:
->>
->> I don't know the IOMMU drivers well either, but it seems like they
->> rely on notifications of device addition and removal (see
->> iommu_bus_notifier()).  It doesn't seem right for them to also use the
->> generic PCI interfaces like pci_get_domain_bus_and_slot() because the
->> IOMMU driver should already know what devices exist and their
->> lifetimes.  It seems like confusion to mix the two.  But I don't have
->> a concrete suggestion.
+Hi,
+
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Thursday, November 21, 2013 12:46 PM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; '谭姝'
+> Subject: RE: [f2fs-dev] [PATCH V2 2/2 RESEND] f2fs: read contiguous sit entry pages by merging for mount performance
 > 
-
-Hi David,
-   Thanks for your review and comment!
-
-> The generic IOMMU code has a notifier, and calls through to an
-> ->add_device() method in the specific IOMMU driver's iommu_ops.
+> Hi,
 > 
-> The Intel IOMMU driver predates that, and its scheme for mapping devices
-> to the correct DMAR unit is different. It happens entirely within the
-> get_domain_for_dev() function, which happens when we're first asked to
-> set up a mapping for a given device (when we don't already have the
-> answer stashed in dev->archdata).
+> 2013-11-21 (목), 11:18 +0800, Chao Yu:
+> > Hi,
+> >
+> > > -----Original Message-----
+> > > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > > Sent: Thursday, November 21, 2013 9:32 AM
+> > > To: Chao Yu
+> > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> > > Subject: Re: [f2fs-dev] [PATCH V2 2/2 RESEND] f2fs: read contiguous sit entry pages by merging for mount performance
+> > >
+> > > Hi,
+> > >
+> > > It seems that ra_sit_pages() is too tightly coupled with
+> > > build_sit_entries().
+> >
+> > This code could be improved.
+> >
+> > > Is there another way not to use *is_order?
+> >
+> > Previously the code is like this:
+> >  -build_sit_entries()
+> >  next_setp:
+> > 	for(start = 0; start < TOTAL_SEGS(sbi); start++)
+> > 		/*step#1 readahead all sit entries blocks*/
+> > 			if(start % SIT_ENTRY_PER_BLOCK == 0) {
+> > 				blk_addr = current_sit_addr(sbi, start);
+> > 				/* grab and submit_read_page */
+> > 			}
+> > 			if(start == TOTAL_SEGS(sbi) - 1)
+> > 				f2fs_submit_read_bio();
+> > 			continue;
+> > 		/*step#2 fill sit entries info*/
+> > 		/*step#3 cover sit entries with journal*/
+> >
+> > But I think its weakness is that it will cost lots of memory to read
+> > ahead all sit entry pages when f2fs mount, and also it's serious waste
+> > that we read them again after these pages are released by VM when
+> > out of memory.
+> >
+> > >
+> > > The ra_sit_pages() tries to read consecutive sit pages as many as
+> > > possible.
+> > > So then, what about just checking whether its block address is
+> > > contiguous or not?
+> > >
+> > > Something like this:
+> > >  -ra_sit_pages()
+> > > 	blkno = start;
+> > > 	while (blkno < sit_i->sit_blocks) {
+> > > 		blk_addr = current_sit_addr(sbi, blkno);
+> > > 		if (blkno != start && prev_blk_addr + 1 != blk_addr)
+> > > 			break;
+> > >
+> > > 		/* grab and submit_read_page */
+> > >
+> > > 		prev_blk_addr = blk_addr;
+> > > 		blkno++;
+> > > 	}
+> >
+> > Agreed, this method could remove *order.
+> > Shouldn't we add nrpages for readahead policy as VM?
 > 
-> I think we should add an ->add_device() method to the Intel IOMMU
-> driver, and make it do much of what's in get_domain_for_dev() right now
-> — finding the "proxy" device (the upstream PCIe bridge or whatever), and
-> then looking through the ACPI DMAR table to find which DMAR unit that's
-> attached to. Then we stash that information (dmar, devfn) in
-> dev->archdata, and get_domain_for_dev() still has *some* work to do,
-> actually allocating a logical domain on the IOMMU in question, but not
-> as much. And refcount the damn domain instead of playing the horrid
-> tricks we currently do to hang it off the upstream proxy device *too*.
+> Aha, agreed.
+> We need nrpages to avoid too many reads on sit blocks.
+> 
+> But, still it needs to change the nrpages in its caller.
+> In your patch, it was sit_i->sit_blocks that is total # of sit blocks.
+> I think 128 or 256 is quite reasonable number.
 
-Intel IOMMU driver has an ->add_device() method already,   .add_device	= intel_iommu_add_device,
-this method was used to update iommu group info. Since Intel IOMMU driver has
-its own notifier, so maybe it's a nice candidate to do something.
-Currently, dmar driver parse DMAR table and find the pci device id under a specific
-DRHD. But only save the device pci_dev * pointer in devices array. So if this pci device
-was removed, this info became stale info. In the last version patch, I use pci device id intead
-of pci_dev * pointer array completely. This maybe introduce some unsafe issues. Because
-pci device maybe destroyed during process device dma mapping etc.
+Hmm, Originally in [PATCH V1] it was be set to 
+MAX_BIO_BLOCKS(max_hw_blocks(sbi)).
 
-So, I have rework the patch and try to save pci device id as well as pci_dev *pointer, like:
-
-struct dmar_device {
-   u16 segment;
-   u8 bus;
-   u8 devfn;  ----------->these tree will be used only when pci device add or remove, we will use them to update pci_dev * pointer in intel iommu driver notifier.
-   struct list_head list;   -->add to DRHD device list.
-   struct pci_dev *pdev;   --->use to hold the pci device
-}
-
-What do you think about ?
-
-In this new patch, we won't change the Intel iommu driver much, just enhance Intel driver iommu
-notifier to make DRHD device list always effect, not stale info.
-
-I will send out this new patch soon.
+So it could be "#define SIT_ENTRIES_RA_NUM	128"?
+BTW, maybe we should send dynamical nrpages which depend on 
+memory state of system as I mention in previous thread.
+How do you think?
 
 > 
-> My main concern here is that the DMAR table contains the PCI bus numbers
-> at boot time. Doing the lookup later will only work if we don't renumber
-> busses. Or if we have a way to look things up based on the *original*
-> bus number.
+> Anyway, how about implementing ra_sit_pages() with a blk_plug likewise
+> ra_node_pages()?
 
-If we won't remove the pci device, the occupied buses won't be change, I think.
-And because in the new patch, we still use pci_dev *pointer to find match DRHD, so
-this is not a regression.
-Since DMAR also use pci device id to identify the support device,
-I have not found anything instead of device id.
-
-In AMD IOMMU driver, it seems to use pci device id to identify drhd too, although
-I just take a quickly glanced at it, maybe not correctly.
+So we use this structure to plug multi bios submitting in ra_sit_pages(), right?
+-build_sit_entries()
+	blk_start_plug(&plug);
+	ra_sit_pages();
+	blk_finish_plug(&plug);
 
 > 
-> The Intel IOMMU also has a bus notifier of its own which it only uses to
-> know when a driver is *detached*, so it can tear down the logical domain
-> for the corresponding device. Would be nice to have the generic IOMMU
-> notifier call a callback for us then too, perhaps.
-
-Update the device info in Intel IOMMU driver is a good point.
-
-
-Thanks!
-Yijing.
-
-> 
-> 
-
-
--- 
-Thanks!
-Yijing
+> --
+> Jaegeuk Kim
+> Samsung
 
