@@ -1,97 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab3KUHJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 02:09:15 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:59525 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab3KUHJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 02:09:12 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net, nm@ti.com
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org, ceh@ti.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Thu, 21 Nov 2013 12:39:02 +0530
-Message-Id: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1751639Ab3KUHPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 02:15:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab3KUHPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 02:15:13 -0500
+Date: Thu, 21 Nov 2013 15:14:42 +0800
+From: "chaowang@redhat.com" <chaowang@redhat.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+Message-ID: <20131121071441.GA2207@dhcp16-109.nay.redhat.com>
+References: <20131113204130.GD7613@redhat.com>
+ <5284A689.70903@jp.fujitsu.com>
+ <20131114151359.GA3913@redhat.com>
+ <5285EC60.1060906@jp.fujitsu.com>
+ <20131115142617.GC6637@redhat.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp>
+ <528B3585.5080606@jp.fujitsu.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes boot loaders set CPU frequency to a value outside of frequency table
-present with cpufreq core. In such cases CPU might be unstable if it has to run
-on that frequency for long duration of time and so its better to set it to a
-frequency which is specified in freq-table. This also makes cpufreq stats
-inconsistent as cpufreq-stats would fail to register because current frequency
-of CPU isn't found in freq-table.
+On 11/20/13 at 05:27am, Atsushi Kumagai wrote:
+> On 2013/11/19 18:56:21, kexec <kexec-bounces@lists.infradead.org> wrote:
+> > (2013/11/18 9:51), Atsushi Kumagai wrote:
+> > > (2013/11/15 23:26), Vivek Goyal wrote:
+> > >> On Fri, Nov 15, 2013 at 06:41:52PM +0900, HATAYAMA Daisuke wrote:
+> > >>
+> > >> [..]
+> > >>>> Given the fact that hpa does not like fixing it in kernel. We are 
+> > >>>> left with option of fixing it in following places.
+> > >>>>
+> > >>>> - Drop partial pages in kexec-tools
+> > >>>> - Drop partial pages in makeudmpfile.
+> > >>>> - Read partial pages using read() interface in makedumpfile
+> > >>>> - Modify /proc/vmcore to copy partial pages in second kernel's memory.
+> > >>>>
+> > >>>> It is not clear to me that partial pages are really useful.  So I 
+> > >>>> want to avoid modifying /proc/vmcore to deal with partial pages and 
+> > >>>> increase complexity.
+> > >>>>
+> > >>>> So fixing makedumpfile (either option2 or option 3) seems least 
+> > >>>> risky to me. In fact I would say let us keep it simple and truncate 
+> > >>>> partial pages in makedumpfile to keep it simple. And look at option 
+> > >>>> 3 once we have a strong use case for partial pages.
+> > >>>>
+> > >>>> What do you think?
+> > >>>>
+> > >>>
+> > >>> As you say, it's not clear that partial pages are really useful, but 
+> > >>> on the other hand, it seems to me not clear that they are really useless.
+> > >>> I think we should get them as long as we have access to them.
+> > >>>
+> > >>> It seems best to me the option 3). Switching between read and mmap 
+> > >>> would be not so complex and also it's by far flexible in 
+> > >>> makedumpfile than in kernel.
+> > >>
+> > >> Ok, I am fine with option 3. It is more complicated option but safe 
+> > >> option.
+> > > 
+> > > It sounds reasonable also to me.
+> > > 
+> > >> Is there any chance that you could look into fixing this. I have no 
+> > >> experience writing code for makedumpfile.
+> > > 
+> > > I'll send a patch to fix this soon.
+> > > 
+> > 
+> > Thanks.
+> > 
+> > BTW, now the following patch has been applied on top of makedumpfile in kexec-tools package on fedora in order to avoid the issue.
+> > 
+> > https://lists.fedoraproject.org/pipermail/kexec/2013-November/000254.html
+> > 
+> > I remember prototype version of mmap patch implemented a kind of --no-mmap option and we could use it to disable mmap() use and use read() instead, I think which is useful when we face this kind of issue.
+> 
+> How about this fail back structure instead of such an extra option ?
+> 
+> Thanks
+> Atsushi Kumagai
+> 
+> From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> Date: Wed, 20 Nov 2013 14:10:19 +0900
+> Subject: [PATCH] Fall back to read() when mmap() fails.
+> 
+> Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> ---
+>  makedumpfile.c | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/makedumpfile.c b/makedumpfile.c
+> index ca03440..f583602 100644
+> --- a/makedumpfile.c
+> +++ b/makedumpfile.c
+> @@ -324,7 +324,15 @@ read_from_vmcore(off_t offset, void *bufptr, unsigned long size)
+>  		if (!read_with_mmap(offset, bufptr, size)) {
+>  			ERRMSG("Can't read the dump memory(%s) with mmap().\n",
+>  			       info->name_memory);
+> -			return FALSE;
+> +
+> +			ERRMSG("This kernel might have some problems about mmap().\n");
+> +			ERRMSG("read() will be used instead of mmap() from now.\n");
+> +
+> +			/*
+> +			 * Fall back to read().
+> +			 */
+> +			info->flag_usemmap = FALSE;
+> +			read_from_vmcore(offset, bufptr, size);
 
-Because we don't want this change to effect boot process badly, we go for the
-next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
-end up setting freq to lowest of the table as 'cur' is initialized to zero).
+Hi, Atsushi
 
-In case where CPU is already running on one of the frequencies present in
-freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
-return early.
+I've got such a workstation too. And I confirm this patch works for me.
 
-Reported-by: Carlos Hernandez <ceh@ti.com>
-Reported-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-After lots of discussion with Nishanth and others, I feel something like this..
+However, I have a question:
+Why not switch to mmap() back after read()?
 
-@Nishanth: Please see if this works for you and I hope we don't need any of
-these patches anymore:
+Thanks
+WANG Chao
 
-- https://lkml.org/lkml/2013/11/15/569 : cpufreq: cpufreq-cpu0: Use a sane boot
-frequency when booting with a mismatched bootloader configuration
-- https://lkml.org/lkml/2013/11/15/503 : cpufreq: stats: Do not populate stats
-  when policy->cur has no exact match
-- https://lkml.org/lkml/2013/11/19/16 : cpufreq/stats: Add "unknown" frequency
-  field in stats tables
-
- drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 02d534d..d55c843 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1038,6 +1038,32 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		}
- 	}
- 
-+	/*
-+	 * Sometimes boot loaders set CPU frequency to a value outside of
-+	 * frequency table present with cpufreq core. In such cases CPU might be
-+	 * unstable if it has to run on that frequency for long duration of time
-+	 * and so its better to set it to a frequency which is specified in
-+	 * freq-table. This also makes cpufreq stats inconsistent as
-+	 * cpufreq-stats would fail to register because current frequency of CPU
-+	 * isn't found in freq-table.
-+	 *
-+	 * Because we don't want this change to effect boot process badly, we go
-+	 * for the next freq which is >= policy->cur ('cur' must be set by now,
-+	 * otherwise we will end up setting freq to lowest of the table as 'cur'
-+	 * is initialized to zero).
-+	 *
-+	 * In case where CPU is already running on one of the frequencies
-+	 * present in freq-table, this would turn into a dummy call as
-+	 * __cpufreq_driver_target() would return early.
-+	 */
-+	if (has_target()) {
-+		ret = __cpufreq_driver_target(policy, policy->cur,
-+				CPUFREQ_RELATION_L);
-+		if (ret)
-+			pr_err("%s: Unable to set frequency from table: %d\n",
-+					__func__, ret);
-+	}
-+
- 	/* related cpus should atleast have policy->cpus */
- 	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
- 
--- 
-1.7.12.rc2.18.g61b472e
-
+>  		}
+>  	} else {
+>  		if (lseek(info->fd_memory, offset, SEEK_SET) == failed) {
+> -- 
+> 1.8.0.2
