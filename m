@@ -1,277 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3KUKLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 05:11:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:27178 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3KUKLH convert rfc822-to-8bit (ORCPT
+	id S1753945Ab3KUKLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 05:11:16 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:49627 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab3KUKLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 05:11:07 -0500
-X-IronPort-AV: E=Sophos;i="4.93,743,1378828800"; 
-   d="scan'208";a="9093972"
-Message-ID: <528DDAAC.3050603@cn.fujitsu.com>
-Date: Thu, 21 Nov 2013 18:04:28 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Thu, 21 Nov 2013 05:11:11 -0500
+Date: Thu, 21 Nov 2013 02:11:01 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Chinmay V S <cvs268@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+Message-ID: <20131121101101.GA18404@infradead.org>
+References: <528CA73B.9070604@profihost.ag>
+ <20131120125446.GA6284@infradead.org>
+ <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com>
+ <528CC36A.7080003@profihost.ag>
+ <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
+ <20131120153703.GA23160@thunk.org>
+ <20131120155507.GA5380@fieldses.org>
+ <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com>
+ <20131120175807.GC5380@fieldses.org>
+ <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com>
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        =?GB2312?B?J8y35q0n?= <shu.tan@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH V2 2/2] f2fs: read contiguous sit entry pages
- by merging for mount performance
-References: <000101cee293$4eae78d0$ec0b6a70$@samsung.com> <5289F6E3.3020607@cn.fujitsu.com> <001801cee5b2$ce8cdac0$6ba69040$@samsung.com> <528C8308.7040604@cn.fujitsu.com> <000101cee67d$2af43130$80dc9390$@samsung.com>
-In-Reply-To: <000101cee67d$2af43130$80dc9390$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/21 18:09:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/21 18:09:05
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 01:46 PM, Chao Yu wrote:
+> 
+> 1. Most drives do NOT respond to CMD_FLUSH immediately i.e. they wait
+> until the data is actually moved to the non-volatile media (which is
+> the right behaviour) i.e. performance drops.
 
-> Hi Gu,
-> 
->> -----Original Message-----
->> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->> Sent: Wednesday, November 20, 2013 5:38 PM
->> To: Chao Yu
->> Cc: '???'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 'Ì·æ­'
->> Subject: Re: [f2fs-dev] [PATCH V2 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
->>
->> Hi Yu,
->> On 11/20/2013 01:37 PM, Chao Yu wrote:
->>
->>> Hi Gu,
->>>
->>>> -----Original Message-----
->>>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->>>> Sent: Monday, November 18, 2013 7:16 PM
->>>> To: Chao Yu
->>>> Cc: '???'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Ì·
-> æ­
->>>> Subject: Re: [f2fs-dev] [PATCH V2 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
->>>>
->>>> Hi Yu,
->>>> One more comment, please refer to inline.
->>>> On 11/16/2013 02:15 PM, Chao Yu wrote:
->>>>
->>>>> Previously we read sit entries page one by one, this method lost the chance of reading contiguous page together.
->>>>> So we read pages as contiguous as possible for better mount performance.
->>>>>
->>>>> v1-->v2:
->>>>>  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng suggested.
->>>>>  o add mark_page_accessed () before release page to delay VM reclaiming them.
->>>>>
->>>>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
->>>>> ---
->>>>>  fs/f2fs/segment.c |  108 ++++++++++++++++++++++++++++++++++++++++-------------
->>>>>  fs/f2fs/segment.h |    2 +
->>>>>  2 files changed, 84 insertions(+), 26 deletions(-)
->>>>>
->>>>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->>>>> index fa284d3..656fe40 100644
->>>>> --- a/fs/f2fs/segment.c
->>>>> +++ b/fs/f2fs/segment.c
->>>>> @@ -14,6 +14,7 @@
->>>>>  #include <linux/blkdev.h>
->>>>>  #include <linux/prefetch.h>
->>>>>  #include <linux/vmalloc.h>
->>>>> +#include <linux/swap.h>
->>>>>
->>>>>  #include "f2fs.h"
->>>>>  #include "segment.h"
->>>>> @@ -1480,41 +1481,96 @@ static int build_curseg(struct f2fs_sb_info *sbi)
->>>>>  	return restore_curseg_summaries(sbi);
->>>>>  }
->>>>>
->>>>> +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start,
->>>>> +					int nrpages, bool *is_order)
->>>>> +{
->>>>> +	struct address_space *mapping = sbi->meta_inode->i_mapping;
->>>>> +	struct sit_info *sit_i = SIT_I(sbi);
->>>>> +	struct page *page;
->>>>> +	block_t blk_addr;
->>>>> +	int blkno = start, readcnt = 0;
->>>>> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
->>>>> +
->>>>> +	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
->>>>> +
->>>>> +		if ((!f2fs_test_bit(blkno, sit_i->sit_bitmap) ^ !*is_order)) {
->>>>> +			*is_order = !*is_order;
->>>>> +			break;
->>>>> +		}
->>>>> +
->>>>> +		blk_addr = sit_i->sit_base_addr + blkno;
->>>>> +		if (*is_order)
->>>>> +			blk_addr += sit_i->sit_blocks;
->>>>> +repeat:
->>>>> +		page = grab_cache_page(mapping, blk_addr);
->>>>> +		if (!page) {
->>>>> +			cond_resched();
->>>>> +			goto repeat;
->>>>> +		}
->>>>> +		if (PageUptodate(page)) {
->>>>> +			mark_page_accessed(page);
->>>>> +			f2fs_put_page(page, 1);
->>>>> +			readcnt++;
->>>>> +			continue;
->>>>> +		}
->>>>> +
->>>>> +		submit_read_page(sbi, page, blk_addr, READ_SYNC);
->>>>> +
->>>>> +		mark_page_accessed(page);
->>>>> +		f2fs_put_page(page, 0);
->>>>> +		readcnt++;
->>>>> +	}
->>>>> +
->>>>> +	f2fs_submit_read_bio(sbi, READ_SYNC);
->>>>> +	return readcnt;
->>>>> +}
->>>>> +
->>>>>  static void build_sit_entries(struct f2fs_sb_info *sbi)
->>>>>  {
->>>>>  	struct sit_info *sit_i = SIT_I(sbi);
->>>>>  	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_COLD_DATA);
->>>>>  	struct f2fs_summary_block *sum = curseg->sum_blk;
->>>>> -	unsigned int start;
->>>>> -
->>>>> -	for (start = 0; start < TOTAL_SEGS(sbi); start++) {
->>>>> -		struct seg_entry *se = &sit_i->sentries[start];
->>>>> -		struct f2fs_sit_block *sit_blk;
->>>>> -		struct f2fs_sit_entry sit;
->>>>> -		struct page *page;
->>>>> -		int i;
->>>>> +	bool is_order = f2fs_test_bit(0, sit_i->sit_bitmap) ? true : false;
->>>>> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
->>>>> +	unsigned int i, start, end;
->>>>> +	unsigned int readed, start_blk = 0;
->>>>>
->>>>> -		mutex_lock(&curseg->curseg_mutex);
->>>>> -		for (i = 0; i < sits_in_cursum(sum); i++) {
->>>>> -			if (le32_to_cpu(segno_in_journal(sum, i)) == start) {
->>>>> -				sit = sit_in_journal(sum, i);
->>>>> -				mutex_unlock(&curseg->curseg_mutex);
->>>>> -				goto got_it;
->>>>> +	do {
->>>>
->>>> How about using find_next_bit to get the suitable start_blk if the next blk
->>>> is not ordered here? And it also can simplify the logic of ra_sit_pages().
->>>
->>> That's a good idea.
->>> But I thought there maybe endianness problem between test_bit and
->>> f2fs_test_bit, so find_next_bit may get wrong result. Am I right?
->>
->> IMO, find_next_bit can do well with endianness issue internally, if
->> it's not so, that may be a weakness.
-> 
-> Right, I mean that if we want to set first position in bitmap, 
-> we cloud use f2fs_set_bit(0, bitmap) or set_bit(7, bitmap).
-> Two types of interface could not be used mixedly.
-> 
-> So could we use {set,test,clear}_bit intead of f2fs_{set,test,clear}_bit?
+Which is what the specification sais they must do.
 
-We can convert f2fs_{set,test,clear}_bit to a wrapper of {set,test,clear}_bit.
+> 2. Some drives may implement CMD_FLUSH to return immediately i.e. no
+> guarantee the data is actually on disk.
 
-Thanks,
-Gu
+In which case they aren't spec complicant.  While I've seen countless
+data integrity bugs on lower end ATA SSDs I've not seen one that simpliy
+ingnores flush.  If you'd want to cheat that bluntly you'd be better
+of just claiming to not have a writeback cache.
 
-> 
->> On the other side, why not introduce a 'f2fs_find_next_bit' if it's
->> seriously needed?:)
-> 
-> Agreed, that's a good point, they were really needed for
-> uniform style and readability.
-> 
->>
->> Regards,
->> Gu
->>
->>>
->>> Thanks,
->>> Yu
->>>>
->>>> Thanks,
->>>> Gu
->>>>
->>>>> +		readed = ra_sit_pages(sbi, start_blk, sit_blk_cnt, &is_order);
->>>>> +
->>>>> +		start = start_blk * sit_i->sents_per_block;
->>>>> +		end = (start_blk + readed) * sit_i->sents_per_block;
->>>>> +
->>>>> +		for (; start < end && start < TOTAL_SEGS(sbi); start++) {
->>>>> +			struct seg_entry *se = &sit_i->sentries[start];
->>>>> +			struct f2fs_sit_block *sit_blk;
->>>>> +			struct f2fs_sit_entry sit;
->>>>> +			struct page *page;
->>>>> +
->>>>> +			mutex_lock(&curseg->curseg_mutex);
->>>>> +			for (i = 0; i < sits_in_cursum(sum); i++) {
->>>>> +				if (le32_to_cpu(segno_in_journal(sum, i)) == start) {
->>>>> +					sit = sit_in_journal(sum, i);
->>>>> +					mutex_unlock(&curseg->curseg_mutex);
->>>>> +					goto got_it;
->>>>> +				}
->>>>>  			}
->>>>> -		}
->>>>> -		mutex_unlock(&curseg->curseg_mutex);
->>>>> -		page = get_current_sit_page(sbi, start);
->>>>> -		sit_blk = (struct f2fs_sit_block *)page_address(page);
->>>>> -		sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
->>>>> -		f2fs_put_page(page, 1);
->>>>> +			mutex_unlock(&curseg->curseg_mutex);
->>>>> +
->>>>> +			page = get_current_sit_page(sbi, start);
->>>>> +			sit_blk = (struct f2fs_sit_block *)page_address(page);
->>>>> +			sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
->>>>> +			f2fs_put_page(page, 1);
->>>>>  got_it:
->>>>> -		check_block_count(sbi, start, &sit);
->>>>> -		seg_info_from_raw_sit(se, &sit);
->>>>> -		if (sbi->segs_per_sec > 1) {
->>>>> -			struct sec_entry *e = get_sec_entry(sbi, start);
->>>>> -			e->valid_blocks += se->valid_blocks;
->>>>> +			check_block_count(sbi, start, &sit);
->>>>> +			seg_info_from_raw_sit(se, &sit);
->>>>> +			if (sbi->segs_per_sec > 1) {
->>>>> +				struct sec_entry *e = get_sec_entry(sbi, start);
->>>>> +				e->valid_blocks += se->valid_blocks;
->>>>> +			}
->>>>>  		}
->>>>> -	}
->>>>> +		start_blk += readed;
->>>>
->>>>
->>>>
->>>>
->>>>> +	} while (start_blk < sit_blk_cnt);
->>>>>  }
->>>>>
->>>>>  static void init_free_segmap(struct f2fs_sb_info *sbi)
->>>>> diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
->>>>> index 269f690..ad5b9f1 100644
->>>>> --- a/fs/f2fs/segment.h
->>>>> +++ b/fs/f2fs/segment.h
->>>>> @@ -83,6 +83,8 @@
->>>>>  	(segno / SIT_ENTRY_PER_BLOCK)
->>>>>  #define	START_SEGNO(sit_i, segno)		\
->>>>>  	(SIT_BLOCK_OFFSET(sit_i, segno) * SIT_ENTRY_PER_BLOCK)
->>>>> +#define SIT_BLK_CNT(sbi)			\
->>>>> +	((TOTAL_SEGS(sbi) + SIT_ENTRY_PER_BLOCK - 1) / SIT_ENTRY_PER_BLOCK)
->>>>>  #define f2fs_bitmap_size(nr)			\
->>>>>  	(BITS_TO_LONGS(nr) * sizeof(unsigned long))
->>>>>  #define TOTAL_SEGS(sbi)	(SM_I(sbi)->main_segments)
->>>
->>>
->>>
->>
->>
->> =
-> 
-> 
+> 3. Anyway, CMD_FLUSH does NOT guarantee atomicity. (Consider power
+> failure in the middle of an ongoing CMD_FLUSH on non battery-backed
+> disks).
 
+It does not guarantee atomicy by itself, but it's the only low-level
+primitive a filesystem or database can use build atomic transaction
+at a higher level on an ATA disk with the writeback cache enabled.
 
+> In case the application cannot be modified to perform ASYNC IO, there
+> exists a way to disable the behaviour of issuing a CMD_FLUSH for each
+> sync() within the block device driver for SATA/SCSI disks. This is
+> what is described by
+> https://gist.github.com/TheCodeArtist/93dddcd6a21dc81414ba
+
+Which is utterly broken, and your insistance on pushing it shows you
+do not understand the problem space.
+
+You solve your performance problem by completely disabling any chance
+of having data integrity guarantees, and do so in a way that is not
+detectable for applications or users.
+
+If you have a workload with lots of small synchronous writes disabling
+the writeback cache on the disk does indeed often help, especially with
+the non-queueable FLUSH on all but the most recent ATA devices.
+
+If you do have workloads where you do lots of synchronous writes
+
+> Just to be clear, i am NOT recommending that this change be mainlined;
+> rather it is a reference to improve performance in the rare cases(like
+> in the OP Stefan's case) where both the app performing DIRECT SYNC
+> block IO and the disk firmware implementing CMD_FLUSH can NOT be
+> modified. In which case the standard block driver behaviour of issuing
+> a CMD_FLUSH with each write is too restrictive and thus modified using
+> the patch.
+
+Again, what your patch does is to explicitly ignore the data integrity
+request from the application.  While this will usually be way faster,
+it will also cause data loss.  Simply disabling the writeback cache
+feature of the disk using hdparm will give you much better performance
+than issueing all the FLUSH command, especially if they are non-queued,
+but without breaking the gurantee to the application.
