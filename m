@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab3KUU6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 15:58:37 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36328 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab3KUU6e (ORCPT
+	id S1754989Ab3KUU67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 15:58:59 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:37230 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab3KUU64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 15:58:34 -0500
-Date: Thu, 21 Nov 2013 21:59:11 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] i915, fbdev: Fix Kconfig typo
-Message-ID: <20131121205911.GP27344@phenom.ffwll.local>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-References: <1385044195-13318-1-git-send-email-bp@alien8.de>
+	Thu, 21 Nov 2013 15:58:56 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthias Schniedermeyer <ms@citd.de>,
+        Linux Containers <containers@lists.linux-foundation.org>
+References: <87vc15mjuw.fsf@xmission.com>
+	<CAJfpegvF89LzAvNB0h0otv7sKoS3rewZzQKAauQx3P+rCkCcSg@mail.gmail.com>
+	<87iox38fkv.fsf@xmission.com> <87d2nb8dxy.fsf@xmission.com>
+	<87iowyxpci.fsf_-_@xmission.com> <87d2n6xpan.fsf_-_@xmission.com>
+	<20131103035406.GA8537@ZenIV.linux.org.uk>
+	<87bo1u8vmf.fsf@xmission.com>
+	<20131108213551.GR13318@ZenIV.linux.org.uk>
+	<87fvr61qtg.fsf@xmission.com> <20131109084916.GA21413@infradead.org>
+Date: Thu, 21 Nov 2013 12:58:44 -0800
+In-Reply-To: <20131109084916.GA21413@infradead.org> (Christoph Hellwig's
+	message of "Sat, 9 Nov 2013 00:49:16 -0800")
+Message-ID: <878uwh8oaj.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385044195-13318-1-git-send-email-bp@alien8.de>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/+wKr+HnBTwz+0g8rZ/roBuRVE9EeEFyw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  3.0 XMDrug1234561 Drug references
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1484]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *****;Christoph Hellwig <hch@infradead.org>
+X-Spam-Relay-Country: 
+Subject: Re: [REVIEW][PATCH 1/4] vfs: Don't allow overwriting mounts in the current mount namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 03:29:55PM +0100, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Too many t's.
-> 
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: intel-gfx@lists.freedesktop.org
-> Cc: dri-devel@lists.freedesktop.org
-> Signed-off-by: Borislav Petkov <bp@suse.de>
+Christoph Hellwig <hch@infradead.org> writes:
 
-Queued for -next, thanks for the patch.
--Daniel
-> ---
->  drivers/gpu/drm/i915/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/Kconfig b/drivers/gpu/drm/i915/Kconfig
-> index 6199d0b5b958..7ca35ecfd952 100644
-> --- a/drivers/gpu/drm/i915/Kconfig
-> +++ b/drivers/gpu/drm/i915/Kconfig
-> @@ -43,7 +43,7 @@ config DRM_I915_KMS
->  	  like intelfb.
->  
->  config DRM_I915_FBDEV
-> -	bool "Enable legacy fbdev support for the modesettting intel driver"
-> +	bool "Enable legacy fbdev support for the modesetting intel driver"
->  	depends on DRM_I915
->  	select DRM_KMS_FB_HELPER
->  	select FB_CFB_FILLRECT
-> -- 
-> 1.8.4
-> 
+> On Fri, Nov 08, 2013 at 02:17:31PM -0800, Eric W. Biederman wrote:
+>> > Read what you've written a few lines above.  The part about target->i_mutex
+>> > being held.
+>> 
+>> That works for the rename as unlink case but we don't hold
+>> old_dentry->d_inode->i_mutex which is what is needed to prevent a mount
+>> on the dentry we are renaming.
+>
+> It will be held in 3.13.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Only for files, not for directories.  And none of those locks turns out
+to be good enough today to prevent the races between mount and rename.
+With the result that when mount returns your mount point could be
+located just about anywhere, and that is just considering renames of the
+actual mountpoint itself.
+
+Eric
