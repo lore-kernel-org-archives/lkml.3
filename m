@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3KULlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:41:32 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35424 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3KULlb (ORCPT
+	id S1754248Ab3KULlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:41:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38781 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab3KULlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:41:31 -0500
-Date: Thu, 21 Nov 2013 11:41:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20131121114105.GO2674@sirena.org.uk>
-References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1384877043-5640-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131120091636.GA30012@lee--X1>
- <20131120102045.GW2674@sirena.org.uk>
- <20131120104526.GA30524@lee--X1>
- <20131120113400.GY2674@sirena.org.uk>
- <20131121090724.GB19368@lee--X1>
+	Thu, 21 Nov 2013 06:41:49 -0500
+Date: Thu, 21 Nov 2013 12:41:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Luck <tony.luck@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
+In-Reply-To: <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
+References: <20130917082838.218329307@infradead.org> <20130917182350.449685712@linutronix.de> <20130917183628.857145384@linutronix.de> <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
+ <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wmfuW8osuO2pi9jF"
-Content-Disposition: inline
-In-Reply-To: <20131121090724.GB19368@lee--X1>
-X-Cookie: Drive defensively.  Buy a tank.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] mfd: Immutable branch for ASoC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Nov 2013, Thomas Gleixner wrote:
+> On Wed, 20 Nov 2013, Tony Luck wrote:
+> > asmlinkage void __sched preempt_schedule_irq(void)
+> > {
+> >            schedule();
+> > }
+> > 
+> > Or is life more complicated than that?
+> 
+> Hmm, I think I fubared that and you decided to ignore my patch :) 
+> 
+> Let me look at it tomorrow morning with full awake brain cells.
 
---wmfuW8osuO2pi9jF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, wrapped my brain around it. I tripped over the magic asm foo which
+has a single need_resched check and schedule point for both sys call
+return and interrupt return.
 
-On Thu, Nov 21, 2013 at 09:07:24AM +0000, Lee Jones wrote:
+So you need the schedule_preempt_irq() for kernel preemption from
+interrupt return while on a normal syscall preemption a schedule would
+be sufficient. But using schedule_preempt_irq() is not harmful here in
+any way. It just sets the preempt_active bit also in cases where it
+would not be required. 
 
-> ----------------------------------------------------------------
-> ASoC immutable branch, as requested by Mark Brown.
-> ----------------------------------------------------------------
-> Charles Keepax (1):
->       ASoC: wm5110: Expose input high pass filter controls
+Even on preempt=n kernels adding the preempt_active bit is completely
+harmless. So instead of having an extra function, moving the existing
+one out of the ifdef PREEMPT looks like the sanest thing to do.
 
-I was expecting patch 1 in the series as well (the DSP stuff won't work
-properly without the register map updates to go with it).
+Peter, Ingo ?
 
---wmfuW8osuO2pi9jF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+	tglx
+------
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c180860..0c59642 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2660,6 +2660,7 @@ asmlinkage void __sched notrace preempt_schedule(void)
+ 	} while (need_resched());
+ }
+ EXPORT_SYMBOL(preempt_schedule);
++#endif /* CONFIG_PREEMPT */
+ 
+ /*
+  * this is the entry point to schedule() from kernel preemption
+@@ -2693,8 +2694,6 @@ asmlinkage void __sched preempt_schedule_irq(void)
+ 	exception_exit(prev_state);
+ }
+ 
+-#endif /* CONFIG_PREEMPT */
+-
+ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
+ 			  void *key)
+ {
 
-iQIcBAEBAgAGBQJSjfFNAAoJELSic+t+oim9DNkP/2StAuJpqUh0K5t56xqyZzxn
-NuFZvXfL3SxFfPgLX4B1Gzhndv+zwRX80qOqA13fB4ba5idxLfzAPGpPNugtsEjJ
-SInyY+1lhCmINwxfZTe+NAjQC7Nhw/e65ygr+JagTnWlDvuOxWj2DipjcEN5tq3b
-H/j0oFc/NHbcTRea+TpxtdwLGhMzVDALaURwBD5ry24pOiBRGj6P0t/9EuvakVQJ
-HlTb2sqCA5VXyZo8E1DLKYiMlWrXF9dVot60oOwToBCGE0tgo/C66HMqlN1oqLNj
-Vawza2TrnIgaeSSG94mZpB2UhQ5BkczNZ12p+dippa6cf65JbQHaDrc3dEY1Am7r
-hhzd1IugX3i8J+0zDVSQOGDQksiD+2XQPdqZD3vdIw2Z9YZ72qcWOezHF5PMHrtj
-BOC32UjRHFSK5/kpoOadqlhjOaa0zplCDHqTKMA+O/i+jnST46Tbs7DzYmuulxJN
-mlFIvEgM1qW+EqjEhfdBK/syXjdZEwLtQdh39io8PJyGqR4qLGAceFi83K5vnihd
-6D3JBT49oy8kZR1aHOIkTmagW3UM2zD2JZ+0v5qOMIzRsmEuY/r+gEyZRpminf6c
-YGZ79OUHjDBdey0KzK0QEDEt1sfeb+udX73o1qGlB6PYHrnBlViUmCaY3mngr1/q
-XUPLwtZve3XNf7FcMPvW
-=vkOe
------END PGP SIGNATURE-----
 
---wmfuW8osuO2pi9jF--
+
+
