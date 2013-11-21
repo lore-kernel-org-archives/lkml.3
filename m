@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3KULAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:00:11 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63148 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3KULAJ (ORCPT
+	id S1754052Ab3KULAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:00:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54507 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3KULAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:00:09 -0500
+	Thu, 21 Nov 2013 06:00:42 -0500
+Message-ID: <528DE85B.4010201@gmail.com>
+Date: Thu, 21 Nov 2013 19:02:51 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
-References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Thu, 21 Nov 2013 11:59:44 +0100
-Message-ID: <CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
-Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
-To: Hans Zhang <zhanghonghui@innofidei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        zhouguangming@innofidei.com
-Content-Type: text/plain; charset=UTF-8
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: linux-kernel@vger.kernel.org,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Ingo Molnar <mingo@kernel.org>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] ARC: Add guard macro to uapi/asm/unistd.h
+References: <1385029778-26092-1-git-send-email-vgupta@synopsys.com> <528DE731.6040200@gmail.com>
+In-Reply-To: <528DE731.6040200@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/21 Hans Zhang <zhanghonghui@innofidei.com>:
->  When read/write the nandblock device, it will abort writing if
->  there's a bad block, it's reasonable to skip the bad block and
->  finish the data writing.
->  The data reading procedure should also skip the bad block since
->  there's no data write to the block.
->
-> --v2:
->  use the wrapped mtd_block_isbad instand of mtd->block_isbad
->
-> Signed-off-by: Hans Zhang <zhanghonghui@innofidei.com>
-> ---
->  drivers/mtd/mtdblock.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
-> index 485ea75..4f6acd1 100644
-> --- a/drivers/mtd/mtdblock.c
-> +++ b/drivers/mtd/mtdblock.c
-> @@ -124,6 +124,13 @@ static int write_cached_data (struct mtdblk_dev *mtdblk)
->                         "at 0x%lx, size 0x%x\n", mtd->name,
->                         mtdblk->cache_offset, mtdblk->cache_size);
->
-> +retry:
-> +       ret = mtd_block_isbad(mtd, mtdblk->cache_offset);
-> +       if (ret > 0) {
-> +               mtdblk->cache_offset += mtdblk->cache_size;
-> +               goto retry;
-> +       }
-> +
->         ret = erase_write (mtd, mtdblk->cache_offset,
->                            mtdblk->cache_size, mtdblk->cache_data);
->         if (ret)
-> @@ -163,6 +170,11 @@ static int do_cached_write (struct mtdblk_dev *mtdblk, unsigned long pos,
->                         size = len;
->
->                 if (size == sect_size) {
-> +                       ret = mtd_block_isbad(mtd, pos);
-> +                       if (ret > 0) {
-> +                               pos += sect_size;
-> +                               continue;
-> +                       }
->                         /*
->                          * We are covering a whole sector.  Thus there is no
->                          * need to bother with the cache while it may still be
-> @@ -242,6 +254,11 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
->                     mtdblk->cache_offset == sect_start) {
->                         memcpy (buf, mtdblk->cache_data + offset, size);
->                 } else {
-> +                       ret = mtd_block_isbad(mtd, pos);
-> +                       if (ret > 0) {
-> +                               pos += sect_size;
-> +                               continue;
-> +                       }
->                         ret = mtd_read(mtd, pos, size, &retlen, buf);
->                         if (ret)
->                                 return ret;
-> --
-> 1.7.1
->
->
+On 11/21/2013 06:57 PM, Chen Gang wrote:
+> On 11/21/2013 06:29 PM, Vineet Gupta wrote:
+>> Chen originally proposed this as "right thing to do" however I
+>> actually ran into this when building perf tools. Some of the utils
+>> include unistd.h as well as linux/unistd.h. Since -I includes kernel
+>> headers too, we end up including the ARC unistd.h twice, leading to
+>> redefinition nwarnings.
+>>
+>> ------------------>8-------------------
+>>     CC bench/sched-pipe.o
+>> In file included from ~/kernel/arch/arc/include/uapi/asm/unistd.h:21:0,
+>>                  from ~/kernel/include/uapi/linux/unistd.h:7,
+>>                  from bench/sched-pipe.c:24:
+>> ~/kernel/include/uapi/asm-generic/unistd.h:889:0: error: "__NR_fcntl64"
+>> redefined [-Werror]
+>>  #define __NR_fcntl64 __NR3264_fcntl
+>>  ^
+>> In file included from
+>> ~/gnu/arc-linux-uclibc/sys-include/sys/syscall.h:24:0,
+>>                  from bench/../perf.h:112,
+>>                  from bench/sched-pipe.c:13:
+>> ~/gnu/arc-linux-uclibc/include/bits/sysnum.h:761:0: note: this is the
+>> location of the previous definition
+>> ------------------>8-------------------
+>>
+>> Verified that make headers_install works fine with this.
+>>
+>> Suggested-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-I don't think it's a good idea to skip bad blocks at mtd level.
-That will definitely break the userspace.
-The nanddump mtd-tool for instance has a bad block handling argument:
---bb=METHOD, where METHOD can be `padbad', `dumpbad', or `skipbad':
-    padbad:  dump flash data, substituting 0xFF for any bad blocks
-    dumpbad: dump flash data, including any bad blocks
-    skipbad: dump good data, completely skipping any bad blocks (default)
+Also thank you very much, it is my 1st patch with new mail address.  :-)
 
-The bad block handling is done by the upper layer (UBI/jffs2...) not by mtd.
+Thanks.
 
-So, if you really need to read/write the mtd layer from userspace and
-jump bad block, you'll have to use the MEMGETBADBLOCK ioctl to check
-if the block is bad before reading/writing.
-
-But using UBI is usually a better option.
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>> Cc: David Howells <dhowells@redhat.com>
+>> ---
+>> I will be adding this to arc tree for 3.13
+>> ---
+>>  arch/arc/include/uapi/asm/unistd.h | 5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/arch/arc/include/uapi/asm/unistd.h b/arch/arc/include/uapi/asm/unistd.h
+>> index 6f30484f34b7..68125dd766c6 100644
+>> --- a/arch/arc/include/uapi/asm/unistd.h
+>> +++ b/arch/arc/include/uapi/asm/unistd.h
+>> @@ -8,6 +8,9 @@
+>>  
+>>  /******** no-legacy-syscalls-ABI *******/
+>>  
+>> +#ifndef _UAPI_ASM_ARC_UNISTD_H
+>> +#define _UAPI_ASM_ARC_UNISTD_H
+>> +
+>>  #define __ARCH_WANT_SYS_EXECVE
+>>  #define __ARCH_WANT_SYS_CLONE
+>>  #define __ARCH_WANT_SYS_VFORK
+>> @@ -32,3 +35,5 @@ __SYSCALL(__NR_arc_gettls, sys_arc_gettls)
+>>  /* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
+>>  #define __NR_sysfs		(__NR_arch_specific_syscall + 3)
+>>  __SYSCALL(__NR_sysfs, sys_sysfs)
+>> +
+>> +#endif
+>>
+> 
+> Is it better to append comment for "#endif"?
+> 
+> e.g. "#endif /* _UAPI_ASM_ARC_UNISTD_H */"
+> 
+> 
+> Thanks.
+> 
 
 
-Richard.
+-- 
+Chen Gang
