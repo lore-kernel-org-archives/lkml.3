@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3KURCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 12:02:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30518 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754554Ab3KURBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 12:01:18 -0500
-Message-Id: <20131121170117.216396966@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 21 Nov 2013 11:59:53 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Yang Shi <yang.shi@windriver.com>
-Subject: [PATCH RT 5/7] mm/memcontrol: Dont call schedule_work_on in preemption disabled
- context
-References: <20131121165948.354971355@goodmis.org>
-Content-Disposition: inline; filename=0005-mm-memcontrol-Don-t-call-schedule_work_on-in-preempt.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1754872Ab3KUQtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 11:49:39 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39654 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753575Ab3KUQth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 11:49:37 -0500
+Date: Thu, 21 Nov 2013 17:49:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: dyoung@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [patch 4/9 v3] efi: cleanup efi_enter_virtual_mode function
+Message-ID: <20131121164929.GM26009@pd.tnic>
+References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
+ <20131121061754.304016344@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131121061754.304016344@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.13-rt25-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Thu, Nov 21, 2013 at 02:17:08PM +0800, dyoung@redhat.com wrote:
+> Add two small functions:
+> efi_merge_regions and efi_map_regions, efi_enter_virtual_mode
+> calls them instead of embedding two long for loop.
+> 
+> v1->v2:
+> refresh; coding style fixes.
+> 
+> v2->v3:
+> Toshi Kani:
+> remove unused variable
+> Matt: check return value of krealloc.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
 
-------------------
+Same short comment nitpick as earlier :)
 
-From: Yang Shi <yang.shi@windriver.com>
+Otherwise:
 
-The following trace is triggered when running ltp oom test cases:
+Acked-by: Borislav Petkov <bp@suse.de>
 
-BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
-in_atomic(): 1, irqs_disabled(): 0, pid: 17188, name: oom03
-Preemption disabled at:[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
+> ---
+>  arch/x86/platform/efi/efi.c |  109 ++++++++++++++++++++++++++------------------
+>  1 file changed, 66 insertions(+), 43 deletions(-)
+> 
+> --- efi.orig/arch/x86/platform/efi/efi.c
+> +++ efi/arch/x86/platform/efi/efi.c
 
-CPU: 2 PID: 17188 Comm: oom03 Not tainted 3.10.10-rt3 #2
-Hardware name: Intel Corporation Calpella platform/MATXM-CORE-411-B, BIOS 4.6.3 08/18/2010
-ffff88007684d730 ffff880070df9b58 ffffffff8169918d ffff880070df9b70
-ffffffff8106db31 ffff88007688b4a0 ffff880070df9b88 ffffffff8169d9c0
-ffff88007688b4a0 ffff880070df9bc8 ffffffff81059da1 0000000170df9bb0
-Call Trace:
-[<ffffffff8169918d>] dump_stack+0x19/0x1b
-[<ffffffff8106db31>] __might_sleep+0xf1/0x170
-[<ffffffff8169d9c0>] rt_spin_lock+0x20/0x50
-[<ffffffff81059da1>] queue_work_on+0x61/0x100
-[<ffffffff8112b361>] drain_all_stock+0xe1/0x1c0
-[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
-[<ffffffff8112beda>] __mem_cgroup_try_charge+0x41a/0xc40
-[<ffffffff810f1c91>] ? release_pages+0x1b1/0x1f0
-[<ffffffff8106f200>] ? sched_exec+0x40/0xb0
-[<ffffffff8112cc87>] mem_cgroup_charge_common+0x37/0x70
-[<ffffffff8112e2c6>] mem_cgroup_newpage_charge+0x26/0x30
-[<ffffffff8110af68>] handle_pte_fault+0x618/0x840
-[<ffffffff8103ecf6>] ? unpin_current_cpu+0x16/0x70
-[<ffffffff81070f94>] ? migrate_enable+0xd4/0x200
-[<ffffffff8110cde5>] handle_mm_fault+0x145/0x1e0
-[<ffffffff810301e1>] __do_page_fault+0x1a1/0x4c0
-[<ffffffff8169c9eb>] ? preempt_schedule_irq+0x4b/0x70
-[<ffffffff8169e3b7>] ? retint_kernel+0x37/0x40
-[<ffffffff8103053e>] do_page_fault+0xe/0x10
-[<ffffffff8169e4c2>] page_fault+0x22/0x30
+[ … ]
 
-So, to prevent schedule_work_on from being called in preempt disabled context,
-replace the pair of get/put_cpu() to get/put_cpu_light().
+> @@ -837,6 +805,18 @@ void __init efi_enter_virtual_mode(void)
+>  		prev_md = md;
+>  
+>  	}
+> +}
+> +
+> +/*
+> + * Map efi memory ranges for runtime serivce and
+> + * update new_memmap with virtual addresses.
+> + */
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Yang Shi <yang.shi@windriver.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- mm/memcontrol.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Stretch comment to 80 cols:
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6b7ff19..1503ca3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2283,7 +2283,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 
- 	/* Notify other cpus that system-wide "drain" is running */
- 	get_online_cpus();
--	curcpu = get_cpu();
-+	curcpu = get_cpu_light();
- 	for_each_online_cpu(cpu) {
- 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
- 		struct mem_cgroup *memcg;
-@@ -2300,7 +2300,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
- 				schedule_work_on(cpu, &stock->work);
- 		}
- 	}
--	put_cpu();
-+	put_cpu_light();
- 
- 	if (!sync)
- 		goto out;
+/*
+ * Map efi memory ranges for runtime serivce and update new_memmap with virtual
+ * addresses.
+ */
+
+like it is customary for the rest of the file.
+
+> +static void * __init efi_map_regions(int *count)
+> +{
+> +	efi_memory_desc_t *md;
+> +	void *p, *new_memmap = NULL;
+> +	unsigned long size;
+> +	u64 end, systab;
+>  
+>  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+>  		md = p;
+
 -- 
-1.8.4.rc3
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
