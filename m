@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3KULdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 06:33:53 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:39065 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab3KULdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 06:33:52 -0500
-X-IronPort-AV: E=Sophos;i="4.93,743,1378857600"; 
-   d="scan'208";a="76748435"
-Message-ID: <528DEF9D.4070003@citrix.com>
-Date: Thu, 21 Nov 2013 11:33:49 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1754067Ab3KULlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 06:41:32 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35424 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3KULlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 06:41:31 -0500
+Date: Thu, 21 Nov 2013 11:41:05 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20131121114105.GO2674@sirena.org.uk>
+References: <1384877043-5640-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1384877043-5640-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131120091636.GA30012@lee--X1>
+ <20131120102045.GW2674@sirena.org.uk>
+ <20131120104526.GA30524@lee--X1>
+ <20131120113400.GY2674@sirena.org.uk>
+ <20131121090724.GB19368@lee--X1>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <Ian.Campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <JBeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is
- not yet up.
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com> <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wmfuW8osuO2pi9jF"
+Content-Disposition: inline
+In-Reply-To: <20131121090724.GB19368@lee--X1>
+X-Cookie: Drive defensively.  Buy a tank.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] mfd: Immutable branch for ASoC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> The user can launch the guest in this sequence:
-> 
-> xl create -p /vm.cfg	[launch, but pause it]
-> xl shutdown latest	[sets control/shutdown=poweroff]
-> xl unpause latest
-> xl console latest	[and see that the guest has completely
-> ignored the shutdown request]
-> 
-> In reality the guest hasn't ignored it. It registers a watch
-> and gets a notification that there is value. It then calls
-> the shutdown_handler which ends up calling orderly_shutdown.
 
-Is this really a bug?.
+--wmfuW8osuO2pi9jF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->From the xl(1) man page.
+On Thu, Nov 21, 2013 at 09:07:24AM +0000, Lee Jones wrote:
 
-  shutdown [OPTIONS] -a|domain-id
-     Gracefully shuts down a domain.  This coordinates with the
-     domain OS to perform graceful shutdown, so there is no guarantee
-     that it will succeed, and may take a variable length of time
-     depending on what services must be shutdown in the domain.
+> ----------------------------------------------------------------
+> ASoC immutable branch, as requested by Mark Brown.
+> ----------------------------------------------------------------
+> Charles Keepax (1):
+>       ASoC: wm5110: Expose input high pass filter controls
 
-Seems like ignoring a shutdown request when the guest cannot yet
-shutdown gracefully is the expected behaviour.
+I was expecting patch 1 in the series as well (the DSP stuff won't work
+properly without the register map updates to go with it).
 
-This also doesn't seem sufficient.  SYSTEM_RUNNING is set prior to
-starting init in an initramfs and orderly_power_off(false) will still
-likely fail at this point.
+--wmfuW8osuO2pi9jF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-David
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSjfFNAAoJELSic+t+oim9DNkP/2StAuJpqUh0K5t56xqyZzxn
+NuFZvXfL3SxFfPgLX4B1Gzhndv+zwRX80qOqA13fB4ba5idxLfzAPGpPNugtsEjJ
+SInyY+1lhCmINwxfZTe+NAjQC7Nhw/e65ygr+JagTnWlDvuOxWj2DipjcEN5tq3b
+H/j0oFc/NHbcTRea+TpxtdwLGhMzVDALaURwBD5ry24pOiBRGj6P0t/9EuvakVQJ
+HlTb2sqCA5VXyZo8E1DLKYiMlWrXF9dVot60oOwToBCGE0tgo/C66HMqlN1oqLNj
+Vawza2TrnIgaeSSG94mZpB2UhQ5BkczNZ12p+dippa6cf65JbQHaDrc3dEY1Am7r
+hhzd1IugX3i8J+0zDVSQOGDQksiD+2XQPdqZD3vdIw2Z9YZ72qcWOezHF5PMHrtj
+BOC32UjRHFSK5/kpoOadqlhjOaa0zplCDHqTKMA+O/i+jnST46Tbs7DzYmuulxJN
+mlFIvEgM1qW+EqjEhfdBK/syXjdZEwLtQdh39io8PJyGqR4qLGAceFi83K5vnihd
+6D3JBT49oy8kZR1aHOIkTmagW3UM2zD2JZ+0v5qOMIzRsmEuY/r+gEyZRpminf6c
+YGZ79OUHjDBdey0KzK0QEDEt1sfeb+udX73o1qGlB6PYHrnBlViUmCaY3mngr1/q
+XUPLwtZve3XNf7FcMPvW
+=vkOe
+-----END PGP SIGNATURE-----
+
+--wmfuW8osuO2pi9jF--
