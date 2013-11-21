@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3KUTnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 14:43:49 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:39868 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab3KUTns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 14:43:48 -0500
-X-Originating-IP: 173.246.103.110
-Date: Thu, 21 Nov 2013 11:43:35 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu 1/3] documentation: Add needed
- ACCESS_ONCE() calls to memory-barriers.txt
-Message-ID: <20131121194334.GC14144@jtriplet-mobl1>
-References: <20131121174824.GA6611@linux.vnet.ibm.com>
- <1385056127-6980-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1754737Ab3KUTpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 14:45:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7523 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751957Ab3KUTpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 14:45:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,746,1378882800"; 
+   d="scan'208";a="439411982"
+Message-ID: <528E62D0.3010003@linux.intel.com>
+Date: Thu, 21 Nov 2013 11:45:20 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385056127-6980-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle implementations
+References: <20131120160450.072555619@infradead.org> <20131120162736.508462614@infradead.org> <20131120165406.14fa0f09@ultegra> <20131121082151.GU10022@twins.programming.kicks-ass.net> <20131121160716.GT4138@linux.vnet.ibm.com> <528E32EF.2050300@linux.intel.com> <20131121191916.GZ4138@linux.vnet.ibm.com>
+In-Reply-To: <20131121191916.GZ4138@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 09:48:45AM -0800, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> The Documentation/memory-barriers.txt file was written before the need
-> for ACCESS_ONCE() was fully appreciated.  It therefore contains no
-> ACCESS_ONCE() calls, which can be a problem when people lift examples
-> from it.  This commit therefore adds ACCESS_ONCE() calls.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> ---
->  Documentation/memory-barriers.txt | 204 +++++++++++++++++++++++---------------
->  1 file changed, 124 insertions(+), 80 deletions(-)
-> 
-> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> index c8c42e64e953..eccc83a40ce1 100644
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -194,18 +194,20 @@ There are some minimal guarantees that may be expected of a CPU:
->   (*) On any given CPU, dependent memory accesses will be issued in order, with
->       respect to itself.  This means that for:
->  
-> -	Q = P; D = *Q;
-> +	ACCESS_ONCE(Q) = P; smp_memory_barrier_depends(); D = ACCESS_ONCE(*Q);
+On 11/21/2013 11:19 AM, Paul E. McKenney wrote:
+> On Thu, Nov 21, 2013 at 08:21:03AM -0800, Arjan van de Ven wrote:
+>> On 11/21/2013 8:07 AM, Paul E. McKenney wrote:
+>>> As long as RCU has some reliable way to identify an idle task, I am
+>>> good.  But I have to ask -- why can't idle injection coordinate with
+>>> the existing idle tasks rather than temporarily making alternative
+>>> idle tasks?
+>>
+>> it's not a real idle. that's the whole problem of the situation.
+>> to the rest of the OS, this is being BUSY (busy saving power using
+>> a CPU instruction, but it might as well have been an mdelay() operation)
+>> and it's also what end users expect; they want to be able to see
+>> where there performance (read: cpu time in "top") is going.
+>
+> My concern is keeping RCU's books straight.  Suppose that there is a need
+> to call for idle in the middle of a preemptible RCU read-side critical
+> section.  Now, if that call for idle involves a context switch, all is
+> well -- RCU will see the task as still being in its RCU read-side critical
+> section, which means that it is OK for RCU to see the CPU as idle.
+>
+> However, if there is no context switch and RCU sees the CPU as idle,
+> preemptible RCU could prematurely end the grace period.  If there is no
+> context switch and RCU sees the CPU as non-idle for too long, we start
+> getting RCU CPU stall warning splats.
+>
+> Another approach would be to only inject idle when the CPU is not
+> doing anything that could possibly be in an RCU read-side critical
+> section.  But things might get a bit hot in case of an overly
+> long RCU read-side critical section.
+>
+> One approach that might work would be to hook into RCU's context-switch
+> code going in and coming out, then telling RCU that the CPU is idle,
+> even though top and friends see it as non-idle.  This last is in fact
+> similar to how RCU handles userspace execution for NO_HZ_FULL.
+>
 
-That should be smp_read_barrier_depends().
+so powerclamp and such are not "idle".
+They are "busy" from everything except the lowest level of the CPU hardware.
+once you start thinking of them as idle, all hell breaks lose in terms of implications
+(including sysadmin visibility etc).... (hence some of the explosions in this thread
+as well).
 
-Also, most of the time shouldn't that use rcu_dereference rather than a
-raw smp_read_barrier_depends()?
+but it's not "idle".
 
-- Josh Triplett
+it's "put the cpu in a low power state for a specified amount of time". sure it uses the same
+instruction to do so that the idle loop uses.
+
+(now to make it messy, the current driver does a bunch of things similar to the idle loop
+which is a mess and fair to be complained about)
+
+
