@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab3KUVBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:01:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab3KUVA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:00:59 -0500
-Message-ID: <1385067648.2879.421.camel@ul30vt.home>
-Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Bharat Bhushan <Bharat.Bhushan@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Nov 2013 14:00:48 -0700
-In-Reply-To: <1385066835.1403.489.camel@snotra.buserror.net>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385066603.2879.414.camel@ul30vt.home>
-	 <1385066835.1403.489.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755241Ab3KUVBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:01:45 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38267 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab3KUVBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 16:01:41 -0500
+From: Jerry Hoemann <jerry.hoemann@hp.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
+        akpm@linux-foundation.org, bp@suse.de, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Cc: penberg@kernel.org, mingo.kernel.org@gmail.com, vgoyal@redhat.com,
+        jerry.hoemann@hp.com
+Subject: [RFC v2 0/2] Early use of boot service memory
+Date: Thu, 21 Nov 2013 14:01:24 -0700
+Message-Id: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
-> On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
-> > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
-> > > 
-> > > > -----Original Message-----
-> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > Sent: Thursday, November 21, 2013 12:17 AM
-> > > > To: Bhushan Bharat-R65777
-> > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood Scott-B07421;
-> > > > Yoder Stuart-B08248; iommu@lists.linux-foundation.org; linux-
-> > > > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > > > kernel@vger.kernel.org; Bhushan Bharat-R65777
-> > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-> > > > 
-> > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each vfio user has
-> > > > $COUNT regions at their disposal exclusively)?
-> > > 
-> > > Number of msi-bank count is system wide and not per aperture, But will be setting windows for banks in the device aperture.
-> > > So say if we are direct assigning 2 pci device (both have different iommu group, so 2 aperture in iommu) to VM.
-> > > Now qemu can make only one call to know how many msi-banks are there but it must set sub-windows for all banks for both pci device in its respective aperture.
-> > 
-> > I'm still confused.  What I want to make sure of is that the banks are
-> > independent per aperture.  For instance, if we have two separate
-> > userspace processes operating independently and they both chose to use
-> > msi bank zero for their device, that's bank zero within each aperture
-> > and doesn't interfere.  Or another way to ask is can a malicious user
-> > interfere with other users by using the wrong bank.  Thanks,
-> 
-> They can interfere.  With this hardware, the only way to prevent that is
-> to make sure that a bank is not shared by multiple protection contexts.
-> For some of our users, though, I believe preventing this is less
-> important than the performance benefit.
 
-I think we need some sort of ownership model around the msi banks then.
-Otherwise there's nothing preventing another userspace from attempting
-an MSI based attack on other users, or perhaps even on the host.  VFIO
-can't allow that.  Thanks,
+Some platform have firmware that violates the UEFI spec and access boot
+service code or data segments after the system has called ExitBootServices().
+The call to efi_reserve_boot_services in setup_arch is a workaround to
+avoid using boot service memory until after the kernel has done
+SetVirtualAddressMap.  However, this reservation fragments memory
+which can cause large allocations early in boot (e.g. crash kernel)
+to fail.
 
-Alex
+This patch set creates a quirk list that governs whether
+efi_reserve_boot_services is called.
+
+A new kernel parameter is added that overrides the quirk list
+and allows engineers developing new platforms to test whether
+they need to have the quirk applied or not.
+
+With this information, setup_arch avoids calling efi_reserve_boot_services
+when it doesn't need to, thus avoiding fragmenting memory.
+
+
+ChangeLog
+
+V1 => v2)
+
+In version 1 the control of the workaround was only by command line argument.
+In version 2, the quirk list is the primary control of the whether
+the workaround is applied.  This allows for seamless integration with
+tools and doesn't require any special knowledge from the user.
+
+The command line argument is retained for platform developers to
+be able to test whether their platforms require the workaround.
+
+Jerry Hoemann (2):
+  efi: Early use of boot service memory
+  x86, efi: Early use of boot service memory
+
+ Documentation/kernel-parameters.txt |  5 +++
+ arch/x86/kernel/setup.c             |  5 ++-
+ arch/x86/platform/efi/efi.c         | 77 ++++++++++++++++++++++++++++++++++++-
+ include/linux/efi.h                 |  2 +
+ 4 files changed, 86 insertions(+), 3 deletions(-)
+
+-- 
+1.7.11.3
 
