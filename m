@@ -1,228 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab3KUQyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 11:54:09 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36464 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189Ab3KUQyH (ORCPT
+	id S1755158Ab3KURCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 12:02:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30518 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754554Ab3KURBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 11:54:07 -0500
-X-Greylist: delayed 488 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 11:54:07 EST
-X-Sasl-enc: o7jaRM2+u9hr8VxYJm/v/S74/0+pLH+UY3ODddh0WvLC 1385052356
-Date: Thu, 21 Nov 2013 08:45:54 -0800
-From: Greg KH <greg@kroah.com>
-To: dyoung@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [patch 9/9 v3] x86: export x86 boot_params to sysfs
-Message-ID: <20131121164554.GB15083@kroah.com>
-References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
- <20131121061757.030007746@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131121061757.030007746@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Nov 2013 12:01:18 -0500
+Message-Id: <20131121170117.216396966@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 21 Nov 2013 11:59:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>, Yang Shi <yang.shi@windriver.com>
+Subject: [PATCH RT 5/7] mm/memcontrol: Dont call schedule_work_on in preemption disabled
+ context
+References: <20131121165948.354971355@goodmis.org>
+Content-Disposition: inline; filename=0005-mm-memcontrol-Don-t-call-schedule_work_on-in-preempt.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 02:17:13PM +0800, dyoung@redhat.com wrote:
-> kexec-tools use boot_params for getting the 1st kernel hardware_subarch,
-> the kexec kernel efi runtime support also need read the old efi_info from
-> boot_params. Currently it exists in debugfs which is not a good place for
-> such infomation. Per HPA, we should avoid of "sploit debugfs".
-> 
-> In this patch /sys/kernel/boot_params are exported, also the setup_data
-> is exported as a subdirectory. For original debugfs since it's already
-> there for long time and kexec-tools is using it for hardware_subarch so
-> let's do not remove them for now.
-> 
-> Structure are like below:
-> 
-> /sys/kernel/boot_params
-> ├── data		/* binary data for boot_params */
-> ├── setup_data  	/* subdirectory for setup_data if there's any */
-> │   ├── 0		/* the first setup_data node */
-> │   │   ├── data	/* binary data for setup_data node 0 */
-> │   │   └── type	/* setup_data type of setup_data node 0, hex string */
-> |   [snip]		/* other setup_data nodes ... */
-> └── version		/* hex string for boot protocal version */
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  Documentation/ABI/testing/sysfs-kernel-boot_params |   40 ++
->  arch/x86/kernel/Makefile                           |    2 
->  arch/x86/kernel/ksysfs.c                           |  326 +++++++++++++++++++++
->  3 files changed, 367 insertions(+), 1 deletion(-)
-> 
-> --- /dev/null
-> +++ efi/Documentation/ABI/testing/sysfs-kernel-boot_params
-> @@ -0,0 +1,40 @@
-> +What:		/sys/kernel/boot_params
-> +Date:		November 2013
-> +Contact:	Dave Young <dyoung@redhat.com>
-> +Description:
-> +		The /sys/kernel/boot_params directory contains two
-> +		files: "data" and "version" and one subdirectory "setup_data".
-> +		It is used to export the kernel boot parameters of x86
-> +		platform to user space for kexec and debugging purpose.
-> +
-> +		If there's no setup_data in boot_params the subdirectory will
-> +		not be created.
-> +
-> +		"data" file is the binary representation of struct boot_params.
-> +
-> +		"version" file is the string representation of boot
-> +		protocol version.
-> +
-> +		"setup_data" subdirectory contains the setup_data data
-> +		structure in boot_params. setup_data is maintained in kernel
-> +		as a link list. In "setup_data" subdirectory there's one
-> +		subdirectory for each link list node named with the number
-> +		of the list nodes. The list node subdirectory contains two
-> +		files "type" and "data". "type" file is the string
-> +		representation of setup_data type. "data" file is the binary
-> +		representation of setup_data payload.
-> +
-> +		The whole boot_params directory structure is like below:
-> +		/sys/kernel/boot_params
-> +		├── data
-> +		├── setup_data
-> +		│   ├── 0
-> +		│   │   ├── data
-> +		│   │   └── type
-> +		│   └── 1
-> +		│       ├── data
-> +		│       └── type
-> +		└── version
-> +
-> +Users:
-> +		Kexec Mailing List <kexec@lists.infradead.org>
-> --- efi.orig/arch/x86/kernel/Makefile
-> +++ efi/arch/x86/kernel/Makefile
-> @@ -35,7 +35,7 @@ obj-y			+= alternative.o i8253.o pci-nom
->  obj-y			+= tsc.o io_delay.o rtc.o
->  obj-y			+= pci-iommu_table.o
->  obj-y			+= resource.o
-> -
-> +obj-$(CONFIG_SYSFS)	+= ksysfs.o
->  obj-y				+= process.o
->  obj-y				+= i387.o xsave.o
->  obj-y				+= ptrace.o
-> --- /dev/null
-> +++ efi/arch/x86/kernel/ksysfs.c
-> @@ -0,0 +1,326 @@
-> +/*
-> + * Architecture specific sysfs attributes in /sys/kernel
-> + *
-> + * Copyright (C) 2007, Intel Corp.
-> + *      Huang Ying <ying.huang@intel.com>
-> + * Copyright (C) 2013, 2013 Red Hat, Inc.
-> + *      Dave Young <dyoung@redhat.com>
-> + *
-> + * This file is released under the GPLv2
-> + */
-> +
-> +#include <linux/kobject.h>
-> +#include <linux/string.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/init.h>
-> +#include <linux/stat.h>
-> +#include <linux/slab.h>
-> +#include <linux/mm.h>
-> +
-> +#include <asm/setup.h>
-> +
-> +static ssize_t boot_params_version_show(struct kobject *kobj,
-> +					struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "0x%04x\n", boot_params.hdr.version);
-> +}
-> +
-> +static struct kobj_attribute boot_params_version_attr =
-> +	__ATTR(version, S_IRUGO, boot_params_version_show, NULL);
+3.8.13.13-rt25-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-__ATTR_RO() please.
+------------------
 
-> +static struct kobj_attribute type_attr =
-> +		__ATTR(type, S_IRUGO, setup_data_type_show, NULL);
+From: Yang Shi <yang.shi@windriver.com>
 
-__ATTR_RO() here too.
+The following trace is triggered when running ltp oom test cases:
+
+BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+in_atomic(): 1, irqs_disabled(): 0, pid: 17188, name: oom03
+Preemption disabled at:[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
+
+CPU: 2 PID: 17188 Comm: oom03 Not tainted 3.10.10-rt3 #2
+Hardware name: Intel Corporation Calpella platform/MATXM-CORE-411-B, BIOS 4.6.3 08/18/2010
+ffff88007684d730 ffff880070df9b58 ffffffff8169918d ffff880070df9b70
+ffffffff8106db31 ffff88007688b4a0 ffff880070df9b88 ffffffff8169d9c0
+ffff88007688b4a0 ffff880070df9bc8 ffffffff81059da1 0000000170df9bb0
+Call Trace:
+[<ffffffff8169918d>] dump_stack+0x19/0x1b
+[<ffffffff8106db31>] __might_sleep+0xf1/0x170
+[<ffffffff8169d9c0>] rt_spin_lock+0x20/0x50
+[<ffffffff81059da1>] queue_work_on+0x61/0x100
+[<ffffffff8112b361>] drain_all_stock+0xe1/0x1c0
+[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
+[<ffffffff8112beda>] __mem_cgroup_try_charge+0x41a/0xc40
+[<ffffffff810f1c91>] ? release_pages+0x1b1/0x1f0
+[<ffffffff8106f200>] ? sched_exec+0x40/0xb0
+[<ffffffff8112cc87>] mem_cgroup_charge_common+0x37/0x70
+[<ffffffff8112e2c6>] mem_cgroup_newpage_charge+0x26/0x30
+[<ffffffff8110af68>] handle_pte_fault+0x618/0x840
+[<ffffffff8103ecf6>] ? unpin_current_cpu+0x16/0x70
+[<ffffffff81070f94>] ? migrate_enable+0xd4/0x200
+[<ffffffff8110cde5>] handle_mm_fault+0x145/0x1e0
+[<ffffffff810301e1>] __do_page_fault+0x1a1/0x4c0
+[<ffffffff8169c9eb>] ? preempt_schedule_irq+0x4b/0x70
+[<ffffffff8169e3b7>] ? retint_kernel+0x37/0x40
+[<ffffffff8103053e>] do_page_fault+0xe/0x10
+[<ffffffff8169e4c2>] page_fault+0x22/0x30
+
+So, to prevent schedule_work_on from being called in preempt disabled context,
+replace the pair of get/put_cpu() to get/put_cpu_light().
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Yang Shi <yang.shi@windriver.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ mm/memcontrol.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6b7ff19..1503ca3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2283,7 +2283,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 
+ 	/* Notify other cpus that system-wide "drain" is running */
+ 	get_online_cpus();
+-	curcpu = get_cpu();
++	curcpu = get_cpu_light();
+ 	for_each_online_cpu(cpu) {
+ 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+ 		struct mem_cgroup *memcg;
+@@ -2300,7 +2300,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 				schedule_work_on(cpu, &stock->work);
+ 		}
+ 	}
+-	put_cpu();
++	put_cpu_light();
+ 
+ 	if (!sync)
+ 		goto out;
+-- 
+1.8.4.rc3
 
 
-> +static struct bin_attribute data_attr = {
-> +	.attr = {
-> +		.name = "data",
-> +		.mode = S_IRUGO,
-> +	},
-> +	.read = setup_data_data_read,
-> +};
-> +
-> +static int __init create_setup_data_node(struct kobject *parent,
-> +					struct kobject **kobjp, int nr)
-> +{
-> +	int ret = 0;
-> +	size_t size;
-> +	struct kobject *kobj;
-> +	char name[16]; /* should be enough for setup_data nodes numbers */
-> +	snprintf(name, 16, "%d", nr);
-> +
-> +	kobj = kobject_create_and_add(name, parent);
-> +	if (!kobj)
-> +		return -ENOMEM;
-> +
-> +	ret = sysfs_create_file(kobj, &type_attr.attr);
-> +	if (ret)
-> +		goto out_kobj;
-> +
-> +	ret = get_setup_data_size(nr, &size);
-> +	if (ret)
-> +		goto out_kobj;
-> +
-> +	data_attr.size = size;
-> +	ret = sysfs_create_bin_file(kobj, &data_attr);
-> +	if (ret)
-> +		goto out_file;
-> +	*kobjp = kobj;
-
-You just raced with userspace (creating and announcing the kobject and
-then, afterward, at some later point in time, created the sysfs files.
-Please use the groups option to create the files properly before
-announcing the kobject to userspace.
-
-> +static int __init boot_params_ksysfs_init(void)
-> +{
-> +	int ret;
-> +	struct kobject *boot_params_kobj;
-> +
-> +	boot_params_kobj = kobject_create_and_add("boot_params",
-> +						       kernel_kobj);
-> +	if (!boot_params_kobj) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +	ret = sysfs_create_file(boot_params_kobj,
-> +				&boot_params_version_attr.attr);
-> +	if (ret)
-> +		goto out_boot_params_kobj;
-> +	ret = sysfs_create_bin_file(boot_params_kobj,
-> +				      &boot_params_data_attr);
-> +	if (ret)
-> +		goto out_create_file;
-> +
-> +	ret = create_setup_data_nodes(boot_params_kobj);
-> +	if (ret)
-> +		goto out_create_bin;
-> +
-> +	return 0;
-
-Same race condition here as well.  Use a groups structure please.
-
-thanks,
-
-greg k-h
