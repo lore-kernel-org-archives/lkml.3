@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab3KUNGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 08:06:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46695 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab3KUNGR (ORCPT
+	id S1754371Ab3KUNHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 08:07:11 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:62267 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab3KUNHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 08:06:17 -0500
-Date: Thu, 21 Nov 2013 14:06:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
-Message-ID: <20131121130605.GE10022@twins.programming.kicks-ass.net>
-References: <20130917082838.218329307@infradead.org>
- <20130917182350.449685712@linutronix.de>
- <20130917183628.857145384@linutronix.de>
- <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
- <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
+	Thu, 21 Nov 2013 08:07:08 -0500
+Message-ID: <528E059C.9050408@gmail.com>
+Date: Thu, 21 Nov 2013 14:07:40 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jingoo Han <jg1.han@samsung.com>, "'Borislav Petkov'" <bp@alien8.de>,
+        "'Wei WANG'" <wei_wang@realsil.com.cn>
+CC: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Rafael J. Wysocki'" <rjw@sisk.pl>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Chris Ball'" <cjb@laptop.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+References: <20131117195358.GO27323@pd.tnic> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com> <20131118133210.GG24851@pd.tnic> <528B36EA.20301@gmail.com> <20131119101521.GA3515@pd.tnic> <528C84A1.5030707@gmail.com> <20131120111541.GA30147@pd.tnic> <528DC2AA.4070202@gmail.com> <20131121101234.GB25459@pd.tnic> <000801cee6ab$4e9f9380$ebdeba80$%han@samsung.com>
+In-Reply-To: <000801cee6ab$4e9f9380$ebdeba80$%han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 12:41:44PM +0100, Thomas Gleixner wrote:
-> On Wed, 20 Nov 2013, Thomas Gleixner wrote:
-> > On Wed, 20 Nov 2013, Tony Luck wrote:
-> > > asmlinkage void __sched preempt_schedule_irq(void)
-> > > {
-> > >            schedule();
-> > > }
-> > > 
-> > > Or is life more complicated than that?
-> > 
-> > Hmm, I think I fubared that and you decided to ignore my patch :) 
-> > 
-> > Let me look at it tomorrow morning with full awake brain cells.
-> 
-> Ok, wrapped my brain around it. I tripped over the magic asm foo which
-> has a single need_resched check and schedule point for both sys call
-> return and interrupt return.
-> 
-> So you need the schedule_preempt_irq() for kernel preemption from
-> interrupt return while on a normal syscall preemption a schedule would
-> be sufficient. But using schedule_preempt_irq() is not harmful here in
-> any way. It just sets the preempt_active bit also in cases where it
-> would not be required. 
-> 
-> Even on preempt=n kernels adding the preempt_active bit is completely
-> harmless. So instead of having an extra function, moving the existing
-> one out of the ifdef PREEMPT looks like the sanest thing to do.
-> 
-> Peter, Ingo ?
+Hi,
 
-Uhm, preempt_schedule_irq() assumes interrupts are disabled and
-explicitly returns with interrupts disabled again. Does the ia64
-callsite conform?
+On 11/21/2013 12:17 PM, Jingoo Han wrote:
+[...]
+> 
+> In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
+> reader driver may make the kernel panic.
+> 
+> I think that the commit "mfd: rtsx: Configure to enter a deeper
+> power-saving mode in S3" may be the culprit.
 
-If so, schedule() would actually be actively wrong, because that will
-whinge when called with interrupts disabled, and will return with
-interrupts enabled.
+I'll do the check tonight.
 
-Anyway, I don't object to the patch per se, but it might bloat a few
-!ia64 kernels for having to carry the extra text.
+> 
+> Francis Moreau,
+> Let us know the exact model name of rts52xx PCIe card reader
+> in your laptop? According to the commit, Wei WANG added S3 mode
+> to rts5227 driver ,and rts5249 driver.
+
+03:00.0 Unassigned class [ff00]: Realtek Semiconductor Co., Ltd. Device
+[10ec:5289] (rev 01)
+	Subsystem: CLEVO/KAPOK Computer Device [1558:0540]
+	Flags: bus master, fast devsel, latency 0, IRQ 40
+	Memory at f7200000 (32-bit, non-prefetchable) [size=64K]
+	Capabilities: [40] Power Management version 3
+	Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [70] Express Endpoint, MSI 00
+	Capabilities: [b0] MSI-X: Enable- Count=1 Masked-
+	Capabilities: [d0] Vital Product Data
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Virtual Channel
+	Capabilities: [160] Device Serial Number 00-00-00-00-00-00-00-00
+	Kernel driver in use: rtsx_pci
+	Kernel modules: rtsx_pci
+
+Thanks,
+
