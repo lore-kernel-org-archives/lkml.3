@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab3KUAZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 19:25:44 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:58535 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3KUAZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 19:25:42 -0500
-X-Originating-IP: 50.43.14.201
-Date: Wed, 20 Nov 2013 16:25:24 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 01/28] rcutorture: Add KVM-based test
- framework
-Message-ID: <20131121002524.GB12110@leaf>
-References: <20131116003517.GA31563@linux.vnet.ibm.com>
- <1384562141-32446-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131116010528.GA9112@kroah.com>
- <20131116012116.GZ4138@linux.vnet.ibm.com>
- <20131115204727.4b7b130d@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131115204727.4b7b130d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754120Ab3KUAfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 19:35:08 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52499 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752496Ab3KUAfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 19:35:04 -0500
+Message-ID: <1384994090.26969.130.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Nov 2013 11:34:50 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 08:47:27PM -0500, Steven Rostedt wrote:
-> On Fri, 15 Nov 2013 17:21:16 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> 
-> > > Oh, one very minor comment on the patches, you should delete the address
-> > > of the FSF from your file headers, unless you want to track the office
-> > > movements of them for the next 40+ years.  We've been removing them from
-> > > kernel code where we notice them, as half of them are wrong, and I don't
-> > > want to have to go back and fix them again when they move again.
-> > 
-> > I had no idea that they tend to move!  Thank you, I will remove them.
-> 
-> From what I've been told, you should replace:
-> 
-> 
-> # You should have received a copy of the GNU General Public License
-> # along with this program; if not, write to the Free Software
-> # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
-> USA.
-> 
-> With:
-> 
-> # You should have received a copy of the GNU General Public License
-> # along with this program; if not, see  <http://www.gnu.org/licenses>
+Hi Linus !
 
-Or, just drop the paragraph entirely, since there's a copy of the GPL in
-COPYING.  (Assuming your legal department has no problem with that.)
+Since you pulled my previous one in less than 20mn (the LE stuff),
+there's no point waiting for tomorrow for these fixes I mentioned
+earlier so here they are.
 
-- Josh Triplett
+This is a small collection of random bug fixes and a few improvements
+of Oops output which I deemed valuable enough to include as well.
+
+The fixes are essentially recent build breakage and regressions,
+and a couple of older bugs such as the DTL log duplication, the
+EEH issue with PCI_COMMAND_MASTER and the problem with small
+contexts passed to get/set_context with VSX enabled.
+
+Cheers,
+Ben.
+The following changes since commit b4789b8e6be3151a955ade74872822f30e8cd914:
+
+  aacraid: prevent invalid pointer dereference (2013-11-19 16:27:39 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to c13f20ac48328b05cd3b8c19e31ed6c132b44b42:
+
+  powerpc/signals: Mark VSX not saved with small contexts (2013-11-21 10:33:45 +1100)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc: booke: Fix build failures
+
+Anton Blanchard (5):
+      powerpc: Print DAR and DSISR on machine check oopses
+      powerpc: Remove a few lines of oops output
+      powerpc/pseries: Duplicate dtl entries sometimes sent to userspace
+      powerpc: Only print PACATMSCRATCH in oops when TM is active
+      powerpc: ppc64 address space capped at 32TB, mmap randomisation disabled
+
+Gavin Shan (2):
+      powerpc/eeh: Enable PCI_COMMAND_MASTER for PCI bridges
+      powerpc/eeh: More accurate log
+
+Heiko Carstens (1):
+      powerpc: Fix __get_user_pages_fast() irq handling
+
+Li Zhong (1):
+      powerpc/vio: Fix a dma_mask issue of vio
+
+Michael Ellerman (2):
+      powerpc: Make cpu_to_chip_id() available when SMP=n
+      powerpc/pseries: Fix SMP=n build of rng.c
+
+Michael Neuling (1):
+      powerpc/signals: Mark VSX not saved with small contexts
+
+ arch/powerpc/include/asm/smp.h        |  2 +-
+ arch/powerpc/kernel/eeh.c             |  9 +++++++++
+ arch/powerpc/kernel/eeh_event.c       |  9 +++++++--
+ arch/powerpc/kernel/process.c         | 21 +++++++++++----------
+ arch/powerpc/kernel/prom.c            | 20 ++++++++++++++++++++
+ arch/powerpc/kernel/signal_32.c       | 10 +++++++++-
+ arch/powerpc/kernel/smp.c             | 16 ----------------
+ arch/powerpc/kernel/time.c            |  4 ++--
+ arch/powerpc/kernel/vio.c             |  2 +-
+ arch/powerpc/mm/gup.c                 |  5 +++--
+ arch/powerpc/mm/slice.c               |  2 +-
+ arch/powerpc/platforms/powernv/rng.c  |  1 +
+ arch/powerpc/platforms/pseries/rng.c  |  1 +
+ arch/powerpc/platforms/wsp/chroma.c   |  1 +
+ arch/powerpc/platforms/wsp/h8.c       |  1 +
+ arch/powerpc/platforms/wsp/ics.c      |  2 ++
+ arch/powerpc/platforms/wsp/opb_pic.c  |  2 ++
+ arch/powerpc/platforms/wsp/psr2.c     |  1 +
+ arch/powerpc/platforms/wsp/scom_wsp.c |  1 +
+ arch/powerpc/platforms/wsp/wsp.c      |  1 +
+ 20 files changed, 75 insertions(+), 36 deletions(-)
+
+
