@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3KUS5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:57:32 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56180 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3KUS5F (ORCPT
+	id S1755103Ab3KUS6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 13:58:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47971 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3KUS6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 13:57:05 -0500
-Message-ID: <528E577C.2050506@wwwdotorg.org>
-Date: Thu, 21 Nov 2013 11:57:00 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 21 Nov 2013 13:58:30 -0500
+Date: Thu, 21 Nov 2013 10:58:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131121185828.GA17070@kroah.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv6+ 01/13] of: introduce of_property_for_earch_phandle_with_args()
-References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com><1385041249-7705-2-git-send-email-hdoyu@nvidia.com> <20131121.191720.1487772262083864095.hdoyu@nvidia.com>
-In-Reply-To: <20131121.191720.1487772262083864095.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 10:17 AM, Hiroshi Doyu wrote:
-> Iterating over a property containing a list of phandles with arguments
-> is a common operation for device drivers. This patch adds a new
-> of_property_for_each_phandle_with_args() macro to make the iteration
-> simpler.
+On Wed, Nov 20, 2013 at 12:50:45PM -0500, Vivek Goyal wrote:
+> Current proposed secureboot implementation disables kexec/kdump because
+> it can allow unsigned kernel to run on a secureboot platform. Intial
+> idea was to sign /sbin/kexec binary and let that binary do the kernel
+> signature verification. I had posted RFC patches for this apparoach
+> here.
 > 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
-> v6+:
-> Use the description, which Grant Likely proposed, to be full enough
-> that a future reader can figure out why a patch was written.
->   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007062.html
+> https://lkml.org/lkml/2013/9/10/560
+> 
+> Later we had discussion at Plumbers and most of the people thought
+> that signing and trusting /sbin/kexec is becoming complex. So a 
+> better idea might be let kernel do the signature verification of
+> new kernel being loaded. This calls for implementing a new system call
+> and moving lot of user space code in kernel.
+> 
+> kexec_load() system call allows loading a kexec/kdump kernel and jump
+> to that kernel at right time. Though a lot of processing is done in
+> user space which prepares a list of segments/buffers to be loaded and
+> kexec_load() works on that list of segments. It does not know what's
+> contained in those segments.
+> 
+> Now a new system call kexec_file_load() is implemented which takes
+> kernel fd and initrd fd as parameters. Now kernel should be able
+> to verify signature of newly loaded kernel. 
+> 
+> This is an early RFC patchset. I have not done signature handling
+> part yet. This is more of a minimal patch to show how new system
+> call and functionality will look like. Right now it can only handle
+> bzImage with 64bit entry point on x86_64. No EFI, no x86_32  or any
+> other architecture. Rest of the things can be added slowly as need
+> arises. In first iteration, I have tried to address most common use case
+> for us.
 
-This new version only addresses one of the concerns that Grant had,
-namely the commit message.
+Very good stuff, thanks for working on this.  How have you been testing
+this on the userspace side?  Are there patches to kexec, or are you just
+using a small test program with the new syscall?
 
-> diff --git a/include/linux/of.h b/include/linux/of.h
+I'll comment on the patches separately.
 
-> +#define of_property_for_each_phandle_with_args(np, list, cells, i, args) \
-> +	for (i = 0; !of_parse_phandle_with_args(np, list, cells, i, args); i++)
-> +
-
-Grant also wanted the actual implementation fixed so that it wasn't so
-inefficient.
-
-What this current patch does is basically:
-
-for every entry in the property:
-    for every entry in the property before the current index:
-        parse the phandle+specifier
-
-That's roughly O(n^2). (n is # entries in the property)
-
-Instead, what should happen is:
-
-for every entry in the property:
-    parse the phandle+specifier
-    yield the result
-
-That's roughly O(n).
-
-In other words, an implementation more along the lines of
-include/linux/of.h's:
-
-#define of_property_for_each_u32(np, propname, prop, p, u)      \
-        for (prop = of_find_property(np, propname, NULL),       \
-                p = of_prop_next_u32(prop, NULL, &u);           \
-                p;                                              \
-                p = of_prop_next_u32(prop, p, &u))
-
-... so you'd need functions like of_prop_first_specifier() and
-of_prop_next_specifier(), and perhaps some associated set of state
-variables, perhaps with all the state wrapped into a single struct for
-simplicity.
+greg k-h
