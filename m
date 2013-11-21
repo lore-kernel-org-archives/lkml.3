@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab3KUGTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 01:19:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13015 "EHLO mx1.redhat.com"
+	id S1753221Ab3KUGTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 01:19:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab3KUGTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 01:19:21 -0500
-Message-Id: <20131121061753.741550355@dhcp-16-126.nay.redhat.com>
+	id S1752154Ab3KUGTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 01:19:10 -0500
+Message-Id: <20131121061757.030007746@dhcp-16-126.nay.redhat.com>
 User-Agent: quilt/0.60-1
-Date: Thu, 21 Nov 2013 14:17:07 +0800
+Date: Thu, 21 Nov 2013 14:17:13 +0800
 From: dyoung@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -16,37 +16,423 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
         matt@console-pimps.org, toshi.kani@hp.com,
-        Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@suse.de>
-Subject: [patch 3/9 v3] efi: reserve boot service fix
+        Dave Young <dyoung@redhat.com>
+Subject: [patch 9/9 v3] x86: export x86 boot_params to sysfs
 References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
-Content-Disposition: inline; filename=03-boot-service-fix.patch
+Content-Disposition: inline; filename=09-add-sysfs-boot-param.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code check boot service region with kernel text region by: 
-start+size >= __pa_symbol(_text)
-The end of the above region should be start + size - 1 instead.
+kexec-tools use boot_params for getting the 1st kernel hardware_subarch,
+the kexec kernel efi runtime support also need read the old efi_info from
+boot_params. Currently it exists in debugfs which is not a good place for
+such infomation. Per HPA, we should avoid of "sploit debugfs".
 
-I see this problem in ovmf + Fedora 19 grub boot:
-text start: 1000000 md start: 800000 md size: 800000
+In this patch /sys/kernel/boot_params are exported, also the setup_data
+is exported as a subdirectory. For original debugfs since it's already
+there for long time and kexec-tools is using it for hardware_subarch so
+let's do not remove them for now.
+
+Structure are like below:
+
+/sys/kernel/boot_params
+├── data		/* binary data for boot_params */
+├── setup_data  	/* subdirectory for setup_data if there's any */
+│   ├── 0		/* the first setup_data node */
+│   │   ├── data	/* binary data for setup_data node 0 */
+│   │   └── type	/* setup_data type of setup_data node 0, hex string */
+|   [snip]		/* other setup_data nodes ... */
+└── version		/* hex string for boot protocal version */
 
 Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
 ---
- arch/x86/platform/efi/efi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-kernel-boot_params |   40 ++
+ arch/x86/kernel/Makefile                           |    2 
+ arch/x86/kernel/ksysfs.c                           |  326 +++++++++++++++++++++
+ 3 files changed, 367 insertions(+), 1 deletion(-)
 
---- linux-2.6.orig/arch/x86/platform/efi/efi.c
-+++ linux-2.6/arch/x86/platform/efi/efi.c
-@@ -438,7 +438,7 @@ void __init efi_reserve_boot_services(vo
- 		 * - Not within any part of the kernel
- 		 * - Not the bios reserved area
- 		*/
--		if ((start+size >= __pa_symbol(_text)
-+		if ((start + size > __pa_symbol(_text)
- 				&& start <= __pa_symbol(_end)) ||
- 			!e820_all_mapped(start, start+size, E820_RAM) ||
- 			memblock_is_region_reserved(start, size)) {
+--- /dev/null
++++ efi/Documentation/ABI/testing/sysfs-kernel-boot_params
+@@ -0,0 +1,40 @@
++What:		/sys/kernel/boot_params
++Date:		November 2013
++Contact:	Dave Young <dyoung@redhat.com>
++Description:
++		The /sys/kernel/boot_params directory contains two
++		files: "data" and "version" and one subdirectory "setup_data".
++		It is used to export the kernel boot parameters of x86
++		platform to user space for kexec and debugging purpose.
++
++		If there's no setup_data in boot_params the subdirectory will
++		not be created.
++
++		"data" file is the binary representation of struct boot_params.
++
++		"version" file is the string representation of boot
++		protocol version.
++
++		"setup_data" subdirectory contains the setup_data data
++		structure in boot_params. setup_data is maintained in kernel
++		as a link list. In "setup_data" subdirectory there's one
++		subdirectory for each link list node named with the number
++		of the list nodes. The list node subdirectory contains two
++		files "type" and "data". "type" file is the string
++		representation of setup_data type. "data" file is the binary
++		representation of setup_data payload.
++
++		The whole boot_params directory structure is like below:
++		/sys/kernel/boot_params
++		├── data
++		├── setup_data
++		│   ├── 0
++		│   │   ├── data
++		│   │   └── type
++		│   └── 1
++		│       ├── data
++		│       └── type
++		└── version
++
++Users:
++		Kexec Mailing List <kexec@lists.infradead.org>
+--- efi.orig/arch/x86/kernel/Makefile
++++ efi/arch/x86/kernel/Makefile
+@@ -35,7 +35,7 @@ obj-y			+= alternative.o i8253.o pci-nom
+ obj-y			+= tsc.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+-
++obj-$(CONFIG_SYSFS)	+= ksysfs.o
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+--- /dev/null
++++ efi/arch/x86/kernel/ksysfs.c
+@@ -0,0 +1,326 @@
++/*
++ * Architecture specific sysfs attributes in /sys/kernel
++ *
++ * Copyright (C) 2007, Intel Corp.
++ *      Huang Ying <ying.huang@intel.com>
++ * Copyright (C) 2013, 2013 Red Hat, Inc.
++ *      Dave Young <dyoung@redhat.com>
++ *
++ * This file is released under the GPLv2
++ */
++
++#include <linux/kobject.h>
++#include <linux/string.h>
++#include <linux/sysfs.h>
++#include <linux/init.h>
++#include <linux/stat.h>
++#include <linux/slab.h>
++#include <linux/mm.h>
++
++#include <asm/setup.h>
++
++static ssize_t boot_params_version_show(struct kobject *kobj,
++					struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%04x\n", boot_params.hdr.version);
++}
++
++static struct kobj_attribute boot_params_version_attr =
++	__ATTR(version, S_IRUGO, boot_params_version_show, NULL);
++
++static ssize_t boot_params_data_read(struct file *fp, struct kobject *kobj,
++				     struct bin_attribute *bin_attr,
++				     char *buf, loff_t off, size_t count)
++{
++	memcpy(buf, (void *)&boot_params + off, count);
++	return count;
++}
++
++static struct bin_attribute boot_params_data_attr = {
++	.attr = {
++		.name = "data",
++		.mode = S_IRUGO,
++	},
++	.read = boot_params_data_read,
++	.size = sizeof(boot_params),
++};
++
++static int kobj_to_setup_data_nr(struct kobject *kobj, int *nr)
++{
++	const char *name;
++
++	name = kobject_name(kobj);
++	return kstrtoint(name, 10, nr);
++}
++
++static int get_setup_data_paddr(int nr, u64 *paddr)
++{
++	int i = 0;
++	struct setup_data *data;
++	u64 pa_data = boot_params.hdr.setup_data;
++
++	while (pa_data) {
++		if (nr == i) {
++			*paddr = pa_data;
++			return 0;
++		}
++		data = ioremap_cache(pa_data, sizeof(*data));
++		if (!data)
++			return -ENOMEM;
++
++		pa_data = data->next;
++		iounmap(data);
++		i++;
++	}
++	return -EINVAL;
++}
++
++static int __init get_setup_data_size(int nr, size_t *size)
++{
++	int i = 0;
++	struct setup_data *data;
++	u64 pa_data = boot_params.hdr.setup_data;
++
++	while (pa_data) {
++		data = ioremap_cache(pa_data, sizeof(*data));
++		if (!data)
++			return -ENOMEM;
++		if (nr == i) {
++			*size = data->len;
++			iounmap(data);
++			return 0;
++		}
++
++		pa_data = data->next;
++		iounmap(data);
++		i++;
++	}
++	return -EINVAL;
++}
++
++static ssize_t setup_data_type_show(struct kobject *kobj,
++					struct kobj_attribute *attr, char *buf)
++{
++	int nr, ret;
++	u64 paddr;
++	struct setup_data *data;
++
++	ret = kobj_to_setup_data_nr(kobj, &nr);
++	if (ret)
++		return ret;
++
++	ret = get_setup_data_paddr(nr, &paddr);
++	if (ret)
++		return ret;
++	data = ioremap_cache(paddr, sizeof(*data));
++	if (!data)
++		return -ENOMEM;
++
++	ret = sprintf(buf, "0x%x\n", data->type);
++	iounmap(data);
++	return ret;
++}
++
++static ssize_t setup_data_data_read(struct file *fp,
++				    struct kobject *kobj,
++				    struct bin_attribute *bin_attr,
++				    char *buf,
++				    loff_t off, size_t count)
++{
++	int nr, ret = 0;
++	u64 paddr;
++	struct setup_data *data;
++	void *p;
++
++	ret = kobj_to_setup_data_nr(kobj, &nr);
++	if (ret)
++		return ret;
++
++	ret = get_setup_data_paddr(nr, &paddr);
++	if (ret)
++		return ret;
++	data = ioremap_cache(paddr, sizeof(*data));
++	if (!data)
++		return -ENOMEM;
++
++	if (off > data->len) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	if (count > data->len - off)
++		count = data->len - off;
++
++	if (!count)
++		goto out;
++
++	ret = count;
++	p = ioremap_cache(paddr + sizeof(*data), data->len);
++	if (!p) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	memcpy(buf, p + off, count);
++	iounmap(p);
++out:
++	iounmap(data);
++	return ret;
++}
++
++static struct kobj_attribute type_attr =
++		__ATTR(type, S_IRUGO, setup_data_type_show, NULL);
++static struct bin_attribute data_attr = {
++	.attr = {
++		.name = "data",
++		.mode = S_IRUGO,
++	},
++	.read = setup_data_data_read,
++};
++
++static int __init create_setup_data_node(struct kobject *parent,
++					struct kobject **kobjp, int nr)
++{
++	int ret = 0;
++	size_t size;
++	struct kobject *kobj;
++	char name[16]; /* should be enough for setup_data nodes numbers */
++	snprintf(name, 16, "%d", nr);
++
++	kobj = kobject_create_and_add(name, parent);
++	if (!kobj)
++		return -ENOMEM;
++
++	ret = sysfs_create_file(kobj, &type_attr.attr);
++	if (ret)
++		goto out_kobj;
++
++	ret = get_setup_data_size(nr, &size);
++	if (ret)
++		goto out_kobj;
++
++	data_attr.size = size;
++	ret = sysfs_create_bin_file(kobj, &data_attr);
++	if (ret)
++		goto out_file;
++	*kobjp = kobj;
++
++	return 0;
++
++out_file:
++	sysfs_remove_file(kobj, &type_attr.attr);
++out_kobj:
++	kobject_put(kobj);
++	return ret;
++}
++
++static void __init cleanup_setup_data_node(struct kobject *kobj)
++{
++	sysfs_remove_file(kobj, &type_attr.attr);
++	sysfs_remove_bin_file(kobj, &data_attr);
++	kobject_put(kobj);
++}
++
++static int __init get_setup_data_total_num(u64 pa_data, int *nr)
++{
++	int ret = 0;
++	struct setup_data *data;
++
++	*nr = 0;
++	while (pa_data) {
++		*nr += 1;
++		data = ioremap_cache(pa_data, sizeof(*data));
++		if (!data) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		pa_data = data->next;
++		iounmap(data);
++	}
++
++out:
++	return ret;
++}
++
++static int __init create_setup_data_nodes(struct kobject *parent)
++{
++	struct kobject *setup_data_kobj, **kobjp;
++	u64 pa_data;
++	int i, j, nr, ret = 0;
++
++	pa_data = boot_params.hdr.setup_data;
++	if (!pa_data)
++		return 0;
++
++	setup_data_kobj = kobject_create_and_add("setup_data", parent);
++	if (!setup_data_kobj) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	ret = get_setup_data_total_num(pa_data, &nr);
++	if (ret)
++		goto out_setup_data_kobj;
++
++	kobjp = kmalloc(sizeof(*kobjp) * nr, GFP_KERNEL);
++	if (!kobjp) {
++		ret = -ENOMEM;
++		goto out_setup_data_kobj;
++	}
++
++	for (i = 0; i < nr; i++) {
++		ret = create_setup_data_node(setup_data_kobj, kobjp + i, i);
++		if (ret) {
++			for (j = i - 1; j > 0; j--)
++				cleanup_setup_data_node(*(kobjp + j));
++			goto out_kmalloc;
++		}
++	}
++
++	kfree(kobjp);
++	return 0;
++
++out_kmalloc:
++	kfree(kobjp);
++out_setup_data_kobj:
++	kobject_put(setup_data_kobj);
++out:
++	return ret;
++}
++
++static int __init boot_params_ksysfs_init(void)
++{
++	int ret;
++	struct kobject *boot_params_kobj;
++
++	boot_params_kobj = kobject_create_and_add("boot_params",
++						       kernel_kobj);
++	if (!boot_params_kobj) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	ret = sysfs_create_file(boot_params_kobj,
++				&boot_params_version_attr.attr);
++	if (ret)
++		goto out_boot_params_kobj;
++	ret = sysfs_create_bin_file(boot_params_kobj,
++				      &boot_params_data_attr);
++	if (ret)
++		goto out_create_file;
++
++	ret = create_setup_data_nodes(boot_params_kobj);
++	if (ret)
++		goto out_create_bin;
++
++	return 0;
++
++out_create_bin:
++	sysfs_remove_bin_file(boot_params_kobj, &boot_params_data_attr);
++out_create_file:
++	sysfs_remove_file(boot_params_kobj, &boot_params_version_attr.attr);
++out_boot_params_kobj:
++	kobject_put(boot_params_kobj);
++out:
++	return ret;
++}
++
++arch_initcall(boot_params_ksysfs_init);
 
