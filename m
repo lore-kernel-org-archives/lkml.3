@@ -1,167 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3KUVL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 16:11:28 -0500
-Received: from claw.goop.org ([74.207.240.146]:59599 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab3KUVL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 16:11:26 -0500
-Message-ID: <528E76FE.5020208@goop.org>
-Date: Thu, 21 Nov 2013 13:11:26 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755081Ab3KUVLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 16:11:55 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:42630 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab3KUVLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 16:11:54 -0500
+Date: Thu, 21 Nov 2013 16:11:52 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf/poll: another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.10.1311211536580.16856@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1311211609070.16856@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1311211346000.16856@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1311211536580.16856@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ben Guthro <ben@guthro.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Xen S3 host resume: "Interrupts enabled after xen_acpi_processor_resume+0x0/0x34"
-References: <528BA6A6.9050403@goop.org>	<CAOvdn6V5vpWgTiY3Q5Ccv8ZaDLBh4YGQom4OtrDBPGgeepToxQ@mail.gmail.com>	<20131119194456.GB7824@phenom.dumpdata.com> <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
-In-Reply-To: <CAOvdn6V-dwrcUqd9T2Bz3BmBnFp9KasE6Gm4NUXdkwSvGZmLTA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2013 11:52 AM, Ben Guthro wrote:
->
->
->
-> On Tue, Nov 19, 2013 at 2:44 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com <mailto:konrad.wilk@oracle.com>> wrote:
->
->     On Tue, Nov 19, 2013 at 02:34:21PM -0500, Ben Guthro wrote:
->     > On Tue, Nov 19, 2013 at 12:57 PM, Jeremy Fitzhardinge
->     <jeremy@goop.org <mailto:jeremy@goop.org>>wrote:
->     >
->     > > After an S3 host resume, I'm seeing:
->     > >
->     > > [48002.772629] ACPI: Low-level resume complete
->     > > [48002.772802] PM: Restoring platform NVS memory
->     > > [48002.776143] xen_acpi_processor: Uploading Xen processor PM info
->     > > [48002.776691] ------------[ cut here ]------------
->     > > [48002.776712] WARNING: CPU: 0 PID: 10235 at
->     drivers/base/syscore.c:104
->     > > syscore_resume+0x9a/0xe0()
->     > > [48002.776751] Interrupts enabled after
->     xen_acpi_processor_resume+0x0/0x34
->     > > [xen_acpi_processor]
->     > > [48002.776836] Modules linked in: tcp_lp btrfs zlib_deflate
->     raid6_pq xor
->     > > ufs hfsplus hfs
->     > >  minix vfat msdos fat jfs xfs libcrc32c reiserfs xt_CHECKSUM
->     tun hidp fuse
->     > > nf_conntrack_
->     > > netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT
->     xt_conntrack
->     > > ebtable_nat eb
->     > > table_broute bridge stp llc ebtable_filter ebtables ip6table_nat
->     > > nf_conntrack_ipv6 nf_de
->     > > frag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security
->     ip6table_raw
->     > > ip6table_filter ip6
->     > > _tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
->     nf_nat_ipv4 nf_nat
->     > > nf_conntrack ipt
->     > > able_mangle iptable_security iptable_raw rfcomm bnep
->     snd_hda_codec_hdmi
->     > > snd_hda_codec_co
->     > > nexant iTCO_wdt iTCO_vendor_support arc4 x86_pkg_temp_thermal
->     coretemp
->     > > iwldvm microcode
->     > > btusb snd_hda_intel mac80211 bluetooth joydev snd_hda_codec
->     snd_hwdep
->     > > snd_seq serio_raw
->     > > iwlwifi i2c_i801 snd_seq_device
->     > > [48002.776894]  snd_pcm cfg80211 sdhci_pci sdhci mmc_core
->     thinkpad_acpi
->     > > wmi tpm_tis e100
->     > > 0e rfkill snd_page_alloc tpm tpm_bios snd_timer ptp snd mei_me mei
->     > > soundcore shpchp lpc_
->     > > ich pps_core mfd_core mperf xen_acpi_processor xen_netback
->     xen_blkback
->     > > xen_gntdev xen_ev
->     > > tchn xenfs xen_privcmd uinput binfmt_misc nfsd auth_rpcgss
->     nfs_acl lockd
->     > > sunrpc dm_crypt
->     > >  crc32_pclmul crc32c_intel i915 ghash_clmulni_intel i2c_algo_bit
->     > > drm_kms_helper drm i2c_
->     > > core video
->     > > [48002.776903] CPU: 0 PID: 10235 Comm: systemd-sleep Not tainted
->     > > 3.11.7-200.fc19.x86_64 #1
->     > > [48002.776905] Hardware name: LENOVO 4286CTO/4286CTO, BIOS
->     8DET59WW (1.29
->     > > ) 04/02/2012
->     > > [48002.776917]  0000000000000009 ffff8801c7697d30 ffffffff8164777b
->     > > ffff8801c7697d78
->     > > [48002.776924]  ffff8801c7697d68 ffffffff8106715d ffffffffa01f6000
->     > > 0000000000000003
->     > > [48002.776931]  ffff8801c7697e08 ffff8801fd970000 0000000000000000
->     > > ffff8801c7697dc8
->     > > [48002.776933] Call Trace:
->     > > [48002.776949]  [<ffffffff8164777b>] dump_stack+0x45/0x56
->     > > [48002.776959]  [<ffffffff8106715d>]
->     warn_slowpath_common+0x7d/0xa0
->     > > [48002.776972]  [<ffffffff810671cc>] warn_slowpath_fmt+0x4c/0x50
->     > > [48002.776989]  [<ffffffffa01f4bb0>] ?
->     > > xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
->     > > [48002.776996]  [<ffffffff813f252a>] syscore_resume+0x9a/0xe0
->     > > [48002.777006]  [<ffffffff810abd7c>]
->     suspend_devices_and_enter+0x40c/0x480
->     > > [48002.777014]  [<ffffffff810abf68>] pm_suspend+0x178/0x260
->     > > [48002.777020]  [<ffffffff810aae19>] state_store+0x79/0xf0
->     > > [48002.777033]  [<ffffffff812fc4af>] kobj_attr_store+0xf/0x20
->     > > [48002.777043]  [<ffffffff8121a226>] sysfs_write_file+0xc6/0x140
->     > > [48002.777054]  [<ffffffff811a819d>] vfs_write+0xbd/0x1e0
->     > > [48002.777062]  [<ffffffff811a8bd9>] SyS_write+0x49/0xa0
->     > > [48002.777073]  [<ffffffff81656999>]
->     system_call_fastpath+0x16/0x1b
->     > > [48002.777077] ---[ end trace 15c5658c596be9f3 ]---
->     > > [48002.777081] Enabling non-boot CPUs ...
->     > >
->     > >
->     > > I wonder if this is a result of upload_pm_data()'s use of
->     mutexes, which
->     > > being a sleeping synchronization operation, shouldn't be done
->     in an
->     > > interrupt-off context.
->     > >
->     > > I'm also having the machine hang in the suspended state on resume
->     > > sometimes (that is, I open the lid/hit a key/press power to
->     resume the
->     > > laptop, but the sleep light keeps pulsing and I can't get it
->     out of that
->     > > state without a forced power-off. I wonder if these are related.
->     > >
->     > > This is with the stock Fedora 19 kernel, but I don't think
->     there are any
->     > > differences from upstream in this area?
->     > >
->     >
->     > There was a commit in 3.12 to handle systems with reduced
->     hardware sleep -
->     > but that would be a failure 100% of the time - not intermittent.
->     > What version of Xen are you running?
->
->     I saw that on Xen 4.3 (or Xen 4.2) but when I upgraded to Xen 4.4
->     I didn't see
->     it anymore. Hence I was thinking it was Xen related.
->
->
-> The following xen commits were done in this timeframe that could be
-> related, depending on what Xen version you are running:
->
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=6e96c186d23873597896051b043cfeb119c4a7d5
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9aa356bc9f7533c3cb7f02c823f532532876d444
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=9e2c5938246546a5b3f698b7421640d85602b994
-> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=529d5731e40e179e396397c633e10316a850044e
->
->
+On Thu, 21 Nov 2013, Vince Weaver wrote:
+> 
+> So I wasn't able to reproduce this, but here's a list of events that were 
+> active at the time of the crash.  Not sure if that's useful or not.
 
-Well, I'm still seeing the kernel warning from syscore_resume about
-interrupts still being enabled after xen_acpi_processor_resume; that
-seems to be a genuine bug independent of any of the hypervisor issues.
+and not that anyone cares, but mailing this off made me notice I had a bug
+in my perf_event printing routines that printed all SOFTWARE events
+as TASK_CLOCK by mistake (using type instead of config in switch
+statement).  Anyway it's fixed now and below is the corrected output.
 
-    J
+> 148:	PERF_TYPE_TRACEPOINT, 0x126; /* 294 ext4/ext4_mark_inode_dirty */
+> 92:	PERF_TYPE_TRACEPOINT, 0x1b; /* 27 irq_vectors/x86_platform_ipi_entry */
+> 169:	PERF_TYPE_TRACEPOINT, 0x1cd; /* 461 random/extract_entropy */
+> 139:	PERF_TYPE_TRACEPOINT, 0x21; /* 33 irq_vectors/reschedule_entry */
+> 211:	PERF_TYPE_TRACEPOINT, 0x25; /* 37 vsyscall/emulate_vsyscall */
+> 196:	PERF_TYPE_TRACEPOINT, 0x2b; /* 43 irq/softirq_raise */
+> 75:	PERF_TYPE_TRACEPOINT, 0x2e; /* 46 irq/irq_handler_exit */
+> 16:	PERF_TYPE_TRACEPOINT, 0x31; /* 49 timer/itimer_expire */
+> 105:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
+> 81:	PERF_TYPE_TRACEPOINT, 0x38; /* 56 timer/timer_cancel */
+> 174:	PERF_TYPE_TRACEPOINT, 0x39; /* 57 timer/timer_expire_exit */
+> 138:	PERF_TYPE_TRACEPOINT, 0x3a; /* 58 timer/timer_expire_entry */
+> 215:	PERF_TYPE_TRACEPOINT, 0x3b; /* 59 timer/timer_start */
+> 129:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
+> 87:	PERF_TYPE_TRACEPOINT, 0x3c; /* 60 timer/timer_init */
+> 55:	PERF_TYPE_TRACEPOINT, 0x3d; /* 61 signal/signal_deliver */
+> 32:	PERF_TYPE_TRACEPOINT, 0x3e; /* 62 signal/signal_generate */
+> 114:	PERF_TYPE_TRACEPOINT, 0x71; /* 113 rpm/rpm_resume */
+> 54:	PERF_TYPE_TRACEPOINT, 0xe2; /* 226 ext4/ext4_get_reserved_cluster_alloc */
+> 10:	PERF_TYPE_BREAKPOINT, HW_BREAKPOINT_W, addr=0xffee, len=0x2
+> 165:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 202:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 22:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 68:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 6:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 99:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+> 115:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 173:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 183:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 184:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 27:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 93:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 97:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES;
+> 121:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
+> 180:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES;
+> 12:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+> 133:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+> 166:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES;
+> 20:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES;
+> 11:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 137:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 155:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 18:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 210:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 64:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 73:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 84:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 88:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 90:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES;
+> 111:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 125:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 153:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 154:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 160:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 164:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 189:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 42:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 44:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 70:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 79:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 82:	PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS;
+> 100:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+> 51:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_BPU | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+> 46:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_READ << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+> 149:	PERF_TYPE_HW_CACHE, PERF_COUNT_HW_CACHE_L1D | ( PERF_COUNT_HW_CACHE_OP_WRITE << 8) | ( PERF_COUNT_HW_CACHE_RESULT_MISS << 16 );
+> 50:	PERF_TYPE_RAW, 0x0;
+> 85:	PERF_TYPE_RAW, 0x0;
+> 35:	PERF_TYPE_RAW, 0x100000000;
+> 156:	PERF_TYPE_RAW, 0x1000800af;
+> 118:	PERF_TYPE_RAW, 0x2000040001081;
+> 58:	PERF_TYPE_RAW, 0x200800000;
+> 94:	PERF_TYPE_RAW, 0x26;
+> 130:	PERF_TYPE_RAW, 0x3c;
+> 37:	PERF_TYPE_RAW, 0x40000000004800;
+> 53:	PERF_TYPE_RAW, 0x4f2e;
+> 117:	PERF_TYPE_RAW, 0x80000;
+> 158:	PERF_TYPE_RAW, 0x80000000;
+> 108:	PERF_TYPE_RAW, 0x8000000000000002;
+> 41:	PERF_TYPE_RAW, 0x8000000000000020;
+> 8:	PERF_TYPE_RAW, 0x800000000000007f;
+> 135:	PERF_TYPE_RAW, 0x80000000000000a9;
+> 193:	PERF_TYPE_RAW, 0x8000000008000004;
+> 101:	PERF_TYPE_RAW, 0x80000000088800ff;
+> 214:	PERF_TYPE_RAW, 0x800000805f5f5f5f;
+> 59:	PERF_TYPE_RAW, 0x804000000000a000;
+> 15:	PERF_TYPE_RAW, 0xc5;
+> 40:	PERF_TYPE_RAW, 0xc5;
+> 188:	PERF_TYPE_RAW, 0xdf;
+> 5:	PERF_TYPE_RAW, 0xffffffffd3cb7fa3;
+> 185:	PERF_TYPE_RAW, 0xffffffffe8dfa2d0;
+> 14:	PERF_TYPE_RAW, 0xffffffffff092c99;
+159:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+212:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+24:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+49:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+57:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+69:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+76:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS;
+106:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+120:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+142:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+192:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+33:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+38:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+52:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+65:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+7:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+96:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES;
+13:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+150:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+171:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+191:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+206:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+28:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+3:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+4:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+61:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+66:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+71:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK;
+104:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+124:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+144:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+157:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+178:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+179:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+36:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+63:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+91:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+9:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS;
+107:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+143:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+198:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+199:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+213:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+21:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+45:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+89:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY;
+112:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+119:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+126:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+132:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+134:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+136:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+141:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+146:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+152:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+181:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+194:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+207:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+26:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+43:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+72:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+77:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+86:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS;
+109:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+140:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+162:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+168:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+17:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+201:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+95:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+98:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS;
+131:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+167:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+177:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+186:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+187:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+30:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+62:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+67:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+80:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ;
+122:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+128:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+145:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+200:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+208:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+209:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+23:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+29:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+31:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+34:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+39:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+48:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+56:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+60:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN;
+102:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+103:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+110:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+113:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+116:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+127:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+19:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+25:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+47:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+74:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+78:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
+83:	PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK;
