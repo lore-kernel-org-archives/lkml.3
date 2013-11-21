@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3KUPUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 10:20:38 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41299 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3KUPUh (ORCPT
+	id S1754257Ab3KUPU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 10:20:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50184 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab3KUPU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 10:20:37 -0500
+	Thu, 21 Nov 2013 10:20:56 -0500
+Date: Thu, 21 Nov 2013 12:05:24 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131121150524.GA24806@ghostprotocols.net>
+References: <1384984585-24300-1-git-send-email-bp@alien8.de>
+ <20131121073410.GA16971@gmail.com>
+ <20131121100722.GA25459@pd.tnic>
+ <20131121111744.GA27513@gmail.com>
+ <20131121113014.GA26009@pd.tnic>
+ <20131121114224.GA27704@gmail.com>
+ <20131121120605.GC26009@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
-References: <1384440661-3769-1-git-send-email-lpapp@kde.org>
-	<20131114172427.GA11062@roeck-us.net>
-	<CAOMwXhNdo8aRGH9AL+JxYnDg2zAN4+-TeHJU=Kc1kDKmyYuYmA@mail.gmail.com>
-	<20131114181845.GA13727@roeck-us.net>
-	<CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
-	<20131114190044.GE13727@roeck-us.net>
-	<CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
-	<CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
-	<CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
-	<20131119165438.GD30481@roeck-us.net>
-	<20131119180007.GB16693@roeck-us.net>
-	<CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
-Date: Thu, 21 Nov 2013 15:20:34 +0000
-X-Google-Sender-Auth: yNZKLtFCKNkJCTIDsHUmUHQe-rA
-Message-ID: <CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121120605.GC26009@pd.tnic>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One week passed since the initial submit. Any feedback from the
-maintainer who accepts patches for this?
+Em Thu, Nov 21, 2013 at 01:06:05PM +0100, Borislav Petkov escreveu:
+> On Thu, Nov 21, 2013 at 12:42:24PM +0100, Ingo Molnar wrote:
+> > ... and just in case you are wondering why I'm making a fuss about it:
+> > a naming discussion for something fundamental as this isn't bikeshed
+> > painting, we really want people to look at that place to readily
+> > stuff kernel related helpers into, and the name should make that very
+> > obvious.
+ 
+> No, I absolutely don't think it is a bikeshedding exercise too. We
+> really need that lib because people have started growing their own
+> facilities in tools/ and outside so having a lib which implements
+> generic functionality for interfacing with the kernel right is going to
+> save everyone a lot of time and energy.
+ 
+> So kapi it is, I'm gonna convert what we have to it but leave time for
+> acme to wake up and smell the coffee ... and the change :-)
 
-On Tue, Nov 19, 2013 at 7:43 PM, Laszlo Papp <lpapp@kde.org> wrote:
-> On Tue, Nov 19, 2013 at 6:00 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On Tue, Nov 19, 2013 at 08:54:38AM -0800, Guenter Roeck wrote:
->>> On Tue, Nov 19, 2013 at 04:42:49PM +0000, Laszlo Papp wrote:
->>> > On Fri, Nov 15, 2013 at 7:52 PM, Marcus Folkesson
->>> > <marcus.folkesson@gmail.com> wrote:
->>> > >
->>> > >> This is just one use case of those, you could also use it for
->>> > >> non-generic gpio functionality, like alarm, "full-on", internal clock,
->>> > >> external clock, etc. I believe it is always a bit tricky with MFD. I
->>> > >> personally prefer to put it into the chip driver because this is not
->>> > >> clearly a generic gpio interface here, and I need to drive it
->>> > >> dynamically.
->>> > >
->>> > > I agree.
->>> > >
->>> > > I think the solution with expose the "GPIOs" in sysfs is the right way to
->>> > > go.
->>> > > The chip-function is of a dynamic nature and should therefor not be set in
->>> > > platform data / devicetree.
->>> > >
->>> > > As mentioned before, GPIOs should use the gpio subsystem whenever possible,
->>> > > but the the gpio-functionality is just a subset of
->>> > > functions these pins may be set to.
->>> > >
->>> > > Also, the I think the *real* reason why the entries is called "gpio" is that
->>> > > it is so the registers are are mentioned in the datasheet.
->>> > > Everyone that is working with the device will know what it is all about.
->>> > > I see it more as an register expose than a gpio interface...
->>> > >
->>> > > I agree that the entries does not really fit here. But they does not fit
->>> > > better elsewhere either.
->>> > > And I don't think they fit worse than the alarm-entries that is already in
->>> > > mainline.
->>> > >
->>> > > Anyway, I think the documentation file should mention what function each
->>> > > valid value represent.
->>> >
->>> > Yes, makes sense to make the documentation more comprehensive. Thanks.
->>> >
->>> > Any other issues from anyone before submitting a polished version?
->>> >
->>> You'll have to get feedback from Jean. I won't accept the patch.
->>>
->> To add to this: The datasheet clearly states that the pins are GPIO pins,
->> three of which can be configured as ALERT output, ALL_ON input, or clock
->> input/output.
->
-> Which is inline with what we wrote before. Although, you probably
-> meant FULL_ON rather than ALL_ON. There is no "ALL_ON" in this
-> context.
->
->> GPIO pins should be made available to the kernel through
->> the GPIO subsystem; any clock configuration should be configured through the
->> clock subsystem if needed.
->
-> I believe we will agree to disagree there. I find it more convenient
-> (along with Markus, etc) to have clearly chip specific feature
-> available for the chip in one place - especially when that follows the
-> consistency - rather than distributed in several sub-spaces. Not that
-> this is only a minor feature. Splitting them into even tinier is
-> strange in my opinion.
->
->> The pin configuration as ALERT output/ALL_ON
->> input/clock is clearly board specific and should thus be provided as
->> platform data and/or devicetree data if needed.
->
-> That is still static, not dynamic, hence inappropriate for the use case at hand.
->
->> The existing GPIO alarm attributes should be removed. The pin values should be
->> reported as GPIO pin values instead.
->
-> Feel free to provide a change for review if you wish.
->
-> I would like to note that I am not planning to rewrite an already
-> existing and tested feature as of now. Not sure if I could find the
-> motivation and time for doing that any soon. To me, it only looks
-> personal taste nitpicking so far, and the feature would be more
-> important to me. There are pro/cons for both sides, but if this
-> feature cannot get it in with this design, there might be no feature
-> like this for the posterity.
->
-> So unless there are good arguments with modulo critical answers why it
-> is unacceptably wrong as is for now, let us drop this change in
-> upstream, then.
+I'm ok with having a library that has this mission statement:
+
+"To offers various helper methods to interface with the Linux kernel:
+ debugfs, procfs, sysfs handling routines with no policy, just pure,
+ obvious helpers to use kernel functionality."
+
+Naming is a bit hard, to keep it small, descriptive, as API can lead
+people to think about other kinds of kernel APIs (syscalls?), "fskapi"
+to mean "fs based kernel API" would perhaps be more descriptive? A
+longer (more descriptive) possibility would be "linux-fskapi".
+
+- Arnaldo
+
+P.S.: "fskapi" also sounds, humm, fun ;-)
