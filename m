@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3KUEKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Nov 2013 23:10:08 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:45459 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3KUEKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Nov 2013 23:10:06 -0500
-Date: Thu, 21 Nov 2013 13:10:04 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 03/05] ARM: shmobile: Add r8a7791 thermal device node to
- DTS
-Message-ID: <20131121041002.GL31130@verge.net.au>
-References: <20131120075921.23557.23231.sendpatchset@w520>
- <20131120075948.23557.47715.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131120075948.23557.47715.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753887Ab3KUELD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Nov 2013 23:11:03 -0500
+Received: from dspam.tip.net.au ([203.10.76.12]:35978 "EHLO members.tip.net.au"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753403Ab3KUELA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Nov 2013 23:11:00 -0500
+Date: Thu, 21 Nov 2013 15:10:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 04/11] vfs: add renameat2 syscall
+Message-Id: <20131121151044.8bbc8cbf38754803915471ef@canb.auug.org.au>
+In-Reply-To: <1384952512-21600-5-git-send-email-miklos@szeredi.hu>
+References: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
+	<1384952512-21600-5-git-send-email-miklos@szeredi.hu>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Nov_2013_15_10_44_+1100_GjqM.+1C+21Ft=BO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 04:59:48PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> Hook up the r8a7791 thermal sensor to the DTS.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
-> 
->  arch/arm/boot/dts/r8a7791.dtsi |    7 +++++++
->  1 file changed, 7 insertions(+)
+--Signature=_Thu__21_Nov_2013_15_10_44_+1100_GjqM.+1C+21Ft=BO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks, I will queue this up.
-Assuming all goes will I plan to push this and other updates
-today or tomorrow.
+Hi all,
 
-> 
-> --- 0001/arch/arm/boot/dts/r8a7791.dtsi
-> +++ work/arch/arm/boot/dts/r8a7791.dtsi	2013-11-20 16:00:29.000000000 +0900
-> @@ -145,6 +145,13 @@
->  		interrupt-controller;
->  	};
->  
-> +	thermal@e61f0000 {
-> +		compatible = "renesas,thermal-r8a7791", "renesas,rcar-thermal";
-> +		reg = <0 0xe61f0000 0 0x14>, <0 0xe61f0100 0 0x38>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>;
-> +	};
-> +
->  	timer {
->  		compatible = "arm,armv7-timer";
->  		interrupts = <1 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
-> 
+On Wed, 20 Nov 2013 14:01:45 +0100 Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> From: Miklos Szeredi <mszeredi@suse.cz>
+>=20
+> Add new renameat2 syscall, which is the same as renameat with an added
+> flags argument.
+>=20
+> Pass flags to vfs_rename() and to i_op->rename() as well.
+>=20
+> All filesystems check flags and return -EOPNOTSUPP for unsupported flags.
+
+Can we please consider doing this slightly slower (and avoiding
+conflicts/missed new uses etc) by creating a new i_op callback and only
+implementing this when necessary?
+
+=46rom past experience, I can just about guarantee that the patch as it is
+will cause conflicts (for me in linux-next if noone else) and a new use
+case will turn up before (or during) the next merge window.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__21_Nov_2013_15_10_44_+1100_GjqM.+1C+21Ft=BO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSjYfJAAoJEMDTa8Ir7ZwV3mkP/RLe/LcL76fE010xqkaCiYr5
+8XNiS+fs6DAvuc0APSLnXJSUro6j371aY++clIw5t8ybsOsUYqPBuUAOokPY/PnH
+pskXE9ydY5m9oDgJWAZac3WiVi0+t5qnvurGWezpj/xRuJz2WayVMEgcp6tvkZtQ
+btStr0TU20H+W2qb/3yRgRj4jxAakZK/dcQfNREZWAGmSC4yWBd2NK5GUipUVSD6
+5cm65RJHk/NLiKUVwAf67F/QTusDWpsQClpHGx+J6GkniLQD56cElQtJDJG2o/wK
+VJgy6NvxauIWwoEyYZiHacnkmwBPFPLbINpmWlBD4vWwuNTrjPhK1Z8VBKUUSf6C
+V3heNQY4UIqiXbkRMRS0wHWEcX91BEHuZ40+HqtNmX7c1hfWwvSaKVub8uqFX0Vj
+187yovUdZ0XxYHBckpVur5eNiauyxmj6rVjOv/qlV7VpZCBGZ9sLL3YqfxWRZ5wg
+xQJNy74Bg9adfyIVda+KXeCxkYBnuNoPfDd6/FfAE/80b9mDJ4p1YZ73YBPyspJC
+oTXz2EdLbPe7Vu+C3w9x0tc4HdISTHjTSt5swg+oBKFT3mlyDZvuK3wIRwxuzj4k
+POsxWTJVia893NdwJFjBmoVkZnESzHrns3dme5hj/vcD+j8ngkvSXjOuCdY5skFi
+WrySUn4BEFaCfkKSwZXE
+=R7YB
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__21_Nov_2013_15_10_44_+1100_GjqM.+1C+21Ft=BO--
