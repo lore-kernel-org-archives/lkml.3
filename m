@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab3KUM4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 07:56:36 -0500
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:44477 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab3KUM4e (ORCPT
+	id S1754223Ab3KUM4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 07:56:51 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51520 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754091Ab3KUM4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 07:56:34 -0500
-X-Greylist: delayed 1279 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 07:56:33 EST
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgQYAAr9jVJV5qhFPGdsb2JhbAANTIM/vU+BNwMBAQEBOIJaAQEBAQIBAQJ1BgsLIRYPCQMCAQIBFhsUBgEMCAEBh3cLCK5kkXYXj3KEMgOVQ5gI
-X-IronPort-AV: E=Sophos;i="4.93,743,1378850400"; 
-   d="scan'208";a="358921190"
-Message-ID: <528DFEC6.3050705@euromail.se>
-Date: Thu, 21 Nov 2013 13:38:30 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 21 Nov 2013 07:56:49 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 Resend] cpuidle: free all state kobjects from cpuidle_free_state_kobj()
+Date: Thu, 21 Nov 2013 14:09:29 +0100
+Message-ID: <1500472.jI9SKO09jR@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <8094ec60e0ad37d24ffbf146bc61515bd805c4fe.1385004181.git.viresh.kumar@linaro.org>
+References: <8094ec60e0ad37d24ffbf146bc61515bd805c4fe.1385004181.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>, simon@mungewell.org,
-        case@corpsmoderne.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Fixes for multitouch / generic gamepads interaction
-References: <1384983141-31019-1-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1384983141-31019-1-git-send-email-benjamin.tissoires@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-> I have been reported recently a problem with the Sixaxis controller
-> (http://www.spinics.net/lists/linux-input/msg28098.html).
-> The root of the problem comes from hid-input, which maps unknown axis to
-> ABS_MISC. However, when an event code is already in use, hid-input uses the one
-> after, leading to uses of ABS_MISC + N, where N is the number of unknown axis.
-
-Yes, and clearly we should not do that. :-)
-
-> We are encountering a problem with the multitouch protocol here because if a
-> device has more than 7 unknown axis (which is the case for the PS3 Sixaxis
-> controller), then the unknown axis get maps to ABS_MT_SLOT and beyond.
+On Thursday, November 21, 2013 08:54:12 AM Viresh Kumar wrote:
+> Loop for states is currently present on callers side and so is replicated at
+> several places. It would be better to move that inside cpuidle_free_state_kobj()
+> instead.
 > 
-> This infers two problems:
-> - the axis currently mapped on ABS_MT_SLOT is a special case in the kernel,
-> and it is not updated
-> - the axis after ABS_MT_SLOT are not filtered anymore, as the kernel things
-> the device is using a multitouch protocol A.
+> This patch does it.
+> 
+> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpuidle/sysfs.c | 23 ++++++++++++-----------
+>  1 file changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index e918b6d..ade31a9 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -378,12 +378,17 @@ static struct kobj_type ktype_state_cpuidle = {
+>  	.release = cpuidle_state_sysfs_release,
+>  };
+>  
+> -static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
+> +static inline void cpuidle_free_state_kobj(struct cpuidle_device *device,
+> +		int count)
+>  {
+> -	kobject_put(&device->kobjs[i]->kobj);
+> -	wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> -	kfree(device->kobjs[i]);
+> -	device->kobjs[i] = NULL;
+> +	int i;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		kobject_put(&device->kobjs[i]->kobj);
+> +		wait_for_completion(&device->kobjs[i]->kobj_unregister);
+> +		kfree(device->kobjs[i]);
+> +		device->kobjs[i] = NULL;
+> +	}
+>  }
+>  
+>  /**
+> @@ -419,8 +424,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>  	return 0;
+>  
+>  error_state:
+> -	for (i = i - 1; i >= 0; i--)
+> -		cpuidle_free_state_kobj(device, i);
+> +	cpuidle_free_state_kobj(device, i);
 
-The problem is generic, and ABS_MT_SLOT just happens to be the first value that
-the hid logic hits. When sevenaxis comes out, we have to do this all over again.
+Well, doesn't the ordering actually matter?  Your patch changes the ordering
+here.
 
-> The patch 0001 solves the first problem, whereas the patches 0002 and 0003
-> fix the second. Bonus point: the userspace is now correctly notified that one of
-> the multitouch protocols is in used, so it does not have to rely on bad designed
-> heuristics.
-
-The bad heuristics are lines 918 and onwards in hid-input.c. I am sure we can
-come up with a way to allocate those axes in a much less fragile way.
-
-Thanks,
-Henrik
-
+>  	return ret;
+>  }
+>  
+> @@ -430,10 +434,7 @@ error_state:
+>   */
+>  static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
+>  {
+> -	int i;
+> -
+> -	for (i = 0; i < device->state_count; i++)
+> -		cpuidle_free_state_kobj(device, i);
+> +	cpuidle_free_state_kobj(device, device->state_count);
+>  }
+>  
+>  #ifdef CONFIG_CPU_IDLE_MULTIPLE_DRIVERS
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
