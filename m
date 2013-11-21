@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3KUSn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 13:43:27 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65433 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755052Ab3KUSmV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755138Ab3KUSmV (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 21 Nov 2013 13:42:21 -0500
-Message-Id: <20131121184218.021475847@goodmis.org>
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38712 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751569Ab3KUSmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 13:42:19 -0500
+Message-Id: <20131121184218.345194664@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 21 Nov 2013 13:42:00 -0500
+Date: Thu, 21 Nov 2013 13:42:02 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Ivo Sieben <meltedpianoman@gmail.com>,
-        Thomas Pfaff <tpfaff@pcs.com>
-Subject: [PATCH RT 1/5] genirq: Set the irq thread policy without checking CAP_SYS_NICE
+        John Kacur <jkacur@redhat.com>, Yang Shi <yang.shi@windriver.com>
+Subject: [PATCH RT 3/5] mm/memcontrol: Dont call schedule_work_on in preemption disabled
+ context
 References: <20131121184159.676777537@goodmis.org>
-Content-Disposition: inline; filename=0001-genirq-Set-the-irq-thread-policy-without-checking-CA.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0003-mm-memcontrol-Don-t-call-schedule_work_on-in-preempt.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,43 +31,74 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Pfaff <tpfaff@pcs.com>
+From: Yang Shi <yang.shi@windriver.com>
 
-In commit ee23871389 ("genirq: Set irq thread to RT priority on
-creation") we moved the assigment of the thread's priority from the
-thread's function into __setup_irq(). That function may run in user
-context for instance if the user opens an UART node and then driver
-calls requests in the ->open() callback. That user may not have
-CAP_SYS_NICE and so the irq thread won't run with the SCHED_OTHER
-policy.
+The following trace is triggered when running ltp oom test cases:
 
-This patch uses sched_setscheduler_nocheck() so we omit the CAP_SYS_NICE
-check which is otherwise required for the SCHED_OTHER policy.
+BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+in_atomic(): 1, irqs_disabled(): 0, pid: 17188, name: oom03
+Preemption disabled at:[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
 
-Cc: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: stable@vger.kernel.org
+CPU: 2 PID: 17188 Comm: oom03 Not tainted 3.10.10-rt3 #2
+Hardware name: Intel Corporation Calpella platform/MATXM-CORE-411-B, BIOS 4.6.3 08/18/2010
+ffff88007684d730 ffff880070df9b58 ffffffff8169918d ffff880070df9b70
+ffffffff8106db31 ffff88007688b4a0 ffff880070df9b88 ffffffff8169d9c0
+ffff88007688b4a0 ffff880070df9bc8 ffffffff81059da1 0000000170df9bb0
+Call Trace:
+[<ffffffff8169918d>] dump_stack+0x19/0x1b
+[<ffffffff8106db31>] __might_sleep+0xf1/0x170
+[<ffffffff8169d9c0>] rt_spin_lock+0x20/0x50
+[<ffffffff81059da1>] queue_work_on+0x61/0x100
+[<ffffffff8112b361>] drain_all_stock+0xe1/0x1c0
+[<ffffffff8112ba70>] mem_cgroup_reclaim+0x90/0xe0
+[<ffffffff8112beda>] __mem_cgroup_try_charge+0x41a/0xc40
+[<ffffffff810f1c91>] ? release_pages+0x1b1/0x1f0
+[<ffffffff8106f200>] ? sched_exec+0x40/0xb0
+[<ffffffff8112cc87>] mem_cgroup_charge_common+0x37/0x70
+[<ffffffff8112e2c6>] mem_cgroup_newpage_charge+0x26/0x30
+[<ffffffff8110af68>] handle_pte_fault+0x618/0x840
+[<ffffffff8103ecf6>] ? unpin_current_cpu+0x16/0x70
+[<ffffffff81070f94>] ? migrate_enable+0xd4/0x200
+[<ffffffff8110cde5>] handle_mm_fault+0x145/0x1e0
+[<ffffffff810301e1>] __do_page_fault+0x1a1/0x4c0
+[<ffffffff8169c9eb>] ? preempt_schedule_irq+0x4b/0x70
+[<ffffffff8169e3b7>] ? retint_kernel+0x37/0x40
+[<ffffffff8103053e>] do_page_fault+0xe/0x10
+[<ffffffff8169e4c2>] page_fault+0x22/0x30
+
+So, to prevent schedule_work_on from being called in preempt disabled context,
+replace the pair of get/put_cpu() to get/put_cpu_light().
+
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: rewrite the changelog]
+Signed-off-by: Yang Shi <yang.shi@windriver.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/irq/manage.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memcontrol.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a6bea19..30211a7 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1024,7 +1024,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto out_mput;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9c36442..107c0ba 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2082,7 +2082,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 
+ 	/* Notify other cpus that system-wide "drain" is running */
+ 	get_online_cpus();
+-	curcpu = get_cpu();
++	curcpu = get_cpu_light();
+ 	for_each_online_cpu(cpu) {
+ 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+ 		struct mem_cgroup *memcg;
+@@ -2099,7 +2099,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
+ 				schedule_work_on(cpu, &stock->work);
  		}
+ 	}
+-	put_cpu();
++	put_cpu_light();
  
--		sched_setscheduler(t, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
- 
- 		/*
- 		 * We keep the reference to the task struct even if
+ 	if (!sync)
+ 		goto out;
 -- 
 1.8.4.rc3
 
