@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab3KVRLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:11:14 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:34809 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755721Ab3KVRKW (ORCPT
+	id S1756063Ab3KVRLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:11:42 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28453 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab3KVRLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:10:22 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 2/5] tty: Enable configurable tty flip buffer limit
-Date: Fri, 22 Nov 2013 12:09:55 -0500
-Message-Id: <1385140198-5822-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com>
-References: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Fri, 22 Nov 2013 12:11:39 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18LAHcCH6P+UWnOtUlRjkLu
+Date: Fri, 22 Nov 2013 09:11:35 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, benoit.cousson@linaro.org,
+        santosh.shilimkar@ti.com, jgchunter@gmail.com, rnayak@ti.com,
+        balbi@ti.com
+Subject: Re: [PATCH 6/8] devicetree: doc: Document ti,timer-parent property
+Message-ID: <20131122171135.GH10023@atomide.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
+ <1385085414-9034-7-git-send-email-joelf@ti.com>
+ <20131122155838.GF10023@atomide.com>
+ <528F8EC4.9050506@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528F8EC4.9050506@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow driver to configure its maximum flip buffer memory
-consumption/limit. This is necessary for very-high speed line
-rates (in excess of 10MB/sec) because the flip buffers can
-be saturated before the line discipline has a chance to
-throttle the input.
+* Joel Fernandes <joelf@ti.com> [131122 09:06]:
+> On 11/22/2013 09:58 AM, Tony Lindgren wrote:
+> > * Joel Fernandes <joelf@ti.com> [131121 18:00]:
+> >> +Required properties for system timers (clockevents/clocksource):
+> >> +- ti,timer-parent:	System timer's parent mux clock needs to be setup.
+> >> +			This is currently hardcoded in code, for DT boot we
+> >> +			move this to DT.
+> >> +
+> > 
+> > This can be replaced with just clk_set_rate, or clk_set_parent if needed.
+> > Or by having a clocks = <&32k_clk> property in the dmtimer node in the
+> > .dts file.
+> > 
+> >>  Optional properties:
+> >>  - ti,timer-alwon:	Indicates the timer is in an alway-on power domain.
+> > 
+> > Hmm this we may not need, this can probably be deciphered from the compatible
+> > flag already?
+> 
+> I was thinking maybe we can improve the of_clocksource_init matching
+> capabilities to match better, not just on compatible but other properties for
+> better selection?
+> 
+> For example, a generic clocksource DT property to say that the timer is in the
+> wakeup domain and so should be preferred as the clocksource? Also additional
+> properties to force its selection?
+> 
+> Then we can switch to clocksource_of_init and have it do the selection. Not sure
+> if there is such a need or value for other ARM platforms so we may be over
+> complicating the framework to handle these quirks. Comments welcomed about it.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_buffer.c | 24 +++++++++++++++++++++---
- include/linux/tty.h      |  1 +
- include/linux/tty_flip.h |  1 +
- 3 files changed, 23 insertions(+), 3 deletions(-)
+Maybe, but so far it seems that it can all be specified in the board specific
+.dts file using standard properties, so I'd first play with that.
 
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index c043136f..57eb34b 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -26,7 +26,7 @@
-  * Byte threshold to limit memory consumption for flip buffers.
-  * The actual memory limit is > 2x this amount.
-  */
--#define TTYB_MEM_LIMIT	65536
-+#define TTYB_DEFAULT_MEM_LIMIT	65536
- 
- /*
-  * We default to dicing tty buffer allocations to this many characters
-@@ -89,7 +89,7 @@ void tty_buffer_unlock_exclusive(struct tty_port *port)
- 
- int tty_buffer_space_avail(struct tty_port *port)
- {
--	int space = TTYB_MEM_LIMIT - atomic_read(&port->buf.memory_used);
-+	int space = port->buf.mem_limit - atomic_read(&port->buf.memory_used);
- 	return max(space, 0);
- }
- 
-@@ -162,7 +162,7 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
- 
- 	/* Should possibly check if this fails for the largest buffer we
- 	   have queued and recycle that ? */
--	if (atomic_read(&port->buf.memory_used) > TTYB_MEM_LIMIT)
-+	if (atomic_read(&port->buf.memory_used) > port->buf.mem_limit)
- 		return NULL;
- 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
- 	if (p == NULL)
-@@ -536,4 +536,22 @@ void tty_buffer_init(struct tty_port *port)
- 	atomic_set(&buf->memory_used, 0);
- 	atomic_set(&buf->priority, 0);
- 	INIT_WORK(&buf->work, flush_to_ldisc);
-+	buf->mem_limit = TTYB_DEFAULT_MEM_LIMIT;
- }
-+
-+/**
-+ *	tty_buffer_set_limit	-	change the tty buffer memory limit
-+ *	@port: tty port to change
-+ *
-+ *	Change the tty buffer memory limit.
-+ *	Must be called before the other tty buffer functions are used.
-+ */
-+
-+int tty_buffer_set_limit(struct tty_port *port, int limit)
-+{
-+	if (limit < MIN_TTYB_SIZE)
-+		return -EINVAL;
-+	port->buf.mem_limit = limit;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(tty_buffer_set_limit);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 2f47989..58a34e7 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -61,6 +61,7 @@ struct tty_bufhead {
- 	struct tty_buffer sentinel;
- 	struct llist_head free;		/* Free queue head */
- 	atomic_t	   memory_used; /* In-use buffers excluding free list */
-+	int		   mem_limit;
- 	struct tty_buffer *tail;	/* Active buffer */
- };
- /*
-diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
-index 21ddd7d..2da8bc2 100644
---- a/include/linux/tty_flip.h
-+++ b/include/linux/tty_flip.h
-@@ -1,6 +1,7 @@
- #ifndef _LINUX_TTY_FLIP_H
- #define _LINUX_TTY_FLIP_H
- 
-+extern int tty_buffer_set_limit(struct tty_port *port, int limit);
- extern int tty_buffer_space_avail(struct tty_port *port);
- extern int tty_buffer_request_room(struct tty_port *port, size_t size);
- extern int tty_insert_flip_string_flags(struct tty_port *port,
--- 
-1.8.1.2
+Regards,
 
+Tony
