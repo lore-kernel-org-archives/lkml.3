@@ -1,83 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab3KVUfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 15:35:22 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:8133 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab3KVUfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:35:19 -0500
-Message-ID: <528FBFFA.1000807@hp.com>
-Date: Fri, 22 Nov 2013 15:35:06 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S932200Ab3KVUfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:35:45 -0500
+Received: from mout.gmx.net ([212.227.17.21]:59470 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932181Ab3KVUfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 15:35:42 -0500
+Message-ID: <528FC01A.6000300@gmx.de>
+Date: Fri, 22 Nov 2013 21:35:38 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com> <1385147087-26588-2-git-send-email-Waiman.Long@hp.com> <CA+55aFzkqP84M7L6j__QHuks7DXTQnGqdCo3=a=u7qKdER9rEQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzkqP84M7L6j__QHuks7DXTQnGqdCo3=a=u7qKdER9rEQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Richard Weinberger <richard@nod.at>
+CC: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        UML devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in
+ radix_tree_next_chunk()
+References: <526696BF.6050909@gmx.de>	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>	<5266A698.10400@gmx.de>	<5266B60A.1000005@nod.at>	<52715AD1.7000703@gmx.de> <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com> <527AB23D.2060305@gmx.de> <527AB51B.1020005@nod.at>
+In-Reply-To: <527AB51B.1020005@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:JSyuk/DhUMKyYL5G30TQlVOtum3gFznAMEK3ggD6rUg+xF6ALNt
+ 5UNKHVdMSkUb1BpMqCQ5hMr17f3Z+h+j4Tjv66F7JvTgn1S/g8lXK9gmK6siNflGlW7gl5s
+ pLldNdkbAZ+dEqj6kp9Bm4Q00BNhVJc04jv+6R/C2+L5CfgHtvdd6km4OjwYgy+fSDpapAF
+ yGVmI2aPjbKcxyd0neJDA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 02:14 PM, Linus Torvalds wrote:
-> On Fri, Nov 22, 2013 at 11:04 AM, Waiman Long<Waiman.Long@hp.com>  wrote:
->> In term of single-thread performance (no contention), a 256K
->> lock/unlock loop was run on a 2.4GHz and 2.93Ghz Westmere x86-64
->> CPUs. The following table shows the average time (in ns) for a single
->> lock/unlock sequence (including the looping and timing overhead):
->>
->> Lock Type                   2.4GHz      2.93GHz
->> ---------                   ------      -------
->> Ticket spinlock              14.9        12.3
->> Read lock                    17.0        13.5
->> Write lock                   17.0        13.5
->> Queue read lock              16.0        13.4
->> Queue write lock              9.2         7.8
-> Can you verify for me that you re-did those numbers? Because it used
-> to be that the fair queue write lock was slower than the numbers you
-> now quote..
->
-> Was the cost of the fair queue write lock purely in the extra
-> conditional testing for whether the lock was supposed to be fair or
-> not, and now that you dropped that, it's fast? If so, then that's an
-> extra argument for the old conditional fair/unfair being complete
-> garbage.
+On 11/06/2013 10:31 PM, Richard Weinberger wrote:
+> Can you please ask gdb for the value of offset?
 
-Yes, the extra latency of the fair lock in earlier patch is due to the 
-need to do a second cmpxchg(). That can be avoided by doing a read 
-first, but that is not good for good cache.  So I optimized it for the 
-default unfair lock. By supporting only one version, there is no need to 
-do a second cmpxchg anymore.
+With this diff against latest Linus tree v3.12-11355-g57498f9 :
 
-> Alternatively, maybe you just took the old timings, and the above
-> numbers are for the old unfair code, and *not* for the actual patch
-> you sent out?
->
-> So please double-check and verify.
->
->                Linus
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 7811ed3..54d9802 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -750,6 +750,7 @@ restart:
+        /* Index outside of the tree */
+        if (offset >= RADIX_TREE_MAP_SIZE)
+                return NULL;
++       printk ("offset a: %lu \n", offset);
 
-I reran the timing test on the 2.93GHz processor. The timing is the 
-practically the same. I reused the old one for the 2.4GHz processor.
+        node = rnode;
+        while (1) {
+@@ -770,6 +771,7 @@ restart:
+                                        if (node->slots[offset])
+                                                break;
+                                }
++                       printk ("offset b: %lu \n", offset);
+                        index &= ~((RADIX_TREE_MAP_SIZE << shift) - 1);
+                        index += offset << shift;
+                        /* Overflow after ~0UL */
+@@ -812,6 +814,7 @@ restart:
+                }
+        }
 
-Regards,
-Longman
++       printk ("offset c: %lu \n", offset);
+        return node->slots + offset;
+ }
+ EXPORT_SYMBOL(radix_tree_next_chunk);
+
+
+I got today these syslog message when the trinity process hangs at a 32 bit Gentoo linux:
+
+
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset c: 63
+Nov 22 21:29:29 trinity kernel: offset a: 0
+Nov 22 21:29:29 trinity kernel: offset b: 3
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset c: 63
+Nov 22 21:29:29 trinity kernel: offset a: 0
+Nov 22 21:29:29 trinity kernel: offset b: 3
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity sshd[1299]: pam_unix(sshd:session): session closed for user tfoerste
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset c: 63
+Nov 22 21:29:29 trinity kernel: offset a: 0
+Nov 22 21:29:29 trinity kernel: offset b: 3
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:29 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset c: 63
+Nov 22 21:29:30 trinity kernel: offset a: 0
+Nov 22 21:29:30 trinity kernel: offset b: 3
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset c: 63
+Nov 22 21:29:30 trinity kernel: offset a: 0
+Nov 22 21:29:30 trinity kernel: offset b: 3
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity sshd[1533]: pam_unix(sshd:session): session opened for user root by (uid=0)
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset b: 63
+Nov 22 21:29:30 trinity kernel: offset c: 63
+Nov 22 21:29:30 trinity kernel: offset a: 0
+Nov 22 21:29:30 trinity kernel: offset b: 3
+Nov 22 21:29:31 trinity kernel: offset b: 63
+Nov 22 21:29:31 trinity kernel: offset b: 63
+Nov 22 21:29:31 trinity kernel: offset b: 63
+Nov 22 21:29:31 trinity kernel: offset b: 63
+Nov 22 21:29:31 trinity kernel: offset b: 63
+Nov 22 21:29:31 trinity kernel: offset c: 63
+Nov 22 21:29:31 trinity shutdown[1536]: shutting down for system halt
+Nov 22 21:29:31 trinity init: Switching to runlevel: 0
+
+
+FWIW gdb's output :
+
+
+tfoerste@n22 ~/devel/linux $ sudo gdb /home/tfoerste/devel/linux/linux 3612 -n -batch -ex bt
+0x083d3c83 in memcpy ()
+#0  0x083d3c83 in memcpy ()
+#1  0x080a6257 in log_store (facility=0, level=4, flags=LOG_NEWLINE, ts_nsec=0, dict=0x86101e0 <__log_buf+25512> "\200=\355\265D", dict_len=0, text=0x86101e0 <__log_buf+25512> "\200=\355\265D", text_len=13) at kernel/printk/printk.c:344
+#2  0x080a7158 in vprintk_emit (facility=0, level=4, dict=0x0, dictlen=0, fmt=0x63a8 <Address 0x63a8 out of bounds>, args=0x63a8 <Address 0x63a8 out of bounds>) at kernel/printk/printk.c:1610
+#3  0x08423845 in printk (fmt=0x63a8 <Address 0x63a8 out of bounds>) at kernel/printk/printk.c:1690
+#4  0x0829c39e in radix_tree_next_chunk (root=0x63a8, iter=0x3f, flags=0) at lib/radix-tree.c:774
+#5  0x080cc78e in find_get_pages (mapping=0x48c21010, start=0, nr_pages=14, pages=0x86101e0 <__log_buf+25512>) at mm/filemap.c:844
+#6  0x080d654a in pagevec_lookup (pvec=0x49bffcc8, mapping=0x63a8, start=25512, nr_pages=25512) at mm/swap.c:937
+#7  0x080d694a in truncate_inode_pages_range (mapping=0x48c21010, lstart=0, lend=-1) at mm/truncate.c:241
+#8  0x080d6cef in truncate_inode_pages (mapping=0x63a8, lstart=603765886628684712) at mm/truncate.c:358
+#9  0x08260a48 in hostfs_evict_inode (inode=0x48c20f58) at fs/hostfs/hostfs_kern.c:233
+#10 0x0811b46f in evict (inode=0x48c20f58) at fs/inode.c:549
+#11 0x0811bf5d in iput_final (inode=<optimized out>) at fs/inode.c:1419
+#12 iput (inode=0x48c20f58) at fs/inode.c:1437
+#13 0x08118858 in dentry_iput (dentry=<optimized out>) at fs/dcache.c:300
+#14 d_kill (parent=<optimized out>, dentry=<optimized out>) at fs/dcache.c:447
+#15 dentry_kill (dentry=0x4957de70, unlock_on_failure=<optimized out>) at fs/dcache.c:549
+#16 0x08118b5d in dput (dentry=0x4957de70) at fs/dcache.c:605
+#17 0x08105353 in __fput (file=0x48a7cd80) at fs/file_table.c:261
+#18 0x081053bb in ____fput (work=0x48a7cd80) at fs/file_table.c:279
+#19 0x08094486 in task_work_run () at kernel/task_work.c:123
+#20 0x0807efb2 in exit_task_work (task=<optimized out>) at include/linux/task_work.h:21
+#21 do_exit (code=1217397248) at kernel/exit.c:787
+#22 0x0807f5fd in do_group_exit (exit_code=0) at kernel/exit.c:920
+#23 0x0807f669 in SYSC_exit_group (error_code=<optimized out>) at kernel/exit.c:931
+#24 SyS_exit_group (error_code=0) at kernel/exit.c:929
+#25 0x08062ab4 in handle_syscall (r=0x48a787cc) at arch/um/kernel/skas/syscall.c:35
+#26 0x08075115 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+#27 userspace (regs=0x48a787cc) at arch/um/os-Linux/skas/process.c:431
+#28 0x0805f770 in fork_handler () at arch/um/kernel/process.c:149
+#29 0x00000000 in ?? ()
+
+
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
