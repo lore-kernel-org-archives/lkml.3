@@ -1,47 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632Ab3KVG40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 01:56:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58193 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab3KVG4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 01:56:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,750,1378882800"; 
-   d="scan'208";a="439698281"
-Message-ID: <528F0000.7000505@linux.intel.com>
-Date: Fri, 22 Nov 2013 08:56:00 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752188Ab3KVHDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:03:43 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:40465 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3KVHDk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 02:03:40 -0500
+Message-ID: <528F01C4.1050608@linaro.org>
+Date: Fri, 22 Nov 2013 12:33:32 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
-        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
-References: <20131120160450.072555619@infradead.org> <20131120162736.691879744@infradead.org> <528CF94E.8020300@linux.intel.com> <20131121101018.GX10022@twins.programming.kicks-ass.net> <528E09F9.9030501@linux.intel.com> <20131121133936.GF10022@twins.programming.kicks-ass.net>
-In-Reply-To: <20131121133936.GF10022@twins.programming.kicks-ass.net>
+To: nm@ti.com
+CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org, ceh@ti.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
+References: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
+In-Reply-To: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/2013 15:39, Peter Zijlstra wrote:
-> On Thu, Nov 21, 2013 at 03:26:17PM +0200, Eliezer Tamir wrote:
-
->> We don't override any limit the user has put on the system call.
+On Thursday 21 November 2013 12:39 PM, Viresh Kumar wrote:
+> Sometimes boot loaders set CPU frequency to a value outside of frequency table
+> present with cpufreq core. In such cases CPU might be unstable if it has to run
+> on that frequency for long duration of time and so its better to set it to a
+> frequency which is specified in freq-table. This also makes cpufreq stats
+> inconsistent as cpufreq-stats would fail to register because current frequency
+> of CPU isn't found in freq-table.
 > 
-> You are in fact, note how the normal select @endtime argument is only
-> set up _after_ you're done polling. So if the syscall had a timeout of 5
-> seconds, you just blew it by 55.
+> Because we don't want this change to effect boot process badly, we go for the
+> next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
+> end up setting freq to lowest of the table as 'cur' is initialized to zero).
 > 
+> In case where CPU is already running on one of the frequencies present in
+> freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
+> return early.
+> 
+> Reported-by: Carlos Hernandez <ceh@ti.com>
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-That's a bug, we will fix it.
+Copying another mail from Nishant here to get my cc'list back..
 
-Cheers,
-Eliezer
+On Friday 22 November 2013 05:12 AM, Nishanth Menon wrote:
+> I gave this a quick run on my 3.12 kernel:
+> http://pastebin.mozilla.org/3649730 is what I applied and output
+> http://pastebin.mozilla.org/3649729
+>
+> I need to see what I might have mucked up.. or see if I can test this
+> on 3.13 master on a different board (since OMAP5 wont boot in master
+> without clock dts nodes :()..
+
+This happened because of common sense, which was missing in my patch :)
+
+Try this over existing patch:
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 6e8b226..e403388 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1126,13 +1126,19 @@ static int __cpufreq_add_dev(struct device *dev, struct
+subsys_interface *sif,
+         * In case where CPU is already running on one of the frequencies
+         * present in freq-table, this would turn into a dummy call as
+         * __cpufreq_driver_target() would return early.
++        *
++        * We are passing target-freq as "policy->cur - 1" otherwise
++        * __cpufreq_driver_target() would simply fail, as policy->cur will be
++        * equal to target-freq.
+         */
+        if (has_target()) {
+-               ret = __cpufreq_driver_target(policy, policy->cur,
++               ret = __cpufreq_driver_target(policy, policy->cur - 1,
+                                CPUFREQ_RELATION_L);
+-               if (ret)
++               if (ret) {
+                        pr_err("%s: Unable to set frequency from table: %d\n",
+                                        __func__, ret);
++                       goto err_out_unregister;
++               }
+        }
+
+        /* related cpus should atleast have policy->cpus */
+
