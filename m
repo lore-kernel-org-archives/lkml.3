@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab3KVLaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:30:09 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:46438 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab3KVLaG (ORCPT
+	id S1755537Ab3KVLbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:31:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43182 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab3KVLa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:30:06 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tianyu.lan@intel.com, nm@ti.com,
-        jinchoi@broadcom.com, sebastian.capella@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
-Date: Fri, 22 Nov 2013 16:59:49 +0530
-Message-Id: <df162ba4cbdf1379ccfa5dd4ca34153626ae9c71.1385118256.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1385118255.git.viresh.kumar@linaro.org>
-References: <cover.1385118255.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1385118255.git.viresh.kumar@linaro.org>
-References: <cover.1385118255.git.viresh.kumar@linaro.org>
+	Fri, 22 Nov 2013 06:30:58 -0500
+Date: Fri, 22 Nov 2013 12:30:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Chris Leech <christopher.leech@intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
+Message-ID: <20131122113044.GL10022@twins.programming.kicks-ass.net>
+References: <20131120160450.072555619@infradead.org>
+ <20131120162736.691879744@infradead.org>
+ <528CF94E.8020300@linux.intel.com>
+ <20131121101018.GX10022@twins.programming.kicks-ass.net>
+ <528E09F9.9030501@linux.intel.com>
+ <20131121133936.GF10022@twins.programming.kicks-ass.net>
+ <528F0000.7000505@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528F0000.7000505@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms might want to change frequency before suspending governors. Like:
-- Some platform which want to set freq to max to speed up suspend/hibernation
-  process.
-- Some platform (like: Tegra or exynos), set this to min or bootloader's
-  frequency.
+On Fri, Nov 22, 2013 at 08:56:00AM +0200, Eliezer Tamir wrote:
+> On 21/11/2013 15:39, Peter Zijlstra wrote:
+> > On Thu, Nov 21, 2013 at 03:26:17PM +0200, Eliezer Tamir wrote:
+> 
+> >> We don't override any limit the user has put on the system call.
+> > 
+> > You are in fact, note how the normal select @endtime argument is only
+> > set up _after_ you're done polling. So if the syscall had a timeout of 5
+> > seconds, you just blew it by 55.
+> > 
+> 
+> That's a bug, we will fix it.
 
-This patch adds an option for those, so that they can specify this at call to
-->init(), so that cpufreq core can take care of this before suspending system.
+The entire thing is a bug, and if I could take away sched_clock() from
+you I would, but sadly its all inlines so I can't :-(
 
-If this variable is not updated by ->init() then its value would be zero and so
-core wouldn't do anything.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 17 +++++++++++++++++
- include/linux/cpufreq.h   |  2 ++
- 2 files changed, 19 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 540bd87..e609102 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1476,6 +1476,7 @@ void cpufreq_suspend(void)
- {
- 	struct cpufreq_policy *policy;
- 	unsigned long flags;
-+	int ret;
- 
- 	if (!has_target())
- 		return;
-@@ -1487,6 +1488,22 @@ void cpufreq_suspend(void)
- 			pr_err("%s: Failed to stop governor for policy: %p\n",
- 					__func__, policy);
- 
-+	/*
-+	 * In case platform wants some specific frequency to be configured
-+	 * during suspend
-+	 */
-+	if (policy->suspend_freq) {
-+		pr_debug("%s: Suspending Governors: Setting suspend-freq: %u\n",
-+				__func__, policy->suspend_freq);
-+
-+		ret = __cpufreq_driver_target(policy, policy->suspend_freq,
-+				CPUFREQ_RELATION_H);
-+		/* We can still suspend even if this failed */
-+		if (ret)
-+			pr_err("%s: Unable to set suspend-freq: %u. Err: %d\n",
-+					__func__, policy->suspend_freq, ret);
-+	}
-+
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 	cpufreq_suspended = true;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 6d93f91..867fdd4 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -72,6 +72,8 @@ struct cpufreq_policy {
- 	unsigned int		max;    /* in kHz */
- 	unsigned int		cur;    /* in kHz, only needed if cpufreq
- 					 * governors are used */
-+	unsigned int		suspend_freq; /* freq to set during suspend */
-+
- 	unsigned int		policy; /* see above */
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
--- 
-1.7.12.rc2.18.g61b472e
-
+Please use local_clock(), yes its slightly more expensive, but I doubt
+you can actually measure the effects on sane hardware.
