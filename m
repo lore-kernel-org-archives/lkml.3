@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3KVUBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 15:01:20 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:53066 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab3KVUBQ (ORCPT
+	id S1756130Ab3KVUBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:01:39 -0500
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:44075 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3KVUBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:01:16 -0500
+	Fri, 22 Nov 2013 15:01:36 -0500
+X-Fcrdns: No
+Message-ID: <528FB828.5000301@profihost.ag>
+Date: Fri, 22 Nov 2013 21:01:44 +0100
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <528F8959.7080207@ti.com>
-References: <1385085414-9034-1-git-send-email-joelf@ti.com>
-	<1385085414-9034-6-git-send-email-joelf@ti.com>
-	<CAL_JsqKS=cGeAhj+K04SOtA8nJRR3MXxS3ry-kzjQOkZx3yK4g@mail.gmail.com>
-	<528F8959.7080207@ti.com>
-Date: Fri, 22 Nov 2013 14:01:15 -0600
-Message-ID: <CAL_JsqJoH_yWP-Aae2REb=qzV6c56=WQoVLV8cFgX+_b+voM5g@mail.gmail.com>
-Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly
- clocksource/clockevent system timers
-From: Rob Herring <robherring2@gmail.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jgchunter@gmail.com, rnayak@ti.com, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        benoit.cousson@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Hellwig <hch@infradead.org>, Chinmay V S <cvs268@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org> <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com> <20131120175807.GC5380@fieldses.org> <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com> <20131121101101.GA18404@infradead.org>
+In-Reply-To: <20131121101101.GA18404@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 10:42 AM, Joel Fernandes <joelf@ti.com> wrote:
-> On 11/22/2013 09:58 AM, Rob Herring wrote:
->> On Thu, Nov 21, 2013 at 7:56 PM, Joel Fernandes <joelf@ti.com> wrote:
->>> This work is a migration effort of OMAP system timers to the
->>> clocksource/clockevent framework. Consider this as a first-pass in this effort.
->>> There are few cleanups that need to be done first. The HWMOD code is
->>> intertwined with the timer code. HWMOD code cleanups in the future will
->>> hopefully make most of this code go away, so till then we separate out the
->>> power/clocks portion of the code from the actual timer bits.  This will
->>> facilitate near-future work of adapting the system timer as a clocksource.
->>>
->>> New functions for OF-only boot are introduced, and we can soon delete the old
->>> versions once we migrate all platforms. Currently only AM335x is migrated and
->>> testedA new omap_generic_timer_init function is introduced for DT platforms.
->>> Code required earlier for non-DT platforms such as setup of timer IDs and timer
->>> parent clock is not required.  parent clocks are automatically setup by the mux
->>> clock driver through DT so they no longer need to be hardcoded.
->>>
->>> The init code will try to pick the best timer for clocksource and clockevent
->>> however bindings are added to force a particular timer as clocksource or
->>> clockevent through DT.
->>>
->>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>> ---
->>>  .../devicetree/bindings/arm/omap/timer.txt         |  12 ++
->>>  arch/arm/mach-omap2/common.h                       |   1 +
->>>  arch/arm/mach-omap2/timer.c                        | 235 +++++++++++++++++++++
->>>  3 files changed, 248 insertions(+)
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
->>> index d02e27c..6cf7a75 100644
->>> --- a/Documentation/devicetree/bindings/arm/omap/timer.txt
->>> +++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
->>> @@ -32,6 +32,18 @@ Optional properties:
->>>  - ti,timer-secure:     Indicates the timer is reserved on a secure OMAP device
->>>                         and therefore cannot be used by the kernel.
->>>
->>> +- ti,timer-clockevent,
->>> +  ti,timer-clocksource These properties force the system timer code to choose
->>> +                       the particular timer as a clockevent or clocksource.
->>> +                       If these properties are not specified, the timer code
->>> +                       picks up a "ti,timer-alwon" as the clocksource and a
->>> +                       timer containing one of the following properties as
->>> +                       the clockevent in the following order:
->>> +                               ti,timer-alwon
->>> +                               ti,timer-dsp
->>> +                               ti,timer-pwm
->>> +                               ti,timer-secure
+Hi Christoph,
+Am 21.11.2013 11:11, schrieb Christoph Hellwig:
 >>
->> These properties were added specifically for the reason of avoiding
->> linux specific properties like these. When is this not sufficient?
+>> 2. Some drives may implement CMD_FLUSH to return immediately i.e. no
+>> guarantee the data is actually on disk.
 >
-> Some platforms cannot use certain timers as clockevents and clocksource, to keep
-> this code functionally equivalent and working, I added these properties so that
-> its possible to select specific timers as clockevents/sources as was being done
-> in the non-DT case. I'm open to suggestions for doing this in a better way for DT.
-
-There has to be a defined reason why a given timer cannot be used. You
-are not explaining what that reason is. Define a property or set of
-properties that describe the h/w feature or quirk.
-
->>
->> And I agree with the comment to use OF_CLKSRC.
->>
+> In which case they aren't spec complicant.  While I've seen countless
+> data integrity bugs on lower end ATA SSDs I've not seen one that simpliy
+> ingnores flush.  If you'd want to cheat that bluntly you'd be better
+> of just claiming to not have a writeback cache.
 >
-> There are difficulties I mentioned in a previous post [1] stating why it may not
-> be possible to use OF_CLKSRC macros, and still keep the code functionally
-> equivalent to when it was non-DT.
+> You solve your performance problem by completely disabling any chance
+> of having data integrity guarantees, and do so in a way that is not
+> detectable for applications or users.
+>
+> If you have a workload with lots of small synchronous writes disabling
+> the writeback cache on the disk does indeed often help, especially with
+> the non-queueable FLUSH on all but the most recent ATA devices.
 
-Sorry, I don't buy it.
+But this isn't correct for drives with capicitors like Crucial m500, 
+Intel DC S3500, DC S3700 isn't it? Shouldn't the linux kernel has an 
+option to disable this for drives like these?
+/sys/block/sdX/device/ignore_flush
 
-Rob
+> Again, what your patch does is to explicitly ignore the data integrity
+> request from the application.  While this will usually be way faster,
+> it will also cause data loss.  Simply disabling the writeback cache
+> feature of the disk using hdparm will give you much better performance
+> than issueing all the FLUSH command, especially if they are non-queued,
+> but without breaking the gurantee to the application.
+>
