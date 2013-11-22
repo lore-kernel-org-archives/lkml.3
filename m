@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab3KVRLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:11:42 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28453 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab3KVRLj (ORCPT
+	id S1755784Ab3KVRQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:16:14 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:49736 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526Ab3KVRQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:11:39 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18LAHcCH6P+UWnOtUlRjkLu
-Date: Fri, 22 Nov 2013 09:11:35 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, benoit.cousson@linaro.org,
-        santosh.shilimkar@ti.com, jgchunter@gmail.com, rnayak@ti.com,
-        balbi@ti.com
-Subject: Re: [PATCH 6/8] devicetree: doc: Document ti,timer-parent property
-Message-ID: <20131122171135.GH10023@atomide.com>
-References: <1385085414-9034-1-git-send-email-joelf@ti.com>
- <1385085414-9034-7-git-send-email-joelf@ti.com>
- <20131122155838.GF10023@atomide.com>
- <528F8EC4.9050506@ti.com>
+	Fri, 22 Nov 2013 12:16:12 -0500
+Date: Fri, 22 Nov 2013 17:15:56 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Jingoo Han <jg1.han@samsung.com>, "'Kyungmin Park'" <kmpark@infradead.org>,
+        "'Henrique de Moraes Holschuh'" <ibm-acpi@hmh.eng.br>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kay@vrfy.org, "'Richard Purdie'" <rpurdie@rpsys.net>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] video: backlight: Remove backlight sysfs uevent
+Message-ID: <20131122171556.GA15680@srcf.ucam.org>
+References: <20131111235700.GA29987@july>
+ <002901cedf3c$a7e77a00$f7b66e00$%han@samsung.com>
+ <20131112005628.GA2914@khazad-dum.debian.net>
+ <1384990859.20536.4.camel@x230>
+ <20131121114332.GA23710@khazad-dum.debian.net>
+ <20131121143326.GA19773@srcf.ucam.org>
+ <20131122113601.GB27196@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528F8EC4.9050506@ti.com>
+In-Reply-To: <20131122113601.GB27196@khazad-dum.debian.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joel Fernandes <joelf@ti.com> [131122 09:06]:
-> On 11/22/2013 09:58 AM, Tony Lindgren wrote:
-> > * Joel Fernandes <joelf@ti.com> [131121 18:00]:
-> >> +Required properties for system timers (clockevents/clocksource):
-> >> +- ti,timer-parent:	System timer's parent mux clock needs to be setup.
-> >> +			This is currently hardcoded in code, for DT boot we
-> >> +			move this to DT.
-> >> +
-> > 
-> > This can be replaced with just clk_set_rate, or clk_set_parent if needed.
-> > Or by having a clocks = <&32k_clk> property in the dmtimer node in the
-> > .dts file.
-> > 
-> >>  Optional properties:
-> >>  - ti,timer-alwon:	Indicates the timer is in an alway-on power domain.
-> > 
-> > Hmm this we may not need, this can probably be deciphered from the compatible
-> > flag already?
+On Fri, Nov 22, 2013 at 09:36:01AM -0200, Henrique de Moraes Holschuh wrote:
+> On Thu, 21 Nov 2013, Matthew Garrett wrote:
+> > The uevent support was initially added to handle systems where pressing 
+> > a hotkey generates an event (good) but the firmware automatically 
+> > changes the brightness (bad). I have absolutely no idea why I added 
+> > BACKLIGHT_UPDATE_SYSFS - BACKLIGHT_UPDATE_HOTKEY solves the problem I 
+> > was trying to solve. I'm not aware of any userspace that relies on 
+> > BACKLIGHT_UPDATE_SYSFS.
 > 
-> I was thinking maybe we can improve the of_clocksource_init matching
-> capabilities to match better, not just on compatible but other properties for
-> better selection?
-> 
-> For example, a generic clocksource DT property to say that the timer is in the
-> wakeup domain and so should be preferred as the clocksource? Also additional
-> properties to force its selection?
-> 
-> Then we can switch to clocksource_of_init and have it do the selection. Not sure
-> if there is such a need or value for other ARM platforms so we may be over
-> complicating the framework to handle these quirks. Comments welcomed about it.
+> Well, either we have userspace that rely on the uevents, or we don't. 
 
-Maybe, but so far it seems that it can all be specified in the board specific
-.dts file using standard properties, so I'd first play with that.
+We have userspace that relies on uevents of type 
+BACKLIGHT_UPDATE_HOTKEY. I don't know that we have userspace that relies 
+on uevents of type BACKLIGHT_UPDATE_SYSFS.
 
-Regards,
-
-Tony
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
