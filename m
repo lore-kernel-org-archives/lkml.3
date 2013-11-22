@@ -1,43 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3KVQyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:54:15 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:50504 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab3KVQyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:54:14 -0500
-From: andrew.liu200917@gmail.com
-To: dan.j.williams@intel.com, vinod.koul@intel.com
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Liu <andrew.liu200917@gmail.com>
-Subject: [PATCH] edma: free the same memory twice
-Date: Sat, 23 Nov 2013 00:54:03 +0800
-Message-Id: <1385139243-5892-1-git-send-email-andrew.liu200917@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755817Ab3KVQ5s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:57:48 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:43692 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755577Ab3KVQ5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:57:46 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        scottwood@freescale.com
+Subject: [PATCH] powerpc 8xx: mfspr SPRN_TBRx in lieu of mftb/mftbu is not supported
+Message-Id: <20131122165731.B06B91A4DE7@localhost.localdomain>
+Date: Fri, 22 Nov 2013 17:57:31 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Liu <andrew.liu200917@gmail.com>
+Commit beb2dc0a7a84be003ce54e98b95d65cc66e6e536 breaks the MPC8xx which seems
+to not support using mfspr SPRN_TBRx instead of mftb/mftbu despite
+what is written in the reference manual
+This patchs revert to the use of mftb/mftbu when CONFIG_8xx is selected
 
-Signed-off-by: Andrew Liu <andrew.liu200917@gmail.com>
----
- drivers/dma/edma.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index bef8a36..04bc1be 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -305,7 +305,6 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
- 						EDMA_SLOT_ANY);
- 			if (echan->slot[i] < 0) {
--				kfree(edesc);
- 				dev_err(dev, "Failed to allocate slot\n");
- 				kfree(edesc);
- 				return NULL;
--- 
-1.7.9
-
+diff -ur a/arch/powerpc/boot/util.S b/arch/powerpc/boot/util.S
+--- a/arch/powerpc/boot/util.S	2013-11-20 21:54:45.000000000 +0100
++++ b/arch/powerpc/boot/util.S	2013-11-22 17:19:51.880386544 +0100
+@@ -71,18 +71,32 @@
+ 	add	r4,r4,r5
+ 	addi	r4,r4,-1
+ 	divw	r4,r4,r5	/* BUS ticks */
++#ifdef CONFIG_8xx
++1:	mftbu	r5
++	mftb	r6
++	mftbu	r7
++#else
+ 1:	mfspr	r5, SPRN_TBRU
+ 	mfspr	r6, SPRN_TBRL
+ 	mfspr	r7, SPRN_TBRU
++#endif
+ 	cmpw	0,r5,r7
+ 	bne	1b		/* Get [synced] base time */
+ 	addc	r9,r6,r4	/* Compute end time */
+ 	addze	r8,r5
++#ifdef CONFIG_8xx
++2:	mftbu	r5
++#else
+ 2:	mfspr	r5, SPRN_TBRU
++#endif
+ 	cmpw	0,r5,r8
+ 	blt	2b
+ 	bgt	3f
++#ifdef CONFIG_8xx
++	mftb	r6
++#else
+ 	mfspr	r6, SPRN_TBRL
++#endif
+ 	cmpw	0,r6,r9
+ 	blt	2b
+ 3:	blr
+diff -ur a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+--- a/arch/powerpc/include/asm/ppc_asm.h	2013-11-20 21:54:45.000000000 +0100
++++ b/arch/powerpc/include/asm/ppc_asm.h	2013-11-22 17:24:57.839272480 +0100
+@@ -438,6 +438,8 @@
+ 	cmpwi dest,0;			\
+ 	beq-  90b;			\
+ END_FTR_SECTION_NESTED(CPU_FTR_CELL_TB_BUG, CPU_FTR_CELL_TB_BUG, 96)
++#elif defined(CONFIG_8xx)
++#define MFTB(dest)			mftb dest
+ #else
+ #define MFTB(dest)			mfspr dest, SPRN_TBRL
+ #endif
+diff -ur a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+--- a/arch/powerpc/include/asm/reg.h	2013-11-20 21:54:45.000000000 +0100
++++ b/arch/powerpc/include/asm/reg.h	2013-11-22 17:27:44.009391916 +0100
+@@ -1154,12 +1154,19 @@
+ 
+ #else /* __powerpc64__ */
+ 
++#if defined(CONFIG_8xx)
++#define mftbl()		({unsigned long rval;	\
++			asm volatile("mftbl %0" : "=r" (rval)); rval;})
++#define mftbu()		({unsigned long rval;	\
++			asm volatile("mftbu %0" : "=r" (rval)); rval;})
++#else
+ #define mftbl()		({unsigned long rval;	\
+ 			asm volatile("mfspr %0, %1" : "=r" (rval) : \
+ 				"i" (SPRN_TBRL)); rval;})
+ #define mftbu()		({unsigned long rval;	\
+ 			asm volatile("mfspr %0, %1" : "=r" (rval) : \
+ 				"i" (SPRN_TBRU)); rval;})
++#endif
+ #endif /* !__powerpc64__ */
+ 
+ #define mttbl(v)	asm volatile("mttbl %0":: "r"(v))
+diff -ur a/arch/powerpc/include/asm/timex.h b/arch/powerpc/include/asm/timex.h
+--- a/arch/powerpc/include/asm/timex.h	2013-11-20 21:54:45.000000000 +0100
++++ b/arch/powerpc/include/asm/timex.h	2013-11-22 17:29:31.207016228 +0100
+@@ -29,7 +29,11 @@
+ 	ret = 0;
+ 
+ 	__asm__ __volatile__(
++#ifdef CONFIG_8xx
++		"97:	mftb %0\n"
++#else
+ 		"97:	mfspr %0, %2\n"
++#endif
+ 		"99:\n"
+ 		".section __ftr_fixup,\"a\"\n"
+ 		".align 2\n"
+@@ -41,7 +45,11 @@
+ 		"	.long 0\n"
+ 		"	.long 0\n"
+ 		".previous"
++#ifdef CONFIG_8xx
++		: "=r" (ret) : "i" (CPU_FTR_601));
++#else
+ 		: "=r" (ret) : "i" (CPU_FTR_601), "i" (SPRN_TBRL));
++#endif
+ 	return ret;
+ #endif
+ }
+diff -ur a/arch/powerpc/kernel/vdso32/gettimeofday.S b/arch/powerpc/kernel/vdso32/gettimeofday.S
+--- a/arch/powerpc/kernel/vdso32/gettimeofday.S	2013-11-20 21:54:46.000000000 +0100
++++ b/arch/powerpc/kernel/vdso32/gettimeofday.S	2013-11-22 17:30:53.646493897 +0100
+@@ -232,9 +232,15 @@
+ 	lwz	r6,(CFG_TB_ORIG_STAMP+4)(r9)
+ 
+ 	/* Get a stable TB value */
++#ifdef CONFIG_8xx
++2:	mftbu	r3
++	mftbl	r4
++	mftbu	r0
++#else
+ 2:	mfspr	r3, SPRN_TBRU
+ 	mfspr	r4, SPRN_TBRL
+ 	mfspr	r0, SPRN_TBRU
++#endif
+ 	cmplw	cr0,r3,r0
+ 	bne-	2b
+ 
