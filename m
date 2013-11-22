@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3KVVNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:13:01 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48037 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755467Ab3KVVM6 convert rfc822-to-8bit (ORCPT
+	id S1756191Ab3KVVOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:14:06 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:37021 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755528Ab3KVVOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:12:58 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: [PATCH 2/2] memory: ti-aemif: add bindings for AEMIF driver
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <528D076A.8070806@ti.com>
-Date: Fri, 22 Nov 2013 15:06:52 -0600
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>, grygorii.strashko@ti.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C0B815B0-E394-494C-88A2-78A0DBFA23DA@kernel.crashing.org>
-References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <20131120182102.GK14627@ns203013.ovh.net> <528D076A.8070806@ti.com>
-To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-X-Mailer: Apple Mail (2.1822)
+	Fri, 22 Nov 2013 16:14:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <528FBFFA.1000807@hp.com>
+References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+	<1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFzkqP84M7L6j__QHuks7DXTQnGqdCo3=a=u7qKdER9rEQ@mail.gmail.com>
+	<528FBFFA.1000807@hp.com>
+Date: Fri, 22 Nov 2013 13:14:03 -0800
+X-Google-Sender-Auth: jz2-irqR10niCvGq_TYFGvUUbG0
+Message-ID: <CA+55aFxW70iKq5YT-icVuvsmH=xapMd5e+OnbL-8JbX7fD4M-Q@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 22, 2013 at 12:35 PM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> Yes, the extra latency of the fair lock in earlier patch is due to the need
+> to do a second cmpxchg(). That can be avoided by doing a read first, but
+> that is not good for good cache.  So I optimized it for the default unfair
+> lock. By supporting only one version, there is no need to do a second
+> cmpxchg anymore.
 
-On Nov 20, 2013, at 1:03 PM, ivan.khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+Ok, thanks.
 
-> On 11/20/2013 08:21 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> +				the chip select signal.
->>> +				Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-wsetup:		write setup width, ns
->>> +				Time between the beginning of a memory cycle
->>> +				and the activation of write strobe.
->>> +				Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-wstrobe:	write strobe width, ns
->>> +				Time between the activation and deactivation of
->>> +				the write strobe.
->>> +				Minimum value is 1 (0 treated as 1).
->>> +
->>> +- ti,cs-whold:		write hold width, ns
->>> +				Time between the deactivation of the write
->>> +				strobe and the end of the cycle (which may be
->>> +				either an address change or the deactivation of
->>> +				the chip select signal.
->>> +				Minimum value is 1 (0 treated as 1).
->>> +
->>> +If any of the above parameters are absent, current parameter value will be taken
->>> +from the corresponding HW reg.
->>> +
->>> +The name for cs node must be in format csN, where N is the cs number.
->> 
->> this is wired we should use reg instead to represent the cs as done for SPI
->> or a an other property
->> 
->> Best Regards,
->> J.
->> 
-> 
-> Ok, I will add new property cs-chipselect like following :
-> 
-> ti,cs-chipselect:	number of chipselect. Indicates on the
-> 			aemif driver which chipselect is used
-> 			for accessing the memory.
-> 			For compatibles "ti,davinci-aemif" and 
-> 			"ti,keystone-aemif" it can be in range [0-3].
-> 			For compatible "ti,omap-L138-aemif" range is [2-5].
-> 
-> Is it OK?
+> I reran the timing test on the 2.93GHz processor. The timing is the
+> practically the same. I reused the old one for the 2.4GHz processor.
 
-Why do you need this? As it was mentioned just use reg:
+Sounds good. I just wanted to make sure the numbers were sane.
 
-So you’d have something like:
-
-memory-controller@21000A00 {
-	…
-	nand:cs2@2 {
-		reg = <2 0 0>;
-		ranges;
-		...
-
-	}:
-};
-
-However, I’m confused by the example in which you have:
-
-+		nand@0,0x8000000 {
-+			compatible = "ti,davinci-nand";
-+			reg = <0 0x8000000 0x4000000
-+			       1 0x0000000 0x0000100>;
-+
-+			.. see davinci-nand.txt
-+		};
-
-What chipselects is this on 0 & 1?
-
-- k
-			
-> 
-> -- 
-> Regards,
-> Ivan Khoronzhuk
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+            Linus
