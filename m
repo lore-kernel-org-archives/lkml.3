@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3KVSkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:40:42 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49861 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3KVSkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:40:37 -0500
-Message-ID: <528FA520.7080501@wwwdotorg.org>
-Date: Fri, 22 Nov 2013 11:40:32 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756047Ab3KVSmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:42:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755521Ab3KVSmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 13:42:38 -0500
+Date: Fri, 22 Nov 2013 19:44:30 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*()
+ family helpers
+Message-ID: <20131122184429.GG8401@dhcp-26-207.brq.redhat.com>
+References: <cover.1382103786.git.agordeev@redhat.com>
+ <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com>
+ <20131120171526.GL28946@htj.dyndns.org>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/7] net: rfkill: gpio: remove gpio conversion support
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com> <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120171526.GL28946@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 05:14 AM, Mika Westerberg wrote:
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> 
-> All platforms using this driver are now converted to the new
-> descriptor-based GPIO interface.
+On Wed, Nov 20, 2013 at 12:15:26PM -0500, Tejun Heo wrote:
+> The use of @nvec and @maxvec is a bit inconsistent.  Maybe it'd be
+> better to make them uniform?
 
-Don't you want to remove the fields from the pdata structure too, since
-it's pointless to set them anymore IIUC?
+With @maxvec I tried to stress an implication there could be values
+less than @maxvec. While @nvec is more like an exact number.
+Perfectly makes sense to me, but this is personal :)
+
+> tejun
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
