@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3KVPJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:09:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3976 "EHLO mx1.redhat.com"
+	id S932078Ab3KVPJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:09:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52299 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab3KVPJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:09:37 -0500
-Date: Fri, 22 Nov 2013 16:09:27 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 2/4] perf diff: give Delta column an appropriate color
-Message-ID: <20131122150927.GA10881@krava.brq.redhat.com>
-References: <1385044427-13995-1-git-send-email-artagnon@gmail.com>
- <1385044427-13995-3-git-send-email-artagnon@gmail.com>
+	id S1755826Ab3KVPJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 10:09:39 -0500
+Message-ID: <528F7397.5070603@ti.com>
+Date: Fri, 22 Nov 2013 09:09:11 -0600
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385044427-13995-3-git-send-email-artagnon@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <balbi@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
+        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>
+Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly clocksource/clockevent
+ system timers
+References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-6-git-send-email-joelf@ti.com> <20131122035127.GA1417@saruman.home>
+In-Reply-To: <20131122035127.GA1417@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 08:03:45PM +0530, Ramkumar Ramachandra wrote:
-> Colorize the numbers in the Delta column either green or red depending
-> on whether the it is positive or negative.
+On 11/21/2013 09:51 PM, Felipe Balbi wrote:
+> Hi,
 > 
+> On Thu, Nov 21, 2013 at 07:56:51PM -0600, Joel Fernandes wrote:
+> 
+> [...]
+> 
+>> New functions for OF-only boot are introduced, and we can soon delete the old
+>> versions once we migrate all platforms. Currently only AM335x is migrated and
+> 
+> actually, you don't need to initialize .init_timer at all in DT boot.
 
-this patch changes the diff output for 'perf diff'
+Actually we still do, because the plan is to keep the hwmod stuff that's
+required in timer.c in a custom .init_time, and then of_clocksource_init maybe
+called to do what you're suggesting but (not yet) more on that below.
 
-file '1' - old perf
-file '2' - your change
+> Just use CLKSOURCE_OF_DECLARE() and pass your omap_generic_timer_init()
+> as argument (although, I'd call it omap_of_timer_init()).
+> That will put of_device_id structure on a special section
+> (__clksource_of_table) and pass your function as a data argument. That
+> function will be called automatically during init.
+>
 
-I expected only the difference would be only color
-not numbers.
+I thought of doing that, but currently the timer selection for clocksource
+is not a simple matching of compatible string, rather it is selecting the timer
+based on properties such as ti,timer-alwon and such.
+
+In omap3 for example, there are needs for specific timers and such have been
+provided with the macros passing in timer id etc. Right now, this can be forced
+through DT with the "ti,timer-clocksource" property I introduced. All this
+selection algorithm is too complex to be handle directly by the
+CLOCKSOURCE_OF_DECLARE / clocksource_of_init matching mechanism.
 
 thanks,
-jirka
 
----
---- 1   2013-11-22 16:05:36.224136167 +0100
-+++ 2   2013-11-22 16:05:40.399152889 +0100
-@@ -9,128 +9,128 @@
-     11.78%   -0.14%  libc-2.17.so       [.] fputs_unlocked
-      9.77%   +0.02%  libc-2.17.so       [.] __GI___mempcpy
-      1.61%   +0.21%  yes                [.] fputs_unlocked@plt
--     0.08%           [kernel.kallsyms]  [k] system_call                           
--     0.07%           [kernel.kallsyms]  [k] __srcu_read_lock                      
--     0.06%           [kernel.kallsyms]  [k] __srcu_read_unlock                    
-+     0.08%   -0.01%  [kernel.kallsyms]  [k] system_call                           
-+     0.07%   -0.01%  [kernel.kallsyms]  [k] __srcu_read_lock                      
-+     0.06%   -0.01%  [kernel.kallsyms]  [k] __srcu_read_unlock                    
-      0.05%   -0.03%  [kernel.kallsyms]  [k] native_write_msr_safe
-      0.04%   -0.03%  [kernel.kallsyms]  [k] apic_timer_interrupt
--     0.04%           libc-2.17.so       [.] __GI___libc_write                     
--     0.04%           [kernel.kallsyms]  [k] __audit_syscall_exit                  
--     0.04%           [kernel.kallsyms]  [k] vfs_write                             
--     0.03%           [kernel.kallsyms]  [k] fget_light                            
--     0.03%           [kernel.kallsyms]  [k] __audit_syscall_entry                 
--     0.03%           [kernel.kallsyms]  [k] fsnotify                              
--     0.02%           libc-2.17.so       [.] _IO_do_write@@GLIBC_2.2.5             
-+     0.04%   +0.00%  libc-2.17.so       [.] __GI___libc_write                     
-+     0.04%   +0.01%  [kernel.kallsyms]  [k] __audit_syscall_exit                  
-+     0.04%   +0.00%  [kernel.kallsyms]  [k] vfs_write                             
-+     0.03%   -0.01%  [kernel.kallsyms]  [k] fget_light                            
-+     0.03%   -0.00%  [kernel.kallsyms]  [k] __audit_syscall_entry                 
-+     0.03%   -0.00%  [kernel.kallsyms]  [k] fsnotify                              
-+     0.02%   -0.00%  libc-2.17.so       [.] _IO_do_write@@GLIBC_2.2.5             
-      0.02%   +0.01%  libc-2.17.so       [.] _IO_file_write@@GLIBC_2.2.5
-      0.02%   -0.01%  [kernel.kallsyms]  [k] task_tick_fair
--     0.02%           libc-2.17.so       [.] _IO_default_xsputn                    
-+     0.02%   -0.00%  libc-2.17.so       [.] _IO_default_xsputn                    
-      0.02%   -0.01%  [kernel.kallsyms]  [k] native_read_tsc
-      0.02%   -0.01%  [kernel.kallsyms]  [k] _raw_spin_lock
--     0.01%           libc-2.17.so       [.] _IO_file_overflow@@GLIBC_2.2.5        
--     0.01%           [kernel.kallsyms]  [k] do_timer                              
-+     0.01%   -0.00%  libc-2.17.so       [.] _IO_file_overflow@@GLIBC_2.2.5        
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] do_timer                              
-      0.01%   -0.01%  [kernel.kallsyms]  [k] update_cfs_rq_blocked_load
--     0.01%           [kernel.kallsyms]  [k] sys_write                             
--     0.01%           [kernel.kallsyms]  [k] irqtime_account_irq                   
--     0.01%           [kernel.kallsyms]  [k] __fsnotify_parent                     
--     0.01%           [kernel.kallsyms]  [k] irqtime_account_process_tick.isra.2   
--     0.01%           [kernel.kallsyms]  [k] native_read_msr_safe                  
--     0.01%           [kernel.kallsyms]  [k] rw_verify_area                        
--     0.01%           [kernel.kallsyms]  [k] sched_clock_cpu                       
--     0.01%           [kernel.kallsyms]  [k] rcu_check_callbacks                   
--     0.01%           [kernel.kallsyms]  [k] run_timer_softirq                     
--     0.01%           [kernel.kallsyms]  [k] path_put                              
--     0.01%           [kernel.kallsyms]  [k] unroll_tree_refs                      
--     0.01%           [kernel.kallsyms]  [k] hrtimer_interrupt                     
--     0.01%           [kernel.kallsyms]  [k] security_file_permission              
--     0.01%           [kernel.kallsyms]  [k] kfree                                 
--     0.01%           [kernel.kallsyms]  [k] native_sched_clock                    
--     0.01%           [kernel.kallsyms]  [k] _raw_spin_lock_irqsave                
--     0.01%           [kernel.kallsyms]  [k] trigger_load_balance                  
--     0.01%           [kernel.kallsyms]  [k] update_cfs_shares                     
--     0.01%           [kernel.kallsyms]  [k] __acct_update_integrals               
--     0.01%           [kernel.kallsyms]  [k] __update_cpu_load                     
--     0.01%           [kernel.kallsyms]  [k] __do_softirq                          
-+     0.01%   +0.01%  [kernel.kallsyms]  [k] sys_write                             
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] irqtime_account_irq                   
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] __fsnotify_parent                     
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] irqtime_account_process_tick.isra.2   
-+     0.01%   +0.00%  [kernel.kallsyms]  [k] native_read_msr_safe                  
-+     0.01%   +0.00%  [kernel.kallsyms]  [k] rw_verify_area                        
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] sched_clock_cpu                       
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] rcu_check_callbacks                   
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] run_timer_softirq                     
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] path_put                              
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] unroll_tree_refs                      
-+     0.01%   -0.01%  [kernel.kallsyms]  [k] hrtimer_interrupt                     
-+     0.01%   +0.00%  [kernel.kallsyms]  [k] security_file_permission              
-+     0.01%   +0.00%  [kernel.kallsyms]  [k] kfree                                 
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] native_sched_clock                    
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave                
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] trigger_load_balance                  
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] update_cfs_shares                     
-+     0.01%   -0.00%  [kernel.kallsyms]  [k] __acct_update_integrals               
+-Joel
+
 
