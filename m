@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab3KVQdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:33:03 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39590 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3KVQc7 (ORCPT
+	id S1755950Ab3KVQdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:33:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45969 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab3KVQdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:32:59 -0500
-Message-ID: <1385137972.10637.86.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [Doubt on Implict BUGs caused LRO] doubt about lro status in
- v3.12 of torvalds/linux.git
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yanfei Wang <backyes@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        China Kernel <kernel@vger.linux-kernel.cn>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 22 Nov 2013 08:32:52 -0800
-In-Reply-To: <CAJULonje7V_sMt6joBBsM3uuQkYFhfNK70BXzN0EyS3sQNb0uQ@mail.gmail.com>
-References: <CAJULonje7V_sMt6joBBsM3uuQkYFhfNK70BXzN0EyS3sQNb0uQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 22 Nov 2013 11:33:08 -0500
+Message-ID: <528F8741.1060406@linutronix.de>
+Date: Fri, 22 Nov 2013 17:33:05 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Mark Jackson <mpfj-list@newflow.co.uk>
+CC: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        jkosina@suse.cz, anatol.pomozov@gmail.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Bin Liu <binmlist@gmail.com>
+Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
+References: <528F7E8F.5050807@newflow.co.uk>
+In-Reply-To: <528F7E8F.5050807@newflow.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-22 at 23:00 +0800, Yanfei Wang wrote:
-> Hi,
+On 11/22/2013 04:55 PM, Mark Jackson wrote:
+> The IDDIG input pin is normally used to determine the USB mode
+> (i.e. HOST or DEVICE).
 > 
-> Compared to the earlier kernel version, I found that Large receive
-> offload(LRO) is obsolete in latest kernel, and that is verified from
-> other materials about Generic receive offload(GRO).
-> 
-> However,  I also found some LRO header files and  lro-related
-> functions referred by some drivers, and the lro-related function
-> definition is already removed at the same time!
-> 
-> TEST steps:
-> 1. my git local db config as follow, url =
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> 2. git checkout v3.12 -b 3.12
-> 3. cd net/ipv4,
->  [backyes@f14 ipv4]$ cat Makefile | grep lro
-> obj-$(CONFIG_INET_LRO) += inet_lro.o
-> [backyes@f14 ipv4]$ ls inet_*
-> inet_connection_sock.c  inet_diag.c  inet_fragment.c
-> inet_hashtables.c  inet_timewait_sock.c
-> [backyes@f14 ipv4]$
-> Here, Makefile has inet_lro.o config, while the inet_lro.c is removed.
-> 4. lro functions referred by some drivers, as follow,
-> [backyes@f14 linux]$ grep "inet_lro" * -r
-> drivers/net/ethernet/pasemi/pasemi_mac.c:#include <linux/inet_lro.h>
-> drivers/net/ethernet/pasemi/pasemi_mac_ethtool.c:#include <linux/inet_lro.h>
-> drivers/infiniband/hw/nes/nes_hw.c:#include <linux/inet_lro.h>
-> drivers/infiniband/hw/nes/nes_hw.h:#include <linux/inet_lro.h>
-> include/linux/inet_lro.h: *  linux/include/linux/inet_lro.h
-> net/ipv4/Makefile:obj-$(CONFIG_INET_LRO) += inet_lro.o
-> 
-> so, I understand that the removal of LRO is not clean, which will
-> cause compiler error for some kernel config.
-> 
+> On some systems (e.g. AM335x) leaving this pin floating allows
+> the USB mode to be set via software.
 
-I think you are slightly confused.
+So you have a board where musb is used only as host or only as device
+and the ID pin not on ground or 3.3V?
+What are the side effects? I remember correctly Bin wanted to avoid
+settings this if it could be avoided.
 
-LRO is not yet removed.
-
-Feel free to contribute ;)
-
-As long as at least one driver still uses LRO, we can not remove LRO.
-
-Converting a driver means testing the new driver, and owning the
-hardware.
-
-
-
+Sebastian
