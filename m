@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3KVBDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:03:49 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:42422 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753245Ab3KVBDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:03:45 -0500
-Date: Thu, 21 Nov 2013 17:03:11 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Greg KH <greg@kroah.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
-        mjg59@srcf.ucam.org
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20131122010311.GZ5274@outflux.net>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
- <20131121190350.GC17070@kroah.com>
+	id S1755299Ab3KVBF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 20:05:27 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:14019 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3KVBFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 20:05:24 -0500
+Date: Thu, 21 Nov 2013 18:05:15 -0700
+From: jerry.hoemann@hp.com
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, matt.fleming@intel.com, yinghai@kernel.org,
+        akpm@linux-foundation.org, bp@suse.de, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        penberg@kernel.org, mingo.kernel.org@gmail.com, vgoyal@redhat.com
+Subject: Re: [RFC v2 0/2] Early use of boot service memory
+Message-ID: <20131122010515.GG1106@anatevka.fc.hp.com>
+Reply-To: jerry.hoemann@hp.com
+References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
+ <20131121230744.GA31592@srcf.ucam.org>
+ <20131121233104.GF1106@anatevka.fc.hp.com>
+ <20131121233831.GB32121@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131121190350.GC17070@kroah.com>
-Organization: Outflux
-X-HELO: www.outflux.net
+In-Reply-To: <20131121233831.GB32121@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Nov 21, 2013 at 11:03:50AM -0800, Greg KH wrote:
-> On Wed, Nov 20, 2013 at 12:50:49PM -0500, Vivek Goyal wrote:
-> > This patch implements the in kernel kexec functionality. It implements a
-> > new system call kexec_file_load. I think parameter list of this system
-> > call will change as I have not done the kernel image signature handling
-> > yet. I have been told that I might have to pass the detached signature
-> > and size as part of system call.
+On Thu, Nov 21, 2013 at 11:38:31PM +0000, Matthew Garrett wrote:
+> On Thu, Nov 21, 2013 at 04:31:04PM -0700, jerry.hoemann@hp.com wrote:
 > 
-> This could be done as we do with modules, and just tack the signature
-> onto the end of the 'blob' of the image.  That way we could use the same
-> tool to sign the binary as we do for modules, and save the need for
-> extra parameters in the syscall.
+> > I tried this back on 3.11 kernel and reserve_crashkernel after free of
+> > boot services failed.  I will admit to not digging in too deeply as to
+> > why it failed.
+> 
+> Hm. If the problem is fragmentation, then yeah, I can imagine this 
+> causing problems. In that case we could take a two-pass approach - find 
+> a gap that *will* be big enough, reserve everything that isn't currently 
+> reserved, and then reserve the rest after ExitBootServices()?
 
-As long as the system call passing in an fd, I'm all good. For those
-of us that run from verified filesystems, we don't need the additional
-signing overhead, but we do need the file descriptor to validate the
-origin of the kernel.
 
--Kees
+Matthew,
+
+Did you really mean EnterVirtualMode (not ExitBootServices?)
+
+One of the difficulties i'm having is that distros and stable releases
+want fixes upstream that they just back port.
+
+ExitBootServices is called in different locations dependent upon
+release.  The current use is to have linux do ExitBootServices, whereas
+EBS used to be done in the boot loaders.  So, i'm concerned that 
+such an approach might require legacy boot loader changes.  That would
+be a difficult sell.
+
+But,  splitting up what is done where may work.
+
+While the crash kernel space is reserved early in boot,  i don't believe
+it is written to until much later (kexec_load??)  So, i don't believe that
+we'd loose any boot code/data that might be missed by firmware that tried
+to access after ExitBootService.
+
+In one of your earlier emails you mentioned the issue is that linux makes
+regions NX.  That would cause problems if FW tried to execute a region
+we just reserved.  Unfortunately, i'm not seeing where the kernel is
+doing this for crash kernel memory.  Assuming it is making it NX, can
+we defer that part?  Or if its not, do we have a problem w/ crash kernel
+reservation at all?
+
+Interesting questions, but as I don't have access to a system that has
+the firmware defects encountered when efi_reserve_boot_services, it makes
+it difficult to test that i don't break them.  Hence, the appealing nature
+of quirks.  Don't have to worry about breaking other platforms as they
+continue to operate same as before.
+
+I can understand the desire some have to not introducing quirks.
+They can be like potato chips.  You can't have just one.  :)  :)
+
+
 
 -- 
-Kees Cook
-Chrome OS Security
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
+
