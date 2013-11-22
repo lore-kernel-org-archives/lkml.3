@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3KVSjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:39:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41698 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab3KVSjh (ORCPT
+	id S1755968Ab3KVSkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:40:18 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58839 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab3KVSkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:39:37 -0500
-Date: Fri, 22 Nov 2013 10:39:32 -0800
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: [GIT PULL] Minor eCryptfs fix for 3.13-rc1
-Message-ID: <20131122183931.GC27306@boyd>
+	Fri, 22 Nov 2013 13:40:14 -0500
+Message-ID: <528FA509.6080907@wwwdotorg.org>
+Date: Fri, 22 Nov 2013 11:40:09 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/7] ARM: tegra: add gpiod_lookup table for paz00
+References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com> <1385122474-14926-3-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1385122474-14926-3-git-send-email-mika.westerberg@linux.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/22/2013 05:14 AM, Mika Westerberg wrote:
+> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> 
+> This makes it possible to request the gpio descriptors in
+> rfkill-gpio driver regardless of the platform.
 
---B4IIlcmfBL/1gGOG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patches 1-3,
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
-Hi Linus,
+All the testing I did was to "cat /sys/kernel/debug/gpios" to make sure
+those two GPIOs had been correctly acquired by the driver, and that they
+changed state as expected via the command-line "rfkill {un,}block" commands.
 
-The following changes since commit 42a2d923cc349583ebf6fdd52a7d35e1c2f7e6bd:
+However, please note that I had to apply a couple fixes to the gpiolib
+core to get this working:
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next (2013-11-13 17:40:34 +0900)
+1)
 
-are available in the git repository at:
+To solve the following build warning:
+
+> In file included from arch/arm/mach-tegra/board-paz00.c:21:0:
+> include/linux/gpio/driver.h:102:17: warning: ‘struct of_phandle_args’ declared inside parameter list [enabled by default]
+> include/linux/gpio/driver.h:102:17: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+
+I applied:
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.13-rc1-quiet-checkers
+> diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+> index 82eac610ce1a..5133cf29803a 100644
+> --- a/include/linux/gpio/driver.h
+> +++ b/include/linux/gpio/driver.h
+> @@ -5,6 +5,7 @@
+>
+>  struct device;
+>  struct gpio_desc;
+> +struct of_phandle_args;
+>  struct seq_file;
+>
+>  /**
 
-for you to fetch changes up to 2000f5beabc9c6baf084de5f7879975408e3652c:
+2)
 
-  eCryptfs: file->private_data is always valid (2013-11-14 12:12:15 -0800)
+In order to get the GPIO lookups from the rfkill driver working, I applied:
 
-----------------------------------------------------------------
-Quiet static checkers by removing unneeded conditionals
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index ac53a9593662..b73c39f99858 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -2368,7 +2368,7 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
+>  				continue;
+>  			}
+>  
+> -			if (chip->ngpio >= p->chip_hwnum) {
+> +			if (chip->ngpio <= p->chip_hwnum) {
+>  				dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
+>  					 chip->label, chip->ngpio);
+>  				continue;
 
-----------------------------------------------------------------
-Tyler Hicks (1):
-      eCryptfs: file->private_data is always valid
-
- fs/ecryptfs/file.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
---B4IIlcmfBL/1gGOG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCgAGBQJSj6TjAAoJENaSAD2qAscKA+EP/11hPj2BAcoJvJcyWTPX3Phk
-LtonSjsfVxhB1sU0Bd0tX7Zp/5vAI2NfK8gfMoq7vIzWeP3+Yyc8TgZzTLG+GhNf
-sK9ivlvPqKY72xhYMgBWgYpXVWLUFb2JngkLtqHlyZvG7QzjtEpkA1rniTyI6DTy
-J1gGSqblgilfeiMnbc8JrsGOD8BYlzFVLPqqsTpDayHQF38O6kK02gyg8sFjCRqW
-XtoQgRwuj42Gia6ltzAqigRs41dpR2mr18NhA13iiOfZ46JoqQcujY/P9RglAMiC
-/2WouBd+o59EUxm7TTY9EWif5AF3bObY81cIisLmnzdXWmRh9RspsqrC0wsbgAAM
-olKJ6uxMpgJrL2C1XnKSZEed37itWH5PxWhDl0FLhJhPy133SzTnYHYyodJmkOuO
-7GA+Llt8mC8jTpXRNN0q0x8oGbIviowY6/FyUcAcjTr87Shvmd3jJpucEaC5Ywm3
-74ELs1M77n2oSAvjoK+SMq7nyv+TeYYyS2UGoxh5VIamPjwWdky317TTaTEKtLnB
-azIJO6uCwXTvypSlUAizxasjXqS9WpGFQe/yY9zIFqBZke6fDHaDeUv3MdnPY2pa
-mWznhRqI9QMV1+xj+cTdbVpCnXtMrDWmIanRYnVJIwygQExfjG4XC4SidieR2pZG
-6M8g6yyOTgAP8MmNGSVi
-=ZXIk
------END PGP SIGNATURE-----
-
---B4IIlcmfBL/1gGOG--
