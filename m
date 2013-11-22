@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3KVVfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:35:54 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:46024 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248Ab3KVVfx (ORCPT
+	id S1755937Ab3KVViK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:38:10 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58521 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3KVViI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:35:53 -0500
-Message-ID: <528FCE57.2000805@gmail.com>
-Date: Fri, 22 Nov 2013 22:36:23 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: rafael.j.wysocki@intel.com, Jingoo Han <jg1.han@samsung.com>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <528F0B1E.6000909@gmail.com> <528F2A85.4090808@gmail.com> <24318767.PoCLxGCZH4@vostro.rjw.lan>
-In-Reply-To: <24318767.PoCLxGCZH4@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 22 Nov 2013 16:38:08 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH] dt-bindings: add GIC-400 binding
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1385155055-9242-1-git-send-email-robherring2@gmail.com>
+Date: Fri, 22 Nov 2013 15:38:02 -0600
+Cc: devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <96D40B82-CB92-4E97-B2A7-862F0FBA5388@codeaurora.org>
+References: <1385155055-9242-1-git-send-email-robherring2@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 01:54 PM, Rafael J. Wysocki wrote:
-> On Friday, November 22, 2013 10:57:25 AM Francis Moreau wrote:
->> Le 22/11/2013 08:43, Francis Moreau a écrit :
->>> Le 21/11/2013 12:17, Jingoo Han a écrit :
->>> [...]
->>>>>
->>>>>> Also I took a look at the changes between v3.11 and v3.12 in this area
->>>>>> and those changes match the issue I'm facing:
->>>>>>
->>>>>> $ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
->>>>>> 09fd867 mfd: rtsx: Copyright modifications
->>>>>> eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
->>>>>> 7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
->>>>>> extra_init_hw
->>>>>> 5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
->>>>>> 773ccdf mfd: rtsx: Read vendor setting from config space
->>>>
->>>> In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
->>>> reader driver may make the kernel panic.
->>>>
->>>> I think that the commit "mfd: rtsx: Configure to enter a deeper
->>>> power-saving mode in S3" may be the culprit.
->>>
->>> Unfortunately no, reverting this commit on top of v3.12 doesn't help. I
->>> also reverted 7140812, 5947c16 but it didn't improve anything.
->>>
->>> The good news is that I managed to have a "light" kernel configuration
->>> which is faster to build and more important it seems that the bug is
->>> almost 100% reproductible now.
->>>
->>> So I'll try to do another git-bisect session later.
->>
->> So after bisecting between v3.11..v3.12 range, git bisect told me:
->>
->> the first bad commit is 551f5c74e17ba9257cdc35bf657ee448cad2d5b0
->>
->> Merge branch 'acpi-processor'
->>
->>     * acpi-processor:
->>       ACPI / processor: Acquire writer lock to update CPU maps
->>       ACPI / processor: Remove acpi_processor_get_limit_info()
->>
->> The two commits brought by the merge are not the culprits because
->> reseting HEAD on "ACPI / processor: Acquire writer lock to update CPU
->> maps" doesn't have the issue anymore.
->>
->> At that point I'm not sure how to bisect futher.
+
+On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
+
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Does the second parent of this merge (that is, 8462d9df9d50) have the problem?
+> Add "arm,gic-400" compatible property for ARM GIC-400 IP.
 > 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> ---
+> Documentation/devicetree/bindings/arm/gic.txt | 1 +
+> 1 file changed, 1 insertion(+)
 
-Yes it does.
+Acked-by: Kumar Gala <galak@codeaurora.org>
 
-Ok, I've finally managed to find out the bad commit:
-ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
-over system PM transitions
+- k
 
-I verified that the parent commit doesn't have the problem.
-
-Rafael, you're the man now ;)
-
-Thanks
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
