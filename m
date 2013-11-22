@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab3KVCIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 21:08:16 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:37896 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3KVCIO (ORCPT
+	id S1755383Ab3KVCKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 21:10:45 -0500
+Received: from longford.logfs.org ([213.229.74.203]:53198 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab3KVCKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 21:08:14 -0500
-Message-ID: <528EBC88.2030609@hitachi.com>
-Date: Fri, 22 Nov 2013 11:08:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Vineet Gupta <vgupta@synopsys.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org,
+	Thu, 21 Nov 2013 21:10:43 -0500
+X-Greylist: delayed 1856 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 21:10:43 EST
+Date: Thu, 21 Nov 2013 19:19:00 -0500
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v3 18/23] x86/dumpstack: Use NOKPROBE_SYMBOL macro
- in dumpstack.c
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <20131120042233.15296.31189.stgit@kbuild-fedora.novalocal> <20131121113006.GA27659@gmail.com>
-In-Reply-To: <20131121113006.GA27659@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+Message-ID: <20131122001859.GA9510@logfs.org>
+References: <20131119131400.GC20655@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131119131400.GC20655@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/21 20:30), Ingo Molnar wrote:
+On Tue, 19 November 2013 14:14:00 +0100, Michal Hocko wrote:
 > 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> Use NOKPROBE_SYMBOL macro for protecting functions
->> from kprobes instead of __kprobes annotation in
->> dumpstack.c.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Jiri Slaby <jslaby@suse.cz>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Vineet Gupta <vgupta@synopsys.com>
->> ---
->>  arch/x86/kernel/dumpstack.c |    9 ++++++---
->>  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> Btw., all these mechanic changes of the __kprobes annotation can be 
-> merged into a single patch. That will cut down on the size of the 
-> series substantially.
+> We have basically ended up with 3 options AFAIR:
+> 	1) allow memcg approach (memcg.oom_control) on the root level
+>            for both OOM notification and blocking OOM killer and handle
+>            the situation from the userspace same as we can for other
+> 	   memcgs.
+> 	2) allow modules to hook into OOM killer path and take the
+> 	   appropriate action.
+> 	3) create a generic filtering mechanism which could be
+> 	   controlled from the userspace by a set of rules (e.g.
+> 	   something analogous to packet filtering).
 
-Right, I just thought it would be easy to review for each
-subsystem maintainer, because some of them including
-forcibly (or explicitly) inlined changes (__always_inline).
+One ancient option I sometime miss was this:
+	- Kill the biggest process.
 
-Thank you,
+Doesn't always make the optimal choice, but neither did any of the
+refinements.  But it had the nice advantage that even I could predict
+which bad choice it would make and why.  Every bit of sophistication
+means that you still get it wrong sometimes, but in less obvious and
+more annoying ways.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Then again, an alternative I actually use in production is to reboot
+the machine on OOM.  Again, very simple, very blunt and very
+predictable.
 
+Jörn
 
+--
+No art, however minor, demands less than total dedication if you want
+to excel in it.
+-- Leon Battista Alberti
