@@ -1,138 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab3KVNcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:32:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45644 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755713Ab3KVNcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:32:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,752,1378882800"; 
-   d="scan'208";a="439875607"
-Message-ID: <528F5EAF.8070109@intel.com>
-Date: Fri, 22 Nov 2013 15:39:59 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755758Ab3KVNeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:34:15 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:42112 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab3KVNeN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:34:13 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+	<8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com>
+Date: Fri, 22 Nov 2013 05:34:03 -0800
+In-Reply-To: <20131122015518.GA31921@redhat.com> (Vivek Goyal's message of
+	"Thu, 21 Nov 2013 20:55:18 -0500")
+Message-ID: <87txf4y304.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/7] mmc: sdhci-acpi: covert to use GPIO descriptor
- API
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com> <1385122474-14926-5-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1385122474-14926-5-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+yyPlb4LBEiFULuCJ8v/z7aodE96AS70o=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0038]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/11/13 14:14, Mika Westerberg wrote:
-> The new descriptor based GPIO interface is now the recommended and safer
-> way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
-> use that interface.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+> On Thu, Nov 21, 2013 at 03:07:04PM -0800, Eric W. Biederman wrote:
+>
+> [..]
+>> 
+>> Before you are done we need an ELF loader.  bzImage really is very
+>> uninteresting.  To the point I am not at all convinced that an in kernel
+>> loader should support it.
+>
+> Hi Eric,
+>
+> Why ELF case is so interesting. I have not use kexec to boot ELF
+> images in years and have not seen others using it too. In fact bzImage
+> seems to be the most common kernel image format for x86, most of the distros
+> ship and use.
 
-> ---
->  drivers/mmc/host/sdhci-acpi.c | 26 ++++++++++++--------------
->  1 file changed, 12 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-> index ef19874fcd1f..5c86550f83ad 100644
-> --- a/drivers/mmc/host/sdhci-acpi.c
-> +++ b/drivers/mmc/host/sdhci-acpi.c
-> @@ -31,10 +31,9 @@
->  #include <linux/bitops.h>
->  #include <linux/types.h>
->  #include <linux/err.h>
-> -#include <linux/gpio.h>
-> +#include <linux/gpio/consumer.h>
->  #include <linux/interrupt.h>
->  #include <linux/acpi.h>
-> -#include <linux/acpi_gpio.h>
->  #include <linux/pm.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/delay.h>
-> @@ -199,22 +198,23 @@ static irqreturn_t sdhci_acpi_sd_cd(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
-> -				 struct mmc_host *mmc)
-> +static int sdhci_acpi_add_own_cd(struct device *dev, struct mmc_host *mmc)
->  {
-> +	struct gpio_desc *desc;
->  	unsigned long flags;
->  	int err, irq;
->  
-> -	if (gpio < 0) {
-> -		err = gpio;
-> +	desc = devm_gpiod_get_index(dev, "sd_cd", 0);
-> +	if (IS_ERR(desc)) {
-> +		err = PTR_ERR(desc);
->  		goto out;
->  	}
->  
-> -	err = devm_gpio_request_one(dev, gpio, GPIOF_DIR_IN, "sd_cd");
-> +	err = gpiod_direction_input(desc);
->  	if (err)
-> -		goto out;
-> +		goto out_free;
->  
-> -	irq = gpio_to_irq(gpio);
-> +	irq = gpiod_to_irq(desc);
->  	if (irq < 0) {
->  		err = irq;
->  		goto out_free;
-> @@ -228,7 +228,7 @@ static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
->  	return 0;
->  
->  out_free:
-> -	devm_gpio_free(dev, gpio);
-> +	devm_gpiod_put(dev, desc);
->  out:
->  	dev_warn(dev, "failed to setup card detect wake up\n");
->  	return err;
-> @@ -254,7 +254,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  	struct resource *iomem;
->  	resource_size_t len;
->  	const char *hid;
-> -	int err, gpio;
-> +	int err;
->  
->  	if (acpi_bus_get_device(handle, &device))
->  		return -ENODEV;
-> @@ -279,8 +279,6 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  	if (IS_ERR(host))
->  		return PTR_ERR(host);
->  
-> -	gpio = acpi_get_gpio_by_index(dev, 0, NULL);
-> -
->  	c = sdhci_priv(host);
->  	c->host = host;
->  	c->slot = sdhci_acpi_get_slot(handle, hid);
-> @@ -338,7 +336,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  		goto err_free;
->  
->  	if (sdhci_acpi_flag(c, SDHCI_ACPI_SD_CD)) {
-> -		if (sdhci_acpi_add_own_cd(dev, gpio, host->mmc))
-> +		if (sdhci_acpi_add_own_cd(dev, host->mmc))
->  			c->use_runtime_pm = false;
->  	}
->  
-> 
+ELF is interesting because it is the minimal file format that does
+everything you need.   So especially for a proof of concept ELF needs to
+come first.  There is an extra virtual address field in the ELF segment
+header but otherwise ELF does not have any unnecessary fields.
 
+ELF is interesting because it is the native kernel file format on all
+architectures linux supports including x86.
+
+ELF is interesting because producing an ELF image in practice requires
+a trivial amount of tooling so it is a good general purpose format to
+support.
+
+> So first I did the loader for the common use case. There is no reason 
+> that one can't write another loader for ELF images. It just bloats
+> the code. Hence I thought that other image loaders can follow slowly. I am
+> not sure why do you say that bzImage is uninteresting. 
+
+If you boot anything that isn't a linux kernel bzImage on x86 bzImage is
+not the solution you are using.  Furthermore because bzImage is a bunch
+of hacks thrown together bzImage keeps evolving in weird and strange
+ways.  The complexity of supporting bzImage only grows through the
+years.
+
+At the end of the day we will probably need to support bzImage in some
+form (possibly just going so far as in userspace extracting the embedded
+ELF image) as there are support benefits of only having one blob you
+sling around.
+
+But let's first start with the sane general case before worring about x86
+legacy weirdness.
+
+For a long term stable ABI to support booting things other than the
+linux kernel bzImage is not my first choice.
+
+>> There is also a huge missing piece of this in that your purgatory is not
+>> checking a hash of the loaded image before jumping too it.  Without that
+>> this is a huge regression at least for the kexec on panic case.  We
+>> absolutely need to check that the kernel sitting around in memory has
+>> not been corrupted before we let it run very far.
+>
+> Agreed. This should not be hard. It is just a matter of calcualting
+> digest of segments. I will store it in kimge and verify digest again
+> before passing control to control page. Will fix it in next version.
+
+Nak.  The verification needs to happen in purgatory. 
+
+The verification needs to happen in code whose runtime environment is
+does not depend on random parts of the kernel.  Anything else is a
+regression in maintainability and reliability.
+
+It is the wrong direction to add any code to what needs to run in the
+known broken environment of the kernel when a panic happens.
+
+Which means that you almost certainly need to go to the trouble of
+supporting the complexity needed to support purgatory code written in C.
+
+(For those just tuning in purgatory is our term for the code that runs
+between the kernels to do those things that can not happen a priori).
+
+Eric
