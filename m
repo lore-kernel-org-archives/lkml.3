@@ -1,31 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab3KVCgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 21:36:45 -0500
-Received: from snt0-omc1-s18.snt0.hotmail.com ([65.55.90.29]:42105 "EHLO
-	snt0-omc1-s18.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753861Ab3KVCgo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 21:36:44 -0500
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 21:36:44 EST
-X-TMN: [8FOE4rEbL9N64VdUEoRyJSbldRXjhohV]
-X-Originating-Email: [nickkrause@sympatico.ca]
-Message-ID: <SNT145-W5F1083BAAD56F076F6E43A5E00@phx.gbl>
-From: Nick Krause <nickkrause@sympatico.ca>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Kernel Jobs - Payed
-Date: Fri, 22 Nov 2013 02:30:35 +0000
-Importance: Normal
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1754088Ab3KVClN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 21:41:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60867 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab3KVClJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 21:41:09 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131122023514.GH31921@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <8761rl73s7.fsf@xmission.com> <5cb078ff-e0d3-478b-ba1c-c16d71c32e02@email.android.com> <20131122023514.GH31921@redhat.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 22 Nov 2013 02:30:36.0085 (UTC) FILETIME=[D359E650:01CEE72A]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 21 Nov 2013 18:40:30 -0800
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, mjg59@srcf.ucam.org, greg@kroah.com
+Message-ID: <5879d8b6-cc71-4e5e-9fa7-adc253f03d29@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Fellow Kernel Hackers, 
-I was wondering if there any jobs you know of from pay working on the Linux Kernel for a beginner hacker ,
-if not is there any work in the networking or driver subsystems that need some work I do know of the porting of Usb IP hardware.
-Thanks A lot Fellow Hackers,
-Nicholas Krause 		 	   		  
+Yes.
+
+Vivek Goyal <vgoyal@redhat.com> wrote:
+>On Thu, Nov 21, 2013 at 05:28:38PM -0800, H. Peter Anvin wrote:
+>> What do you need from ELF?
+>
+>Sorry, I did not understand the question. Is it for me or Eric. I am
+>assuming you are asking Eric that why ELF is so important?
+>
+>Thanks
+>Vivek
+
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
