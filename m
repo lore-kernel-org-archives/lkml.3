@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab3KVUm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 15:42:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33195 "EHLO mx2.suse.de"
+	id S1756111Ab3KVUsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:48:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477Ab3KVUm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:42:56 -0500
-Date: Fri, 22 Nov 2013 21:42:52 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-In-Reply-To: <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
-Message-ID: <alpine.LRH.2.00.1311222136030.9932@twin.jikos.cz>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755856Ab3KVUsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 15:48:07 -0500
+Date: Fri, 22 Nov 2013 21:49:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, viro@ZenIV.linux.org.uk, keescook@chromium.org,
+        mhocko@suse.cz, snanda@chromium.org, dserrg@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] check_unsafe_exec: kill the dead -EAGAIN and
+	clear_in_exec logic
+Message-ID: <20131122204917.GA20520@redhat.com>
+References: <20131122175442.GA31453@redhat.com> <528FBE22.5030208@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528FBE22.5030208@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013, Vivek Goyal wrote:
+On 11/22, KOSAKI Motohiro wrote:
+>
+> (11/22/2013 12:54 PM), Oleg Nesterov wrote:
+> > fs_struct->in_exec == T means that this ->fs is used by a single
+> > process (thread group), and one of the treads does do_execve().
+> >
+> > To avoid the mt-exec races this code has the following complications:
+> >
+> > 	1. check_unsafe_exec() returns -EBUSY if ->in_exec was
+> > 	   already set by another thread.
+> >
+> > 	2. do_execve_common() records "clear_in_exec" to ensure
+> > 	   that the error path can only clear ->in_exec if it was
+> > 	   set by current.
+> >
+> > However, after 9b1bf12d5d51 "signals: move cred_guard_mutex from
+> > task_struct to signal_struct" we do not need these complications:
+> >
+> > 	1. We can't race with our sub-thread, this is called under
+> > 	   per-process ->cred_guard_mutex. And we can't race with
+> > 	   another CLONE_FS task, we already checked that this fs
+> > 	   is not shared.
+> >
+> > 	   We can remove the  dead -EAGAIN logic.
+> >
+> > 	2. "out_unmark:" in do_execve_common() is either called
+> > 	   under ->cred_guard_mutex, or after de_thread() which
+> > 	   kills other threads, so we can't race with sub-thread
+> > 	   which could set ->in_exec. And if ->fs is shared with
+> > 	   another process ->in_exec should be false anyway.
+> >
+> > 	   We can clear in_exec unconditionally.
+> >
+> > This also means that check_unsafe_exec() can be void.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> I have found no problem in this patch. However, I have a very basic question.
+> Why do we need to keep fs->in_exec?
 
-> This patch implements the in kernel kexec functionality. It implements a
-> new system call kexec_file_load. I think parameter list of this system
-> call will change as I have not done the kernel image signature handling
-> yet. I have been told that I might have to pass the detached signature
-> and size as part of system call.
-> 
-> Previously segment list was prepared in user space. Now user space just
-> passes kernel fd, initrd fd and command line and kernel will create a
-> segment list internally.
-> 
-> This patch contains generic part of the code. Actual segment preparation
-> and loading is done by arch and image specific loader. Which comes in
-> next patch.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-[ ... snip ... ]
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 6238927..50bcaa8 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-[ ... snip ... ]
-> @@ -843,7 +1075,11 @@ static int kimage_load_normal_segment(struct kimage *image,
->  				PAGE_SIZE - (maddr & ~PAGE_MASK));
->  		uchunk = min(ubytes, mchunk);
->  
-> -		result = copy_from_user(ptr, buf, uchunk);
-> +		/* For file based kexec, source pages are in kernel memory */
-> +		if (image->file_mode)
-> +			memcpy(ptr, buf, uchunk);
+To ensure that a sub-thread can't create a new process with the same
+->fs while we are doing exec without LSM_UNSAFE_SHARE, I guess. This
+is only for security/ code.
 
-Very minor nit I came across when going through the patchset -- can't we 
-use some different buffer for the file-based kexec that's not marked 
-__user here? This really causes some eye-pain when looking at the code.
+> If it is correct,
+> can't we move it it to signal->in_exec?
 
-Thanks a lot for pushing this patchset forward,
+Yes, perhaps, I am thinking about more cleanups too. But not that this
+will add the subtle change. CLONE_THREAD doesn't require CLONE_FS, so
+copy_fs() can fail even it the caller doesn't share ->fs with the execing
+thread. And we still need fs->lock to set signal->in_exec, this looks
+a bit strange.
 
--- 
-Jiri Kosina
-SUSE Labs
+> I am not expert in this area and I may overlook something.
+
+Neither me ;) So this patch tries to not change the current logic.
+
+I feel that perhaps we can do more cleanups, but I am not really sure
+and this needs a separate change.
+
+Oleg.
+
