@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab3KVMQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:16:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:59658 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab3KVMOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:14:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,751,1378882800"; 
-   d="scan'208";a="413007355"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/7] mmc: sdhci-acpi: covert to use GPIO descriptor API
-Date: Fri, 22 Nov 2013 14:14:31 +0200
-Message-Id: <1385122474-14926-5-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1755779Ab3KVMRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:17:43 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:60575 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754837Ab3KVMRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 07:17:41 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] n_tty: Fix 4096-byte canonical reads
+Date: Fri, 22 Nov 2013 07:16:25 -0500
+Message-Id: <1385122585-8535-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new descriptor based GPIO interface is now the recommended and safer
-way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
-use that interface.
+Although the maximum allowable canonical line is specified to
+be 255 bytes (MAX_CANON), the practical limit has actually been
+the size of the line discipline read buffer (N_TTY_BUF_SIZE == 4096).
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Commit 32f13521ca68bc624ff6effc77f308a52b038bf0,
+n_tty: Line copy to user buffer in canonical mode, limited the
+line copy to 4095 bytes. With a completely full line discipline
+read buffer and a userspace buffer > 4095, _no_ data was copied,
+and the read() syscall returned 0, indicating EOF.
+
+Fix the interval arithmetic to compute the correct number of bytes
+to copy to userspace in the range [1..4096].
+
+Cc: <stable@vger.kernel.org> # 3.12.x
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/mmc/host/sdhci-acpi.c | 26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+ drivers/tty/n_tty.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-index ef19874fcd1f..5c86550f83ad 100644
---- a/drivers/mmc/host/sdhci-acpi.c
-+++ b/drivers/mmc/host/sdhci-acpi.c
-@@ -31,10 +31,9 @@
- #include <linux/bitops.h>
- #include <linux/types.h>
- #include <linux/err.h>
--#include <linux/gpio.h>
-+#include <linux/gpio/consumer.h>
- #include <linux/interrupt.h>
- #include <linux/acpi.h>
--#include <linux/acpi_gpio.h>
- #include <linux/pm.h>
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
-@@ -199,22 +198,23 @@ static irqreturn_t sdhci_acpi_sd_cd(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 053ead2..0f74945 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1998,7 +1998,10 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 		found = 1;
  
--static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
--				 struct mmc_host *mmc)
-+static int sdhci_acpi_add_own_cd(struct device *dev, struct mmc_host *mmc)
- {
-+	struct gpio_desc *desc;
- 	unsigned long flags;
- 	int err, irq;
+ 	size = N_TTY_BUF_SIZE - tail;
+-	n = (found + eol + size) & (N_TTY_BUF_SIZE - 1);
++	n = eol - tail;
++	if (n > 4096)
++		n += 4096;
++	n += found;
+ 	c = n;
  
--	if (gpio < 0) {
--		err = gpio;
-+	desc = devm_gpiod_get_index(dev, "sd_cd", 0);
-+	if (IS_ERR(desc)) {
-+		err = PTR_ERR(desc);
- 		goto out;
- 	}
- 
--	err = devm_gpio_request_one(dev, gpio, GPIOF_DIR_IN, "sd_cd");
-+	err = gpiod_direction_input(desc);
- 	if (err)
--		goto out;
-+		goto out_free;
- 
--	irq = gpio_to_irq(gpio);
-+	irq = gpiod_to_irq(desc);
- 	if (irq < 0) {
- 		err = irq;
- 		goto out_free;
-@@ -228,7 +228,7 @@ static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
- 	return 0;
- 
- out_free:
--	devm_gpio_free(dev, gpio);
-+	devm_gpiod_put(dev, desc);
- out:
- 	dev_warn(dev, "failed to setup card detect wake up\n");
- 	return err;
-@@ -254,7 +254,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
- 	struct resource *iomem;
- 	resource_size_t len;
- 	const char *hid;
--	int err, gpio;
-+	int err;
- 
- 	if (acpi_bus_get_device(handle, &device))
- 		return -ENODEV;
-@@ -279,8 +279,6 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
- 	if (IS_ERR(host))
- 		return PTR_ERR(host);
- 
--	gpio = acpi_get_gpio_by_index(dev, 0, NULL);
--
- 	c = sdhci_priv(host);
- 	c->host = host;
- 	c->slot = sdhci_acpi_get_slot(handle, hid);
-@@ -338,7 +336,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
- 		goto err_free;
- 
- 	if (sdhci_acpi_flag(c, SDHCI_ACPI_SD_CD)) {
--		if (sdhci_acpi_add_own_cd(dev, gpio, host->mmc))
-+		if (sdhci_acpi_add_own_cd(dev, host->mmc))
- 			c->use_runtime_pm = false;
- 	}
- 
+ 	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
 -- 
-1.8.4.3
+1.8.1.2
 
