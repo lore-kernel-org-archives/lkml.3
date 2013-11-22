@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab3KVCEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 21:04:20 -0500
-Received: from mx-a.atmailcloud.com ([65.61.115.90]:64629 "EHLO
-	ultra2.atmailcloud.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3KVCER (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 21:04:17 -0500
-X-Greylist: delayed 1385 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 21:04:17 EST
+	id S1755340Ab3KVCE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 21:04:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755099Ab3KVCEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 21:04:24 -0500
+Date: Thu, 21 Nov 2013 21:03:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        mjg59@srcf.ucam.org, greg@kroah.com, ebiederm@xmission.com,
+        hpa@zytor.com
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131122020353.GC31921@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <528EAB73.9010700@jp.fujitsu.com>
 MIME-Version: 1.0
-Date: Thu, 21 Nov 2013 20:41:10 -0500
-Message-ID: <CA+tRDaL=RSjG=Fdw4+6hia8WWM5oa_JoZBA+HFOA6mgqTunb0A@mail.gmail.com>
-Subject: DisplayLink driver
-From: Alejandro Bonilla <abonilla@linuxwireless.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528EAB73.9010700@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Nov 22, 2013 at 09:55:15AM +0900, HATAYAMA Daisuke wrote:
+> (2013/11/21 2:50), Vivek Goyal wrote:
+> >Current proposed secureboot implementation disables kexec/kdump because
+> >it can allow unsigned kernel to run on a secureboot platform. Intial
+> >idea was to sign /sbin/kexec binary and let that binary do the kernel
+> >signature verification. I had posted RFC patches for this apparoach
+> >here.
+> >
+> >https://lkml.org/lkml/2013/9/10/560
+> >
+> >Later we had discussion at Plumbers and most of the people thought
+> >that signing and trusting /sbin/kexec is becoming complex. So a
+> >better idea might be let kernel do the signature verification of
+> >new kernel being loaded. This calls for implementing a new system call
+> >and moving lot of user space code in kernel.
+> >
+> >kexec_load() system call allows loading a kexec/kdump kernel and jump
+> >to that kernel at right time. Though a lot of processing is done in
+> >user space which prepares a list of segments/buffers to be loaded and
+> >kexec_load() works on that list of segments. It does not know what's
+> >contained in those segments.
+> >
+> >Now a new system call kexec_file_load() is implemented which takes
+> >kernel fd and initrd fd as parameters. Now kernel should be able
+> >to verify signature of newly loaded kernel.
+> >
+> >This is an early RFC patchset. I have not done signature handling
+> >part yet. This is more of a minimal patch to show how new system
+> >call and functionality will look like. Right now it can only handle
+> >bzImage with 64bit entry point on x86_64. No EFI, no x86_32  or any
+> >other architecture. Rest of the things can be added slowly as need
+> >arises. In first iteration, I have tried to address most common use case
+> >for us.
+> >
+> >Any feedback is welcome.
+> >
+> 
+> So, ultimately on this design direction, user-land kexec command someday
+> will no longer be used at all? Or is there any feature you will keep in
+> user-land side?
+> 
 
-I have a Lenovo ThinkVision LT1421 which I guess uses the DisplayLink
-chipset 1.x, I'm also using kernel 3.11.6. The device is recognized
-[  997.279496] usb 2-1.5: new high-speed USB device number 4 using ehci-pci
-[  997.344494] usb 2-1.5: device descriptor read/64, error 64
-[  997.534746] usb 2-1.5: New USB device found, idVendor=17e9, idProduct=03e0
-[  997.534753] usb 2-1.5: New USB device strings: Mfr=1, Product=2,
-SerialNumber=3
-[  997.534756] usb 2-1.5: Product: Lenovo LT1421 wide
-[  997.534759] usb 2-1.5: Manufacturer: DisplayLink
-[  997.534761] usb 2-1.5: SerialNumber: 6V9BZHC1
-[  997.543996] [drm] vendor descriptor length:17 data:17 5f 01 00 15
-05 00 01 03 00 04
-[  997.640811] udl 2-1.5:1.0: fb1: udldrmfb frame buffer device
-[  997.640816] udl 2-1.5:1.0: registered panic notifier
-[  997.640822] [drm] Initialized udl 0.0.1 20120220 on minor 1
-[  997.640886] usbcore: registered new interface driver udl
+Current user land is huge and implements lots of image formats on
+differnt architectures with tons of options. 
 
-But xrandr is not recognizing the device/screen.
-
-So the question is, which driver supports it, the UDL or UDLFB driver?
-
-(please cc me, I'm not subscribed)
+I doubt that kernel implementation will be a complete replacement of
+existing implementation anytime soon.  If kernel implementation works
+well, then may be in future at some point of time we can completely
+move away from user space implementation.
 
 Thanks
+Vivek
