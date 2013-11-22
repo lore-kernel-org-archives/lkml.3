@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3KVRGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:06:11 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39096 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755723Ab3KVRGJ (ORCPT
+	id S1755843Ab3KVRHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:07:49 -0500
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:43763
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753381Ab3KVRHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:06:09 -0500
-Message-ID: <528F8EFB.4040400@vmware.com>
-Date: Fri, 22 Nov 2013 18:06:03 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 22 Nov 2013 12:07:48 -0500
+Message-ID: <528F8F62.7000801@newflow.co.uk>
+Date: Fri, 22 Nov 2013 17:07:46 +0000
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>
-CC: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: Re: [i915] BUG: Bad page state in process Xorg
-References: <1384980928.3312.6.camel@localhost.localdomain> <alpine.DEB.2.00.1311221036020.16356@skynet.skynet.ie> <CAKMK7uGoAN=PHu+=1FmXPGyZxg3+Mm2awJgkOfO8zBDF2-5arQ@mail.gmail.com> <F6786E45-566F-47C5-974A-B2C1B9B674E4@m3y3r.de> <CAKMK7uEHo3N-R5W6m_-gyEkuq0WPN=YUzJUpdG=MeznPcY2Haw@mail.gmail.com>
-In-Reply-To: <CAKMK7uEHo3N-R5W6m_-gyEkuq0WPN=YUzJUpdG=MeznPcY2Haw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        jkosina@suse.cz, anatol.pomozov@gmail.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Bin Liu <binmlist@gmail.com>
+Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
+References: <528F7E8F.5050807@newflow.co.uk> <528F8741.1060406@linutronix.de> <528F8B35.8070408@newflow.co.uk> <528F8DF1.2060307@linutronix.de>
+In-Reply-To: <528F8DF1.2060307@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 05:18 PM, Daniel Vetter wrote:
-> On Fri, Nov 22, 2013 at 4:54 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
->>> Am 22.11.2013 um 11:55 schrieb Daniel Vetter <daniel@ffwll.ch>:
->>>
->>> On Fri, Nov 22, 2013 at 11:36 AM, Dave Airlie <airlied@linux.ie> wrote:
->>>>> Hi,
->>>> cc'ing mailing list,
->>>>
->>>> Daniel any ideas?
->>> Nope, not really :( And no ideas how to triage this further - if it
->>> takes 9 days to hit it eventually we'll have a real hard time. Or does
->>> this happen even after just a short X run?
->> Seems to happen every time while stopping the x server. Also after a short run time.
+On 22/11/13 17:01, Sebastian Andrzej Siewior wrote:
+> On 11/22/2013 05:49 PM, Mark Jackson wrote:
+>>> and the ID pin not on ground or 3.3V?
+>>> What are the side effects? I remember correctly Bin wanted to avoid
+>>> settings this if it could be avoided.
 >>
->> The current fedora 3.11 kernel doesn't show this bug. I'm using fedora 19, with a self compiled kernel.
+>> Yes ... we have a host only USB port and an unconnected ID pin.
+> 
+> Is it too late to connect that pin?
+
+Unfortunately, yes.
+
+The USB portion of the CPU board has not been needed until now, and
+although I did know about the unconnected pin, I also knew it could be
+fixed in s/w, so I wasn't too concerned.
+
+>> AFAIK it defaults to device mode so I can't see any devices that get
+>> plugged into the USB port.
 >>
->> I did turn on config-debug-pagealloc but this didn't show any wrongness.
-> In that case I think the bisect is the fastest way to insight - atm
-> I'm really at loss what could be wrong here.
+>> If I tweak the s/w to "force" host mode on, then everything appears to
+>> work okay.
+>>
+>> I guess it's more of a hardware oversight that we left the pin floating
+>> but in the real world, I guess someone may want this feature to they
+>> can change the usb port type ?
+> 
+> This is something I would prefer to avoid if possible. We have the
+> dr_mode attribute in DT. Based on that one we act as a device or host.
+> Now if you decide (via dr_mode) either for host or device that means we
+> have to set that bit. Where I feel a little uncomfortable is when
+> someone having OTG runs in hostmode and attaches a host.
+> 
+>>
+>> Either way, I need to fix the current h/w (which can be done via s/w)
+>> hence the patch.
+> I've seen many projects where this pin has been forgotten and it could
+> not be changed in SW and they patched the HW. Usually this is noticed
+> in the early phase and a wire is just soldered and the redesign has it
+> fixed. So I don't think that this is a big issue.
+> Do you insists on having this change merged upstream?
 
- From the error messages it looks like whatever's responsible for 
-clearing page->mapping doesn't do it for these pages,
-(shmem code?).
+No ... I didn't think it would be such an issue, so I'm happy to keep this
+as a local patch if that's any better.
 
-/Thomas
-
-> -Daniel
+Mark J.
