@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3KVXpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 18:45:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58536 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab3KVXpG (ORCPT
+	id S1756368Ab3KVXse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 18:48:34 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:21113 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab3KVXsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 18:45:06 -0500
-Date: Fri, 22 Nov 2013 15:45:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: karl.kiniger@med.ge.com, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        t.artem@lycos.com, linux-mm@kvack.org, mgorman@suse.de, jack@suse.cz,
-        fengguang.wu@intel.com, torvalds@linux-foundation.org,
-        mpatlasov@parallels.com
-Subject: Re: [PATCH] mm: add strictlimit knob -v2
-Message-Id: <20131122154505.3e686fcfc584534d555399e5@linux-foundation.org>
-In-Reply-To: <20131106150515.25906.55017.stgit@dhcp-10-30-17-2.sw.ru>
-References: <20131104140104.7936d263258a7a6753eb325e@linux-foundation.org>
-	<20131106150515.25906.55017.stgit@dhcp-10-30-17-2.sw.ru>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 22 Nov 2013 18:48:32 -0500
+Message-ID: <1385164109.20467.56.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 2/5] net: MOXA ART: connect to PHY and add ethtool
+ support
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Date: Fri, 22 Nov 2013 23:48:29 +0000
+In-Reply-To: <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
+References: <1385132242-3204-1-git-send-email-jonas.jensen@gmail.com>
+	 <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20310.005
+X-TM-AS-Result: No--12.993000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Nov 2013 19:05:57 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
-
-> "strictlimit" feature was introduced to enforce per-bdi dirty limits for
-> FUSE which sets bdi max_ratio to 1% by default:
+On Fri, 2013-11-22 at 15:57 +0100, Jonas Jensen wrote:
+> The kernel now has a MDIO bus driver and a phy_driver (RTL8201CP),
+> connect to this PHY using OF and add ethtool support.
 > 
-> http://article.gmane.org/gmane.linux.kernel.mm/105809
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
 > 
-> However the feature can be useful for other relatively slow or untrusted
-> BDIs like USB flash drives and DVD+RW. The patch adds a knob to enable the
-> feature:
+> Notes:
+>     Applies to next-20131122
 > 
-> echo 1 > /sys/class/bdi/X:Y/strictlimit
+>  drivers/net/ethernet/moxa/moxart_ether.c | 179 ++++++++++++++++++++++++++++++-
+>  drivers/net/ethernet/moxa/moxart_ether.h |   1 +
+>  2 files changed, 179 insertions(+), 1 deletion(-)
 > 
-> Being enabled, the feature enforces bdi max_ratio limit even if global (10%)
-> dirty limit is not reached. Of course, the effect is not visible until
-> /sys/class/bdi/X:Y/max_ratio is decreased to some reasonable value.
-> 
-> ...
->
-> --- a/Documentation/ABI/testing/sysfs-class-bdi
-> +++ b/Documentation/ABI/testing/sysfs-class-bdi
-> @@ -53,3 +53,11 @@ stable_pages_required (read-only)
+> diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
+> index 3c14afd..bcc6005 100644
+> --- a/drivers/net/ethernet/moxa/moxart_ether.c
+> +++ b/drivers/net/ethernet/moxa/moxart_ether.c
+> @@ -26,9 +26,15 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/crc32.h>
+>  #include <linux/crc32c.h>
+> +#include <linux/phy.h>
+> +#include <linux/of_mdio.h>
 >  
->  	If set, the backing device requires that all pages comprising a write
->  	request must not be changed until writeout is complete.
-> +
-> +strictlimit (read-write)
-> +
-> +	Forces per-BDI checks for the share of given device in the write-back
-> +	cache even before the global background dirty limit is reached. This
-> +	is useful in situations where the global limit is much higher than
-> +	affordable for given relatively slow (or untrusted) device. Turning
-> +	strictlimit on has no visible effect if max_ratio is equal to 100%.
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index ce682f7..4ee1d64 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -234,11 +234,46 @@ static ssize_t stable_pages_required_show(struct device *dev,
->  }
->  static DEVICE_ATTR_RO(stable_pages_required);
+>  #include "moxart_ether.h"
 >  
-> +static ssize_t strictlimit_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
+> +#define DRV_NAME                "moxart-ethernet"
+> +#define DRV_VERSION             "0.2"
+> +#define MOXART_NUM_STATS        16
+
+MOXART_NUM_STATS should be defined as ARRAY_SIZE(ethtool_stats_keys).
+
+[...]
+> +static void moxart_get_drvinfo(struct net_device *ndev,
+> +			       struct ethtool_drvinfo *info)
 > +{
-> +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-> +	unsigned int val;
-> +	ssize_t ret;
-> +
-> +	ret = kstrtouint(buf, 10, &val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	switch (val) {
-> +	case 0:
-> +		bdi->capabilities &= ~BDI_CAP_STRICTLIMIT;
-> +		break;
-> +	case 1:
-> +		bdi->capabilities |= BDI_CAP_STRICTLIMIT;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return count;
-> +}
-> +static ssize_t strictlimit_show(struct device *dev,
-> +		struct device_attribute *attr, char *page)
-> +{
-> +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-> +
-> +	return snprintf(page, PAGE_SIZE-1, "%d\n",
-> +			!!(bdi->capabilities & BDI_CAP_STRICTLIMIT));
-> +}
-> +static DEVICE_ATTR_RW(strictlimit);
-> +
->  static struct attribute *bdi_dev_attrs[] = {
->  	&dev_attr_read_ahead_kb.attr,
->  	&dev_attr_min_ratio.attr,
->  	&dev_attr_max_ratio.attr,
->  	&dev_attr_stable_pages_required.attr,
-> +	&dev_attr_strictlimit.attr,
->  	NULL,
+> +	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
+> +	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
+> +	strlcpy(info->bus_info, dev_name(&ndev->dev), sizeof(info->bus_info));
+> +	info->n_stats = MOXART_NUM_STATS;
+[...]
 
-Well the patch is certainly simple and straightforward enough and
-*seems* like it will be useful.  The main (and large!) downside is that
-it adds to the user interface so we'll have to maintain this feature
-and its functionality for ever.
+Don't initialise n_stats here; the core will initialise it using your
+get_sset_count implementation.
 
-Given this, my concern is that while potentially useful, the feature
-might not be *sufficiently* useful to justify its inclusion.  So we'll
-end up addressing these issues by other means, then we're left
-maintaining this obsolete legacy feature.
+Ben.
 
-So I'm thinking that unless someone can show that this is good and
-complete and sufficient for a "large enough" set of issues, I'll take a
-pass on the patch[1].  What do people think?
-
-
-[1] Actually, I'll stick it in -mm and maintain it, so next time
-someone reports an issue I can say "hey, try this".
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
