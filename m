@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab3KVDXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 22:23:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab3KVDXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 22:23:32 -0500
-Date: Fri, 22 Nov 2013 10:45:06 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [patch 9/9 v3] x86: export x86 boot_params to sysfs
-Message-ID: <20131122024506.GB3874@dhcp-16-126.nay.redhat.com>
-References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
- <20131121061757.030007746@dhcp-16-126.nay.redhat.com>
- <20131121164554.GB15083@kroah.com>
+	id S1754224Ab3KVD0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 22:26:06 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:35013 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3KVD0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 22:26:03 -0500
+Date: Fri, 22 Nov 2013 04:26:00 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Add a text_poke syscall
+Message-ID: <20131122032600.GJ29695@two.firstfloor.org>
+References: <1384820855-27790-1-git-send-email-andi@firstfloor.org>
+ <20131119064948.GA32025@gmail.com>
+ <20131119191034.GF29695@two.firstfloor.org>
+ <20131121130715.GC8044@home.goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131121164554.GB15083@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131121130715.GC8044@home.goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/13 at 08:45am, Greg KH wrote:
-> > +static struct kobj_attribute boot_params_version_attr =
-> > +	__ATTR(version, S_IRUGO, boot_params_version_show, NULL);
+> Seems you need to solve a catch-22 on this. You need to show that there's a
+> need (application), that requires this new feature and also show that all the
+
+Patching code is quite common these days.
+
+I'm just stating that.
+
+> existing kernel features are inefficient for what is needed.
+
+I believe it's possible to do it without kernel support, just hard and
+ugly. 
+
+So the idea was: the kernel already knows how to do it. It does it
+in a (not perfect but reasonable way). Let's just export it.
+
+Will make everyone's live easier. 
+
+Is a single place so if any changes are needed they are all
+centralized. If there are ever any new bugs in this area
+they could be worked around in a single place.
+
+It's too hard to leave it to user space programmers @-)
+
 > 
-> __ATTR_RO() please.
+> The catch-22 may be that a application wont be created without the feature,
+> but that's the problem you need to solve.
 
-Will do
+Of course the applications get created, they just likely have extremly
+subtle bugs if they don't quite conform to the official protocol.
 
-> 
-> > +static struct kobj_attribute type_attr =
-> > +		__ATTR(type, S_IRUGO, setup_data_type_show, NULL);
-> 
-> __ATTR_RO() here too.
+Or they may suddenly break when running on some new CPUs which
+has different requirements.
 
-Will do
-
-[snip]
-> > +
-> > +	ret = get_setup_data_size(nr, &size);
-> > +	if (ret)
-> > +		goto out_kobj;
-> > +
-> > +	data_attr.size = size;
-> > +	ret = sysfs_create_bin_file(kobj, &data_attr);
-> > +	if (ret)
-> > +		goto out_file;
-> > +	*kobjp = kobj;
-> 
-> You just raced with userspace (creating and announcing the kobject and
-> then, afterward, at some later point in time, created the sysfs files.
-> Please use the groups option to create the files properly before
-> announcing the kobject to userspace.
-
-Will do
-
-[snip]
-> > +		goto out_boot_params_kobj;
-> > +	ret = sysfs_create_bin_file(boot_params_kobj,
-> > +				      &boot_params_data_attr);
-> > +	if (ret)
-> > +		goto out_create_file;
-> > +
-> > +	ret = create_setup_data_nodes(boot_params_kobj);
-> > +	if (ret)
-> > +		goto out_create_bin;
-> > +
-> > +	return 0;
-> 
-> Same race condition here as well.  Use a groups structure please.
-> 
-
-Will use group attributes
-
-Thanks for review
-Dave
+-Andi
