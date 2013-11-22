@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab3KVQXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:23:25 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:41015 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab3KVQXV (ORCPT
+	id S932103Ab3KVQXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:23:31 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:41771 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab3KVQX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:23:21 -0500
+	Fri, 22 Nov 2013 11:23:27 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com
 Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 01/23] mtd: st_spi_fsm: Allocate resources and register with MTD framework
-Date: Fri, 22 Nov 2013 16:22:38 +0000
-Message-Id: <1385137380-28968-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 03/23] mtd: st_spi_fsm: Initialise and configure the FSM for normal working conditions
+Date: Fri, 22 Nov 2013 16:22:40 +0000
+Message-Id: <1385137380-28968-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
 References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
@@ -21,200 +21,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a new driver. It's used to communicate with a special type of
-optimised Serial Flash Controller called the FSM. The FSM uses a subset
-of the SPI protocol to communicate with supported NOR-Flash devices.
+This patch uses default values to initialise a connected flash chip. This
+includes; a device soft reset, setting of a safe working frequency, a
+switch into Fast Sequencing Mode, configuring of timing data and a purge
+of the FIFO.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/Kconfig      |   7 +++
- drivers/mtd/devices/Makefile     |   1 +
- drivers/mtd/devices/st_spi_fsm.c | 111 +++++++++++++++++++++++++++++++++++++++
- drivers/mtd/devices/st_spi_fsm.h |  27 ++++++++++
- 4 files changed, 146 insertions(+)
- create mode 100644 drivers/mtd/devices/st_spi_fsm.c
- create mode 100644 drivers/mtd/devices/st_spi_fsm.h
+ drivers/mtd/devices/st_spi_fsm.c | 116 +++++++++++++++++++++++++++++++++++++++
+ drivers/mtd/devices/st_spi_fsm.h |  11 ++++
+ 2 files changed, 127 insertions(+)
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 74ab4b7..d977281 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -217,6 +217,13 @@ config MTD_DOCG3
- 	  M-Systems and now Sandisk. The support is very experimental,
- 	  and doesn't give access to any write operations.
- 
-+config MTD_ST_SPI_FSM
-+	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-+	help
-+	  This provides an MTD device driver for the ST Microelectronics
-+	  SPI FSM Serial Flash Controller and support for a subset of
-+	  connected Serial Flash devices.
-+
- if MTD_DOCG3
- config BCH_CONST_M
- 	default 14
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index d83bd73..c68868f 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
- obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
-+obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
- 
- 
- CFLAGS_docg3.o			+= -I$(src)
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-new file mode 100644
-index 0000000..1e3abde
---- /dev/null
+index 1e3abde..fe96b47 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -0,0 +1,111 @@
-+/*
-+ * st_spi_fsm.c	Support for ST Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2013 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+#include <asm/io.h>
-+
-+#include "st_spi_fsm.h"
-+
-+static int stfsm_probe(struct platform_device *pdev)
+@@ -25,11 +25,121 @@
+ 
+ #include "st_spi_fsm.h"
+ 
++static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
 +{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res;
-+	struct stfsm *fsm;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No DT found\n");
-+		return -EINVAL;
-+	}
-+
-+	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
-+	if (!fsm)
-+		return -ENOMEM;
-+
-+	fsm->dev = &pdev->dev;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Resource not found\n");
-+		return -ENODEV;
-+	}
-+
-+	fsm->region = devm_request_mem_region(&pdev->dev, res->start,
-+					      resource_size(res), pdev->name);
-+	if (!fsm->region) {
-+		dev_err(&pdev->dev,
-+			"Failed to reserve memory region [0x%08x-0x%08x]\n",
-+			res->start, res->end);
-+		return -EBUSY;
-+	}
-+
-+	fsm->base = devm_ioremap_nocache(&pdev->dev,
-+					 res->start, resource_size(res));
-+	if (!fsm->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap [0x%08x]\n", res->start);
-+		return -EINVAL;
-+	}
-+
-+	mutex_init(&fsm->lock);
-+
-+	platform_set_drvdata(pdev, fsm);
-+
-+	fsm->mtd.dev.parent	= &pdev->dev;
-+	fsm->mtd.type		= MTD_NORFLASH;
-+	fsm->mtd.writesize	= 4;
-+	fsm->mtd.writebufsize	= fsm->mtd.writesize;
-+	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+
-+	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
++	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
 +}
 +
-+static int stfsm_remove(struct platform_device *pdev)
++static void stfsm_clear_fifo(struct stfsm *fsm)
 +{
-+	struct stfsm *fsm = platform_get_drvdata(pdev);
-+	int err;
++	uint32_t avail;
 +
-+	err = mtd_device_unregister(&fsm->mtd);
-+	if (err)
-+		return err;
++	for (;;) {
++		avail = stfsm_fifo_available(fsm);
++		if (!avail)
++			break;
++
++		while (avail) {
++			readl(fsm->base + SPI_FAST_SEQ_DATA_REG);
++			avail--;
++		}
++	}
++}
++
++static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
++{
++	int ret, timeout = 10;
++
++	/* Wait for controller to accept mode change */
++	while(--timeout) {
++		ret = readl(fsm->base + SPI_STA_MODE_CHANGE);
++		if (ret & 0x1)
++			break;
++		udelay(1);
++	}
++
++	if (!timeout)
++		return -EBUSY;
++
++	writel(mode, fsm->base + SPI_MODESELECT);
 +
 +	return 0;
 +}
 +
-+static struct of_device_id stfsm_match[] = {
-+	{ .compatible = "st,spi-fsm", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, spi_fsm_match);
++static void stfsm_set_freq(struct stfsm *fsm, uint32_t spi_freq)
++{
++	uint32_t emi_freq;
++	uint32_t clk_div;
 +
-+static struct platform_driver stfsm_driver = {
-+	.probe		= stfsm_probe,
-+	.remove		= stfsm_remove,
-+	.driver		= {
-+		.name	= "st-spi-fsm",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = stfsm_match,
-+	},
-+};
-+module_platform_driver(stfsm_driver);
++	/* TODO: Make this dynamic */
++	emi_freq = STFSM_DEFAULT_EMI_FREQ;
 +
-+MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
-+MODULE_DESCRIPTION("ST SPI FSM driver");
-+MODULE_LICENSE("GPL");
++	/*
++	 * Calculate clk_div - values between 2 and 128
++	 * Multiple of 2, rounded up
++	 */
++	clk_div = 2*((emi_freq + (2*spi_freq - 1))/(2*spi_freq));
++	if (clk_div < 2)
++		clk_div = 2;
++	else if (clk_div > 128)
++		clk_div = 128;
++
++	/*
++	 * Determine a suitable delay for the IP to complete a change of
++	 * direction of the FIFO. The required delay is related to the clock
++	 * divider used. The following heuristics are based on empirical tests,
++	 * using a 100MHz EMI clock.
++	 */
++	if (clk_div <= 4)
++		fsm->fifo_dir_delay = 0;
++	else if (clk_div <= 10)
++		fsm->fifo_dir_delay = 1;
++	else
++		fsm->fifo_dir_delay = (clk_div + 9) / 10;
++
++	dev_dbg(fsm->dev, "emi_clk = %uHZ, spi_freq = %uHZ, clk_div = %u\n",
++		emi_freq, spi_freq, clk_div);
++
++	writel(clk_div, fsm->base + SPI_CLOCKDIV);
++}
++
++static int stfsm_init(struct stfsm *fsm)
++{
++	int ret;
++
++	/* Perform a soft reset of the FSM controller */
++	writel(SEQ_CFG_SWRESET, fsm->base + SPI_FAST_SEQ_CFG);
++	udelay(1);
++	writel(0, fsm->base + SPI_FAST_SEQ_CFG);
++
++	/* Set clock to 'safe' frequency initially */
++	stfsm_set_freq(fsm, STFSM_FLASH_SAFE_FREQ);
++
++	/* Switch to FSM */
++	ret = stfsm_set_mode(fsm, SPI_MODESELECT_FSM);
++	if (ret)
++		return ret;
++
++	/* Set timing parameters */
++	writel(SPI_CFG_DEVICE_ST            |
++	       SPI_CFG_DEFAULT_MIN_CS_HIGH  |
++	       SPI_CFG_DEFAULT_CS_SETUPHOLD |
++	       SPI_CFG_DEFAULT_DATA_HOLD,
++	       fsm->base + SPI_CONFIGDATA);
++	writel(STFSM_DEFAULT_WR_TIME, fsm->base + SPI_STATUS_WR_TIME_REG);
++
++	/* Clear FIFO, just in case */
++	stfsm_clear_fifo(fsm);
++
++	return 0;
++}
++
+ static int stfsm_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct resource *res;
+ 	struct stfsm *fsm;
++	int ret;
+ 
+ 	if (!np) {
+ 		dev_err(&pdev->dev, "No DT found\n");
+@@ -66,6 +176,12 @@ static int stfsm_probe(struct platform_device *pdev)
+ 
+ 	mutex_init(&fsm->lock);
+ 
++	ret = stfsm_init(fsm);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to initialise FSM Controller\n");
++		return ret;
++	}
++
+ 	platform_set_drvdata(pdev, fsm);
+ 
+ 	fsm->mtd.dev.parent	= &pdev->dev;
 diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-new file mode 100644
-index 0000000..df45e1a
---- /dev/null
+index b420a43..4e92e58 100644
+--- a/drivers/mtd/devices/st_spi_fsm.h
 +++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -0,0 +1,27 @@
-+/*
-+ * st_spi_fsm.c	Support for ST Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2013 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
+@@ -69,6 +69,10 @@
+ #define SPI_CFG_CS_SETUPHOLD(x)		(((x) & 0xff) << 16)
+ #define SPI_CFG_DATA_HOLD(x)		(((x) & 0xff) << 24)
+ 
++#define SPI_CFG_DEFAULT_MIN_CS_HIGH	SPI_CFG_MIN_CS_HIGH(0x0AA)
++#define SPI_CFG_DEFAULT_CS_SETUPHOLD	SPI_CFG_CS_SETUPHOLD(0xA0)
++#define SPI_CFG_DEFAULT_DATA_HOLD	SPI_CFG_DATA_HOLD(0x00)
 +
-+#ifndef ST_SPI_FSM_H
-+#define ST_SPI_FSM_H
+ /*
+  * Register: SPI_FAST_SEQ_TRANSFER_SIZE
+  */
+@@ -180,12 +184,19 @@
+ #define STFSM_INST_WAIT			STFSM_INSTR(STFSM_OPC_WAIT,	0)
+ #define STFSM_INST_STOP			STFSM_INSTR(STFSM_OPC_STOP,	0)
+ 
++#define STFSM_DEFAULT_EMI_FREQ	100000000UL                        /* 100 MHz */
++#define STFSM_DEFAULT_WR_TIME	STFSM_DEFAULT_EMI_FREQ * (15/1000) /* 15ms */
 +
-+struct stfsm {
-+	struct device		*dev;
-+	void __iomem		*base;
-+	struct resource		*region;
-+	struct mtd_info		mtd;
-+	struct mutex		lock;
-+};
++#define STFSM_FLASH_SAFE_FREQ	10000000UL                         /* 10 MHz */
 +
-+#endif	/* ST_SPI_FSM_H */
+ struct stfsm {
+ 	struct device		*dev;
+ 	void __iomem		*base;
+ 	struct resource		*region;
+ 	struct mtd_info		mtd;
+ 	struct mutex		lock;
++
++	uint32_t		fifo_dir_delay;
+ };
+ 
+ #endif	/* ST_SPI_FSM_H */
 -- 
 1.8.1.2
 
