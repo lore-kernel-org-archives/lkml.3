@@ -1,144 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3KVQ5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:57:48 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:43692 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755577Ab3KVQ5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:57:46 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        scottwood@freescale.com
-Subject: [PATCH] powerpc 8xx: mfspr SPRN_TBRx in lieu of mftb/mftbu is not supported
-Message-Id: <20131122165731.B06B91A4DE7@localhost.localdomain>
-Date: Fri, 22 Nov 2013 17:57:31 +0100 (CET)
+	id S1755782Ab3KVRBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:01:42 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46237 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab3KVRBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:01:41 -0500
+Message-ID: <528F8DF1.2060307@linutronix.de>
+Date: Fri, 22 Nov 2013 18:01:37 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Mark Jackson <mpfj-list@newflow.co.uk>
+CC: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        jkosina@suse.cz, anatol.pomozov@gmail.com,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Bin Liu <binmlist@gmail.com>
+Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
+References: <528F7E8F.5050807@newflow.co.uk> <528F8741.1060406@linutronix.de> <528F8B35.8070408@newflow.co.uk>
+In-Reply-To: <528F8B35.8070408@newflow.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit beb2dc0a7a84be003ce54e98b95d65cc66e6e536 breaks the MPC8xx which seems
-to not support using mfspr SPRN_TBRx instead of mftb/mftbu despite
-what is written in the reference manual
-This patchs revert to the use of mftb/mftbu when CONFIG_8xx is selected
+On 11/22/2013 05:49 PM, Mark Jackson wrote:
+>> and the ID pin not on ground or 3.3V?
+>> What are the side effects? I remember correctly Bin wanted to avoid
+>> settings this if it could be avoided.
+> 
+> Yes ... we have a host only USB port and an unconnected ID pin.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Is it too late to connect that pin?
 
-diff -ur a/arch/powerpc/boot/util.S b/arch/powerpc/boot/util.S
---- a/arch/powerpc/boot/util.S	2013-11-20 21:54:45.000000000 +0100
-+++ b/arch/powerpc/boot/util.S	2013-11-22 17:19:51.880386544 +0100
-@@ -71,18 +71,32 @@
- 	add	r4,r4,r5
- 	addi	r4,r4,-1
- 	divw	r4,r4,r5	/* BUS ticks */
-+#ifdef CONFIG_8xx
-+1:	mftbu	r5
-+	mftb	r6
-+	mftbu	r7
-+#else
- 1:	mfspr	r5, SPRN_TBRU
- 	mfspr	r6, SPRN_TBRL
- 	mfspr	r7, SPRN_TBRU
-+#endif
- 	cmpw	0,r5,r7
- 	bne	1b		/* Get [synced] base time */
- 	addc	r9,r6,r4	/* Compute end time */
- 	addze	r8,r5
-+#ifdef CONFIG_8xx
-+2:	mftbu	r5
-+#else
- 2:	mfspr	r5, SPRN_TBRU
-+#endif
- 	cmpw	0,r5,r8
- 	blt	2b
- 	bgt	3f
-+#ifdef CONFIG_8xx
-+	mftb	r6
-+#else
- 	mfspr	r6, SPRN_TBRL
-+#endif
- 	cmpw	0,r6,r9
- 	blt	2b
- 3:	blr
-diff -ur a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
---- a/arch/powerpc/include/asm/ppc_asm.h	2013-11-20 21:54:45.000000000 +0100
-+++ b/arch/powerpc/include/asm/ppc_asm.h	2013-11-22 17:24:57.839272480 +0100
-@@ -438,6 +438,8 @@
- 	cmpwi dest,0;			\
- 	beq-  90b;			\
- END_FTR_SECTION_NESTED(CPU_FTR_CELL_TB_BUG, CPU_FTR_CELL_TB_BUG, 96)
-+#elif defined(CONFIG_8xx)
-+#define MFTB(dest)			mftb dest
- #else
- #define MFTB(dest)			mfspr dest, SPRN_TBRL
- #endif
-diff -ur a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
---- a/arch/powerpc/include/asm/reg.h	2013-11-20 21:54:45.000000000 +0100
-+++ b/arch/powerpc/include/asm/reg.h	2013-11-22 17:27:44.009391916 +0100
-@@ -1154,12 +1154,19 @@
- 
- #else /* __powerpc64__ */
- 
-+#if defined(CONFIG_8xx)
-+#define mftbl()		({unsigned long rval;	\
-+			asm volatile("mftbl %0" : "=r" (rval)); rval;})
-+#define mftbu()		({unsigned long rval;	\
-+			asm volatile("mftbu %0" : "=r" (rval)); rval;})
-+#else
- #define mftbl()		({unsigned long rval;	\
- 			asm volatile("mfspr %0, %1" : "=r" (rval) : \
- 				"i" (SPRN_TBRL)); rval;})
- #define mftbu()		({unsigned long rval;	\
- 			asm volatile("mfspr %0, %1" : "=r" (rval) : \
- 				"i" (SPRN_TBRU)); rval;})
-+#endif
- #endif /* !__powerpc64__ */
- 
- #define mttbl(v)	asm volatile("mttbl %0":: "r"(v))
-diff -ur a/arch/powerpc/include/asm/timex.h b/arch/powerpc/include/asm/timex.h
---- a/arch/powerpc/include/asm/timex.h	2013-11-20 21:54:45.000000000 +0100
-+++ b/arch/powerpc/include/asm/timex.h	2013-11-22 17:29:31.207016228 +0100
-@@ -29,7 +29,11 @@
- 	ret = 0;
- 
- 	__asm__ __volatile__(
-+#ifdef CONFIG_8xx
-+		"97:	mftb %0\n"
-+#else
- 		"97:	mfspr %0, %2\n"
-+#endif
- 		"99:\n"
- 		".section __ftr_fixup,\"a\"\n"
- 		".align 2\n"
-@@ -41,7 +45,11 @@
- 		"	.long 0\n"
- 		"	.long 0\n"
- 		".previous"
-+#ifdef CONFIG_8xx
-+		: "=r" (ret) : "i" (CPU_FTR_601));
-+#else
- 		: "=r" (ret) : "i" (CPU_FTR_601), "i" (SPRN_TBRL));
-+#endif
- 	return ret;
- #endif
- }
-diff -ur a/arch/powerpc/kernel/vdso32/gettimeofday.S b/arch/powerpc/kernel/vdso32/gettimeofday.S
---- a/arch/powerpc/kernel/vdso32/gettimeofday.S	2013-11-20 21:54:46.000000000 +0100
-+++ b/arch/powerpc/kernel/vdso32/gettimeofday.S	2013-11-22 17:30:53.646493897 +0100
-@@ -232,9 +232,15 @@
- 	lwz	r6,(CFG_TB_ORIG_STAMP+4)(r9)
- 
- 	/* Get a stable TB value */
-+#ifdef CONFIG_8xx
-+2:	mftbu	r3
-+	mftbl	r4
-+	mftbu	r0
-+#else
- 2:	mfspr	r3, SPRN_TBRU
- 	mfspr	r4, SPRN_TBRL
- 	mfspr	r0, SPRN_TBRU
-+#endif
- 	cmplw	cr0,r3,r0
- 	bne-	2b
- 
+> AFAIK it defaults to device mode so I can't see any devices that get
+> plugged into the USB port.
+> 
+> If I tweak the s/w to "force" host mode on, then everything appears to
+> work okay.
+> 
+> I guess it's more of a hardware oversight that we left the pin floating
+> but in the real world, I guess someone may want this feature to they
+> can change the usb port type ?
+
+This is something I would prefer to avoid if possible. We have the
+dr_mode attribute in DT. Based on that one we act as a device or host.
+Now if you decide (via dr_mode) either for host or device that means we
+have to set that bit. Where I feel a little uncomfortable is when
+someone having OTG runs in hostmode and attaches a host.
+
+> 
+> Either way, I need to fix the current h/w (which can be done via s/w)
+> hence the patch.
+I've seen many projects where this pin has been forgotten and it could
+not be changed in SW and they patched the HW. Usually this is noticed
+in the early phase and a wire is just soldered and the redesign has it
+fixed. So I don't think that this is a big issue.
+Do you insists on having this change merged upstream?
+
+> 
+> Mark J.
+> 
+
+Sebastian
