@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab3KVXDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 18:03:55 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:55656 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab3KVXDx (ORCPT
+	id S1756273Ab3KVXEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 18:04:08 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:51768 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab3KVXEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 18:03:53 -0500
+	Fri, 22 Nov 2013 18:04:05 -0500
+Date: Fri, 22 Nov 2013 18:04:00 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: cl@linux-foundation.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] percpu: stop the loop when a cpu belongs to a new
+ group
+Message-ID: <20131122230400.GG8981@mtj.dyndns.org>
+References: <1382345893-6644-1-git-send-email-weiyang@linux.vnet.ibm.com>
+ <20131027123008.GJ14934@mtj.dyndns.org>
+ <20131028030055.GC15642@weiyang.vnet.ibm.com>
+ <20131028113120.GB11541@mtj.dyndns.org>
+ <20131028151746.GA7548@weiyang.vnet.ibm.com>
+ <20131120030056.GA15273@weiyang.vnet.ibm.com>
+ <20131120055121.GA13754@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <528F0DB8.7020604@windriver.com>
-References: <528F0DB8.7020604@windriver.com>
-Date: Fri, 22 Nov 2013 15:03:52 -0800
-X-Google-Sender-Auth: JbyaWmg6lETjA6rm8g6Oj91fXeg
-Message-ID: <CAL3LdT5w5sz8ftm2FBHUT3hajrGZKjwfK5m0WqdcGMTtaMaEGQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] e1000: prevent oops when adapter is being closed and
- reset simultaneously
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: yzhu1 <Yanjun.Zhu@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        zhuyj <zyjzyj2000@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120055121.GA13754@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:54 PM, yzhu1 <Yanjun.Zhu@windriver.com> wrote:
-> Hi, maintainers
->
-> This change is based on a similar change made to e1000e support in
-> commit bb9e44d0d0f4 ("e1000e: prevent oops when adapter is being closed
-> and reset simultaneously").  The same issue has also been observed
-> on the older e1000 cards.
->
-> Here, we have increased the RESET_COUNT value to 50 because there are too
-> many accesses to e1000 nic on stress tests to e1000 nic, it is not enough
-> to set RESET_COUT 25. Experimentation has shown that it is enough to set
-> RESET_COUNT 50.
->
-> Please help me to merge this patch. Thanks a lot.
->
-> Zhu Yanjun
+Hello,
 
-Please remember to actually include the driver maintainer for the
-driver your patch is against (i.e. me).
+On Wed, Nov 20, 2013 at 12:51:21AM -0500, Tejun Heo wrote:
+> The patch is just extremely marginal.  Ah well... why not?  I'll apply
+> it once -rc1 drops.
 
-I will add your patch to my queue.
+So, I was about to apply this patch but decided against it.  It
+doesn't really make anything better and the code looks worse
+afterwards.
+
+Thanks.
 
 -- 
-Cheers,
-Jeff
+tejun
