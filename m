@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab3KVB66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:58:58 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:49188 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3KVB6u (ORCPT
+	id S1755757Ab3KVB7r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 20:59:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49189 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab3KVB5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:58:50 -0500
+	Thu, 21 Nov 2013 20:57:40 -0500
+From: Joel Fernandes <joelf@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <benoit.cousson@linaro.org>, <santosh.shilimkar@ti.com>,
+        <jgchunter@gmail.com>, <rnayak@ti.com>, <balbi@ti.com>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 6/8] devicetree: doc: Document ti,timer-parent property
+Date: Thu, 21 Nov 2013 19:56:52 -0600
+Message-ID: <1385085414-9034-7-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1385085414-9034-1-git-send-email-joelf@ti.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CANEJEGu_2YdVOjcnzh30RPMiP0KC5bL6JasxMS_+1xV9poxgQw@mail.gmail.com>
-References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
- <20131120.004026.2013972041095203460.davem@davemloft.net> <CANEJEGtBmvFNcFzOW9ZnOFd=ZMnz82ajcN52YqW3+n0+=rhxBA@mail.gmail.com>
- <20131120.135413.920731121262719289.davem@davemloft.net> <CANEJEGtXOjxj+85QVfWFGH6WuxxCz6uAfEuUo7bv9YEwh_8OAw@mail.gmail.com>
- <CANEJEGu_2YdVOjcnzh30RPMiP0KC5bL6JasxMS_+1xV9poxgQw@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 21 Nov 2013 17:58:10 -0800
-Message-ID: <CAGVrzcase25NosVHA74OLnviJj7nU_2Rxki_hvi8bOwznDuWGg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B under ChromeOS
-To: Grant Grundler <grundler@google.com>
-Cc: David Miller <davem@davemloft.net>, Freddy Xin <freddy@asix.com.tw>,
-        netdev <netdev@vger.kernel.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, davemloft@davemloft.net,
-        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>, Daniel_ASIX <daniel@asix.com.tw>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/21 Grant Grundler <grundler@google.com>:
-> On Wed, Nov 20, 2013 at 11:32 AM, Grant Grundler <grundler@google.com> wrote:
->> Seems like this should be part of usbnet_resume code based on whether
->> the driver provides mdio_write hook (most USBNET drivers do).
->
-> Just to be clear: I don't think this is feasible for the now obvious
-> reason that not all device lose phy stat on resume. :/
->
-> Freddy sent me a patch that saves/restores MII_ADVERTISE and MII_BMCR
-> registers. Testing that now and he'll post if that all works out.
+Timer's parent mux clocks require a parent clock alias, provide the same from
+device tree.
 
-That should be enough to ensure the PHY is put back into a consistent
-state. So long as you are suspending/resuming from a configuration
-where autoneg was enabled, I would not expect anything bad to happen.
-If the link was forced, that is a different story.
+Ultimately this will be provided from DT as clock node phandles but clk-mux
+driver DT bindings series is still under going review. So to keep things
+working during the timer migration, we add this property.  Originally this was
+hardcoded in timer.c, now we do the same in DT and would be removing the
+hardcoded names from timer.c
 
-One way to make sure this work properly without driver-specific code
-is to include that functionality into the PHY library. As far as I can
-see it the asix drivers do not use it but implement the old-style
-mii_bus interface so that would be a first step.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ Documentation/devicetree/bindings/arm/omap/timer.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
+index 6cf7a75..644bc61 100644
+--- a/Documentation/devicetree/bindings/arm/omap/timer.txt
++++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
+@@ -24,6 +24,11 @@ Required properties:
+ 			where <X> is the instance number of the timer from the
+ 			HW spec.
+ 
++Required properties for system timers (clockevents/clocksource):
++- ti,timer-parent:	System timer's parent mux clock needs to be setup.
++			This is currently hardcoded in code, for DT boot we
++			move this to DT.
++
+ Optional properties:
+ - ti,timer-alwon:	Indicates the timer is in an alway-on power domain.
+ - ti,timer-dsp:		Indicates the timer can interrupt the on-chip DSP in
 -- 
-Florian
+1.8.1.2
+
