@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab3KVQAB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:00:01 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:54755 "EHLO
+	id S1755980Ab3KVQA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:00:57 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:54751 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab3KVP75 (ORCPT
+	with ESMTP id S932225Ab3KVP7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:59:57 -0500
+	Fri, 22 Nov 2013 10:59:55 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 6/7] n_tty: Only perform wakeups for waiters
-Date: Fri, 22 Nov 2013 10:59:24 -0500
-Message-Id: <1385135965-4235-7-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next 5/7] n_tty: Refactor input_available_p() by call site
+Date: Fri, 22 Nov 2013 10:59:23 -0500
+Message-Id: <1385135965-4235-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>
 References: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>
@@ -22,70 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only wakeup the _waiting_ reader, polls and/or writer(s).
+Distinguish if caller is n_tty_poll() or n_tty_read(), and
+set the read/wakeup threshold accordingly.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/tty/n_tty.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 8f2356e..aae28a6 100644
+index 9298b68..8f2356e 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -275,7 +275,8 @@ static void n_tty_check_unthrottle(struct tty_struct *tty)
- 			return;
+@@ -1878,14 +1878,15 @@ static int n_tty_open(struct tty_struct *tty)
+ 	return 0;
+ }
+ 
+-static inline int input_available_p(struct tty_struct *tty, int amt)
++static inline int input_available_p(struct tty_struct *tty, int poll)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
++	int amt = poll && !TIME_CHAR(tty) ? MIN_CHAR(tty) : 1;
+ 
+ 	if (ldata->icanon && !L_EXTPROC(tty)) {
+ 		if (ldata->canon_head != ldata->read_tail)
+ 			return 1;
+-	} else if (read_cnt(ldata) >= (amt ? amt : 1))
++	} else if (read_cnt(ldata) >= amt)
+ 		return 1;
+ 
+ 	return 0;
+@@ -2384,7 +2385,7 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
+ 
+ 	poll_wait(file, &tty->read_wait, wait);
+ 	poll_wait(file, &tty->write_wait, wait);
+-	if (input_available_p(tty, TIME_CHAR(tty) ? 0 : MIN_CHAR(tty)))
++	if (input_available_p(tty, 1))
+ 		mask |= POLLIN | POLLRDNORM;
+ 	else if (ldata->icanon)
  		n_tty_set_room(tty);
- 		n_tty_write_wakeup(tty->link);
--		wake_up_interruptible_poll(&tty->link->write_wait, POLLOUT);
-+		if (waitqueue_active(&tty->link->write_wait))
-+			wake_up_interruptible_poll(&tty->link->write_wait, POLLOUT);
- 		return;
- 	}
- 
-@@ -350,7 +351,8 @@ static void n_tty_packet_mode_flush(struct tty_struct *tty)
- 	spin_lock_irqsave(&tty->ctrl_lock, flags);
- 	if (tty->link->packet) {
- 		tty->ctrl_status |= TIOCPKT_FLUSHREAD;
--		wake_up_interruptible(&tty->link->read_wait);
-+		if (waitqueue_active(&tty->link->read_wait))
-+			wake_up_interruptible(&tty->link->read_wait);
- 	}
- 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
- }
-@@ -1156,7 +1158,8 @@ static void n_tty_receive_break(struct tty_struct *tty)
- 		put_tty_queue('\0', ldata);
- 	}
- 	put_tty_queue('\0', ldata);
--	wake_up_interruptible(&tty->read_wait);
-+	if (waitqueue_active(&tty->read_wait))
-+		wake_up_interruptible(&tty->read_wait);
- }
- 
- /**
-@@ -1214,7 +1217,8 @@ static void n_tty_receive_parity_error(struct tty_struct *tty, unsigned char c)
- 		put_tty_queue('\0', ldata);
- 	else
- 		put_tty_queue(c, ldata);
--	wake_up_interruptible(&tty->read_wait);
-+	if (waitqueue_active(&tty->read_wait))
-+		wake_up_interruptible(&tty->read_wait);
- }
- 
- static void
-@@ -1808,8 +1812,10 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
- 		start_tty(tty);
- 
- 	/* The termios change make the tty ready for I/O */
--	wake_up_interruptible(&tty->write_wait);
--	wake_up_interruptible(&tty->read_wait);
-+	if (waitqueue_active(&tty->write_wait))
-+		wake_up_interruptible(&tty->write_wait);
-+	if (waitqueue_active(&tty->read_wait))
-+		wake_up_interruptible(&tty->read_wait);
- }
- 
- /**
 -- 
 1.8.1.2
 
