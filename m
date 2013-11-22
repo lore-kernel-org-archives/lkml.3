@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab3KVWSs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:18:48 -0500
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:51571 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab3KVWSn (ORCPT
+	id S1756237Ab3KVWUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 17:20:50 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:41792 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab3KVWUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:18:43 -0500
-Date: Fri, 22 Nov 2013 17:18:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: William Dauchy <wdauchy@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-Message-ID: <20131122221839.GD8981@mtj.dyndns.org>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
- <52820030.6000806@huawei.com>
- <20131112143147.GB6049@dhcp22.suse.cz>
- <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
- <20131112165504.GF6049@dhcp22.suse.cz>
- <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
- <20131115062458.GA9755@mtj.dyndns.org>
- <20131115075401.GB9755@mtj.dyndns.org>
- <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
- <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
+	Fri, 22 Nov 2013 17:20:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
+References: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 22 Nov 2013 15:20:28 -0700
+Message-ID: <CAErSpo5OAOtn9cbQeL7bvAjwUWmA1rYQM5R5G6R2P4VJo+Drrw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: Yu Zhao <yu.zhao@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 09:59:37PM +0100, William Dauchy wrote:
-> Hugh, Tejun,
-> 
-> Do we have some news about this patch? I'm also hitting this bug on a 3.10.x
+On Wed, Nov 6, 2013 at 7:49 AM, ethan.zhao <ethan.kernel@gmail.com> wrote:
+> Though no specification about NumVFs register initial value after POST, to void the confusion
+> lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
+> to zero:
+>
+> $lspci -vvv -s 03:00.0
+> Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
+> ~
+> Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
+>                 IOVCap: Migration-, Interrupt Message Number: 000
+>                 IOVCtl: Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
+>                 IOVSta: Migration-
+>                 Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
+>                                                               ^dazed !
+> ~
+> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
 
-Just applied to cgroup/for-3.13-fixes w/ stable cc'd.  Will push to
-Linus next week.
+Applied to my pci/misc branch for v3.14, thanks!
 
-Thanks.
+Bjorn
 
--- 
-tejun
+> ---
+>  drivers/pci/iov.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index de8ffac..a4941ad 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
+>
+>  found:
+>         pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
+> +       /* VF Enable is cleared, so we could init the NumVFs register to 0 */
+> +       pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
+>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
+>         pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
+>         if (!offset || (total > 1 && !stride))
+> --
+> 1.8.3.4 (Apple Git-47)
+>
