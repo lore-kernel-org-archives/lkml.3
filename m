@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab3KVSnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:43:55 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:51666 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755570Ab3KVSnw (ORCPT
+	id S1755934Ab3KVSo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:44:57 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:35396 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477Ab3KVSoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:43:52 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME is set
-References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com>
-	<528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com>
-	<528D1327.7080205@codeaurora.org> <528D1784.8080704@ti.com>
-	<528D1C49.3020301@ti.com>
-Date: Fri, 22 Nov 2013 10:43:49 -0800
-In-Reply-To: <528D1C49.3020301@ti.com> (Santosh Shilimkar's message of "Wed,
-	20 Nov 2013 15:32:09 -0500")
-Message-ID: <87ppps6zve.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 22 Nov 2013 13:44:55 -0500
+Date: Fri, 22 Nov 2013 13:44:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH RFC v2 12/29] PCI/MSI: Introduce pcim_enable_msi*()
+ family helpers
+Message-ID: <20131122184447.GB8981@mtj.dyndns.org>
+References: <cover.1382103786.git.agordeev@redhat.com>
+ <6bc575621ef70f72b206e4aa944acd32f1a75718.1382103786.git.agordeev@redhat.com>
+ <20131120171526.GL28946@htj.dyndns.org>
+ <20131122184429.GG8401@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122184429.GG8401@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
+On Fri, Nov 22, 2013 at 07:44:30PM +0100, Alexander Gordeev wrote:
+> On Wed, Nov 20, 2013 at 12:15:26PM -0500, Tejun Heo wrote:
+> > The use of @nvec and @maxvec is a bit inconsistent.  Maybe it'd be
+> > better to make them uniform?
+> 
+> With @maxvec I tried to stress an implication there could be values
+> less than @maxvec. While @nvec is more like an exact number.
+> Perfectly makes sense to me, but this is personal :)
 
-[...]
+Oh yeah, I agree but saw a place where @nvec is used for max.  Maybe I
+was confused.  Looking again...
 
->>> It looks like even if you just remove the locks here, the PM core is
->>> free to call this function with irqs disabled if pm_runtime_irq_safe()
->>> has been called on the device. Perhaps runtime PM can only do the
->>> clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
->>> calls should happen in the system suspend callbacks?
->> 
->> Even don't know what to say :( On Keystone clk_unprepare()/clk_prepare() are NOPs.
->> But clk_prepare() has to be called at least once before clk_enable() :((
->> So, solution with suspend/resume will not fix current problem :( unfortunately.
->> 
->> FYI, Now pm_clk_suspend/pm_clk_resume are called from arch/arm/mach-keystone/pm_domain.c
->> (also similar solution is used by Davinci, but issue has not been detected because
->> PM runtime hasn't been used by Davinci IP drivers before)
->> 
-> One way to deal with this is to have clk_unprepare()/clk_prepare()
-> called from dev_pm_domain ops before calling pm_clk_[suspend/resume]() if we
-> can't have that as part of runtime code.
++int pcim_enable_msi_range(struct pci_dev *dev, struct msix_entry *entries,
++                         unsigned int nvec, unsigned int minvec)
++
++This variation on pci_enable_msi_block() call allows a device driver to
++request any number of MSIs within specified range minvec to nvec. Whenever
++possible device drivers are encouraged to use this function rather than
++explicit request loop calling pci_enable_msi_block().
 
-That doesn't solve the irq_safe problem that Stephen pointed out without
-being very careful.  Basically, if you have _any_ potentially sleeping
-calls in this path, you can never allow devices to use
-pm_runtime_irq_safe().
+e.g. shouldn't that @nvec be @maxvec?
 
-Also, I don't like having the clk_enable in the PM core but the
-clk_prepare in the platform-specific pm_domain.  That seems prone for
-platforms to get wrong.
+Thanks.
 
-I'll need to think about this a little more before having any idea what
-to do here.
-
-Kevin
-
-
-
-
-
-
+-- 
+tejun
