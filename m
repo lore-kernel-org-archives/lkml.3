@@ -1,233 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3KVORP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 09:17:15 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:56978 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3KVORO (ORCPT
+	id S1755741Ab3KVOSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 09:18:15 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:62539 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab3KVOSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 09:17:14 -0500
-Subject: Re: [PATCH 01/22] tools lib traceevent: Add plugin support
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <1385031680-9014-2-git-send-email-jolsa@redhat.com>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	 <1385031680-9014-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Nov 2013 23:17:06 +0900
-Message-ID: <1385129826.1747.22.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Fri, 22 Nov 2013 09:18:13 -0500
+Message-ID: <528F67A1.60306@gmail.com>
+Date: Fri, 22 Nov 2013 09:18:09 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Xufeng Zhang <xufeng.zhang@windriver.com>, nhorman@tuxdriver.com
+CC: davem@davemloft.net, linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: Restore 'resent' bit to avoid retransmitted chunks
+ for RTT measurements
+References: <1385109031-4246-1-git-send-email-xufeng.zhang@windriver.com>
+In-Reply-To: <1385109031-4246-1-git-send-email-xufeng.zhang@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-2013-11-21 (목), 12:00 +0100, Jiri Olsa:
-> Backporting plugin support for traceevent lib.
+On 11/22/2013 03:30 AM, Xufeng Zhang wrote:
+> From: Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
 > 
-> Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+> Currently retransmitted DATA chunks could also be used for
+> RTT measurements since there are no flag to identify whether
+> the transmitted DATA chunk is a new one or a retransmitted one.
+> This problem is introduced by commit ae19c5486 ("sctp: remove
+> 'resent' bit from the chunk") which inappropriately removed the
+> 'resent' bit completely, instead of doing this, we should set 
+> the resent bit only for the retransmitted DATA chunks.
 > 
-> It's now possible to use following interface to load plugins
-> (shared objects) to enahnce pevent object functionality.
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> ---
+>  include/net/sctp/structs.h |    1 +
+>  net/sctp/output.c          |   23 +++++++++++++----------
+>  net/sctp/outqueue.c        |    3 +++
+>  net/sctp/sm_make_chunk.c   |    1 +
+>  4 files changed, 18 insertions(+), 10 deletions(-)
 > 
-> The plugin interface/hooks are as follows:
-> (taken from event-parse.h comments)
+> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+> index 2174d8d..ea0ca5f 100644
+> --- a/include/net/sctp/structs.h
+> +++ b/include/net/sctp/structs.h
+> @@ -629,6 +629,7 @@ struct sctp_chunk {
+>  #define SCTP_NEED_FRTX 0x1
+>  #define SCTP_DONT_FRTX 0x2
+>  	__u16	rtt_in_progress:1,	/* This chunk used for RTT calc? */
+> +		resent:1,		/* Has this chunk ever been resent. */
+>  		has_tsn:1,		/* Does this chunk have a TSN yet? */
+>  		has_ssn:1,		/* Does this chunk have a SSN yet? */
+>  		singleton:1,		/* Only chunk in the packet? */
+> diff --git a/net/sctp/output.c b/net/sctp/output.c
+> index e650978..32c214d 100644
+> --- a/net/sctp/output.c
+> +++ b/net/sctp/output.c
+> @@ -467,17 +467,20 @@ int sctp_packet_transmit(struct sctp_packet *packet)
+>  	list_for_each_entry_safe(chunk, tmp, &packet->chunk_list, list) {
+>  		list_del_init(&chunk->list);
+>  		if (sctp_chunk_is_data(chunk)) {
+> -			/* 6.3.1 C4) When data is in flight and when allowed
+> -			 * by rule C5, a new RTT measurement MUST be made each
+> -			 * round trip.  Furthermore, new RTT measurements
+> -			 * SHOULD be made no more than once per round-trip
+> -			 * for a given destination transport address.
+> -			 */
+> -
+> -			if (!tp->rto_pending) {
+> -				chunk->rtt_in_progress = 1;
+> -				tp->rto_pending = 1;
+> +			if (!chunk->resent) {
+> +				/* 6.3.1 C4) When data is in flight and when allowed
+> +				 * by rule C5, a new RTT measurement MUST be made each
+> +				 * round trip.  Furthermore, new RTT measurements
+> +				 * SHOULD be made no more than once per round-trip
+> +				 * for a given destination transport address.
+> +				 */
+> +
+> +				if (!tp->rto_pending) {
+
+Could be combined as
+    if (!chunk->resent && !tp->rto_pending) {
+
+> +					chunk->rtt_in_progress = 1;
+> +					tp->rto_pending = 1;
+> +				}
+>  			}
+> +
+>  			has_data = 1;
+>  		}
+>  
+> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+> index 94df758..70f4f56 100644
+> --- a/net/sctp/outqueue.c
+> +++ b/net/sctp/outqueue.c
+> @@ -446,6 +446,8 @@ void sctp_retransmit_mark(struct sctp_outq *q,
+>  				transport->rto_pending = 0;
+>  			}
+>  
+> +			chunk->resent = 1;
+> +
+>  			/* Move the chunk to the retransmit queue. The chunks
+>  			 * on the retransmit queue are always kept in order.
+>  			 */
+> @@ -1375,6 +1377,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+>  				 * instance).
+>  				 */
+>  				if (!tchunk->tsn_gap_acked &&
+> +				    !tchunk->resent &&
+>  				    tchunk->rtt_in_progress) {
+>  					tchunk->rtt_in_progress = 0;
+>  					rtt = jiffies - tchunk->sent_at;
+> diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+> index fe69032..8fe89f8 100644
+> --- a/net/sctp/sm_make_chunk.c
+> +++ b/net/sctp/sm_make_chunk.c
+> @@ -1321,6 +1321,7 @@ struct sctp_chunk *sctp_chunkify(struct sk_buff *skb,
+>  	INIT_LIST_HEAD(&retval->list);
+>  	retval->skb		= skb;
+>  	retval->asoc		= (struct sctp_association *)asoc;
+> +	retval->resent          = 0;
+
+Not needed due to zeroed out malloc.
+
+-vlad
+
+>  	retval->singleton	= 1;
+>  
+>  	retval->fast_retransmit = SCTP_CAN_FRTX;
 > 
-> - 'pevent_plugin_loader' (required)
->     The function name to initialized the plugin.
-> 
->     int pevent_plugin_loader(struct pevent *pevent)
-> 
-> - 'pevent_plugin_unloader' (optional)
->     The function called just before unloading
-> 
->     int pevent_plugin_unloader(void)
-> 
-> - 'pevent_plugin_options'  (optional)
->     Plugin options that can be set before loading
-> 
->     struct plugin_option pevent_plugin_options[] = {
->        {
->                .name = "option-name",
->                .plugin_alias = "overide-file-name", (optional)
->                .description = "description of option to show users",
->        },
->        {
->                .name = NULL,
->        },
->     };
-> 
->     Array must end with .name = NULL;
-> 
->     The plugin_alias (below) can be used to give a shorter
->     name to access the vairable. Useful if a plugin handles
->     more than one event.
-> 
->     NOTE options support is not backported yet.
-> 
-> - 'pevent_plugin_alias' (optional)
->     The name to use for finding options (uses filename if not defined)
-> 
-> New traceevent functions are added to search and load
-> available plugins:
-> 
->   struct plugin_list*
->   traceevent_load_plugins(struct pevent *pevent)
->     - loads plusing for 'struct pevent' object and returns
->       loaded plugins list
-> 
->   void traceevent_unload_plugins(struct plugin_list *plugin_list);
->     - unload plugin list
-
-First of all, thank you for your nice work! :)
-
-> 
-[SNIP[
-> +static void
-> +load_plugin(struct pevent *pevent, const char *path,
-> +	    const char *file, void *data)
-> +{
-> +	struct plugin_list **plugin_list = data;
-> +	pevent_plugin_load_func func;
-> +	struct plugin_list *list;
-> +	const char *alias;
-> +	char *plugin;
-> +	void *handle;
-> +
-> +	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-
-I'd like not to see this malloc_or_die() anymore in a new code.  Just
-returning after showing a warning looks enough here.
-
-> +
-> +	strcpy(plugin, path);
-> +	strcat(plugin, "/");
-> +	strcat(plugin, file);
-> +
-> +	handle = dlopen(plugin, RTLD_NOW | RTLD_GLOBAL);
-
-Why RTLD_NOW and RTLD_GLOBAL?  Hmm.. maybe using _NOW is needed to
-prevent a runtime error, but not sure why _GLOBAL is needed.
-
-IIUC _GLOBAL is for exporting symbols to *other libraries*.  Is it
-intended for this plugin support?
-
-
-> +	if (!handle) {
-> +		warning("could not load plugin '%s'\n%s\n",
-> +			plugin, dlerror());
-> +		goto out_free;
-> +	}
-> +
-> +	alias = dlsym(handle, PEVENT_PLUGIN_ALIAS_NAME);
-> +	if (!alias)
-> +		alias = file;
-
-So this 'alias' is not used anywhere in the current code, right?
-Do you plan to add the option processing soon?
-
-> +
-> +	func = dlsym(handle, PEVENT_PLUGIN_LOADER_NAME);
-> +	if (!func) {
-> +		warning("could not find func '%s' in plugin '%s'\n%s\n",
-> +			PEVENT_PLUGIN_LOADER_NAME, plugin, dlerror());
-> +		goto out_free;
-> +	}
-> +
-> +	list = malloc_or_die(sizeof(*list));
-
-Ditto.  Please check return value and handle error properly.
-
-
-> +	list->next = *plugin_list;
-> +	list->handle = handle;
-> +	list->name = plugin;
-> +	*plugin_list = list;
-> +
-> +	pr_stat("registering plugin: %s", plugin);
-> +	func(pevent);
-> +	return;
-> +
-> + out_free:
-> +	free(plugin);
-> +}
-> +
-> +static void
-> +load_plugins_dir(struct pevent *pevent, const char *suffix,
-> +		 const char *path,
-> +		 void (*load_plugin)(struct pevent *pevent,
-> +				     const char *path,
-> +				     const char *name,
-> +				     void *data),
-
-Doesn't gcc complain about the name shadows other function?  Anyway I
-think we should avoid using same name - probably using typedef for the
-function might be helpful.
-
-
-> +		 void *data)
-[SNIP]
-> +	/*
-> +	 * Now let the home directory override the environment
-> +	 * or system defaults.
-> +	 */
-> +	home = getenv("HOME");
-> +	if (!home)
-> +		return;
-> +
-> +	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
-
-Ditto.
-
-Thanks,
-Namhyung
-
-> +
-> +	strcpy(path, home);
-> +	strcat(path, "/");
-> +	strcat(path, LOCAL_PLUGIN_DIR);
-> +
-> +	load_plugins_dir(pevent, suffix, path, load_plugin, data);
-> +
-> +	free(path);
-> +}
-> +
-> +struct plugin_list*
-> +traceevent_load_plugins(struct pevent *pevent)
-> +{
-> +	struct plugin_list *list = NULL;
-> +
-> +	load_plugins(pevent, ".so", load_plugin, &list);
-> +	return list;
-> +}
-> +
-> +void
-> +traceevent_unload_plugins(struct plugin_list *plugin_list)
-> +{
-> +	pevent_plugin_unload_func func;
-> +	struct plugin_list *list;
-> +
-> +	while (plugin_list) {
-> +		list = plugin_list;
-> +		plugin_list = list->next;
-> +		func = dlsym(list->handle, PEVENT_PLUGIN_UNLOADER_NAME);
-> +		if (func)
-> +			func();
-> +		dlclose(list->handle);
-> +		free(list->name);
-> +		free(list);
-> +	}
-> +}
-
-
 
