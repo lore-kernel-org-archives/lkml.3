@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3KVTsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:48:19 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51503 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755771Ab3KVTsS (ORCPT
+	id S1755963Ab3KVTzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:55:21 -0500
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:39172 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab3KVTzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:48:18 -0500
-X-Sasl-enc: 873KhqJdbFAE1XUKyAA/WT3j2U9DClREiLHawanL9gzM 1385149695
-Date: Fri, 22 Nov 2013 11:48:14 -0800
-From: Greg KH <greg@kroah.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, hpa@zytor.com, mjg59@srcf.ucam.org
-Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
-Message-ID: <20131122194814.GC25105@kroah.com>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <8761rl73s7.fsf@xmission.com>
- <20131122015518.GA31921@redhat.com>
- <87txf4y304.fsf@xmission.com>
- <20131122141945.GE4046@redhat.com>
+	Fri, 22 Nov 2013 14:55:19 -0500
+X-Fcrdns: No
+Message-ID: <528FB6AE.1080405@profihost.ag>
+Date: Fri, 22 Nov 2013 20:55:26 +0100
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122141945.GE4046@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chinmay V S <cvs268@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        matthew@wil.cx
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
+In-Reply-To: <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 09:19:46AM -0500, Vivek Goyal wrote:
-> On Fri, Nov 22, 2013 at 05:34:03AM -0800, Eric W. Biederman wrote:
-> 
-> [..]
-> > > Why ELF case is so interesting. I have not use kexec to boot ELF
-> > > images in years and have not seen others using it too. In fact bzImage
-> > > seems to be the most common kernel image format for x86, most of the distros
-> > > ship and use.
-> > 
-> > ELF is interesting because it is the minimal file format that does
-> > everything you need.   So especially for a proof of concept ELF needs to
-> > come first.  There is an extra virtual address field in the ELF segment
-> > header but otherwise ELF does not have any unnecessary fields.
-> > 
-> > ELF is interesting because it is the native kernel file format on all
-> > architectures linux supports including x86.
-> > 
-> > ELF is interesting because producing an ELF image in practice requires
-> > a trivial amount of tooling so it is a good general purpose format to
-> > support.
-> 
-> Ok. I will have a look at ELF loader too. I was hoping to keep only one
-> loader in initial patch. But looks like that's not acceptable.
+Am 20.11.2013 16:22, schrieb Chinmay V S:
+> Hi Stefan,
+>
+>> thanks for your great and detailed reply. I'm just wondering why an
+>> intel 520 ssd degrades the speed just by 2% in case of O_SYNC. intel 530
+>> the newer model and replacement for the 520 degrades speed by 75% like
+>> the crucial m4.
+>>
+>> The Intel DC S3500 instead delivers also nearly 98% of it's performance
+>> even under O_SYNC.
+>
+> If you have confirmed the performance numbers, then it indicates that
+> the Intel 530 controller is more advanced and makes better use of the
+> internal disk-cache to achieve better performance (as compared to the
+> Intel 520). Thus forcing CMD_FLUSH on each IOP (negating the benefits
+> of the disk write-cache and not allowing any advanced disk controller
+> optimisations) has a more pronouced effect of degrading the
+> performance on Intel 530 SSDs. (Someone with some actual info on Intel
+> SSDs kindly confirm this.)
+>
+>>> To simply disable this behaviour and make the SYNC/DSYNC behaviour and
+>>> performance on raw block-device I/O resemble the standard filesystem
+>>> I/O you may want to apply the following patch to your kernel -
+>>> https://gist.github.com/TheCodeArtist/93dddcd6a21dc81414ba
+>>>
+>>> The above patch simply disables the CMD_FLUSH command support even on
+>>> disks that claim to support it.
+>>
+>> Is this the right one? By assing ahci_dummy_read_id we disable the
+>> CMD_FLUSH?
+>>
+>> What is the risk of that one?
+>
+> Yes, https://gist.github.com/TheCodeArtist/93dddcd6a21dc81414ba is the
+> right one. The dummy read_id() provides a hook into the initial
+> disk-properties discovery process when the disk is plugged-in. By
+> explicitly negating the bits that indicate cache and
+> flush-cache(CMD_FLUSH) support, we can ensure that the block driver
+> does NOT issue CMD_FLUSH commands to the disk. Note that this does NOT
+> disable the write-cache on the disk itself i.e. performance improves
+> due to the on-disk write-cache in the absence of any CMD_FLUSH
+> commands from the host-PC.
 
-I totally disagree.  I think what you have done now is fine.  If it
-works for bzImage, it's a good sense that this is usable as-is.
+ah OK thanks.
 
-And, if someone else cares about signed elf images, hey, let them
-implement the loader for it :)
+> Theoretically, it increases the chances of data loss i.e. if power is
+> removed while the write is in progress from the app. Personally though
+> i have found that the impact of this is minimal because SYNC on a raw
+> block device with CMD_FLUSH does NOT guarantee atomicity in case of a
+> power-loss. Hence, in the event of a power loss, applications cannot
+> rely on SYNC(with CMD_FLUSH) for data integrity. Rather they have to
+> maintain other data-structures with redundant disk metadata (which is
+> precisely what modern file-systems do). Thus, removing CMD_FLUSH
+> doesn't really result in a downside as such.
 
-Either way, the syscall interface wouldn't change, which is the
-important thing to get right, so you should be fine for now.
+In my production system i've crucial m500 which have a capicitor so in a 
+case of power loss they flush their data to disk automatically.
 
-thanks,
+> The main thing to consider when applying the above simple patch is
+> that it is system-wide. The above patch prevents the host-PC from
+> issuing CMD_FLUSH for ALL drives enumerated via SATA/SCSI on the
+> system.
+>
+> If this patch works for you, then to restrict the change in behaviour
+> to a specific disk, you will need to:
+> 1. Identify the disk by its model number within the dummy read_id().
+> 2. Zero the bits ONLY for your particular disk.
+> 3. Return without modifying anything for all other disks.
+>
+> Try out the above patch and let me know if you have any further issues.
 
-greg k-h
+The best thing would be a a flag under
+/sys/bock/sdc/device/
+
+for ssds with capictor - so everybody can decide on their own.
+
+Stefan
