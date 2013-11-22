@@ -1,94 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab3KVSGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:06:50 -0500
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:15193
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932137Ab3KVSGp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:06:45 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371Ic89bh1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2149h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h)
-Date: Fri, 22 Nov 2013 10:06:34 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 4/7] clocksource/cadence_ttc: Adjust interval in clock
- notifier
-References: <1383945677-29674-1-git-send-email-soren.brinkmann@xilinx.com>
- <1383945677-29674-5-git-send-email-soren.brinkmann@xilinx.com>
- <52825779.2050106@linaro.org>
+	id S1755962Ab3KVSHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:07:34 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58633 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab3KVSHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 13:07:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <52825779.2050106@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <e1bb716e-96dc-4da0-ba92-3a5492b5ba59@CO1EHSMHS007.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131122172916.GB6477@cerebellum.variantweb.net>
+References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org> <20131122172916.GB6477@cerebellum.variantweb.net>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 22 Nov 2013 13:07:10 -0500
+X-Google-Sender-Auth: rIyIjiDHT4rMhNsorNmm0UBCjdc
+Message-ID: <CALZtONDEi5H9U9ZSskziau=e0xjVpJNnBF_k71+s=MFLsD75ug@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Fri, Nov 22, 2013 at 12:29 PM, Seth Jennings
+<sjennings@variantweb.net> wrote:
+> On Wed, Nov 20, 2013 at 02:49:33PM -0500, Dan Streetman wrote:
+>> Currently, zswap is writeback cache; stored pages are not sent
+>> to swap disk, and when zswap wants to evict old pages it must
+>> first write them back to swap cache/disk manually.  This avoids
+>> swap out disk I/O up front, but only moves that disk I/O to
+>> the writeback case (for pages that are evicted), and adds the
+>> overhead of having to uncompress the evicted pages, and adds the
+>> need for an additional free page (to store the uncompressed page)
+>> at a time of likely high memory pressure.  Additionally, being
+>> writeback adds complexity to zswap by having to perform the
+>> writeback on page eviction.
+>>
+>> This changes zswap to writethrough cache by enabling
+>> frontswap_writethrough() before registering, so that any
+>> successful page store will also be written to swap disk.  All the
+>> writeback code is removed since it is no longer needed, and the
+>> only operation during a page eviction is now to remove the entry
+>> from the tree and free it.
+>
+> I like it.  It gets rid of a lot of nasty writeback code in zswap.
+>
+> I'll have to test before I ack, hopefully by the end of the day.
 
-On Tue, Nov 12, 2013 at 05:29:45PM +0100, Daniel Lezcano wrote:
-> On 11/08/2013 10:21 PM, Soren Brinkmann wrote:
-> >The clockevent has to be reprogrammed if the timer's input
-> >clock frequency changes and the timer is in periodic mode, in order to
-> >maintain the correct timer interval.
-> >
-> >Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> >---
-> >  drivers/clocksource/cadence_ttc_timer.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> >diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> >index a92350b55d32..68a336038d8f 100644
-> >--- a/drivers/clocksource/cadence_ttc_timer.c
-> >+++ b/drivers/clocksource/cadence_ttc_timer.c
-> >@@ -338,6 +338,10 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
-> >  		/* update cached frequency */
-> >  		ttc->freq = ndata->new_rate;
-> >
-> >+		if (ttcce->ce.mode == CLOCK_EVT_MODE_PERIODIC)
-> >+			ttc_set_interval(ttc, DIV_ROUND_CLOSEST(ttc->freq,
-> >+						PRESCALE * HZ));
-> >+
-> 
-> Couldn't be racy ?
-I guess you're right. What would be the proper way to resolve it? If we
-look at a little more code things look like this:
+One note - when you test, change this section in the evict function:
 
-	local_irq_save(flags);                                           
-	clockevents_update_freq(&ttcce->ce,                              
-	                ndata->new_rate / PRESCALE);                     
-	local_irq_restore(flags);                                        
-	                                                                 
-	/* update cached frequency */                                    
-	ttc->freq = ndata->new_rate;                                     
-	                                                                 
-	if (ttcce->ce.mode == CLOCK_EVT_MODE_PERIODIC)                   
-	        ttc_set_interval(ttc, DIV_ROUND_CLOSEST(ttc->freq,       
-	                                PRESCALE * HZ));
+        if (unlikely(entry->refcount > 0)) {
+                spin_unlock(&tree->lock);
+                return -EAGAIN;
+        }
 
-Would it be enough to move the ttc_set_interval() call within the
-section where local IRQs are disabled? I have the feeling for this timer
-the local_irq_save() may in general not be the right option since the
-timer is not CPU local.
-Should we probably change this do irq_disable(ttcce->ce.irq)?
+to a rb search instead:
 
-	Thanks,
-	Sören
+        if (unlikely(entry == zswap_rb_search(&tree->rbroot, offset))) {
+                spin_unlock(&tree->lock);
+                return -EAGAIN;
+        }
+
+or, since even if load() is working on the entry concurrently, telling
+zbud it's been evicted (by returning 0) shouldn't actually make any
+difference (currently) since zbud doesn't actually do anything
+significant with the return value, so that section could just be
+removed.  (Although, thinking about it, I think the evict function
+should additionally zswap_rb_erase() before the zswap_entry_put()
+because if load() is using the entry, it'll remain in the rb tree and
+if it's dup-detected or invalidated then it'll be zswap_entry_put()
+down to -1 by the dup removal or invalidation, plus when load() is
+done with it...I think this gets back to pulling zswap_rb_erase back
+out of the zswap_entry_put function).
+
+But it shouldn't stay as-is, since entry has likely been free'd
+already and shouldn't be dereferenced to check the refcount.
+
+I'll send an updated patch, but first I'd like to re-test myself as
+well with SPECjbb and also I want to update my test program to check
+the number of frontswap load hits also.
 
 
+>
+> Yes, this will increase writes to the swap device over the delayed
+> writeback approach.  I think it is a good thing though.  I think it
+> makes the difference between zswap and zram, both in operation and in
+> application, more apparent. Zram is the better choice for embedded where
+> write wear is a concern, and zswap being better if you need more
+> flexibility to dynamically manage the compressed pool.
+>
+> Seth
+>
+>>
+>> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+>> ---
+>>
+>> This does require the patch just sent to the list
+>> "mm/zswap: don't allow entry eviction if in use by load"
+>> is applied.
+>>
+>> Changes since v1:
+>> update to apply to latest -tip, previous patch missed several recent
+>> zswap patches.
+>>
+>>  mm/zswap.c | 208 ++++++-------------------------------------------------------
+>>  1 file changed, 18 insertions(+), 190 deletions(-)
+>>
+>> diff --git a/mm/zswap.c b/mm/zswap.c
+>> index f4fbbd5..2d209a3 100644
+>> --- a/mm/zswap.c
+>> +++ b/mm/zswap.c
+>> @@ -39,7 +39,6 @@
+>>  #include <linux/mm_types.h>
+>>  #include <linux/page-flags.h>
+>>  #include <linux/swapops.h>
+>> -#include <linux/writeback.h>
+>>  #include <linux/pagemap.h>
+>>
+>>  /*********************************
+>> @@ -59,8 +58,8 @@ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+>>
+>>  /* Pool limit was hit (see zswap_max_pool_percent) */
+>>  static u64 zswap_pool_limit_hit;
+>> -/* Pages written back when pool limit was reached */
+>> -static u64 zswap_written_back_pages;
+>> +/* Pages evicted when pool limit was reached */
+>> +static u64 zswap_evicted_pages;
+>>  /* Store failed due to a reclaim failure after pool limit was reached */
+>>  static u64 zswap_reject_reclaim_fail;
+>>  /* Compressed page was too big for the allocator to (optimally) store */
+>> @@ -160,7 +159,7 @@ static void zswap_comp_exit(void)
+>>   * rbnode - links the entry into red-black tree for the appropriate swap type
+>>   * refcount - the number of outstanding reference to the entry. This is needed
+>>   *            to protect against premature freeing of the entry by code
+>> - *            concurent calls to load, invalidate, and writeback.  The lock
+>> + *            concurent calls to load, invalidate, and evict.  The lock
+>>   *            for the zswap_tree structure that contains the entry must
+>>   *            be held while changing the refcount.  Since the lock must
+>>   *            be held, there is no reason to also make refcount atomic.
+>> @@ -412,132 +411,19 @@ static bool zswap_is_full(void)
+>>  }
+>>
+>>  /*********************************
+>> -* writeback code
+>> +* evict
+>>  **********************************/
+>> -/* return enum for zswap_get_swap_cache_page */
+>> -enum zswap_get_swap_ret {
+>> -     ZSWAP_SWAPCACHE_NEW,
+>> -     ZSWAP_SWAPCACHE_EXIST,
+>> -     ZSWAP_SWAPCACHE_FAIL,
+>> -};
+>> -
+>> -/*
+>> - * zswap_get_swap_cache_page
+>> - *
+>> - * This is an adaption of read_swap_cache_async()
+>> - *
+>> - * This function tries to find a page with the given swap entry
+>> - * in the swapper_space address space (the swap cache).  If the page
+>> - * is found, it is returned in retpage.  Otherwise, a page is allocated,
+>> - * added to the swap cache, and returned in retpage.
+>> - *
+>> - * If success, the swap cache page is returned in retpage
+>> - * Returns ZSWAP_SWAPCACHE_EXIST if page was already in the swap cache
+>> - * Returns ZSWAP_SWAPCACHE_NEW if the new page needs to be populated,
+>> - *     the new page is added to swapcache and locked
+>> - * Returns ZSWAP_SWAPCACHE_FAIL on error
+>> - */
+>> -static int zswap_get_swap_cache_page(swp_entry_t entry,
+>> -                             struct page **retpage)
+>> -{
+>> -     struct page *found_page, *new_page = NULL;
+>> -     struct address_space *swapper_space = swap_address_space(entry);
+>> -     int err;
+>> -
+>> -     *retpage = NULL;
+>> -     do {
+>> -             /*
+>> -              * First check the swap cache.  Since this is normally
+>> -              * called after lookup_swap_cache() failed, re-calling
+>> -              * that would confuse statistics.
+>> -              */
+>> -             found_page = find_get_page(swapper_space, entry.val);
+>> -             if (found_page)
+>> -                     break;
+>> -
+>> -             /*
+>> -              * Get a new page to read into from swap.
+>> -              */
+>> -             if (!new_page) {
+>> -                     new_page = alloc_page(GFP_KERNEL);
+>> -                     if (!new_page)
+>> -                             break; /* Out of memory */
+>> -             }
+>> -
+>> -             /*
+>> -              * call radix_tree_preload() while we can wait.
+>> -              */
+>> -             err = radix_tree_preload(GFP_KERNEL);
+>> -             if (err)
+>> -                     break;
+>> -
+>> -             /*
+>> -              * Swap entry may have been freed since our caller observed it.
+>> -              */
+>> -             err = swapcache_prepare(entry);
+>> -             if (err == -EEXIST) { /* seems racy */
+>> -                     radix_tree_preload_end();
+>> -                     continue;
+>> -             }
+>> -             if (err) { /* swp entry is obsolete ? */
+>> -                     radix_tree_preload_end();
+>> -                     break;
+>> -             }
+>> -
+>> -             /* May fail (-ENOMEM) if radix-tree node allocation failed. */
+>> -             __set_page_locked(new_page);
+>> -             SetPageSwapBacked(new_page);
+>> -             err = __add_to_swap_cache(new_page, entry);
+>> -             if (likely(!err)) {
+>> -                     radix_tree_preload_end();
+>> -                     lru_cache_add_anon(new_page);
+>> -                     *retpage = new_page;
+>> -                     return ZSWAP_SWAPCACHE_NEW;
+>> -             }
+>> -             radix_tree_preload_end();
+>> -             ClearPageSwapBacked(new_page);
+>> -             __clear_page_locked(new_page);
+>> -             /*
+>> -              * add_to_swap_cache() doesn't return -EEXIST, so we can safely
+>> -              * clear SWAP_HAS_CACHE flag.
+>> -              */
+>> -             swapcache_free(entry, NULL);
+>> -     } while (err != -ENOMEM);
+>> -
+>> -     if (new_page)
+>> -             page_cache_release(new_page);
+>> -     if (!found_page)
+>> -             return ZSWAP_SWAPCACHE_FAIL;
+>> -     *retpage = found_page;
+>> -     return ZSWAP_SWAPCACHE_EXIST;
+>> -}
+>>
+>>  /*
+>> - * Attempts to free an entry by adding a page to the swap cache,
+>> - * decompressing the entry data into the page, and issuing a
+>> - * bio write to write the page back to the swap device.
+>> - *
+>> - * This can be thought of as a "resumed writeback" of the page
+>> - * to the swap device.  We are basically resuming the same swap
+>> - * writeback path that was intercepted with the frontswap_store()
+>> - * in the first place.  After the page has been decompressed into
+>> - * the swap cache, the compressed version stored by zswap can be
+>> - * freed.
+>> + * This is called from zbud to remove an entry that is being evicted.
+>>   */
+>> -static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+>> +static int zswap_evict_entry(struct zbud_pool *pool, unsigned long handle)
+>>  {
+>>       struct zswap_header *zhdr;
+>>       swp_entry_t swpentry;
+>>       struct zswap_tree *tree;
+>>       pgoff_t offset;
+>>       struct zswap_entry *entry;
+>> -     struct page *page;
+>> -     u8 *src, *dst;
+>> -     unsigned int dlen;
+>> -     int ret;
+>> -     struct writeback_control wbc = {
+>> -             .sync_mode = WB_SYNC_NONE,
+>> -     };
+>>
+>>       /* extract swpentry from data */
+>>       zhdr = zbud_map(pool, handle);
+>> @@ -547,89 +433,30 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+>>       offset = swp_offset(swpentry);
+>>       BUG_ON(pool != tree->pool);
+>>
+>> -     /* find and ref zswap entry */
+>> +     /* find zswap entry */
+>>       spin_lock(&tree->lock);
+>> -     entry = zswap_entry_find_get(&tree->rbroot, offset);
+>> +     entry = zswap_rb_search(&tree->rbroot, offset);
+>>       if (!entry) {
+>>               /* entry was invalidated */
+>>               spin_unlock(&tree->lock);
+>>               return 0;
+>>       }
+>> -     spin_unlock(&tree->lock);
+>>       BUG_ON(offset != entry->offset);
+>>
+>> -     /* try to allocate swap cache page */
+>> -     switch (zswap_get_swap_cache_page(swpentry, &page)) {
+>> -     case ZSWAP_SWAPCACHE_FAIL: /* no memory or invalidate happened */
+>> -             ret = -ENOMEM;
+>> -             goto fail;
+>> -
+>> -     case ZSWAP_SWAPCACHE_EXIST:
+>> -             /* page is already in the swap cache, ignore for now */
+>> -             page_cache_release(page);
+>> -             ret = -EEXIST;
+>> -             goto fail;
+>> -
+>> -     case ZSWAP_SWAPCACHE_NEW: /* page is locked */
+>> -             /* decompress */
+>> -             dlen = PAGE_SIZE;
+>> -             src = (u8 *)zbud_map(tree->pool, entry->handle) +
+>> -                     sizeof(struct zswap_header);
+>> -             dst = kmap_atomic(page);
+>> -             ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
+>> -                             entry->length, dst, &dlen);
+>> -             kunmap_atomic(dst);
+>> -             zbud_unmap(tree->pool, entry->handle);
+>> -             BUG_ON(ret);
+>> -             BUG_ON(dlen != PAGE_SIZE);
+>> -
+>> -             /* page is up to date */
+>> -             SetPageUptodate(page);
+>> -     }
+>> -
+>> -     /* move it to the tail of the inactive list after end_writeback */
+>> -     SetPageReclaim(page);
+>> -
+>> -     /* start writeback */
+>> -     __swap_writepage(page, &wbc, end_swap_bio_write);
+>> -     page_cache_release(page);
+>> -     zswap_written_back_pages++;
+>> -
+>> -     spin_lock(&tree->lock);
+>> -     /* drop local reference */
+>> +     /* drop initial reference */
+>>       zswap_entry_put(tree, entry);
+>>
+>> -     /*
+>> -     * There are three possible situations for entry here:
+>> -     * (1) refcount is 1(normal case),  entry is valid and on the tree
+>> -     * (2) refcount is 0, entry is freed and not on the tree
+>> -     *     because invalidate happened during writeback
+>> -     * (3) refcount is 2, entry is in use by load, prevent eviction
+>> -     */
+>> -     if (likely(entry->refcount > 0))
+>> -             zswap_entry_put(tree, entry);
+>> +     /* if still in use by load(), do not allow eviction */
+>>       if (unlikely(entry->refcount > 0)) {
+>>               spin_unlock(&tree->lock);
+>>               return -EAGAIN;
+>>       }
+>> -     spin_unlock(&tree->lock);
+>>
+>> -     goto end;
+>> +     zswap_evicted_pages++;
+>>
+>> -     /*
+>> -     * if we get here due to ZSWAP_SWAPCACHE_EXIST
+>> -     * a load may happening concurrently
+>> -     * it is safe and okay to not free the entry
+>> -     * if we free the entry in the following put
+>> -     * it it either okay to return !0
+>> -     */
+>> -fail:
+>> -     spin_lock(&tree->lock);
+>> -     zswap_entry_put(tree, entry);
+>>       spin_unlock(&tree->lock);
+>>
+>> -end:
+>> -     return ret;
+>> +     return 0;
+>>  }
+>>
+>>  /*********************************
+>> @@ -746,7 +573,7 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+>>       spin_lock(&tree->lock);
+>>       entry = zswap_entry_find_get(&tree->rbroot, offset);
+>>       if (!entry) {
+>> -             /* entry was written back */
+>> +             /* entry was evicted */
+>>               spin_unlock(&tree->lock);
+>>               return -1;
+>>       }
+>> @@ -780,7 +607,7 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>>       spin_lock(&tree->lock);
+>>       entry = zswap_rb_search(&tree->rbroot, offset);
+>>       if (!entry) {
+>> -             /* entry was written back */
+>> +             /* entry was evicted */
+>>               spin_unlock(&tree->lock);
+>>               return;
+>>       }
+>> @@ -813,7 +640,7 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+>>  }
+>>
+>>  static struct zbud_ops zswap_zbud_ops = {
+>> -     .evict = zswap_writeback_entry
+>> +     .evict = zswap_evict_entry
+>>  };
+>>
+>>  static void zswap_frontswap_init(unsigned type)
+>> @@ -872,8 +699,8 @@ static int __init zswap_debugfs_init(void)
+>>                       zswap_debugfs_root, &zswap_reject_kmemcache_fail);
+>>       debugfs_create_u64("reject_compress_poor", S_IRUGO,
+>>                       zswap_debugfs_root, &zswap_reject_compress_poor);
+>> -     debugfs_create_u64("written_back_pages", S_IRUGO,
+>> -                     zswap_debugfs_root, &zswap_written_back_pages);
+>> +     debugfs_create_u64("evicted_pages", S_IRUGO,
+>> +                     zswap_debugfs_root, &zswap_evicted_pages);
+>>       debugfs_create_u64("duplicate_entry", S_IRUGO,
+>>                       zswap_debugfs_root, &zswap_duplicate_entry);
+>>       debugfs_create_u64("pool_pages", S_IRUGO,
+>> @@ -918,6 +745,7 @@ static int __init init_zswap(void)
+>>               pr_err("per-cpu initialization failed\n");
+>>               goto pcpufail;
+>>       }
+>> +     frontswap_writethrough(true);
+>>       frontswap_register_ops(&zswap_frontswap_ops);
+>>       if (zswap_debugfs_init())
+>>               pr_warn("debugfs initialization failed\n");
+>> --
+>> 1.8.3.1
+>>
