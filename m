@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3KVW73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:59:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58221 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3KVW72 (ORCPT
+	id S1756200Ab3KVXDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 18:03:55 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:55656 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3KVXDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:59:28 -0500
-Date: Fri, 22 Nov 2013 14:59:27 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/3] mm, memory-failure: fix the typo in
- me_pagecache_dirty()
-Message-Id: <20131122145927.f3745790b1332c231087fd60@linux-foundation.org>
-In-Reply-To: <1383914858-14533-3-git-send-email-zwu.kernel@gmail.com>
-References: <1383914858-14533-1-git-send-email-zwu.kernel@gmail.com>
-	<1383914858-14533-3-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Nov 2013 18:03:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <528F0DB8.7020604@windriver.com>
+References: <528F0DB8.7020604@windriver.com>
+Date: Fri, 22 Nov 2013 15:03:52 -0800
+X-Google-Sender-Auth: JbyaWmg6lETjA6rm8g6Oj91fXeg
+Message-ID: <CAL3LdT5w5sz8ftm2FBHUT3hajrGZKjwfK5m0WqdcGMTtaMaEGQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] e1000: prevent oops when adapter is being closed and
+ reset simultaneously
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: yzhu1 <Yanjun.Zhu@windriver.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        zhuyj <zyjzyj2000@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  8 Nov 2013 20:47:38 +0800 Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+On Thu, Nov 21, 2013 at 11:54 PM, yzhu1 <Yanjun.Zhu@windriver.com> wrote:
+> Hi, maintainers
+>
+> This change is based on a similar change made to e1000e support in
+> commit bb9e44d0d0f4 ("e1000e: prevent oops when adapter is being closed
+> and reset simultaneously").  The same issue has also been observed
+> on the older e1000 cards.
+>
+> Here, we have increased the RESET_COUNT value to 50 because there are too
+> many accesses to e1000 nic on stress tests to e1000 nic, it is not enough
+> to set RESET_COUT 25. Experimentation has shown that it is enough to set
+> RESET_COUNT 50.
+>
+> Please help me to merge this patch. Thanks a lot.
+>
+> Zhu Yanjun
 
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -611,7 +611,7 @@ static int me_pagecache_clean(struct page *p, unsigned long pfn)
->  }
->  
->  /*
-> - * Dirty cache page page
-> + * Dirty cache page
->   * Issues: when the error hit a hole page the error is not properly
->   * propagated.
->   */
+Please remember to actually include the driver maintainer for the
+driver your patch is against (i.e. me).
 
-The accurate and complete description of this page is actually
-"pagecache page", so...
+I will add your patch to my queue.
 
---- a/mm/memory-failure.c~mm-memory-failure-fix-the-typo-in-me_pagecache_dirty-fix
-+++ a/mm/memory-failure.c
-@@ -611,7 +611,7 @@ static int me_pagecache_clean(struct pag
- }
- 
- /*
-- * Dirty cache page
-+ * Dirty pagecache page
-  * Issues: when the error hit a hole page the error is not properly
-  * propagated.
-  */
-_
-
+-- 
+Cheers,
+Jeff
