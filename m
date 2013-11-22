@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3KVRxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:53:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21502 "EHLO mx1.redhat.com"
+	id S1755899Ab3KVRx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:53:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab3KVRxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:53:13 -0500
-Date: Fri, 22 Nov 2013 18:54:24 +0100
+	id S1755828Ab3KVRx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:53:27 -0500
+Date: Fri, 22 Nov 2013 18:54:39 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Kees Cook <keescook@chromium.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Sameer Nanda <snanda@chromium.org>,
         Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] in_exec/etc cleanups
-Message-ID: <20131122175424.GA31432@redhat.com>
+Subject: [PATCH 1/4] check_unsafe_exec: use while_each_thread() rather than
+	next_thread()
+Message-ID: <20131122175439.GA31446@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131122175424.GA31432@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+next_thread() should be avoided, change check_unsafe_exec()
+to use while_each_thread(). This also saves 32 bytes.
 
-Initially I was going to make a single patch (1/4) as a preparation
-for the next changes, but imho this code needs cleanups. The patches
-do not depend on each other, they can be applied individually.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/exec.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Oleg.
-
- fs/exec.c             |   53 +++++++++++++-----------------------------------
- include/linux/sched.h |    1 -
- kernel/fork.c         |    1 -
- kernel/sys.c          |    5 +--
- 4 files changed, 17 insertions(+), 43 deletions(-)
+diff --git a/fs/exec.c b/fs/exec.c
+index 1dee8ef..0cd9c25 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1245,10 +1245,11 @@ static int check_unsafe_exec(struct linux_binprm *bprm)
+ 	if (current->no_new_privs)
+ 		bprm->unsafe |= LSM_UNSAFE_NO_NEW_PRIVS;
+ 
++	t = p;
+ 	n_fs = 1;
+ 	spin_lock(&p->fs->lock);
+ 	rcu_read_lock();
+-	for (t = next_thread(p); t != p; t = next_thread(t)) {
++	while_each_thread(p, t) {
+ 		if (t->fs == p->fs)
+ 			n_fs++;
+ 	}
+-- 
+1.5.5.1
 
