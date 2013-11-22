@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab3KVQDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:03:00 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:63622 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3KVQC7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:02:59 -0500
-Date: Fri, 22 Nov 2013 11:02:52 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+	id S932176Ab3KVQEK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:04:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50094 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab3KVQEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:04:09 -0500
+Date: Fri, 22 Nov 2013 17:04:04 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Message-ID: <20131122160252.GA8981@mtj.dyndns.org>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
- <20131120061830.GA16081@mtj.dyndns.org>
- <CAErSpo5s9chjgSaA2kqE_72f=+2Lq9HQLM3xstw8Avg+Nx63xA@mail.gmail.com>
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel
+ loading
+In-Reply-To: <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1311221701510.22082@pobox.suse.cz>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com> <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com> <20131122134317.GA4046@redhat.com>
+ <CAMuHMdV4=Z8i0u_rWpQU0HHW0mvyv1k-acW1MyT9ZYy=iNwrfg@mail.gmail.com> <alpine.LRH.2.00.1311221631100.9932@twin.jikos.cz> <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5s9chjgSaA2kqE_72f=+2Lq9HQLM3xstw8Avg+Nx63xA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 22 Nov 2013, Eric Paris wrote:
 
-On Fri, Nov 22, 2013 at 08:43:55AM -0700, Bjorn Helgaas wrote:
-> > So, we do have cases where the parent is removed before the child.  I
-> > suppose the parent pci bridge is removed already?  AFAICS this
-> > shouldn't break anything but people did seem to expect the removals to
-> > be ordered from child to parent.  Bjorn, is this something you expect
-> > to happened?
-> 
-> I do not expect a PCI bridge to be removed before the devices below
-> it.  We should be removing all the children before removing the parent
-> bridge.
-> 
-> But is this related to PCI?  I don't see the connection yet.  I tried
+> Consider a cloud provider who gives their customer a machine where
+> they, the cloud provider, is specifying the kernel and initrd.  This
+> is a real thing that people do today.  Root on the machine has ZERO
+> control over the kernel, bootloader, and initrd.  Check it out,
+> qemu/kvm can do this.  But, there is no way to disable kexec if the
+> distro configures it in (well, there is in RHEL at least).  
 
-I'm not sure.  It was from thunderbolt and nobody is reporting it on
-other interconnects, so it could be.
-
-> to look into this a bit (my notes are at
-> https://bugzilla.kernel.org/show_bug.cgi?id=65281), but I haven't
-> figured out the big-picture problem yet.
-> 
-> I don't have warm fuzzies that adding a "have we already removed this"
-> check is the best resolution, but maybe that's just because I don't
-> understand the problem.
-
-Yeah, the whole thing is sorta pointless.  Just issuing removal and
-continuing on should do, IMHO.
-
-Thanks.
+If that root can load LKMs, access /dev/mem, or whatever else, there is 
+not really a point disabling kexec anyway, is the same thing can be 
+implemented (although with more hassle, of course) through these channels 
+as well.
 
 -- 
-tejun
+Jiri Kosina
+SUSE Labs
