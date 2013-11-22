@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3KVT5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:57:10 -0500
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:60427 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3KVT5I (ORCPT
+	id S1756102Ab3KVUBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:01:20 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:53066 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab3KVUBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:57:08 -0500
-X-Fcrdns: No
-Message-ID: <528FB71C.5020304@profihost.ag>
-Date: Fri, 22 Nov 2013 20:57:16 +0100
-From: Stefan Priebe <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 22 Nov 2013 15:01:16 -0500
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chinmay V S <cvs268@gmail.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, matthew@wil.cx
-Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
-References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org>
-In-Reply-To: <20131120155507.GA5380@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+In-Reply-To: <528F8959.7080207@ti.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
+	<1385085414-9034-6-git-send-email-joelf@ti.com>
+	<CAL_JsqKS=cGeAhj+K04SOtA8nJRR3MXxS3ry-kzjQOkZx3yK4g@mail.gmail.com>
+	<528F8959.7080207@ti.com>
+Date: Fri, 22 Nov 2013 14:01:15 -0600
+Message-ID: <CAL_JsqJoH_yWP-Aae2REb=qzV6c56=WQoVLV8cFgX+_b+voM5g@mail.gmail.com>
+Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly
+ clocksource/clockevent system timers
+From: Rob Herring <robherring2@gmail.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jgchunter@gmail.com, rnayak@ti.com, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        benoit.cousson@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.11.2013 16:55, schrieb J. Bruce Fields:
-> On Wed, Nov 20, 2013 at 10:37:03AM -0500, Theodore Ts'o wrote:
->> On Wed, Nov 20, 2013 at 08:52:36PM +0530, Chinmay V S wrote:
+On Fri, Nov 22, 2013 at 10:42 AM, Joel Fernandes <joelf@ti.com> wrote:
+> On 11/22/2013 09:58 AM, Rob Herring wrote:
+>> On Thu, Nov 21, 2013 at 7:56 PM, Joel Fernandes <joelf@ti.com> wrote:
+>>> This work is a migration effort of OMAP system timers to the
+>>> clocksource/clockevent framework. Consider this as a first-pass in this effort.
+>>> There are few cleanups that need to be done first. The HWMOD code is
+>>> intertwined with the timer code. HWMOD code cleanups in the future will
+>>> hopefully make most of this code go away, so till then we separate out the
+>>> power/clocks portion of the code from the actual timer bits.  This will
+>>> facilitate near-future work of adapting the system timer as a clocksource.
 >>>
->>> If you have confirmed the performance numbers, then it indicates that
->>> the Intel 530 controller is more advanced and makes better use of the
->>> internal disk-cache to achieve better performance (as compared to the
->>> Intel 520). Thus forcing CMD_FLUSH on each IOP (negating the benefits
->>> of the disk write-cache and not allowing any advanced disk controller
->>> optimisations) has a more pronouced effect of degrading the
->>> performance on Intel 530 SSDs. (Someone with some actual info on Intel
->>> SSDs kindly confirm this.)
+>>> New functions for OF-only boot are introduced, and we can soon delete the old
+>>> versions once we migrate all platforms. Currently only AM335x is migrated and
+>>> testedA new omap_generic_timer_init function is introduced for DT platforms.
+>>> Code required earlier for non-DT platforms such as setup of timer IDs and timer
+>>> parent clock is not required.  parent clocks are automatically setup by the mux
+>>> clock driver through DT so they no longer need to be hardcoded.
+>>>
+>>> The init code will try to pick the best timer for clocksource and clockevent
+>>> however bindings are added to force a particular timer as clocksource or
+>>> clockevent through DT.
+>>>
+>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>>> ---
+>>>  .../devicetree/bindings/arm/omap/timer.txt         |  12 ++
+>>>  arch/arm/mach-omap2/common.h                       |   1 +
+>>>  arch/arm/mach-omap2/timer.c                        | 235 +++++++++++++++++++++
+>>>  3 files changed, 248 insertions(+)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
+>>> index d02e27c..6cf7a75 100644
+>>> --- a/Documentation/devicetree/bindings/arm/omap/timer.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
+>>> @@ -32,6 +32,18 @@ Optional properties:
+>>>  - ti,timer-secure:     Indicates the timer is reserved on a secure OMAP device
+>>>                         and therefore cannot be used by the kernel.
+>>>
+>>> +- ti,timer-clockevent,
+>>> +  ti,timer-clocksource These properties force the system timer code to choose
+>>> +                       the particular timer as a clockevent or clocksource.
+>>> +                       If these properties are not specified, the timer code
+>>> +                       picks up a "ti,timer-alwon" as the clocksource and a
+>>> +                       timer containing one of the following properties as
+>>> +                       the clockevent in the following order:
+>>> +                               ti,timer-alwon
+>>> +                               ti,timer-dsp
+>>> +                               ti,timer-pwm
+>>> +                               ti,timer-secure
 >>
->> You might also want to do some power fail testing to make sure that
->> the SSD is actually flusing all of its internal Flash Translation
->> Layer (FTL) metadata to stable storage on every CMD_FLUSH command.
+>> These properties were added specifically for the reason of avoiding
+>> linux specific properties like these. When is this not sufficient?
 >
-> Some SSD's are also claim the ability to flush the cache on power loss:
+> Some platforms cannot use certain timers as clockevents and clocksource, to keep
+> this code functionally equivalent and working, I added these properties so that
+> its possible to select specific timers as clockevents/sources as was being done
+> in the non-DT case. I'm open to suggestions for doing this in a better way for DT.
+
+There has to be a defined reason why a given timer cannot be used. You
+are not explaining what that reason is. Define a property or set of
+properties that describe the h/w feature or quirk.
+
+>>
+>> And I agree with the comment to use OF_CLKSRC.
+>>
 >
-> 	http://www.intel.com/content/www/us/en/solid-state-drives/ssd-320-series-power-loss-data-protection-brief.html
->
-> Which should in theory let them respond immediately to flush requests,
-> right?  Except they only seem to advertise it as a safety (rather than a
-> performance) feature, so I probably misunderstand something.
+> There are difficulties I mentioned in a previous post [1] stating why it may not
+> be possible to use OF_CLKSRC macros, and still keep the code functionally
+> equivalent to when it was non-DT.
 
-Yes but they all should make use and support CMD_FLUSH so it's slow on 
-them too.
+Sorry, I don't buy it.
 
-> And the 520 doesn't claim this feature (look for "enhanced power loss
-> protection" at http://ark.intel.com/products/66248), so that wouldn't
-> explain these results anyway.
-
-Correct i think intel simply ignores CMD_FLUSH on that drive - no idea 
-why an they fixed this for their 330, 530, DC S3500 (all tested)
-
-> --b.
->
->>
->> There are lots of flash media that don't do this, with the result that
->> I get lots of users whining at me when their file system stored on an
->> SD card has massive corruption after a power fail event.
->>
->> Historically, Intel has been really good about avoiding this, but
->> since they've moved to using 3rd party flash controllers, I now advise
->> everyone who plans to use any flash storage, regardless of the
->> manufacturer, to do their own explicit power fail testing (hitting the
->> reset button is not good enough, you need to kick the power plug out
->> of the wall, or better yet, use a network controlled power switch you
->> so you can repeat the power fail test dozens or hundreds of times for
->> your qualification run) before being using flash storage in a mission
->> critical situation where you care about data integrity after a power
->> fail event.
->>
->> IOW, make sure that the SSD isn't faster because it's playing fast and
->> loose with the FTL metadata....
->>
->> Cheers,
->>
->> 						- Ted
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Rob
