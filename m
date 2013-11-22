@@ -1,171 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3KVUfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 15:35:45 -0500
-Received: from mout.gmx.net ([212.227.17.21]:59470 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932181Ab3KVUfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:35:42 -0500
-Message-ID: <528FC01A.6000300@gmx.de>
-Date: Fri, 22 Nov 2013 21:35:38 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756166Ab3KVUgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:36:41 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:42700 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab3KVUgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 15:36:38 -0500
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in
- radix_tree_next_chunk()
-References: <526696BF.6050909@gmx.de>	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>	<5266A698.10400@gmx.de>	<5266B60A.1000005@nod.at>	<52715AD1.7000703@gmx.de> <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com> <527AB23D.2060305@gmx.de> <527AB51B.1020005@nod.at>
-In-Reply-To: <527AB51B.1020005@nod.at>
-X-Enigmail-Version: 1.6
+Date: Fri, 22 Nov 2013 12:36:37 -0800
+X-Google-Sender-Auth: 7-reOZFUiYN8NHSquPRW2UVq0fc
+Message-ID: <CA+55aFxK5hkhteiL5cyPtHX5reup6aOiHQTCDKKdBsHiWsroGA@mail.gmail.com>
+Subject: Linux 3.13-rc1 is out
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:JSyuk/DhUMKyYL5G30TQlVOtum3gFznAMEK3ggD6rUg+xF6ALNt
- 5UNKHVdMSkUb1BpMqCQ5hMr17f3Z+h+j4Tjv66F7JvTgn1S/g8lXK9gmK6siNflGlW7gl5s
- pLldNdkbAZ+dEqj6kp9Bm4Q00BNhVJc04jv+6R/C2+L5CfgHtvdd6km4OjwYgy+fSDpapAF
- yGVmI2aPjbKcxyd0neJDA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 10:31 PM, Richard Weinberger wrote:
-> Can you please ask gdb for the value of offset?
+So you had an extra week to prepare your pull requests, and if you
+were planning on sending it in the last two days thinking I'd close
+the merge window on Sunday as usual, I can only laugh derisively in
+your general direction, and call you bad names. Because I'm not
+interested in your excuses. I did warn people about this in the 3.12
+release notes. As it was, there were a few people who cut it fairly
+close today. You know who you are.
 
-With this diff against latest Linus tree v3.12-11355-g57498f9 :
+If there are pull requests I missed (due to getting caught in spam
+filters, or not matching my normal search patterns), and you think you
+sent your pull request in time but it got overlooked, ping me -
+because I don't have anything pending I know about, but mistakes
+happen.
 
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index 7811ed3..54d9802 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -750,6 +750,7 @@ restart:
-        /* Index outside of the tree */
-        if (offset >= RADIX_TREE_MAP_SIZE)
-                return NULL;
-+       printk ("offset a: %lu \n", offset);
+Talking about mistakes... I suspect it was a mistake to have that
+extra week before the merge window opened, and I probably should just
+have done a 3.12-rc8 instead. Because the linux-next statistics look
+suspicious, and we had extra stuff show up there not just in that
+first week. Clearly people took that "let's have an extra week of
+merge window" and extrapolated it a bit too much. Oh, well. Live and
+learn.
 
-        node = rnode;
-        while (1) {
-@@ -770,6 +771,7 @@ restart:
-                                        if (node->slots[offset])
-                                                break;
-                                }
-+                       printk ("offset b: %lu \n", offset);
-                        index &= ~((RADIX_TREE_MAP_SIZE << shift) - 1);
-                        index += offset << shift;
-                        /* Overflow after ~0UL */
-@@ -812,6 +814,7 @@ restart:
-                }
-        }
+Anyway, other than that small oddity, this was a fairly normal merge
+window. By patch size we had a pretty usual ~55% drivers, 18%
+architecture code, 9% network updates, and the rest is spread out (fs,
+headers, tools, documentation). Featurewise, the big ones are likely
+the nftables and the multi-queue block layer stuff, but depending on
+your interests you might find all the incremental updates to various
+areas interesting. There are some odd ones in there (LE mode Powerpc
+support..)
 
-+       printk ("offset c: %lu \n", offset);
-        return node->slots + offset;
- }
- EXPORT_SYMBOL(radix_tree_next_chunk);
+Go forth and test, and start sending me regression fixes. And really,
+if you didn't send me your pull request in time, don't whine about it.
+Because nobody likes a whiner.
 
+Shortlog of merges appended. The real shortlog is much too big to be
+readable, as always for rc1.
 
-I got today these syslog message when the trinity process hangs at a 32 bit Gentoo linux:
+             Linus
 
+---
+Al Viro (3):
+  vfs updates
+  VFS fixes
+  vfs bits and pieces
 
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset c: 63
-Nov 22 21:29:29 trinity kernel: offset a: 0
-Nov 22 21:29:29 trinity kernel: offset b: 3
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset c: 63
-Nov 22 21:29:29 trinity kernel: offset a: 0
-Nov 22 21:29:29 trinity kernel: offset b: 3
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity sshd[1299]: pam_unix(sshd:session): session closed for user tfoerste
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset c: 63
-Nov 22 21:29:29 trinity kernel: offset a: 0
-Nov 22 21:29:29 trinity kernel: offset b: 3
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:29 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset c: 63
-Nov 22 21:29:30 trinity kernel: offset a: 0
-Nov 22 21:29:30 trinity kernel: offset b: 3
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset c: 63
-Nov 22 21:29:30 trinity kernel: offset a: 0
-Nov 22 21:29:30 trinity kernel: offset b: 3
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity sshd[1533]: pam_unix(sshd:session): session opened for user root by (uid=0)
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset b: 63
-Nov 22 21:29:30 trinity kernel: offset c: 63
-Nov 22 21:29:30 trinity kernel: offset a: 0
-Nov 22 21:29:30 trinity kernel: offset b: 3
-Nov 22 21:29:31 trinity kernel: offset b: 63
-Nov 22 21:29:31 trinity kernel: offset b: 63
-Nov 22 21:29:31 trinity kernel: offset b: 63
-Nov 22 21:29:31 trinity kernel: offset b: 63
-Nov 22 21:29:31 trinity kernel: offset b: 63
-Nov 22 21:29:31 trinity kernel: offset c: 63
-Nov 22 21:29:31 trinity shutdown[1536]: shutting down for system halt
-Nov 22 21:29:31 trinity init: Switching to runlevel: 0
+Andrew Morton (3):
+  first patch-bomb
+  patches
+  patches
 
+Anton Vorontsov (1):
+  battery updates
 
-FWIW gdb's output :
+Artem Bityutskiy (2):
+  ubifs changes
+  UBI changes
 
+Ben Myers (2):
+  xfs update
+  second xfs update
 
-tfoerste@n22 ~/devel/linux $ sudo gdb /home/tfoerste/devel/linux/linux 3612 -n -batch -ex bt
-0x083d3c83 in memcpy ()
-#0  0x083d3c83 in memcpy ()
-#1  0x080a6257 in log_store (facility=0, level=4, flags=LOG_NEWLINE, ts_nsec=0, dict=0x86101e0 <__log_buf+25512> "\200=\355\265D", dict_len=0, text=0x86101e0 <__log_buf+25512> "\200=\355\265D", text_len=13) at kernel/printk/printk.c:344
-#2  0x080a7158 in vprintk_emit (facility=0, level=4, dict=0x0, dictlen=0, fmt=0x63a8 <Address 0x63a8 out of bounds>, args=0x63a8 <Address 0x63a8 out of bounds>) at kernel/printk/printk.c:1610
-#3  0x08423845 in printk (fmt=0x63a8 <Address 0x63a8 out of bounds>) at kernel/printk/printk.c:1690
-#4  0x0829c39e in radix_tree_next_chunk (root=0x63a8, iter=0x3f, flags=0) at lib/radix-tree.c:774
-#5  0x080cc78e in find_get_pages (mapping=0x48c21010, start=0, nr_pages=14, pages=0x86101e0 <__log_buf+25512>) at mm/filemap.c:844
-#6  0x080d654a in pagevec_lookup (pvec=0x49bffcc8, mapping=0x63a8, start=25512, nr_pages=25512) at mm/swap.c:937
-#7  0x080d694a in truncate_inode_pages_range (mapping=0x48c21010, lstart=0, lend=-1) at mm/truncate.c:241
-#8  0x080d6cef in truncate_inode_pages (mapping=0x63a8, lstart=603765886628684712) at mm/truncate.c:358
-#9  0x08260a48 in hostfs_evict_inode (inode=0x48c20f58) at fs/hostfs/hostfs_kern.c:233
-#10 0x0811b46f in evict (inode=0x48c20f58) at fs/inode.c:549
-#11 0x0811bf5d in iput_final (inode=<optimized out>) at fs/inode.c:1419
-#12 iput (inode=0x48c20f58) at fs/inode.c:1437
-#13 0x08118858 in dentry_iput (dentry=<optimized out>) at fs/dcache.c:300
-#14 d_kill (parent=<optimized out>, dentry=<optimized out>) at fs/dcache.c:447
-#15 dentry_kill (dentry=0x4957de70, unlock_on_failure=<optimized out>) at fs/dcache.c:549
-#16 0x08118b5d in dput (dentry=0x4957de70) at fs/dcache.c:605
-#17 0x08105353 in __fput (file=0x48a7cd80) at fs/file_table.c:261
-#18 0x081053bb in ____fput (work=0x48a7cd80) at fs/file_table.c:279
-#19 0x08094486 in task_work_run () at kernel/task_work.c:123
-#20 0x0807efb2 in exit_task_work (task=<optimized out>) at include/linux/task_work.h:21
-#21 do_exit (code=1217397248) at kernel/exit.c:787
-#22 0x0807f5fd in do_group_exit (exit_code=0) at kernel/exit.c:920
-#23 0x0807f669 in SYSC_exit_group (error_code=<optimized out>) at kernel/exit.c:931
-#24 SyS_exit_group (error_code=0) at kernel/exit.c:929
-#25 0x08062ab4 in handle_syscall (r=0x48a787cc) at arch/um/kernel/skas/syscall.c:35
-#26 0x08075115 in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-#27 userspace (regs=0x48a787cc) at arch/um/os-Linux/skas/process.c:431
-#28 0x0805f770 in fork_handler () at arch/um/kernel/process.c:149
-#29 0x00000000 in ?? ()
+Benjamin Herrenschmidt (3):
+  powerpc updates
+  powerpc LE updates
+  third set of powerpc updates
 
+Benjamin LaHaise (1):
+  aio fixes
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Bjorn Helgaas (2):
+  PCI changes
+  PCI updates
+
+Borislav Petkov (1):
+  EDAC updates
+
+Brian Norris (1):
+  MTD changes
+
+Bruce Fields (2):
+  nfsd changes
+  nfsd bugfixes
+
+Bryan Wu (1):
+  LED subsystem changes
+
+Catalin Marinas (1):
+  ARM64 update
+
+Chris Ball (1):
+  MMC updates
+
+Chris Mason (2):
+  btrfs fixes
+  btrfs fixes
+
+Dave Airlie (3):
+  drm updates
+  drm regression fix
+  DRM fixes
+
+David Miller (7):
+  networking fixes
+  networking updates
+  sparc update
+  IDE updates
+  sparc fixes
+  networking fixes
+  networking fixes
+
+David Teigland (1):
+  dlm fix
+
+Dmitry Torokhov (1):
+  input updates
+
+Eric Paris (1):
+  audit updates
+
+Geert Uytterhoeven (1):
+  m68k updates
+
+Gleb Natapov (1):
+  KVM fixes
+
+Greg KH (5):
+  USB driver update
+  char/misc patches
+  driver core / sysfs patches
+  tty/serial driver updates
+  staging driver update
+
+Guenter Roeck (3):
+  h8300 platform removal
+  hwmon updates
+  hwmon fixes
+
+Hans-Christian Egtvedt (1):
+  AVR32 updates
+
+Helge Deller (2):
+  parisc update
+  parisc fixes
+
+Ingo Molnar (30):
+  RCU updates
+  IRQ changes
+  leftover IRQ fixes
+  perf updates
+  scheduler changes
+  timer changes
+  x86/apic fix
+  x86 user access changes
+  x86 boot changes
+  x86 build changes
+  x86 cleanups
+  x86 cpu changes
+  x86 EFI changes
+  x86/hyperv changes
+  x86/intel-mid changes
+  x86 iommu changes
+  x86 RAS changes
+  x86 mm fixlet
+  x86 platform fixlet
+  x86 reboot changes
+  x86 uaccess changes
+  x86 UV debug changes
+  x86/trace changes
+  core locking changes
+  scheduler fixes
+  two x86 fixes
+  perf updates
+  perf fixes
+  irq cleanups
+  x86 fix
+
+Jaegeuk Kim (1):
+  f2fs updates
+
+James Bottomley (1):
+  first round of SCSI updates
+
+James Hogan (1):
+  metag architecture changes
+
+James Morris (1):
+  security subsystem updates
+
+Jan Kara (1):
+  ext[23], udf and quota fixes
+
+Jean Delvare (1):
+  hwmon fixes and updates
+
+Jens Axboe (4):
+  block IO core updates
+  block driver updates
+  second round of block driver updates
+  block IO fixes
+
+Jiri Kosina (2):
+  trivial tree updates
+  HID updates
+
+Joerg Roedel (1):
+  IOMMU updates
+
+Jonas Bonn (1):
+  OpenRISC updates
+
+Konrad Rzeszutek Wilk (1):
+  Xen updates
+
+Linus Walleij (2):
+  pin control updates
+  GPIO changes
+
+Mark Brown (3):
+  regmap updates
+  regulator updates
+  spi updates
+
+Mark Salter (1):
+  Kconfig cleanups
+
+Martin Schwidefsky (2):
+  s390 updates
+  second set of s390 patches
+
+Matt Turner (1):
+  alpha updates
+
+Mauro Carvalho Chehab (3):
+  EDAC driver updates
+  media updates
+  media build fixes
+
+Michal Marek (3):
+  kbuild changes
+  kconfig changes
+  misc kbuild changes
+
+Michal Simek (1):
+  microblaze updates
+
+Mike Snitzer (1):
+  device mapper changes
+
+Mike Turquette (1):
+  clock framework changes
+
+Miklos Szeredi (1):
+  fuse updates
+
+Neil Brown (1):
+  md update
+
+Nicholas Bellinger (1):
+  SCSI target updates
+
+Olof Johansson (7):
+  ARM SoC low-priority fixes
+  ARM SoC cleanups
+  ARM SoC platform changes
+  ARM SoC board updates
+  ARM driver updates
+  ARM SoC DT updates
+  ARM SoC fixes
+
+Paolo Bonzini (1):
+  KVM changes
+
+Pekka Enberg (1):
+  SLAB changes
+
+Phillip Lougher (1):
+  squashfs updates
+
+Rafael J Wysocki (1):
+  ACPI and power management updates
+
+Rafael Wysocki (1):
+  more ACPI and power management updates
+
+Ralf Baechle (1):
+  MIPS updates
+
+Richard Weinberger (1):
+  UML changes
+
+Rob Herring (1):
+  devicetree updates
+
+Roland Dreier (1):
+  infiniband/rdma updates
+
+Russell King (3):
+  DMA mask updates
+  ARM updates
+  ARM fixes
+
+Rusty Russell (2):
+  module updates
+  virtio updates
+
+Samuel Ortiz (1):
+  MFD updates
+
+Steve French (2):
+  CIFS updates
+  CIFS fixes
+
+Steven Miao (1):
+  blackfin updates
+
+Steven Rostedt (2):
+  perf/ftrace fix
+  tracing update
+
+Steven Whitehouse (2):
+  gfs2 updates
+  GFS2 fixes
+
+Takashi Iwai (3):
+  sound updates
+  sound fixes
+  second set of sound fixes
+
+Ted Ts'o (2):
+  ext4 changes
+  /dev/random changes
+
+Tejun Heo (3):
+  percpu changes
+  libata changes
+  cgroup changes
+
+Thierry Reding (1):
+  pwm changes
+
+Tomi Valkeinen (1):
+  fbdev changes
+
+Tony Luck (1):
+  ia64 fix
+
+Trond Myklebust (1):
+  NFS client updates
+
+Tyler Hicks (1):
+  minor eCryptfs fix
+
+Vineet Gupta (2):
+  ARC changes
+  second set of ARC changes
+
+Vinod Koul (1):
+  slave-dmaengine changes
+
+Wim Van Sebroeck (1):
+  watchdog changes
+
+Wolfram Sang (1):
+  i2c changes
+
+Zhang Rui (1):
+  thermal management updates
