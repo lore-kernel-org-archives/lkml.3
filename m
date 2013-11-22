@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab3KVVnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:43:39 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:44540 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3KVVng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:43:36 -0500
-Message-ID: <528FD003.8090607@gmail.com>
-Date: Fri, 22 Nov 2013 15:43:31 -0600
-From: Rob Herring <robherring2@gmail.com>
+	id S1755528Ab3KVVn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:43:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:56446 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755917Ab3KVVnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 16:43:53 -0500
+Message-ID: <528FD00F.9080108@ti.com>
+Date: Fri, 22 Nov 2013 15:43:43 -0600
+From: Nishanth Menon <nm@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: devicetree <devicetree@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH] dt-bindings: add ARMv8 PMU binding
-References: <1385155032-9032-1-git-send-email-robherring2@gmail.com> <A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
-In-Reply-To: <A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: <rjw@rjwysocki.net>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <shawn.guo@linaro.org>, <ceh@ti.com>
+Subject: Re: [PATCH] cpufreq: Make sure CPU is running on a freq from freq-table
+References: <de5c3ff26e9d06a6e0b06f8ba3da6d8c3ff82304.1385017369.git.viresh.kumar@linaro.org> <528F01C4.1050608@linaro.org>
+In-Reply-To: <528F01C4.1050608@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 03:38 PM, Kumar Gala wrote:
+On 11/22/2013 01:03 AM, viresh kumar wrote:
+> On Thursday 21 November 2013 12:39 PM, Viresh Kumar wrote:
+
+[...]
+> Copying another mail from Nishant here to get my cc'list back..
 > 
-> On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Friday 22 November 2013 05:12 AM, Nishanth Menon wrote:
+>> I gave this a quick run on my 3.12 kernel:
+>> http://pastebin.mozilla.org/3649730 is what I applied and output
+>> http://pastebin.mozilla.org/3649729
+>>
+>> I need to see what I might have mucked up.. or see if I can test this
+>> on 3.13 master on a different board (since OMAP5 wont boot in master
+>> without clock dts nodes :()..
 > 
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Pawel Moll <pawel.moll@arm.com>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> ---
->> Documentation/devicetree/bindings/arm/pmu.txt | 1 +
->> 1 file changed, 1 insertion(+)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
->> index 343781b..3e1e498 100644
->> --- a/Documentation/devicetree/bindings/arm/pmu.txt
->> +++ b/Documentation/devicetree/bindings/arm/pmu.txt
->> @@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
->> Required properties:
->>
->> - compatible : should be one of
->> +	"arm,armv8-pmuv3”
+> This happened because of common sense, which was missing in my patch :)
 > 
-> what about arm,armv8-pmu-v3?
+> Try this over existing patch:
 
-I'm just documenting what is already being used:
 
-arch/arm64/boot/dts/foundation-v8.dts:          compatible =
-"arm,armv8-pmuv3";
-arch/arm64/boot/dts/rtsm_ve-aemv8a.dts:         compatible =
-"arm,armv8-pmuv3";
+Works like a charm :) thanks.
 
-Do we want to change those?
+http://pastebin.mozilla.org/3655494 -> simple Ondemand governor testing.
+http://pastebin.mozilla.org/3655493 -> simple Userspace governor testing.
 
-Rob
-
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 6e8b226..e403388 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1126,13 +1126,19 @@ static int __cpufreq_add_dev(struct device *dev, struct
+> subsys_interface *sif,
+>          * In case where CPU is already running on one of the frequencies
+>          * present in freq-table, this would turn into a dummy call as
+>          * __cpufreq_driver_target() would return early.
+> +        *
+> +        * We are passing target-freq as "policy->cur - 1" otherwise
+> +        * __cpufreq_driver_target() would simply fail, as policy->cur will be
+> +        * equal to target-freq.
+>          */
+>         if (has_target()) {
+> -               ret = __cpufreq_driver_target(policy, policy->cur,
+> +               ret = __cpufreq_driver_target(policy, policy->cur - 1,
+>                                 CPUFREQ_RELATION_L);
+> -               if (ret)
+> +               if (ret) {
+>                         pr_err("%s: Unable to set frequency from table: %d\n",
+>                                         __func__, ret);
+> +                       goto err_out_unregister;
+> +               }
+>         }
+> 
+>         /* related cpus should atleast have policy->cpus */
+> 
+-- 
+Regards,
+Nishanth Menon
