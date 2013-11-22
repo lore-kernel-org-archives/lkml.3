@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab3KVThS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:37:18 -0500
-Received: from exprod5og102.obsmtp.com ([64.18.0.143]:33964 "HELO
-	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755840Ab3KVThJ (ORCPT
+	id S1756101Ab3KVTh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:37:56 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54697 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755657Ab3KVThy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:37:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <528C95D2.5090200@arm.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-Date: Fri, 22 Nov 2013 11:37:08 -0800
-Message-ID: <CAL85gmD9sxyn9ELNQePbCYAAnovSE_vgbdYZccrkTdX1YPRhiA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Feng Kan <fkan@apm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 22 Nov 2013 14:37:54 -0500
+Date: Fri, 22 Nov 2013 19:37:13 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Anurag Aggarwal <anurag19aggarwal@gmail.com>
+Cc: naveen.sel@samsung.com, "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        narendra.m1@samsung.com, nico@linaro.org,
+        Anurag Aggarwal <a.anurag@samsung.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, will.deacon@arm.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        cpgs@samsung.com, naveenkrishna.ch@gmail.com, rajat.suri@samsung.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        mohammad.a2@samsung.com
+Subject: Re: [PATCH] ARM: unwinder: Handle Stackoverflow in unwind_exec_insn
+Message-ID: <20131122193703.GA2286@e103592.cambridge.arm.com>
+References: <1383731448-847-1-git-send-email-a.anurag@samsung.com>
+ <20131108132119.GB2602@localhost.localdomain>
+ <CAPoNrtuuHOB5d+vo-wGJ=5JQG=K0ZdaAv2Nyfxnit=WAWzXegg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPoNrtuuHOB5d+vo-wGJ=5JQG=K0ZdaAv2Nyfxnit=WAWzXegg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>       set_handle_irq(gic_handle_irq);
->>
->> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
+On Sat, Nov 09, 2013 at 12:28:57PM +0530, Anurag Aggarwal wrote:
+> Thanks for your input Dave,
+> 
+> I think there is another way to avoid the stack overflow and reduce
+> the number of checks also,
+> 
+> Stack overflow will cause a problem only when we are backtracking the
+> last set of registers.
+> i.e when the difference between current SP and top of stack is less
+> than or equal to number of registers
 
->Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
-
-The only time those bits are touched are when the dts is modified with the
-bypass flag. Otherwise those bits remain untouched as before.
+Apologies, it looks like I failed to respond to this earlier...
 
 
->> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
->> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
->> +             bypass_val = 0;
->
-> [adding Mark on Cc, so he can comment on the DT parts]
->
-> Where's the DT documentation update? Also, as this is an
-> implementation-specific quirk, you should consider using a separate
-> compatible string and move the handling of this issue into some X-Gene
-> specific code.
+Although that will usually be correct, there is no rule in the ABI to
+guarantee it.
 
-Yes, the only way to do that nicely would be to add another irq-xgene file.
-Since I see little of gic specific implementation in the irq-gic file. To add
-another irq-xgene file for one change seems excessive at the time. Given
-that in v2 these bypass bits are added, is it better to check for v2 dts
-property before modify the CPU_CTRL register?
+> we can create two unwind_exec_insn, one without checks and one with checks.
+> 
+> then we call the correct function from unwind_frame depending on the
+> difference of SP and top of stack.
+> 
+> This will reduce the amount of checks every time we read a set of
+> registers from stack
 
->
->> +     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, bypass_val, node);
->>
->>       if (parent) {
->>               irq = irq_of_parse_and_map(node, 0);
->> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
->> index 0e5d9ec..999515b 100644
->> --- a/include/linux/irqchip/arm-gic.h
->> +++ b/include/linux/irqchip/arm-gic.h
->> @@ -64,14 +64,14 @@ struct device_node;
->>  extern struct irq_chip gic_arch_extn;
->>
->>  void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
->> -                 u32 offset, struct device_node *);
->> +                 u32 offset, u32 bypass_val, struct device_node *);
->>  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
->>  void gic_cpu_if_down(void);
->>
->>  static inline void gic_init(unsigned int nr, int start,
->>                           void __iomem *dist , void __iomem *cpu)
->>  {
->> -     gic_init_bases(nr, start, dist, cpu, 0, NULL);
->> +     gic_init_bases(nr, start, dist, cpu, 0, 0, NULL);
->>  }
->>
->>  #endif /* __ASSEMBLY */
->>
->
-> Cheers,
->
->         M.
-> --
-> Jazz is not dead. It just smells funny...
->
+That sounds like it might duplicate a lot of code, to optimise based on
+assumptions that may not always be true, for what really should not be a
+hot path in the kernel.
+
+If you can find a tidy way of doing it, it would be certainly worth
+reviewing, but I still think it would be simpler just to do a simple
+bounds check for every word read from the stack -- it should be
+impossible for that to go wrong, even if some of the bounds checks
+are not stictly required.
+
+Cheers
+---Dave
