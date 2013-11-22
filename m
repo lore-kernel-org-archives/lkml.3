@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab3KVQIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:08:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49685 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532Ab3KVQIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:08:48 -0500
-Date: Fri, 22 Nov 2013 17:08:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] rtmutex: take the waiter lock with irqs off
-Message-ID: <20131122160841.GS3866@twins.programming.kicks-ass.net>
-References: <1383798668.5441.25.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
- <20131107125923.GB24644@localhost.localdomain>
- <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
- <1384243595.15180.63.camel@marge.simpson.net>
- <alpine.DEB.2.02.1311121024590.30673@ionos.tec.linutronix.de>
- <20131115163008.GB12164@linutronix.de>
- <20131115201436.GC12164@linutronix.de>
- <20131118141021.GA10022@twins.programming.kicks-ass.net>
- <20131122135931.GA8698@linutronix.de>
+	id S1755912Ab3KVQJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:09:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755726Ab3KVQJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:09:10 -0500
+Date: Fri, 22 Nov 2013 11:08:37 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131122160837.GJ4046@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <8761rl73s7.fsf@xmission.com>
+ <20131122015518.GA31921@redhat.com>
+ <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
+ <20131122134317.GA4046@redhat.com>
+ <CAMuHMdV4=Z8i0u_rWpQU0HHW0mvyv1k-acW1MyT9ZYy=iNwrfg@mail.gmail.com>
+ <alpine.LRH.2.00.1311221631100.9932@twin.jikos.cz>
+ <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
+ <alpine.LNX.2.00.1311221701510.22082@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131122135931.GA8698@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.LNX.2.00.1311221701510.22082@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 02:59:31PM +0100, Sebastian Andrzej Siewior wrote:
-> +extern void __lockfunc rt_spin_try_unlock(spinlock_t *lock);
+On Fri, Nov 22, 2013 at 05:04:04PM +0100, Jiri Kosina wrote:
+> On Fri, 22 Nov 2013, Eric Paris wrote:
+> 
+> > Consider a cloud provider who gives their customer a machine where
+> > they, the cloud provider, is specifying the kernel and initrd.  This
+> > is a real thing that people do today.  Root on the machine has ZERO
+> > control over the kernel, bootloader, and initrd.  Check it out,
+> > qemu/kvm can do this.  But, there is no way to disable kexec if the
+> > distro configures it in (well, there is in RHEL at least).  
+> 
+> If that root can load LKMs, access /dev/mem, or whatever else, there is 
+> not really a point disabling kexec anyway, is the same thing can be 
+> implemented (although with more hassle, of course) through these channels 
+> as well.
 
-I know what you mean, but.. try_unlock() just sounds wrong, how can we
-attempt but fail to unlock a lock we hold ;-)
+I am assuming that in above scenario, kernel will run in locked down
+mode (something what matthew implemented for secureboot). Where /dev/mem
+write access will be disabled and only signed modules will be loaded.
 
-
-/me crawls back under his rock ;-)
+Thanks
+Vivek
