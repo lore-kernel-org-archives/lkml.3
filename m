@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab3KVQ10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:27:26 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35872 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155Ab3KVQXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:23:48 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 10/23] mtd: st_spi_fsm: Dynamically setup flash device based on JEDEC ID
-Date: Fri, 22 Nov 2013 16:22:47 +0000
-Message-Id: <1385137380-28968-11-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
-References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
+	id S932163Ab3KVQ1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:27:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755721Ab3KVQ1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:27:51 -0500
+Date: Fri, 22 Nov 2013 10:33:50 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131122153349.GH4046@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <8761rl73s7.fsf@xmission.com>
+ <20131122015518.GA31921@redhat.com>
+ <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
+ <alpine.LRH.2.00.1311221429470.9932@twin.jikos.cz>
+ <20131122134600.GC4046@redhat.com>
+ <alpine.LNX.2.00.1311221449120.22082@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1311221449120.22082@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using previously added infrastructure we can now extract a device's JEDEC
-ID, compare it to a list of known and supported devices and make assumptions
-based on known characteristics of a given chip.
+On Fri, Nov 22, 2013 at 02:50:43PM +0100, Jiri Kosina wrote:
+> On Fri, 22 Nov 2013, Vivek Goyal wrote:
+> 
+> > > OTOH, does this feature make any sense whatsover on architectures that 
+> > > don't support secure boot anyway?
+> > 
+> > I guess if signed modules makes sense, then being able to kexec signed
+> > kernel images should make sense too, in general.
+> 
+> Well, that's really a grey zone, I'd say.
+> 
+> In a non-secureboot environment, if you are root, you are able to issue 
+> reboot into a completely different, self-made kernel anyway, independent 
+> on whether signed modules are used or not.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 26 +++++++++++++++++++++++++-
- drivers/mtd/devices/st_spi_fsm.h |  1 +
- 2 files changed, 26 insertions(+), 1 deletion(-)
+That's a good poing. Frankly speaking I don't know if there is a good
+use case to allow loading signed kernels only or not.
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index ddab76f..a66dbac 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -124,6 +124,7 @@ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- 
- static struct flash_info * stfsm_jedec_probe(struct stfsm *fsm)
- {
-+	struct flash_info	*info;
- 	u16                     ext_jedec;
- 	u32			jedec;
- 	u8			id[5];
-@@ -141,6 +142,15 @@ static struct flash_info * stfsm_jedec_probe(struct stfsm *fsm)
- 	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
- 		jedec, id[0], id[1], id[2], id[3], id[4]);
- 
-+	for (info = flash_types; info->name; info++) {
-+		if (info->jedec_id == jedec) {
-+			if (info->ext_id && info->ext_id != ext_jedec)
-+				continue;
-+			return info;
-+		}
-+	}
-+	dev_err(fsm->dev, "Unrecognized JEDEC id %06x\n", jedec);
-+
- 	return NULL;
- }
- 
-@@ -251,6 +261,7 @@ static int stfsm_init(struct stfsm *fsm)
- static int stfsm_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
-+	struct flash_info *info;
- 	struct resource *res;
- 	struct stfsm *fsm;
- 	int ret;
-@@ -297,7 +308,11 @@ static int stfsm_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Detect SPI FLASH device */
--	stfsm_jedec_probe(fsm);
-+	info = stfsm_jedec_probe(fsm);
-+	if (!info)
-+		return -ENODEV;
-+
-+	fsm->info = info;
- 
- 	platform_set_drvdata(pdev, fsm);
- 
-@@ -306,6 +321,15 @@ static int stfsm_probe(struct platform_device *pdev)
- 	fsm->mtd.writesize	= 4;
- 	fsm->mtd.writebufsize	= fsm->mtd.writesize;
- 	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+	fsm->mtd.size		= info->sector_size * info->n_sectors;
-+	fsm->mtd.erasesize	= info->sector_size;
-+
-+	dev_err(&pdev->dev,
-+		"Found serial flash device: %s\n"
-+		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
-+		info->name,
-+		(long long)fsm->mtd.size, (long long)(fsm->mtd.size >> 20),
-+		fsm->mtd.erasesize, (fsm->mtd.erasesize >> 10));
- 
- 	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
- }
-diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-index e4e5bfa..60341f2 100644
---- a/drivers/mtd/devices/st_spi_fsm.h
-+++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -235,6 +235,7 @@ struct stfsm {
- 	struct resource		*region;
- 	struct mtd_info		mtd;
- 	struct mutex		lock;
-+	struct flash_info 	*info;
- 
- 	uint32_t		fifo_dir_delay;
- };
--- 
-1.8.1.2
+Kees mentioned that he would like to know where the kernel came from
+and whether it came from trusted disk or not. So he does seem to have
+a use case where he wants to launch only trusted kernel or deny execution.
 
+Thanks
+Vivek
