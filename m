@@ -1,56 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3KVTk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:40:59 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:50484 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3KVTky (ORCPT
+	id S1756127Ab3KVTmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:42:51 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59248 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab3KVTmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:40:54 -0500
-Date: Fri, 22 Nov 2013 16:40:47 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/8] perf symbol: Save vmlinux or kallsyms path loaded
-Message-ID: <20131122194047.GF11305@ghostprotocols.net>
-References: <1384806771-2945-1-git-send-email-dsahern@gmail.com>
- <1384806771-2945-4-git-send-email-dsahern@gmail.com>
- <20131122184458.GE11305@ghostprotocols.net>
- <528FACF0.5090604@gmail.com>
+	Fri, 22 Nov 2013 14:42:49 -0500
+Message-ID: <528FB3B4.3030303@jp.fujitsu.com>
+Date: Fri, 22 Nov 2013 14:42:44 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528FACF0.5090604@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: oleg@redhat.com, akpm@linux-foundation.org
+CC: kosaki.motohiro@jp.fujitsu.com, viro@ZenIV.linux.org.uk,
+        keescook@chromium.org, mhocko@suse.cz, snanda@chromium.org,
+        dserrg@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] check_unsafe_exec: use while_each_thread() rather
+ than next_thread()
+References: <20131122175439.GA31446@redhat.com>
+In-Reply-To: <20131122175439.GA31446@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 22, 2013 at 12:13:52PM -0700, David Ahern escreveu:
-> On 11/22/13, 11:44 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Mon, Nov 18, 2013 at 01:32:46PM -0700, David Ahern escreveu:
-> >>Save vmlinux or kallsyms path loaded using embedded default lookup (ie.,
-> >>not a user specified path). Upcoming perf sched timehist command requires
-> >>kernel symbols for properly computing idle times and prints a warning
-> >>if the kernel symbols are not loaded.
+(11/22/2013 12:54 PM), Oleg Nesterov wrote:
+> next_thread() should be avoided, change check_unsafe_exec()
+> to use while_each_thread(). This also saves 32 bytes.
 
-> >What would happen if strdup failed here?
+Just curious.
+Why it should be avoided? Just for cleaner code? Or is there
+serious issue?
 
-> perf continues on happily. On the timehist command will question
-> computation of idle times which require kernel symbols.
-
-> >Why don't we undo anything done so far in this function and return an
-> >error?
-
-> In the notion of best effort of continuing. It's not a show stopper
-> that strdup failed; it's just not the filename it used for symbols.
-
-So if later on one would need to print that info, it would just show
-"unknown"?
-
-- Arnaldo
