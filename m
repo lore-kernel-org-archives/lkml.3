@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3KVQii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:38:38 -0500
-Received: from fm2nodo5.polito.it ([130.192.180.14]:44178 "EHLO
-	fm2nodo5.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3KVQig (ORCPT
+	id S932128Ab3KVQiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:38:46 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:51069
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755654Ab3KVQim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:38:36 -0500
-X-ExtScanner: Niversoft's FindAttachments (free)
-Message-ID: <528F882B.5050808@polito.it>
-Date: Fri, 22 Nov 2013 17:36:59 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 22 Nov 2013 11:38:42 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dI154dI1432I14ffIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h17326ah8275dh1de097h186068hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h1155h)
+Date: Sat, 23 Nov 2013 00:31:32 +0800
+From: Nicolin Chen <b42378@freescale.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
+        <broonie@kernel.org>
+CC: <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <pawel.moll@arm.com>,
+        <linux-doc@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <dmaengine@vger.kernel.org>, <ijc+devicetree@hellion.org.uk>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 0/4] Add dual-fifo mode support of i.MX ssi
+Message-ID: <20131122163132.GB17344@MrMyself>
+References: <cover.1384352281.git.b42378@freescale.com>
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 3ce1217d6cd5 ima patch causes s390 to crash on boot
-References: <20131122114819.GB4208@osiris> <528F5C01.8020304@polito.it> <20131122141314.GC4208@osiris> <528F8515.7040201@polito.it> <20131122163502.GE4208@osiris>
-In-Reply-To: <20131122163502.GE4208@osiris>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-FEAS-SYSTEM-WL: 130.192.180.41
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1384352281.git.b42378@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 05:35 PM, Heiko Carstens wrote:
-> On Fri, Nov 22, 2013 at 05:23:49PM +0100, Roberto Sassu wrote:
->> Another problem that I found is that strsep()
->> modifies the source buffer by replacing the separator
->> character with '\0'. In particular, this function
->> modifies static data initialized at the beginning
->> of the ima_template.c file. Maybe, this is causing
->> the kernel panic. I already sent a patch to fix this
->> problem (attached to the email) even if it is not
->> supposed to land on the 3.13 kernel. Let me know
->> if this fixes the issue. Otherwise, I will check
->> the code more in depth.
->
-> With your patch below applied the kernel boots again.
-> So it should go into 3.13 (or a different fix).
->
+Hi all,
 
-Ok, good. Yes, we will apply this patch to the 3.13 kernel.
+   I'm sorry to push this. But this series has been an orphan for a while.
+   Could any one please receive and foster it?
 
+Thank you.
+Nicolin Chen
 
-> Thanks!
-
-No problem.
-
-Roberto
-
-
->
->>  From 2d3aa1c0328c44ecc3af7de162791c8cddfb6dfd Mon Sep 17 00:00:00 2001
->> From: Roberto Sassu <roberto.sassu@polito.it>
->> Date: Wed, 6 Nov 2013 13:51:35 +0100
->> Subject: [RFC][PATCH 2/4] ima: make a copy of template_fmt in
->>   template_desc_init_fields()
->>
->> This patch makes a copy of the 'template_fmt' function argument so that
->> the latter will not be modified by strsep(), which does the splitting by
->> replacing the given separator with '\0'.
->>
->> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
->> ---
->>   security/integrity/ima/ima_template.c | 9 ++++++++-
->>   1 file changed, 8 insertions(+), 1 deletion(-)
->>
->> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
->> index 7bcff5c..bb33576 100644
->> --- a/security/integrity/ima/ima_template.c
->> +++ b/security/integrity/ima/ima_template.c
->> @@ -113,13 +113,19 @@ static int template_desc_init_fields(char *template_fmt,
->>   				     struct ima_template_field ***fields,
->>   				     int *num_fields)
->>   {
->> -	char *c, *template_fmt_ptr = template_fmt;
->> +	char *c, *template_fmt_ptr, *template_fmt_copy = NULL;
->>   	int template_num_fields = template_fmt_size(template_fmt);
->>   	int i, result = 0;
->>
->>   	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX)
->>   		return -EINVAL;
->>
->> +	/* copying is needed as strsep() modifies the original buffer */
->> +	template_fmt_copy = kstrdup(template_fmt, GFP_KERNEL);
->> +	if (template_fmt_copy == NULL)
->> +		return -ENOMEM;
->> +
->> +	template_fmt_ptr = template_fmt_copy;
->>   	*fields = kzalloc(template_num_fields * sizeof(*fields), GFP_KERNEL);
->>   	if (*fields == NULL) {
->>   		result = -ENOMEM;
->> @@ -139,6 +145,7 @@ static int template_desc_init_fields(char *template_fmt,
->>   	*num_fields = i;
->>   	return 0;
->>   out:
->> +	kfree(template_fmt_copy);
->>   	kfree(*fields);
->>   	*fields = NULL;
->>   	return result;
->> --
->> 1.8.1.4
->>
->
+On Wed, Nov 13, 2013 at 10:55:23PM +0800, Nicolin Chen wrote:
+>  * ! This series of patches has a direct dependency between them. When
+>  * ! applying them, we need to apply to one single branch. Otherwise,
+>  * ! it would break currect branches.
+> 
+> Changelog
+> v7:
+>  * Appended missing Acked-by to all four patches.
+>  * Sorry that I didn't add them at the first place.
+> v6:
+>  * PATCH-1: Use goto err_firmware instead of return directly.
+>  *
+>  * Nothing changes for the other three ack-ed patches
+> v5:
+>  * PATCH-3: Add period size constraint when using dual fifo mode
+>  *
+>  * Nothing changes for the other three patches
+> v4:
+>  * PATCH-3: Drop useless register configuration.
+>  *
+>  * Nothing changes for the other three patches
+> v3:
+>  * PATCH-1: Add comments to indicate the end of v1 and v2 array.
+>  * PATCH-3: Use better way to keep watermark as even number.
+>  *
+>  * Nothing changes for PATCH-2 and PATCH-4
+> v2:
+>  * Instead of adding rogue scripts to current SDMA driver based on firmware
+>  * V1, we define the new SDMA firmware as version 2 and bisect the PATCH-1
+>  * to two patches: The first is to add version check code to the SDMA driver;
+>  * And the second is to add SSI dual FIFO DMATYPE.
+>  *
+>  * Nothing changes for the last two patches.
+> v1:
+>  * SSI can reduce hardware overrun/underrun possibility when using dual
+>  * fifo mode. To support this mode, we need to first update sdma sciprt
+>  * list, and then enable dual fifo BIT in SSI driver, and last update DT
+>  * bindings of i.MX series.
+> 
+> Nicolin Chen (4):
+>   dma: imx-sdma: Add sdma firmware version 2 support
+>   dma: imx-sdma: Add new dma type for ssi dual fifo script
+>   ASoC: fsl_ssi: Add dual fifo mode support
+>   ARM: dts: imx: use dual-fifo sdma script for ssi
+> 
+>  .../devicetree/bindings/dma/fsl-imx-sdma.txt       |  1 +
+>  arch/arm/boot/dts/imx51.dtsi                       |  4 ++--
+>  arch/arm/boot/dts/imx53.dtsi                       |  4 ++--
+>  arch/arm/boot/dts/imx6qdl.dtsi                     | 12 +++++-----
+>  arch/arm/boot/dts/imx6sl.dtsi                      | 12 +++++-----
+>  drivers/dma/imx-sdma.c                             | 19 ++++++++++++++-
+>  include/linux/platform_data/dma-imx-sdma.h         |  5 ++++
+>  include/linux/platform_data/dma-imx.h              |  1 +
+>  sound/soc/fsl/fsl_ssi.c                            | 27 +++++++++++++++++++++-
+>  9 files changed, 67 insertions(+), 18 deletions(-)
+> 
+> -- 
+> 1.8.4
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
