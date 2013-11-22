@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab3KVRKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:10:30 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:34816 "EHLO
+	id S1756034Ab3KVRKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:10:50 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:34820 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab3KVRK1 (ORCPT
+	with ESMTP id S1755968Ab3KVRK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:10:27 -0500
+	Fri, 22 Nov 2013 12:10:29 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next 4/5] tty: Remove tty_prepare_flip_string_flags()
-Date: Fri, 22 Nov 2013 12:09:57 -0500
-Message-Id: <1385140198-5822-5-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH tty-next 5/5] tty: Halve flip buffer GFP_ATOMIC memory consumption
+Date: Fri, 22 Nov 2013 12:09:58 -0500
+Message-Id: <1385140198-5822-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com>
 References: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com>
@@ -22,66 +22,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no in-tree user of tty_prepare_flip_string_flags(); remove.
+tty flip buffers use GFP_ATOMIC allocations for received data
+which is to be processed by the line discipline. For each byte
+received, an extra byte is used to indicate the error status of
+that byte.
+
+Instead, if the received data is error-free, encode the entire
+buffer without status bytes.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 28 ----------------------------
- include/linux/tty_flip.h |  2 --
- 2 files changed, 30 deletions(-)
+ drivers/tty/tty_buffer.c | 45 +++++++++++++++++++++++++++++++++++----------
+ include/linux/tty.h      |  4 ++++
+ include/linux/tty_flip.h |  8 ++++++--
+ 3 files changed, 45 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index e8f22f8..6a3620e 100644
+index 6a3620e..c4fe20e 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -373,34 +373,6 @@ int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
+@@ -100,6 +100,7 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
+ 	p->next = NULL;
+ 	p->commit = 0;
+ 	p->read = 0;
++	p->flags = 0;
  }
- EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
  
--/**
-- *	tty_prepare_flip_string_flags	-	make room for characters
-- *	@port: tty port
-- *	@chars: return pointer for character write area
-- *	@flags: return pointer for status flag write area
-- *	@size: desired size
-- *
-- *	Prepare a block of space in the buffer for data. Returns the length
-- *	available and buffer pointer to the space which is now allocated and
-- *	accounted for as ready for characters. This is used for drivers
-- *	that need their own block copy routines into the buffer. There is no
-- *	guarantee the buffer is a DMA target!
-- */
--
--int tty_prepare_flip_string_flags(struct tty_port *port,
--			unsigned char **chars, char **flags, size_t size)
--{
+ /**
+@@ -230,31 +231,49 @@ void tty_buffer_flush(struct tty_struct *tty)
+  *	tty_buffer_request_room		-	grow tty buffer if needed
+  *	@tty: tty structure
+  *	@size: size desired
++ *	@flags: buffer flags if new buffer allocated (default = 0)
+  *
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
++ *
++ *	Will change over to a new buffer if the current buffer is encoded as
++ *	TTY_NORMAL (so has no flags buffer) and the new buffer requires
++ *	a flags buffer.
+  */
+-int tty_buffer_request_room(struct tty_port *port, size_t size)
++int __tty_buffer_request_room(struct tty_port *port, size_t size, int flags)
+ {
+ 	struct tty_bufhead *buf = &port->buf;
+ 	struct tty_buffer *b, *n;
+-	int left;
++	int left, change;
+ 
+ 	b = buf->tail;
+-	left = b->size - b->used;
++	if (b->flags & TTYB_NORMAL)
++		left = 2 * b->size - b->used;
++	else
++		left = b->size - b->used;
+ 
+-	if (left < size) {
++	change = (b->flags & TTYB_NORMAL) && (~flags & TTYB_NORMAL);
++	if (change || left < size) {
+ 		/* This is the slow path - looking for new buffers to use */
+ 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
++			n->flags = flags;
+ 			buf->tail = n;
+ 			b->commit = b->used;
+ 			smp_mb();
+ 			b->next = n;
+-		} else
++		} else if (change)
++			size = 0;
++		else
+ 			size = left;
+ 	}
+ 	return size;
+ }
++EXPORT_SYMBOL_GPL(__tty_buffer_request_room);
++
++int tty_buffer_request_room(struct tty_port *port, size_t size)
++{
++	return __tty_buffer_request_room(port, size, 0);
++}
+ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+ 
+ /**
+@@ -274,12 +293,14 @@ int tty_insert_flip_string_fixed_flag(struct tty_port *port,
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+-		int space = tty_buffer_request_room(port, goal);
++		int flags = (flag == TTY_NORMAL) ? TTYB_NORMAL : 0;
++		int space = __tty_buffer_request_room(port, goal, flags);
+ 		struct tty_buffer *tb = port->buf.tail;
+ 		if (unlikely(space == 0))
+ 			break;
+ 		memcpy(char_buf_ptr(tb, tb->used), chars, space);
+-		memset(flag_buf_ptr(tb, tb->used), flag, space);
++		if (~tb->flags & TTYB_NORMAL)
++			memset(flag_buf_ptr(tb, tb->used), flag, space);
+ 		tb->used += space;
+ 		copied += space;
+ 		chars += space;
+@@ -362,11 +383,12 @@ EXPORT_SYMBOL(tty_schedule_flip);
+ int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
+ 		size_t size)
+ {
 -	int space = tty_buffer_request_room(port, size);
--	if (likely(space)) {
--		struct tty_buffer *tb = port->buf.tail;
--		*chars = char_buf_ptr(tb, tb->used);
--		*flags = flag_buf_ptr(tb, tb->used);
--		tb->used += space;
--	}
--	return space;
--}
--EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
--
++	int space = __tty_buffer_request_room(port, size, TTYB_NORMAL);
+ 	if (likely(space)) {
+ 		struct tty_buffer *tb = port->buf.tail;
+ 		*chars = char_buf_ptr(tb, tb->used);
+-		memset(flag_buf_ptr(tb, tb->used), TTY_NORMAL, space);
++		if (~tb->flags & TTYB_NORMAL)
++			memset(flag_buf_ptr(tb, tb->used), TTY_NORMAL, space);
+ 		tb->used += space;
+ 	}
+ 	return space;
+@@ -379,7 +401,10 @@ receive_buf(struct tty_struct *tty, struct tty_buffer *head, int count)
+ {
+ 	struct tty_ldisc *disc = tty->ldisc;
+ 	unsigned char *p = char_buf_ptr(head, head->read);
+-	char	      *f = flag_buf_ptr(head, head->read);
++	char	      *f = NULL;
++
++	if (~head->flags & TTYB_NORMAL)
++		f = flag_buf_ptr(head, head->read);
  
- static int
- receive_buf(struct tty_struct *tty, struct tty_buffer *head, int count)
+ 	if (disc->ops->receive_buf2)
+ 		count = disc->ops->receive_buf2(tty, p, f, count);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index ed9aedd..9d234dc 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -39,10 +39,14 @@ struct tty_buffer {
+ 	int size;
+ 	int commit;
+ 	int read;
++	int flags;
+ 	/* Data points here */
+ 	unsigned long data[0];
+ };
+ 
++/* Values for .flags field of tty_buffer */
++#define TTYB_NORMAL	1	/* buffer has no flags buffer */
++
+ static inline unsigned char *char_buf_ptr(struct tty_buffer *b, int ofs)
+ {
+ 	return ((unsigned char *)b->data) + ofs;
 diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
-index 2da8bc2..3f821e9 100644
+index 3f821e9..c28dd52 100644
 --- a/include/linux/tty_flip.h
 +++ b/include/linux/tty_flip.h
-@@ -10,8 +10,6 @@ extern int tty_insert_flip_string_fixed_flag(struct tty_port *port,
- 		const unsigned char *chars, char flag, size_t size);
- extern int tty_prepare_flip_string(struct tty_port *port,
- 		unsigned char **chars, size_t size);
--extern int tty_prepare_flip_string_flags(struct tty_port *port,
--		unsigned char **chars, char **flags, size_t size);
- extern void tty_flip_buffer_push(struct tty_port *port);
- void tty_schedule_flip(struct tty_port *port);
- 
+@@ -17,8 +17,12 @@ static inline int tty_insert_flip_char(struct tty_port *port,
+ 					unsigned char ch, char flag)
+ {
+ 	struct tty_buffer *tb = port->buf.tail;
+-	if (tb && tb->used < tb->size) {
+-		*flag_buf_ptr(tb, tb->used) = flag;
++	int change;
++
++	change = (tb->flags & TTYB_NORMAL) && (flag != TTY_NORMAL);
++	if (!change && tb->used < tb->size) {
++		if (~tb->flags & TTYB_NORMAL)
++			*flag_buf_ptr(tb, tb->used) = flag;
+ 		*char_buf_ptr(tb, tb->used++) = ch;
+ 		return 1;
+ 	}
 -- 
 1.8.1.2
 
