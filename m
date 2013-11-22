@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3KVQCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:02:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:54674 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755721Ab3KVQCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:02:07 -0500
-Message-ID: <528F7FE5.3020908@ti.com>
-Date: Fri, 22 Nov 2013 10:01:41 -0600
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932158Ab3KVQDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:03:00 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:63622 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab3KVQC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:02:59 -0500
+Date: Fri, 22 Nov 2013 11:02:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
+ sysfs_remove_group()
+Message-ID: <20131122160252.GA8981@mtj.dyndns.org>
+References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20131120061830.GA16081@mtj.dyndns.org>
+ <CAErSpo5s9chjgSaA2kqE_72f=+2Lq9HQLM3xstw8Avg+Nx63xA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
-        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>,
-        <balbi@ti.com>
-Subject: Re: [PATCH 1/8] ARM: OMAP: Move public portion of dmtimer.h to include/linux/omap-timer.h
-References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-2-git-send-email-joelf@ti.com> <20131122153334.GE10023@atomide.com>
-In-Reply-To: <20131122153334.GE10023@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5s9chjgSaA2kqE_72f=+2Lq9HQLM3xstw8Avg+Nx63xA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 09:33 AM, Tony Lindgren wrote:
-> Hi,
+Hello,
+
+On Fri, Nov 22, 2013 at 08:43:55AM -0700, Bjorn Helgaas wrote:
+> > So, we do have cases where the parent is removed before the child.  I
+> > suppose the parent pci bridge is removed already?  AFAICS this
+> > shouldn't break anything but people did seem to expect the removals to
+> > be ordered from child to parent.  Bjorn, is this something you expect
+> > to happened?
 > 
-> * Joel Fernandes <joelf@ti.com> [131121 18:00]:
->> Multiplatform support has made arch/arm/plat-omap/include/plat/ inaccessible to
->> drivers outside the plat-omap directory [1]. Due to this the following drivers
->> are disabled with !CONFIG_ARCH_MULTIPLATFORM:
->> CONFIG_IR_RX51 (drivers/media/rc/ir-rx51.c)
->> CONFIG_TIDSPBRIDGE (drivers/staging/tidspbridge/core/dsp-clock.c)
->>
->> We move the portion of the dmtimer "API" that should be accessible to the
->> drivers, into include/linux/omap-timer.h
+> I do not expect a PCI bridge to be removed before the devices below
+> it.  We should be removing all the children before removing the parent
+> bridge.
 > 
-> As we chatted earlier, we don't have to expose all these hardware specific
-> functions and use existing Linux generic frameworks instead.
+> But is this related to PCI?  I don't see the connection yet.  I tried
+
+I'm not sure.  It was from thunderbolt and nobody is reporting it on
+other interconnects, so it could be.
+
+> to look into this a bit (my notes are at
+> https://bugzilla.kernel.org/show_bug.cgi?id=65281), but I haven't
+> figured out the big-picture problem yet.
 > 
-> We can implement an irqchip and a clocksource in the dmtimer code for the
-> client drivers to use, and after that we only have a couple of dmtimer
-> specific functions left to export.
-> 
-> I'm thinkging some thing like this for the public API:
-> 
-> omap_dm_timer_request			request_irq
-> omap_dm_timer_request_specific		request_irq
-> omap_dm_timer_get_irq			request_irq
-> omap_dm_timer_set_source		clk_set_rate
-> omap_dm_timer_stop			disable_irq
-> omap_dm_timer_start			enable_irq
-> omap_dm_timer_disable			disable_irq
-> omap_dm_timer_free			free_irq
-> omap_dm_timer_set_int_enable		enable_irq
+> I don't have warm fuzzies that adding a "have we already removed this"
+> check is the best resolution, but maybe that's just because I don't
+> understand the problem.
 
-Hi Tony,
+Yeah, the whole thing is sorta pointless.  Just issuing removal and
+continuing on should do, IMHO.
 
-The thing I feel we're trying to fit a square peg into round hole type of thing
-here.
+Thanks.
 
-Some reasons I feel this is overkill (point 2 makes it even not possible):
-
-1. Ideally IR_RX51 should be using clockevents/hrtimer framework instead of
-irqchip. Other than that, dsp bridge is the only other user.
-
-2. These functions will be also be required to be public once mach-omap2/timer.c
-moves to drivers/clocksource/ . At such an early point of code, we can't use
-irqchip anyway so we'd need these functions public.
-
-3. This is a minor point, but its also not immediately intuitive or clear to
-someone who needs a dedicated hardware timer that they need to use an IRQ chip
-driver for the same. But we can avoid any discussion about this till we can
-discuss/agree on the above 2.
-
-thanks,
-
--Joel
+-- 
+tejun
