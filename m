@@ -1,149 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab3KVIqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:46:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37481 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab3KVIqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:46:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,750,1378882800"; 
-   d="scan'208";a="437864292"
-Message-ID: <528F1B7E.7010601@intel.com>
-Date: Fri, 22 Nov 2013 10:53:18 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mmc: sdhci-acpi: covert to use GPIO descriptor API
-References: <1385045153-25160-1-git-send-email-mika.westerberg@linux.intel.com> <1385045153-25160-3-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1385045153-25160-3-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754669Ab3KVIq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:46:29 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:18544 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3KVIqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 03:46:24 -0500
+X-AuditID: cbfec7f4-b7fee6d000004b2d-d2-528f19dd5f54
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v3 0/5] mfd: max14577: Add max14577 MFD drivers
+Date: Fri, 22 Nov 2013 09:46:07 +0100
+Message-id: <1385109972-28059-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xK7p3JfuDDJYsNLA4uFXTYuOM9awW
+	Ux8+YbO4/uU5q8X8I+dYLSaunMxsceDPDkaLc69WMlq8fmFocbbpDbvF/a9HGS2+Xelgstj0
+	+BqrxcK2JSwWl3fNYbNYe+Quu8XtxhVsFhOmr2WxOLziAJPFupfTWSxOd7NavDrYxuIg5rFm
+	3hpGjwWfr7B7TOj/xOixc9Zddo+Vy7+weWxeoeWxaVUnm8er1TNZPe5c28PmMe9koMfmJfUe
+	fVtWMXp83iTnsXFuaABfFJdNSmpOZllqkb5dAlfGkZuPmQqWyVR83LObpYGxV7SLkYNDQsBE
+	YuspuS5GTiBTTOLCvfVsXYxcHEICSxklTh67zQ6SEBLoY5L4ft8PxGYTMJbYvHwJWJGIwBxW
+	id1nnrGAOMwCRxkl3nbuYgKpEhawl7g25QaYzSKgKnFg5j4WEJtXwF1iyuc97BCbFSTmTLKZ
+	wMi9gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIHHzZwbj4mNUhRgEORiUe3h2WfUFC
+	rIllxZW5hxglOJiVRHh/XQUK8aYkVlalFuXHF5XmpBYfYmTi4JRqYFwfbPvx24mp75ru3j+Y
+	4PTFjcPvZlLjVEXWoilPRTK7uj4cexe7Y+latTu/2u4Jv3NK560+pq7uma8QnKCU1f10VVhv
+	1rvexwIflAXMG/gv3bXd9f1680T+Tb+PMqaYXfc//tNPqfa+/1TekOW7p7ganlJSYnj63fDE
+	ZMHZzGKWXFXfZPJdrimxFGckGmoxFxUnAgB7HmIdYQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/11/13 16:45, Mika Westerberg wrote:
-> The new descriptor based GPIO interface is now the recommend and more safer
+Hi,
 
-"recommend and more safer" -> "recommended and safer"
+This is third version of patchset adding drivers for MAXIM 14577 chip.
 
-> way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
-> use that interface.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/mmc/host/sdhci-acpi.c | 26 ++++++++++----------------
->  1 file changed, 10 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-> index ef19874fcd1f..379ddfe14bc7 100644
-> --- a/drivers/mmc/host/sdhci-acpi.c
-> +++ b/drivers/mmc/host/sdhci-acpi.c
-> @@ -31,10 +31,9 @@
->  #include <linux/bitops.h>
->  #include <linux/types.h>
->  #include <linux/err.h>
-> -#include <linux/gpio.h>
-> +#include <linux/gpio/consumer.h>
->  #include <linux/interrupt.h>
->  #include <linux/acpi.h>
-> -#include <linux/acpi_gpio.h>
->  #include <linux/pm.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/delay.h>
-> @@ -199,22 +198,19 @@ static irqreturn_t sdhci_acpi_sd_cd(int irq, void *dev_id)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
-> -				 struct mmc_host *mmc)
-> +static int sdhci_acpi_add_own_cd(struct device *dev, struct mmc_host *mmc)
->  {
-> +	struct gpio_desc *desc;
->  	unsigned long flags;
->  	int err, irq;
->  
-> -	if (gpio < 0) {
-> -		err = gpio;
-> +	desc = devm_gpiod_get_index(dev, NULL, 0);
+Description
+-----------
+The chip contains Micro-USB Interface Circuit and Li+ Battery Charger.
+It contains accessory and USB charger detection logic. It supports USB 2.0
+Hi-Speed, UART and stereo audio signals over Micro-USB connector.
 
-I notice that:
+The battery charger is compliant with the USB Battery Charging Specification
+Revision 1.1. It has also SFOUT LDO output for powering USB devices.
 
-	devm_gpio_request_one(.., label)
-		-> gpio_request_one(..., label)
-			-> gpiod_request(..., label)
+The patchset consists of following drivers:
+1. MFD core driver.
+2. Extcon driver for the MUIC (Micro USB Interface Controller).
+3. Charger driver using power supply class.
+4. Regulator driver for SFOUT and charger.
+5. Documentation of device tree bindings.
 
-but:
+The patchset is rebased on latest Linus' tree (v3.12-10928-g527d151) however
+testing was mostly done on 3.10.
 
-	devm_gpiod_get_index(..., con_id, ...)
-		-> gpiod_get_index(..., con_id, ...)
-			-> gpiod_request(..., con_id)
 
-which suggests that 'con_id' is equivalent to 'label'.
-i.e. "sd_cd".  Is it?
+Changes since v2:
+-----------------
+1. Replaced max14577-irq.c with regmap_irq_chip, as suggested by Mark Brown.
+2. Applied suggestions from review (Mark Brown, Lee Jones).
+3. Regulator: Added registering unconditionally of all regulators (Mark Brown).
+4. Regulator: Removed the "struct max14577_regulator *info" (Bartlomiej
+   Zolnierkiewicz).
+5. Extcon: Removed work-around for hardware reboot (USB cable attached with
+   factory button set to D/L mode) as it is not needed.
 
-> +	if (IS_ERR(desc)) {
-> +		err = PTR_ERR(desc);
->  		goto out;
->  	}
->  
-> -	err = devm_gpio_request_one(dev, gpio, GPIOF_DIR_IN, "sd_cd");
-> -	if (err)
-> -		goto out;
-> -
-> -	irq = gpio_to_irq(gpio);
-> +	irq = gpiod_to_irq(desc);
->  	if (irq < 0) {
->  		err = irq;
->  		goto out_free;
-> @@ -228,7 +224,7 @@ static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
->  	return 0;
->  
->  out_free:
-> -	devm_gpio_free(dev, gpio);
-> +	devm_gpiod_put(dev, desc);
->  out:
->  	dev_warn(dev, "failed to setup card detect wake up\n");
->  	return err;
-> @@ -254,7 +250,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  	struct resource *iomem;
->  	resource_size_t len;
->  	const char *hid;
-> -	int err, gpio;
-> +	int err;
->  
->  	if (acpi_bus_get_device(handle, &device))
->  		return -ENODEV;
-> @@ -279,8 +275,6 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  	if (IS_ERR(host))
->  		return PTR_ERR(host);
->  
-> -	gpio = acpi_get_gpio_by_index(dev, 0, NULL);
-> -
->  	c = sdhci_priv(host);
->  	c->host = host;
->  	c->slot = sdhci_acpi_get_slot(handle, hid);
-> @@ -338,7 +332,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
->  		goto err_free;
->  
->  	if (sdhci_acpi_flag(c, SDHCI_ACPI_SD_CD)) {
-> -		if (sdhci_acpi_add_own_cd(dev, gpio, host->mmc))
-> +		if (sdhci_acpi_add_own_cd(dev, host->mmc))
->  			c->use_runtime_pm = false;
->  	}
->  
-> 
+Changes since v1:
+-----------------
+1. Applied comments from review (Mark Brown, Mark Rutland).
+2. Removed any DT bindings which are not needed.
+3. Removed "wakeup" node from bindings.
+4. Fixed interrupt handling during resume. This lead to removal of the weird
+   IRQ/GPIO code discussed during review.
+5. Minor fixes pointed by checkpatch, added authors.
+6. Use of_get_child_by_name() for accessing regulators bindings.
+7. Added documentation of bindings (fifth patch).
+
+
+Best regards,
+Krzysztof Kozlowski
+
+
+Chanwoo Choi (2):
+  mfd: max14577: Add max14577 MFD driver core
+  extcon: max14577: Add extcon-max14577 driver to support MUIC device
+
+Krzysztof Kozlowski (3):
+  charger: max14577: Add charger support for Maxim 14577
+  regulator: max14577: Add regulator driver for Maxim 14577
+  mfd: max14577: Add device tree bindings document
+
+ Documentation/devicetree/bindings/mfd/max14577.txt |   48 ++
+ drivers/extcon/Kconfig                             |   10 +
+ drivers/extcon/Makefile                            |    1 +
+ drivers/extcon/extcon-max14577.c                   |  795 ++++++++++++++++++++
+ drivers/mfd/Kconfig                                |   13 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/max14577.c                             |  241 ++++++
+ drivers/power/Kconfig                              |    7 +
+ drivers/power/Makefile                             |    1 +
+ drivers/power/max14577_charger.c                   |  322 ++++++++
+ drivers/regulator/Kconfig                          |    7 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/max14577.c                       |  272 +++++++
+ include/linux/mfd/max14577-private.h               |  324 ++++++++
+ include/linux/mfd/max14577.h                       |   69 ++
+ 15 files changed, 2112 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+ create mode 100644 drivers/extcon/extcon-max14577.c
+ create mode 100644 drivers/mfd/max14577.c
+ create mode 100644 drivers/power/max14577_charger.c
+ create mode 100644 drivers/regulator/max14577.c
+ create mode 100644 include/linux/mfd/max14577-private.h
+ create mode 100644 include/linux/mfd/max14577.h
+
+-- 
+1.7.9.5
 
