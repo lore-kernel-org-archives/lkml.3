@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab3KVLiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:38:09 -0500
-Received: from eka-193-239-192-194.ftto.ovea.com ([193.239.192.194]:20443 "EHLO
-	mail.cortus.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3KVLiI (ORCPT
+	id S1755403Ab3KVLpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:45:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:35178 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753416Ab3KVLpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:38:08 -0500
-X-Greylist: delayed 2585 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Nov 2013 06:38:07 EST
-Message-ID: <528F3804.6020702@cortus.com>
-Date: Fri, 22 Nov 2013 11:55:00 +0100
-From: =?ISO-8859-1?Q?St=E9phane_Lambert?= <stephane.lambert@cortus.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 22 Nov 2013 06:45:06 -0500
+Date: Fri, 22 Nov 2013 08:45:10 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Hans Zhang <zhanghonghui@innofidei.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhouguangming@innofidei.com
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+Message-ID: <20131122114509.GB2414@localhost>
+References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
+ <CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
+ <528EB1E3.7030101@innofidei.com>
+ <20131122015237.GB3509@localhost>
+ <528EBD0B.5010006@innofidei.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Cortus R&D (France) Recruiting - Embedded Linux Engineer
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 10.33.67.14
-X-SA-Exim-Mail-From: stephane.lambert@cortus.com
-X-SA-Exim-Scanned: No (on mail.cortus.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <528EBD0B.5010006@innofidei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everybody,
+On Fri, Nov 22, 2013 at 10:10:19AM +0800, Hans Zhang wrote:
+> On 2013/11/22 9:52, Ezequiel Garcia wrote:
+> > On Fri, Nov 22, 2013 at 09:22:43AM +0800, Hans Zhang wrote:
+> >> On 2013/11/21 18:59, Richard Genoud wrote:
+> >>
+> >> Here's my scenario, I want to write nand through mtdblock by dd command
+> > You could get some better support by explaining why do you want to write
+> > to a NAND through mtdblock. It sounds a bit ackward to me, but I'm sure
+> > you have a good reason for it!
+> >
+> > Let's hear it :-)
+> 
+> Thanks for your reply.
+> This is for my embed system upgrade, I reserved one nand partition for filesystem
+> environment which will load to DDR while uboot booting.
+> This filesystem.uboot file should be able to read both by uboot and kernel, and
+> maybe written by uboot and kernel. There will be no filesystems upon the nand in
+> case the loader may not support some filesystem types while uboot booting.
+> 
+> Seems that the trimmed environment of OS has get rid of the mtd-tools, So the dd
+> command was the most convenience tools to use by hand.
+> 
 
-Cortus is looking for an Embedded Linux Engineer for our Linux kernel
-porting projects.
-The role offers the challenge of helping to port the kernel to a new
-architecture and
-extending the current ports to our new products.
-
-We design innovative 32 bit RISC processor cores for embedded systems and
-provide services and software around these cores.
-
-More details can be found here:
-
-    http://www.cortus.com/linux_opportunities.php
-
-If you think you are a good candidate for our company,
-please send your CV to hr-linux@cortus.com along with a description
-of how you think you can contribute to our success.
-
-Best regards,
-
-Stephane Lambert.
-
---
-Cortus SAS
-
-
-
+I still don't understand why are you using mtdblock. Why can't you write
+through the char device?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
