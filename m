@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab3KVOql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 09:46:41 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:65038 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab3KVOqj convert rfc822-to-8bit (ORCPT
+	id S1755752Ab3KVOuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 09:50:51 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47895 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526Ab3KVOuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 09:46:39 -0500
+	Fri, 22 Nov 2013 09:50:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAL0eWdHwwcMUc2m0MSihV5R2caQJ7kp579w4M0X=hNZ=ccoRig@mail.gmail.com>
-References: <1363129342-24310-1-git-send-email-ynvich@gmail.com>
-	<20130312231054.GA6379@kroah.com>
-	<CAL0eWdGYvdun=ChQ5gra67cBEgLFrzQ9dBGHL3ubAHOdww4FrQ@mail.gmail.com>
-	<20130312233951.GA32737@kroah.com>
-	<CAL0eWdHwwcMUc2m0MSihV5R2caQJ7kp579w4M0X=hNZ=ccoRig@mail.gmail.com>
-Date: Fri, 22 Nov 2013 18:46:38 +0400
-Message-ID: <CAL0eWdFajz3cO-+PyrmLe7vqJLZsayL0dQGMx-o6+tvUZBhXLA@mail.gmail.com>
-Subject: Re: [PATCH] allow alternative name for PXA serial console
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <528F6BB8.8040504@roeck-us.net>
+References: <20131114181845.GA13727@roeck-us.net>
+	<CAOMwXhNaZ=oqp5mjnCrOSkdax5U6ffsZf_p4mzd3W2jF+=xWqg@mail.gmail.com>
+	<20131114190044.GE13727@roeck-us.net>
+	<CAOMwXhPvPnprrJx-1dfJnO+E12sxAE9M_sYg7tyzp4dsDa8vyg@mail.gmail.com>
+	<CAJ4dqQu0=HP=Ut+VnNjkSL2cE8QN+JRa-Xd8X01ij+ijKUKxwA@mail.gmail.com>
+	<CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+	<20131119165438.GD30481@roeck-us.net>
+	<20131119180007.GB16693@roeck-us.net>
+	<CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
+	<CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
+	<20131121173458.GC10783@roeck-us.net>
+	<CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
+	<CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
+	<528F6BB8.8040504@roeck-us.net>
+Date: Fri, 22 Nov 2013 14:50:50 +0000
+X-Google-Sender-Auth: F3QZhaOkqKPnGqLTBfHdE4x2u_I
+Message-ID: <CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 March 2013 04:03, Сергей Янович <ynvich@gmail.com> wrote:
-> On 13 March 2013 03:39, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
->> On Wed, Mar 13, 2013 at 03:34:59AM +0400, Сергей Янович wrote:
->>> --------------------
->>> * Non-8250 serial port support
->>> *
->>> PXA serial port support (SERIAL_PXA) [Y/n/?] y
->>>   Console on PXA serial port (SERIAL_PXA_CONSOLE) [Y/n/?] y
->>>   as /dev/ttySA[0-3] (SERIAL_PXA_TTYSA_NAME) [N/y/?] (NEW)
+On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 11/22/2013 01:23 AM, Laszlo Papp wrote:
 >>
->> Please make it sane for the single line it is on.
->
-> "PXA serial port with SA-1100 major"
-> "PXA serial port with SA-1100 major number"
-> "PXA serial port with SA-1100 major device number"
->
-> Could anything like that be acceptable?
->
-> How long a line could be?
->
->>> Maybe I am missing something obvious, but it seems that such a
->>> collision is a kernel bug. Someone assumed that PXA cannot have a 8250
->>> tty device and used 8250's parameters in PXA tty driver.
+>> Just to clarify: you want to have ./gpio/gpio-max6650.c?
 >>
->> Yes, someone must have messed up, so care to find the root problem here?
+> No, I never said that. I wanted you to register the gpio pins
+> with the gpio subsystem. I didn't ask you to write a separate
+> driver for it.
 >
-> Two drivers try to use the same resource. It was in pre-git era, so it
-> difficult to find out exactly. I would guess that that 8250 have
-> precedence by at least 5 years. But it is almost guaranteed that lots
-> of people depend on PXA console having ttyS0 name. So simple
-> s/ttyS/ttySA/ is not a solution. My patch preserves status quo by
-> default, but allows to have a correct workaround for those who face a
-> collision. By correct I mean that it will not create a new collision
-> since a system cannot run on both SA-1100 and PXA270 at the same time.
-> This assumption is already documented in
-> arch/arm/mach-pxa/include/mach/irqs.h line 94.
+> Sure, strictly speaking one could write a top level mfd driver
+> and separate gpio and hwmon drivers, but at least in my opinion
+> that would be overkill. I also never suggested this; you brought
+> the term mfd into the discussion.
 
-Patch discussion seemed to stall. Could we restart?
+Why is it an overkill to write a separate gpio driver for this, and
+potentially also for the gpio status register of this particular MAXIM
+chip?
+
+Other gpio drivers in the gpio folder are also short. This would not
+become long either.
