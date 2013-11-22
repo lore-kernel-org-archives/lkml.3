@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab3KVQEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:04:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50094 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab3KVQEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:04:09 -0500
-Date: Fri, 22 Nov 2013 17:04:04 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel
- loading
-In-Reply-To: <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1311221701510.22082@pobox.suse.cz>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com> <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com> <20131122134317.GA4046@redhat.com>
- <CAMuHMdV4=Z8i0u_rWpQU0HHW0mvyv1k-acW1MyT9ZYy=iNwrfg@mail.gmail.com> <alpine.LRH.2.00.1311221631100.9932@twin.jikos.cz> <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755666Ab3KVQFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:05:00 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:35267 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab3KVQE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:04:59 -0500
+Date: Fri, 22 Nov 2013 08:04:57 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+Message-ID: <20131122160457.GA3951@roeck-us.net>
+References: <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
+ <20131119165438.GD30481@roeck-us.net>
+ <20131119180007.GB16693@roeck-us.net>
+ <CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
+ <CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
+ <20131121173458.GC10783@roeck-us.net>
+ <CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
+ <CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
+ <528F6BB8.8040504@roeck-us.net>
+ <CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013, Eric Paris wrote:
+On Fri, Nov 22, 2013 at 02:50:50PM +0000, Laszlo Papp wrote:
+> On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 11/22/2013 01:23 AM, Laszlo Papp wrote:
+> >>
+> >> Just to clarify: you want to have ./gpio/gpio-max6650.c?
+> >>
+> > No, I never said that. I wanted you to register the gpio pins
+> > with the gpio subsystem. I didn't ask you to write a separate
+> > driver for it.
+> >
+> > Sure, strictly speaking one could write a top level mfd driver
+> > and separate gpio and hwmon drivers, but at least in my opinion
+> > that would be overkill. I also never suggested this; you brought
+> > the term mfd into the discussion.
+> 
+> Why is it an overkill to write a separate gpio driver for this, and
+> potentially also for the gpio status register of this particular MAXIM
+> chip?
+> 
+> Other gpio drivers in the gpio folder are also short. This would not
+> become long either.
+> 
+No one prevents you from writing a separate gpio driver. I will certainly
+not prevent you from doing it. Just don't claim that I requested it.
+Same is true for an mfd driver; I won't prevent you from writing one.
+But don't claim that I told you to do it.
 
-> Consider a cloud provider who gives their customer a machine where
-> they, the cloud provider, is specifying the kernel and initrd.  This
-> is a real thing that people do today.  Root on the machine has ZERO
-> control over the kernel, bootloader, and initrd.  Check it out,
-> qemu/kvm can do this.  But, there is no way to disable kexec if the
-> distro configures it in (well, there is in RHEL at least).  
-
-If that root can load LKMs, access /dev/mem, or whatever else, there is 
-not really a point disabling kexec anyway, is the same thing can be 
-implemented (although with more hassle, of course) through these channels 
-as well.
-
--- 
-Jiri Kosina
-SUSE Labs
+Guenter
