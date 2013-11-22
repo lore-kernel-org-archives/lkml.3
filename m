@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3KVSIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:08:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55911 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755903Ab3KVSIM convert rfc822-to-8bit (ORCPT
+	id S1756044Ab3KVSI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:08:27 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:61393 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab3KVSIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:08:12 -0500
-From: Alexander Graf <agraf@suse.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: gem csum breakage with 018c5bba (Handle CHECKSUM_COMPLETE more adequately ...)
-Date: Fri, 22 Nov 2013 19:08:16 +0100
-Message-Id: <B8BCE323-6F65-4D14-BD4A-BFA07C3ED290@suse.de>
-Cc: herbert@gondor.hengli.com.au, alexander.h.duyck@intel.com,
-        netdev@vger.kernel.org, edumazet@google.com,
-        herbert@gondor.hengli.com.au,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-To: David Miller <davem@davemloft.net>
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1812\))
-X-Mailer: Apple Mail (2.1812)
+	Fri, 22 Nov 2013 13:08:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131122180501.GA8547@roeck-us.net>
+References: <20131119180007.GB16693@roeck-us.net>
+	<CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
+	<CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
+	<20131121173458.GC10783@roeck-us.net>
+	<CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
+	<CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
+	<528F6BB8.8040504@roeck-us.net>
+	<CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
+	<20131122160457.GA3951@roeck-us.net>
+	<CAOMwXhO525BAJ+ESLaJ-62vkL7mAxLMULuaphE6YVda02beqfg@mail.gmail.com>
+	<20131122180501.GA8547@roeck-us.net>
+Date: Fri, 22 Nov 2013 18:08:24 +0000
+X-Google-Sender-Auth: VyPSOLpgS9esyiusR3GUk90Deig
+Message-ID: <CAOMwXhO_D3cR5QfXp3wZGrO+i85X5H=Q0HAr2VCB6=96nLx4yQ@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+From: Laszlo Papp <lpapp@kde.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Nov 22, 2013 at 6:05 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Fri, Nov 22, 2013 at 05:47:33PM +0000, Laszlo Papp wrote:
+>> On Fri, Nov 22, 2013 at 4:04 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > On Fri, Nov 22, 2013 at 02:50:50PM +0000, Laszlo Papp wrote:
+>> >> On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> >> > On 11/22/2013 01:23 AM, Laszlo Papp wrote:
+>> >> >>
+>> >> >> Just to clarify: you want to have ./gpio/gpio-max6650.c?
+>> >> >>
+>> >> > No, I never said that. I wanted you to register the gpio pins
+>> >> > with the gpio subsystem. I didn't ask you to write a separate
+>> >> > driver for it.
+>> >> >
+>> >> > Sure, strictly speaking one could write a top level mfd driver
+>> >> > and separate gpio and hwmon drivers, but at least in my opinion
+>> >> > that would be overkill. I also never suggested this; you brought
+>> >> > the term mfd into the discussion.
+>> >>
+>> >> Why is it an overkill to write a separate gpio driver for this, and
+>> >> potentially also for the gpio status register of this particular MAXIM
+>> >> chip?
+>> >>
+>> >> Other gpio drivers in the gpio folder are also short. This would not
+>> >> become long either.
+>> >>
+>> > No one prevents you from writing a separate gpio driver. I will certainly
+>> > not prevent you from doing it. Just don't claim that I requested it.
+>> > Same is true for an mfd driver; I won't prevent you from writing one.
+>> > But don't claim that I told you to do it.
+>>
+>> I am not sure if you are trying to claim that with this statement a
+>> separate gpio driver would be acceptable, but it would require a bit
+>> more work, or whether that you would reject such a driver added.
+>>
+> Please explain, for my education, what makes you believe that I would
+> object to or reject to anyone submitting such a driver.
 
-With current Linus' master tree my ibook started emitting a lot of annoying csum calculation warnings. I've bisected it down to the commit seen in the subject line, but I suppose the real problem lies somewhere a lot deeper and only gets revealed thanks to the more clever checksum logic applied now.
+After the current objection, I am not sure anymore. I thought the last
+change would have been just as acceptable. ;-)
 
-Any ideas how to dig further into this?
-
-
-Thanks,
-
-Alex
-
----
-
-<unknown>: hw csum failure
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #1
-Call Trace:
-[efff1d00] [c00090f0] show_stack+0x48/0x150 (unreliable)
-[efff1d40] [c049f794] csum_partial_copy_to_xdr+0xf8/0x168
-[efff1d60] [c04a1120] xs_udp_data_ready+0xbc/0x140
-[efff1d90] [c03f99f4] sock_queue_rcv_skb+0x144/0x1c0
-[efff1db0] [c045aa28] __udp_queue_rcv_skb+0x38/0xd4
-[efff1dc0] [c045de5c] udp_queue_rcv_skb+0x260/0x3ac
-[efff1de0] [c045e6dc] __udp4_lib_rcv+0x2c8/0x63c
-[efff1e20] [c0432a78] ip_local_deliver_finish+0x100/0x268
-[efff1e40] [c0408264] __netif_receive_skb_core+0x510/0x690
-[efff1ea0] [c040b78c] napi_gro_receive+0xac/0xd8
-[efff1eb0] [c0353b94] gem_poll+0x5bc/0x116c
-[efff1f50] [c040a60c] net_rx_action+0x118/0x1fc
-[efff1f90] [c0046afc] __do_softirq+0xd4/0x1c4
-[efff1fe0] [c0046f04] irq_exit+0x94/0xb8
-[efff1ff0] [c000ef30] call_do_irq+0x24/0x3c
-[c0733e90] [c0006ca4] do_IRQ+0x64/0xb4
-[c0733eb0] [c0011b34] ret_from_except+0x0/0x1c
---- Exception: 501 at arch_cpu_idle+0x24/0x6c
-    LR = arch_cpu_idle+0x24/0x6c
-[c0733f70] [c0082638] rcu_idle_enter+0x84/0xc4 (unreliable)
-[c0733f80] [c007c4b0] cpu_startup_entry+0xa4/0x16c
-[c0733fb0] [c06caf54] start_kernel+0x308/0x31c
-[c0733ff0] [00003d34] 0x3d34
+So, in short, I would not like to waste more time with unacceptable
+approaches for the maintainer. Anyway, if you feel happy about
+accepting such an approach once stabilized, I think I will go for
+that.
