@@ -1,405 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab3KVNGb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:06:31 -0500
-Received: from mail.efficios.com ([78.47.125.74]:43070 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab3KVNGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:06:30 -0500
-Date: Fri, 22 Nov 2013 13:06:29 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Luis Lozano <llozano@chromium.org>
-Cc: Jakub Jelinek <jakub@redhat.com>, Alexander Holler <holler@ahsoftware.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Henderson <rth@twiddle.net>,
+	id S1755544Ab3KVNNT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:13:19 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62276 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752069Ab3KVNNS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:13:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Kukjin Kim <kgene@kernel.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>, lttng-dev@lists.lttng.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
-        Han Shen <shenhan@chromium.org>
-Message-ID: <542673482.73156.1385125589922.JavaMail.zimbra@efficios.com>
-In-Reply-To: <CANxoKds7uwdwQ06AaqE-kcRbWGnqDU2gnFD-3GuKoF7tXigTHw@mail.gmail.com>
-References: <52803E5D.3050109@mentor.com> <528E94E2.3080102@ahsoftware.de> <CANxoKds1iLpXK0yb1qW_Z4tLSRccrf69nYUV7mLSJBMwSrjwmQ@mail.gmail.com> <20131122003904.GT892@tucnak.redhat.com> <894043206.72860.1385085446389.JavaMail.zimbra@efficios.com> <CANxoKdsUjG4McOVR8A3dZekNmCwyEztJ7rabCJ8p-G7mNmjiLA@mail.gmail.com> <2038513765.72947.1385091506781.JavaMail.zimbra@efficios.com> <CANxoKds7uwdwQ06AaqE-kcRbWGnqDU2gnFD-3GuKoF7tXigTHw@mail.gmail.com>
-Subject: Re: current_thread_info() not respecting program order with gcc
- 4.8.x
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
+Subject: Re: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
+Date: Fri, 22 Nov 2013 14:25:59 +0100
+Message-ID: <4592811.7DNNYfo4cW@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com>
+References: <cover.1385118255.git.viresh.kumar@linaro.org> <2783049.JzUB2QcsZz@vostro.rjw.lan> <CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
-Thread-Topic: current_thread_info() not respecting program order with gcc 4.8.x
-Thread-Index: 2vyMegAX9Vhwpt/yNpZyu8aSqGsBBw==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Luis Lozano" <llozano@chromium.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: "Jakub Jelinek" <jakub@redhat.com>, "Alexander Holler" <holler@ahsoftware.de>, "Linus Torvalds"
-> <torvalds@linux-foundation.org>, "Richard Henderson" <rth@twiddle.net>, "Linux Kernel Mailing List"
-> <linux-kernel@vger.kernel.org>, "Will Deacon" <will.deacon@arm.com>, "Catalin Marinas" <catalin.marinas@arm.com>,
-> "Peter Zijlstra" <peterz@infradead.org>, lttng-dev@lists.lttng.org, "Nathan Lynch" <Nathan_Lynch@mentor.com>, "Paul
-> E. McKenney" <paulmck@linux.vnet.ibm.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Bhaskar Janakiraman"
-> <bjanakiraman@chromium.org>, "Han Shen" <shenhan@chromium.org>
-> Sent: Friday, November 22, 2013 3:18:14 AM
-> Subject: Re: current_thread_info() not respecting program order with gcc 4.8.x
+On Friday, November 22, 2013 06:22:52 PM Viresh Kumar wrote:
+> On 22 November 2013 18:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Friday, November 22, 2013 04:59:49 PM Viresh Kumar wrote:
+> >> Some platforms might want to change frequency before suspending governors. Like:
+> >> - Some platform which want to set freq to max to speed up suspend/hibernation
+> >>   process.
+> >> - Some platform (like: Tegra or exynos), set this to min or bootloader's
+> >>   frequency.
+> >>
+> >> This patch adds an option for those, so that they can specify this at call to
+> >> ->init(), so that cpufreq core can take care of this before suspending system.
+> >>
+> >> If this variable is not updated by ->init() then its value would be zero and so
+> >> core wouldn't do anything.
+> >>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >
+> > I don't think this is generally necessary, because the suspend/resume routines
+> > added by patch [1/2] will be executed very late during suspend or very early
+> > during resume and it shouldn't really matter what performance levels the CPUs
+> > are at then.
 > 
-> On Thu, Nov 21, 2013 at 7:38 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > ----- Original Message -----
-> > > From: "Luis Lozano" <llozano@google.com>
-> > > To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> > > Cc: "Jakub Jelinek" <jakub@redhat.com>, "Alexander Holler"
-> > > <holler@ahsoftware.de>, "Linus Torvalds"
-> > > <torvalds@linux-foundation.org>, "Richard Henderson" <rth@twiddle.net>,
-> > > "Linux Kernel Mailing List"
-> > > <linux-kernel@vger.kernel.org>, "Will Deacon" <will.deacon@arm.com>,
-> > > "Catalin Marinas" <catalin.marinas@arm.com>,
-> > > "Peter Zijlstra" <peterz@infradead.org>, lttng-dev@lists.lttng.org,
-> > > "Nathan Lynch" <Nathan_Lynch@mentor.com>, "Paul
-> > > E. McKenney" <paulmck@linux.vnet.ibm.com>, "Andrew Morton"
-> > > <akpm@linux-foundation.org>, "Bhaskar Janakiraman"
-> > > <bjanakiraman@chromium.org>, "Han Shen" <shenhan@chromium.org>
-> > > Sent: Thursday, November 21, 2013 9:36:27 PM
-> > > Subject: Re: current_thread_info() not respecting program order with gcc
-> > > 4.8.x
-> > >
-> > > Hi Mathieu,
-> > >
-> > > Yes the problem we were seeing with GCC bug 58854 is that an interrupt
-> > > handler was corrupting the stack of a routine which had an invalid
-> > > value of SP (not really on "top" of the stack) for part of the
-> > > routine.
-> > > But in the assembly code you sent, I don't see where sp is being
-> > > modified... or where the access to "below" sp is happening.
-> >
-> > The following instruction
-> >
-> >   f1c:      e50b1048        str     r1, [fp, #-72]  ; 0xffffffb8
-> >
-> > appears in the assembly generated by gcc 4.8.2, but not in the one
-> > generated by 4.7.3,
-> 
-> 
-> 
-> It is there in 4.7.3 just a few lines difference.
-> I don't see any meaningful difference between the 2 assembly snippets...
-> Just the instructions ordered a little different?
-> 
-> Luis
+> There are few things here:
+> - I feel that the current place from where we have suspended stuff is not gonna
+> fly. We are doing that in noirq and probably devices which might be required
+> during frequency transitions might already be down.. So we *may* need to
+> move that in dpm_suspend()..
 
-(resending reply in plain text)
+That would be a much more intrusive change.  Definitely not 3.13 material
+at this point.
 
-
-Assembly generated by 4.7.3 vs 4.8.2 are much more different.
-
-The diff I've presented yesterday is between 4.8.2 and 4.8.2+barrier() at the end of
-the function error path. When I can get a cross compiler to work, I will send out more
-the complete assembly listings of the function.
-
-Thanks,
-
-Mathieu
-
-
-> 
-> >
-> > which makes me wonder if it's good or not. With
-> > slightly different build output from the diff (probably a different config
-> > from Nathan), the first function instructions look like:
-> >
-> > 00000efc <lttng_event_reserve>:
-> >      efc:       e1a0c00d        mov     ip, sp
-> >      f00:       e92ddff0        push    {r4, r5, r6, r7, r8, r9, sl, fp,
-> >      ip, lr, pc}
-> >      f04:       e24cb004        sub     fp, ip, #4
-> >      f08:       e24dd03c        sub     sp, sp, #60     ; 0x3c
-> >      f0c:       e52de004        push    {lr}            ; (str lr, [sp,
-> >      #-4]!)
-> >      f10:       ebfffffe        bl      0 <__gnu_mcount_nc>
-> >      f14:       e5903000        ldr     r3, [r0]
-> >      f18:       e1a04000        mov     r4, r0
-> >      f1c:       e1a0000d        mov     r0, sp
-> >      f20:       e5936030        ldr     r6, [r3, #48]   ; 0x30
-> >      f24:       e3c03d7f        bic     r3, r0, #8128   ; 0x1fc0
-> >      f28:       e3c3303f        bic     r3, r3, #63     ; 0x3f
-> >      f2c:       e50b104c        str     r1, [fp, #-76]  ; 0xffffffb4
-> >      f30:       e5932004        ldr     r2, [r3, #4]
-> >      f34:       e2822001        add     r2, r2, #1
-> >      f38:       e5832004        str     r2, [r3, #4]
-> >      f3c:       ebfffffe        bl      0 <debug_smp_processor_id>
-> >      f40:       e59f2e44        ldr     r2, [pc, #3652] ; 1d8c
-> >      <lttng_event_reserve+0xe90>
-> >      f44:       e59f3e44        ldr     r3, [pc, #3652] ; 1d90
-> >      <lttng_event_reserve+0xe94>
-> >      f48:       e7921100        ldr     r1, [r2, r0, lsl #2]
-> >      f4c:       e1a05000        mov     r5, r0
-> >      f50:       e7932001        ldr     r2, [r3, r1]
-> >
-> > My rusty ARM assembler knowledge analyzes this like:
-> >
-> > ip = sp            (ip being the scratch register)
-> > push 11 registers * 4 bytes = 44 bytes onto the stack
-> > fp = ip - 4
-> > sp = sp - 60   (sp = ip - 104)
-> > push {lr} bl
-> > 0 <__gnu_mcount_nc>  (dynamically patched to a pop {lr})
-> > [...]
-> > store r1 into mem location fp - 76
-> >
-> > So yes, it does look like the -76 from fp is within the stack.
-> >
-> >
-> > > In GCC bug 58854 it was pretty clear that the restore of the sp
-> > > register in the epilogue is moved to somewhere close to the prologue
-> > > of the routine.
-> > > Are we missing some diffs from the assembly comparison?
-> >
-> > My next step is to setup my own 4.8.2 ARM cross-compiler. I've tried this
-> > morning,
-> > did not manage to get one working even after following 2 howtos, trying
-> > with Debian
-> > packages, etc. Nathan told me this diff was the full comparison between the
-> > two
-> > functions, but you'll understand that at this point I want to reproduce
-> > everything myself, because this is a _weird_ issue.
-> >
-> > But after a long day of debugging, it's time for some sleep. I will get
-> > back to this
-> > tomorrow,
-> >
-> > Thanks,
-> >
-> > Mathieu
-> >
-> > >
-> > > Thanks
-> > >
-> > > Luis
-> > >
-> > >
-> > >
-> > >
-> > > On Thu, Nov 21, 2013 at 5:57 PM, Mathieu Desnoyers
-> > > <mathieu.desnoyers@efficios.com> wrote:
-> > > > ----- Original Message -----
-> > > >> From: "Jakub Jelinek" <jakub@redhat.com>
-> > > >> To: "Luis Lozano" <llozano@google.com>
-> > > >> Cc: "Alexander Holler" <holler@ahsoftware.de>, "Linus Torvalds"
-> > > >> <torvalds@linux-foundation.org>, "Mathieu Desnoyers"
-> > > >> <mathieu.desnoyers@efficios.com>, "Richard Henderson"
-> > > >> <rth@twiddle.net>,
-> > > >> "Linux Kernel Mailing List"
-> > > >> <linux-kernel@vger.kernel.org>, "Will Deacon" <will.deacon@arm.com>,
-> > > >> "Catalin Marinas" <catalin.marinas@arm.com>,
-> > > >> "Peter Zijlstra" <peterz@infradead.org>, lttng-dev@lists.lttng.org,
-> > > >> "Nathan Lynch" <Nathan_Lynch@mentor.com>, "Paul
-> > > >> E. McKenney" <paulmck@linux.vnet.ibm.com>, "Andrew Morton"
-> > > >> <akpm@linux-foundation.org>, "Bhaskar Janakiraman"
-> > > >> <bjanakiraman@chromium.org>, "Han Shen" <shenhan@chromium.org>
-> > > >> Sent: Thursday, November 21, 2013 7:39:04 PM
-> > > >> Subject: Re: current_thread_info() not respecting program order with
-> > > >> gcc
-> > > >> 4.8.x
-> > > >>
-> > > >> On Thu, Nov 21, 2013 at 03:45:35PM -0800, Luis Lozano wrote:
-> > > >> > I think we need a reproducer. Without this we may all be going on
-> > > >> > the
-> > > >> > wrong path. This whole conversation started on an *assumption* that
-> > > >> > some accesses were being reordered.
-> > > >> >
-> > > >> > evidence of the reorder or reproducer please?
-> > > >>
-> > > >> Yeah, if a compiler bug is suspected, can anybody please open
-> > > >> a bugreport in http://gcc.gnu.org/bugzilla/ with the preprocessed
-> > > >> source,
-> > > >> compiler version, flags and how it was configured and some hint in
-> > > >> which
-> > > >> function to look for what exactly?  We don't necessarily need a
-> > > >> runtime
-> > > >> small reproducer, but if it can be shown in the assembly what has been
-> > > >> reordered and why you think it shouldn't, with the above mentioned
-> > > >> input
-> > > >> that ought to be sufficient.  Thanks.
-> > > >
-> > > > OK OK, let me reply on list first so I can share the result of a full
-> > > > day
-> > > > of bug hunting. We're not there yet, but many options have been
-> > > > eliminated.
-> > > >
-> > > > The issue shows up in stress test, when tracing with lttng-modules
-> > > > 2.4-rc1,
-> > > > on ARM. It's been reproduced with a Linux kernel 3.12 so far, with
-> > > > lttng-modules
-> > > > compiled against that kernel.
-> > > >
-> > > > First, I asked Nathan to compile his kernel with gcc 4.7, and
-> > > > lttng-modules
-> > > > with gcc 4.8.x (and vice-versa). The problem only appears when
-> > > > lttng-modules
-> > > > are compiled with gcc 4.8.x. The compiler version used to compile the
-> > > > rest
-> > > > of the kernel does not matter.
-> > > >
-> > > > Then I looked at gcc 4.8 changelog for ARM, new feature:
-> > > > -fno-sched-pressure
-> > > > (sched pressure is there by default). Nathan tried compiling
-> > > > lttng-modules
-> > > > with
-> > > > -fno-sched-pressure. The problem still reproduces.
-> > > >
-> > > > Knowing that adding barrier() outside of preempt_disable()/enable() was
-> > > > fixing the issue, we tried identifying which code location was
-> > > > responsible
-> > > > for working around the issue. Skipping a long investigation, here is
-> > > > the
-> > > > executive summary:
-> > > >
-> > > > http://git.lttng.org/?p=lttng-modules.git;a=blob;f=lttng-ring-buffer-client.h;h=50c47b3bf49f6c2dd24e250cf1a9b97808cd8e27;hb=HEAD
-> > > >
-> > > > Has the following function. We identified that adding a barrier() as
-> > > > shown
-> > > > below
-> > > > works around the issue:
-> > > >
-> > > > static
-> > > > int lttng_event_reserve(struct lib_ring_buffer_ctx *ctx,
-> > > >                       uint32_t event_id)
-> > > > {
-> > > >         struct lttng_channel *lttng_chan =
-> > > >         channel_get_private(ctx->chan);
-> > > >         int ret, cpu;
-> > > >
-> > > >         cpu = lib_ring_buffer_get_cpu(&client_config);
-> > > >         if (cpu < 0)
-> > > >                 return -EPERM;
-> > > >         ctx->cpu = cpu;
-> > > >
-> > > >         switch (lttng_chan->header_type) {
-> > > >         case 1: /* compact */
-> > > >                 if (event_id > 30)
-> > > >                         ctx->rflags |= LTTNG_RFLAG_EXTENDED;
-> > > >                 break;
-> > > >         case 2: /* large */
-> > > >                 if (event_id > 65534)
-> > > >                         ctx->rflags |= LTTNG_RFLAG_EXTENDED;
-> > > >                 break;
-> > > >         default:
-> > > >                 WARN_ON_ONCE(1);
-> > > >         }
-> > > >
-> > > >         ret = lib_ring_buffer_reserve(&client_config, ctx);
-> > > >         if (ret)
-> > > >                 goto put;
-> > > >         lttng_write_event_header(&client_config, ctx, event_id);
-> > > >         return 0;
-> > > > put:
-> > > >         lib_ring_buffer_put_cpu(&client_config);
-> > > >         ---------------> barrier() added here;
-> > > >         <----------------------------
-> > > >         return ret;
-> > > > }
-> > > >
-> > > > Where barrier() is the usual asm volatile with "memory" clobber,
-> > > > nothing
-> > > > else.
-> > > >
-> > > > Nathan gave me the binary diff for the assembly generated for this
-> > > > function
-> > > > without
-> > > > the barrier and with the barrier:
-> > > >
-> > > > --- /tmp/lttng_event_reserve-4.8.2.dump 2013-11-21 11:14:14.536495079
-> > > > -0600
-> > > > +++ /tmp/lttng_event_reserve-with-barrier-4.8.2.dump    2013-11-21
-> > > > 14:12:52.997355907 -0600
-> > > > @@ -7,11 +7,11 @@
-> > > >       f10:      ebfffffe        bl      0 <__gnu_mcount_nc>
-> > > >       f14:      e5903000        ldr     r3, [r0]
-> > > >       f18:      e1a04000        mov     r4, r0
-> > > > -     f1c:      e50b1048        str     r1, [fp, #-72]  ; 0xffffffb8
-> > > > +     f1c:      e1a0000d        mov     r0, sp
-> > > >       f20:      e5936030        ldr     r6, [r3, #48]   ; 0x30
-> > > > -     f24:      e1a0000d        mov     r0, sp
-> > > > -     f28:      e3c03d7f        bic     r3, r0, #8128   ; 0x1fc0
-> > > > -     f2c:      e3c3303f        bic     r3, r3, #63     ; 0x3f
-> > > > +     f24:      e3c03d7f        bic     r3, r0, #8128   ; 0x1fc0
-> > > > +     f28:      e3c3303f        bic     r3, r3, #63     ; 0x3f
-> > > > +     f2c:      e50b1048        str     r1, [fp, #-72]  ; 0xffffffb8
-> > > >       f30:      e5932004        ldr     r2, [r3, #4]
-> > > >       f34:      e2822001        add     r2, r2, #1
-> > > >       f38:      e5832004        str     r2, [r3, #4]
-> > > > @@ -53,7 +53,7 @@
-> > > >       fc8:      e3c3303f        bic     r3, r3, #63     ; 0x3f
-> > > >       fcc:      e5933000        ldr     r3, [r3]
-> > > >       fd0:      e3130002        tst     r3, #2
-> > > > -     fd4:      0a000000        beq     fdc <lttng_event_reserve+0xe0>
-> > > > +     fd4:      0a0002be        beq     1ad4
-> > > > <lttng_event_reserve+0xbd8>
-> > > >       fd8:      ebfffffe        bl      0 <preempt_schedule>
-> > > >       fdc:      ea0002bc        b       1ad4
-> > > >       <lttng_event_reserve+0xbd8>
-> > > >       fe0:      e3500000        cmp     r0, #0
-> > > >
-> > > > We tried disabling the ftrace function tracing to get mcount out of the
-> > > > way,
-> > > > and the problem still reproduces.
-> > > >
-> > > > I'm stopping here in terms of details about the disassembly, because I
-> > > > need to double check with Nathan that I get the right disassembly for
-> > > > the
-> > > > right
-> > > > cases. I also terribly need to setup a 4.8.2 ARM cross-compiler on my
-> > > > machine.
-> > > >
-> > > > I'm attaching Nathan's ARM configuration.
-> > > >
-> > > > It does look behave a bit like this bug pointed out by Luis:
-> > > >
-> > > > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
-> > > >
-> > > > AFAIU (please correct me if I am wrong), ARM's interrupt handler run
-> > > > on top of the thread stack (?). If it's the case, then anything stored
-> > > > on the stack below "sp" could be overwritten by an interrupt handler.
-> > > > This would fit well the reproduction scenario for this bug: Nathan runs
-> > > > LTTng tracing of kmem_cache_free tracepoint with hackbench running.
-> > > > A race between a short window of stack use below sp and interrupt
-> > > > handlers
-> > > > would trigger with this kind of stress-test.
-> > > >
-> > > > Thoughts ?
-> > > >
-> > > > Thanks,
-> > > >
-> > > > Mathieu
-> > > >
-> > > >
-> > > > --
-> > > > Mathieu Desnoyers
-> > > > EfficiOS Inc.
-> > > > http://www.efficios.com
-> > >
-> > >
-> > >
-> > > --
-> > >
-> > > Luis A. Lozano | Software Engineer | llozano@google.com | +1
-> > > (408)431-5164
-> > >
-> >
-> > --
-> > Mathieu Desnoyers
-> > EfficiOS Inc.
-> > http://www.efficios.com
-> 
+Thanks!
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
