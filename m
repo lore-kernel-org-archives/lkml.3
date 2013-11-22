@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab3KVDB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 22:01:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:58197 "EHLO mga01.intel.com"
+	id S1754000Ab3KVDXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 22:23:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37195 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab3KVDBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 22:01:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,749,1378882800"; 
-   d="scan'208";a="437741020"
-Subject: [PATCH V2] wm8994: move dcs done irq request to the end of
- initialization of completion
-From: wangbiao <biao.wang@intel.com>
-To: Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Vinod Koul <vinod.koul@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Cc: di.zhang@intel.com, biao.wang@intel.com,
-        patches@opensource.wolfsonmicro.com
-In-Reply-To: <1384996978.19494.7.camel@wangbiao>
-References: <1384996978.19494.7.camel@wangbiao>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 22 Nov 2013 10:44:30 +0800
-Message-ID: <1385088270.20782.12.camel@wangbiao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752587Ab3KVDXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 22:23:32 -0500
+Date: Fri, 22 Nov 2013 10:45:06 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [patch 9/9 v3] x86: export x86 boot_params to sysfs
+Message-ID: <20131122024506.GB3874@dhcp-16-126.nay.redhat.com>
+References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
+ <20131121061757.030007746@dhcp-16-126.nay.redhat.com>
+ <20131121164554.GB15083@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121164554.GB15083@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-once code return from request_threaded_irq, irq was setup enabled by
-default, but completion var dcs_done not got initialized yet, if then a
-dcs done irq was raised, system will got hung as the sync mechanism is
-invalid now.
+On 11/21/13 at 08:45am, Greg KH wrote:
+> > +static struct kobj_attribute boot_params_version_attr =
+> > +	__ATTR(version, S_IRUGO, boot_params_version_show, NULL);
+> 
+> __ATTR_RO() please.
 
-so this patch move dcs done irq request to the end of initialization 
-of completion.
+Will do
 
-Signed-off-by: wang, biao <biao.wang@intel.com>
-Signed-off-by: Zhang, Di <di.zhang@intel.com>
----
- sound/soc/codecs/wm8994.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> > +static struct kobj_attribute type_attr =
+> > +		__ATTR(type, S_IRUGO, setup_data_type_show, NULL);
+> 
+> __ATTR_RO() here too.
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 86426a1..b9be9cb 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -4077,12 +4077,6 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
- 	wm8994_request_irq(wm8994->wm8994, WM8994_IRQ_TEMP_SHUT,
- 			   wm8994_temp_shut, "Thermal shutdown", codec);
- 
--	ret = wm8994_request_irq(wm8994->wm8994, WM8994_IRQ_DCS_DONE,
--				 wm_hubs_dcs_done, "DC servo done",
--				 &wm8994->hubs);
--	if (ret == 0)
--		wm8994->hubs.dcs_done_irq = true;
--
- 	switch (control->type) {
- 	case WM8994:
- 		if (wm8994->micdet_irq) {
-@@ -4313,6 +4307,11 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
- 	}
- 
- 	wm_hubs_add_analogue_routes(codec, 0, 0);
-+	ret = wm8994_request_irq(wm8994->wm8994, WM8994_IRQ_DCS_DONE,
-+				 wm_hubs_dcs_done, "DC servo done",
-+				 &wm8994->hubs);
-+	if (ret == 0)
-+		wm8994->hubs.dcs_done_irq = true;
- 	snd_soc_dapm_add_routes(dapm, intercon, ARRAY_SIZE(intercon));
- 
- 	switch (control->type) {
--- 
-1.7.0.4
+Will do
 
+[snip]
+> > +
+> > +	ret = get_setup_data_size(nr, &size);
+> > +	if (ret)
+> > +		goto out_kobj;
+> > +
+> > +	data_attr.size = size;
+> > +	ret = sysfs_create_bin_file(kobj, &data_attr);
+> > +	if (ret)
+> > +		goto out_file;
+> > +	*kobjp = kobj;
+> 
+> You just raced with userspace (creating and announcing the kobject and
+> then, afterward, at some later point in time, created the sysfs files.
+> Please use the groups option to create the files properly before
+> announcing the kobject to userspace.
 
+Will do
 
+[snip]
+> > +		goto out_boot_params_kobj;
+> > +	ret = sysfs_create_bin_file(boot_params_kobj,
+> > +				      &boot_params_data_attr);
+> > +	if (ret)
+> > +		goto out_create_file;
+> > +
+> > +	ret = create_setup_data_nodes(boot_params_kobj);
+> > +	if (ret)
+> > +		goto out_create_bin;
+> > +
+> > +	return 0;
+> 
+> Same race condition here as well.  Use a groups structure please.
+> 
+
+Will use group attributes
+
+Thanks for review
+Dave
