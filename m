@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3KVQuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:50:00 -0500
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:43643
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752565Ab3KVQt6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:49:58 -0500
-Message-ID: <528F8B35.8070408@newflow.co.uk>
-Date: Fri, 22 Nov 2013 16:49:57 +0000
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S932087Ab3KVQvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:51:12 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38986 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab3KVQvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 11:51:09 -0500
+Date: Fri, 22 Nov 2013 11:51:00 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131122165100.GN3556@cmpxchg.org>
+References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
+ <20131031054942.GA26301@cmpxchg.org>
+ <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com>
+ <20131113233419.GJ707@cmpxchg.org>
+ <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
+ <20131114032508.GL707@cmpxchg.org>
+ <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
+ <20131118154115.GA3556@cmpxchg.org>
+ <20131118165110.GE32623@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        jkosina@suse.cz, anatol.pomozov@gmail.com,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Bin Liu <binmlist@gmail.com>
-Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
-References: <528F7E8F.5050807@newflow.co.uk> <528F8741.1060406@linutronix.de>
-In-Reply-To: <528F8741.1060406@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118165110.GE32623@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/11/13 16:33, Sebastian Andrzej Siewior wrote:
-> On 11/22/2013 04:55 PM, Mark Jackson wrote:
->> The IDDIG input pin is normally used to determine the USB mode
->> (i.e. HOST or DEVICE).
->>
->> On some systems (e.g. AM335x) leaving this pin floating allows
->> the USB mode to be set via software.
+On Mon, Nov 18, 2013 at 05:51:10PM +0100, Michal Hocko wrote:
+> On Mon 18-11-13 10:41:15, Johannes Weiner wrote:
+> > On Thu, Nov 14, 2013 at 03:26:51PM -0800, David Rientjes wrote:
+> > > When current has a pending SIGKILL or is already in the exit path, it
+> > > only needs access to memory reserves to fully exit.  In that sense, the
+> > > memcg is not actually oom for current, it simply needs to bypass memory
+> > > charges to exit and free its memory, which is guarantee itself that
+> > > memory will be freed.
+> > > 
+> > > We only want to notify userspace for actionable oom conditions where
+> > > something needs to be done (and all oom handling can already be deferred
+> > > to userspace through this method by disabling the memcg oom killer with
+> > > memory.oom_control), not simply when a memcg has reached its limit, which
+> > > would actually have to happen before memcg reclaim actually frees memory
+> > > for charges.
+> > 
+> > Even though the situation may not require a kill, the user still wants
+> > to know that the memory hard limit was breached and the isolation
+> > broken in order to prevent a kill.  We just came really close and the
 > 
-> So you have a board where musb is used only as host or only as device
-> and the ID pin not on ground or 3.3V?
-> What are the side effects? I remember correctly Bin wanted to avoid
-> settings this if it could be avoided.
+> You can observe that you are getting into troubles from fail counter
+> already. The usability without more reclaim statistics is a bit
+> questionable but you get a rough impression that something is wrong at
+> least.
+> 
+> > fact that current is exiting is coincidental.  Not everybody is having
+> > OOM situations on a frequent basis and they might want to know when
+> > they are redlining the system and that the same workload might blow up
+> > the next time it's run.
+> 
+> I am just concerned that signaling temporal OOM conditions which do not
+> require any OOM killer action (user or kernel space) might be confusing.
+> Userspace would have harder times to tell whether any action is required
+> or not.
 
-Yes ... we have a host only USB port and an unconnected ID pin.
+But userspace in all likeliness DOES need to take action.
 
-AFAIK it defaults to device mode so I can't see any devices that get
-plugged into the USB port.
+Reclaim is a really long process.  If 5 times doing 12 priority cycles
+and scanning thousands of pages is not enough to reclaim a single
+page, what does that say about the health of the memcg?
 
-If I tweak the s/w to "force" host mode on, then everything appears to
-work okay.
+But more importantly, OOM handling is just inherently racy.  A task
+might receive the kill signal a split second *after* userspace was
+notified.  Or a task may exit voluntarily a split second after a
+victim was chosen and killed.
 
-I guess it's more of a hardware oversight that we left the pin floating
-but in the real world, I guess someone may want this feature to they
-can change the usb port type ?
-
-Either way, I need to fix the current h/w (which can be done via s/w)
-hence the patch.
-
-Mark J.
-
+We have to draw a line somewhere, right now this is "reclaim failed".
+This patch doesn't fix a problem, it just blurs that line and makes
+OOM notifications less predictable.
