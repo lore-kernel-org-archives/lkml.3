@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3KVQjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:39:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43722 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab3KVQio (ORCPT
+	id S1755966Ab3KVQk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:40:29 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43242 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577Ab3KVQk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:38:44 -0500
-Date: Fri, 22 Nov 2013 17:38:35 +0100
-From: Michael Grzeschik <mgr@pengutronix.de>
-To: Mark Jackson <mpfj-list@newflow.co.uk>
-Cc: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, bigeasy@linutronix.de,
-        Greg KH <gregkh@linuxfoundation.org>, jkosina@suse.cz,
-        anatol.pomozov@gmail.com,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
-Message-ID: <20131122163835.GF24508@pengutronix.de>
-References: <528F7E8F.5050807@newflow.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528F7E8F.5050807@newflow.co.uk>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 17:33:51 up 63 days,  4:21, 47 users,  load average: 21,65, 23,34,
- 26,47
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 22 Nov 2013 11:40:28 -0500
+Message-ID: <1385138424.11733.34.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [BUG] 3ce1217d6cd5 ima patch causes s390 to crash on boot
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Roberto Sassu <roberto.sassu@polito.it>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 22 Nov 2013 11:40:24 -0500
+In-Reply-To: <20131122163502.GE4208@osiris>
+References: <20131122114819.GB4208@osiris> <528F5C01.8020304@polito.it>
+	 <20131122141314.GC4208@osiris> <528F8515.7040201@polito.it>
+	 <20131122163502.GE4208@osiris>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112216-8236-0000-0000-00000414F9AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo,
+On Fri, 2013-11-22 at 17:35 +0100, Heiko Carstens wrote:
+> On Fri, Nov 22, 2013 at 05:23:49PM +0100, Roberto Sassu wrote:
+> > Another problem that I found is that strsep()
+> > modifies the source buffer by replacing the separator
+> > character with '\0'. In particular, this function
+> > modifies static data initialized at the beginning
+> > of the ima_template.c file. Maybe, this is causing
+> > the kernel panic. I already sent a patch to fix this
+> > problem (attached to the email) even if it is not
+> > supposed to land on the 3.13 kernel. Let me know
+> > if this fixes the issue. Otherwise, I will check
+> > the code more in depth.
+> 
+> With your patch below applied the kernel boots again.
+> So it should go into 3.13 (or a different fix).
+> 
+> Thanks!
 
-On Fri, Nov 22, 2013 at 03:55:59PM +0000, Mark Jackson wrote:
-> The IDDIG input pin is normally used to determine the USB mode
-> (i.e. HOST or DEVICE).
-> 
-> On some systems (e.g. AM335x) leaving this pin floating allows
-> the USB mode to be set via software.
-> 
-> This patch adds support for this via the device tree.
-> 
-> Signed-off-by: Mark Jackson <mpfj@newflow.co.uk>
-> ---
->  .../devicetree/bindings/usb/am33xx-usb.txt         |    2 ++
->  drivers/usb/musb/musb_dsps.c                       |   14 ++++++++++++++
->  include/linux/usb/musb.h                           |    1 +
->  3 files changed, 17 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/am33xx-usb.txt b/Documentation/devicetree/bindings/usb/am33xx-usb.txt
-> index 20c2ff2..560b7ff 100644
-> --- a/Documentation/devicetree/bindings/usb/am33xx-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/am33xx-usb.txt
-> @@ -47,6 +47,8 @@ USB
->  - dmas: specifies the dma channels
->  - dma-names: specifies the names of the channels. Use "rxN" for receive
->    and "txN" for transmit endpoints. N specifies the endpoint number.
-> +- ti,force-host: specifies that the IDDIG input be ignored and the device be
-> +  put into host mode regardless.
+Thanks for testing!  There are a number of bug fixes for this release in
+linux-integrity/ima-fixes-new.  Now that the security patches made it
+into Linus' tree, I'll send the pull request to James.
 
-You should always CC devicetree-discuss if adding new bindings. Why
-another binding anyway? We have the common binding dr_mode already.
-Please use this and of_usb_get_dr_mode from drivers/usb/usb-common.c
-instead.
+thanks,
 
-Thanks,
-Michael
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Mimi
+
