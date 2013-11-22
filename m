@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab3KVB7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:59:52 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58695 "EHLO arroyo.ext.ti.com"
+	id S932086Ab3KVB7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 20:59:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755477Ab3KVB5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:57:40 -0500
-From: Joel Fernandes <joelf@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <benoit.cousson@linaro.org>, <santosh.shilimkar@ti.com>,
-        <jgchunter@gmail.com>, <rnayak@ti.com>, <balbi@ti.com>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 0/8] OMAP: timers: Preparation for migration to clocksource
-Date: Thu, 21 Nov 2013 19:56:46 -0600
-Message-ID: <1385085414-9034-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755770Ab3KVB7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 20:59:52 -0500
+Date: Thu, 21 Nov 2013 20:59:10 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v6 2/3] x86, apic: Add disable_cpu_apicid kernel parameter
+Message-ID: <20131122015910.GB31921@redhat.com>
+References: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
+ <20131121020044.2748.70221.stgit@localhost6.localdomain6>
+ <20131121213300.GR16208@redhat.com>
+ <528EA874.9010609@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528EA874.9010609@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is in preparation to make the OMAP dmtimer a clocksource driver
-(moving it drivers/clocksource/). As a first step, we introduce a  a generic
-.init_time function OMAP DT platforms that can be used across OMAP devices.
-Also introduced are a better separation between omap-specific code such as
-hwmod and the generic timer code. This will allow us to move the generic
-portion to drivers/clocksource/ in the future.
+On Fri, Nov 22, 2013 at 09:42:28AM +0900, HATAYAMA Daisuke wrote:
+> (2013/11/22 6:33), Vivek Goyal wrote:
+> >On Thu, Nov 21, 2013 at 11:00:44AM +0900, HATAYAMA Daisuke wrote:
+> >
+> >[..]
+> >>@@ -2122,6 +2129,19 @@ void generic_processor_info(int apicid, int version)
+> >>  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
+> >>  				phys_cpu_present_map);
+> >>
+> >>+	if (disabled_cpu_apicid != BAD_APICID &&
+> >>+	    disabled_cpu_apicid != boot_cpu_physical_apicid &&
+> >
+> >Hi Hatayama,
+> >
+> >So we are comparing disabled_cpu_apicid with boot_cpu_physical_apicid
+> >to make sure that one can not disable the cpu we are booting on. Can
+> >we just read the apic id of booting cpu in local variable and compare
+> >against that?
+> >
+> >Something like as follows.
+> >
+> >	if (disabled_cpu_apicid != BAD_APICID &&
+> >	    disabled_cpu_apicid == apicid &&
+> >	    disabled_cpu_apicid != read_apic_id()) {
+> >		/* Disable cpu */	
+> >	}
+> >
+> >If above works, you will not need first patch in the series?
+> >
+> 
+> Yes, I came up with the idea, too. But doing this means we leave two different
+> ways boot_cpu_physical_apicid is used at boot, which seemed incomplete as a
+> patch. Also, then we could even lost the reason why boot_cpu_physical_apicid
+> exists.
+> 
+> But, it's true that the 1st patch causes one more reviewing point. I'll
+> remove it and fix the 2nd patch just as you suggested here.
 
-The generic functions with the new DT bindings were tested on OMAP4 and AM33xx.
-Although, OMAP4 uses the local timer for clocksource by default.
+I would say that do the boot_cpu_physical_id related cleanup in a separate
+series. If we keep this patch really simple without fear of breaking
+anything else, acking and committing the patch becomes easier.
 
-Lastly, this series also adds a new omap-timer.h header that allows drivers
-to use the public dmtimer API in MULTIPLATFORM configurations, and along
-with this, ir-rx51 is enabled as well, with some fixes to it.
+Feel free to post boot cpu related cleanup in a separate series.
 
-Joel Fernandes (8):
-  ARM: OMAP: Move public portion of dmtimer.h to
-    include/linux/omap-timer.h
-  rc: ir-rx51: Use clk API to get clock rate
-  rc: ir-rx51: Turn ON ir-rx51 as it should work for MULTIPLATFORM
-  ARM: OMAP4: timer: Remove non-DT code for TWD timer
-  ARM: OMAP2+: timer: Introduce OF-friendly clocksource/clockevent
-    system timers
-  devicetree: doc: Document ti,timer-parent property
-  ARM: DTS: am33xx: Provide the ti,timer-parent property
-  ARM: AM33xx: Move to using omap_generic_timer_init for init_time
-
- .../devicetree/bindings/arm/omap/timer.txt         |  17 ++
- arch/arm/boot/dts/am33xx.dtsi                      |   2 +
- arch/arm/mach-omap2/board-generic.c                |   2 +-
- arch/arm/mach-omap2/common.h                       |   1 +
- arch/arm/mach-omap2/timer.c                        | 257 +++++++++++++++++++--
- arch/arm/plat-omap/include/plat/dmtimer.h          | 121 +---------
- drivers/media/rc/Kconfig                           |   2 +-
- drivers/media/rc/ir-rx51.c                         |   6 +-
- include/linux/omap-timer.h                         | 167 +++++++++++++
- 9 files changed, 432 insertions(+), 143 deletions(-)
- create mode 100644 include/linux/omap-timer.h
-
--- 
-1.8.1.2
-
+Thanks
+Vivek
