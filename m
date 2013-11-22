@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3KVQwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:52:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55301 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab3KVQwY (ORCPT
+	id S932140Ab3KVQx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:53:28 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:36290 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932099Ab3KVQx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:52:24 -0500
-Date: Fri, 22 Nov 2013 08:52:23 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [PATCH 0/6] Generic WorkQueue Engine (GenWQE) device driver (v7)
-Message-ID: <20131122165223.GB30314@kroah.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
- <1385127450.14011.3.camel@oc7383187364.ibm.com>
+	Fri, 22 Nov 2013 11:53:27 -0500
+Message-ID: <528F8C01.8020603@codethink.co.uk>
+Date: Fri, 22 Nov 2013 10:53:21 -0600
+From: Mark Doffman <mark.doffman@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385127450.14011.3.camel@oc7383187364.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Dillow <dave@thedillows.org>
+CC: ceph-devel@vger.kernel.org, sage@inktank.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        rob.taylor@codethink.co.uk
+Subject: Re: [PATCH 0/4] Add ceph root filesystem functionality and documentation.
+References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk> <1385065186.18238.0.camel@frustration.ornl.gov>
+In-Reply-To: <1385065186.18238.0.camel@frustration.ornl.gov>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 02:37:30PM +0100, Frank Haverkamp wrote:
-> Hello Greg and others,
-> 
-> is the patchset ok this way, or do you see anything more I should
-> change/improve?
+On 11/21/2013 02:19 PM, David Dillow wrote:
+> On Wed, 2013-11-20 at 20:13 -0600, mark.doffman@codethink.co.uk wrote:
+>> The following patch series adds the ability to use a ceph distributed
+>> file system as the root device. The functionality is similar to
+>> NFS root but for the ceph filesystem.
+>
+> Why do this in the kernel vs in the initramfs? Dracut would be a more
+> appropriate place, I think, as it has support for other network root
+> devices already.
 
-It is the middle of the 3.13-rc1 merge window, and we are all busy off
-doing other work at the moment.  So please give us a chance to catch up
-with that, and then, after -rc1 is out, I'll get back to my pending
-patch queue:
-	$ mdfrm -c ~/mail/todo
-	1945 messages in /home/gregkh/mail/todo
+I don't know if its a good idea to require an initramfs for mounting a
+rootfs over the network. NFS root is currently in the kernel, and
+frequently used without an initramfs.
 
-thanks,
+Booting from ceph using a root device is relatively simple compared to
+generating an initramfs and it has the possibility of producing smaller
+images for memory constrained devices.
 
-greg k-h
+
