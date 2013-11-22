@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3KVVT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:19:27 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:58207 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab3KVVT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:19:26 -0500
-From: Francis Giraldeau <francis.giraldeau@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Francis Giraldeau <francis.giraldeau@gmail.com>
-Subject: [PATCH] Prevent infinite loop if unwind fails
-Date: Fri, 22 Nov 2013 16:19:16 -0500
-Message-Id: <1385155156-26573-1-git-send-email-francis.giraldeau@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S932093Ab3KVVVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:21:23 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28007 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755248Ab3KVVVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 16:21:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,753,1378882800"; 
+   d="scan'208";a="438269897"
+Date: Fri, 22 Nov 2013 13:21:19 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v3 13/23] x86/trap: Use NOKPROBE_SYMBOL macro in
+ trap.c
+Message-ID: <20131122212119.GE19762@tassilo.jf.intel.com>
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
+ <20131120042221.15296.85443.stgit@kbuild-fedora.novalocal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131120042221.15296.85443.stgit@kbuild-fedora.novalocal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unwind may loop forever if sample is incomplete or bogus. Bound the number of
-unw_step() that yield the same IP to prevent infinite loop.
+On Wed, Nov 20, 2013 at 04:22:21AM +0000, Masami Hiramatsu wrote:
+> Use NOKPROBE_SYMBOL macro to protect functions from kprobes
+> instead of __kprobes annotation in trap.c.
+> This also applies __always_inline annotation for some cases,
+> because NOKPROBE_SYMBOL() will inhibit inlining by referring
+> the symbol address.
 
-Signed-off-by: Francis Giraldeau <francis.giraldeau@gmail.com>
----
- tools/perf/util/unwind.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+NOKPROBE_SYMBOL seems to add a reference from some variable to the function?
 
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 958723b..bf45b6b 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -520,7 +520,8 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- {
- 	unw_addr_space_t addr_space;
- 	unw_cursor_t c;
--	int ret;
-+	unw_word_t prev_ip = 0;
-+	int ret, rec = 0;
- 
- 	addr_space = unw_create_addr_space(&accessors, 0);
- 	if (!addr_space) {
-@@ -537,6 +538,11 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 
- 		unw_get_reg(&c, UNW_REG_IP, &ip);
- 		ret = entry(ip, ui->thread, ui->machine, cb, arg);
-+		if (prev_ip != ip)
-+			rec = 0;
-+		if (++rec >= 100)
-+			break;
-+		prev_ip = ip;
- 	}
- 
- 	unw_destroy_addr_space(addr_space);
--- 
-1.8.1.2
+With LTO we can optimize away unused functions, but not
+when there are references to the symbol. So this would likely
+prevent optimizations with LTO.
 
+I prefer a simpler "__kprobe" annotation.
+
+-Andi
