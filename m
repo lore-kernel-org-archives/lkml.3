@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3KVIJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:09:22 -0500
-Received: from mx01-fr.bfs.de ([193.174.231.67]:14174 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab3KVIJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:09:21 -0500
-Message-ID: <528F112B.4090404@bfs.de>
-Date: Fri, 22 Nov 2013 09:09:15 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1753875Ab3KVIKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:10:12 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:45715 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab3KVIKI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 03:10:08 -0500
+Message-ID: <528F115A.8020602@hitachi.com>
+Date: Fri, 22 Nov 2013 17:10:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Andreas Platschek <andi.platschek@gmail.com>
-CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] tty: replace mutex_lock() with tty_write_lock()
-References: <1385061132-7254-1-git-send-email-andi.platschek@gmail.com>
-In-Reply-To: <1385061132-7254-1-git-send-email-andi.platschek@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: Re: [PATCH 2/2] tracing/probes: Fix basic print type functions
+References: <1384749649-31447-1-git-send-email-namhyung@kernel.org> <1384749649-31447-2-git-send-email-namhyung@kernel.org> <20131120152245.GB24734@redhat.com> <87k3g1t1hw.fsf@sejong.aot.lge.com>
+In-Reply-To: <87k3g1t1hw.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 21.11.2013 20:12, schrieb Andreas Platschek:
-> Use tty_write_lock()/tty_write_unlock() consistently.
+(2013/11/22 15:05), Namhyung Kim wrote:
+> Hi Oleg,
 > 
-> This takes care of the following sparse warning:
-> drivers/tty/tty_io.c:1169:17: warning: context imbalance in 'tty_write_message' - unexpected unlock
+> On Wed, 20 Nov 2013 16:22:45 +0100, Oleg Nesterov wrote:
+>> On 11/18, Namhyung Kim wrote:
+>>>
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
+>>> +#if BITS_PER_LONG == 32
+>>>  DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
+>>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
+>>>  DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
+>>> +#else /* BITS_PER_LONG == 64 */
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
+>>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
+>>> +#endif
+>>
+>> I must have missed something... Not only I do not understand why
+>> do we need "#if BITS_PER_LONG", I can't understand why
+>> DEFINE_BASIC_PRINT_TYPE_FUNC() needs "cast" argument.
+>>
+>> IOW, how about the patch below instead?
 > 
-> Signed-off-by: Andreas Platschek <andi.platschek@gmail.com>
-> ---
->  drivers/tty/tty_io.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Looks good to me.
 > 
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 3a1a01a..13dca92 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1165,7 +1165,7 @@ out:
->  void tty_write_message(struct tty_struct *tty, char *msg)
->  {
->  	if (tty) {
-> -		mutex_lock(&tty->atomic_write_lock);
-> +		tty_write_lock(tty,0);
->  		tty_lock(tty);
->  		if (tty->ops->write && !test_bit(TTY_CLOSING, &tty->flags)) {
->  			tty_unlock(tty);
+> Masami, did you have any issue regarding the casts?
 
-i am not an expert on this but you may need to replace that tty_unlock() with tty_write_unlock().
+Hm, unless compiler doesn't complain about it,I'm OK for that.
+And as far as I tested on x86/x86-64/arm(32), this has no problem. :)
 
-re,
- wh
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
