@@ -1,179 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3KVI5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:57:14 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:39432 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3KVI5K (ORCPT
+	id S1754968Ab3KVI5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:57:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36704 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3KVI5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:57:10 -0500
+	Fri, 22 Nov 2013 03:57:38 -0500
+Date: Fri, 22 Nov 2013 11:57:32 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: ZHAO Gang <gamerh2o@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH v3 2/5] staging: et131x: drop packet when error occurs in
+ et131x_tx
+Message-ID: <20131122085732.GC5302@mwanda>
+References: <cover.1384933520.git.gamerh2o@gmail.com>
+ <c55eeb3252a868e9e62655baed8d6b11992b9cbe.1384933520.git.gamerh2o@gmail.com>
+ <20131121211920.GC10691@einon.net>
 MIME-Version: 1.0
-In-Reply-To: <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
-References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com> <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Fri, 22 Nov 2013 14:26:48 +0530
-Message-ID: <CAHfPSqA9w_2FoycJnKGosuTLi6R+0Bwpe_+zx-tp-0JegD7smw@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v10] thermal: samsung: change base_common to more
- meaningful base_second
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com, t.figa@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121211920.GC10691@einon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+On Thu, Nov 21, 2013 at 09:19:21PM +0000, Mark Einon wrote:
+> On Wed, Nov 20, 2013 at 03:55:27PM +0800, ZHAO Gang wrote:
+> > As TODO file suggested, drop packet instead of return NETDEV_TX_BUSY
+> > when tx failed.
+> > 
+> > et131x_tx calls function et131x_send_packets, I put the work of
+> > et131x_send_packets directly into et131x_tx, and made some changes to
+> > let the code more readable.
+> > 
+> > Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+> 
+> Acked-by: Mark Einon <mark.einon@gmail.com>
+> 
+> > ---
+> >  drivers/staging/et131x/et131x.c | 84 +++++++++++------------------------------
+> >  1 file changed, 22 insertions(+), 62 deletions(-)
+> > 
+> > diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> > index 836a4db..cda037a 100644
+> > --- a/drivers/staging/et131x/et131x.c
+> > +++ b/drivers/staging/et131x/et131x.c
+> > @@ -3123,55 +3123,6 @@ static int send_packet(struct sk_buff *skb, struct et131x_adapter *adapter)
+> >  	return 0;
+> >  }
+> >  
+> > -/* et131x_send_packets - This function is called by the OS to send packets
+> > - * @skb: the packet(s) to send
+> > - * @netdev:device on which to TX the above packet(s)
+> > - *
+> > - * Return 0 in almost all cases; non-zero value in extreme hard failure only
+> > - */
+> > -static int et131x_send_packets(struct sk_buff *skb, struct net_device *netdev)
+> > -{
+> > -	int status = 0;
+> > -	struct et131x_adapter *adapter = netdev_priv(netdev);
+> > -
+> > -	/* Send these packets
+> > -	 *
+> > -	 * NOTE: The Linux Tx entry point is only given one packet at a time
+> > -	 * to Tx, so the PacketCount and it's array used makes no sense here
+> > -	 */
+> > -
+> > -	/* TCB is not available */
+> > -	if (adapter->tx_ring.used >= NUM_TCB) {
+> > -		/* NOTE: If there's an error on send, no need to queue the
+> > -		 * packet under Linux; if we just send an error up to the
+> > -		 * netif layer, it will resend the skb to us.
+> > -		 */
+> > -		status = -ENOMEM;
+> > -	} else {
+> > -		/* We need to see if the link is up; if it's not, make the
+> > -		 * netif layer think we're good and drop the packet
+> > -		 */
+> > -		if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
+> > -					!netif_carrier_ok(netdev)) {
+> > -			dev_kfree_skb_any(skb);
+> > -			skb = NULL;
+> > -
+> > -			adapter->net_stats.tx_dropped++;
+> > -		} else {
+> > -			status = send_packet(skb, adapter);
+> > -			if (status != 0 && status != -ENOMEM) {
+> > -				/* On any other error, make netif think we're
+> > -				 * OK and drop the packet
+> > -				 */
+> > -				dev_kfree_skb_any(skb);
+> > -				skb = NULL;
+> > -				adapter->net_stats.tx_dropped++;
+> > -			}
+> > -		}
+> > -	}
+> > -	return status;
+> > -}
+> > -
+> >  /* free_send_packet - Recycle a struct tcb
+> >   * @adapter: pointer to our adapter
+> >   * @tcb: pointer to struct tcb
+> > @@ -4537,12 +4488,9 @@ static void et131x_multicast(struct net_device *netdev)
+> >  /* et131x_tx - The handler to tx a packet on the device
+> >   * @skb: data to be Tx'd
+> >   * @netdev: device on which data is to be Tx'd
+> > - *
+> > - * Returns 0 on success, errno on failure (as defined in errno.h)
+> >   */
+> > -static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+> > +static netdev_tx_t et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+> >  {
+> > -	int status = 0;
+> >  	struct et131x_adapter *adapter = netdev_priv(netdev);
+> >  
+> >  	/* stop the queue if it's getting full */
+> > @@ -4553,17 +4501,29 @@ static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+> >  	/* Save the timestamp for the TX timeout watchdog */
+> >  	netdev->trans_start = jiffies;
+> >  
+> > -	/* Call the device-specific data Tx routine */
+> > -	status = et131x_send_packets(skb, netdev);
+> > +	/* TCB is not available */
+> > +	if (adapter->tx_ring.used >= NUM_TCB)
+> > +		goto drop;
+> >  
+> > -	/* Check status and manage the netif queue if necessary */
+> > -	if (status != 0) {
+> > -		if (status == -ENOMEM)
+> > -			status = NETDEV_TX_BUSY;
+> > -		else
+> > -			status = NETDEV_TX_OK;
+> > +	/* We need to see if the link is up; if it's not, make the
+> > +	 * netif layer think we're good and drop the packet
+> > +	 */
+> > +	if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
+> > +	    !netif_carrier_ok(netdev)) {
+> > +		goto drop;
+> > +	} else {
+> > +		if (!send_packet(skb, adapter))
+> > +			goto out;
+> > +		/* On error (send_packet returns != 0), make netif
+> > +		 * think we're OK and drop the packet
+> > +		 */
+> >  	}
+> > -	return status;
+> > +
+> > +drop:
+> > +	dev_kfree_skb_any(skb);
+> > +	adapter->net_stats.tx_dropped++;
+> > +out:
+> > +	return NETDEV_TX_OK;
+> >  }
 
-On 19 November 2013 18:34, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> On Exynos5440 and Exynos5420 there are registers common
-> across the TMU channels.
->
-> To support that, we introduced a ADDRESS_MULTIPLE flag in the
-> driver and the 2nd set of register base and size are provided
-> in the "reg" property of the node.
->
-> As per Amit's suggestion, this patch changes the base_common
-> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> Changes since v9:
-> Just respinning
->
-> Changes since v8:
->  None
->  .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
->  drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
->  drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
->  drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
->  4 files changed, 12 insertions(+), 12 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> index 284f530..116cca0 100644
-> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> @@ -11,8 +11,8 @@
->  - reg : Address range of the thermal registers. For soc's which has multiple
->         instances of TMU and some registers are shared across all TMU's like
->         interrupt related then 2 set of register has to supplied. First set
-> -       belongs to each instance of TMU and second set belongs to common TMU
-> -       registers.
-> +       belongs to each instance of TMU and second set belongs to second set
-> +       of common TMU registers.
->  - interrupts : Should contain interrupt for thermal system
->  - clocks : The main clock for TMU device
->  - clock-names : Thermal system clock name
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index c493245..bbd0fc3 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -41,7 +41,7 @@
->   * @id: identifier of the one instance of the TMU controller.
->   * @pdata: pointer to the tmu platform/configuration data
->   * @base: base address of the single instance of the TMU controller.
-> - * @base_common: base address of the common registers of the TMU controller.
-> + * @base_second: base address of the common registers of the TMU controller.
->   * @irq: irq number of the TMU controller.
->   * @soc: id of the SOC type.
->   * @irq_work: pointer to the irq work structure.
-> @@ -56,7 +56,7 @@ struct exynos_tmu_data {
->         int id;
->         struct exynos_tmu_platform_data *pdata;
->         void __iomem *base;
-> -       void __iomem *base_common;
-> +       void __iomem *base_second;
->         int irq;
->         enum soc_type soc;
->         struct work_struct irq_work;
-> @@ -297,7 +297,7 @@ skip_calib_data:
->         }
->         /*Clear the PMIN in the common TMU register*/
->         if (reg->tmu_pmin && !data->id)
-> -               writel(0, data->base_common + reg->tmu_pmin);
-> +               writel(0, data->base_second + reg->tmu_pmin);
->  out:
->         clk_disable(data->clk);
->         mutex_unlock(&data->lock);
-> @@ -454,7 +454,7 @@ static void exynos_tmu_work(struct work_struct *work)
->
->         /* Find which sensor generated this interrupt */
->         if (reg->tmu_irqstatus) {
-> -               val_type = readl(data->base_common + reg->tmu_irqstatus);
-> +               val_type = readl(data->base_second + reg->tmu_irqstatus);
->                 if (!((val_type >> data->id) & 0x1))
->                         goto out;
->         }
-> @@ -579,7 +579,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->          * Check if the TMU shares some registers and then try to map the
->          * memory of common registers.
->          */
-> -       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
-> +       if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
->                 return 0;
->
->         if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
-> @@ -587,9 +587,9 @@ static int exynos_map_dt_data(struct platform_device *pdev)
->                 return -ENODEV;
->         }
->
-> -       data->base_common = devm_ioremap(&pdev->dev, res.start,
-> +       data->base_second = devm_ioremap(&pdev->dev, res.start,
->                                         resource_size(&res));
-> -       if (!data->base_common) {
-> +       if (!data->base_second) {
->                 dev_err(&pdev->dev, "Failed to ioremap memory\n");
->                 return -ENOMEM;
->         }
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index 980859a..0d6b32f 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -60,7 +60,7 @@ enum soc_type {
->   *                     state(active/idle) can be checked.
->   * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
->   *                     sample time.
-> - * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
-> + * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
->   *                     sensors shares some common registers.
->   * TMU_SUPPORT - macro to compare the above features with the supplied.
->   */
-> @@ -70,7 +70,7 @@ enum soc_type {
->  #define TMU_SUPPORT_FALLING_TRIP               BIT(3)
->  #define TMU_SUPPORT_READY_STATUS               BIT(4)
->  #define TMU_SUPPORT_EMUL_TIME                  BIT(5)
-> -#define TMU_SUPPORT_SHARED_MEMORY              BIT(6)
-> +#define TMU_SUPPORT_ADDRESS_MULTIPLE           BIT(6)
->
->  #define TMU_SUPPORTS(a, b)     (a->features & TMU_SUPPORT_ ## b)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index 7cdb04e..1d27069 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -255,7 +255,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->         .type = SOC_ARCH_EXYNOS5440, \
->         .registers = &exynos5440_tmu_registers, \
->         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> -                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
-> +                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
->
->  struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
->         .tmu_data = {
-> --
-> 1.7.10.4
->
-Any update on this patch set, its been
-Acked by Amit and Reviewed-by Bartlomiej Zolnierkiewicz
+This is a lot of spaghetti.  Just write it like this:
 
 
--- 
-Shine bright,
-(: Nav :)
+	if (adapter->tx_ring.used >= NUM_TCB)
+		goto drop;
+	if (adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK)
+		goto drop;
+	if (!netif_carrier_ok(netdev))
+		goto drop;
+	status = send_packet(skb, adapter);
+	if (status)
+		goto drop;
+
+	return NETDEV_TX_OK;
+
+drop:
+	dev_kfree_skb_any(skb);
+	adapter->net_stats.tx_dropped++;
+
+	/* We return success deliberately to make the netif layer happy */
+	return NETDEV_TX_OK;
+
+In the original code the success path was if condition false, then if
+condition true, then follow a goto then return.  In the new code it is
+straight line path to success with no nested if else statements.
+
+regards,
+dan carpenter
