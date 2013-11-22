@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab3KVLNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:13:54 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:61434 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3KVLNx (ORCPT
+	id S1755392Ab3KVLSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:18:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43057 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3KVLSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:13:53 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: input question: ambient light sensor button
-Date: Fri, 22 Nov 2013 12:13:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input" <linux-input@vger.kernel.org>
-References: <201309151553.34000@pali> <201311201550.05800@pali> <CAN+gG=HwuES-H4y5=_VcEQg4OiE2NYmra2+MzsbPusiOEq7Qsw@mail.gmail.com>
-In-Reply-To: <CAN+gG=HwuES-H4y5=_VcEQg4OiE2NYmra2+MzsbPusiOEq7Qsw@mail.gmail.com>
+	Fri, 22 Nov 2013 06:18:01 -0500
+Date: Fri, 22 Nov 2013 12:17:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
+ to memory-barriers.txt
+Message-ID: <20131122111723.GK10022@twins.programming.kicks-ass.net>
+References: <20131121213055.GA6938@linux.vnet.ibm.com>
+ <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131121215517.GA16796@laptop.programming.kicks-ass.net>
+ <20131121220950.GG4138@linux.vnet.ibm.com>
+ <20131121221821.GB16796@laptop.programming.kicks-ass.net>
+ <20131121223230.GI4138@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4428584.doDzpflCvy";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311221213.49580@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131121223230.GI4138@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4428584.doDzpflCvy
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 21, 2013 at 02:32:30PM -0800, Paul E. McKenney wrote:
 
-On Wednesday 20 November 2013 16:59:42 Benjamin Tissoires wrote:
-> Hi,
->=20
-> On Wed, Nov 20, 2013 at 9:50 AM, Pali Roh=C3=A1r <pali.rohar@gmail.com> w=
-rote:
-> >> > > I guess we need patch adding
-> >> > >=20
-> >> > >   #define KEY_ALS_TOGGLE  0x230
-> >> > >=20
-> >> > > Thanks.
-> >> >=20
-> >> > So there is no good key for als yet?
-> >>=20
-> >> No, but if you send me a patch adding it I will gladly
-> >> apply it.
-> >>=20
-> >> Thanks.
-> >=20
-> > Ok, here is patch:
-> >=20
-> > Add key code for ambient light sensor button
-> >=20
-> > More notebooks have special button for enabling/disabling
-> > ambient light sensor. This patch adding new als code to
-> > input.h header file.
-> >=20
-> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> >=20
-> > diff --git a/include/uapi/linux/input.h
-> > b/include/uapi/linux/input.h index a372627..1562f10 100644
-> > --- a/include/uapi/linux/input.h
-> > +++ b/include/uapi/linux/input.h
-> > @@ -719,6 +719,8 @@ struct input_keymap_entry {
-> >=20
-> >  #define BTN_DPAD_LEFT          0x222
-> >  #define BTN_DPAD_RIGHT         0x223
-> >=20
-> > +#define KEY_ALS_TOGGLE         0x230
->=20
-> Could you just add a comment explaining that ALS is ambiant
-> light sensor? Otherwise, I'm sure someone else will use this
-> event code for an other thing... :)
->=20
-> Cheers,
-> Benjamin
+> > > We could, but at the moment I would prefer the decrease in readability
+> > > to the copy-and-paste bugs that omit needed ACCESS_ONCE() calls.
+> > > 
+> > > Is there some way to get both ACCESS_ONCE() and readability?  An
+> > > abbreviation such as AO()?  More easily distinguished variable names?
+> > > Something else?
+> > 
+> > Use a form that looks less like C and thus defeats copy/paste?
+> 
+> My concern with that approach is that there is likely to be a large
+> number of people who are likely to be willing and able to transcribe
+> from any reasonable non-C form to ACCESS_ONCE()-free C code.  :-/
+> 
+> But maybe you have something specific in mind?
 
-Ok, here is new diff with comment:
+No, that was pretty much it. My issues is though that the subject matter
+is difficult enough without actively obfuscating the examples.
 
-diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-index a372627..7bacdb5 100644
-=2D-- a/include/uapi/linux/input.h
-+++ b/include/uapi/linux/input.h
-@@ -719,6 +719,8 @@ struct input_keymap_entry {
- #define BTN_DPAD_LEFT		0x222
- #define BTN_DPAD_RIGHT		0x223
-=20
-+#define KEY_ALS_TOGGLE		0x230	/* Ambient light sensor */
-+
- #define BTN_TRIGGER_HAPPY		0x2c0
- #define BTN_TRIGGER_HAPPY1		0x2c0
- #define BTN_TRIGGER_HAPPY2		0x2c1
+Furthermore, people will find ways to get it wrong anyhow, if all they
+do is copy/paste without thought, then getting it wrong is pretty much
+guaranteed in this case. Memory ordering isn't something you can do
+without thinking.
 
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart4428584.doDzpflCvy
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKPPG0ACgkQi/DJPQPkQ1JLmACdH4q7tq0z6veB4E5kgXskuKb0
-gjsAoKvVExlIePcdRJ6UhpdRp9DgcGMz
-=mfe3
------END PGP SIGNATURE-----
-
---nextPart4428584.doDzpflCvy--
