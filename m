@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab3KVV2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:28:06 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:53926 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755248Ab3KVV2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:28:01 -0500
-Date: Fri, 22 Nov 2013 15:28:07 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: mm, numa: test segfaults, only when NUMA balancing is on
-Message-ID: <20131122212807.GR3062@sgi.com>
-References: <20131016155429.GP25735@sgi.com>
- <20131104145828.GA1218@suse.de>
- <20131104200346.GA3066@sgi.com>
- <20131106131048.GC4877@suse.de>
- <20131107214838.GY3066@sgi.com>
- <20131108112054.GB5040@suse.de>
- <20131108221329.GD4236@sgi.com>
- <20131112212902.GA4725@sgi.com>
- <20131115000901.GB26002@suse.de>
- <20131115144504.GE26002@suse.de>
+	id S1755697Ab3KVVfy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:35:54 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:46024 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab3KVVfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 16:35:53 -0500
+Message-ID: <528FCE57.2000805@gmail.com>
+Date: Fri, 22 Nov 2013 22:36:23 +0100
+From: Francis Moreau <francis.moro@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131115144504.GE26002@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: rafael.j.wysocki@intel.com, Jingoo Han <jg1.han@samsung.com>,
+        "'Borislav Petkov'" <bp@alien8.de>,
+        "'Wei WANG'" <wei_wang@realsil.com.cn>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Chris Ball'" <cjb@laptop.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+References: <20131117195358.GO27323@pd.tnic> <528F0B1E.6000909@gmail.com> <528F2A85.4090808@gmail.com> <24318767.PoCLxGCZH4@vostro.rjw.lan>
+In-Reply-To: <24318767.PoCLxGCZH4@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If the warning added by that patch does *not* trigger than can you also
-> test this patch? It removes the barriers which should not be necessary
-> and takes a reference tot he page before waiting on the lock. The
-> previous version did not take the reference because otherwise the
-> WARN_ON could not distinguish between a migration waiter and a surprise
-> gup.
+On 11/22/2013 01:54 PM, Rafael J. Wysocki wrote:
+> On Friday, November 22, 2013 10:57:25 AM Francis Moreau wrote:
+>> Le 22/11/2013 08:43, Francis Moreau a écrit :
+>>> Le 21/11/2013 12:17, Jingoo Han a écrit :
+>>> [...]
+>>>>>
+>>>>>> Also I took a look at the changes between v3.11 and v3.12 in this area
+>>>>>> and those changes match the issue I'm facing:
+>>>>>>
+>>>>>> $ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
+>>>>>> 09fd867 mfd: rtsx: Copyright modifications
+>>>>>> eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
+>>>>>> 7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
+>>>>>> extra_init_hw
+>>>>>> 5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
+>>>>>> 773ccdf mfd: rtsx: Read vendor setting from config space
+>>>>
+>>>> In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
+>>>> reader driver may make the kernel panic.
+>>>>
+>>>> I think that the commit "mfd: rtsx: Configure to enter a deeper
+>>>> power-saving mode in S3" may be the culprit.
+>>>
+>>> Unfortunately no, reverting this commit on top of v3.12 doesn't help. I
+>>> also reverted 7140812, 5947c16 but it didn't improve anything.
+>>>
+>>> The good news is that I managed to have a "light" kernel configuration
+>>> which is faster to build and more important it seems that the bug is
+>>> almost 100% reproductible now.
+>>>
+>>> So I'll try to do another git-bisect session later.
+>>
+>> So after bisecting between v3.11..v3.12 range, git bisect told me:
+>>
+>> the first bad commit is 551f5c74e17ba9257cdc35bf657ee448cad2d5b0
+>>
+>> Merge branch 'acpi-processor'
+>>
+>>     * acpi-processor:
+>>       ACPI / processor: Acquire writer lock to update CPU maps
+>>       ACPI / processor: Remove acpi_processor_get_limit_info()
+>>
+>> The two commits brought by the merge are not the culprits because
+>> reseting HEAD on "ACPI / processor: Acquire writer lock to update CPU
+>> maps" doesn't have the issue anymore.
+>>
+>> At that point I'm not sure how to bisect futher.
+> 
+> Does the second parent of this merge (that is, 8462d9df9d50) have the problem?
+> 
 
-Sorry for the delay; been a bit busy.  I tested both of these patches on
-top of this one (separately, of course):
+Yes it does.
 
-http://www.spinics.net/lists/linux-mm/msg63919.html
+Ok, I've finally managed to find out the bad commit:
+ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
+over system PM transitions
 
-I think that's the one you were referring to, if not send me a pointer
-to the correct one and I'll give it another shot.  Both patches still
-segfaulted, so it doesn't appear that either of these solved the
-problem.  If you have anything else you'd like for me to try let me
-know.
+I verified that the parent commit doesn't have the problem.
 
-- Alex
+Rafael, you're the man now ;)
+
+Thanks
+
+
