@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab3KVHjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 02:39:14 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51651 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3KVHjK (ORCPT
+	id S1754469Ab3KVHlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:41:19 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:39475 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab3KVHlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 02:39:10 -0500
-Date: Fri, 22 Nov 2013 08:38:54 +0100
-From: Vladimir Murzin <murzin.v@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: linux-mm@kvack.org, Seth Jennings <sjennings@variantweb.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Subject: Re: [PATCH] mm/zswap: change params from hidden to ro
-Message-ID: <20131122073851.GB1853@hp530>
-References: <1384965522-5788-1-git-send-email-ddstreet@ieee.org>
- <20131120173347.GA2369@hp530>
- <CALZtONA81=R4abFMpMMtDZKQe0s-8+JxvEfZO3NEZ910VwRDmw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <CALZtONA81=R4abFMpMMtDZKQe0s-8+JxvEfZO3NEZ910VwRDmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Nov 2013 02:41:16 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCHv5 2/9] driver/core: populate devices in order for IOMMUs
+To: Stephen Warren <swarren@wwwdotorg.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        swarren@nvidia.com, will.deacon@arm.com, thierry.reding@gmail.com,
+        galak@codeaurora.org
+Cc: mark.rutland@arm.com, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <528E5932.1070105@wwwdotorg.org>
+References: <1384853593-32202-1-git-send-email-hdoyu@nvidia.com> < 1384853593-32202-3-git-send-email-hdoyu@nvidia.com> <20131121131558. E5B82C40A2C@trevor.secretlab.ca> <528E5932.1070105@wwwdotorg.org>
+Date: Fri, 22 Nov 2013 07:41:11 +0000
+Message-Id: <20131122074111.155E2C40753@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 12:52:47PM -0500, Dan Streetman wrote: > On Wed, Nov
-20, 2013 at 12:33 PM, Vladimir Murzin <murzin.v@gmail.com> wrote: > > Hi Dan!
-> >
-> > On Wed, Nov 20, 2013 at 11:38:42AM -0500, Dan Streetman wrote:
-> >> The "compressor" and "enabled" params are currently hidden,
-> >> this changes them to read-only, so userspace can tell if
-> >> zswap is enabled or not and see what compressor is in use.
-> >
-> > Could you elaborate more why this pice of information is necessary for
-> > userspace?
+On Thu, 21 Nov 2013 12:04:18 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/21/2013 06:15 AM, Grant Likely wrote:
+> > On Tue, 19 Nov 2013 11:33:06 +0200, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> >> IOMMU devices on the bus need to be poplulated first, then iommu
+> >> master devices are done later.
+> >>
+> >> With CONFIG_OF_IOMMU, "iommus=" DT binding would be used to identify
+> >> whether a device can be an iommu msater or not. If a device can, we'll
+> >> defer to populate that device till an iommu device is populated. Once
+> >> an iommu device is populated, "dev->bus->iommu_ops" is set in the
+> >> bus. Then, those defered iommu master devices are populated and
+> >> configured for IOMMU with help of the already populated iommu device
+> >> via iommu_ops->add_device(). Multiple IOMMUs can be listed on this
+> >> "iommus" binding so that a device can have multiple IOMMUs attached.
+> >>
+> >> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> >> ---
+> >> v5:
+> >> Use "iommus=" binding instread of arm,smmu's "#stream-id-cells".
+> >>
+> >> v4:
+> >> This is newly added, and the successor of the following RFC:
+> >>   [RFC][PATCHv3+ 1/2] driver/core: Add of_iommu_attach()
+> >>   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/006914.html
+> >> ---
+> >>  drivers/base/dd.c        |  5 +++++
+> >>  drivers/iommu/of_iommu.c | 22 ++++++++++++++++++++++
+> >>  include/linux/of_iommu.h |  7 +++++++
+> >>  3 files changed, 34 insertions(+)
+> >>
+> >> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> >> index 35fa368..6e892d4 100644
+> >> --- a/drivers/base/dd.c
+> >> +++ b/drivers/base/dd.c
+> >> @@ -25,6 +25,7 @@
+> >>  #include <linux/async.h>
+> >>  #include <linux/pm_runtime.h>
+> >>  #include <linux/pinctrl/devinfo.h>
+> >> +#include <linux/of_iommu.h>
+> >>  
+> >>  #include "base.h"
+> >>  #include "power/power.h"
+> >> @@ -273,6 +274,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+> >>  
+> >>  	dev->driver = drv;
+> >>  
+> >> +	ret = of_iommu_attach(dev);
+> >> +	if (ret)
+> >> +		goto probe_failed;
+> >> +
+> >>  	/* If using pinctrl, bind pins now before probing */
+> >>  	ret = pinctrl_bind_pins(dev);
+> >>  	if (ret)
+> > 
+> > I'm very concerned about this approach. Hooking into the core probe
+> > path for things like this is not going to scale well. I'm not thrilled
+> > with the pinctrl hook being here either, but that is already merged. :-(
+> > Also, hooking in here is going affect every single device device driver
+> > probe path, and a large number of them are never, ever, going to have
+> > iommu interactions.
+> > 
+> > There needs to be a less invasive way of doing what you want. I still
+> > feel like the individual device drivers themselves need to be aware that
+> > they might be hooking through an IOMMU. Or, if they are hooking through
+> > a bus like PCIe, then have the PCIe bus defer creating child devices
+> > until the IOMMU is configured and in place.
 > 
-> For anyone interested in zswap, it's handy to be able to tell if it's
-> enabled or not ;-)  Technically people can check to see if the zswap
-> debug files are in /sys/kernel/debug/zswap, but I think the actual
-> "enabled" param is more obvious.  And the compressor param is really
-> the only way anyone from userspace can see what compressor's being
-> used; that's helpful to know for anyone that might want to be using a
-> non-default compressor.
+> I general though, couldn't any MMIO on-SoC device potentially be
+> affected by an IOMMU? The point of putting the call to of_iommu_attach()
+> here rather than inside individual driver's probe() is to avoid
+> requiring "every" driver having to paste more boiler-plate into probe().
 
-So, it is needed for user not userspace? I tend to think that users are smart
-enough to check cmdline for that. 
+It seems more that IOMMU attachment is closer to being a property of the
+bus rather than a property of the device itself. In that context it
+would make more sense for the bus device to hold off child device
+registration or probing until the IOMMU is available. That keeps the
+logic out of both the core code and the individual device drivers.
 
-AFAICS module_param exist here to provide simplest ability to handle the
-setting via cmdline. zsawap is not able to be loaded as a module for now. If
-it could, than there was reason to check which params were used while module
-loading and guess how they affected zswap state. 
+g.
 
-> 
-> And of course, eventually we'll want to make the params writable, so
-> the compressor can be changed dynamically, and zswap can be enabled or
-> disabled dynamically (or at least enabled after boot).
-
-module_params is not the best place to handle this, because they do not
-provide any hooks for handling write unless I missed something. However,
-making zswap state dynamically adjustable require not only setting the
-numbers, but handling the correctness switching from one state to another.
-
-Vladimir
