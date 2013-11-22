@@ -1,44 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab3KVWsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:48:13 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:58696 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab3KVWsK (ORCPT
+	id S932152Ab3KVWsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 17:48:55 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:63320 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab3KVWsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:48:10 -0500
+	Fri, 22 Nov 2013 17:48:54 -0500
+Message-ID: <528FDF52.4030500@gmail.com>
+Date: Fri, 22 Nov 2013 17:48:50 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1385160319.17856.35.camel@joe-AO722>
-References: <1385158664-12923-1-git-send-email-ufimtseva@gmail.com>
-	<1385160319.17856.35.camel@joe-AO722>
-Date: Fri, 22 Nov 2013 17:48:09 -0500
-Message-ID: <CAEr7rXhjG0aGF48CkL77a=BQZpwfTzShq88PSQ6gDcaFobeRcg@mail.gmail.com>
-Subject: Re: [PATCH v2] checkpatch.pl: Check for functions without a real prototype
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: apw <apw@canonical.com>, linux-kernel@vger.kernel.org
+To: Chang <changxiangzhong@gmail.com>, nhorman@tuxdriver.com,
+        davem@davemloft.net
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: sctp: set chunk->tsn_gap_acked at the end of cycle
+References: <1385106589-402-1-git-send-email-changxiangzhong@gmail.com> <528F69B7.7020902@gmail.com> <528FAF50.10100@gmail.com>
+In-Reply-To: <528FAF50.10100@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 5:45 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2013-11-22 at 17:17 -0500, Elena Ufimtseva wrote:
->> Based on Richard Weinberger patch https://lkml.org/lkml/2012/3/16/510
->> Functions like this one are evil:
+On 11/22/2013 02:24 PM, Chang wrote:
+> 
+> On 11/22/2013 03:27 PM, Vlad Yasevich wrote:
+>> On 11/22/2013 02:49 AM, Chang Xiangzhong wrote:
+>>> tsn_gap_acked is an important state flag in chunk, which indicates if
+>>> the
+>>> chunk has been acked in gap reports before.
+>> Actually, this bit indicates simply that the chunk has been acked.  It
+>> doesn't state whether it's been acked in a gap report or via
+>> cumulative tsn.
+> Thanks for pointing this out. Sorry for not having made that clear.
 >>
->> void foo()
->> {
->>       ...
->> }
-> []
->> - added white space in regular expression between (), based
->> on comments from Joe Perches.
->
-> Thanks Elena, but this is already applied in -next.
->
->
-No problem, thanks Joe )
+>>> SFR-CACC algorithm depends on this
+>>> variable. So set this at the end of each iteration, otherwise the
+>>> SFR-CACC
+>>> algorithm would never be toggled.
+>>>
+>>> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+>>> ---
+>>>   net/sctp/outqueue.c | 3 ++-
+>>>   1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+>>> index 1b494fa..bff828c 100644
+>>> --- a/net/sctp/outqueue.c
+>>> +++ b/net/sctp/outqueue.c
+>>> @@ -1396,7 +1396,6 @@ static void sctp_check_transmitted(struct
+>>> sctp_outq *q,
+>>>                * while DATA was outstanding).
+>>>                */
+>>>               if (!tchunk->tsn_gap_acked) {
+>>> -                tchunk->tsn_gap_acked = 1;
+>>>                   if (TSN_lt(*highest_new_tsn_in_sack, tsn))
+>>>                       *highest_new_tsn_in_sack = tsn;
+>>>                   bytes_acked += sctp_data_size(tchunk);
+>>> @@ -1460,6 +1459,8 @@ static void sctp_check_transmitted(struct
+>>> sctp_outq *q,
+>>>                    */
+>>>                   list_add_tail(lchunk, &tlist);
+>>>               }
+>>> +
+>>> +            tchunk->tsn_gap_acked = 1;
+>> The current code will set the state if it hasn't been set yet.  Why is
+>> this needed?
+> Because in line 1420 ~ 1440 The SFR-CACC algorithms use tsn_gap_acked.
+> That "if block" would never be triggered because the varaiable's been
+> set. That's why I move the "state changing sentence" to the end of the
+> iteration.
+>> Now there is an issue with tracking highest_new_tsn_in_sack.  The spec
+>> is a little vague on this, but the highest_new_tsn_in_sack only supposed
+>> to track tsns that have not been resent.  If a tsn has been reneged, and
+>> then sent again, it is not considered 'new' thus should not count
+>> toward highest_new_tsn_in_sack.  We currently do not track this right.
+> I'll try to figure this out.
 
--- 
-Elena
+So the solution that's been proposed before is to move the CACC block up
+and merge it with the !tsn_gap_acked block.  This requires additional
+change though to only mark highest_new_tsn if the chunk has not been
+retransmitted (which you've added in a prior patch).
+
+-vlad
+
+>> -vlad
+>>
+>> -vlad
+>>
+>>>           } else {
+>>>               if (tchunk->tsn_gap_acked) {
+>>>                   pr_debug("%s: receiver reneged on data TSN:0x%x\n",
+>>>
+> 
+
