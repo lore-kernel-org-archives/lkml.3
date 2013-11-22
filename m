@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab3KVPjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:39:45 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:40575 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab3KVPjm (ORCPT
+	id S1755670Ab3KVPne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:43:34 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:49890 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab3KVPnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:39:42 -0500
-Date: Fri, 22 Nov 2013 16:38:15 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Clock drift with GENERIC_TIME_VSYSCALL_OLD
-Message-ID: <20131122163815.393ab1f2@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112215-4966-0000-0000-000007962AFF
+	Fri, 22 Nov 2013 10:43:33 -0500
+Date: Fri, 22 Nov 2013 16:43:29 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131122154317.GB15636@gmail.com>
+References: <20131121100722.GA25459@pd.tnic>
+ <20131121111744.GA27513@gmail.com>
+ <20131121113014.GA26009@pd.tnic>
+ <20131121114224.GA27704@gmail.com>
+ <20131121120605.GC26009@pd.tnic>
+ <20131121150524.GA24806@ghostprotocols.net>
+ <20131121152804.GI26009@pd.tnic>
+ <20131121173714.GD24806@ghostprotocols.net>
+ <20131122122701.GA1480@gmail.com>
+ <20131122145756.GB11305@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122145756.GB11305@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
 
-I just hunted down a time related bug which caused the Linux internal
-xtime to drift away from the precise hardware clock provided by the
-TOD clock found in the s390 architecture.
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-After a long search I came along this lovely piece of code in
-kernel/time/timekeeping.c:
+> Lets experiment at having things at the right granularity, even if 
+> it involves many, directly linked, like libperf.a, libraries, one at 
+> a time, starting with fskapi (or whatever name ends up being 
+> preferred for this initial one).
 
-#ifdef CONFIG_GENERIC_TIME_VSYSCALL_OLD
-static inline void old_vsyscall_fixup(struct timekeeper *tk)
+That's fine with me - what I stood up against was the idea to merge 
+into a single place things like the Git helpers, cmdline/option 
+parser, etc.
 
-        s64 remainder;
+The naming problem is mostly non-existent if the concepts are kept 
+nicely separate: the best name for the debugfs bits is probably 
+tools/lib/debugfs/, the best name for command line option parser is 
+tools/lib/cmdline/, the best name for trace event parsing is 
+tools/lib/traceevents/ [hey, we already have that one in the right 
+place! ;-)], etc.
 
-        /*
-        * Store only full nanoseconds into xtime_nsec after rounding
-        * it up and add the remainder to the error difference.
-        * XXX - This is necessary to avoid small 1ns inconsistnecies caused
-        * by truncating the remainder in vsyscalls. However, it causes
-        * additional work to be done in timekeeping_adjust(). Once
-        * the vsyscall implementations are converted to use xtime_nsec
-        * (shifted nanoseconds), and CONFIG_GENERIC_TIME_VSYSCALL_OLD
-        * users are removed, this can be killed.
-        */
-        remainder = tk->xtime_nsec & ((1ULL << tk->shift) - 1);
-        tk->xtime_nsec -= remainder;
-        tk->xtime_nsec += 1ULL << tk->shift;
-        tk->ntp_error += remainder << tk->ntp_error_shift;
+Thanks,
 
-}
-#else
-#define old_vsyscall_fixup(tk)
-#endif
-
-The highly precise result of our TOD clock source ends up in
-tk->xtime_sec / tk->xtime_nsec where old_vsyscall_fixup just rounds
-it up to the next nano-second (booo). To add insult to injury an
-incorrect delta gets added to ntp_error, xtime has been forwarded by
-((1ULL << tk->shift) - (tk->xtime_nsec & ((1ULL << tk->shift) - 1)))
-and not set back by (tk->xtime_nsec & ((1ULL << tk->shift) - 1)).
-xtime is too fast by one nano-second per tick. To verify that this
-is indeed the problem I removed the line that adds the nano-second
-to xtime_nsec and voila the clocks are in sync.
-
-A possible patch to fix this would be:
-
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1347,6 +1347,7 @@ static inline void old_vsyscall_fixup(struct timekeeper *t
-k)
-        tk->xtime_nsec -= remainder;
-        tk->xtime_nsec += 1ULL << tk->shift;
-        tk->ntp_error += remainder << tk->ntp_error_shift;
-+       tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
- 
- }
- #else
-
-But that has the downside that it creates a negative ntp_error that
-can only be corrected with an adjustment of tk->mult which takes a
-long time.
-
-The fix I am going to use is to convert s390 to GENERIC_TIME_VSYSCALL,
-you might want to think about doing that for powerpc and ia64 as well.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+	Ingo
