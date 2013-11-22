@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3KVHpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 02:45:11 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59728 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab3KVHpI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 02:45:08 -0500
-Message-ID: <528F0B80.9020900@linux-pingi.de>
-Date: Fri, 22 Nov 2013 08:45:04 +0100
-From: Karsten Keil <kkeil@linux-pingi.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754341Ab3KVHri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:47:38 -0500
+Received: from mail.sliven.bg ([87.121.77.67]:45612 "EHLO mail.sliven.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808Ab3KVHrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 02:47:33 -0500
+X-Greylist: delayed 2055 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Nov 2013 02:47:32 EST
+Message-ID: <3083.196.28.245.209.1385098697.squirrel@mail.sliven.bg>
+Date: Fri, 22 Nov 2013 11:38:17 +0600 (BTT)
+Subject: Personal email(22 November 2013)
+From: "Mrs Nicole Marois" <nicolemaroisparis@gmail.com>
+Reply-To: marois0147@gmail.com
+User-Agent: SquirrelMail/1.4.13
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@laposte.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
-Subject: Re: [PATCH linux-next] hisax: disable build for big-endian arm
-References: <1385077794-17022-1-git-send-email-vincent.stehle@laposte.net> <s5hzjowhp2l.wl%tiwai@suse.de>
-In-Reply-To: <s5hzjowhp2l.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:uNO9kUjytwarbAJc0p7JuA9/QUZnNcSQr4bMbHhoupm
- Xx/nBHm0vHT4Qm8h6/Rt18MswU4VYMX5Cd8tbDIpbMavDMsTw6
- FlgndmDntVd5pJY349e1FmTiUBJvQijiT2AArZ8o/4CH/jwnv7
- 4lCwEkfR0F03AFEMJQaamoYjPn+vRZyUt500S1SpeurT5JhJyr
- VQI2mOF6LZPEzPjC/NscKOV+srLvHd8ulb3xGakwQkrjqd+iXb
- Jaoy8BbDLrrnRkVxoR3wq922UzCF3ariuAZomzMXkB7fsflwuN
- qWS/lAFC0DGVEOTLzmbdyKzutVXX02SAki37Jrqc13FGPQIIwq
- AKYaT6FXPQLj52ZrUXZlR5oeom6dFohXCUmbc6u0H
+Content-Type: text/plain;charset=windows-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.11.2013 08:29, schrieb Takashi Iwai:
-> At Fri, 22 Nov 2013 00:49:54 +0100,
-> Vincent Stehlé wrote:
->>
->> Teles PCI and HFC PCI-bus refuse to build on big-endian ARM; disable them in
->> Kconfig.
->>
->> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
->> Cc: Karsten Keil <isdn@linux-pingi.de>
->> ---
->>
->> Hi,
->>
->> This can be seen on e.g. linux next-20131121 with arm allyesconfig.
->>
->> Best regards,
->>
->> V.
->>
->>  drivers/isdn/hisax/Kconfig | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
->> index d9edcc9..53dbb75 100644
->> --- a/drivers/isdn/hisax/Kconfig
->> +++ b/drivers/isdn/hisax/Kconfig
->> @@ -109,7 +109,7 @@ config HISAX_16_3
->>  
->>  config HISAX_TELESPCI
->>  	bool "Teles PCI"
->> -	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN)))
->> +	depends on PCI && (BROKEN || !(SPARC || PPC || PARISC || M68K || (MIPS && !CPU_LITTLE_ENDIAN) || FRV || (XTENSA && !CPU_LITTLE_ENDIAN) || (ARM && !CPU_LITTLE_ENDIAN)))
-> 
-> Isn't it a bit better to exclude CPU_LITTLE_ENDIAN globally?
-> 
-> 	depends on PCI && CPU_LITTLE_ENDIAN && (BROKEN || !(SPARC || PPC || PARISC || M68K || MIPS || FRV || XTENSA || ARM))
-> 
-> Or maybe just
-> 
-> 	depends on PCI && (X86 || BROKEN)
-> 
-> (Alpha?  Can anyone test? :)
 
-I never got this card so it was never in my tests, if I remember
-correctely  somebody had it running with Alpha before 2000.
-And yes I'm fine if we simplify this mess to only X86.
+CONTACT US IMMEDIATELY FOR YOUR PAYMENT.
 
-Karsten
+Dear Beloved Friend,
+
+    I am Mrs Nicole Marois Benoite, and i have been suffering from
+ovarian cancer disease and the doctor says that i have just few days to
+leave. I am from (Paris) France but based in Africa Burkina Faso since
+eleven years ago as a business woman dealing with gold exportation.
+
+Now that i am about to end the race like this, without any family
+members and no child. I have $3 Million US DOLLARS in Africa Development
+Bank (ADB) Burkina Faso which i instructed the bank to give St Andrews
+Missionary Home in Burkina Faso.But my mind is not at rest because i am
+writing this letter now through the help of my computer beside my sick
+bed.
+
+I also have $4.5 Million US Dollars at Eco-Bank here in Burkina Faso
+and i instructed the bank to transfer the fund to you as foreigner that
+will apply to the bank after i have gone, that they should release the
+fund to him/her,but you will assure me that you will take 50% of the
+fund and give 50% to the orphanages home in your country for my heart to
+rest.
+
+Respond to me immediately  for further details since I have just few
+days to end my life due to the ovarian cancer disease, hoping you will
+understand my point.
+
+Yours fairly friend,
+Mrs Nicole Marois Benoite
+
