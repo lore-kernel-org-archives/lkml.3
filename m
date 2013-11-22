@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3KVHri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 02:47:38 -0500
-Received: from mail.sliven.bg ([87.121.77.67]:45612 "EHLO mail.sliven.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab3KVHrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 02:47:33 -0500
-X-Greylist: delayed 2055 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Nov 2013 02:47:32 EST
-Message-ID: <3083.196.28.245.209.1385098697.squirrel@mail.sliven.bg>
-Date: Fri, 22 Nov 2013 11:38:17 +0600 (BTT)
-Subject: Personal email(22 November 2013)
-From: "Mrs Nicole Marois" <nicolemaroisparis@gmail.com>
-Reply-To: marois0147@gmail.com
-User-Agent: SquirrelMail/1.4.13
+	id S1755085Ab3KVHuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:50:04 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37392 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab3KVHt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 02:49:57 -0500
+Message-ID: <528F0C9E.8020409@linaro.org>
+Date: Fri, 22 Nov 2013 13:19:50 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=windows-1251
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+To: Lan Tianyu <tianyu.lan@intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH V2] Cpufreq: Make governor data on nonboot cpus across
+ system suspend/resume
+References: <9847309.KdKOG5y1Zx@vostro.rjw.lan> <1384616184-6197-1-git-send-email-tianyu.lan@intel.com> <5288425A.6000501@linaro.org>
+In-Reply-To: <5288425A.6000501@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 17 November 2013 09:43 AM, viresh kumar wrote:
+> On 16 November 2013 21:06, Lan Tianyu <tianyu.lan@intel.com> wrote:
 
-CONTACT US IMMEDIATELY FOR YOUR PAYMENT.
+> But I don't really like the solution here. You are handling frozen for EXIT in
+> cpufreq-core and for INIT in governor. That doesn't look like the right
+> approach. There are out of tree governors too (I know we don't care about them
+> :)), and those also need to adapt with some policy made at cpufreq-core level.
+> 
+> I told you that I had another solution for this problem, pretty similar to
+> yours. It looked like this:
 
-Dear Beloved Friend,
+Hi Lan,
 
-    I am Mrs Nicole Marois Benoite, and i have been suffering from
-ovarian cancer disease and the doctor says that i have just few days to
-leave. I am from (Paris) France but based in Africa Burkina Faso since
-eleven years ago as a business woman dealing with gold exportation.
+There is some confusion going on here :)
 
-Now that i am about to end the race like this, without any family
-members and no child. I have $3 Million US DOLLARS in Africa Development
-Bank (ADB) Burkina Faso which i instructed the bank to give St Andrews
-Missionary Home in Burkina Faso.But my mind is not at rest because i am
-writing this letter now through the help of my computer beside my sick
-bed.
+There were few problems in the approach in your patch, which I have mentioned
+above, and Rafael agreed to them..
 
-I also have $4.5 Million US Dollars at Eco-Bank here in Burkina Faso
-and i instructed the bank to transfer the fund to you as foreigner that
-will apply to the bank after i have gone, that they should release the
-fund to him/her,but you will assure me that you will take 50% of the
-fund and give 50% to the orphanages home in your country for my heart to
-rest.
+> But after the PM notifiers patch I even don't want this to go.. I will make sure
+> that that patch goes in, in one form or another :)
 
-Respond to me immediately  for further details since I have just few
-days to end my life due to the ovarian cancer disease, hoping you will
-understand my point.
+And I was still trying to get a better solution in place of these changes. And
+was going on the suggestions you gave about calling cpufreq callbacks from
+dpm_{suspend|resume}_noirq() calls.. And I am on my way to get things fixed that
+way. And so we don't actually need this patch anymore (I just saw that you have
+sent another version of it, probably because Rafael asked? Don't know what
+happened there :))..
 
-Yours fairly friend,
-Mrs Nicole Marois Benoite
-
+So, I will try to get something working soon for you and Nishanth..
