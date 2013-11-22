@@ -1,91 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3KVM2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:28:55 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62426 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752132Ab3KVM2x (ORCPT
+	id S1755510Ab3KVMb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:31:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38269 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab3KVMby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:28:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <cjb@laptop.org>, Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
-Date: Fri, 22 Nov 2013 13:41:35 +0100
-Message-ID: <9252491.gfcLFPm9bi@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+	Fri, 22 Nov 2013 07:31:54 -0500
+Date: Fri, 22 Nov 2013 04:31:17 -0800
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-e0edc78f25c020dea66742c05a7fbcb2ff3df629@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] Documentation/memory-barriers.txt:
+  Fix a typo in the data dependency description
+Git-Commit-ID: e0edc78f25c020dea66742c05a7fbcb2ff3df629
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 22 Nov 2013 04:31:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 22, 2013 02:14:27 PM Mika Westerberg wrote:
-> Hi all,
-> 
-> Now that the mainline kernel has full ACPI support for the GPIO descriptor
-> interface we can get rid of ACPI specific GPIO functions in favor of GPIO
-> descriptor (gpiod_*) interfaces.
-> 
-> This series first converts the existing two users to this interface and
-> then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
-> called internally in drivers/gpio. We then remove the acpi_gpio.h and
-> require all users to user gpiod_* interfaces.
-> 
-> This is second version of the series. Changes to the previous [1]:
->  * paz00 is passing the lookup table so that we don't need to have gpio
->    conversion function in rfkill-gpio.c anymore.
->  * Corrected sdhci-acpi.c to pass con_id and added call to
->    gpiod_direction_input().
-> 
-> I suppose it would make sense to merge the whole series via GPIO or ACPI
-> trees because there's a dependency that the first two patches need to be
-> applied before last three. Otherwise the drivers in question fail to
-> compile.
-> 
-> [1] https://lkml.org/lkml/2013/11/21/317
-> 
-> Heikki Krogerus (3):
->   net: rfkill: gpio: convert to descriptor-based GPIO interface
->   ARM: tegra: add gpiod_lookup table for paz00
->   net: rfkill: gpio: remove gpio conversion support
-> 
-> Mika Westerberg (4):
->   mmc: sdhci-acpi: covert to use GPIO descriptor API
->   gpio / ACPI: register to ACPI events automatically
->   gpio / ACPI: get rid of acpi_gpio.h
->   Documentation / ACPI: update to GPIO descriptor API
-> 
->  Documentation/acpi/enumeration.txt | 36 ++++--------------
->  arch/arm/mach-tegra/board-paz00.c  |  9 ++++-
->  drivers/gpio/gpiolib-acpi.c        | 20 +++++++---
->  drivers/gpio/gpiolib.c             |  5 ++-
->  drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
->  drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
->  drivers/pinctrl/pinctrl-baytrail.c |  4 --
->  include/linux/acpi_gpio.h          | 51 -------------------------
->  net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
->  9 files changed, 125 insertions(+), 149 deletions(-)
->  create mode 100644 drivers/gpio/gpiolib.h
->  delete mode 100644 include/linux/acpi_gpio.h
+Commit-ID:  e0edc78f25c020dea66742c05a7fbcb2ff3df629
+Gitweb:     http://git.kernel.org/tip/e0edc78f25c020dea66742c05a7fbcb2ff3df629
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Fri, 22 Nov 2013 11:24:53 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 22 Nov 2013 11:46:12 +0100
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Documentation/memory-barriers.txt: Fix a typo in the data dependency description
 
-for the ACPI-related material in this series.
+This typo has been there forever, it is 7.5 years old, looks like this
+section of our memory ordering documentation is a place where most eyes
+are glazed over already ;-)
 
-Thanks,
-Rafael
+[ Also fix some stray spaces and stray tabs while at it, shrinking the
+  file by 49 bytes. Visual output unchanged. ]
 
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/n/tip-gncea9cb8igosblizfqMXrie@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/memory-barriers.txt | 42 +++++++++++++++++++--------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index c8c42e6..020cccd 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -500,7 +500,7 @@ odd-numbered bank is idle, one can see the new value of the pointer P (&B),
+ but the old value of the variable B (2).
+ 
+ 
+-Another example of where data dependency barriers might by required is where a
++Another example of where data dependency barriers might be required is where a
+ number is read from memory and then used to calculate the index for an array
+ access:
+ 
+@@ -882,12 +882,12 @@ cache it for later use.
+ 
+ Consider:
+ 
+-	CPU 1	   		CPU 2
++	CPU 1			CPU 2
+ 	=======================	=======================
+-	 	   		LOAD B
+-	 	   		DIVIDE		} Divide instructions generally
+-	 	   		DIVIDE		} take a long time to perform
+-	 	   		LOAD A
++				LOAD B
++				DIVIDE		} Divide instructions generally
++				DIVIDE		} take a long time to perform
++				LOAD A
+ 
+ Which might appear as this:
+ 
+@@ -910,13 +910,13 @@ Which might appear as this:
+ Placing a read barrier or a data dependency barrier just before the second
+ load:
+ 
+-	CPU 1	   		CPU 2
++	CPU 1			CPU 2
+ 	=======================	=======================
+-	 	   		LOAD B
+-	 	   		DIVIDE
+-	 	   		DIVIDE
++				LOAD B
++				DIVIDE
++				DIVIDE
+ 				<read barrier>
+-	 	   		LOAD A
++				LOAD A
+ 
+ will force any value speculatively obtained to be reconsidered to an extent
+ dependent on the type of barrier used.  If there was no change made to the
+@@ -1887,8 +1887,8 @@ functions:
+      space should suffice for PCI.
+ 
+      [*] NOTE! attempting to load from the same location as was written to may
+-     	 cause a malfunction - consider the 16550 Rx/Tx serial registers for
+-     	 example.
++	 cause a malfunction - consider the 16550 Rx/Tx serial registers for
++	 example.
+ 
+      Used with prefetchable I/O memory, an mmiowb() barrier may be required to
+      force stores to be ordered.
+@@ -1955,19 +1955,19 @@ barriers for the most part act at the interface between the CPU and its cache
+ 	                          :
+ 	+--------+    +--------+  :   +--------+    +-----------+
+ 	|        |    |        |  :   |        |    |           |    +--------+
+-	|  CPU   |    | Memory |  :   | CPU    |    |           |    |	      |
+-	|  Core  |--->| Access |----->| Cache  |<-->|           |    |	      |
++	|  CPU   |    | Memory |  :   | CPU    |    |           |    |        |
++	|  Core  |--->| Access |----->| Cache  |<-->|           |    |        |
+ 	|        |    | Queue  |  :   |        |    |           |--->| Memory |
+-	|        |    |        |  :   |        |    |           |    |	      |
+-	+--------+    +--------+  :   +--------+    |           |    | 	      |
++	|        |    |        |  :   |        |    |           |    |        |
++	+--------+    +--------+  :   +--------+    |           |    |        |
+ 	                          :                 | Cache     |    +--------+
+ 	                          :                 | Coherency |
+ 	                          :                 | Mechanism |    +--------+
+ 	+--------+    +--------+  :   +--------+    |           |    |	      |
+ 	|        |    |        |  :   |        |    |           |    |        |
+ 	|  CPU   |    | Memory |  :   | CPU    |    |           |--->| Device |
+-	|  Core  |--->| Access |----->| Cache  |<-->|           |    | 	      |
+-	|        |    | Queue  |  :   |        |    |           |    | 	      |
++	|  Core  |--->| Access |----->| Cache  |<-->|           |    |        |
++	|        |    | Queue  |  :   |        |    |           |    |        |
+ 	|        |    |        |  :   |        |    |           |    +--------+
+ 	+--------+    +--------+  :   +--------+    +-----------+
+ 	                          :
+@@ -2090,7 +2090,7 @@ CPU's caches by some other cache event:
+ 	p = &v;		q = p;
+ 			<D:request p>
+ 	<B:modify p=&v>	<D:commit p=&v>
+-		  	<D:read p>
++			<D:read p>
+ 			x = *q;
+ 			<C:read *q>	Reads from v before v updated in cache
+ 			<C:unbusy>
+@@ -2115,7 +2115,7 @@ queue before processing any further requests:
+ 	p = &v;		q = p;
+ 			<D:request p>
+ 	<B:modify p=&v>	<D:commit p=&v>
+-		  	<D:read p>
++			<D:read p>
+ 			smp_read_barrier_depends()
+ 			<C:unbusy>
+ 			<C:commit v=2>
