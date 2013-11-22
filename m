@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3KVKga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 05:36:30 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58167 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab3KVKg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 05:36:26 -0500
-Date: Fri, 22 Nov 2013 10:35:33 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20131122103533.GI14725@sirena.org.uk>
-References: <1385109972-28059-1-git-send-email-k.kozlowski@samsung.com>
- <1385109972-28059-3-git-send-email-k.kozlowski@samsung.com>
+	id S1755573Ab3KVKgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 05:36:51 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:43476 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754566Ab3KVKgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 05:36:48 -0500
+Date: Fri, 22 Nov 2013 10:36:34 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Thomas Meyer <thomas@m3y3r.de>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [i915] BUG: Bad page state in process Xorg
+In-Reply-To: <1384980928.3312.6.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1311221036020.16356@skynet.skynet.ie>
+References: <1384980928.3312.6.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="boAH8PqvUi1v1f55"
-Content-Disposition: inline
-In-Reply-To: <1385109972-28059-3-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 2/5] extcon: max14577: Add extcon-max14577 driver to
- support MUIC device
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Hi,
 
---boAH8PqvUi1v1f55
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+cc'ing mailing list,
 
-On Fri, Nov 22, 2013 at 09:46:09AM +0100, Krzysztof Kozlowski wrote:
+Daniel any ideas?
 
-> +#define	DELAY_MS_DEFAULT		17000		/* unit: millisecond */
+Dave.
 
-This delay is sufficiently large that the delayed work using it probably
-ought to use the power efficient workqueues instead of just a regular
-schedule_delayed_work().  This will mean that instead of being scheduled
-on the core which scheduled it the work can run on any CPU, avoiding the
-need to power up a currently idle CPU just to run the work.
-
---boAH8PqvUi1v1f55
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSjzNyAAoJELSic+t+oim9w/IP+wQa4UdcAp36KDye/BZezVYK
-XFHXJ5cQaJv0GPNRmrfH9nTAPblin2kE1gtF+zc+YEy8jqeDVWMVozdPzmxlASZh
-c7HqvprBnJuCy7Z1iOXwsTxlLXZwu/X1sEggdYbPgDCbMWy+BlDrldkKs2e9JAtl
-CR63fh1R4OZoWUKsxmNg+1kaGps7mV5nqGyBo6pUUiqCT/xmsFvm/Qg1Mx4+9qRx
-T6drwdc1IIdP4F4rcpne9X9miKLVx9T6OvAg+uAoZ97PFhz2S67sotOPLXuaGXj1
-repiEVjjYBmSyCNHtaFaDHga5IFam7KOKLmgMzVrCkcE9LTWPAI4gsOGvGemz3S0
-jFnGPOlO/rH4+4+Jgwb0ViAc54WTVBNc4JNXui5stl6yjrj54e7xfbsX6N39vS8Y
-IsQ8w/kCuGrHRsh21JezgA/MXmq0P7P6NO2/PR7aKKbRtU6kMA8tSh8Atl98mExI
-jO6cnmFvkbyPRSe5H2qXe8+/oZKQjmF5FBW1O/pevVeGqvu1/TS/1BoU+rQ1iCpe
-f7CyjL2yexvFnBwx5P0Hj7nFKd2B8q6aElR6S/uY5J/YbBWSWDQKw989hD3dyAQJ
-ivlir8tKW4QBqoKrJmCcCxkn0YATrtQvOTHS5UGecfbik3/BA6SFMnH+MYmKHH7U
-Qom+IQ3+b/EcpglcFMwy
-=vYTX
------END PGP SIGNATURE-----
-
---boAH8PqvUi1v1f55--
+> I reported this bug a few days ago, but nobody did respond to my bug
+> report:
+> http://lkml.indiana.edu/hypermail/linux/kernel/1311.2/00058.html
+> 
+> Every time I restart the X server I will run into this bug with 3.12.0.
+> 
+> Help is welcome.
+> 
+> [ 9913.719551] BUG: Bad page state in process Xorg  pfn:20f2bb
+> [ 9913.721755] page:ffffea00083caec0 count:0 mapcount:0 mapping:ffff8802357975f8 index:0xe
+> [ 9913.733741] page flags: 0x800000000008001c(referenced|uptodate|dirty|swapbacked)
+> [ 9913.741062] Modules linked in: tcp_lp fuse ipt_MASQUERADE ip6t_REJECT xt_conntrack bluetooth ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw arc4 iwldvm snd_usb_audio mac80211 snd_hda_codec_hdmi iwlwifi snd_hda_codec_realtek snd_usbmidi_lib snd_hda_intel kvm_intel asix snd_hda_codec usbnet kvm atl1c snd_hwdep mii snd_seq acer_wmi acerhdf sparse_keymap snd_pcm joydev pcspkr cfg80211 rfkill acpi_cpufreq freq_table snd_rawmidi snd_seq_device snd_page_alloc snd_timer snd wmi soundcore uinput ipv6 xts gf128mul udl syscopyarea sysfillrect sysimgblt drm_usb usb_storage
+> [ 9913.741125] CPU: 0 PID: 723 Comm: Xorg Tainted: G    B        3.12.0 #2
+> [ 9913.741128] Hardware name: Acer Aspire 1810T/JM11-MS, BIOS v1.3310 03/25/2010
+> [ 9913.741130]  0000000000000000 ffff880213127cc0 ffffffff8154dc8b ffff880213127cd8
+> [ 9913.741135]  ffffffff8154b6e7 ffffea00083caec0 ffff880213127d10 ffffffff810c6955
+> [ 9913.741139]  ffffea00083caec0 800000000008001c 0000000000000000 ffff880234080000
+> [ 9913.741143] Call Trace:
+> [ 9913.741151]  [<ffffffff8154dc8b>] dump_stack+0x19/0x1b
+> [ 9913.741155]  [<ffffffff8154b6e7>] bad_page+0xc9/0xe2
+> [ 9913.741160]  [<ffffffff810c6955>] free_pages_prepare+0xd5/0xe0
+> [ 9913.741165]  [<ffffffff810c725d>] free_hot_cold_page+0x1d/0x120
+> [ 9913.741169]  [<ffffffff810cbe9e>] __put_single_page+0x1e/0x30
+> [ 9913.741172]  [<ffffffff810cc045>] put_page+0x25/0x40
+> [ 9913.741178]  [<ffffffff81346a73>] i915_gem_object_put_pages_gtt+0xc3/0x1a0
+> [ 9913.741183]  [<ffffffff81348378>] i915_gem_object_put_pages+0x78/0xd0
+> [ 9913.741187]  [<ffffffff8134a167>] i915_gem_free_object+0xe7/0x220
+> [ 9913.741192]  [<ffffffff81318a75>] drm_gem_object_free+0x25/0x30
+> [ 9913.741196]  [<ffffffff8132e5db>] drm_gem_dmabuf_release+0x4b/0x70
+> [ 9913.741201]  [<ffffffff813ae0b7>] dma_buf_release+0x27/0x90
+> [ 9913.741205]  [<ffffffff8110deab>] __fput+0xcb/0x240
+> [ 9913.741209]  [<ffffffff8110e059>] ____fput+0x9/0x10
+> [ 9913.741214]  [<ffffffff81052b5c>] task_work_run+0x9c/0xc0
+> [ 9913.741219]  [<ffffffff8103a365>] do_exit+0x6d5/0x9d0
+> [ 9913.741223]  [<ffffffff81551063>] ? __schedule+0x243/0x5e0
+> [ 9913.741227]  [<ffffffff81052b44>] ? task_work_run+0x84/0xc0
+> [ 9913.741232]  [<ffffffff8103b4d5>] do_group_exit+0x35/0x90
+> [ 9913.741236]  [<ffffffff8103b53f>] SyS_exit_group+0xf/0x10
+> [ 9913.741241]  [<ffffffff81558960>] system_call_fastpath+0x16/0x1b
+> [ 9913.741246] BUG: Bad page state in process Xorg  pfn:20f2bc
+> [ 9913.749565] page:ffffea00083caf00 count:0 mapcount:0 mapping:ffff8802357975f8 index:0xf
+> 
+> with kind regards
+> thomas
+> 
+> 
+> 
+> 
