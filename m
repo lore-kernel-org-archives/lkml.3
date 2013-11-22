@@ -1,172 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab3KVN5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:57:18 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59169 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab3KVN5R (ORCPT
+	id S1755690Ab3KVN7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:59:35 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44763 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab3KVN7e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:57:17 -0500
-Date: Fri, 22 Nov 2013 05:57:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] Documentation/memory-barriers.txt:  Fix a
- typo in the data dependency description
-Message-ID: <20131122135710.GQ4138@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <tip-e0edc78f25c020dea66742c05a7fbcb2ff3df629@git.kernel.org>
+	Fri, 22 Nov 2013 08:59:34 -0500
+Date: Fri, 22 Nov 2013 14:59:31 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] rtmutex: take the waiter lock with irqs off
+Message-ID: <20131122135931.GA8698@linutronix.de>
+References: <1383794799.5441.16.camel@marge.simpson.net>
+ <1383798668.5441.25.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+ <20131107125923.GB24644@localhost.localdomain>
+ <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de>
+ <1384243595.15180.63.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311121024590.30673@ionos.tec.linutronix.de>
+ <20131115163008.GB12164@linutronix.de>
+ <20131115201436.GC12164@linutronix.de>
+ <20131118141021.GA10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <tip-e0edc78f25c020dea66742c05a7fbcb2ff3df629@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112213-9332-0000-0000-000002438997
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131118141021.GA10022@twins.programming.kicks-ass.net>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 04:31:17AM -0800, tip-bot for Ingo Molnar wrote:
-> Commit-ID:  e0edc78f25c020dea66742c05a7fbcb2ff3df629
-> Gitweb:     http://git.kernel.org/tip/e0edc78f25c020dea66742c05a7fbcb2ff3df629
-> Author:     Ingo Molnar <mingo@kernel.org>
-> AuthorDate: Fri, 22 Nov 2013 11:24:53 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Fri, 22 Nov 2013 11:46:12 +0100
-> 
-> Documentation/memory-barriers.txt: Fix a typo in the data dependency description
-> 
-> This typo has been there forever, it is 7.5 years old, looks like this
-> section of our memory ordering documentation is a place where most eyes
-> are glazed over already ;-)
-> 
-> [ Also fix some stray spaces and stray tabs while at it, shrinking the
->   file by 49 bytes. Visual output unchanged. ]
-> 
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Link: http://lkml.kernel.org/n/tip-gncea9cb8igosblizfqMXrie@git.kernel.org
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  Documentation/memory-barriers.txt | 42 +++++++++++++++++++--------------------
->  1 file changed, 21 insertions(+), 21 deletions(-)
-> 
-> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> index c8c42e6..020cccd 100644
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -500,7 +500,7 @@ odd-numbered bank is idle, one can see the new value of the pointer P (&B),
->  but the old value of the variable B (2).
-> 
-> 
-> -Another example of where data dependency barriers might by required is where a
-> +Another example of where data dependency barriers might be required is where a
+* Peter Zijlstra | 2013-11-18 15:10:21 [+0100]:
 
-Heh!  It took me no fewer than three reads to spot it even in the diff!  ;-)
+>Its get_next_timer_interrupt() that does a trylock() and only for
+>PREEMPT_RT_FULL.
+>
+>Also; on IRC you said:
+>
+>  "<bigeasy> I'm currently not sure if we should do
+>the _irq() lock or a trylock for the wait_lock in
+>rt_mutex_slowtrylock()"
+>
+>Which I misread and dismissed -- but yes that might actually work too
+>and would be a much smaller patch. You'd only need trylock and unlock.
 
-							Thanx, Paul
+Yes and the patch is at the end of the mail. I also added your "lockdep:
+Correctly annotate hardirq context in irq_exit()" to the -RT queue and
+saw the splat. After the trylock replacement I needed something similar
+for the unlock path _or_ lockdep would complain. So unless there is a
+better way…
 
->  number is read from memory and then used to calculate the index for an array
->  access:
-> 
-> @@ -882,12 +882,12 @@ cache it for later use.
-> 
->  Consider:
-> 
-> -	CPU 1	   		CPU 2
-> +	CPU 1			CPU 2
->  	=======================	=======================
-> -	 	   		LOAD B
-> -	 	   		DIVIDE		} Divide instructions generally
-> -	 	   		DIVIDE		} take a long time to perform
-> -	 	   		LOAD A
-> +				LOAD B
-> +				DIVIDE		} Divide instructions generally
-> +				DIVIDE		} take a long time to perform
-> +				LOAD A
-> 
->  Which might appear as this:
-> 
-> @@ -910,13 +910,13 @@ Which might appear as this:
->  Placing a read barrier or a data dependency barrier just before the second
->  load:
-> 
-> -	CPU 1	   		CPU 2
-> +	CPU 1			CPU 2
->  	=======================	=======================
-> -	 	   		LOAD B
-> -	 	   		DIVIDE
-> -	 	   		DIVIDE
-> +				LOAD B
-> +				DIVIDE
-> +				DIVIDE
->  				<read barrier>
-> -	 	   		LOAD A
-> +				LOAD A
-> 
->  will force any value speculatively obtained to be reconsidered to an extent
->  dependent on the type of barrier used.  If there was no change made to the
-> @@ -1887,8 +1887,8 @@ functions:
->       space should suffice for PCI.
-> 
->       [*] NOTE! attempting to load from the same location as was written to may
-> -     	 cause a malfunction - consider the 16550 Rx/Tx serial registers for
-> -     	 example.
-> +	 cause a malfunction - consider the 16550 Rx/Tx serial registers for
-> +	 example.
-> 
->       Used with prefetchable I/O memory, an mmiowb() barrier may be required to
->       force stores to be ordered.
-> @@ -1955,19 +1955,19 @@ barriers for the most part act at the interface between the CPU and its cache
->  	                          :
->  	+--------+    +--------+  :   +--------+    +-----------+
->  	|        |    |        |  :   |        |    |           |    +--------+
-> -	|  CPU   |    | Memory |  :   | CPU    |    |           |    |	      |
-> -	|  Core  |--->| Access |----->| Cache  |<-->|           |    |	      |
-> +	|  CPU   |    | Memory |  :   | CPU    |    |           |    |        |
-> +	|  Core  |--->| Access |----->| Cache  |<-->|           |    |        |
->  	|        |    | Queue  |  :   |        |    |           |--->| Memory |
-> -	|        |    |        |  :   |        |    |           |    |	      |
-> -	+--------+    +--------+  :   +--------+    |           |    | 	      |
-> +	|        |    |        |  :   |        |    |           |    |        |
-> +	+--------+    +--------+  :   +--------+    |           |    |        |
->  	                          :                 | Cache     |    +--------+
->  	                          :                 | Coherency |
->  	                          :                 | Mechanism |    +--------+
->  	+--------+    +--------+  :   +--------+    |           |    |	      |
->  	|        |    |        |  :   |        |    |           |    |        |
->  	|  CPU   |    | Memory |  :   | CPU    |    |           |--->| Device |
-> -	|  Core  |--->| Access |----->| Cache  |<-->|           |    | 	      |
-> -	|        |    | Queue  |  :   |        |    |           |    | 	      |
-> +	|  Core  |--->| Access |----->| Cache  |<-->|           |    |        |
-> +	|        |    | Queue  |  :   |        |    |           |    |        |
->  	|        |    |        |  :   |        |    |           |    +--------+
->  	+--------+    +--------+  :   +--------+    +-----------+
->  	                          :
-> @@ -2090,7 +2090,7 @@ CPU's caches by some other cache event:
->  	p = &v;		q = p;
->  			<D:request p>
->  	<B:modify p=&v>	<D:commit p=&v>
-> -		  	<D:read p>
-> +			<D:read p>
->  			x = *q;
->  			<C:read *q>	Reads from v before v updated in cache
->  			<C:unbusy>
-> @@ -2115,7 +2115,7 @@ queue before processing any further requests:
->  	p = &v;		q = p;
->  			<D:request p>
->  	<B:modify p=&v>	<D:commit p=&v>
-> -		  	<D:read p>
-> +			<D:read p>
->  			smp_read_barrier_depends()
->  			<C:unbusy>
->  			<C:commit v=2>
-> 
+>That said, allowing such usage from actual IRQ context is iffy; suppose
+>the trylock succeeds, who then is the lock owner?
+>
+>I suppose it would be whatever task we interrupted and boosting will
+>'work' because we're non-preemptable, but still *YUCK*.
 
+You are right, this ain't pretty. I hope this timer mess can be replaced
+with something else so the whole trylock thingy can be removed.
+
+Sebastian
+
+--- a/include/linux/spinlock_rt.h
++++ b/include/linux/spinlock_rt.h
+@@ -22,6 +22,7 @@ extern void __lockfunc rt_spin_lock(spin
+ extern unsigned long __lockfunc rt_spin_lock_trace_flags(spinlock_t *lock);
+ extern void __lockfunc rt_spin_lock_nested(spinlock_t *lock, int subclass);
+ extern void __lockfunc rt_spin_unlock(spinlock_t *lock);
++extern void __lockfunc rt_spin_try_unlock(spinlock_t *lock);
+ extern void __lockfunc rt_spin_unlock_wait(spinlock_t *lock);
+ extern int __lockfunc rt_spin_trylock_irqsave(spinlock_t *lock, unsigned long *flags);
+ extern int __lockfunc rt_spin_trylock_bh(spinlock_t *lock);
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -816,10 +816,8 @@ static void  noinline __sched rt_spin_lo
+ /*
+  * Slow path to release a rt_mutex spin_lock style
+  */
+-static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
++static void __sched __rt_spin_lock_slowunlock(struct rt_mutex *lock)
+ {
+-	raw_spin_lock(&lock->wait_lock);
+-
+ 	debug_rt_mutex_unlock(lock);
+ 
+ 	rt_mutex_deadlock_account_unlock(current);
+@@ -838,6 +836,21 @@ static void  noinline __sched rt_spin_lo
+ 	rt_mutex_adjust_prio(current);
+ }
+ 
++static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
++{
++	raw_spin_lock(&lock->wait_lock);
++	__rt_spin_lock_slowunlock(lock);
++}
++
++static void  noinline __sched rt_spin_lock_try_slowunlock(struct rt_mutex *lock)
++{
++	int ret;
++
++	ret = raw_spin_trylock(&lock->wait_lock);
++	BUG_ON(!ret);
++	__rt_spin_lock_slowunlock(lock);
++}
++
+ void __lockfunc rt_spin_lock(spinlock_t *lock)
+ {
+ 	rt_spin_lock_fastlock(&lock->lock, rt_spin_lock_slowlock);
+@@ -868,6 +881,13 @@ void __lockfunc rt_spin_unlock(spinlock_
+ }
+ EXPORT_SYMBOL(rt_spin_unlock);
+ 
++void __lockfunc rt_spin_try_unlock(spinlock_t *lock)
++{
++	/* NOTE: we always pass in '1' for nested, for simplicity */
++	spin_release(&lock->dep_map, 1, _RET_IP_);
++	rt_spin_lock_fastunlock(&lock->lock, rt_spin_lock_try_slowunlock);
++}
++
+ void __lockfunc __rt_spin_unlock(struct rt_mutex *lock)
+ {
+ 	rt_spin_lock_fastunlock(lock, rt_spin_lock_slowunlock);
+@@ -1191,7 +1211,8 @@ rt_mutex_slowtrylock(struct rt_mutex *lo
+ {
+ 	int ret = 0;
+ 
+-	raw_spin_lock(&lock->wait_lock);
++	if (!raw_spin_trylock(&lock->wait_lock))
++		return ret;
+ 	init_lists(lock);
+ 
+ 	if (likely(rt_mutex_owner(lock) != current)) {
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1400,7 +1400,7 @@ unsigned long get_next_timer_interrupt(u
+ 		expires = base->next_timer;
+ 	}
+ #ifdef CONFIG_PREEMPT_RT_FULL
+-	rt_spin_unlock(&base->lock);
++	rt_spin_try_unlock(&base->lock);
+ #else
+ 	spin_unlock(&base->lock);
+ #endif
