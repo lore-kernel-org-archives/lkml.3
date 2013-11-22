@@ -1,100 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3KVRxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:53:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755955Ab3KVRxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:53:38 -0500
-Date: Fri, 22 Nov 2013 18:54:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Sameer Nanda <snanda@chromium.org>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] kill task_struct->did_exec
-Message-ID: <20131122175447.GA31463@redhat.com>
+	id S1756036Ab3KVRx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:53:56 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:50627 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab3KVRxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:53:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122175424.GA31432@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Fri, 22 Nov 2013 09:53:52 -0800
+Message-ID: <CAJusiZXq0CPHNvNCKCRp=XZ8UO9gFKVsU3cTEON5BCHDxrqFZQ@mail.gmail.com>
+Subject: disappearing listen()ed SO_REUSEPORT sockets across fork() when using epoll
+From: Shawn Landden <shawnlandden@gmail.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tom Herbert <therbert@google.com>
+Content-Type: multipart/mixed; boundary=047d7bdc131e84689904ebc7b226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can kill either task->did_exec or PF_FORKNOEXEC, they are
-mutually exclusive. The patch kill ->did_exec because it has
-a single user.
+--047d7bdc131e84689904ebc7b226
+Content-Type: text/plain; charset=ISO-8859-1
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/exec.c             |    1 -
- include/linux/sched.h |    1 -
- kernel/fork.c         |    1 -
- kernel/sys.c          |    5 ++---
- 4 files changed, 2 insertions(+), 6 deletions(-)
+Hello, when running the attached program on 3.12 child processes
+are missing a socket fd opened, set with SO_REUSEPORT, listen()ed to,
+and added to epoll_ctl().
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 9944bbf..380640f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1432,7 +1432,6 @@ static int exec_binprm(struct linux_binprm *bprm)
- 	if (ret >= 0) {
- 		trace_sched_process_exec(current, old_pid, bprm);
- 		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
--		current->did_exec = 1;
- 		proc_exec_connector(current);
- 	}
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 34c1903..4f1958e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1114,7 +1114,6 @@ struct task_struct {
- 	/* Used for emulating ABI behavior of previous Linux versions */
- 	unsigned int personality;
- 
--	unsigned did_exec:1;
- 	unsigned in_execve:1;	/* Tell the LSMs that the process is doing an
- 				 * execve */
- 	unsigned in_iowait:1;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 2cb6024..7dbf504 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1224,7 +1224,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	if (!try_module_get(task_thread_info(p)->exec_domain->module))
- 		goto bad_fork_cleanup_count;
- 
--	p->did_exec = 0;
- 	delayacct_tsk_init(p);	/* Must remain after dup_task_struct() */
- 	copy_flags(clone_flags, p);
- 	INIT_LIST_HEAD(&p->children);
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c18ecca..1d9a218 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -896,8 +896,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
-  * only important on a multi-user system anyway, to make sure one user
-  * can't send a signal to a process owned by another.  -TYT, 12/12/91
-  *
-- * Auch. Had to add the 'did_exec' flag to conform completely to POSIX.
-- * LBT 04.03.94
-+ * !PF_FORKNOEXEC check to conform completely to POSIX. LBT 04.03.94.
-  */
- SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
- {
-@@ -933,7 +932,7 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
- 		if (task_session(p) != task_session(group_leader))
- 			goto out;
- 		err = -EACCES;
--		if (p->did_exec)
-+		if (!(p->flags & PF_FORKNOEXEC))
- 			goto out;
- 	} else {
- 		err = -ESRCH;
+This is the output I get when pointing "wget http://localhost:5555/"
+at the attached program:
+
+main PID 31591
+PID 31634 started
+PID 31634 accept()ed connection
+PID 31635 started
+PID 31636 started
+PID 31635 accept() failed: Bad file descriptor
+PID 31636 accept() failed: Bad file descriptor
+PID 31634 accept()ed connection
+PID 31634 accept()ed connection
+PID 31634 accept()ed connection
+PID 31634 accept()ed connection
+
+
+While I would expect something like:
+
+main PID 31591
+PID 31634 started
+PID 31634 accept()ed connection
+PID 31635 started
+PID 31636 started
+PID 31635 accept()ed connection
+PID 31636 accept()ed connection
+
+-more new processes, but inversely proportional to number of listening processes
+-accept() always returns successfully
+
+
 -- 
-1.5.5.1
 
+---
+Shawn Landden
++1 360 389 3001 (SMS preferred)
+
+--047d7bdc131e84689904ebc7b226
+Content-Type: text/x-csrc; charset=US-ASCII; name="epoll_test.c"
+Content-Disposition: attachment; filename="epoll_test.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hobpzyx80
+
+I2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4gCiNpbmNsdWRlIDxzeXMv
+c29ja2V0Lmg+CiNpbmNsdWRlIDxuZXRpbmV0L2luLmg+CiNpbmNsdWRlIDxzdGRsaWIuaD4KI2lu
+Y2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSA8c3lzL2Vwb2xsLmg+CgppbnQgbWFpbiggaW50IGFy
+Z2MsIGNoYXIgKmFyZ3ZbXSkgewogICAgICAgIGludCBzb2NrZmQsIGVwb2xsZmQsIGFjY2VwdGZk
+LCBwb3J0bm87CiAgICAgICAgc3RydWN0IGVwb2xsX2V2ZW50IGV2ZW50ID0ge0VQT0xMSU4sIE5V
+TEx9LCBnb3RldmVudDsKICAgICAgICBjaGFyIGJ1ZmZlclsyNTZdOwogICAgICAgIHN0cnVjdCBz
+b2NrYWRkcl9pbiBzZXJ2X2FkZHI7CiAgICAgICAgaW50ICBuOwogICAgICAgIHBpZF90IHBpZDsK
+CiAgICAgICAgcHJpbnRmKCJtYWluIFBJRCAlZFxuIiwgZ2V0cGlkKCkpOwoKICAgICAgICBtZW1z
+ZXQoKGNoYXIgKikgJnNlcnZfYWRkciwgMCwgc2l6ZW9mKHNlcnZfYWRkcikpOwogICAgICAgIHBv
+cnRubyA9IDU1NTU7CiAgICAgICAgc2Vydl9hZGRyLnNpbl9mYW1pbHkgPSBBRl9JTkVUOwogICAg
+ICAgIHNlcnZfYWRkci5zaW5fYWRkci5zX2FkZHIgPSBJTkFERFJfQU5ZOwogICAgICAgIHNlcnZf
+YWRkci5zaW5fcG9ydCA9IGh0b25zKHBvcnRubyk7CiAKICAgICAgICBpZiAoKHNvY2tmZCA9IHNv
+Y2tldChBRl9JTkVULCBTT0NLX1NUUkVBTSwgMCkpIDwgMCkgCgkJcmV0dXJuIHByaW50Zigic29j
+a2V0KCkgZmFpbGVkOiAlbVxuIik7CgogICAgICAgIGludCBvcHR2YWwgPSAxOwogICAgICAgIGlm
+ICgoc2V0c29ja29wdChzb2NrZmQsIFNPTF9TT0NLRVQsIFNPX1JFVVNFUE9SVCwgJm9wdHZhbCwg
+c2l6ZW9mKG9wdHZhbCkpKSA8IDApCiAgICAgICAgICAgICAgICByZXR1cm4gcHJpbnRmKCJzZXRz
+b2Nrb3B0KCkgZmFpbGVkOiAlbSIpOwoKICAgICAgICBpZiAoYmluZChzb2NrZmQsIChzdHJ1Y3Qg
+c29ja2FkZHIgKikgJnNlcnZfYWRkciwKICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplb2Yo
+c2Vydl9hZGRyKSkgPCAwKQoJCXJldHVybiBwcmludGYoImJpbmQoKSBmYWlsZWQ6ICVtXG4iKTsK
+CiAgICAgICAgaWYgKGxpc3Rlbihzb2NrZmQsIFNPTUFYQ09OTikgPCAwKQoJCXJldHVybiBwcmlu
+dGYoImxpc3RlbigpIGZhaWxlZDogJW1cbiIpOwoJCQoJaWYgKChlcG9sbGZkID0gZXBvbGxfY3Jl
+YXRlMSgwKSkgPCAwKQoJICAgICAgICByZXR1cm4gcHJpbnRmKCJlcG9sbF9jcmVhdGUxKCkgZmFp
+bGVkOiAlbVxuIik7CiAgICAgICAgCiAgICAgICAgaWYgKGVwb2xsX2N0bChlcG9sbGZkLCAgRVBP
+TExfQ1RMX0FERCwgc29ja2ZkLCAmZXZlbnQpIDwgMCkKICAgICAgICAgICAgICAgIHJldHVybiBw
+cmludGYoImVwb2xsX2N0bCgpIGZhaWxlZDogJW1cbiIpOwogICAgICAgIAogICAgICAgIHdoaWxl
+ICgxKSB7CiAgICAgICAgICAgICAgICBpZiAoZXBvbGxfd2FpdChlcG9sbGZkLCAmZ290ZXZlbnQs
+IDEsIC0xKSAhPSAxKQogICAgICAgICAgICAgICAgICAgICAgICByZXR1cm4gcHJpbnRmKCJlcG9s
+bF93YWl0KCkgZmFpbGVkOiAlbVxuIik7CgogICAgICAgICAgICAgICAgcGlkID0gZm9yaygpOwog
+ICAgICAgICAgICAgICAgaWYgKHBpZCA9PSAwKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHBy
+aW50ZigiUElEICVkIHN0YXJ0ZWRcbiIsIGdldHBpZCgpKTsKICAgICAgICAgICAgICAgICAgICAg
+ICAgd2hpbGUoMSkgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cnVjdCBzb2Nr
+YWRkcl9pbiBjbGlfYWRkcjsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzb2NrbGVu
+X3QgY2xpX3NpemUgPSBzaXplb2YgY2xpX2FkZHI7CgogICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIGlmICgoYWNjZXB0ZmQgPSBhY2NlcHQoc29ja2ZkLCAoc3RydWN0IHNvY2thZGRyICop
+JmNsaV9hZGRyLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAmY2xpX3NpemUpKSA8IDApIHsKCSAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgcHJpbnRmKCJQSUQgJWQgYWNjZXB0KCkgZmFpbGVkOiAlbVxuIiwgZ2V0cGlkKCkpOwoJ
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzbGVlcCg2MCk7CgkgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgIHJldHVybiAxOwogICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIH0KCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcHJpbnRmKCJQSUQgJWQgYWNj
+ZXB0KCllZCBjb25uZWN0aW9uXG4iLCBnZXRwaWQoKSk7CgogICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgIGlmIChjbG9zZShhY2NlcHRmZCkgPCAwKQogICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgcmV0dXJuIHByaW50ZigiY2xvc2UoKSBmYWlsZWQ6ICVtXG4iKTsK
+ICAgICAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAg
+ICAgY2xvc2Uoc29ja2ZkKTsKICAgICAgICB9Cn0K
+--047d7bdc131e84689904ebc7b226--
