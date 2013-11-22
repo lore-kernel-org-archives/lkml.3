@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab3KVRsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:48:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65166 "EHLO mx1.redhat.com"
+	id S1755692Ab3KVRxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:53:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21502 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755877Ab3KVRsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:48:52 -0500
-Date: Fri, 22 Nov 2013 12:01:06 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, dave.hansen@intel.com
-Subject: [PATCH] mmzone.h: constify some zone access functions
-Message-ID: <20131122120106.4c372847@redhat.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753339Ab3KVRxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:53:13 -0500
+Date: Fri, 22 Nov 2013 18:54:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Sameer Nanda <snanda@chromium.org>,
+        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] in_exec/etc cleanups
+Message-ID: <20131122175424.GA31432@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Luiz capitulino <lcapitulino@redhat.com>
----
- include/linux/mmzone.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Hello.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index bd791e4..5e202d6 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -560,12 +560,12 @@ static inline bool zone_spans_pfn(const struct zone *zone, unsigned long pfn)
- 	return zone->zone_start_pfn <= pfn && pfn < zone_end_pfn(zone);
- }
- 
--static inline bool zone_is_initialized(struct zone *zone)
-+static inline bool zone_is_initialized(const struct zone *zone)
- {
- 	return !!zone->wait_table;
- }
- 
--static inline bool zone_is_empty(struct zone *zone)
-+static inline bool zone_is_empty(const struct zone *zone)
- {
- 	return zone->spanned_pages == 0;
- }
-@@ -843,7 +843,7 @@ unsigned long __init node_memmap_size_bytes(int, unsigned long, unsigned long);
-  */
- #define zone_idx(zone)		((zone) - (zone)->zone_pgdat->node_zones)
- 
--static inline int populated_zone(struct zone *zone)
-+static inline int populated_zone(const struct zone *zone)
- {
- 	return (!!zone->present_pages);
- }
--- 
-1.8.3.1
+Initially I was going to make a single patch (1/4) as a preparation
+for the next changes, but imho this code needs cleanups. The patches
+do not depend on each other, they can be applied individually.
+
+Oleg.
+
+ fs/exec.c             |   53 +++++++++++++-----------------------------------
+ include/linux/sched.h |    1 -
+ kernel/fork.c         |    1 -
+ kernel/sys.c          |    5 +--
+ 4 files changed, 17 insertions(+), 43 deletions(-)
 
