@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab3KVVTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:19:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51901 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755338Ab3KVVTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:19:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,753,1378882800"; 
-   d="scan'208";a="438268480"
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: enable DMA CMA with swiotlb
-References: <1384903939-3371-1-git-send-email-akinobu.mita@gmail.com>
-	<528D4A1A.2050100@zytor.com>
-	<CAC5umyh0Hfx3NgHX11eqskuifhrdYGB8L1nx1u0YUdBGchRTxw@mail.gmail.com>
-	<528E4CBA.8000808@zytor.com>
-	<CAC5umygUgSjUMFECDXAjmSPzpfUZ6=jRhZWhd5hTT2-eO6Oh6Q@mail.gmail.com>
-	<528F71F8.4070902@zytor.com>
-Date: Fri, 22 Nov 2013 13:19:04 -0800
-In-Reply-To: <528F71F8.4070902@zytor.com> (H. Peter Anvin's message of "Fri,
-	22 Nov 2013 07:02:16 -0800")
-Message-ID: <87fvqow2wn.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756221Ab3KVVT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:19:27 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58207 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab3KVVT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 16:19:26 -0500
+From: Francis Giraldeau <francis.giraldeau@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Francis Giraldeau <francis.giraldeau@gmail.com>
+Subject: [PATCH] Prevent infinite loop if unwind fails
+Date: Fri, 22 Nov 2013 16:19:16 -0500
+Message-Id: <1385155156-26573-1-git-send-email-francis.giraldeau@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
->
-> If you have a real iotlb, why would you need contiguous memory?
+Unwind may loop forever if sample is incomplete or bogus. Bound the number of
+unw_step() that yield the same IP to prevent infinite loop.
 
-iotlb is often slow.
+Signed-off-by: Francis Giraldeau <francis.giraldeau@gmail.com>
+---
+ tools/perf/util/unwind.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Another use case is allocating 1GB pages at runtime.
-
--Andi
+diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
+index 958723b..bf45b6b 100644
+--- a/tools/perf/util/unwind.c
++++ b/tools/perf/util/unwind.c
+@@ -520,7 +520,8 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+ {
+ 	unw_addr_space_t addr_space;
+ 	unw_cursor_t c;
+-	int ret;
++	unw_word_t prev_ip = 0;
++	int ret, rec = 0;
+ 
+ 	addr_space = unw_create_addr_space(&accessors, 0);
+ 	if (!addr_space) {
+@@ -537,6 +538,11 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
+ 
+ 		unw_get_reg(&c, UNW_REG_IP, &ip);
+ 		ret = entry(ip, ui->thread, ui->machine, cb, arg);
++		if (prev_ip != ip)
++			rec = 0;
++		if (++rec >= 100)
++			break;
++		prev_ip = ip;
+ 	}
+ 
+ 	unw_destroy_addr_space(addr_space);
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.8.1.2
+
