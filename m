@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab3KVLdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:33:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43236 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab3KVLdK (ORCPT
+	id S1755494Ab3KVLeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:34:31 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:55493 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab3KVLe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:33:10 -0500
-Date: Fri, 22 Nov 2013 12:33:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Chris Leech <christopher.leech@intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3/7] idle, thermal, acpi: Remove home grown idle
- implementations
-Message-ID: <20131122113300.GM10022@twins.programming.kicks-ass.net>
-References: <20131120162736.508462614@infradead.org>
- <20131120165406.14fa0f09@ultegra>
- <20131121082151.GU10022@twins.programming.kicks-ass.net>
- <20131121160716.GT4138@linux.vnet.ibm.com>
- <528E32EF.2050300@linux.intel.com>
- <20131121191916.GZ4138@linux.vnet.ibm.com>
- <528E62D0.3010003@linux.intel.com>
- <20131121200717.GB4138@linux.vnet.ibm.com>
- <20131121161005.34150ab2@ultegra>
- <20131122042036.GL4138@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122042036.GL4138@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 22 Nov 2013 06:34:29 -0500
+X-AuditID: cbfec7f5-b7fe66d00000432e-c9-528f41438960
+Message-id: <1385120065.6030.0.camel@AMDC1943>
+Subject: Re: [PATCH v3 2/5] extcon: max14577: Add extcon-max14577 driver to
+ support MUIC device
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Date: Fri, 22 Nov 2013 12:34:25 +0100
+In-reply-to: <20131122103533.GI14725@sirena.org.uk>
+References: <1385109972-28059-1-git-send-email-k.kozlowski@samsung.com>
+ <1385109972-28059-3-git-send-email-k.kozlowski@samsung.com>
+ <20131122103533.GI14725@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t/xa7rOjv1BBi+a5S0ObtW02DhjPavF
+	1IdP2Cyuf3nOajH/yDlWi4krJzNbHPizg9Hi3KuVjBZnm96wW9z/epTR4tuVDiaLTY+vsVos
+	bFvCYnF51xw2i7VH7rJb3G5cwWYxYfpaFovDKw4wWax7OZ3F4nQ3q8Wrg20sDqIea+atYfRY
+	8PkKu8eE/k+MHjtn3WX3WLn8C5vH5hVaHptWdbJ5vFo9k9XjzrU9bB7zTgZ6bF5S79G3ZRWj
+	x+dNch4b54YG8EVx2aSk5mSWpRbp2yVwZZy8t4ypoJW1ounPA+YGxr/MXYycHBICJhKTNl9k
+	gbDFJC7cW8/WxcjFISSwlFHi78fZTBDOZ0aJh18fsYFU8QroSfQ/P88IYgsLJEpcfHEZbBKb
+	gLHE5uVLwGpEBJQlrn7fywLSzCzQyyYxY+NTdpAEi4CqxNGFh5hAbE6ghubLu9ghNqxjlGjc
+	dIwVJMEsoC4xad4iqPuUJHa3d7JDxOUlNq95ywxxhaDEj8n3WCYwCsxC0jILSdksJGULGJlX
+	MYqmliYXFCel5xrpFSfmFpfmpesl5+duYoRE8dcdjEuPWR1iFOBgVOLh3WHZFyTEmlhWXJl7
+	iFGCg1lJhLfdtj9IiDclsbIqtSg/vqg0J7X4ECMTB6dUA6ORssVDr2ABt6h/ty4UpcinNO7r
+	V750qW7X1rATu87FuZX13t71ce2fEOVjavn65SI++UGlW+9ELyoOm68lvkxU6cW6crsW43PP
+	HL/KOU550PFFMGBxeK2PnfzCeVp3lBtfxBVolTfeOlSk07ngttI6hc2nNkv3vz2w/PfeVzvF
+	k3XU3sT5/VBiKc5INNRiLipOBADHNRkQwAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 08:20:36PM -0800, Paul E. McKenney wrote:
-> The 6ms to 25ms range should be just fine as far as normal RCU grace
-> periods are concerned.  However, it does mean that expedited grace
-> periods could be delayed: They normally take a few tens of microseconds,
-> but if they were unlucky enough to show up during an idle injection,
-> they would be magnified by two to three orders of magnitude, which is
-> not pretty.
+On Fri, 2013-11-22 at 10:35 +0000, Mark Brown wrote:
+> On Fri, Nov 22, 2013 at 09:46:09AM +0100, Krzysztof Kozlowski wrote:
 > 
-> Hence my suggestion of hooking into RCU on idle-injection start and end
-> so that RCU considers that time period to be idle.  Just like it does
-> for user-mode execution on NO_HZ_FULL kernels, so I still don't see this
-> approach to be a problem.  I must confess that I still don't understand
-> what Arjan doesn't like about it.
+> > +#define	DELAY_MS_DEFAULT		17000		/* unit: millisecond */
+> 
+> This delay is sufficiently large that the delayed work using it probably
+> ought to use the power efficient workqueues instead of just a regular
+> schedule_delayed_work().  This will mean that instead of being scheduled
+> on the core which scheduled it the work can run on any CPU, avoiding the
+> need to power up a currently idle CPU just to run the work.
 
-Using these patches it would indeed use the RCU idle machinery as per
-the normal idle path.
+I'll fix this. Thanks for review of the patches.
 
-If you can I can add more WARN_ON()s in play_idle() to ensure we're not
-called while holding any RCU locks.
+Best regards,
+Krzysztof
+
+
