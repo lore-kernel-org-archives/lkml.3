@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3KVShH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:37:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477Ab3KVShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:37:04 -0500
-Date: Fri, 22 Nov 2013 19:38:54 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH RFC v2 11/29] PCI/MSI: Convert pci_msix_table_size() to a
- public interface
-Message-ID: <20131122183854.GF8401@dhcp-26-207.brq.redhat.com>
-References: <cover.1382103786.git.agordeev@redhat.com>
- <04a7098780907bd8848d4939b24a74e70e274866.1382103786.git.agordeev@redhat.com>
- <20131120162324.GK28946@htj.dyndns.org>
+	id S1755928Ab3KVSjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:39:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41698 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab3KVSjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 13:39:37 -0500
+Date: Fri, 22 Nov 2013 10:39:32 -0800
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] Minor eCryptfs fix for 3.13-rc1
+Message-ID: <20131122183931.GC27306@boyd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
 Content-Disposition: inline
-In-Reply-To: <20131120162324.GK28946@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 11:23:24AM -0500, Tejun Heo wrote:
-> On Fri, Oct 18, 2013 at 07:12:11PM +0200, Alexander Gordeev wrote:
-> > Make pci_msix_table_size() return error code if the device
-> > does not support MSI-X. This update is needed to create a
-> > consistent MSI-X counterpart for pci_get_msi_cap() MSI
-> > interface.
-> > 
-> > Device drivers can use this interface to obtain maximum number
-> > of MSI-X interrupts the device supports and i.e. use that number
-> > in a following call to pci_enable_msix() interface.
-> 
-> Please mention that the return value of the function has been changed
-> in the description.  Also, do we want to rename it to
-> pci_get_msix_cap() for consistency?
 
-I do not think so. The naming explicitly hints PCI registers and
-pci_get_msix_cap() is confusing at least. I would leave it as is.
+--B4IIlcmfBL/1gGOG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> 
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+Hi Linus,
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+The following changes since commit 42a2d923cc349583ebf6fdd52a7d35e1c2f7e6bd:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next (2013-11-13 17:40:34 +0900)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.13-rc1-quiet-checkers
+
+for you to fetch changes up to 2000f5beabc9c6baf084de5f7879975408e3652c:
+
+  eCryptfs: file->private_data is always valid (2013-11-14 12:12:15 -0800)
+
+----------------------------------------------------------------
+Quiet static checkers by removing unneeded conditionals
+
+----------------------------------------------------------------
+Tyler Hicks (1):
+      eCryptfs: file->private_data is always valid
+
+ fs/ecryptfs/file.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--B4IIlcmfBL/1gGOG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBCgAGBQJSj6TjAAoJENaSAD2qAscKA+EP/11hPj2BAcoJvJcyWTPX3Phk
+LtonSjsfVxhB1sU0Bd0tX7Zp/5vAI2NfK8gfMoq7vIzWeP3+Yyc8TgZzTLG+GhNf
+sK9ivlvPqKY72xhYMgBWgYpXVWLUFb2JngkLtqHlyZvG7QzjtEpkA1rniTyI6DTy
+J1gGSqblgilfeiMnbc8JrsGOD8BYlzFVLPqqsTpDayHQF38O6kK02gyg8sFjCRqW
+XtoQgRwuj42Gia6ltzAqigRs41dpR2mr18NhA13iiOfZ46JoqQcujY/P9RglAMiC
+/2WouBd+o59EUxm7TTY9EWif5AF3bObY81cIisLmnzdXWmRh9RspsqrC0wsbgAAM
+olKJ6uxMpgJrL2C1XnKSZEed37itWH5PxWhDl0FLhJhPy133SzTnYHYyodJmkOuO
+7GA+Llt8mC8jTpXRNN0q0x8oGbIviowY6/FyUcAcjTr87Shvmd3jJpucEaC5Ywm3
+74ELs1M77n2oSAvjoK+SMq7nyv+TeYYyS2UGoxh5VIamPjwWdky317TTaTEKtLnB
+azIJO6uCwXTvypSlUAizxasjXqS9WpGFQe/yY9zIFqBZke6fDHaDeUv3MdnPY2pa
+mWznhRqI9QMV1+xj+cTdbVpCnXtMrDWmIanRYnVJIwygQExfjG4XC4SidieR2pZG
+6M8g6yyOTgAP8MmNGSVi
+=ZXIk
+-----END PGP SIGNATURE-----
+
+--B4IIlcmfBL/1gGOG--
