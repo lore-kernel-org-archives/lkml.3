@@ -1,25 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab3KVMqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:46:44 -0500
-Received: from webmail.mrl.gob.ec ([190.152.249.215]:44823 "EHLO
-	webmail.mrl.gob.ec" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab3KVMqm (ORCPT
+	id S1755569Ab3KVMss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:48:48 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:53645 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3KVMsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:46:42 -0500
-X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Nov 2013 07:46:42 EST
-Date: Fri, 22 Nov 2013 07:39:36 -0500 (ECT)
-From: Miss Mary Dakota <abuse@mrl.gob.ec>
-Reply-To: "missmary_0021@yahoo.co.uk" <missmary_0021@yahoo.co.uk>
-Message-ID: <795233649.237.1385123976439.JavaMail.root@webmail.mrl.gob.ec>
-Subject: Can I completely trust you as a reliable person
+	Fri, 22 Nov 2013 07:48:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.200.6]
-X-Mailer: Zimbra 6.0.12_GA_2883 (ZimbraWebClient - FF3.0 (Win)/6.0.12_GA_2883)
-To: undisclosed-recipients:;
+In-Reply-To: <230872262.gyF1HmIKoj@vostro.rjw.lan>
+References: <cover.1385118255.git.viresh.kumar@linaro.org>
+	<e4bc55fac6bc68694e9905cc3cc6844173b64925.1385118256.git.viresh.kumar@linaro.org>
+	<230872262.gyF1HmIKoj@vostro.rjw.lan>
+Date: Fri, 22 Nov 2013 18:18:46 +0530
+Message-ID: <CAKohpomaRUBL8HP-LVyN-E9w_rb9c9StW4xaR+kormfjskw_CA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] cpufreq: suspend governors on system suspend/hibernate
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22 November 2013 18:03, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> The locking here is pointless.  It doesn't prevent any race conditions
+> from happening.
+
+All comments accepted..
