@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab3KVNhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:37:38 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:33354 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab3KVNhh (ORCPT
+	id S1755652Ab3KVNkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:40:40 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8586 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab3KVNki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:37:37 -0500
-Subject: Re: [PATCH 0/6] Generic WorkQueue Engine (GenWQE) device driver
- (v7)
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-In-Reply-To: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 22 Nov 2013 14:37:30 +0100
-Message-ID: <1385127450.14011.3.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112213-0542-0000-0000-000007269947
+	Fri, 22 Nov 2013 08:40:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 22 Nov 2013 05:34:33 -0800
+Date: Fri, 22 Nov 2013 15:40:35 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+Message-ID: <20131122134035.GD26617@tbergstrom-lnx.Nvidia.com>
+References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg and others,
+On Wed, Oct 30, 2013 at 01:41:29AM +0100, Peter De Schrijver wrote:
+> Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+> Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
+> 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-is the patchset ok this way, or do you see anything more I should
-change/improve?
+I will squash this into the next tegra-clk-next as the previous pull request
+has never made it.
 
-Regards
+Cheers,
 
-Frank
-
-
-
+Peter.
