@@ -1,68 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab3KVGpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 01:45:14 -0500
-Received: from exprod5og118.obsmtp.com ([64.18.0.160]:36930 "HELO
-	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750819Ab3KVGpL (ORCPT
+	id S1753255Ab3KVGqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 01:46:48 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:55025 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3KVGqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 01:45:11 -0500
+	Fri, 22 Nov 2013 01:46:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <528EAB34.6010105@codeaurora.org>
-References: <1384946021-22100-1-git-send-email-vkale@apm.com>
-	<1384946021-22100-2-git-send-email-vkale@apm.com>
-	<528CFC77.5050200@codeaurora.org>
-	<CAPrCYkefGMfweREk8bBKsO2VY4Tnc-fUZW8sw_K5ugRj5zJUFA@mail.gmail.com>
-	<CAPrCYkdpHPPY6D1dj5R=QJ5mtmKUfTx+M7wRMV-t2LrZMdSW9w@mail.gmail.com>
-	<528EAB34.6010105@codeaurora.org>
-Date: Fri, 22 Nov 2013 12:15:10 +0530
-Message-ID: <CAPrCYkcrtDXQxCn-CY7UnX3etL7FHu-H2P-NGe+WFh6-=_2czQ@mail.gmail.com>
-Subject: Re: [PATCH V4 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
-From: Vinayak Kale <vkale@apm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "jcm@redhat.com" <jcm@redhat.com>, tglx <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 22 Nov 2013 12:16:44 +0530
+Message-ID: <CA+NduCDdAV1R4RRJ4e=cYZiMA1imVjRZRL+fe0XA2-v=ziVDQg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+From: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>, hs@denx.de,
+        khali@linux-fr.org, ben-linux@fluff.org,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 6:24 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 11/20/13 22:10, Vinayak Kale wrote:
->> [removing chris.smith@st.com]
->>
->> On Thu, Nov 21, 2013 at 11:36 AM, Vinayak Kale <vkale@apm.com> wrote:
->>> On Wed, Nov 20, 2013 at 11:46 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>>> On 11/20/13 03:13, Vinayak Kale wrote:
->>>>> This patch adds an accessor function for IRQ_PER_CPU flag.
->>>>> The accessor function is useful to dertermine whether an IRQ is percpu or not.
->>>>>
->>>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
->>>>> ---
->>>> This looks like a copy of Chris Smith's patch. Shouldn't Chris be the
->>>> author and the commit text be whatever Chris sent?
->>> In the cover letter of this patch series I did mention about Chris's
->>> earlier patch. I didn't know his email-id earlier, have found the
->>> mail-id now. CCing the mail-id to check whether it's still valid.
->>>
->> Chris's mail-id doesn't seem to be valid, the earlier mail to his
->> mail-id [chris.smith@st.com] bounced.
->> Please let me know in such case how to mention original author's credits.
+On Fri, Nov 22, 2013 at 11:42 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> This patch adds new compatible to support HSI2C module on Exynos5260
+> HSI2C module on Exynos5260 needs to be reset during during initialization.
 >
-> It's up to the maintainer accepting the patch. If I was picking up the
-> patch I would say it doesn't really matter if the mail-id is valid
-> anymore. Leave the original patch intact and just add your sign-off. If
-> you took the patch and significantly changed it it's good to put
-> "Based-on-a-patch-by:" and then take over authorship.
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+>  .../devicetree/bindings/i2c/i2c-exynos5.txt        |    6 +++-
+>  drivers/i2c/busses/i2c-exynos5.c                   |   31 ++++++++++++++++++--
+>  2 files changed, 34 insertions(+), 3 deletions(-)
 >
-Thanks for the info.
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> index 056732c..704ab92 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> @@ -5,7 +5,11 @@ at various speeds ranging from 100khz to 3.4Mhz.
+>
+>  Required properties:
+>    - compatible: value should be.
+> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+> +       -> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
+> +                               Exynos5250/5420 SoCs.
+> +       -> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
+> +                               on Exynos5260 SoCs.
+> +
+>    - reg: physical base address of the controller and length of memory mapped
+>      region.
+>    - interrupts: interrupt number to the cpu.
+> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+> index aca3991..cbb49e2 100644
+> --- a/drivers/i2c/busses/i2c-exynos5.c
+> +++ b/drivers/i2c/busses/i2c-exynos5.c
+> @@ -184,14 +184,35 @@ struct exynos5_i2c {
+>          * 2. Fast speed upto 1Mbps
+>          */
+>         int                     speed_mode;
+> +
+> +       /* Version of HS-I2C Hardware */
+> +       unsigned int            version;
+> +};
+> +
+> +enum hsi2c_version {
+> +       EXYNOS_5,
+> +       EXYNOS_5260
+>  };
+>
+>  static const struct of_device_id exynos5_i2c_match[] = {
+> -       { .compatible = "samsung,exynos5-hsi2c" },
+> +       {
+> +               .compatible = "samsung,exynos5-hsi2c",
+> +               .data = (void *)EXYNOS_5 },
+> +       {
+> +               .compatible = "samsung,exynos5260-hsi2c",
+> +               .data = (void *)EXYNOS_5260 },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos5_i2c_match);
+>
+> +static inline unsigned int exynos5_i2c_get_version(struct platform_device *pdev)
+> +{
+> +       const struct of_device_id *match;
+> +
+> +       match = of_match_node(exynos5_i2c_match, pdev->dev.of_node);
+> +       return (unsigned int)match->data;
+> +}
+> +
+>  static void exynos5_i2c_clr_pend_irq(struct exynos5_i2c *i2c)
+>  {
+>         writel(readl(i2c->regs + HSI2C_INT_STATUS),
+> @@ -692,7 +713,13 @@ static int exynos5_i2c_probe(struct platform_device *pdev)
+>         if (ret)
+>                 goto err_clk;
+>
+> -       exynos5_i2c_init(i2c);
+> +       i2c->version = exynos5_i2c_get_version(pdev);
+> +
+> +       /* The HS-I2C core on Exynos5260 needs a reset to start with */
+> +       if (i2c->version == EXYNOS_5260)
 
-I have made a minor change w.r.t. Chris's original patch: changed the
-accessor function name from irq_is_per_cpu() to irq_is_percpu() since
-I think irq_is_percpu() name is more inline with other *percpu* kernel
-functions.
+Is there is any change in the HSI2C IP for EXYNOS5260?
+Can you let me know whats the change w.r.t IP and
+why it needs reset to start,which was not needed in earlier SOC?
 
-I will put Chris's sign-off as well as mine. I hope tglx will be fine with this.
+> +               exynos5_i2c_reset(i2c);
+> +       else
+> +               exynos5_i2c_init(i2c);
+>
+>         ret = i2c_add_adapter(&i2c->adap);
+>         if (ret < 0) {
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
