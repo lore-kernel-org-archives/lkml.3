@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3KVHnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 02:43:32 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:64861 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3KVHnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 02:43:31 -0500
-Message-ID: <528F0B1E.6000909@gmail.com>
-Date: Fri, 22 Nov 2013 08:43:26 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>, "'Borislav Petkov'" <bp@alien8.de>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>
-CC: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <CAC9WiBggfssh+31_MqVCT-hDf2E8zTuc81q-DhLYQuVF053mEA@mail.gmail.com> <20131117220611.GQ27323@pd.tnic> <528A05D0.30907@gmail.com> <20131118133210.GG24851@pd.tnic> <528B36EA.20301@gmail.com> <20131119101521.GA3515@pd.tnic> <528C84A1.5030707@gmail.com> <20131120111541.GA30147@pd.tnic> <528DC2AA.4070202@gmail.com> <20131121101234.GB25459@pd.tnic> <000801cee6ab$4e9f9380$ebdeba80$%han@samsung.com>
-In-Reply-To: <000801cee6ab$4e9f9380$ebdeba80$%han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755136Ab3KVHpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:45:12 -0500
+Received: from plane.gmane.org ([80.91.229.3]:57217 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517Ab3KVHpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 02:45:09 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Roman Peniaev <r.peniaev@gmail.com>
+Subject: Re: [PATCH 6/7] Squashfs: Directly decompress into the page cache for file data
+Date: Fri, 22 Nov 2013 07:40:32 +0000 (UTC)
+Message-ID: <loom.20131122T083329-218@post.gmane.org>
+References: <1384912091-11092-1-git-send-email-phillip@squashfs.org.uk> <1384912091-11092-6-git-send-email-phillip@squashfs.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 210.94.41.89 (Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; .NET4.0C; MS-RTC LM 8))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 21/11/2013 12:17, Jingoo Han a écrit :
-[...]
->>
->>> Also I took a look at the changes between v3.11 and v3.12 in this area
->>> and those changes match the issue I'm facing:
->>>
->>> $ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
->>> 09fd867 mfd: rtsx: Copyright modifications
->>> eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
->>> 7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
->>> extra_init_hw
->>> 5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
->>> 773ccdf mfd: rtsx: Read vendor setting from config space
+Hello, Phillip.
+
+one remark below:
+
 > 
-> In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
-> reader driver may make the kernel panic.
-> 
-> I think that the commit "mfd: rtsx: Configure to enter a deeper
-> power-saving mode in S3" may be the culprit.
+> +static int squashfs_read_cache(struct page *target_page, u64 block, int 
+bsize,
+> +	int pages, struct page **page)
+> +{
+> +	struct inode *i = target_page->mapping->host;
+> +	struct squashfs_cache_entry *buffer = squashfs_get_datablock(i-
+>i_sb,
+> +						 block, bsize);
+> +	int bytes = buffer->length, res = buffer->error, n, offset = 0;
+> +	void *pageaddr;
+> +
+> +	if (res) {
+> +		ERROR("Unable to read page, block %llx, size %x\n", block,
+> +			bsize);
+> +		goto out;
 
-Unfortunately no, reverting this commit on top of v3.12 doesn't help. I
-also reverted 7140812, 5947c16 but it didn't improve anything.
 
-The good news is that I managed to have a "light" kernel configuration
-which is faster to build and more important it seems that the bug is
-almost 100% reproductible now.
+have you forgotten to unlock the pages on error path?
 
-So I'll try to do another git-bisect session later.
+in case of error squashfs_readpage will unlock only target page.
 
-Thanks.
+
+> +	}
+> +
+> +	for (n = 0; n < pages && bytes > 0; n++,
+> +			bytes -= PAGE_CACHE_SIZE, offset += 
+PAGE_CACHE_SIZE) {
+> +		int avail = min_t(int, bytes, PAGE_CACHE_SIZE);
+
+
