@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab3KVBy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:54:26 -0500
-Received: from ozlabs.org ([203.10.76.45]:60320 "EHLO ozlabs.org"
+	id S1755273Ab3KVBzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 20:55:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7459 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab3KVByY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:54:24 -0500
-Date: Fri, 22 Nov 2013 12:54:17 +1100
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Jason Baron <jbaron@akamai.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>
-Subject: Re: [PATCH v2] panic: Make panic_timeout configurable
-Message-ID: <20131122015416.GA23897@concordia>
-References: <20131118210436.233B5202A@prod-mail-relay06.akamai.com>
- <20131118143059.afe17d2faced16171a05eb10@linux-foundation.org>
- <528A9F24.1000206@akamai.com>
- <20131119070905.GF32367@gmail.com>
- <528BE05E.8090501@akamai.com>
- <20131121111638.GA15913@concordia>
- <528E795A.6070600@akamai.com>
+	id S1753021Ab3KVBzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 20:55:47 -0500
+Date: Thu, 21 Nov 2013 20:55:18 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131122015518.GA31921@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <8761rl73s7.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528E795A.6070600@akamai.com>
+In-Reply-To: <8761rl73s7.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 04:21:30PM -0500, Jason Baron wrote:
-> On 11/21/2013 06:16 AM, Michael Ellerman wrote:
-> > On Tue, Nov 19, 2013 at 05:04:14PM -0500, Jason Baron wrote:
-> >> On 11/19/2013 02:09 AM, Ingo Molnar wrote:
-> >>>
-> >>> * Jason Baron <jbaron@akamai.com> wrote:
-> >>>
-> >>>> On 11/18/2013 05:30 PM, Andrew Morton wrote:
-> >>>>> On Mon, 18 Nov 2013 21:04:36 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
-> >>>>>
-> >>>>>> The panic_timeout value can be set via the command line option 'panic=x', or via
-> >>>>>> /proc/sys/kernel/panic, however that is not sufficient when the panic occurs
-> >>>>>> before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
-> >>>>>> so that we can set the desired value from the .config.
-> >>>>>>
-> >>>>>> The default panic_timeout value continues to be 0 - wait forever, 
-> >>>>>> except for powerpc and mips, which have been defaulted to 180 and 
-> >>>>>> 5 respectively. This is in keeping with the fact that these 
-> >>>>>> arches already set panic_timeout in their arch init code. 
-> >>>>>> However, I found three exceptions- two in mips and one in powerpc 
-> >>>>>> where the settings didn't match these default values. In those 
-> >>>>>> cases, I left the arch code so it continues to override, in case 
-> >>>>>> the user has not changed from the default. It would nice if these 
-> >>>>>> arches had one default value, or if we could determine the 
-> >>>>>> correct setting at compile-time.
-> > ...
-> >>
-> >> Sure, I can round up all the related patches in this area that make
-> >> sense and re-submit as a series.
-> >>
-> >> Felipe, would the CONFIG_PANIC_TIMEOUT=xx .config parameter work for your
-> >> needs, or would you still like to see the command-line processing moved
-> >> up?
-> >>
-> >> I'd also like to hear from the PowerPC folks about the arch defaults
-> >> there. Now, that mips is ok with CONFIG_PANIC_TIMEOUT, PowerPC is the
-> >> only arch doing specific initialization of 'panic_timeout'.
-> > 
-> > Hi Jason,
-> > 
-> > I think we'd like to choose the value at runtime, as we do now. The
-> > powerpc arch supports a wide spread of different hardware, so it's nice
-> > to be able to customise the value based on the platform. Also we build a
-> > single kernel that boots on many platforms, and so we can't pick the
-> > value at compile time.
+On Thu, Nov 21, 2013 at 03:07:04PM -0800, Eric W. Biederman wrote:
+
+[..]
 > 
-> Hi,
+> Before you are done we need an ELF loader.  bzImage really is very
+> uninteresting.  To the point I am not at all convinced that an in kernel
+> loader should support it.
+
+Hi Eric,
+
+Why ELF case is so interesting. I have not use kexec to boot ELF
+images in years and have not seen others using it too. In fact bzImage
+seems to be the most common kernel image format for x86, most of the distros
+ship and use.
+
+So first I did the loader for the common use case. There is no reason 
+that one can't write another loader for ELF images. It just bloats
+the code. Hence I thought that other image loaders can follow slowly. I am
+not sure why do you say that bzImage is uninteresting. 
+
 > 
-> Ok, So powerpc sets the timeout to '180' during setup_arch(), but then
-> overrides the value to '10' only for pSeries. 
+> There is also a huge missing piece of this in that your purgatory is not
+> checking a hash of the loaded image before jumping too it.  Without that
+> this is a huge regression at least for the kexec on panic case.  We
+> absolutely need to check that the kernel sitting around in memory has
+> not been corrupted before we let it run very far.
 
-Yep.
+Agreed. This should not be hard. It is just a matter of calcualting
+digest of segments. I will store it in kimge and verify digest again
+before passing control to control page. Will fix it in next version.
 
-> The patch proposed in this thread, sets the default built-in value for
-> powerpc to 180 and then continues to override in pSeries, if its
-> still 180 (IE the user hasn't requested another value). This allows
-> the panic_timeout value to have an effect before we reach the
-> arch_init() code. Are you ok with this? That is, are you ok with the
-> proposed powerpc bits?
-
-Yes that looks OK to me.
-
-It means we get a non-zero value during early boot, which is nice, the
-user can override the value if they wish, and otherwise the existing
-behaviour is unchanged.
-
-cheers
+Thanks
+Vivek
