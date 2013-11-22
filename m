@@ -1,37 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab3KVPUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:20:41 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43715 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab3KVPUg (ORCPT
+	id S1755827Ab3KVPW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:22:28 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28389 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3KVPW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:20:36 -0500
-Message-ID: <528F7641.2010003@gmail.com>
-Date: Fri, 22 Nov 2013 08:20:33 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 22 Nov 2013 10:22:26 -0500
+Date: Fri, 22 Nov 2013 10:21:10 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Matt Wilson <msw@linux.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xenproject.org, Matt Wilson <msw@amazon.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/gnttab: leave lazy MMU mode in the case of a m2p
+ override failure
+Message-ID: <20131122152110.GA3124@phenom.dumpdata.com>
+References: <1384978295-18292-1-git-send-email-msw@linux.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-References: <20131121100722.GA25459@pd.tnic> <20131121111744.GA27513@gmail.com> <20131121113014.GA26009@pd.tnic> <20131121114224.GA27704@gmail.com> <20131121120605.GC26009@pd.tnic> <20131121150524.GA24806@ghostprotocols.net> <20131121152804.GI26009@pd.tnic> <20131121173714.GD24806@ghostprotocols.net> <20131122122701.GA1480@gmail.com> <20131122135034.GA20146@nazgul.tnic> <20131122150055.GC11305@ghostprotocols.net>
-In-Reply-To: <20131122150055.GC11305@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384978295-18292-1-git-send-email-msw@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/13, 8:00 AM, Arnaldo Carvalho de Melo wrote:
->
-> Lets do one at a time, so far we agreed that the ones that involves
-> parsing procfs/sysfs etc should go in tools/lib/(fs)?kapi, so lets do
-> that one.
+On Wed, Nov 20, 2013 at 12:11:35PM -0800, Matt Wilson wrote:
+> From: Matt Wilson <msw@amazon.com>
+> 
+> Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+> m2p_add/remove_override call fails.
 
-libsysfs & libsysfs-devel?
+Stefano?
 
+> 
+> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Anthony Liguori <aliguori@amazon.com>
+> Cc: xen-devel@lists.xenproject.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Matt Wilson <msw@amazon.com>
+> ---
+>  drivers/xen/grant-table.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 62ccf54..0283871 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -930,9 +930,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+>  				       &kmap_ops[i] : NULL);
+>  		if (ret)
+> -			return ret;
+> +			goto out;
+>  	}
+>  
+> + out:
+>  	if (lazy)
+>  		arch_leave_lazy_mmu_mode();
+>  
+> @@ -969,9 +970,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		ret = m2p_remove_override(pages[i], kmap_ops ?
+>  				       &kmap_ops[i] : NULL);
+>  		if (ret)
+> -			return ret;
+> +			goto out;
+>  	}
+>  
+> + out:
+>  	if (lazy)
+>  		arch_leave_lazy_mmu_mode();
+>  
+> -- 
+> 1.7.9.5
+> 
