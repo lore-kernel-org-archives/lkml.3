@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab3KVGid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 01:38:33 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47168 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab3KVGh5 (ORCPT
+	id S1751739Ab3KVGpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 01:45:14 -0500
+Received: from exprod5og118.obsmtp.com ([64.18.0.160]:36930 "HELO
+	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750819Ab3KVGpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 01:37:57 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
-        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
-Cc: james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
-        gregkh@linuxfoundation.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 3/4] sched: clean up __update_cpu_load
-Date: Fri, 22 Nov 2013 14:37:14 +0800
-Message-Id: <1385102235-25664-4-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
-References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
+	Fri, 22 Nov 2013 01:45:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <528EAB34.6010105@codeaurora.org>
+References: <1384946021-22100-1-git-send-email-vkale@apm.com>
+	<1384946021-22100-2-git-send-email-vkale@apm.com>
+	<528CFC77.5050200@codeaurora.org>
+	<CAPrCYkefGMfweREk8bBKsO2VY4Tnc-fUZW8sw_K5ugRj5zJUFA@mail.gmail.com>
+	<CAPrCYkdpHPPY6D1dj5R=QJ5mtmKUfTx+M7wRMV-t2LrZMdSW9w@mail.gmail.com>
+	<528EAB34.6010105@codeaurora.org>
+Date: Fri, 22 Nov 2013 12:15:10 +0530
+Message-ID: <CAPrCYkcrtDXQxCn-CY7UnX3etL7FHu-H2P-NGe+WFh6-=_2czQ@mail.gmail.com>
+Subject: Re: [PATCH V4 1/2] genirq: Add an accessor for IRQ_PER_CPU flag
+From: Vinayak Kale <vkale@apm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "jcm@redhat.com" <jcm@redhat.com>, tglx <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we don't decay the rq->cpu_load, so we don't need the
-pending_updates. But we still want update rq->rt_avg, so
-still keep rq->last_load_update_tick and func __update_cpu_load.
+On Fri, Nov 22, 2013 at 6:24 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 11/20/13 22:10, Vinayak Kale wrote:
+>> [removing chris.smith@st.com]
+>>
+>> On Thu, Nov 21, 2013 at 11:36 AM, Vinayak Kale <vkale@apm.com> wrote:
+>>> On Wed, Nov 20, 2013 at 11:46 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>> On 11/20/13 03:13, Vinayak Kale wrote:
+>>>>> This patch adds an accessor function for IRQ_PER_CPU flag.
+>>>>> The accessor function is useful to dertermine whether an IRQ is percpu or not.
+>>>>>
+>>>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>>>>> ---
+>>>> This looks like a copy of Chris Smith's patch. Shouldn't Chris be the
+>>>> author and the commit text be whatever Chris sent?
+>>> In the cover letter of this patch series I did mention about Chris's
+>>> earlier patch. I didn't know his email-id earlier, have found the
+>>> mail-id now. CCing the mail-id to check whether it's still valid.
+>>>
+>> Chris's mail-id doesn't seem to be valid, the earlier mail to his
+>> mail-id [chris.smith@st.com] bounced.
+>> Please let me know in such case how to mention original author's credits.
+>
+> It's up to the maintainer accepting the patch. If I was picking up the
+> patch I would say it doesn't really matter if the mail-id is valid
+> anymore. Leave the original patch intact and just add your sign-off. If
+> you took the patch and significantly changed it it's good to put
+> "Based-on-a-patch-by:" and then take over authorship.
+>
+Thanks for the info.
 
-After remove the load_idx, in the most of time the source_load is
-equal to target_load, except only when source cpu is idle. At that
-time we force set the cpu_load is 0(in update_cpu_load_nohz).
-So we still left cpu_load in rq.
+I have made a minor change w.r.t. Chris's original patch: changed the
+accessor function name from irq_is_per_cpu() to irq_is_percpu() since
+I think irq_is_percpu() name is more inline with other *percpu* kernel
+functions.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- kernel/sched/proc.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index a2435c5..057bb9b 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -404,8 +404,7 @@ static void calc_load_account_active(struct rq *this_rq)
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
--static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
--			      unsigned long pending_updates)
-+static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
- {
- 	this_rq->nr_load_updates++;
- 
-@@ -449,7 +448,6 @@ void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 	unsigned long load = get_rq_runnable_load(this_rq);
--	unsigned long pending_updates;
- 
- 	/*
- 	 * bail if there's load or we're actually up-to-date.
-@@ -457,10 +455,9 @@ void update_idle_cpu_load(struct rq *this_rq)
- 	if (load || curr_jiffies == this_rq->last_load_update_tick)
- 		return;
- 
--	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
- 	this_rq->last_load_update_tick = curr_jiffies;
- 
--	__update_cpu_load(this_rq, load, pending_updates);
-+	__update_cpu_load(this_rq, load);
- }
- 
- /*
-@@ -483,7 +480,7 @@ void update_cpu_load_nohz(void)
- 		 * We were idle, this means load 0, the current load might be
- 		 * !0 due to remote wakeups and the sort.
- 		 */
--		__update_cpu_load(this_rq, 0, pending_updates);
-+		__update_cpu_load(this_rq, 0);
- 	}
- 	raw_spin_unlock(&this_rq->lock);
- }
-@@ -499,7 +496,7 @@ void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, load, 1);
-+	__update_cpu_load(this_rq, load);
- 
- 	calc_load_account_active(this_rq);
- }
--- 
-1.8.1.2
-
+I will put Chris's sign-off as well as mine. I hope tglx will be fine with this.
