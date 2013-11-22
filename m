@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3KVBrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:47:42 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:47052 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3KVBrk (ORCPT
+	id S1754888Ab3KVBwg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 20:52:36 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:33479 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753021Ab3KVBwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:47:40 -0500
-Message-ID: <528EB834.1050702@gmail.com>
-Date: Fri, 22 Nov 2013 09:49:40 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 21 Nov 2013 20:52:34 -0500
+Date: Thu, 21 Nov 2013 22:52:38 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Hans Zhang <zhanghonghui@innofidei.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhouguangming@innofidei.com
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+Message-ID: <20131122015237.GB3509@localhost>
+References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
+ <CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
+ <528EB1E3.7030101@innofidei.com>
 MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>
-CC: a-jacquiot@ti.com, viro@zeniv.linux.org.uk, linux-c6x-dev@linux-c6x.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: c6x: uapi: be sure of "_UAPI" prefix for all guard
- macros
-References: <52889AC5.9000806@gmail.com> <1385049781.1966.16.camel@deneb.redhat.com>
-In-Reply-To: <1385049781.1966.16.camel@deneb.redhat.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <528EB1E3.7030101@innofidei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 12:03 AM, Mark Salter wrote:
-> On Sun, 2013-11-17 at 18:30 +0800, Chen Gang wrote:
->> For all uapi headers, need use "_UAPI" prefix for its guard macro
->> (which will be stripped by "scripts/headers_installer.sh").
->>
->> Also be sure that all files have their guard macros.
->>
->> Also be sure that all "#endif" are followed with correct comments.
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+On Fri, Nov 22, 2013 at 09:22:43AM +0800, Hans Zhang wrote:
+> On 2013/11/21 18:59, Richard Genoud wrote:
 > 
-> Acked-by: Mark Salter <msalter@redhat.com>
-> 
-> 
+> Here's my scenario, I want to write nand through mtdblock by dd command
 
-Thank you very much!! :-)
+You could get some better support by explaining why do you want to write
+to a NAND through mtdblock. It sounds a bit ackward to me, but I'm sure
+you have a good reason for it!
 
-Thanks.
+Let's hear it :-)
 -- 
-Chen Gang
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
