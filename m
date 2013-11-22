@@ -1,187 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3KVLrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:47:14 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:33293 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab3KVLrN (ORCPT
+	id S1755548Ab3KVLs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:48:26 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:45261 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab3KVLsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:47:13 -0500
+	Fri, 22 Nov 2013 06:48:25 -0500
+Date: Fri, 22 Nov 2013 12:48:19 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [BUG] 3ce1217d6cd5 ima patch causes s390 to crash on boot
+Message-ID: <20131122114819.GB4208@osiris>
 MIME-Version: 1.0
-In-Reply-To: <CAHj3AV=xiW76y_bqP5h6sprokfphj5WquF32EGzJ-YqOyoj9-w@mail.gmail.com>
-References: <cover.1384933520.git.gamerh2o@gmail.com>
-	<c55eeb3252a868e9e62655baed8d6b11992b9cbe.1384933520.git.gamerh2o@gmail.com>
-	<20131121211920.GC10691@einon.net>
-	<CAHj3AV=xiW76y_bqP5h6sprokfphj5WquF32EGzJ-YqOyoj9-w@mail.gmail.com>
-Date: Fri, 22 Nov 2013 19:47:12 +0800
-Message-ID: <CAAb+SYagm1UeJycq6Y9GqfU1C=HbRYKUmFfHdejT7bekonGceQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] staging: et131x: drop packet when error occurs in et131x_tx
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: Denis Kirjanov <kirjanov@gmail.com>
-Cc: Mark Einon <mark.einon@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112211-8372-0000-0000-000007DA1B75
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 5:17 PM, Denis Kirjanov <kirjanov@gmail.com> wrote:
-> On 11/22/13, Mark Einon <mark.einon@gmail.com> wrote:
->> On Wed, Nov 20, 2013 at 03:55:27PM +0800, ZHAO Gang wrote:
->>> As TODO file suggested, drop packet instead of return NETDEV_TX_BUSY
->>> when tx failed.
->>>
->>> et131x_tx calls function et131x_send_packets, I put the work of
->>> et131x_send_packets directly into et131x_tx, and made some changes to
->>> let the code more readable.
->>>
->>> Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
->>
->> Acked-by: Mark Einon <mark.einon@gmail.com>
->>
->>> ---
->>>  drivers/staging/et131x/et131x.c | 84
->>> +++++++++++------------------------------
->>>  1 file changed, 22 insertions(+), 62 deletions(-)
->>>
->>> diff --git a/drivers/staging/et131x/et131x.c
->>> b/drivers/staging/et131x/et131x.c
->>> index 836a4db..cda037a 100644
->>> --- a/drivers/staging/et131x/et131x.c
->>> +++ b/drivers/staging/et131x/et131x.c
->>> @@ -3123,55 +3123,6 @@ static int send_packet(struct sk_buff *skb, struct
->>> et131x_adapter *adapter)
->>>      return 0;
->>>  }
->>>
->>> -/* et131x_send_packets - This function is called by the OS to send
->>> packets
->>> - * @skb: the packet(s) to send
->>> - * @netdev:device on which to TX the above packet(s)
->>> - *
->>> - * Return 0 in almost all cases; non-zero value in extreme hard failure
->>> only
->>> - */
->>> -static int et131x_send_packets(struct sk_buff *skb, struct net_device
->>> *netdev)
->>> -{
->>> -    int status = 0;
->>> -    struct et131x_adapter *adapter = netdev_priv(netdev);
->>> -
->>> -    /* Send these packets
->>> -     *
->>> -     * NOTE: The Linux Tx entry point is only given one packet at a time
->>> -     * to Tx, so the PacketCount and it's array used makes no sense here
->>> -     */
->>> -
->>> -    /* TCB is not available */
->>> -    if (adapter->tx_ring.used >= NUM_TCB) {
->>> -            /* NOTE: If there's an error on send, no need to queue the
->>> -             * packet under Linux; if we just send an error up to the
->>> -             * netif layer, it will resend the skb to us.
->>> -             */
->>> -            status = -ENOMEM;
->>> -    } else {
->>> -            /* We need to see if the link is up; if it's not, make the
->>> -             * netif layer think we're good and drop the packet
->>> -             */
->>> -            if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
->>> -                                    !netif_carrier_ok(netdev)) {
->>> -                    dev_kfree_skb_any(skb);
->>> -                    skb = NULL;
->>> -
->>> -                    adapter->net_stats.tx_dropped++;
->>> -            } else {
->>> -                    status = send_packet(skb, adapter);
->>> -                    if (status != 0 && status != -ENOMEM) {
->>> -                            /* On any other error, make netif think we're
->>> -                             * OK and drop the packet
->>> -                             */
->>> -                            dev_kfree_skb_any(skb);
->>> -                            skb = NULL;
->>> -                            adapter->net_stats.tx_dropped++;
->>> -                    }
->>> -            }
->>> -    }
->>> -    return status;
->>> -}
->>> -
->>>  /* free_send_packet - Recycle a struct tcb
->>>   * @adapter: pointer to our adapter
->>>   * @tcb: pointer to struct tcb
->>> @@ -4537,12 +4488,9 @@ static void et131x_multicast(struct net_device
->>> *netdev)
->>>  /* et131x_tx - The handler to tx a packet on the device
->>>   * @skb: data to be Tx'd
->>>   * @netdev: device on which data is to be Tx'd
->>> - *
->>> - * Returns 0 on success, errno on failure (as defined in errno.h)
->>>   */
->>> -static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
->>> +static netdev_tx_t et131x_tx(struct sk_buff *skb, struct net_device
->>> *netdev)
->>>  {
->>> -    int status = 0;
->>>      struct et131x_adapter *adapter = netdev_priv(netdev);
->>>
->>>      /* stop the queue if it's getting full */
->>> @@ -4553,17 +4501,29 @@ static int et131x_tx(struct sk_buff *skb, struct
->>> net_device *netdev)
->>>      /* Save the timestamp for the TX timeout watchdog */
->>>      netdev->trans_start = jiffies;
->>>
->>> -    /* Call the device-specific data Tx routine */
->>> -    status = et131x_send_packets(skb, netdev);
->>> +    /* TCB is not available */
->>> +    if (adapter->tx_ring.used >= NUM_TCB)
->>> +            goto drop;
->
-> That's wrong. You have to properly manage tx queue and not just drop packets
+Hi Roberto,
 
-Could you kindly tell me what should be done to tx queue?
+your patch 3ce1217d6cd5 "ima: define template fields library and new helpers"
+causes s390 to crash on boot:
 
->
->>> -    /* Check status and manage the netif queue if necessary */
->>> -    if (status != 0) {
->>> -            if (status == -ENOMEM)
->>> -                    status = NETDEV_TX_BUSY;
->>> -            else
->>> -                    status = NETDEV_TX_OK;
->>> +    /* We need to see if the link is up; if it's not, make the
->>> +     * netif layer think we're good and drop the packet
->>> +     */
->>> +    if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
->>> +        !netif_carrier_ok(netdev)) {
->>> +            goto drop;
->>> +    } else {
->>> +            if (!send_packet(skb, adapter))
->>> +                    goto out;
->>> +            /* On error (send_packet returns != 0), make netif
->>> +             * think we're OK and drop the packet
->>> +             */
->>>      }
->>> -    return status;
->>> +
->>> +drop:
->>> +    dev_kfree_skb_any(skb);
->>> +    adapter->net_stats.tx_dropped++;
->>> +out:
->>> +    return NETDEV_TX_OK;
->>>  }
->>>
->>>  /* et131x_tx_timeout - Timeout handler
->>> --
->>> 1.8.3.1
->>>
->> _______________________________________________
->> devel mailing list
->> devel@linuxdriverproject.org
->> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
->>
->
->
-> --
-> Regards,
-> Denis
+ IMA: No TPM chip found, activating TPM-bypass!
+ Unable to handle kernel pointer dereference at virtual kernel address 0000000000842000
+ Oops: 0004 [#1] SMP
+ Modules linked in:
+ CPU: 3 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc2-00098-g3ce1217d6cd5 #17
+ task: 000000003ffa0000 ti: 000000003ff84000 task.ti: 000000003ff84000
+ Krnl PSW : 0704e00180000000 000000000044bf88 (strsep+0x7c/0xa0)
+            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:2 PM:0 EA:3
+ Krnl GPRS: 000000000000007c 000000000000007c 000000003ff87d90 0000000000821fd8
+            0000000000000000 000000000000007c 0000000000aa37e0 0000000000aa9008
+            0000000000000051 0000000000a114d8 0000000100000002 0000000000842bde
+            0000000000842bdf 00000000006f97f0 000000000040062c 000000003ff87cf0
+ Krnl Code: 000000000044bf7c: a7f4000a           brc     15,44bf90
+            000000000044bf80: b90200cc           ltgr    %r12,%r12
+           #000000000044bf84: a7840006           brc     8,44bf90
+           >000000000044bf88: 9200c000           mvi     0(%r12),0
+            000000000044bf8c: 41c0c001           la      %r12,1(%r12)
+            000000000044bf90: e3c020000024       stg     %r12,0(%r2)
+            000000000044bf96: b904002b           lgr     %r2,%r11
+            000000000044bf9a: ebbcf0700004       lmg     %r11,%r12,112(%r15)
+ Call Trace:
+ ([<00000000004005fe>] ima_init_template+0xa2/0x1bc)
+  [<0000000000a7c896>] ima_init+0x7a/0xa8
+  [<0000000000a7c938>] init_ima+0x24/0x40
+  [<00000000001000e8>] do_one_initcall+0x68/0x128
+  [<0000000000a4eb56>] kernel_init_freeable+0x20a/0x2b4
+  [<00000000006a1ff4>] kernel_init+0x30/0x178
+  [<00000000006b69fe>] kernel_thread_starter+0x6/0xc
+  [<00000000006b69f8>] kernel_thread_starter+0x0/0xc
+ Last Breaking-Event-Address:
+  [<000000000044bf42>] strsep+0x36/0xa0
+
