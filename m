@@ -1,42 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3KVIZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:25:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21091 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3KVIZd (ORCPT
+	id S1754705Ab3KVI12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:27:28 -0500
+Received: from mail.windriver.com ([147.11.1.11]:60021 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3KVI1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:25:33 -0500
-Date: Fri, 22 Nov 2013 11:25:25 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andreas Platschek <andi.platschek@gmail.com>
-Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] tty: replace mutex_lock() with tty_write_lock()
-Message-ID: <20131122082525.GA5302@mwanda>
-References: <1385061132-7254-1-git-send-email-andi.platschek@gmail.com>
+	Fri, 22 Nov 2013 03:27:25 -0500
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>
+CC: <davem@davemloft.net>, <linux-sctp@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sctp: Restore 'resent' bit to avoid retransmitted chunks for RTT measurements
+Date: Fri, 22 Nov 2013 16:30:31 +0800
+Message-ID: <1385109031-4246-1-git-send-email-xufeng.zhang@windriver.com>
+X-Mailer: git-send-email 1.7.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385061132-7254-1-git-send-email-andi.platschek@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 08:12:12PM +0100, Andreas Platschek wrote:
-> Use tty_write_lock()/tty_write_unlock() consistently.
-> 
-> This takes care of the following sparse warning:
-> drivers/tty/tty_io.c:1169:17: warning: context imbalance in 'tty_write_message' - unexpected unlock
-> 
+From: Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-I don't think we can do this.  mutex_lock() always succeeds and
-tty_write_lock() can fail.
+Currently retransmitted DATA chunks could also be used for
+RTT measurements since there are no flag to identify whether
+the transmitted DATA chunk is a new one or a retransmitted one.
+This problem is introduced by commit ae19c5486 ("sctp: remove
+'resent' bit from the chunk") which inappropriately removed the
+'resent' bit completely, instead of doing this, we should set 
+the resent bit only for the retransmitted DATA chunks.
 
-I think we just have to live with the error message.
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+---
+ include/net/sctp/structs.h |    1 +
+ net/sctp/output.c          |   23 +++++++++++++----------
+ net/sctp/outqueue.c        |    3 +++
+ net/sctp/sm_make_chunk.c   |    1 +
+ 4 files changed, 18 insertions(+), 10 deletions(-)
 
-regards,
-dan carpenter
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index 2174d8d..ea0ca5f 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -629,6 +629,7 @@ struct sctp_chunk {
+ #define SCTP_NEED_FRTX 0x1
+ #define SCTP_DONT_FRTX 0x2
+ 	__u16	rtt_in_progress:1,	/* This chunk used for RTT calc? */
++		resent:1,		/* Has this chunk ever been resent. */
+ 		has_tsn:1,		/* Does this chunk have a TSN yet? */
+ 		has_ssn:1,		/* Does this chunk have a SSN yet? */
+ 		singleton:1,		/* Only chunk in the packet? */
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index e650978..32c214d 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -467,17 +467,20 @@ int sctp_packet_transmit(struct sctp_packet *packet)
+ 	list_for_each_entry_safe(chunk, tmp, &packet->chunk_list, list) {
+ 		list_del_init(&chunk->list);
+ 		if (sctp_chunk_is_data(chunk)) {
+-			/* 6.3.1 C4) When data is in flight and when allowed
+-			 * by rule C5, a new RTT measurement MUST be made each
+-			 * round trip.  Furthermore, new RTT measurements
+-			 * SHOULD be made no more than once per round-trip
+-			 * for a given destination transport address.
+-			 */
+-
+-			if (!tp->rto_pending) {
+-				chunk->rtt_in_progress = 1;
+-				tp->rto_pending = 1;
++			if (!chunk->resent) {
++				/* 6.3.1 C4) When data is in flight and when allowed
++				 * by rule C5, a new RTT measurement MUST be made each
++				 * round trip.  Furthermore, new RTT measurements
++				 * SHOULD be made no more than once per round-trip
++				 * for a given destination transport address.
++				 */
++
++				if (!tp->rto_pending) {
++					chunk->rtt_in_progress = 1;
++					tp->rto_pending = 1;
++				}
+ 			}
++
+ 			has_data = 1;
+ 		}
+ 
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index 94df758..70f4f56 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -446,6 +446,8 @@ void sctp_retransmit_mark(struct sctp_outq *q,
+ 				transport->rto_pending = 0;
+ 			}
+ 
++			chunk->resent = 1;
++
+ 			/* Move the chunk to the retransmit queue. The chunks
+ 			 * on the retransmit queue are always kept in order.
+ 			 */
+@@ -1375,6 +1377,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 				 * instance).
+ 				 */
+ 				if (!tchunk->tsn_gap_acked &&
++				    !tchunk->resent &&
+ 				    tchunk->rtt_in_progress) {
+ 					tchunk->rtt_in_progress = 0;
+ 					rtt = jiffies - tchunk->sent_at;
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index fe69032..8fe89f8 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -1321,6 +1321,7 @@ struct sctp_chunk *sctp_chunkify(struct sk_buff *skb,
+ 	INIT_LIST_HEAD(&retval->list);
+ 	retval->skb		= skb;
+ 	retval->asoc		= (struct sctp_association *)asoc;
++	retval->resent          = 0;
+ 	retval->singleton	= 1;
+ 
+ 	retval->fast_retransmit = SCTP_CAN_FRTX;
+-- 
+1.7.0.2
 
