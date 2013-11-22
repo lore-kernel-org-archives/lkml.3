@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3KVX0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 18:26:06 -0500
-Received: from mdfmta005.mxout.tch.inty.net ([91.221.169.46]:39241 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755484Ab3KVX0F (ORCPT
+	id S1756208Ab3KVX1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 18:27:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58321 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab3KVX1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 18:26:05 -0500
-Message-ID: <528FE805.1080001@lougher.demon.co.uk>
-Date: Fri, 22 Nov 2013 23:25:57 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-CC: phillip@squashfs.org.uk, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] double free in decompressor.c
-References: <CAGG-pURFGv2my_u8Okv5bft1SzpyGH8ccYYonjTFuZ7D=92x1g@mail.gmail.com>
-In-Reply-To: <CAGG-pURFGv2my_u8Okv5bft1SzpyGH8ccYYonjTFuZ7D=92x1g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-MDF-HostID: 18
+	Fri, 22 Nov 2013 18:27:12 -0500
+Date: Fri, 22 Nov 2013 15:27:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
+ too much
+Message-Id: <20131122152711.c644e5acf02b61668c63b59c@linux-foundation.org>
+In-Reply-To: <20131108102113.GB6343@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+	<1383860919-1883-4-git-send-email-jack@suse.cz>
+	<CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
+	<20131107225733.GE2054@quack.suse.cz>
+	<20131107232148.GE28130@localhost.localdomain>
+	<20131107183717.0fc9eb6e@gandalf.local.home>
+	<20131107234647.GG28130@localhost.localdomain>
+	<20131108102113.GB6343@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/11/13 21:50, Geyslan Gregório Bem wrote:
-> Coverity caught double free possibility (CID 1130962).
->
-> I can patch this, but I have to know if is correct to free comp_opts
-> in the function squashfs_decompressor_create() or it had to be done in
-> the caller. My bet is the caller.
->
->
-> 128void *squashfs_decompressor_setup(struct super_block *sb, unsigned
-> short flags)
-> 129{
-> 130        struct squashfs_sb_info *msblk = sb->s_fs_info;
-> 131        void *stream, *comp_opts = get_comp_opts(sb, flags);
-> 132
->
-> 1. Condition "IS_ERR(comp_opts)", taking false branch
-> 133        if (IS_ERR(comp_opts))
-> 134                return comp_opts;
-> 135
->
-> 2. freed_arg: "squashfs_decompressor_create(struct squashfs_sb_info *,
-> void *)" frees "comp_opts".[show details]
-> 136        stream = squashfs_decompressor_create(msblk, comp_opts);
->
-> 3. Condition "IS_ERR(stream)", taking true branch
-> 137        if (IS_ERR(stream))
+On Fri, 8 Nov 2013 11:21:13 +0100 Jan Kara <jack@suse.cz> wrote:
 
-FALSE positive.
+> On Fri 08-11-13 00:46:49, Frederic Weisbecker wrote:
+> > On Thu, Nov 07, 2013 at 06:37:17PM -0500, Steven Rostedt wrote:
+> > > On Fri, 8 Nov 2013 00:21:51 +0100
+> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > 
+> > > > Offloading to a workqueue would be perhaps better, and writing to the serial
+> > > > console could then be done with interrupts enabled, preemptible context, etc...
+> > > 
+> > > Oh God no ;-)  Adding workqueue logic into printk just spells a
+> > > nightmare of much more complexity for a critical kernel infrastructure.
+> > 
+> > But yeah that's scary, that means workqueues itself can't printk that safely.
+> > So, you're right after all.
+>   Yeah, we've been there (that was actually my initial proposal). But
+> Andrew and Steven (rightfully) objected and suggested irq_work should be
+> used instead.
 
-squashfs_decompressor_create() frees comp_opts only on success.
+I still hate the patchset and so does everyone else, including you ;)
+There must be something smarter we can do.  Let's start by restating
+the problem:
 
-If IS_ERR(stream) is true, then comp_opts has not been freed by
-squashfs_decompressor_create().
+CPU A is in printk, emitting log_buf characters to a slow device. 
+Meanwhile other CPUs come into printk(), see that the system is busy,
+dump their load into log_buf then scram, leaving CPU A to do even more
+work.
 
-Phillip
+Correct so far?
+
+If so, what is the role of local_irq_disabled() in this?  Did CPU A
+call printk() with local interrupts disabled, or is printk (or the
+console driver) causing the irqs-off condition?  Where and why is this
+IRQ disablement happening?
 
 
->
-> CID 1130962 (#1 of 1): Double free (USE_AFTER_FREE)4. double_free:
-> Calling "kfree(void const *)" frees pointer "comp_opts" which has
-> already been freed.
-> 138                kfree(comp_opts);
-> 139
-> 140        return stream;
-> 141}
->
->
+Could we fix this problem by not permitting CPUs B, C and D to DoS CPU
+A?  When CPU B comes into printk() and sees that printk is busy, make
+CPU A hand over to CPU B and let CPU A get out of there?
+
 
