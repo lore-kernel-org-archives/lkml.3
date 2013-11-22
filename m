@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab3KVS5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:57:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755773Ab3KVS5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:57:34 -0500
-Date: Fri, 22 Nov 2013 13:57:06 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
-        Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20131122185706.GK4046@redhat.com>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
- <1384969851-7251-5-git-send-email-vgoyal@redhat.com>
- <20131121190350.GC17070@kroah.com>
- <20131121190620.GA25951@srcf.ucam.org>
- <20131121191305.GK16208@redhat.com>
- <20131121191907.GA26366@srcf.ucam.org>
+	id S1755883Ab3KVTCB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:02:01 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33357 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab3KVTB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 14:01:59 -0500
+Message-ID: <528FAA00.9060801@ti.com>
+Date: Fri, 22 Nov 2013 14:01:20 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121191907.GA26366@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kevin Hilman <khilman@linaro.org>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pm@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME
+ is set
+References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com> <528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com> <528D1327.7080205@codeaurora.org> <528D1784.8080704@ti.com> <528D1C49.3020301@ti.com> <87ppps6zve.fsf@linaro.org>
+In-Reply-To: <87ppps6zve.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 07:19:07PM +0000, Matthew Garrett wrote:
-> On Thu, Nov 21, 2013 at 02:13:05PM -0500, Vivek Goyal wrote:
-> > On Thu, Nov 21, 2013 at 07:06:20PM +0000, Matthew Garrett wrote:
-> > > That would require a certain degree of massaging from userspace if we 
-> > > want to be able to use the existing Authenticode signatures. Otherwise 
-> > > we need to sign kernels twice.
-> > 
-> > I was thinking oof signing the same kernel twice. Can I sign authenticode
-> > signed kernel again (using RSA signature as we do for modules) and append
-> > the signature to bzImage. 
+On Friday 22 November 2013 01:43 PM, Kevin Hilman wrote:
+> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
 > 
-> No, you'd need to do it the other way around.
+> [...]
+> 
+>>>> It looks like even if you just remove the locks here, the PM core is
+>>>> free to call this function with irqs disabled if pm_runtime_irq_safe()
+>>>> has been called on the device. Perhaps runtime PM can only do the
+>>>> clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
+>>>> calls should happen in the system suspend callbacks?
+>>>
+>>> Even don't know what to say :( On Keystone clk_unprepare()/clk_prepare() are NOPs.
+>>> But clk_prepare() has to be called at least once before clk_enable() :((
+>>> So, solution with suspend/resume will not fix current problem :( unfortunately.
+>>>
+>>> FYI, Now pm_clk_suspend/pm_clk_resume are called from arch/arm/mach-keystone/pm_domain.c
+>>> (also similar solution is used by Davinci, but issue has not been detected because
+>>> PM runtime hasn't been used by Davinci IP drivers before)
+>>>
+>> One way to deal with this is to have clk_unprepare()/clk_prepare()
+>> called from dev_pm_domain ops before calling pm_clk_[suspend/resume]() if we
+>> can't have that as part of runtime code.
+> 
+> That doesn't solve the irq_safe problem that Stephen pointed out without
+> being very careful.  Basically, if you have _any_ potentially sleeping
+> calls in this path, you can never allow devices to use
+> pm_runtime_irq_safe().
+> 
+You are right. I realized that after reading the code.
 
-Hmm..., I am running out of ideas here. This is what I understand.
+> Also, I don't like having the clk_enable in the PM core but the
+> clk_prepare in the platform-specific pm_domain.  That seems prone for
+> platforms to get wrong.
+> 
+Agree.
 
-- If I sign the bzImage (using PKCS1.5 signature), and later it is signed
-  with authenticode format signatures, then PKCS1.5 signatures will not be
-  valid as PE/COFF signing will do some modification to PE/COFF header in
-  bzImage. And another problem is that then I don't have a way to find
-  PKCS1.5 signature.
+> I'll need to think about this a little more before having any idea what
+> to do here.
+> 
+Thanks Kevin for looking into it.
 
-- If bzImage is first signed with authenticode format signature and then
-  signed using PKCS1.5 signature, then  authenticode format signature
-  will become invalid as it will also hash the data appened at the end
-  of file.
+Regards,
+Santosh
 
-So looks like both signatures can't co-exist on same file. That means
-one signature has to be detached.
-
-I am beginning to think that create a kernel option which allows to choose
-between attached and detached signatures. Extend kexec syscall to allow
-a parameter to pass in detached signatures. If detached signatures are
-not passed, then look for signatures at the end of file. That way, those
-who are signing kernels using platform specific format (authenticode) in 
-this case, they can generate detached signature while others can just
-use attached signatures.
-
-Any thoughts on how this should be handled?
-
-Thanks
-Vivek
