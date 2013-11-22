@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab3KVB7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 20:59:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770Ab3KVB7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 20:59:52 -0500
-Date: Thu, 21 Nov 2013 20:59:10 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v6 2/3] x86, apic: Add disable_cpu_apicid kernel parameter
-Message-ID: <20131122015910.GB31921@redhat.com>
-References: <20131121015951.2748.47826.stgit@localhost6.localdomain6>
- <20131121020044.2748.70221.stgit@localhost6.localdomain6>
- <20131121213300.GR16208@redhat.com>
- <528EA874.9010609@jp.fujitsu.com>
+	id S1755037Ab3KVCEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 21:04:20 -0500
+Received: from mx-a.atmailcloud.com ([65.61.115.90]:64629 "EHLO
+	ultra2.atmailcloud.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab3KVCER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 21:04:17 -0500
+X-Greylist: delayed 1385 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Nov 2013 21:04:17 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528EA874.9010609@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 21 Nov 2013 20:41:10 -0500
+Message-ID: <CA+tRDaL=RSjG=Fdw4+6hia8WWM5oa_JoZBA+HFOA6mgqTunb0A@mail.gmail.com>
+Subject: DisplayLink driver
+From: Alejandro Bonilla <abonilla@linuxwireless.org>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 09:42:28AM +0900, HATAYAMA Daisuke wrote:
-> (2013/11/22 6:33), Vivek Goyal wrote:
-> >On Thu, Nov 21, 2013 at 11:00:44AM +0900, HATAYAMA Daisuke wrote:
-> >
-> >[..]
-> >>@@ -2122,6 +2129,19 @@ void generic_processor_info(int apicid, int version)
-> >>  	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
-> >>  				phys_cpu_present_map);
-> >>
-> >>+	if (disabled_cpu_apicid != BAD_APICID &&
-> >>+	    disabled_cpu_apicid != boot_cpu_physical_apicid &&
-> >
-> >Hi Hatayama,
-> >
-> >So we are comparing disabled_cpu_apicid with boot_cpu_physical_apicid
-> >to make sure that one can not disable the cpu we are booting on. Can
-> >we just read the apic id of booting cpu in local variable and compare
-> >against that?
-> >
-> >Something like as follows.
-> >
-> >	if (disabled_cpu_apicid != BAD_APICID &&
-> >	    disabled_cpu_apicid == apicid &&
-> >	    disabled_cpu_apicid != read_apic_id()) {
-> >		/* Disable cpu */	
-> >	}
-> >
-> >If above works, you will not need first patch in the series?
-> >
-> 
-> Yes, I came up with the idea, too. But doing this means we leave two different
-> ways boot_cpu_physical_apicid is used at boot, which seemed incomplete as a
-> patch. Also, then we could even lost the reason why boot_cpu_physical_apicid
-> exists.
-> 
-> But, it's true that the 1st patch causes one more reviewing point. I'll
-> remove it and fix the 2nd patch just as you suggested here.
+Hi,
 
-I would say that do the boot_cpu_physical_id related cleanup in a separate
-series. If we keep this patch really simple without fear of breaking
-anything else, acking and committing the patch becomes easier.
+I have a Lenovo ThinkVision LT1421 which I guess uses the DisplayLink
+chipset 1.x, I'm also using kernel 3.11.6. The device is recognized
+[  997.279496] usb 2-1.5: new high-speed USB device number 4 using ehci-pci
+[  997.344494] usb 2-1.5: device descriptor read/64, error 64
+[  997.534746] usb 2-1.5: New USB device found, idVendor=17e9, idProduct=03e0
+[  997.534753] usb 2-1.5: New USB device strings: Mfr=1, Product=2,
+SerialNumber=3
+[  997.534756] usb 2-1.5: Product: Lenovo LT1421 wide
+[  997.534759] usb 2-1.5: Manufacturer: DisplayLink
+[  997.534761] usb 2-1.5: SerialNumber: 6V9BZHC1
+[  997.543996] [drm] vendor descriptor length:17 data:17 5f 01 00 15
+05 00 01 03 00 04
+[  997.640811] udl 2-1.5:1.0: fb1: udldrmfb frame buffer device
+[  997.640816] udl 2-1.5:1.0: registered panic notifier
+[  997.640822] [drm] Initialized udl 0.0.1 20120220 on minor 1
+[  997.640886] usbcore: registered new interface driver udl
 
-Feel free to post boot cpu related cleanup in a separate series.
+But xrandr is not recognizing the device/screen.
+
+So the question is, which driver supports it, the UDL or UDLFB driver?
+
+(please cc me, I'm not subscribed)
 
 Thanks
-Vivek
