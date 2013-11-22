@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3KVM10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:27:26 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:65012 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532Ab3KVM1Z (ORCPT
+	id S1755616Ab3KVM2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:28:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62426 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752132Ab3KVM2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:27:25 -0500
+	Fri, 22 Nov 2013 07:28:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <cjb@laptop.org>, Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
+Date: Fri, 22 Nov 2013 13:41:35 +0100
+Message-ID: <9252491.gfcLFPm9bi@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <528E4CBA.8000808@zytor.com>
-References: <1384903939-3371-1-git-send-email-akinobu.mita@gmail.com>
-	<528D4A1A.2050100@zytor.com>
-	<CAC5umyh0Hfx3NgHX11eqskuifhrdYGB8L1nx1u0YUdBGchRTxw@mail.gmail.com>
-	<528E4CBA.8000808@zytor.com>
-Date: Fri, 22 Nov 2013 21:27:24 +0900
-Message-ID: <CAC5umygUgSjUMFECDXAjmSPzpfUZ6=jRhZWhd5hTT2-eO6Oh6Q@mail.gmail.com>
-Subject: Re: [PATCH] x86: enable DMA CMA with swiotlb
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/22 H. Peter Anvin <hpa@zytor.com>:
-> On 11/21/2013 07:02 AM, Akinobu Mita wrote:
->>
->> I want to use DMA CMA for the feature that requires a single huge chunk
->> (about 64MB) of host memory.
->
-> That is tautological.  "I want to use the Contiguous Memory Allocator to
-> allocate contiguous memory."
->
->> Please refer 3 of 24 in:
->> http://www.jedec.org/sites/default/files/T_Fujisawa_MF_2013.pdf
->
-> But yes, it makes sense that a device using host memory would not be
-> able to leverage swiotlb, because the software simply has no clue what
-> the DMA transactions are.  In that sense it is fundamentally different
-> from a real IOTLB.
+On Friday, November 22, 2013 02:14:27 PM Mika Westerberg wrote:
+> Hi all,
+> 
+> Now that the mainline kernel has full ACPI support for the GPIO descriptor
+> interface we can get rid of ACPI specific GPIO functions in favor of GPIO
+> descriptor (gpiod_*) interfaces.
+> 
+> This series first converts the existing two users to this interface and
+> then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
+> called internally in drivers/gpio. We then remove the acpi_gpio.h and
+> require all users to user gpiod_* interfaces.
+> 
+> This is second version of the series. Changes to the previous [1]:
+>  * paz00 is passing the lookup table so that we don't need to have gpio
+>    conversion function in rfkill-gpio.c anymore.
+>  * Corrected sdhci-acpi.c to pass con_id and added call to
+>    gpiod_direction_input().
+> 
+> I suppose it would make sense to merge the whole series via GPIO or ACPI
+> trees because there's a dependency that the first two patches need to be
+> applied before last three. Otherwise the drivers in question fail to
+> compile.
+> 
+> [1] https://lkml.org/lkml/2013/11/21/317
+> 
+> Heikki Krogerus (3):
+>   net: rfkill: gpio: convert to descriptor-based GPIO interface
+>   ARM: tegra: add gpiod_lookup table for paz00
+>   net: rfkill: gpio: remove gpio conversion support
+> 
+> Mika Westerberg (4):
+>   mmc: sdhci-acpi: covert to use GPIO descriptor API
+>   gpio / ACPI: register to ACPI events automatically
+>   gpio / ACPI: get rid of acpi_gpio.h
+>   Documentation / ACPI: update to GPIO descriptor API
+> 
+>  Documentation/acpi/enumeration.txt | 36 ++++--------------
+>  arch/arm/mach-tegra/board-paz00.c  |  9 ++++-
+>  drivers/gpio/gpiolib-acpi.c        | 20 +++++++---
+>  drivers/gpio/gpiolib.c             |  5 ++-
+>  drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
+>  drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
+>  drivers/pinctrl/pinctrl-baytrail.c |  4 --
+>  include/linux/acpi_gpio.h          | 51 -------------------------
+>  net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
+>  9 files changed, 125 insertions(+), 149 deletions(-)
+>  create mode 100644 drivers/gpio/gpiolib.h
+>  delete mode 100644 include/linux/acpi_gpio.h
 
-I'm currently working for integrating DMA CMA with intel-iommu which
-I can test.  Regardless of which dma ops is actually used, I would
-like to allocate large contiguous memory with dma_alloc_coherent()
-and tell the base address to the device.
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-We can use mem= or crashkernel= to reserve host memory, but it is
-complicated and unables to work with real IOMMU.
+for the ACPI-related material in this series.
+
+Thanks,
+Rafael
+
