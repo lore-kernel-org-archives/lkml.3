@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab3KVSGb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:06:31 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:41155 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab3KVSG2 (ORCPT
+	id S1756021Ab3KVSIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:08:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55911 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755903Ab3KVSIM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:06:28 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH staging-next 0/4] fwserial changes for 3.14
-Date: Fri, 22 Nov 2013 13:06:07 -0500
-Message-Id: <1385143571-3571-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Fri, 22 Nov 2013 13:08:12 -0500
+From: Alexander Graf <agraf@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: gem csum breakage with 018c5bba (Handle CHECKSUM_COMPLETE more adequately ...)
+Date: Fri, 22 Nov 2013 19:08:16 +0100
+Message-Id: <B8BCE323-6F65-4D14-BD4A-BFA07C3ED290@suse.de>
+Cc: herbert@gondor.hengli.com.au, alexander.h.duyck@intel.com,
+        netdev@vger.kernel.org, edumazet@google.com,
+        herbert@gondor.hengli.com.au,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1812\))
+X-Mailer: Apple Mail (2.1812)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-**This patchset requires 'Halve tty buffer memory consumption' patchset **
+Hi,
 
-Greg,
+With current Linus' master tree my ibook started emitting a lot of annoying csum calculation warnings. I've bisected it down to the commit seen in the subject line, but I suppose the real problem lies somewhere a lot deeper and only gets revealed thanks to the more clever checksum logic applied now.
 
-I have not forgotten fwserial :)
+Any ideas how to dig further into this?
 
-Patches 1 & 2 remove the hacky rx buffering, and instead rely on
-configurable tty buffers. [Interestingly, tty buffers were originally
-introduced by Alan Cox to replace flip buffers specifically to support
-higher throughput serial devices which had mutated special-purpose
-rx buffering.]
 
-Patch 3 remedies an ugly (private interface) name.
-Patch 4 adds build configuration options which control how many
-fwserial devices can exist (per adapter and in total). This is
-so some build configurations can minimize resources while still
-providing firewire serial console autoconnect (say for a debugging
-console or a headless server) while another build configuration
-could support many headless server consoles running on a single
-machine.
+Thanks,
 
-I hope to get the stage 1 console driver into -next in this
-cycle as well.
+Alex
 
-Regards,
+---
 
-Peter Hurley (4):
-  staging/fwserial: Rip out rx buffering
-  staging/fwserial: Up the tty buffer limit to 128K
-  staging/fwserial: Rename data profiling functions
-  staging/fwserial: Add Kconfig options for max ports
-
- drivers/staging/fwserial/Kconfig    |  20 +++++
- drivers/staging/fwserial/fwserial.c | 151 ++++++++++--------------------------
- drivers/staging/fwserial/fwserial.h |  24 +-----
- drivers/tty/tty_buffer.c            |   1 +
- 4 files changed, 64 insertions(+), 132 deletions(-)
-
--- 
-1.8.1.2
-
+<unknown>: hw csum failure
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #1
+Call Trace:
+[efff1d00] [c00090f0] show_stack+0x48/0x150 (unreliable)
+[efff1d40] [c049f794] csum_partial_copy_to_xdr+0xf8/0x168
+[efff1d60] [c04a1120] xs_udp_data_ready+0xbc/0x140
+[efff1d90] [c03f99f4] sock_queue_rcv_skb+0x144/0x1c0
+[efff1db0] [c045aa28] __udp_queue_rcv_skb+0x38/0xd4
+[efff1dc0] [c045de5c] udp_queue_rcv_skb+0x260/0x3ac
+[efff1de0] [c045e6dc] __udp4_lib_rcv+0x2c8/0x63c
+[efff1e20] [c0432a78] ip_local_deliver_finish+0x100/0x268
+[efff1e40] [c0408264] __netif_receive_skb_core+0x510/0x690
+[efff1ea0] [c040b78c] napi_gro_receive+0xac/0xd8
+[efff1eb0] [c0353b94] gem_poll+0x5bc/0x116c
+[efff1f50] [c040a60c] net_rx_action+0x118/0x1fc
+[efff1f90] [c0046afc] __do_softirq+0xd4/0x1c4
+[efff1fe0] [c0046f04] irq_exit+0x94/0xb8
+[efff1ff0] [c000ef30] call_do_irq+0x24/0x3c
+[c0733e90] [c0006ca4] do_IRQ+0x64/0xb4
+[c0733eb0] [c0011b34] ret_from_except+0x0/0x1c
+--- Exception: 501 at arch_cpu_idle+0x24/0x6c
+    LR = arch_cpu_idle+0x24/0x6c
+[c0733f70] [c0082638] rcu_idle_enter+0x84/0xc4 (unreliable)
+[c0733f80] [c007c4b0] cpu_startup_entry+0xa4/0x16c
+[c0733fb0] [c06caf54] start_kernel+0x308/0x31c
+[c0733ff0] [00003d34] 0x3d34
