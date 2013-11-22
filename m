@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3KVPUT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:20:19 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54291 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab3KVPUS (ORCPT
+	id S1755793Ab3KVPUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:20:41 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43715 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab3KVPUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:20:18 -0500
+	Fri, 22 Nov 2013 10:20:36 -0500
+Message-ID: <528F7641.2010003@gmail.com>
+Date: Fri, 22 Nov 2013 08:20:33 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
-References: <1385132242-3204-1-git-send-email-jonas.jensen@gmail.com>
-	<1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
-Date: Fri, 22 Nov 2013 16:20:17 +0100
-Message-ID: <CACmBeS3vyLT7MYeTM6OzYvpWdqJgHp=ys0acf-qun14pbc=oXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] net: MOXA ART: connect to PHY and add ethtool support
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: netdev <netdev@vger.kernel.org>
-Cc: davem <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+References: <20131121100722.GA25459@pd.tnic> <20131121111744.GA27513@gmail.com> <20131121113014.GA26009@pd.tnic> <20131121114224.GA27704@gmail.com> <20131121120605.GC26009@pd.tnic> <20131121150524.GA24806@ghostprotocols.net> <20131121152804.GI26009@pd.tnic> <20131121173714.GD24806@ghostprotocols.net> <20131122122701.GA1480@gmail.com> <20131122135034.GA20146@nazgul.tnic> <20131122150055.GC11305@ghostprotocols.net>
+In-Reply-To: <20131122150055.GC11305@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 November 2013 15:57, Jonas Jensen <jonas.jensen@gmail.com> wrote:
->  drivers/net/ethernet/moxa/moxart_ether.c | 179 ++++++++++++++++++++++++++++++-
->  drivers/net/ethernet/moxa/moxart_ether.h |   1 +
->  2 files changed, 179 insertions(+), 1 deletion(-)
+On 11/22/13, 8:00 AM, Arnaldo Carvalho de Melo wrote:
+>
+> Lets do one at a time, so far we agreed that the ones that involves
+> parsing procfs/sysfs etc should go in tools/lib/(fs)?kapi, so lets do
+> that one.
 
-I see now I forgot to include the devicetree binding document.
+libsysfs & libsysfs-devel?
 
-I'll wait for comments.
-
-
-Thanks,
-Jonas
