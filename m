@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3KVQYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:24:17 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41974 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756040Ab3KVQYP (ORCPT
+	id S1755975Ab3KVQYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:24:00 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:47531 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab3KVQX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:24:15 -0500
+	Fri, 22 Nov 2013 11:23:57 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com
 Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 19/23] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
-Date: Fri, 22 Nov 2013 16:22:56 +0000
-Message-Id: <1385137380-28968-20-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 13/23] mtd: st_spi_fsm: Fetch platform specific configurations
+Date: Fri, 22 Nov 2013 16:22:50 +0000
+Message-Id: <1385137380-28968-14-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
 References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
@@ -21,86 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on information we can obtain though platform specific data and/or
-chip capabilities we are able to determine whether or not we can handle
-a SoC reset or not. To find out why this is important please read the
-comment provided in the patch.
+All supported platforms are able to pass specific configurations via
+the Device Tree on boot. Here we add a function which is to be called
+during the probing process which will extract them, or make other
+assumptions based on capabilities provided.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 38 ++++++++++++++++++++++++++++++++++++++
- drivers/mtd/devices/st_spi_fsm.h |  2 ++
- 2 files changed, 40 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 85abf9a..9a66c99 100644
+index 0b32fef..5bced00 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -128,6 +128,40 @@ static void stfsm_wait_seq(struct stfsm *fsm)
- 	dev_err(fsm->dev, "timeout on sequence completion\n");
+@@ -273,6 +273,15 @@ static int stfsm_init(struct stfsm *fsm)
+ 	return 0;
  }
  
-+/*
-+ * SoC reset on 'boot-from-spi' systems
-+ *
-+ * Certain modes of operation cause the Flash device to enter a particular state
-+ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
-+ * Addr' commands).  On boot-from-spi systems, it is important to consider what
-+ * happens if a warm reset occurs during this period.  The SPIBoot controller
-+ * assumes that Flash device is in its default reset state, 24-bit address mode,
-+ * and ready to accept commands.  This can be achieved using some form of
-+ * on-board logic/controller to force a device POR in response to a SoC-level
-+ * reset or by making use of the device reset signal if available (limited
-+ * number of devices only).
-+ *
-+ * Failure to take such precautions can cause problems following a warm reset.
-+ * For some operations (e.g. ERASE), there is little that can be done.  For
-+ * other modes of operation (e.g. 32-bit addressing), options are often
-+ * available that can help minimise the window in which a reset could cause a
-+ * problem.
-+ *
-+ */
-+static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
++static void stfsm_fetch_platform_configs(struct platform_device *pdev)
 +{
-+	/* Reset signal is available on the board and supported by the device */
-+	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
-+		return true;
++	struct stfsm *fsm = platform_get_drvdata(pdev);
++	struct flash_info *info = fsm->info;
 +
-+	/* Board-level logic forces a power-on-reset */
-+	if (fsm->reset_por)
-+		return true;
-+
-+	/* Reset is not properly handled and may result in failure to reboot */
-+	return false;
++	if (info->sector_size * info->n_sectors > 0xFFFFFF)
++		info->flags |= FLASH_FLAG_32BITADDR;
 +}
 +
- /* Configure 'addr_cfg' according to addressing mode */
- static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
- 				       struct stfsm_seq *seq)
-@@ -442,6 +476,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
- 		goto boot_device_fail;
- 	}
+ static int stfsm_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -331,6 +340,8 @@ static int stfsm_probe(struct platform_device *pdev)
  
-+	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
+ 	platform_set_drvdata(pdev, fsm);
+ 
++	stfsm_fetch_platform_configs(pdev);
 +
-+	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
-+
- 	/* Where in the syscon the boot device information lives */
- 	ret = of_property_read_u32(np, "boot-device-reg", &boot_device_reg);
- 	if (ret)
-diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-index 2e12bff..8eb9e20 100644
---- a/drivers/mtd/devices/st_spi_fsm.h
-+++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -239,6 +239,8 @@ struct stfsm {
- 
- 	uint32_t		fifo_dir_delay;
- 	bool			booted_from_spi;
-+	bool			reset_signal;
-+	bool			reset_por;
- };
- 
- struct stfsm_seq {
+ 	fsm->mtd.dev.parent	= &pdev->dev;
+ 	fsm->mtd.type		= MTD_NORFLASH;
+ 	fsm->mtd.writesize	= 4;
 -- 
 1.8.1.2
 
