@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab3KVWcq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:32:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:47487 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab3KVWcl (ORCPT
+	id S1756140Ab3KVWef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 17:34:35 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:15464 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab3KVWee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:32:41 -0500
-Date: Fri, 22 Nov 2013 23:32:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: badarkhe.manish@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [patch 05/34] idle: Implement generic idle function
-In-Reply-To: <CAOh2x=nefF3QqHy2C8jRFeXj_JxyeUus+4D1OD96qj8BkYY-JA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311222328190.30673@ionos.tec.linutronix.de>
-References: <20130321214930.752934102@linutronix.de> <20130321215233.646635455@linutronix.de> <CAOh2x=nefF3QqHy2C8jRFeXj_JxyeUus+4D1OD96qj8BkYY-JA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 22 Nov 2013 17:34:34 -0500
+Message-ID: <1385159385.1791.160.camel@misato.fc.hp.com>
+Subject: Re: [patch 0/9 v3] kexec kernel efi runtime support
+From: Toshi Kani <toshi.kani@hp.com>
+To: dyoung@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, matt@console-pimps.org
+Date: Fri, 22 Nov 2013 15:29:45 -0700
+In-Reply-To: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
+References: <20131121061704.363730447@dhcp-16-126.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Nov 2013, Viresh Kumar wrote:
+On Thu, 2013-11-21 at 14:17 +0800, dyoung@redhat.com wrote:
+> Hi,
+> 
+> Here is the V3 for supporting kexec kernel efi runtime.
+> Per pervious discussion I pass the 1st kernel efi runtime mapping
+> via setup_data to 2nd kernel. Besides of the runtime mapping
+> info I also pass the fw_vendor, runtime, config table, smbios
+> physical address in setup_data. EFI spec mentioned fw_vendor,
+> runtime, config table addresses will be converted to virt address
+> after entering virtual mode, but we will use it as physical address
+> in efi_init. For smbios EFI spec did not mention about the address
+> updating, but during my test on a HP workstation, the bios will
+> convert it to Virt addr, thus pass it in setup_data as well.
+> 
+> For fw_vendor, runtime, config table, I export them in /sys/firmware/
+> efi/, smbios is already in /sys/firmware/efi/systab.
+> 
+> For efi runtime mapping I add a new directory /sys/firmware/efi/
+> runtime-map/ like below
+> [dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
+> /sys/firmware/efi/runtime-map/
+> ├── 0
+> │   ├── attribute
+> │   ├── num_pages
+> │   ├── phys_addr
+> │   ├── type
+> │   └── virt_addr
+> ├── 1
+> │   ├── attribute
+> │   ├── num_pages
+> │   ├── phys_addr
+> │   ├── type
+> │   └── virt_addr
+> [snip]
+>  
+> kexec-tools will assemble them as setup_data and pass to 2nd kernel.
+> I will send userspace patches as well.
+> 
+> Limitation is I only write support for x86_64, test on below machines:
+> Lenovo thinkpad t420
+> Dell inspiron 14 - 3421
+> HP Z420 workstation
+> Qemu + OVMF
 
-> On Fri, Mar 22, 2013 at 3:23 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > --- linux-2.6.orig/kernel/cpu/idle.c
-> > +++ linux-2.6/kernel/cpu/idle.c
-> 
-> > +void cpu_startup_entry(enum cpuhp_state state)
-> > +{
-> > +       current_set_polling();
-> > +       arch_cpu_idle_prepare();
-> > +       cpu_idle_loop();
-> > +}
-> > +#endif
-> 
-> Hi Thomas..
-> 
-> Manish (cc'd) recently asked me purpose of _state_ argument in this
-> routine, As this is unused here..
-> 
-> Was this reserved for future use?
+Tested on an HP EFI-based 60-way server (prototype).  For the series:
 
-Yep, if you dig the mail archives you'll find my cpu hotplug series
-which tries to convert it to a full state machine. So the state
-argument is due to that, because the boot cpu will call into that with
-a certain state and we want to allow archs to skip some states even on
-secondary cpus. So yes, it's unused, but its there on purpose. It's
-going to be used when my work backlog drops down to the cpuhotplug
-mess again. About 2 lightyears from now ....
+Tested-by: Toshi Kani <toshi.kani@hp.com>
 
 Thanks,
+-Toshi
 
-	tglx
+
