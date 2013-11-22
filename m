@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab3KVQx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:53:28 -0500
-Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:36290 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099Ab3KVQx1 (ORCPT
+	id S1755872Ab3KVQyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:54:15 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50504 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab3KVQyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:53:27 -0500
-Message-ID: <528F8C01.8020603@codethink.co.uk>
-Date: Fri, 22 Nov 2013 10:53:21 -0600
-From: Mark Doffman <mark.doffman@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: David Dillow <dave@thedillows.org>
-CC: ceph-devel@vger.kernel.org, sage@inktank.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        rob.taylor@codethink.co.uk
-Subject: Re: [PATCH 0/4] Add ceph root filesystem functionality and documentation.
-References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk> <1385065186.18238.0.camel@frustration.ornl.gov>
-In-Reply-To: <1385065186.18238.0.camel@frustration.ornl.gov>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Nov 2013 11:54:14 -0500
+From: andrew.liu200917@gmail.com
+To: dan.j.williams@intel.com, vinod.koul@intel.com
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Liu <andrew.liu200917@gmail.com>
+Subject: [PATCH] edma: free the same memory twice
+Date: Sat, 23 Nov 2013 00:54:03 +0800
+Message-Id: <1385139243-5892-1-git-send-email-andrew.liu200917@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 02:19 PM, David Dillow wrote:
-> On Wed, 2013-11-20 at 20:13 -0600, mark.doffman@codethink.co.uk wrote:
->> The following patch series adds the ability to use a ceph distributed
->> file system as the root device. The functionality is similar to
->> NFS root but for the ceph filesystem.
->
-> Why do this in the kernel vs in the initramfs? Dracut would be a more
-> appropriate place, I think, as it has support for other network root
-> devices already.
+From: Andrew Liu <andrew.liu200917@gmail.com>
 
-I don't know if its a good idea to require an initramfs for mounting a
-rootfs over the network. NFS root is currently in the kernel, and
-frequently used without an initramfs.
+Signed-off-by: Andrew Liu <andrew.liu200917@gmail.com>
+---
+ drivers/dma/edma.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Booting from ceph using a root device is relatively simple compared to
-generating an initramfs and it has the possibility of producing smaller
-images for memory constrained devices.
-
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index bef8a36..04bc1be 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -305,7 +305,6 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
+ 						EDMA_SLOT_ANY);
+ 			if (echan->slot[i] < 0) {
+-				kfree(edesc);
+ 				dev_err(dev, "Failed to allocate slot\n");
+ 				kfree(edesc);
+ 				return NULL;
+-- 
+1.7.9
 
