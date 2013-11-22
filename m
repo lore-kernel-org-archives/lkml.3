@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3KVTYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:24:05 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:65511 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab3KVTYD (ORCPT
+	id S1756093Ab3KVT1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:27:07 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:45671 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab3KVT1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:24:03 -0500
-Message-ID: <528FAF50.10100@gmail.com>
-Date: Fri, 22 Nov 2013 20:24:00 +0100
-From: Chang <changxiangzhong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 22 Nov 2013 14:27:02 -0500
+Date: Fri, 22 Nov 2013 11:26:57 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH v3 tip/core/locking 0/3] Memory-barrier documentation updates
+Message-ID: <20131122192657.GA11924@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>, nhorman@tuxdriver.com,
-        davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: sctp: set chunk->tsn_gap_acked at the end of cycle
-References: <1385106589-402-1-git-send-email-changxiangzhong@gmail.com> <528F69B7.7020902@gmail.com>
-In-Reply-To: <528F69B7.7020902@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112219-0928-0000-0000-000003B239C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello!
 
-On 11/22/2013 03:27 PM, Vlad Yasevich wrote:
-> On 11/22/2013 02:49 AM, Chang Xiangzhong wrote:
->> tsn_gap_acked is an important state flag in chunk, which indicates if the
->> chunk has been acked in gap reports before.
-> Actually, this bit indicates simply that the chunk has been acked.  It
-> doesn't state whether it's been acked in a gap report or via cumulative tsn.
-Thanks for pointing this out. Sorry for not having made that clear.
->
->> SFR-CACC algorithm depends on this
->> variable. So set this at the end of each iteration, otherwise the SFR-CACC
->> algorithm would never be toggled.
->>
->> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
->> ---
->>   net/sctp/outqueue.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->> index 1b494fa..bff828c 100644
->> --- a/net/sctp/outqueue.c
->> +++ b/net/sctp/outqueue.c
->> @@ -1396,7 +1396,6 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->>   			 * while DATA was outstanding).
->>   			 */
->>   			if (!tchunk->tsn_gap_acked) {
->> -				tchunk->tsn_gap_acked = 1;
->>   				if (TSN_lt(*highest_new_tsn_in_sack, tsn))
->>   					*highest_new_tsn_in_sack = tsn;
->>   				bytes_acked += sctp_data_size(tchunk);
->> @@ -1460,6 +1459,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->>   				 */
->>   				list_add_tail(lchunk, &tlist);
->>   			}
->> +
->> +			tchunk->tsn_gap_acked = 1;
-> The current code will set the state if it hasn't been set yet.  Why is
-> this needed?
-Because in line 1420 ~ 1440 The SFR-CACC algorithms use tsn_gap_acked. 
-That "if block" would never be triggered because the varaiable's been 
-set. That's why I move the "state changing sentence" to the end of the 
-iteration.
-> Now there is an issue with tracking highest_new_tsn_in_sack.  The spec
-> is a little vague on this, but the highest_new_tsn_in_sack only supposed
-> to track tsns that have not been resent.  If a tsn has been reneged, and
-> then sent again, it is not considered 'new' thus should not count
-> toward highest_new_tsn_in_sack.  We currently do not track this right.
-I'll try to figure this out.
-> -vlad
->
-> -vlad
->
->>   		} else {
->>   			if (tchunk->tsn_gap_acked) {
->>   				pr_debug("%s: receiver reneged on data TSN:0x%x\n",
->>
+This series applies some long-needed updates to memory-barriers.txt:
+
+1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
+	in code copy-and-pasted from this file.
+
+2.	Add long atomic examples alongside the existing atomics.
+
+3.	Prohibit architectures supporting the Linux kernel from
+	speculating stores.
+
+Changes from v2:
+
+o	Update examples so that that load against which the subsequent
+	store is to be ordered is part of the "if" condition.
+
+o	Add an example showing how the compiler can remove "if"
+	conditions and how to prevent it from doing so.
+
+o	Add ACCESS_ONCE() to the compiler-barrier section.
+
+o	Add a sentence noting that transitivity requires smp_mb().
+
+Changes from v1:
+
+o	Combined with Peter Zijlstra's speculative-store-prohibition patch.
+
+o	Added more pitfalls to avoid when prohibiting speculative
+	stores, along with how to avoid them.
+
+o	Applied Josh Triplett's review comments.
+
+							Thanx, Paul
 
