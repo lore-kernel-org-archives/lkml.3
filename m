@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3KVP15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:27:57 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59020 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab3KVP1z (ORCPT
+	id S1755618Ab3KVPdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:33:38 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63805 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab3KVPdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:27:55 -0500
-Subject: Re: [PATCH 17/22] perf tools: Add build and install plugins targets
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <1385031680-9014-18-git-send-email-jolsa@redhat.com>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	 <1385031680-9014-18-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Nov 2013 00:27:48 +0900
-Message-ID: <1385134068.1747.105.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Fri, 22 Nov 2013 10:33:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX195WXsiuGmaEJpD2A35dItF
+Date: Fri, 22 Nov 2013 07:33:34 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, benoit.cousson@linaro.org,
+        santosh.shilimkar@ti.com, jgchunter@gmail.com, rnayak@ti.com,
+        balbi@ti.com
+Subject: Re: [PATCH 1/8] ARM: OMAP: Move public portion of dmtimer.h to
+ include/linux/omap-timer.h
+Message-ID: <20131122153334.GE10023@atomide.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
+ <1385085414-9034-2-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385085414-9034-2-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-11-21 (목), 12:01 +0100, Jiri Olsa:
-> Adding 'plugins' target along with the libtraceevent.a,
-> so plugins are built together with traceevent library.
+Hi,
+
+* Joel Fernandes <joelf@ti.com> [131121 18:00]:
+> Multiplatform support has made arch/arm/plat-omap/include/plat/ inaccessible to
+> drivers outside the plat-omap directory [1]. Due to this the following drivers
+> are disabled with !CONFIG_ARCH_MULTIPLATFORM:
+> CONFIG_IR_RX51 (drivers/media/rc/ir-rx51.c)
+> CONFIG_TIDSPBRIDGE (drivers/staging/tidspbridge/core/dsp-clock.c)
 > 
-> Adding 'install-traceevent-plugins' Makefile install target,
-> instructing perf to install plugins into:
->   $(HOME)/libexec/perf-core/traceevent/plugins
->     - if installed localy under $HOME
->   $(DESTDIR)/$(prefix)/$(perfexecdir)/traceevent/plugins
->     - if installed globally
+> We move the portion of the dmtimer "API" that should be accessible to the
+> drivers, into include/linux/omap-timer.h
 
-[SNIP]
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -578,6 +578,7 @@ else
->  lib = lib
->  endif
->  libdir = $(prefix)/$(lib)
-> +plugindir=$(perfexecdir)/traceevent/plugins
+As we chatted earlier, we don't have to expose all these hardware specific
+functions and use existing Linux generic frameworks instead.
 
-Hmm.. it puts traceevent plugins under the perf directory.  But I don't
-think it's a good idea since libtraceevent can be used independently.
+We can implement an irqchip and a clocksource in the dmtimer code for the
+client drivers to use, and after that we only have a couple of dmtimer
+specific functions left to export.
 
-What about something like this?
+I'm thinkging some thing like this for the public API:
 
-  plugindir = $(perfexecdir)/../traceevent/plugins
+omap_dm_timer_request			request_irq
+omap_dm_timer_request_specific		request_irq
+omap_dm_timer_get_irq			request_irq
+omap_dm_timer_set_source		clk_set_rate
+omap_dm_timer_stop			disable_irq
+omap_dm_timer_start			enable_irq
+omap_dm_timer_disable			disable_irq
+omap_dm_timer_free			free_irq
+omap_dm_timer_set_int_enable		enable_irq
 
-Thanks,
-Namhyung
+After that, what's left to export are some functions to configure
+the hardware timer:
 
+omap_dm_timer_write_counter
+omap_dm_timer_set_match
+omap_dm_timer_read_counter
+omap_dm_timer_read_status
+omap_dm_timer_write_status
 
+And for those we can then eventually probably have some Linux generic
+hardware timer API :)
+
+Regards,
+
+Tony
