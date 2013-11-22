@@ -1,167 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3KVHt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 02:49:59 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58291 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3KVHt5 (ORCPT
+	id S1754713Ab3KVHye (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 02:54:34 -0500
+Received: from mail.windriver.com ([147.11.1.11]:53116 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab3KVHyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 02:49:57 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-a2-528f0ca3e846
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH] f2fs: readahead contiguous pages for
- restore_node_summary
-Date: Fri, 22 Nov 2013 15:48:54 +0800
-Message-id: <000101cee757$6f3b4790$4db1d6b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7nVThOK8MIrc/MQQSG0VJCDOm6QA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQd3FPP1BBrM3aFtc3/WXyeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxryHwgWn
-	pCrOzVzP2sD4UaSLkZNDQsBEYtr+6WwQtpjEhXvrgWwuDiGB6YwSjbvvsEM4Pxglpj5czgxS
-	xSagIrG84z8TiC0ioCix4f0GsCJmgRmMEofn/mMFSQgLhEvsvt4G1sAioCrR9uMcC4jNK2Ap
-	8fL8S2YIW1Dix+R7YHFmAQ2J/kUb2CBseYnNa94yQ5ykILHj7GtGiGV6ElNeLIGqF5fYeOQW
-	ywRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc1M+kdzCu
-	arA4xCjAwajEw7vDsi9IiDWxrLgy9xCjBAezkgjvr6tAId6UxMqq1KL8+KLSnNTiQ4zSHCxK
-	4rwHW60DhQTSE0tSs1NTC1KLYLJMHJxSDYwznyy8uZf5xDX78E+74960CDiZ7tXZ98hDY9LO
-	i98VNWPeMNW8T/275FZU12NTg6P7xZZOza3avC316HdpY61rD8UaypzKL2quO/K1fcVd1UCL
-	p4U3chcxf/7K57Q4XVWkNHROhpd9+GHOox1b1Dl3zFgtaucS9EdVnDFAyfTJ8sPMVnFZD32V
-	WIozEg21mIuKEwEoXUwsZgIAAA==
+	Fri, 22 Nov 2013 02:54:32 -0500
+Message-ID: <528F0DB8.7020604@windriver.com>
+Date: Fri, 22 Nov 2013 15:54:32 +0800
+From: yzhu1 <Yanjun.Zhu@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        zhuyj <zyjzyj2000@gmail.com>
+Subject: [PATCH 1/1] e1000: prevent oops when adapter is being closed and
+ reset simultaneously
+Content-Type: multipart/mixed;
+	boundary="------------060303040403000205030505"
+X-Originating-IP: [128.224.162.216]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If cp has no CP_UMOUNT_FLAG, we will read all pages in whole node segment 
-one by one, it makes low performance. So let's merge contiguous pages and 
-readahead for better performance.
+--------------060303040403000205030505
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Hi, maintainers
+
+This change is based on a similar change made to e1000e support in
+commit bb9e44d0d0f4 ("e1000e: prevent oops when adapter is being closed
+and reset simultaneously").  The same issue has also been observed
+on the older e1000 cards.
+
+Here, we have increased the RESET_COUNT value to 50 because there are too
+many accesses to e1000 nic on stress tests to e1000 nic, it is not enough
+to set RESET_COUT 25. Experimentation has shown that it is enough to set
+RESET_COUNT 50.
+
+Please help me to merge this patch. Thanks a lot.
+
+Zhu Yanjun
+
+--------------060303040403000205030505
+Content-Type: text/x-patch;
+	name="0001-e1000-prevent-oops-when-adapter-is-being-closed-and-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0001-e1000-prevent-oops-when-adapter-is-being-closed-and-.pa";
+	filename*1="tch"
+
+>From 54e9e48a9f878eb45f0cc6322415244d7a9f1598 Mon Sep 17 00:00:00 2001
+From: yzhu1 <yanjun.zhu@windriver.com>
+Date: Fri, 22 Nov 2013 15:46:48 +0800
+Subject: [PATCH 1/1] e1000: prevent oops when adapter is being closed and
+ reset simultaneously
+
+This change is based on a similar change made to e1000e support in
+commit bb9e44d0d0f4 ("e1000e: prevent oops when adapter is being closed
+and reset simultaneously").  The same issue has also been observed
+on the older e1000 cards.
+
+Here, we have increased the RESET_COUNT value to 50 because there are too
+many accesses to e1000 nic on stress tests to e1000 nic, it is not enough
+to set RESET_COUT 25. Experimentation has shown that it is enough to set
+RESET_COUNT 50.
+
+Signed-off-by: yzhu1 <yanjun.zhu@windriver.com>
 ---
- fs/f2fs/node.c |   89 +++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 63 insertions(+), 26 deletions(-)
+ drivers/net/ethernet/intel/e1000/e1000.h      |    5 +++++
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    9 +++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 4ac4150..81e704a 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1572,47 +1572,84 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
- 	return 0;
- }
+diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
+index 58c1472..0af4a8e 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000.h
++++ b/drivers/net/ethernet/intel/e1000/e1000.h
+@@ -83,6 +83,11 @@ struct e1000_adapter;
+ 
+ #define E1000_MAX_INTR			10
  
 +/*
-+ * ra_sum_pages() merge contiguous pages into one bio and submit.
-+ * these pre-readed pages are linked in pages list.
++ * Count for polling __E1000_RESET condition every 10-20msec.
 + */
-+static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
-+				int start, int nrpages)
-+{
-+	struct page *page;
-+	int page_idx = start;
++#define E1000_CHECK_RESET_COUNT         50
 +
-+	for (; page_idx < start + nrpages; page_idx++) {
-+		/* alloc temporal page for read node summary info*/
-+		page = alloc_page(GFP_NOFS | __GFP_ZERO);
-+		if (!page) {
-+			struct page *tmp;
-+			list_for_each_entry_safe(page, tmp, pages, lru) {
-+				list_del(&page->lru);
-+				unlock_page(page);
-+				__free_pages(page, 0);
-+			}
-+			return -ENOMEM;
-+		}
-+
-+		lock_page(page);
-+		page->index = page_idx;
-+		list_add_tail(&page->lru, pages);
-+	}
-+
-+	list_for_each_entry(page, pages, lru)
-+		submit_read_page(sbi, page, page->index, READ_SYNC);
-+
-+	f2fs_submit_read_bio(sbi, READ_SYNC);
-+	return 0;
-+}
-+
- int restore_node_summary(struct f2fs_sb_info *sbi,
- 			unsigned int segno, struct f2fs_summary_block *sum)
+ /* TX/RX descriptor defines */
+ #define E1000_DEFAULT_TXD		256
+ #define E1000_MAX_TXD			256
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index e386228..c0f5217 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -1440,6 +1440,10 @@ static int e1000_close(struct net_device *netdev)
  {
- 	struct f2fs_node *rn;
- 	struct f2fs_summary *sum_entry;
--	struct page *page;
-+	struct page *page, *tmp;
- 	block_t addr;
--	int i, last_offset;
--
--	/* alloc temporal page for read node */
--	page = alloc_page(GFP_NOFS | __GFP_ZERO);
--	if (!page)
--		return -ENOMEM;
--	lock_page(page);
-+	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-+	int i, last_offset, nrpages, err = 0;
-+	LIST_HEAD(page_list);
- 
- 	/* scan the node segment */
- 	last_offset = sbi->blocks_per_seg;
- 	addr = START_BLOCK(sbi, segno);
- 	sum_entry = &sum->entries[0];
- 
--	for (i = 0; i < last_offset; i++, sum_entry++) {
--		/*
--		 * In order to read next node page,
--		 * we must clear PageUptodate flag.
--		 */
--		ClearPageUptodate(page);
-+	for (i = 0; i < last_offset; i += nrpages, addr += nrpages) {
- 
--		if (f2fs_readpage(sbi, page, addr, READ_SYNC))
--			goto out;
-+		nrpages = min(last_offset - i, bio_blocks);
-+		/* read ahead node pages */
-+		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
-+		if (err)
-+			return err;
- 
--		lock_page(page);
--		rn = F2FS_NODE(page);
--		sum_entry->nid = rn->footer.nid;
--		sum_entry->version = 0;
--		sum_entry->ofs_in_node = 0;
--		addr++;
-+		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+ 	struct e1000_adapter *adapter = netdev_priv(netdev);
+ 	struct e1000_hw *hw = &adapter->hw;
++	int count = E1000_CHECK_RESET_COUNT;
 +
-+			lock_page(page);
-+			if(PageUptodate(page)) {
-+				rn = F2FS_NODE(page);
-+				sum_entry->nid = rn->footer.nid;
-+				sum_entry->version = 0;
-+				sum_entry->ofs_in_node = 0;
-+				sum_entry++;
-+			} else {
-+				err = -EIO;
-+			}
++	while (test_bit(__E1000_RESETTING, &adapter->flags) && count--)
++		usleep_range(10000, 20000);
+ 
+ 	WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 	e1000_down(adapter);
+@@ -4963,6 +4967,11 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+ 	netif_device_detach(netdev);
+ 
+ 	if (netif_running(netdev)) {
++		int count = E1000_CHECK_RESET_COUNT;
 +
-+			list_del(&page->lru);
-+			unlock_page(page);
-+			__free_pages(page, 0);
-+		}
++		while (test_bit(__E1000_RESETTING, &adapter->flags) && count--)
++			usleep_range(10000, 20000);
++
+ 		WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 		e1000_down(adapter);
  	}
--	unlock_page(page);
--out:
--	__free_pages(page, 0);
--	return 0;
-+	return err;
- }
- 
- static bool flush_nats_in_journal(struct f2fs_sb_info *sbi)
 -- 
 1.7.9.5
 
+
+--------------060303040403000205030505--
