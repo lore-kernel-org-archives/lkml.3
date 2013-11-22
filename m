@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3KVLpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:45:08 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:35178 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753416Ab3KVLpG (ORCPT
+	id S1755481Ab3KVLqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:46:22 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47705 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab3KVLqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:45:06 -0500
-Date: Fri, 22 Nov 2013 08:45:10 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Hans Zhang <zhanghonghui@innofidei.com>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        zhouguangming@innofidei.com
-Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
-Message-ID: <20131122114509.GB2414@localhost>
-References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
- <CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
- <528EB1E3.7030101@innofidei.com>
- <20131122015237.GB3509@localhost>
- <528EBD0B.5010006@innofidei.com>
+	Fri, 22 Nov 2013 06:46:20 -0500
+Message-ID: <528F4406.3090309@hitachi.com>
+Date: Fri, 22 Nov 2013 20:46:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <528EBD0B.5010006@innofidei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce NOKPROBE_SYMBOL()
+ and general cleaning of kprobe blacklist
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <y0mvbznxi6k.fsf@fche.csb> <20131120153801.GA9743@gmail.com> <20131120173600.GK8993@redhat.com> <528D6C9F.8050809@hitachi.com> <20131121072938.GA16912@gmail.com> <528EC2FF.30301@hitachi.com>
+In-Reply-To: <528EC2FF.30301@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 10:10:19AM +0800, Hans Zhang wrote:
-> On 2013/11/22 9:52, Ezequiel Garcia wrote:
-> > On Fri, Nov 22, 2013 at 09:22:43AM +0800, Hans Zhang wrote:
-> >> On 2013/11/21 18:59, Richard Genoud wrote:
-> >>
-> >> Here's my scenario, I want to write nand through mtdblock by dd command
-> > You could get some better support by explaining why do you want to write
-> > to a NAND through mtdblock. It sounds a bit ackward to me, but I'm sure
-> > you have a good reason for it!
-> >
-> > Let's hear it :-)
+(2013/11/22 11:35), Masami Hiramatsu wrote:
+> (2013/11/21 16:29), Ingo Molnar wrote:
+>>
+>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>
+>>> (2013/11/21 2:36), Frank Ch. Eigler wrote:
+>>
+>> [ ... ]
+>>>> one needs to resort to something like:
+>>>>
+>>>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
+>>>>    perf probe $symbol
+>>>> done
+>>>>
+>>>> then wait for a few hours for that to finish. Then, or while the loop
+>>>> is still running, run
+>>>>
+>>>> # perf record -e 'probe:*' -aR sleep 1
+>>>>
+>>>> to take a kernel down.
+>>>
+>>> Um, indeed, current blacklist is not perfect. [...]
+>>
+>> Then it needs to be fixed ASAP!
 > 
-> Thanks for your reply.
-> This is for my embed system upgrade, I reserved one nand partition for filesystem
-> environment which will load to DDR while uboot booting.
-> This filesystem.uboot file should be able to read both by uboot and kernel, and
-> maybe written by uboot and kernel. There will be no filesystems upon the nand in
-> case the loader may not support some filesystem types while uboot booting.
+> OK, I see. At least the two patches included this series
+> should be fixed. :)
 > 
-> Seems that the trimmed environment of OS has get rid of the mtd-tools, So the dd
-> command was the most convenience tools to use by hand.
-> 
+> And more, I need to test all symbols and drills down.
 
-I still don't understand why are you using mtdblock. Why can't you write
-through the char device?
+OK, what I've found was;
+ - The functions which can be ftraced look good.
+   (see tracing/available_filter_functions)
+ - following functions should not be able to be probed.
+   - memcpy, memset
+   - native_load_sp0 and some other native functions (need to be clear)
+   - restore
+   - trace_graph_return
+   - trace_hardirqs_off_thunk, trace_hardirqs_on_thunk
+   - This list still be not perfect. I just enabled/disabled kprobes
+     one by one. There might be combined bugs (combination of several
+     kprobes).
+ - Some of them are hard to specify by NOKPROBE_SYMBOL because they are
+   defined in assembly file.
+
+Anyway, to fix all of them, I think we need file-based blacklist
+especially for assembler symbols.
+
+For example, we can get all text symbols by below command;
+ nm some-file.o | grep -i " t " | cut -f3 -d" "
+so that we can make a blacklisted-symbol list for the file.
+I need to look the Kbuild for how I can do that in Makefile.
+
+Thank you,
+
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
