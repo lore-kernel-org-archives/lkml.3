@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab3KVIqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:46:37 -0500
+	id S1755471Ab3KVIrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:47:14 -0500
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:18544 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3KVIq2 (ORCPT
+	with ESMTP id S1754011Ab3KVIq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:46:28 -0500
-X-AuditID: cbfec7f4-b7fee6d000004b2d-f6-528f19e21d7c
+	Fri, 22 Nov 2013 03:46:26 -0500
+X-AuditID: cbfec7f4-b7fee6d000004b2d-e4-528f19df6e05
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -26,91 +26,90 @@ Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 4/5] regulator: max14577: Add regulator driver for Maxim
- 14577
-Date: Fri, 22 Nov 2013 09:46:11 +0100
-Message-id: <1385109972-28059-5-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v3 2/5] extcon: max14577: Add extcon-max14577 driver to support
+ MUIC device
+Date: Fri, 22 Nov 2013 09:46:09 +0100
+Message-id: <1385109972-28059-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1385109972-28059-1-git-send-email-k.kozlowski@samsung.com>
 References: <1385109972-28059-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xK7qPJPuDDA491rI4uFXTYuOM9awW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xK7r3JfuDDJ69NbU4uFXTYuOM9awW
 	Ux8+YbO4/uU5q8X8I+dYLSaunMxsceDPDkaLc69WMlq8fmFocbbpDbvF/a9HGS2+Xelgstj0
 	+BqrxcK2JSwWl3fNYbNYe+Quu8XtxhVsFhOmr2WxOLziAJPFupfTWSxOd7NavDrYxuIg5rFm
 	3hpGjwWfr7B7TOj/xOixc9Zddo+Vy7+weWxeoeWxaVUnm8er1TNZPe5c28PmMe9koMfmJfUe
-	fVtWMXp83iTnsXFuaABfFJdNSmpOZllqkb5dAlfGtM8P2Aq+h1U8nWXYwHjQo4uRk0NCwETi
-	bdcUVghbTOLCvfVsILaQwFJGiX0v8roYuYDsPiaJTYuuMYIk2ASMJTYvX8IGkhARmMMqsfvM
-	MxYQh1ngKKPE285dTCBVwgLBElP2zAOzWQRUJf5sfga2glfAXeLTjGXMXYwcQOsUJOZMsgEJ
-	cwp4SPRN/80KEhYCKrn/wWoCI+8CRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCFR82UH
-	4+JjVocYBTgYlXh4d1j2BQmxJpYVV+YeYpTgYFYS4f11FSjEm5JYWZValB9fVJqTWnyIkYmD
-	U6qBsVzsUfm6fT+ZEwSf9G+cPeXWhdozB0wFHzJte1r19+hdRzPRoj+Ll5v/SDFZI8V/PdIr
-	dZVcfUKK1uk9Sk8kL0t0SZyZeEZv6gSWA4qtpj7BeaU3vmQVO1v6hUz9qXPz7NFtD6MTPHWS
-	FV3Mm85X6Aiydcfs6rn+ZlcC8+4rc7XU503y8Am4qsRSnJFoqMVcVJwIAJG9HF14AgAA
+	fVtWMXp83iTnsXFuaABfFJdNSmpOZllqkb5dAlfGrX09rAU79jJWrNy6gLWB8egcxi5GTg4J
+	AROJEzPmM0PYYhIX7q1n62Lk4hASWMooceP4PHaQhJBAH5PEzV1KIDabgLHE5uVLwIpEBOaw
+	Suw+84wFxGEWOMoo8bZzF1MXIweHsECsxMY5YM0sAqoSJ19OBdvAK+Au8f/NXhaQEgkBBYk5
+	k2xAwpwCHhJ903+zgoSFgEruf7CawMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI
+	5HzZwbj4mNUhRgEORiUe3h2WfUFCrIllxZW5hxglOJiVRHh/XQUK8aYkVlalFuXHF5XmpBYf
+	YmTi4JRqYHQRcHsTWig39TtHj4Or+Pfmqk16UdcehXV3Cy2eVfdjad4C9Vbf39nmK36t3VRi
+	9E26QXNFvC4Tl2jJxL49l8492GbcnSvDvl3Y5+Xp/dq2lg9qHwZE8qhfk7gV1tobt0/VpiPU
+	7Jk/51yxju3/6s5fqCpedqbvktS0H7Y/TsXffizadWfSNyWW4oxEQy3mouJEAOa3S+96AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX14577 chip is a multi-function device which includes MUIC,
-charger and voltage regulator. The driver is located in drivers/mfd.
+From: Chanwoo Choi <cw00.choi@samsung.com>
 
-This patch adds regulator driver for MAX14577 chip. There are two
-regulators in this chip:
-1. Safeout LDO with constant voltage output of 4.9V. It can be only
-   enabled or disabled.
-2. Current regulator for the charger. It provides current from 90mA up
-   to 950mA.
-Driver supports Device Tree.
+This patch supports Maxim MAX14577 MUIC(Micro USB Interface Controller)
+device by using EXTCON subsystem to handle various external connectors.
+The max14577 device uses regmap method for i2c communication and
+supports irq domain.
 
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/regulator/Kconfig    |    7 ++
- drivers/regulator/Makefile   |    1 +
- drivers/regulator/max14577.c |  272 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max14577.h |    1 -
- 4 files changed, 280 insertions(+), 1 deletion(-)
- create mode 100644 drivers/regulator/max14577.c
+ drivers/extcon/Kconfig           |   10 +
+ drivers/extcon/Makefile          |    1 +
+ drivers/extcon/extcon-max14577.c |  749 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 760 insertions(+)
+ create mode 100644 drivers/extcon/extcon-max14577.c
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index ce785f4..11ee053 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -249,6 +249,13 @@ config REGULATOR_LP8788
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index f1d54a3..bdb5a00 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -31,6 +31,16 @@ config EXTCON_ADC_JACK
  	help
- 	  This driver supports LP8788 voltage regulator chip.
+ 	  Say Y here to enable extcon device driver based on ADC values.
  
-+config REGULATOR_MAX14577
-+	tristate "Maxim 14577 regulator"
++config EXTCON_MAX14577
++	tristate "MAX14577 EXTCON Support"
 +	depends on MFD_MAX14577
++	select IRQ_DOMAIN
++	select REGMAP_I2C
 +	help
-+	  This driver controls a Maxim 14577 regulator via I2C bus.
-+	  The regulators include safeout LDO and current regulator 'CHARGER'.
++	  If you say yes here you get support for the MUIC device of
++	  Maxim MAX14577 PMIC. The MAX14577 MUIC is a USB port accessory
++	  detector and switch.
 +
- config REGULATOR_MAX1586
- 	tristate "Maxim 1586/1587 voltage regulator"
- 	depends on I2C
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 01c597e..654bd43 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
- obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
-+obj-$(CONFIG_REGULATOR_MAX14577) += max14577.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
- obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
- obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
-diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+ config EXTCON_MAX77693
+ 	tristate "MAX77693 EXTCON Support"
+ 	depends on MFD_MAX77693 && INPUT
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 759fdae..43eccc0 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_OF_EXTCON)		+= of_extcon.o
+ obj-$(CONFIG_EXTCON)		+= extcon-class.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
+ obj-$(CONFIG_EXTCON_ADC_JACK)	+= extcon-adc-jack.o
++obj-$(CONFIG_EXTCON_MAX14577)	+= extcon-max14577.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+ obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
 new file mode 100644
-index 0000000..d913bed
+index 0000000..19195fb
 --- /dev/null
-+++ b/drivers/regulator/max14577.c
-@@ -0,0 +1,272 @@
++++ b/drivers/extcon/extcon-max14577.c
+@@ -0,0 +1,749 @@
 +/*
-+ * max14577.c - Regulator driver for the Maxim 14577
++ * extcon-max14577.c - MAX14577 extcon driver to support MAX14577 MUIC
 + *
-+ * Copyright (C) 2013 Samsung Electronics
-+ * Krzysztof Kozlowski <k.kozlowski@samsung.com>
++ * Copyright (C) 2013 Samsung Electrnoics
++ * Chanwoo Choi <cw00.choi@samsung.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -123,273 +122,738 @@ index 0000000..d913bed
 + * GNU General Public License for more details.
 + */
 +
++#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
 +#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
 +#include <linux/mfd/max14577.h>
 +#include <linux/mfd/max14577-private.h>
-+#include <linux/regulator/of_regulator.h>
++#include <linux/extcon.h>
++#include <linux/irqdomain.h>
 +
-+struct max14577_regulator {
++#define	DEV_NAME			"max14577-muic"
++#define	DELAY_MS_DEFAULT		17000		/* unit: millisecond */
++
++enum max14577_muic_adc_debounce_time {
++	ADC_DEBOUNCE_TIME_5MS = 0,
++	ADC_DEBOUNCE_TIME_10MS,
++	ADC_DEBOUNCE_TIME_25MS,
++	ADC_DEBOUNCE_TIME_38_62MS,
++};
++
++enum max14577_muic_status {
++	MAX14577_MUIC_STATUS1 = 0,
++	MAX14577_MUIC_STATUS2 = 1,
++	MAX14577_MUIC_STATUS_END,
++};
++
++struct max14577_muic_info {
 +	struct device *dev;
 +	struct max14577 *max14577;
-+	struct regulator_dev **regulators;
++	struct extcon_dev *edev;
++	int prev_cable_type;
++	int prev_chg_type;
++	u8 status[MAX14577_MUIC_STATUS_END];
++
++	bool irq_adc;
++	bool irq_chg;
++	struct work_struct irq_work;
++	struct mutex mutex;
++
++	/*
++	 * Use delayed workqueue to detect cable state and then
++	 * notify cable state to notifiee/platform through uevent.
++	 * After completing the booting of platform, the extcon provider
++	 * driver should notify cable state to upper layer.
++	 */
++	struct delayed_work wq_detcable;
++
++	/*
++	 * Default usb/uart path whether UART/USB or AUX_UART/AUX_USB
++	 * h/w path of COMP2/COMN1 on CONTROL1 register.
++	 */
++	int path_usb;
++	int path_uart;
 +};
 +
-+static int max14577_reg_is_enabled(struct regulator_dev *rdev)
-+{
-+	int rid = rdev_get_id(rdev);
-+	struct regmap *rmap = rdev->regmap;
-+	u8 reg_data;
-+
-+	switch (rid) {
-+	case MAX14577_CHARGER:
-+		max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2, &reg_data);
-+		if ((reg_data & CHGCTRL2_MBCHOSTEN_MASK) == 0)
-+			return 0;
-+		max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
-+		if ((reg_data & STATUS3_CGMBC_MASK) == 0)
-+			return 0;
-+		/* MBCHOSTEN and CGMBC are on */
-+		return 1;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
-+{
-+	u8 reg_data;
-+	struct regmap *rmap = rdev->regmap;
-+
-+	if (rdev_get_id(rdev) != MAX14577_CHARGER)
-+		return -EINVAL;
-+
-+	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL4, &reg_data);
-+
-+	if ((reg_data & CHGCTRL4_MBCICHWRCL_MASK) == 0)
-+		return MAX14577_REGULATOR_CURRENT_LIMIT_MIN;
-+
-+	reg_data = ((reg_data & CHGCTRL4_MBCICHWRCH_MASK) >>
-+			CHGCTRL4_MBCICHWRCH_SHIFT);
-+	return MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
-+		reg_data * MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP;
-+}
-+
-+static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
-+		int min_uA, int max_uA)
-+{
-+	int i, current_bits = 0xf;
-+	u8 reg_data;
-+
-+	if (rdev_get_id(rdev) != MAX14577_CHARGER)
-+		return -EINVAL;
-+
-+	if (min_uA > MAX14577_REGULATOR_CURRENT_LIMIT_MAX ||
-+			max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_MIN)
-+		return -EINVAL;
-+
-+	if (max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START) {
-+		/* Less than 200 mA, so set 90mA (turn only Low Bit off) */
-+		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
-+		return max14577_update_reg(rdev->regmap,
-+				MAX14577_CHG_REG_CHG_CTRL4,
-+				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
-+	}
-+
-+	/* max_uA is in range: <LIMIT_HIGH_START, inifinite>, so search for
-+	 * valid current starting from LIMIT_MAX. */
-+	for (i = MAX14577_REGULATOR_CURRENT_LIMIT_MAX;
-+			i >= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START;
-+			i -= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP) {
-+		if (i <= max_uA)
-+			break;
-+		current_bits--;
-+	}
-+	BUG_ON(current_bits < 0); /* Cannot happen */
-+	/* Turn Low Bit on (use range 200mA-950 mA) */
-+	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
-+	/* and set proper High Bits */
-+	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
-+
-+	return max14577_update_reg(rdev->regmap, MAX14577_CHG_REG_CHG_CTRL4,
-+			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
-+}
-+
-+static struct regulator_ops max14577_safeout_ops = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.list_voltage		= regulator_list_voltage_linear,
++enum max14577_muic_cable_group {
++	MAX14577_CABLE_GROUP_ADC = 0,
++	MAX14577_CABLE_GROUP_CHG,
 +};
 +
-+static struct regulator_ops max14577_charger_ops = {
-+	.is_enabled		= max14577_reg_is_enabled,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_current_limit	= max14577_reg_get_current_limit,
-+	.set_current_limit	= max14577_reg_set_current_limit,
++/**
++ * struct max14577_muic_irq
++ * @irq: the index of irq list of MUIC device.
++ * @name: the name of irq.
++ * @virq: the virtual irq to use irq domain
++ */
++struct max14577_muic_irq {
++	unsigned int irq;
++	const char *name;
++	unsigned int virq;
 +};
 +
-+static struct regulator_desc supported_regulators[] = {
-+	[MAX14577_SAFEOUT] = {
-+		.name = "SAFEOUT",
-+		.id = MAX14577_SAFEOUT,
-+		.ops = &max14577_safeout_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
-+		.n_voltages = 1,
-+		.min_uV = MAX14577_REGULATOR_SAFEOUT_VOLTAGE,
-+		.enable_reg = MAX14577_REG_CONTROL2,
-+		.enable_mask = CTRL2_SFOUTORD_MASK,
-+	},
-+	[MAX14577_CHARGER] = {
-+		.name = "CHARGER",
-+		.id = MAX14577_CHARGER,
-+		.ops = &max14577_charger_ops,
-+		.type = REGULATOR_CURRENT,
-+		.owner = THIS_MODULE,
-+		.enable_reg = MAX14577_CHG_REG_CHG_CTRL2,
-+		.enable_mask = CHGCTRL2_MBCHOSTEN_MASK,
-+	},
++static struct max14577_muic_irq muic_irqs[] = {
++	{ MAX14577_IRQ_INT1_ADC,	"muic-ADC" },
++	{ MAX14577_IRQ_INT1_ADCLOW,	"muic-ADCLOW" },
++	{ MAX14577_IRQ_INT1_ADCERR,	"muic-ADCError" },
++	{ MAX14577_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
++	{ MAX14577_IRQ_INT2_CHGDETRUN,	"muic-CHGDETRUN" },
++	{ MAX14577_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
++	{ MAX14577_IRQ_INT2_DBCHG,	"muic-DBCHG" },
++	{ MAX14577_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
 +};
 +
-+#ifdef CONFIG_OF
-+static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
-+					struct max14577_platform_data *pdata)
++/* Define supported accessory type */
++enum max14577_muic_acc_type {
++	MAX14577_MUIC_ADC_GROUND = 0x0,
++	MAX14577_MUIC_ADC_SEND_END_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S1_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S2_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S3_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S4_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S5_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S6_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S7_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S8_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S9_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S10_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S11_BUTTON,
++	MAX14577_MUIC_ADC_REMOTE_S12_BUTTON,
++	MAX14577_MUIC_ADC_RESERVED_ACC_1,
++	MAX14577_MUIC_ADC_RESERVED_ACC_2,
++	MAX14577_MUIC_ADC_RESERVED_ACC_3,
++	MAX14577_MUIC_ADC_RESERVED_ACC_4,
++	MAX14577_MUIC_ADC_RESERVED_ACC_5,
++	MAX14577_MUIC_ADC_AUDIO_DEVICE_TYPE2,
++	MAX14577_MUIC_ADC_PHONE_POWERED_DEV,
++	MAX14577_MUIC_ADC_TTY_CONVERTER,
++	MAX14577_MUIC_ADC_UART_CABLE,
++	MAX14577_MUIC_ADC_CEA936A_TYPE1_CHG,
++	MAX14577_MUIC_ADC_FACTORY_MODE_USB_OFF,
++	MAX14577_MUIC_ADC_FACTORY_MODE_USB_ON,
++	MAX14577_MUIC_ADC_AV_CABLE_NOLOAD,
++	MAX14577_MUIC_ADC_CEA936A_TYPE2_CHG,
++	MAX14577_MUIC_ADC_FACTORY_MODE_UART_OFF,
++	MAX14577_MUIC_ADC_FACTORY_MODE_UART_ON,
++	MAX14577_MUIC_ADC_AUDIO_DEVICE_TYPE1, /* with Remote and Simple Ctrl */
++	MAX14577_MUIC_ADC_OPEN,
++};
++
++/* max14577 MUIC device support below list of accessories(external connector) */
++enum {
++	EXTCON_CABLE_USB = 0,
++	EXTCON_CABLE_TA,
++	EXTCON_CABLE_FAST_CHARGER,
++	EXTCON_CABLE_SLOW_CHARGER,
++	EXTCON_CABLE_CHARGE_DOWNSTREAM,
++	EXTCON_CABLE_JIG_USB_ON,
++	EXTCON_CABLE_JIG_USB_OFF,
++	EXTCON_CABLE_JIG_UART_OFF,
++	EXTCON_CABLE_JIG_UART_ON,
++
++	_EXTCON_CABLE_NUM,
++};
++
++static const char *max14577_extcon_cable[] = {
++	[EXTCON_CABLE_USB]			= "USB",
++	[EXTCON_CABLE_TA]			= "TA",
++	[EXTCON_CABLE_FAST_CHARGER]		= "Fast-charger",
++	[EXTCON_CABLE_SLOW_CHARGER]		= "Slow-charger",
++	[EXTCON_CABLE_CHARGE_DOWNSTREAM]	= "Charge-downstream",
++	[EXTCON_CABLE_JIG_USB_ON]		= "JIG-USB-ON",
++	[EXTCON_CABLE_JIG_USB_OFF]		= "JIG-USB-OFF",
++	[EXTCON_CABLE_JIG_UART_OFF]		= "JIG-UART-OFF",
++	[EXTCON_CABLE_JIG_UART_ON]		= "JIG-UART-ON",
++
++	NULL,
++};
++
++/*
++ * max14577_muic_set_debounce_time - Set the debounce time of ADC
++ * @info: the instance including private data of max14577 MUIC
++ * @time: the debounce time of ADC
++ */
++static int max14577_muic_set_debounce_time(struct max14577_muic_info *info,
++		enum max14577_muic_adc_debounce_time time)
 +{
-+	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
-+	struct device_node *np;
-+	struct max14577_regulator_platform_data *reg_pdata;
-+	struct of_regulator_match rmatch;
-+	int i, ret;
++	u8 ret;
 +
-+	np = of_get_child_by_name(max14577->dev->of_node, "regulators");
-+	if (!np)
-+		return -EINVAL;
-+
-+	reg_pdata = devm_kzalloc(&pdev->dev, sizeof(*reg_pdata) *
-+			     ARRAY_SIZE(supported_regulators), GFP_KERNEL);
-+	if (!reg_pdata)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < ARRAY_SIZE(supported_regulators); i++) {
-+		rmatch.name = supported_regulators[i].name;
-+		ret = of_regulator_match(&pdev->dev, np, &rmatch, 1);
-+		if (ret != 1)
-+			continue;
-+		dev_dbg(&pdev->dev, "Found regulator %d/%s\n",
-+				supported_regulators[i].id,
-+				supported_regulators[i].name);
-+		reg_pdata[i].id = supported_regulators[i].id;
-+		reg_pdata[i].initdata = rmatch.init_data;
-+		reg_pdata[i].of_node = rmatch.of_node;
-+	}
-+
-+	pdata->regulators = reg_pdata;
-+
-+	return 0;
-+}
-+#else
-+static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
-+					struct max14577_platform_data *pdata)
-+{
-+	return 0;
-+}
-+#endif
-+
-+static int max14577_regulator_probe(struct platform_device *pdev)
-+{
-+	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
-+	struct max14577_platform_data *pdata = dev_get_platdata(max14577->dev);
-+	int i, size;
-+	struct regulator_config config = {};
-+	struct regulator_dev **regulators;
-+
-+	if (!pdata) {
-+		/* Parent must provide pdata */
-+		dev_err(&pdev->dev, "No MFD driver platform data found.\n");
-+		return -ENODEV;
-+	}
-+
-+	if (max14577->dev->of_node) {
-+		int ret = max14577_regulator_dt_parse_pdata(pdev, pdata);
-+		if (ret)
++	switch (time) {
++	case ADC_DEBOUNCE_TIME_5MS:
++	case ADC_DEBOUNCE_TIME_10MS:
++	case ADC_DEBOUNCE_TIME_25MS:
++	case ADC_DEBOUNCE_TIME_38_62MS:
++		ret = max14577_update_reg(info->max14577->regmap,
++					  MAX14577_MUIC_REG_CONTROL3,
++					  CTRL3_ADCDBSET_MASK,
++					  time << CTRL3_ADCDBSET_SHIFT);
++		if (ret) {
++			dev_err(info->dev, "failed to set ADC debounce time\n");
 +			return ret;
++		}
++		break;
++	default:
++		dev_err(info->dev, "invalid ADC debounce time\n");
++		return -EINVAL;
 +	}
 +
-+	size = sizeof(struct regulator_dev *) * ARRAY_SIZE(supported_regulators);
-+	regulators = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-+	if (!regulators) {
-+		dev_err(&pdev->dev, "Cannot allocate memory for regulators\n");
-+		return -ENOMEM;
++	return 0;
++};
++
++/*
++ * max14577_muic_set_path - Set hardware line according to attached cable
++ * @info: the instance including private data of max14577 MUIC
++ * @value: the path according to attached cable
++ * @attached: the state of cable (true:attached, false:detached)
++ *
++ * The max14577 MUIC device share outside H/W line among a varity of cables
++ * so, this function set internal path of H/W line according to the type of
++ * attached cable.
++ */
++static int max14577_muic_set_path(struct max14577_muic_info *info,
++		u8 val, bool attached)
++{
++	int ret = 0;
++	u8 ctrl1, ctrl2 = 0;
++
++	/* Set open state to path before changing hw path */
++	ret = max14577_update_reg(info->max14577->regmap,
++				MAX14577_MUIC_REG_CONTROL1,
++				CLEAR_IDBEN_MICEN_MASK, CTRL1_SW_OPEN);
++	if (ret < 0) {
++		dev_err(info->dev, "failed to update MUIC register\n");
++		return ret;
 +	}
 +
-+	config.dev = &pdev->dev;
-+	config.regmap = max14577->regmap;
++	if (attached)
++		ctrl1 = val;
++	else
++		ctrl1 = CTRL1_SW_OPEN;
 +
-+	for (i = 0; i < ARRAY_SIZE(supported_regulators); i++) {
++	ret = max14577_update_reg(info->max14577->regmap,
++				MAX14577_MUIC_REG_CONTROL1,
++				CLEAR_IDBEN_MICEN_MASK, ctrl1);
++	if (ret < 0) {
++		dev_err(info->dev, "failed to update MUIC register\n");
++		return ret;
++	}
++
++	if (attached)
++		ctrl2 |= CTRL2_CPEN_MASK;	/* LowPwr=0, CPEn=1 */
++	else
++		ctrl2 |= CTRL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
++
++	ret = max14577_update_reg(info->max14577->regmap,
++			MAX14577_REG_CONTROL2,
++			CTRL2_LOWPWR_MASK | CTRL2_CPEN_MASK, ctrl2);
++	if (ret < 0) {
++		dev_err(info->dev, "failed to update MUIC register\n");
++		return ret;
++	}
++
++	dev_dbg(info->dev,
++		"CONTROL1 : 0x%02x, CONTROL2 : 0x%02x, state : %s\n",
++		ctrl1, ctrl2, attached ? "attached" : "detached");
++
++	return 0;
++}
++
++/*
++ * max14577_muic_get_cable_type - Return cable type and check cable state
++ * @info: the instance including private data of max14577 MUIC
++ * @group: the path according to attached cable
++ * @attached: store cable state and return
++ *
++ * This function check the cable state either attached or detached,
++ * and then divide precise type of cable according to cable group.
++ *	- max14577_CABLE_GROUP_ADC
++ *	- max14577_CABLE_GROUP_CHG
++ */
++static int max14577_muic_get_cable_type(struct max14577_muic_info *info,
++		enum max14577_muic_cable_group group, bool *attached)
++{
++	int cable_type = 0;
++	int adc;
++	int chg_type;
++
++	switch (group) {
++	case MAX14577_CABLE_GROUP_ADC:
 +		/*
-+		 * Index of supported_regulators[] is also the id and must
-+		 * match index of pdata->regulators[].
++		 * Read ADC value to check cable type and decide cable state
++		 * according to cable type
 +		 */
-+		config.init_data = pdata->regulators[i].initdata;
-+		config.of_node = pdata->regulators[i].of_node;
++		adc = info->status[MAX14577_MUIC_STATUS1] & STATUS1_ADC_MASK;
++		adc >>= STATUS1_ADC_SHIFT;
 +
-+		regulators[i] = devm_regulator_register(&pdev->dev,
-+				&supported_regulators[i], &config);
-+		if (IS_ERR(regulators[i])) {
-+			int ret = PTR_ERR(regulators[i]);
-+			dev_err(&pdev->dev,
-+					"Regulator init failed for ID %d with error: %d\n",
-+					i, ret);
++		/*
++		 * Check current cable state/cable type and store cable type
++		 * (info->prev_cable_type) for handling cable when cable is
++		 * detached.
++		 */
++		if (adc == MAX14577_MUIC_ADC_OPEN) {
++			*attached = false;
++
++			cable_type = info->prev_cable_type;
++			info->prev_cable_type = MAX14577_MUIC_ADC_OPEN;
++		} else {
++			*attached = true;
++
++			cable_type = info->prev_cable_type = adc;
++		}
++		break;
++	case MAX14577_CABLE_GROUP_CHG:
++		/*
++		 * Read charger type to check cable type and decide cable state
++		 * according to type of charger cable.
++		 */
++		chg_type = info->status[MAX14577_MUIC_STATUS2] &
++			STATUS2_CHGTYP_MASK;
++		chg_type >>= STATUS2_CHGTYP_SHIFT;
++
++		if (chg_type == MAX14577_CHARGER_TYPE_NONE) {
++			*attached = false;
++
++			cable_type = info->prev_chg_type;
++			info->prev_chg_type = MAX14577_CHARGER_TYPE_NONE;
++		} else {
++			*attached = true;
++
++			/*
++			 * Check current cable state/cable type and store cable
++			 * type(info->prev_chg_type) for handling cable when
++			 * charger cable is detached.
++			 */
++			cable_type = info->prev_chg_type = chg_type;
++		}
++
++		break;
++	default:
++		dev_err(info->dev, "Unknown cable group (%d)\n", group);
++		cable_type = -EINVAL;
++		break;
++	}
++
++	return cable_type;
++}
++
++static int max14577_muic_jig_handler(struct max14577_muic_info *info,
++		int cable_type, bool attached)
++{
++	char cable_name[32];
++	int ret = 0;
++	u8 path = CTRL1_SW_OPEN;
++
++	dev_dbg(info->dev,
++		"external connector is %s (adc:0x%02x)\n",
++		attached ? "attached" : "detached", cable_type);
++
++	switch (cable_type) {
++	case MAX14577_MUIC_ADC_FACTORY_MODE_USB_OFF:	/* ADC_JIG_USB_OFF */
++		/* PATH:AP_USB */
++		strcpy(cable_name, "JIG-USB-OFF");
++		path = CTRL1_SW_USB;
++		break;
++	case MAX14577_MUIC_ADC_FACTORY_MODE_USB_ON:	/* ADC_JIG_USB_ON */
++		/* PATH:AP_USB */
++		strcpy(cable_name, "JIG-USB-ON");
++		path = CTRL1_SW_USB;
++		break;
++	case MAX14577_MUIC_ADC_FACTORY_MODE_UART_OFF:	/* ADC_JIG_UART_OFF */
++		/* PATH:AP_UART */
++		strcpy(cable_name, "JIG-UART-OFF");
++		path = CTRL1_SW_UART;
++		break;
++	default:
++		dev_err(info->dev, "failed to detect %s jig cable\n",
++			attached ? "attached" : "detached");
++		return -EINVAL;
++	}
++
++	ret = max14577_muic_set_path(info, path, attached);
++	if (ret < 0)
++		return ret;
++
++	extcon_set_cable_state(info->edev, cable_name, attached);
++
++	return 0;
++}
++
++static int max14577_muic_adc_handler(struct max14577_muic_info *info)
++{
++	int cable_type;
++	bool attached;
++	int ret = 0;
++
++	/* Check accessory state which is either detached or attached */
++	cable_type = max14577_muic_get_cable_type(info,
++				MAX14577_CABLE_GROUP_ADC, &attached);
++
++	dev_dbg(info->dev,
++		"external connector is %s (adc:0x%02x, prev_adc:0x%x)\n",
++		attached ? "attached" : "detached", cable_type,
++		info->prev_cable_type);
++
++	switch (cable_type) {
++	case MAX14577_MUIC_ADC_FACTORY_MODE_USB_OFF:
++	case MAX14577_MUIC_ADC_FACTORY_MODE_USB_ON:
++	case MAX14577_MUIC_ADC_FACTORY_MODE_UART_OFF:
++		/* JIG */
++		ret = max14577_muic_jig_handler(info, cable_type, attached);
++		if (ret < 0)
++			return ret;
++		break;
++	case MAX14577_MUIC_ADC_GROUND:
++	case MAX14577_MUIC_ADC_SEND_END_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S1_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S2_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S3_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S4_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S5_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S6_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S7_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S8_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S9_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S10_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S11_BUTTON:
++	case MAX14577_MUIC_ADC_REMOTE_S12_BUTTON:
++	case MAX14577_MUIC_ADC_RESERVED_ACC_1:
++	case MAX14577_MUIC_ADC_RESERVED_ACC_2:
++	case MAX14577_MUIC_ADC_RESERVED_ACC_3:
++	case MAX14577_MUIC_ADC_RESERVED_ACC_4:
++	case MAX14577_MUIC_ADC_RESERVED_ACC_5:
++	case MAX14577_MUIC_ADC_AUDIO_DEVICE_TYPE2:
++	case MAX14577_MUIC_ADC_PHONE_POWERED_DEV:
++	case MAX14577_MUIC_ADC_TTY_CONVERTER:
++	case MAX14577_MUIC_ADC_UART_CABLE:
++	case MAX14577_MUIC_ADC_CEA936A_TYPE1_CHG:
++	case MAX14577_MUIC_ADC_AV_CABLE_NOLOAD:
++	case MAX14577_MUIC_ADC_CEA936A_TYPE2_CHG:
++	case MAX14577_MUIC_ADC_FACTORY_MODE_UART_ON:
++	case MAX14577_MUIC_ADC_AUDIO_DEVICE_TYPE1:
++		/*
++		 * This accessory isn't used in general case if it is specially
++		 * needed to detect additional accessory, should implement
++		 * proper operation when this accessory is attached/detached.
++		 */
++		dev_info(info->dev,
++			"accessory is %s but it isn't used (adc:0x%x)\n",
++			attached ? "attached" : "detached", cable_type);
++		return -EAGAIN;
++	default:
++		dev_err(info->dev,
++			"failed to detect %s accessory (adc:0x%x)\n",
++			attached ? "attached" : "detached", cable_type);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int max14577_muic_chg_handler(struct max14577_muic_info *info)
++{
++	int chg_type;
++	bool attached;
++	int ret = 0;
++
++	chg_type = max14577_muic_get_cable_type(info,
++				MAX14577_CABLE_GROUP_CHG, &attached);
++
++	dev_dbg(info->dev,
++		"external connector is %s(chg_type:0x%x, prev_chg_type:0x%x)\n",
++			attached ? "attached" : "detached",
++			chg_type, info->prev_chg_type);
++
++	switch (chg_type) {
++	case MAX14577_CHARGER_TYPE_USB:
++		/* PATH:AP_USB */
++		ret = max14577_muic_set_path(info, info->path_usb, attached);
++		if (ret < 0)
++			return ret;
++
++		extcon_set_cable_state(info->edev, "USB", attached);
++		break;
++	case MAX14577_CHARGER_TYPE_DEDICATED_CHG:
++		extcon_set_cable_state(info->edev, "TA", attached);
++		break;
++	case MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT:
++		extcon_set_cable_state(info->edev,
++				"Charge-downstream", attached);
++		break;
++	case MAX14577_CHARGER_TYPE_SPECIAL_500MA:
++		extcon_set_cable_state(info->edev, "Slow-charger", attached);
++		break;
++	case MAX14577_CHARGER_TYPE_SPECIAL_1A:
++		extcon_set_cable_state(info->edev, "Fast-charger", attached);
++		break;
++	case MAX14577_CHARGER_TYPE_NONE:
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++		break;
++	default:
++		dev_err(info->dev,
++			"failed to detect %s accessory (chg_type:0x%x)\n",
++			attached ? "attached" : "detached", chg_type);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void max14577_muic_irq_work(struct work_struct *work)
++{
++	struct max14577_muic_info *info = container_of(work,
++			struct max14577_muic_info, irq_work);
++	int ret = 0;
++
++	if (!info->edev)
++		return;
++
++	mutex_lock(&info->mutex);
++
++	ret = max14577_bulk_read(info->max14577->regmap,
++			MAX14577_MUIC_REG_STATUS1, info->status, 2);
++	if (ret) {
++		dev_err(info->dev, "failed to read MUIC register\n");
++		mutex_unlock(&info->mutex);
++		return;
++	}
++
++	if (info->irq_adc) {
++		ret = max14577_muic_adc_handler(info);
++		info->irq_adc = false;
++	}
++	if (info->irq_chg) {
++		ret = max14577_muic_chg_handler(info);
++		info->irq_chg = false;
++	}
++
++	if (ret < 0)
++		dev_err(info->dev, "failed to handle MUIC interrupt\n");
++
++	mutex_unlock(&info->mutex);
++
++	return;
++}
++
++static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
++{
++	struct max14577_muic_info *info = data;
++	int i, irq_type = -1;
++
++	/*
++	 * We may be called multiple times for different nested IRQ-s.
++	 * Including changes in INT1_ADC and INT2_CGHTYP at once.
++	 * However we only need to know whether it was ADC, charger
++	 * or both interrupts so decode IRQ and turn on proper flags.
++	 */
++	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
++		if (irq == muic_irqs[i].virq)
++			irq_type = muic_irqs[i].irq;
++
++	switch (irq_type) {
++	case MAX14577_IRQ_INT1_ADC:
++	case MAX14577_IRQ_INT1_ADCLOW:
++	case MAX14577_IRQ_INT1_ADCERR:
++		/* Handle all of accessory except for
++		   type of charger accessory */
++		info->irq_adc = true;
++		break;
++	case MAX14577_IRQ_INT2_CHGTYP:
++	case MAX14577_IRQ_INT2_CHGDETRUN:
++	case MAX14577_IRQ_INT2_DCDTMR:
++	case MAX14577_IRQ_INT2_DBCHG:
++	case MAX14577_IRQ_INT2_VBVOLT:
++		/* Handle charger accessory */
++		info->irq_chg = true;
++		break;
++	default:
++		dev_err(info->dev, "muic interrupt: irq %d occurred, skipped\n",
++				irq_type);
++		return IRQ_HANDLED;
++	}
++	schedule_work(&info->irq_work);
++
++	return IRQ_HANDLED;
++}
++
++static int max14577_muic_detect_accessory(struct max14577_muic_info *info)
++{
++	int ret = 0;
++	int adc;
++	int chg_type;
++	bool attached;
++
++	mutex_lock(&info->mutex);
++
++	/* Read STATUSx register to detect accessory */
++	ret = max14577_bulk_read(info->max14577->regmap,
++			MAX14577_MUIC_REG_STATUS1, info->status, 2);
++	if (ret) {
++		dev_err(info->dev, "failed to read MUIC register\n");
++		mutex_unlock(&info->mutex);
++		return ret;
++	}
++
++	adc = max14577_muic_get_cable_type(info, MAX14577_CABLE_GROUP_ADC,
++					&attached);
++	if (attached && adc != MAX14577_MUIC_ADC_OPEN) {
++		ret = max14577_muic_adc_handler(info);
++		if (ret < 0) {
++			dev_err(info->dev, "Cannot detect accessory\n");
++			mutex_unlock(&info->mutex);
 +			return ret;
 +		}
 +	}
 +
++	chg_type = max14577_muic_get_cable_type(info, MAX14577_CABLE_GROUP_CHG,
++					&attached);
++	if (attached && chg_type != MAX14577_CHARGER_TYPE_NONE) {
++		ret = max14577_muic_chg_handler(info);
++		if (ret < 0) {
++			dev_err(info->dev, "Cannot detect charger accessory\n");
++			mutex_unlock(&info->mutex);
++			return ret;
++		}
++	}
++
++	mutex_unlock(&info->mutex);
++
 +	return 0;
 +}
 +
-+static struct platform_driver max14577_regulator_driver = {
-+	.driver = {
-+		   .owner = THIS_MODULE,
-+		   .name = "max14577-regulator",
-+		   },
-+	.probe	= max14577_regulator_probe,
++static void max14577_muic_detect_cable_wq(struct work_struct *work)
++{
++	struct max14577_muic_info *info = container_of(to_delayed_work(work),
++				struct max14577_muic_info, wq_detcable);
++
++	max14577_muic_detect_accessory(info);
++}
++
++static int max14577_muic_probe(struct platform_device *pdev)
++{
++	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
++	struct max14577_muic_info *info;
++	int delay_jiffies;
++	int ret;
++	int i;
++	u8 id;
++
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++	info->dev = &pdev->dev;
++	info->max14577 = max14577;
++
++	platform_set_drvdata(pdev, info);
++	mutex_init(&info->mutex);
++
++	INIT_WORK(&info->irq_work, max14577_muic_irq_work);
++
++	/* Support irq domain for max14577 MUIC device */
++	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++) {
++		struct max14577_muic_irq *muic_irq = &muic_irqs[i];
++		unsigned int virq = 0;
++
++		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
++		if (!virq)
++			return -EINVAL;
++		muic_irq->virq = virq;
++
++		ret = devm_request_threaded_irq(&pdev->dev, virq, NULL,
++				max14577_muic_irq_handler,
++				IRQF_NO_SUSPEND,
++				muic_irq->name, info);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"failed: irq request (IRQ: %d,"
++				" error :%d)\n",
++				muic_irq->irq, ret);
++			return ret;
++		}
++	}
++
++	/* Initialize extcon device */
++	info->edev = devm_kzalloc(&pdev->dev, sizeof(*info->edev), GFP_KERNEL);
++	if (!info->edev) {
++		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
++		return -ENOMEM;
++	}
++	info->edev->name = DEV_NAME;
++	info->edev->supported_cable = max14577_extcon_cable;
++	ret = extcon_dev_register(info->edev);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to register extcon device\n");
++		return ret;
++	}
++
++	/* Default h/w line path */
++	info->path_usb = CTRL1_SW_USB;
++	info->path_uart = CTRL1_SW_UART;
++	delay_jiffies = msecs_to_jiffies(DELAY_MS_DEFAULT);
++
++	/* Set initial path for UART */
++	max14577_muic_set_path(info, info->path_uart, true);
++
++	/* Check revision number of MUIC device*/
++	ret = max14577_read_reg(info->max14577->regmap,
++			MAX14577_REG_DEVICEID, &id);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to read revision number\n");
++		goto err_extcon;
++	}
++	dev_info(info->dev, "device ID : 0x%x\n", id);
++
++	/* Set ADC debounce time */
++	max14577_muic_set_debounce_time(info, ADC_DEBOUNCE_TIME_25MS);
++
++	/*
++	 * Detect accessory after completing the initialization of platform
++	 *
++	 * - Use delayed workqueue to detect cable state and then
++	 * notify cable state to notifiee/platform through uevent.
++	 * After completing the booting of platform, the extcon provider
++	 * driver should notify cable state to upper layer.
++	 */
++	INIT_DELAYED_WORK(&info->wq_detcable, max14577_muic_detect_cable_wq);
++	schedule_delayed_work(&info->wq_detcable, delay_jiffies);
++
++	return ret;
++
++err_extcon:
++	extcon_dev_unregister(info->edev);
++	return ret;
++}
++
++static int max14577_muic_remove(struct platform_device *pdev)
++{
++	struct max14577_muic_info *info = platform_get_drvdata(pdev);
++
++	cancel_work_sync(&info->irq_work);
++	extcon_dev_unregister(info->edev);
++
++	return 0;
++}
++
++static struct platform_driver max14577_muic_driver = {
++	.driver		= {
++		.name	= DEV_NAME,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= max14577_muic_probe,
++	.remove		= max14577_muic_remove,
 +};
 +
-+static int __init max14577_regulator_init(void)
-+{
-+	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
-+			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
-+			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
-+	BUILD_BUG_ON(ARRAY_SIZE(supported_regulators) != MAX14577_REG_MAX);
-+	return platform_driver_register(&max14577_regulator_driver);
-+}
-+subsys_initcall(max14577_regulator_init);
++module_platform_driver(max14577_muic_driver);
 +
-+static void __exit max14577_regulator_exit(void)
-+{
-+	platform_driver_unregister(&max14577_regulator_driver);
-+}
-+module_exit(max14577_regulator_exit);
-+
-+MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
-+MODULE_DESCRIPTION("MAXIM 14577 regulator driver");
++MODULE_DESCRIPTION("Maxim max14577 Extcon driver");
++MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 512d731..247b021 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -63,7 +63,6 @@ struct max14577_platform_data {
- 
- 	int (*set_gpio_pogo_cb) (int new_dev);
- 
--	int num_regulators;
- 	struct max14577_regulator_platform_data *regulators;
- };
- 
++MODULE_ALIAS("platform:extcon-max14577");
 -- 
 1.7.9.5
 
