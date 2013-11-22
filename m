@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3KVPrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:47:22 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:45398 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab3KVPrV (ORCPT
+	id S1755897Ab3KVPrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:47:40 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:35872 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726Ab3KVPrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:47:21 -0500
-Subject: Re: [PATCH 21/22] perf tools: Add trace-event global object for
- tracepoint interface
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-In-Reply-To: <1385031680-9014-22-git-send-email-jolsa@redhat.com>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	 <1385031680-9014-22-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Nov 2013 00:47:14 +0900
-Message-ID: <1385135234.1747.122.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Fri, 22 Nov 2013 10:47:37 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 1/2] TTY: pmac_zilog, check existence of ports in pmz_console_init()
+Date: Fri, 22 Nov 2013 16:47:26 +0100
+Message-Id: <1385135247-9068-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-11-21 (목), 12:01 +0100, Jiri Olsa:
-> In order to get the proper plugins processing we need to
-> use full trace-event interface when creating tracepoint
-> events. So far we were using shortcut to get the parsed
-> format.
-> 
-> Moving current 'event_format__new' function into trace-event
-> object as 'trace_event__tp_format'.
-> 
-> This function uses properly initialized global trace-event
-> object, ensuring proper plugins processing.
+When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
+on the kernel command line, it crashes with:
 
-I see this when I compile it on my old ubuntu 10.04 box (with gcc 4.4.3)
+Unable to handle kernel NULL pointer dereference at virtual address   (null)
+Oops: 00000000
+PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
+...
+Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
 
-  CC       util/trace-event.o
-cc1: warnings being treated as errors
-util/trace-event.c: In function 'trace_event__tp_format':
-util/trace-event.c:63: error: not protecting function: no buffer at
-least 8 bytes long
-make[1]: *** [util/trace-event.o] Error 1
+The normal tty driver doesn't crash, because init_pmz() checks
+pmz_ports_count again after calling pmz_probe().
 
-Thanks,
-Namhyung
+In the serial console initialization path, pmz_console_init() doesn't do
+this, causing the driver to crash later.
 
+Add a check for pmz_ports_count to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ drivers/tty/serial/pmac_zilog.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
+index 481b781b26e3..e9d420ff3931 100644
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -2052,6 +2052,9 @@ static int __init pmz_console_init(void)
+ 	/* Probe ports */
+ 	pmz_probe();
+ 
++	if (pmz_ports_count == 0)
++		return -ENODEV;
++
+ 	/* TODO: Autoprobe console based on OF */
+ 	/* pmz_console.index = i; */
+ 	register_console(&pmz_console);
+-- 
+1.7.9.5
 
