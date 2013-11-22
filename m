@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab3KVSI1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 13:08:27 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61393 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab3KVSIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 13:08:25 -0500
+	id S1756065Ab3KVSIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:08:54 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39015 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755903Ab3KVSIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 13:08:51 -0500
+Date: Fri, 22 Nov 2013 13:08:35 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Luigi Semenzato <semenzato@google.com>
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, Greg Thelen <gthelen@google.com>,
+        Glauber Costa <glommer@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+Message-ID: <20131122180835.GO3556@cmpxchg.org>
+References: <20131119131400.GC20655@dhcp22.suse.cz>
+ <20131119134007.GD20655@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1311192352070.20752@chino.kir.corp.google.com>
+ <20131120152251.GA18809@dhcp22.suse.cz>
+ <CAA25o9S5EQBvyk=HP3obdCaXKjoUVtzeb4QsNmoLMq6NnOYifA@mail.gmail.com>
+ <alpine.DEB.2.02.1311201933420.7167@chino.kir.corp.google.com>
+ <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131122180501.GA8547@roeck-us.net>
-References: <20131119180007.GB16693@roeck-us.net>
-	<CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
-	<CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
-	<20131121173458.GC10783@roeck-us.net>
-	<CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
-	<CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
-	<528F6BB8.8040504@roeck-us.net>
-	<CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
-	<20131122160457.GA3951@roeck-us.net>
-	<CAOMwXhO525BAJ+ESLaJ-62vkL7mAxLMULuaphE6YVda02beqfg@mail.gmail.com>
-	<20131122180501.GA8547@roeck-us.net>
-Date: Fri, 22 Nov 2013 18:08:24 +0000
-X-Google-Sender-Auth: VyPSOLpgS9esyiusR3GUk90Deig
-Message-ID: <CAOMwXhO_D3cR5QfXp3wZGrO+i85X5H=Q0HAr2VCB6=96nLx4yQ@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA25o9Q64eK5LHhrRyVn73kFz=Z7Jji=rYWS=9jWL_4y9ZGbQA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 6:05 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Fri, Nov 22, 2013 at 05:47:33PM +0000, Laszlo Papp wrote:
->> On Fri, Nov 22, 2013 at 4:04 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > On Fri, Nov 22, 2013 at 02:50:50PM +0000, Laszlo Papp wrote:
->> >> On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> >> > On 11/22/2013 01:23 AM, Laszlo Papp wrote:
->> >> >>
->> >> >> Just to clarify: you want to have ./gpio/gpio-max6650.c?
->> >> >>
->> >> > No, I never said that. I wanted you to register the gpio pins
->> >> > with the gpio subsystem. I didn't ask you to write a separate
->> >> > driver for it.
->> >> >
->> >> > Sure, strictly speaking one could write a top level mfd driver
->> >> > and separate gpio and hwmon drivers, but at least in my opinion
->> >> > that would be overkill. I also never suggested this; you brought
->> >> > the term mfd into the discussion.
->> >>
->> >> Why is it an overkill to write a separate gpio driver for this, and
->> >> potentially also for the gpio status register of this particular MAXIM
->> >> chip?
->> >>
->> >> Other gpio drivers in the gpio folder are also short. This would not
->> >> become long either.
->> >>
->> > No one prevents you from writing a separate gpio driver. I will certainly
->> > not prevent you from doing it. Just don't claim that I requested it.
->> > Same is true for an mfd driver; I won't prevent you from writing one.
->> > But don't claim that I told you to do it.
->>
->> I am not sure if you are trying to claim that with this statement a
->> separate gpio driver would be acceptable, but it would require a bit
->> more work, or whether that you would reject such a driver added.
->>
-> Please explain, for my education, what makes you believe that I would
-> object to or reject to anyone submitting such a driver.
+On Wed, Nov 20, 2013 at 11:03:33PM -0800, Luigi Semenzato wrote:
+> On Wed, Nov 20, 2013 at 7:36 PM, David Rientjes <rientjes@google.com> wrote:
+> > On Wed, 20 Nov 2013, Luigi Semenzato wrote:
+> >
+> >> Chrome OS uses a custom low-memory notification to minimize OOM kills.
+> >>  When the notifier triggers, the Chrome browser tries to free memory,
+> >> including by shutting down processes, before the full OOM occurs.  But
+> >> OOM kills cannot always be avoided, depending on the speed of
+> >> allocation and how much CPU the freeing tasks are able to use
+> >> (certainly they could be given higher priority, but it get complex).
+> >>
+> >> We may end up using memcg so we can use the cgroup
+> >> memory.pressure_level file instead of our own notifier, but we have no
+> >> need for finer control over OOM kills beyond the very useful kill
+> >> priority.  One process at a time is good enough for us.
+> >>
+> >
+> > Even with your own custom low-memory notifier or memory.pressure_level,
+> > it's still possible that all memory is depleted and you run into an oom
+> > kill before your userspace had a chance to wakeup and prevent it.  I think
+> > what you'll want is either your custom notifier of memory.pressure_level
+> > to do pre-oom freeing but fallback to a userspace oom handler that
+> > prevents kernel oom kills until it ensures userspace did everything it
+> > could to free unneeded memory, do any necessary logging, etc, and do so
+> > over a grace period of memory.oom_delay_millisecs before the kernel
+> > eventually steps in and kills.
+> 
+> Yes, I agree that we can't always prevent OOM situations, and in fact
+> we tolerate OOM kills, although they have a worse impact on the users
+> than controlled freeing does.
+> 
+> Well OK here it goes.  I hate to be a party-pooper, but the notion of
+> a user-level OOM-handler scares me a bit for various reasons.
+> 
+> 1. Our custom notifier sends low-memory warnings well ahead of memory
+> depletion.  If we don't have enough time to free memory then, what can
+> the last-minute OOM handler do?
+>
+> 2. In addition to the time factor, it's not trivial to do anything,
+> including freeing memory, without allocating memory first, so we'll
+> need a reserve, but how much, and who is allowed to use it?
+> 
+> 3. How does one select the OOM-handler timeout?  If the freeing paths
+> in the code are swapped out, the time needed to bring them in can be
+> highly variable.
+> 
+> 4. Why wouldn't the OOM-handler also do the killing itself?  (Which is
+> essentially what we do.)  Then all we need is a low-memory notifier
+> which can predict how quickly we'll run out of memory.
+> 
+> 5. The use case mentioned earlier (the fact that the killing of one
+> process can make an entire group of processes useless) can be dealt
+> with using OOM priorities and user-level code.
 
-After the current objection, I am not sure anymore. I thought the last
-change would have been just as acceptable. ;-)
+I would also be interested in the answers to all these questions.
 
-So, in short, I would not like to waste more time with unacceptable
-approaches for the maintainer. Anyway, if you feel happy about
-accepting such an approach once stabilized, I think I will go for
-that.
+> I confess I am surprised that the OOM killer works as well as I think
+> it does.  Adding a user-level component would bring a whole new level
+> of complexity to code that's already hard to fully comprehend, and
+> might not really address the fundamental issues.
+
+Agreed.
+
+OOM killing is supposed to be a last resort and should be avoided as
+much as possible.  The situation is so precarious at this point that
+the thought of involving USERSPACE to fix it seems crazy to me.
+
+It would make much more sense to me to focus on early notifications
+and deal with looming situations while we still have the resources to
+do so.
+
+Before attempting to build a teleportation device in the kernel, maybe
+we should just stop painting ourselves into corners?
