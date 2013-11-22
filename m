@@ -1,150 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab3KVVPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:15:12 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:38262 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab3KVVPJ (ORCPT
+	id S1756150Ab3KVVRa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:17:30 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:46944 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3KVVR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:15:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
-References: <1385132242-3204-1-git-send-email-jonas.jensen@gmail.com> <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 22 Nov 2013 13:14:28 -0800
-Message-ID: <CAGVrzcZOKegkSTtzF9RyuEhWcz6Popm69ZFirYdTfeXLfVRdhQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] net: MOXA ART: connect to PHY and add ethtool support
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 22 Nov 2013 16:17:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Will Deacon <will.deacon@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH] dt-bindings: add ARMv8 PMU binding
+Date: Fri, 22 Nov 2013 15:17:12 -0600
+Message-Id: <1385155032-9032-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jonas,
+From: Rob Herring <rob.herring@calxeda.com>
 
-> +       if (!priv->phy_dev)
-> +               return -ENODEV;
+Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
 
-This should not be required since you will fail probing the interface
-if you cannot connect to the PHY device.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+---
+ Documentation/devicetree/bindings/arm/pmu.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-> +
-> +       return phy_ethtool_gset(priv->phy_dev, cmd);
-> +}
-> +
-> +static int moxart_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-> +{
-> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +       if (!priv->phy_dev)
-> +               return -ENODEV;
-
-Same here
-
-> +
-> +       return phy_ethtool_sset(priv->phy_dev, cmd);
-> +}
-> +
-> +static int moxart_nway_reset(struct net_device *ndev)
-> +{
-> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +       if (!priv->phy_dev)
-> +               return -EINVAL;
-
-And here
-
-[snip]
-
-> +       if (!priv->phy_dev)
-> +               return -ENODEV;
-
-And here
-
-> +
-> +       return phy_mii_ioctl(priv->phy_dev, ir, cmd);
-> +}
-> +
->  static void moxart_mac_free_memory(struct net_device *ndev)
->  {
->         struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> @@ -169,6 +314,10 @@ static int moxart_mac_open(struct net_device *ndev)
->         moxart_update_mac_address(ndev);
->         moxart_mac_setup_desc_ring(ndev);
->         moxart_mac_enable(ndev);
-> +
-> +       if (priv->phy_dev)
-> +               phy_start(priv->phy_dev);
-> +
->         netif_start_queue(ndev);
->
->         netdev_dbg(ndev, "%s: IMR=0x%x, MACCR=0x%x\n",
-> @@ -184,6 +333,9 @@ static int moxart_mac_stop(struct net_device *ndev)
->
->         napi_disable(&priv->napi);
->
-> +       if (priv->phy_dev)
-> +               phy_stop(priv->phy_dev);
-> +
->         netif_stop_queue(ndev);
->
->         /* disable all interrupts */
-> @@ -429,12 +581,22 @@ static struct net_device_ops moxart_netdev_ops = {
->         .ndo_set_mac_address    = moxart_set_mac_address,
->         .ndo_validate_addr      = eth_validate_addr,
->         .ndo_change_mtu         = eth_change_mtu,
-> +       .ndo_do_ioctl           = moxart_do_ioctl,
->  };
->
-> +static void moxart_adjust_link(struct net_device *ndev)
-> +{
-> +#ifdef DEBUG
-> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +       phy_print_status(priv->phy_dev);
-> +#endif
-
-This is too simplistic, you should at least do the following:
-
-- check for an update in the PHY duplex setting and update the
-Ethernet MAC with this new setting
-- check for an update in the PHY speed settings and update relevant
-MAC registers (RX/TX clock speed, PHY speed etc...)
-
-Also, it is a good practice to retain the previous link
-state/duplex/speed, compare them against the phydev values and call
-phy_print_status() if there is any change.
-
-> +}
-> +
->  static int moxart_mac_probe(struct platform_device *pdev)
->  {
->         struct device *p_dev = &pdev->dev;
-> -       struct device_node *node = p_dev->of_node;
-> +       struct device_node *node = p_dev->of_node, *phy_node;
->         struct net_device *ndev;
->         struct moxart_mac_priv_t *priv;
->         struct resource *res;
-> @@ -455,6 +617,20 @@ static int moxart_mac_probe(struct platform_device *pdev)
->         priv = netdev_priv(ndev);
->         priv->ndev = ndev;
->
-> +       phy_node = of_parse_phandle(node, "phy-handle", 0);
-> +       if (!phy_node)
-> +               dev_err(p_dev, "of_parse_phandle failed\n");
-> +
-> +       if (phy_node) {
-> +               priv->phy_dev = of_phy_connect(priv->ndev, phy_node,
-> +                                              &moxart_adjust_link,
-> +                                              0, PHY_INTERFACE_MODE_MII);
-
-Unless the hardware supports anything but MII, this is fine. A nicer
-binding would include a "phy-mode" or "phy-connection-type" property
-which describes how the Ethernet MAC and PHY are connected to each
-other. You can then retrieve that property using of_get_phy_mode().
+diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
+index 343781b..3e1e498 100644
+--- a/Documentation/devicetree/bindings/arm/pmu.txt
++++ b/Documentation/devicetree/bindings/arm/pmu.txt
+@@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
+ Required properties:
+ 
+ - compatible : should be one of
++	"arm,armv8-pmuv3"
+ 	"arm,cortex-a15-pmu"
+ 	"arm,cortex-a9-pmu"
+ 	"arm,cortex-a8-pmu"
 -- 
-Florian
+1.8.1.2
+
