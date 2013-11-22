@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3KVR75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:59:57 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39894 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753756Ab3KVR74 (ORCPT
+	id S1755682Ab3KVSFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 13:05:05 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:55359 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab3KVSFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:59:56 -0500
-Message-ID: <528F9B8D.2090806@hurleysoftware.com>
-Date: Fri, 22 Nov 2013 12:59:41 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 22 Nov 2013 13:05:03 -0500
+Date: Fri, 22 Nov 2013 10:05:01 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
+Message-ID: <20131122180501.GA8547@roeck-us.net>
+References: <20131119180007.GB16693@roeck-us.net>
+ <CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
+ <CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
+ <20131121173458.GC10783@roeck-us.net>
+ <CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
+ <CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
+ <528F6BB8.8040504@roeck-us.net>
+ <CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
+ <20131122160457.GA3951@roeck-us.net>
+ <CAOMwXhO525BAJ+ESLaJ-62vkL7mAxLMULuaphE6YVda02beqfg@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [RFC] Control dependencies
-References: <20131121161733.GH10022@twins.programming.kicks-ass.net> <20131121180237.GX4138@linux.vnet.ibm.com> <20131122134630.GQ3866@twins.programming.kicks-ass.net>
-In-Reply-To: <20131122134630.GQ3866@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhO525BAJ+ESLaJ-62vkL7mAxLMULuaphE6YVda02beqfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 08:46 AM, Peter Zijlstra wrote:
-> How about the below version?
->
-> ---
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -61,19 +61,20 @@ static void perf_output_put_handle(struc
->   	 *
->   	 *   kernel				user
->   	 *
-> -	 *   READ ->data_tail			READ ->data_head
-> -	 *   smp_mb()	(A)			smp_rmb()	(C)
-> -	 *   WRITE $data			READ $data
-> -	 *   smp_wmb()	(B)			smp_mb()	(D)
-> -	 *   STORE ->data_head			WRITE ->data_tail
-> +	 *   if (LOAD ->data_tail) {		LOAD ->data_head
-> +	 *			(A)		smp_rmb()	(C)
-> +	 *	STORE $data			LOAD $data
-> +	 *	smp_wmb()	(B)		smp_mb()	(D)
-> +	 *	STORE ->data_head		STORE ->data_tail
+On Fri, Nov 22, 2013 at 05:47:33PM +0000, Laszlo Papp wrote:
+> On Fri, Nov 22, 2013 at 4:04 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On Fri, Nov 22, 2013 at 02:50:50PM +0000, Laszlo Papp wrote:
+> >> On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> > On 11/22/2013 01:23 AM, Laszlo Papp wrote:
+> >> >>
+> >> >> Just to clarify: you want to have ./gpio/gpio-max6650.c?
+> >> >>
+> >> > No, I never said that. I wanted you to register the gpio pins
+> >> > with the gpio subsystem. I didn't ask you to write a separate
+> >> > driver for it.
+> >> >
+> >> > Sure, strictly speaking one could write a top level mfd driver
+> >> > and separate gpio and hwmon drivers, but at least in my opinion
+> >> > that would be overkill. I also never suggested this; you brought
+> >> > the term mfd into the discussion.
+> >>
+> >> Why is it an overkill to write a separate gpio driver for this, and
+> >> potentially also for the gpio status register of this particular MAXIM
+> >> chip?
+> >>
+> >> Other gpio drivers in the gpio folder are also short. This would not
+> >> become long either.
+> >>
+> > No one prevents you from writing a separate gpio driver. I will certainly
+> > not prevent you from doing it. Just don't claim that I requested it.
+> > Same is true for an mfd driver; I won't prevent you from writing one.
+> > But don't claim that I told you to do it.
+> 
+> I am not sure if you are trying to claim that with this statement a
+> separate gpio driver would be acceptable, but it would require a bit
+> more work, or whether that you would reject such a driver added.
+> 
+Please explain, for my education, what makes you believe that I would
+object to or reject to anyone submitting such a driver.
 
-
-I wasn't subscribed to linux-arch so missed the smp_store_release()
-outcome, if there was one.
-
-Are (B) and (D) still slated for changing to STORE.rel semantics,
-aka smp_store_release()?
-
-I realize that, for the perf ring buffer, (D) is in userspace but
-I'm also interested in non-perf situations where (D) would be in the
-kernel.
-
-Regards,
-Peter Hurley
-
-
-
+Thanks,
+Guenter
