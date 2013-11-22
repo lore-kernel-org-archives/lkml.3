@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3KVLSD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 06:18:03 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43057 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3KVLSB (ORCPT
+	id S1755242Ab3KVL37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 06:29:59 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:45245 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab3KVL34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 06:18:01 -0500
-Date: Fri, 22 Nov 2013 12:17:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
- to memory-barriers.txt
-Message-ID: <20131122111723.GK10022@twins.programming.kicks-ass.net>
-References: <20131121213055.GA6938@linux.vnet.ibm.com>
- <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131121215517.GA16796@laptop.programming.kicks-ass.net>
- <20131121220950.GG4138@linux.vnet.ibm.com>
- <20131121221821.GB16796@laptop.programming.kicks-ass.net>
- <20131121223230.GI4138@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131121223230.GI4138@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 22 Nov 2013 06:29:56 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tianyu.lan@intel.com, nm@ti.com,
+        jinchoi@broadcom.com, sebastian.capella@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 0/2] cpufreq: suspend governors during s2r/hibernation
+Date: Fri, 22 Nov 2013 16:59:47 +0530
+Message-Id: <cover.1385118255.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 02:32:30PM -0800, Paul E. McKenney wrote:
+This patchset adds cpufreq callbacks to dpm_{suspend|resume}_noirq() for
+handling suspend/resume of cpufreq governors. This is required for early suspend
+and late resume of governors.
 
-> > > We could, but at the moment I would prefer the decrease in readability
-> > > to the copy-and-paste bugs that omit needed ACCESS_ONCE() calls.
-> > > 
-> > > Is there some way to get both ACCESS_ONCE() and readability?  An
-> > > abbreviation such as AO()?  More easily distinguished variable names?
-> > > Something else?
-> > 
-> > Use a form that looks less like C and thus defeats copy/paste?
-> 
-> My concern with that approach is that there is likely to be a large
-> number of people who are likely to be willing and able to transcribe
-> from any reasonable non-C form to ACCESS_ONCE()-free C code.  :-/
-> 
-> But maybe you have something specific in mind?
+There are multiple problems that are fixed by this patch:
+- Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+  wasn't working well with suspend/resume as calls for removing non-boot CPUs
+  was turning out into a call to drivers ->target() which then tries to play
+  with regulators. But regulators and their I2C bus were already suspended and
+  this resulted in a failure. This is why we need a PM notifier here.
+- Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+  tunables configuration for clusters/sockets with non-boot CPUs was getting
+  lost after suspend/resume, as we were notifying governors with
+  CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+  deallocating memory for tunables.
 
-No, that was pretty much it. My issues is though that the subject matter
-is difficult enough without actively obfuscating the examples.
+This was earlier sent here:
+https://lkml.org/lkml/2013/11/15/107
 
-Furthermore, people will find ways to get it wrong anyhow, if all they
-do is copy/paste without thought, then getting it wrong is pretty much
-guaranteed in this case. Memory ordering isn't something you can do
-without thinking.
+V1->V2:
+- Used direct callbacks from dpm_{suspend|resume}_noirq() for
+  suspending/resuming govenors instead of doing that with help of PM notifiers.
+- Patch 2/2: Switching to the desirable frequency before suspending the
+  governors.
 
+
+Viresh Kumar (2):
+  cpufreq: suspend governors on system suspend/hibernate
+  cpufreq: Change freq before suspending governors
+
+ drivers/base/power/main.c |  3 ++
+ drivers/cpufreq/cpufreq.c | 79 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  5 +++
+ 3 files changed, 87 insertions(+)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
