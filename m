@@ -1,57 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3KVRsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:48:39 -0500
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:40788
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753339Ab3KVRsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:48:38 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "jlee@suse.com" <jlee@suse.com>,
-        "matt@console-pimps.org" <matt@console-pimps.org>,
-        "richard@nod.at" <richard@nod.at>, "cxie@redhat.com" <cxie@redhat.com>
-Subject: Re: [PATCH] x86, efi: add no_bricked_efi whitelist
-Thread-Topic: [PATCH] x86, efi: add no_bricked_efi whitelist
-Thread-Index: AQHO5ctsbQuFm47B1katHCc9ePY1AJovbqbwgADxyq6AAGsLuIAAvw4A
-Date: Fri, 22 Nov 2013 17:48:34 +0000
-Message-ID: <1385142514.2884.2.camel@x230>
-References: <528C740A.6010407@jp.fujitsu.com>
-	 <1384963376.20536.3.camel@x230> <528DD3E0.3050606@jp.fujitsu.com>
-	 <1385064722.12107.1.camel@x230> <528E9EB2.3060808@jp.fujitsu.com>
-	 <1385078632.12107.3.camel@x230> <528EF87D.4050300@jp.fujitsu.com>
-In-Reply-To: <528EF87D.4050300@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [209.6.207.143]
-x-forefront-prvs: 0038DE95A2
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(199002)(189002)(24454002)(59766001)(69226001)(76786001)(74876001)(76796001)(83072001)(77982001)(33646001)(74706001)(81816001)(56816003)(56776001)(85306002)(77096001)(33716001)(54316002)(50986001)(47976001)(81686001)(19580395003)(2656002)(74662001)(81342001)(74366001)(83322001)(19580405001)(81542001)(47736001)(87936001)(31966008)(49866001)(65816001)(80022001)(4396001)(87266001)(47446002)(80976001)(74502001)(54356001)(66066001)(79102001)(51856001)(63696002)(76482001)(46102001)(53806001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB423;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:209.6.207.143;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6E44339335945846AFB69BC34463BFA1@namprd05.prod.outlook.com>
+	id S932121Ab3KVRso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:48:44 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40988 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983Ab3KVRsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:48:40 -0500
+Message-ID: <528F98F3.1020909@oracle.com>
+Date: Fri, 22 Nov 2013 11:48:35 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] fs: create file_has_read_ops and file_has_write_ops helpers
+References: <20131111125328.ef8f0641ccdbb28a0d0564da@canb.auug.org.au> <20131111032052.GV13318@ZenIV.linux.org.uk>
+In-Reply-To: <20131111032052.GV13318@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAMHmjgB024707
 
-On Fri, 2013-11-22 at 15:23 +0900, Yasuaki Ishimatsu wrote:
+On 11/10/2013 09:20 PM, Al Viro wrote:
+> On Mon, Nov 11, 2013 at 12:53:28PM +1100, Stephen Rothwell wrote:
+>> Hi Dave,
+>>
+>> Today's linux-next merge of the aio-direct tree got a conflict in
+>> drivers/mtd/nand/nandsim.c between commit 72c2d5319200 ("file->f_op is
+>> never NULL...") from the vfs tree and commit dd458300240b ("fs: create
+>> file_readable() and file_writable() functions") from the aio-direct tree.
+>>
+>> I fixed it up (I just used the aio-direct tree version) and can carry the
+>> fix as necessary (no action is required).
+> 
+> Hrm...  Pity that this thing sits in the middle of aio-direct; it would
+> make more sense to take it in vfs.git ;-/  There are several more places
+> where we get the conflicts of the same sort.
 
-> I don't know how to implement your idea. But if GC run by your idea, the free
-> space may spread out. So 1) case is solved. But it does not solve 2) case.
-> In my opinion, if system has sane firmware, all nvram strage should be used.
-> I will send whiltelist version which used DMI infomation. Please review it.
+Well, Linus rejected my patchset as it is, so I'm going to have to
+rework it. I'd appreciate if you could pick up this patch in vfs.git
+targeting the next merge window.
 
-We don't want to solve (2). The benefit in doing so is small compared to
-the cost of maintaining a whitelist or risking breaking systems.
+> FWIW, I have two nitpicks with these helpers:
+> 	a) checks for NULL argument do not belong there
+> 	b) please, please, do not breed more instances of that stupid
+> 'filp' thing; AFAICS, it's an example of really bad taste on part of
+> AST - it stands for 'file pointer' and yes, it's a minixism.  Linus has
+> used that naming convention in 0.01 and it spread when people copied
+> stuff.  There's a perfectly good identifier - 'file'...
 
+I've fixed both of these. In addition, on hindsight I didn't like
+the names file_readable and file_writable. It wasn't clear what
+they actually tested. I have renamed them file_has_read_ops and
+file_has_write_ops.
+
+Thanks,
+Dave
+
+Create functions to simplify testing if file_ops contain either a
+read or aio_read op, or likewise write or aio_write. I anticipate
+adding alternate read and write functions in the near future and
+would like to avoid adding another clause to the test in multiple
+places.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ drivers/mtd/nand/nandsim.c          |  4 ++--
+ drivers/usb/gadget/storage_common.c |  4 ++--
+ fs/read_write.c                     | 14 +++++++-------
+ include/linux/fs.h                  | 10 ++++++++++
+ 4 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
+index 42e8a77..3fca8b3 100644
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -575,12 +575,12 @@ static int alloc_device(struct nandsim *ns)
+ 		cfile = filp_open(cache_file, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+ 		if (IS_ERR(cfile))
+ 			return PTR_ERR(cfile);
+-		if (!cfile->f_op->read && !cfile->f_op->aio_read) {
++		if (!file_has_read_ops(cfile)) {
+ 			NS_ERR("alloc_device: cache file not readable\n");
+ 			err = -EINVAL;
+ 			goto err_close;
+ 		}
+-		if (!cfile->f_op->write && !cfile->f_op->aio_write) {
++		if (!file_has_write_ops(cfile)) {
+ 			NS_ERR("alloc_device: cache file not writeable\n");
+ 			err = -EINVAL;
+ 			goto err_close;
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index ec20a1f..92d250c 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -220,11 +220,11 @@ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	 * If we can't read the file, it's no good.
+ 	 * If we can't write the file, use it read-only.
+ 	 */
+-	if (!(filp->f_op->read || filp->f_op->aio_read)) {
++	if (!file_has_read_ops(filp)) {
+ 		LINFO(curlun, "file not readable: %s\n", filename);
+ 		goto out;
+ 	}
+-	if (!(filp->f_op->write || filp->f_op->aio_write))
++	if (!file_has_write_ops(filp))
+ 		ro = 1;
+ 
+ 	size = i_size_read(inode->i_mapping->host);
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 58e440d..2cde934 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -384,7 +384,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+ 
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+-	if (!file->f_op->read && !file->f_op->aio_read)
++	if (!file_has_read_ops(file))
+ 		return -EINVAL;
+ 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
+ 		return -EFAULT;
+@@ -433,7 +433,7 @@ ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t
+ 	const char __user *p;
+ 	ssize_t ret;
+ 
+-	if (!file->f_op->write && !file->f_op->aio_write)
++	if (!file_has_write_ops(file))
+ 		return -EINVAL;
+ 
+ 	old_fs = get_fs();
+@@ -460,7 +460,7 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+ 
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+-	if (!file->f_op->write && !file->f_op->aio_write)
++	if (!file_has_write_ops(file))
+ 		return -EINVAL;
+ 	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+ 		return -EFAULT;
+@@ -773,7 +773,7 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+ {
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+-	if (!file->f_op->aio_read && !file->f_op->read)
++	if (!file_has_read_ops(file))
+ 		return -EINVAL;
+ 
+ 	return do_readv_writev(READ, file, vec, vlen, pos);
+@@ -786,7 +786,7 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
+ {
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+-	if (!file->f_op->aio_write && !file->f_op->write)
++	if (!file_has_write_ops(file))
+ 		return -EINVAL;
+ 
+ 	return do_readv_writev(WRITE, file, vec, vlen, pos);
+@@ -956,7 +956,7 @@ static size_t compat_readv(struct file *file,
+ 		goto out;
+ 
+ 	ret = -EINVAL;
+-	if (!file->f_op->aio_read && !file->f_op->read)
++	if (!file_has_read_ops(file))
+ 		goto out;
+ 
+ 	ret = compat_do_readv_writev(READ, file, vec, vlen, pos);
+@@ -1023,7 +1023,7 @@ static size_t compat_writev(struct file *file,
+ 		goto out;
+ 
+ 	ret = -EINVAL;
+-	if (!file->f_op->aio_write && !file->f_op->write)
++	if (!file_has_write_ops(file))
+ 		goto out;
+ 
+ 	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 121f11f..86d4279 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1549,6 +1549,16 @@ struct file_operations {
+ 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
+ };
+ 
++static inline int file_has_read_ops(struct file *file)
++{
++	return file->f_op->read || file->f_op->aio_read;
++}
++
++static inline int file_has_write_ops(struct file *file)
++{
++	return file->f_op->write || file->f_op->aio_write;
++}
++
+ struct inode_operations {
+ 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
+ 	void * (*follow_link) (struct dentry *, struct nameidata *);
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.8.4.2
+
