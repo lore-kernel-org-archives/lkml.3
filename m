@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab3KVNrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:47:16 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45854 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab3KVNrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:47:12 -0500
-Date: Fri, 22 Nov 2013 14:46:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [RFC] Control dependencies
-Message-ID: <20131122134630.GQ3866@twins.programming.kicks-ass.net>
-References: <20131121161733.GH10022@twins.programming.kicks-ass.net>
- <20131121180237.GX4138@linux.vnet.ibm.com>
+	id S1755704Ab3KVNu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:50:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43138 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755490Ab3KVNu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:50:26 -0500
+Date: Fri, 22 Nov 2013 14:50:34 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
+Message-ID: <20131122135034.GA20146@nazgul.tnic>
+References: <20131121073410.GA16971@gmail.com>
+ <20131121100722.GA25459@pd.tnic>
+ <20131121111744.GA27513@gmail.com>
+ <20131121113014.GA26009@pd.tnic>
+ <20131121114224.GA27704@gmail.com>
+ <20131121120605.GC26009@pd.tnic>
+ <20131121150524.GA24806@ghostprotocols.net>
+ <20131121152804.GI26009@pd.tnic>
+ <20131121173714.GD24806@ghostprotocols.net>
+ <20131122122701.GA1480@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20131121180237.GX4138@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131122122701.GA1480@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 10:02:37AM -0800, Paul E. McKenney wrote:
-> > --- a/kernel/events/ring_buffer.c
-> > +++ b/kernel/events/ring_buffer.c
-> 
-> My patch does not cover this file.  Wouldn't hurt for them to be
-> separate.
+On Fri, Nov 22, 2013 at 01:27:01PM +0100, Ingo Molnar wrote:
+> I don't think those other bits should go into this library. rbtree
+> should go into lib/rbtree/, command-line bits into lib/cmdline/, build
+> system helpers into lib/build/, etc.
+>
+> Merging unrelated things into a single library is a user-space disease
+> we need not repeat.
 
-Oh sure, but I wanted to present the RFC with at least one working
-example to illustrate why I even bother and to aid in discussion.
+Well, rbtree is basically rblist.c and the rbtree*.h headers which
+simply wrap the kernel headers.
 
-> > @@ -62,18 +62,18 @@ static void perf_output_put_handle(struc
-> >  	 *   kernel				user
-> >  	 *
-> >  	 *   READ ->data_tail			READ ->data_head
-> > -	 *   smp_mb()	(A)			smp_rmb()	(C)
-> > +	 *   barrier()	(A)			smp_rmb()	(C)
-> 
-> We need a conditional for this to work.  I know that the required
-> conditional is there in the code, but we need it explicitly in this
-> example as well.
+cmdline is parse-options.c.
 
-Agreed, I skimped on that because I didn't quite know how to write that
-best.
+IOW, that's splitting it into too granulary pieces with 1-2 compilation
+units ber library.
 
-How about the below version?
+And what if there are interdependencies between the stuff split this
+way? That could become very painful and unnecessary.
 
----
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -61,19 +61,20 @@ static void perf_output_put_handle(struc
- 	 *
- 	 *   kernel				user
- 	 *
--	 *   READ ->data_tail			READ ->data_head
--	 *   smp_mb()	(A)			smp_rmb()	(C)
--	 *   WRITE $data			READ $data
--	 *   smp_wmb()	(B)			smp_mb()	(D)
--	 *   STORE ->data_head			WRITE ->data_tail
-+	 *   if (LOAD ->data_tail) {		LOAD ->data_head
-+	 *			(A)		smp_rmb()	(C)
-+	 *	STORE $data			LOAD $data
-+	 *	smp_wmb()	(B)		smp_mb()	(D)
-+	 *	STORE ->data_head		STORE ->data_tail
-+	 *   }
- 	 *
- 	 * Where A pairs with D, and B pairs with C.
- 	 *
--	 * I don't think A needs to be a full barrier because we won't in fact
--	 * write data until we see the store from userspace. So we simply don't
--	 * issue the data WRITE until we observe it. Be conservative for now.
-+	 * In our case (A) is a control dependency that separates the load of
-+	 * the ->data_tail and the stores of $data. In case ->data_tail
-+	 * indicates there is no room in the buffer to store $data we do not.
- 	 *
--	 * OTOH, D needs to be a full barrier since it separates the data READ
-+	 * D needs to be a full barrier since it separates the data READ
- 	 * from the tail WRITE.
- 	 *
- 	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-@@ -81,7 +82,7 @@ static void perf_output_put_handle(struc
- 	 *
- 	 * See perf_output_begin().
- 	 */
--	smp_wmb();
-+	smp_wmb(); /* B, matches C */
- 	rb->user_page->data_head = head;
- 
- 	/*
-@@ -144,17 +145,26 @@ int perf_output_begin(struct perf_output
- 		if (!rb->overwrite &&
- 		    unlikely(CIRC_SPACE(head, tail, perf_data_size(rb)) < size))
- 			goto fail;
-+
-+		/*
-+		 * The above forms a control dependency barrier separating the
-+		 * @tail load above from the data stores below. Since the @tail
-+		 * load is required to compute the branch to fail below.
-+		 *
-+		 * A, matches D; the full memory barrier userspace SHOULD issue
-+		 * after reading the data and before storing the new tail
-+		 * position.
-+		 *
-+		 * See perf_output_put_handle().
-+		 */
-+
- 		head += size;
- 	} while (local_cmpxchg(&rb->head, offset, head) != offset);
- 
- 	/*
--	 * Separate the userpage->tail read from the data stores below.
--	 * Matches the MB userspace SHOULD issue after reading the data
--	 * and before storing the new tail position.
--	 *
--	 * See perf_output_put_handle().
-+	 * We rely on the implied barrier() by local_cmpxchg() to ensure
-+	 * none of the data stores below can be lifted up by the compiler.
- 	 */
--	smp_mb();
- 
- 	if (unlikely(head - local_read(&rb->wakeup) > rb->watermark))
- 		local_add(rb->watermark, &rb->wakeup);
+So having a simple single library which includes generic stuff needed to
+interface with the kernel is much simpler and sane, IMHO.
+
+And, since we're keeping it internal, we can do the split the other way
+around instead - first do the single generic library and then carve out
+a certain subset of functionality if/when it makes sense.
+
+The same approach we can use for the name - first split and work with it
+and change stuff when the need for it arises.
+
+> I'd also not expose any of this externally but straight link it into
+> the individual utilities - that way it does not matter that it's a
+> nice, topical, fine-grained set of functionality.
+>
+> I don't think we are ready for (nor do we want the overhead of)
+> maintaining a library ABI at this stage.
+>
+> Once things slow down and it's all so robust that we've had at most
+> a handful of commits in tools/lib/ in a full year we can think about
+> exporting it, maybe ...
+
+Right.
