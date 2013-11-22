@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab3KVMwz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:52:55 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53934 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3KVMww (ORCPT
+	id S1755597Ab3KVMxF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:53:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39930 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab3KVMxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:52:52 -0500
+	Fri, 22 Nov 2013 07:53:02 -0500
+Date: Fri, 22 Nov 2013 12:52:57 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: James Henstridge <james.henstridge@canonical.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Fabien =?iso-8859-1?Q?Andr=E9?= <fabien.andre@gmail.com>,
+        Bastien Nocera <hadess@hadess.net>
+Subject: Re: [appleir] BUG: unable to handle kernel NULL pointer dereference
+Message-ID: <20131122125257.GD4629@hercules.my.domain>
+References: <20131029145139.GA2788@hercules>
+ <alpine.LNX.2.00.1311061635160.835@pobox.suse.cz>
+ <CALcaVO=jOEqCwLCMUgEkFJMcc4H6bMLU4yvjo1fJ7DeXgkZH6A@mail.gmail.com>
+ <527BB695.9040209@redhat.com>
+ <alpine.LNX.2.00.1311191533200.6657@pobox.suse.cz>
+ <CALcaVOmCAV8XeURJ5UpWfaFXoj+bz6DZ1NgAt7Xiv5pfEynRFQ@mail.gmail.com>
+ <alpine.LNX.2.00.1311210959170.22082@pobox.suse.cz>
+ <20131121101316.GA3394@hercules.my.domain>
+ <alpine.LNX.2.00.1311221339110.22082@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <2783049.JzUB2QcsZz@vostro.rjw.lan>
-References: <cover.1385118255.git.viresh.kumar@linaro.org>
-	<df162ba4cbdf1379ccfa5dd4ca34153626ae9c71.1385118256.git.viresh.kumar@linaro.org>
-	<2783049.JzUB2QcsZz@vostro.rjw.lan>
-Date: Fri, 22 Nov 2013 18:22:52 +0530
-Message-ID: <CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Stephen Warren <swarren@nvidia.com>, Kukjin Kim <kgene@kernel.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1311221339110.22082@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 November 2013 18:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Friday, November 22, 2013 04:59:49 PM Viresh Kumar wrote:
->> Some platforms might want to change frequency before suspending governors. Like:
->> - Some platform which want to set freq to max to speed up suspend/hibernation
->>   process.
->> - Some platform (like: Tegra or exynos), set this to min or bootloader's
->>   frequency.
->>
->> This patch adds an option for those, so that they can specify this at call to
->> ->init(), so that cpufreq core can take care of this before suspending system.
->>
->> If this variable is not updated by ->init() then its value would be zero and so
->> core wouldn't do anything.
->>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> I don't think this is generally necessary, because the suspend/resume routines
-> added by patch [1/2] will be executed very late during suspend or very early
-> during resume and it shouldn't really matter what performance levels the CPUs
-> are at then.
+On Fri, Nov 22, 2013 at 01:39:47PM +0100, Jiri Kosina wrote:
+> On Thu, 21 Nov 2013, Luis Henriques wrote:
+> 
+> > > > Sorry for the delays in testing out the patch.  I have tried a kernel
+> > > > with the patch applied, and can no longer reproduce the oops.  The
+> > > > hid-appleir driver appears to be working correctly, generating key
+> > > > press events in response to the remote, and LIRC functions correctly
+> > > > via hiddev.
+> > > > 
+> > > > Thanks for the everyone's help with this.
+> > > 
+> > > Applied, thanks.
+> > 
+> > Hi Jiri,
+> > 
+> > Since this fixes an issue in a 3.11 kernel, could you please tag this
+> > commit for stable>=3.11?  If its too late, I can send the request to
+> > stable@ once this patch is merged.
+> 
+> Thanks for noticing. It's too late to add the tag, so if you submit it to 
+> -stable once it's in Linus' tree, I'll appreciate it; otherwise I'll try 
+> to remember to do that myself.
 
-There are few things here:
-- I feel that the current place from where we have suspended stuff is not gonna
-fly. We are doing that in noirq and probably devices which might be required
-during frequency transitions might already be down.. So we *may* need to
-move that in dpm_suspend()..
-- Secondly I want to understand why Tegra/Exynos has such code which I
-mentioned above..
+Sure, no problem.  I'll keep an eye on this.
 
-@Stephen, Kukjin and other samsung folks: Please provide some input here,
-before your systems break in mainline :)
-
-> The only exception *may* be hibernation, because the amount of time needed to
-> create the image will depend on the current performance level of the boot CPU,
-> but that should be an explicitly special case in my opinion.
-
-Hmm.. That looks sensible if there is nothing special required for Tegra/Exynos.
+Cheers,
+--
+Luis
