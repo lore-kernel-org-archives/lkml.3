@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab3KVRWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:22:35 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46352 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab3KVRWe (ORCPT
+	id S1755749Ab3KVR0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:26:18 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63557 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab3KVR0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:22:34 -0500
-Message-ID: <528F92D6.9010409@linutronix.de>
-Date: Fri, 22 Nov 2013 18:22:30 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Mark Jackson <mpfj-list@newflow.co.uk>
-CC: linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        jkosina@suse.cz, anatol.pomozov@gmail.com,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Bin Liu <binmlist@gmail.com>
-Subject: Re: [PATCH] Allow MUSB DSPS to use "force host" mode
-References: <528F7E8F.5050807@newflow.co.uk> <528F8741.1060406@linutronix.de> <528F8B35.8070408@newflow.co.uk> <528F8DF1.2060307@linutronix.de> <528F8F62.7000801@newflow.co.uk>
-In-Reply-To: <528F8F62.7000801@newflow.co.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 22 Nov 2013 12:26:17 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] extcon: gpio: Request gpio pin before modifying its state
+Date: Fri, 22 Nov 2013 09:26:01 -0800
+Message-Id: <1385141161-7785-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 06:07 PM, Mark Jackson wrote:
->> Do you insists on having this change merged upstream?
-> 
-> No ... I didn't think it would be such an issue, so I'm happy to keep this
-> as a local patch if that's any better.
+Commit 338de0ca (extcon: gpio: Use gpio driver/chip debounce if supported)
+introduced a call to gpio_set_debounce() before actually requesting the
+respective gpio pin from the gpio subsystem.
 
-Felipe, Bin: Second opinion on that?
+The gpio subsystem expects that a gpio pin was requested before modifying its
+state. Not doing so results in a warning from gpiolib, and the gpio pin is
+auto-requested. This in turn causes the subsequent devm_gpio_request_one()
+to fail. So devm_gpio_request_one() must be called prior to calling
+gpio_set_debounce().
 
-> 
-> Mark J.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/extcon/extcon-gpio.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Sebastian
+diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+index 7e0dff5..4736a9c 100644
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -105,6 +105,12 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	extcon_data->state_off = pdata->state_off;
+ 	if (pdata->state_on && pdata->state_off)
+ 		extcon_data->edev.print_state = extcon_gpio_print_state;
++
++	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
++				    pdev->name);
++	if (ret < 0)
++		return ret;
++
+ 	if (pdata->debounce) {
+ 		ret = gpio_set_debounce(extcon_data->gpio,
+ 					pdata->debounce * 1000);
+@@ -117,11 +123,6 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
+-				    pdev->name);
+-	if (ret < 0)
+-		goto err;
+-
+ 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
+ 
+ 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
+-- 
+1.7.9.7
+
