@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3KVWzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:55:14 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:62811 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab3KVWzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:55:10 -0500
+	id S1756249Ab3KVW4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 17:56:25 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2561 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755526Ab3KVW4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 17:56:22 -0500
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Markus Mayer" <markus.mayer@linaro.org>
+To: "Wim Van Sebroeck" <wim@iguana.be>, "Guenter Roeck" <linux@roeck-us.net>,
+        "Christian Daudt" <bcm@fixthebug.org>
+cc: "Linaro Patches" <patches@linaro.org>,
+        "Matt Porter" <matt.porter@linaro.org>,
+        "One Thousand Gnomes" <gnomes@lxorguk.ukuu.org.uk>,
+        "Linux Watchdog List" <linux-watchdog@vger.kernel.org>,
+        "ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Markus Mayer" <markus.mayer@linaro.org>
+Subject: [PATCH v5 0/2] watchdog: bcm281xx: Watchdog Driver
+Date: Fri, 22 Nov 2013 14:56:02 -0800
+Message-ID: <1385160964-18578-1-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20131122221839.GD8981@mtj.dyndns.org>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
- <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz>
- <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
- <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
- <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org>
- <alpine.LNX.2.00.1311171746160.15789@eggly.anvils> <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
- <20131122221839.GD8981@mtj.dyndns.org>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Fri, 22 Nov 2013 23:54:49 +0100
-Message-ID: <CAJ75kXabrnxqdtb5SXqm_pYTrSih9yvP38DApF+_P+YZCepTMw@mail.gmail.com>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7E913F6E4RS10428054-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+This is version 5 of the watchdog driver for the BCM281xx family of mobile
+SoCs.
 
-On Fri, Nov 22, 2013 at 11:18 PM, Tejun Heo <tj@kernel.org> wrote:
-> Just applied to cgroup/for-3.13-fixes w/ stable cc'd.  Will push to
-> Linus next week.
+Changes since version 4:
+- Fixed whitespace issue in Kconfig "help" section
+- Rebased onto 3.13-rc1 (due to merge conflict in Makefile)
 
-Thank your for your quick reply. Do you also have a backport for
-v3.10.x already available?
+Changes since version 3:
+- Removed #include <linux/miscdevice.h>
+- Added Reviewed-by:/Acked-by: Guenter Roeck
 
-Best regards,
+Changes since version 2:
+
+- BCM_KONA_WDT_NAME: "bcm-kona-wdt" -> "bcm_kona_wdt"
+- Don't initialize static variable
+- Removed '{'/'}' from single-line statements
+- busy_count retains the maximum loop count of the longest loop rather
+  than an over-all maximum
+- Use seq_puts() in lieu of seq_printf() in 2 locations
+- Removed error message after devm_kzalloc()
+- Added MODULE_ALIAS
+
+Changes since version 1:
+
+- Added module name to "help" section in Kconfig A few cosmetic code
+- simplifications and fixes Removed most dev_info() calls and changed the
+- remaining ones to dev_dbg() Renamed SECWDOG_WD_LOAD_FLAG_MASK to
+- SECWDOG_WD_LOAD_FLAG Added some comments to secure_register_read() and
+- struct bcm_kona_wdt Added delay to secure_register_read() Reduced maximum
+- retry loop from 10000 to 1000 Introduced "busy_count" variable to count
+- how often secure_register_read() gets stalled; this is available through
+- debugfs Simplified secure_register_read() to return -ETIMEDOUT rather than
+- using a variable parameter to indicate a timeout error Got rid of all uses
+- of -EAGAIN Fixed return value check for debugfs_create_dir() Simplified
+- bcm_kona_wdt_debugfs_init() by getting rid of goto Created new generic
+- function bcm_kona_wdt_ctrl_reg_modify() The following functions now use
+- bcm_kona_wdt_ctrl_reg_modify():
+    - bcm_kona_wdt_set_resolution_reg() bcm_kona_wdt_set_timeout_reg()
+    - bcm_kona_wdt_stop()
+- Made bcm_kona_wdt_set_timeout_reg() more generic, so bcm_kona_wdt_start()
+  can use it Removed MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR)
+
+Markus Mayer (2):
+  watchdog: bcm281xx: Watchdog Driver
+  ARM: bcm281xx: watchdog configuration
+
+ arch/arm/configs/bcm_defconfig  |    3 +
+ drivers/watchdog/Kconfig        |   22 +++
+ drivers/watchdog/Makefile       |    1 +
+ drivers/watchdog/bcm_kona_wdt.c |  365 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 391 insertions(+)
+ create mode 100644 drivers/watchdog/bcm_kona_wdt.c
+
 -- 
-William
+1.7.9.5
+
+
