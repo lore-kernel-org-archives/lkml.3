@@ -1,76 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab3KVX1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 18:27:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58321 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab3KVX1M (ORCPT
+	id S1756310Ab3KVX1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 18:27:38 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:39822 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3KVX1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 18:27:12 -0500
-Date: Fri, 22 Nov 2013 15:27:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-Id: <20131122152711.c644e5acf02b61668c63b59c@linux-foundation.org>
-In-Reply-To: <20131108102113.GB6343@quack.suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
-	<1383860919-1883-4-git-send-email-jack@suse.cz>
-	<CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
-	<20131107225733.GE2054@quack.suse.cz>
-	<20131107232148.GE28130@localhost.localdomain>
-	<20131107183717.0fc9eb6e@gandalf.local.home>
-	<20131107234647.GG28130@localhost.localdomain>
-	<20131108102113.GB6343@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Nov 2013 18:27:35 -0500
+From: Lv Zheng <zetalog@gmail.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <zetalog@gmail.com>, Lv Zheng <lv.zheng@intel.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 0/4] ACPI: Cleanup header inclusions.
+Date: Sat, 23 Nov 2013 07:26:31 +0800
+Message-Id: <cover.1385094640.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Nov 2013 11:21:13 +0100 Jan Kara <jack@suse.cz> wrote:
+From: Lv Zheng <lv.zheng@intel.com>
 
-> On Fri 08-11-13 00:46:49, Frederic Weisbecker wrote:
-> > On Thu, Nov 07, 2013 at 06:37:17PM -0500, Steven Rostedt wrote:
-> > > On Fri, 8 Nov 2013 00:21:51 +0100
-> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > 
-> > > > Offloading to a workqueue would be perhaps better, and writing to the serial
-> > > > console could then be done with interrupts enabled, preemptible context, etc...
-> > > 
-> > > Oh God no ;-)  Adding workqueue logic into printk just spells a
-> > > nightmare of much more complexity for a critical kernel infrastructure.
-> > 
-> > But yeah that's scary, that means workqueues itself can't printk that safely.
-> > So, you're right after all.
->   Yeah, we've been there (that was actually my initial proposal). But
-> Andrew and Steven (rightfully) objected and suggested irq_work should be
-> used instead.
+ACPICA header files are lacking in stub protections.  This makes all ACPICA
+header files could only be included for CONFIG_ACPI=y environment.  This
+infects new ACPI prototypes, if such prototypes referenced ACPICA defined
+types, they must be incldued only in the CONFIG_ACPI=y environment.  The
+<acpi/acpi_bus.h> and <acpi/acpi_drivers.h> are the monstrosity infants
+born under this background, directly including them in the CONFIG_ACPI=n
+environment is not safe.  The infection spreads to whole kernel source tree
+that we can see "#ifdef CONFIG_ACPI" here and there.
 
-I still hate the patchset and so does everyone else, including you ;)
-There must be something smarter we can do.  Let's start by restating
-the problem:
+This patchset tries to enforces <linux/acpi.h> inclusions instead of
+<acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions.
 
-CPU A is in printk, emitting log_buf characters to a slow device. 
-Meanwhile other CPUs come into printk(), see that the system is busy,
-dump their load into log_buf then scram, leaving CPU A to do even more
-work.
+Lv Zheng (4):
+  ACPICA: Linux: Cleanup wrong ACPICA inclusions.
+  ACPI: Cleanup <acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions.
+  ACPICA: Cleanup <acpi/acpi.h> inclusions.
+  ACPI: Add support to force header inclusion rules for <linux/acpi.h>.
 
-Correct so far?
+ arch/ia64/hp/common/aml_nfw.c                        |    3 +--
+ arch/x86/kernel/apic/apic_flat_64.c                  |    4 +---
+ arch/x86/kernel/apic/io_apic.c                       |    3 ---
+ arch/x86/pci/mmconfig_32.c                           |    1 -
+ arch/x86/platform/olpc/olpc-xo15-sci.c               |    3 +--
+ drivers/acpi/ac.c                                    |    3 +--
+ drivers/acpi/acpi_extlog.c                           |    1 -
+ drivers/acpi/acpi_pad.c                              |    3 +--
+ drivers/acpi/acpica/Makefile                         |    2 +-
+ drivers/acpi/apei/einj.c                             |    1 -
+ drivers/acpi/battery.c                               |    3 +--
+ drivers/acpi/blacklist.c                             |    1 -
+ drivers/acpi/bus.c                                   |    2 --
+ drivers/acpi/button.c                                |    3 +--
+ drivers/acpi/custom_method.c                         |    2 +-
+ drivers/acpi/debugfs.c                               |    2 +-
+ drivers/acpi/dock.c                                  |    2 --
+ drivers/acpi/ec.c                                    |    3 +--
+ drivers/acpi/event.c                                 |    2 +-
+ drivers/acpi/fan.c                                   |    3 +--
+ drivers/acpi/hed.c                                   |    2 --
+ drivers/acpi/numa.c                                  |    1 -
+ drivers/acpi/nvs.c                                   |    1 -
+ drivers/acpi/osl.c                                   |    2 --
+ drivers/acpi/pci_irq.c                               |    2 --
+ drivers/acpi/pci_link.c                              |    3 +--
+ drivers/acpi/pci_root.c                              |    2 --
+ drivers/acpi/power.c                                 |    3 +--
+ drivers/acpi/proc.c                                  |    3 +--
+ drivers/acpi/processor_core.c                        |    2 +-
+ drivers/acpi/processor_idle.c                        |    1 -
+ drivers/acpi/processor_perflib.c                     |    3 +--
+ drivers/acpi/processor_thermal.c                     |    3 +--
+ drivers/acpi/processor_throttling.c                  |    3 +--
+ drivers/acpi/sbshc.c                                 |    3 +--
+ drivers/acpi/scan.c                                  |    1 -
+ drivers/acpi/sleep.c                                 |    2 --
+ drivers/acpi/sysfs.c                                 |    2 +-
+ drivers/acpi/thermal.c                               |    3 +--
+ drivers/acpi/utils.c                                 |    2 --
+ drivers/acpi/video.c                                 |    3 +--
+ drivers/acpi/wakeup.c                                |    1 -
+ drivers/ata/libata-acpi.c                            |    1 -
+ drivers/ata/pata_acpi.c                              |    2 +-
+ drivers/char/hpet.c                                  |    1 -
+ drivers/char/tpm/tpm_acpi.c                          |    2 +-
+ drivers/char/tpm/tpm_ppi.c                           |    1 -
+ drivers/gpu/drm/i915/intel_acpi.c                    |    1 -
+ drivers/gpu/drm/nouveau/nouveau_acpi.c               |    3 ---
+ drivers/gpu/drm/radeon/radeon_acpi.c                 |    2 --
+ drivers/hv/vmbus_drv.c                               |    1 -
+ drivers/hwmon/acpi_power_meter.c                     |    3 +--
+ drivers/hwmon/asus_atk0110.c                         |    5 +----
+ drivers/ide/ide-acpi.c                               |    1 -
+ drivers/input/misc/atlas_btns.c                      |    2 +-
+ drivers/iommu/amd_iommu_init.c                       |    1 -
+ drivers/iommu/intel_irq_remapping.c                  |    2 +-
+ drivers/pci/hotplug/acpiphp_ibm.c                    |    1 -
+ drivers/pci/hotplug/pciehp.h                         |    2 --
+ drivers/pci/ioapic.c                                 |    1 -
+ drivers/pci/pci-acpi.c                               |    2 --
+ drivers/pci/pci-label.c                              |    1 -
+ drivers/platform/x86/acer-wmi.c                      |    1 -
+ drivers/platform/x86/asus-laptop.c                   |    3 +--
+ drivers/platform/x86/asus-wmi.c                      |    3 +--
+ drivers/platform/x86/classmate-laptop.c              |    2 +-
+ drivers/platform/x86/dell-wmi-aio.c                  |    1 -
+ drivers/platform/x86/dell-wmi.c                      |    1 -
+ drivers/platform/x86/eeepc-laptop.c                  |    3 +--
+ drivers/platform/x86/eeepc-wmi.c                     |    2 +-
+ drivers/platform/x86/hp_accel.c                      |    2 +-
+ drivers/platform/x86/ideapad-laptop.c                |    3 +--
+ drivers/platform/x86/intel-rst.c                     |    2 +-
+ drivers/platform/x86/intel-smartconnect.c            |    2 +-
+ drivers/platform/x86/intel_menlow.c                  |    3 +--
+ drivers/platform/x86/intel_oaktrail.c                |    2 --
+ drivers/platform/x86/mxm-wmi.c                       |    3 +--
+ drivers/platform/x86/panasonic-laptop.c              |    3 +--
+ drivers/platform/x86/pvpanic.c                       |    3 +--
+ drivers/platform/x86/samsung-q10.c                   |    2 +-
+ drivers/platform/x86/sony-laptop.c                   |    2 --
+ drivers/platform/x86/tc1100-wmi.c                    |    4 +---
+ drivers/platform/x86/thinkpad_acpi.c                 |    2 +-
+ drivers/platform/x86/toshiba_acpi.c                  |    2 +-
+ drivers/platform/x86/toshiba_bluetooth.c             |    3 +--
+ drivers/platform/x86/wmi.c                           |    2 --
+ drivers/platform/x86/xo15-ebook.c                    |    3 +--
+ drivers/pnp/pnpacpi/core.c                           |    1 -
+ drivers/pnp/pnpacpi/pnpacpi.h                        |    1 -
+ drivers/sfi/sfi_acpi.c                               |    2 +-
+ drivers/staging/quickstart/quickstart.c              |    2 +-
+ drivers/usb/core/usb-acpi.c                          |    1 -
+ drivers/xen/xen-acpi-cpuhotplug.c                    |    2 --
+ drivers/xen/xen-acpi-memhotplug.c                    |    1 -
+ drivers/xen/xen-acpi-pad.c                           |    3 +--
+ drivers/xen/xen-acpi-processor.c                     |    3 +--
+ include/acpi/acpi_bus.h                              |    6 +++++-
+ include/acpi/acpi_drivers.h                          |    7 +++++--
+ include/acpi/platform/aclinux.h                      |    6 ++++++
+ include/linux/acpi_io.h                              |    2 +-
+ include/linux/ide.h                                  |    3 ---
+ include/linux/iscsi_ibft.h                           |    2 +-
+ include/linux/pci_hotplug.h                          |    3 +--
+ include/linux/sfi_acpi.h                             |    2 +-
+ include/linux/tboot.h                                |    2 +-
+ tools/power/cpupower/debug/kernel/cpufreq-test_tsc.c |    3 +--
+ 106 files changed, 75 insertions(+), 166 deletions(-)
 
-If so, what is the role of local_irq_disabled() in this?  Did CPU A
-call printk() with local interrupts disabled, or is printk (or the
-console driver) causing the irqs-off condition?  Where and why is this
-IRQ disablement happening?
-
-
-Could we fix this problem by not permitting CPUs B, C and D to DoS CPU
-A?  When CPU B comes into printk() and sees that printk is busy, make
-CPU A hand over to CPU B and let CPU A get out of there?
-
+-- 
+1.7.10
 
