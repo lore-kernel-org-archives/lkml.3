@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab3KVNmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:42:33 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:9728 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab3KVNmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:42:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 22 Nov 2013 05:36:26 -0800
-Date: Fri, 22 Nov 2013 15:41:40 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Thierry Reding" <thierry.reding@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: add FUSE clock device
-Message-ID: <20131122134140.GE26617@tbergstrom-lnx.Nvidia.com>
-References: <1385001490-18927-1-git-send-email-acourbot@nvidia.com>
+	id S1755714Ab3KVNns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:43:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2220 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132Ab3KVNnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:43:47 -0500
+Date: Fri, 22 Nov 2013 08:43:17 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131122134317.GA4046@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <8761rl73s7.fsf@xmission.com>
+ <20131122015518.GA31921@redhat.com>
+ <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385001490-18927-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 03:38:10AM +0100, Alexandre Courbot wrote:
-> This clock is needed to ensure the FUSE registers can be accessed
-> without freezing the system.
+On Fri, Nov 22, 2013 at 10:09:17AM +0100, Geert Uytterhoeven wrote:
+> On Fri, Nov 22, 2013 at 2:55 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> Before you are done we need an ELF loader.  bzImage really is very
+> >> uninteresting.  To the point I am not at all convinced that an in kernel
+> >> loader should support it.
+> >
+> > Hi Eric,
+> >
+> > Why ELF case is so interesting. I have not use kexec to boot ELF
+> > images in years and have not seen others using it too. In fact bzImage
+> > seems to be the most common kernel image format for x86, most of the distros
+> > ship and use.
+> >
+> > So first I did the loader for the common use case. There is no reason
+> > that one can't write another loader for ELF images. It just bloats
+> > the code. Hence I thought that other image loaders can follow slowly. I am
+> > not sure why do you say that bzImage is uninteresting.
 > 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Welcome to the non-x86-centric world ;-)
+> 
+> Looking at kexec-tools, all of arm, cris, i386, ia64, m68k, mips, ppc, ppc64,
+> s390, sh, and x86_64 support ELF.
 
-Acked-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+How many of them use ELF to boot in real world? Also one can easily
+add ELF loader. I am just not able to see why ELF loader should be
+a requirement for this patchset.
 
->  drivers/clk/tegra/clk-tegra114.c | 1 +
->  drivers/clk/tegra/clk-tegra124.c | 1 +
->  drivers/clk/tegra/clk-tegra20.c  | 1 +
->  drivers/clk/tegra/clk-tegra30.c  | 2 +-
->  4 files changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-> index dbab27f773b5..b29d31d94d2e 100644
-> --- a/drivers/clk/tegra/clk-tegra114.c
-> +++ b/drivers/clk/tegra/clk-tegra114.c
-> @@ -925,6 +925,7 @@ static struct tegra_devclk devclks[] __initdata = {
->  	{ .con_id = "sclk", .dt_id = TEGRA114_CLK_SCLK },
->  	{ .con_id = "hclk", .dt_id = TEGRA114_CLK_HCLK },
->  	{ .con_id = "pclk", .dt_id = TEGRA114_CLK_PCLK },
-> +	{ .con_id = "fuse", .dt_id = TEGRA114_CLK_FUSE },
->  	{ .dev_id = "rtc-tegra", .dt_id = TEGRA114_CLK_RTC },
->  	{ .dev_id = "timer", .dt_id = TEGRA114_CLK_TIMER },
->  };
-> diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-> index 266e80b51d38..e123fd218983 100644
-> --- a/drivers/clk/tegra/clk-tegra124.c
-> +++ b/drivers/clk/tegra/clk-tegra124.c
-> @@ -1007,6 +1007,7 @@ static struct tegra_devclk devclks[] __initdata = {
->  	{ .con_id = "sclk", .dt_id = TEGRA124_CLK_SCLK },
->  	{ .con_id = "hclk", .dt_id = TEGRA124_CLK_HCLK },
->  	{ .con_id = "pclk", .dt_id = TEGRA124_CLK_PCLK },
-> +	{ .con_id = "fuse", .dt_id = TEGRA124_CLK_FUSE },
->  	{ .dev_id = "rtc-tegra", .dt_id = TEGRA124_CLK_RTC },
->  	{ .dev_id = "timer", .dt_id = TEGRA124_CLK_TIMER },
->  };
-> diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-> index 58faac5f509e..9dd264886621 100644
-> --- a/drivers/clk/tegra/clk-tegra20.c
-> +++ b/drivers/clk/tegra/clk-tegra20.c
-> @@ -452,6 +452,7 @@ static struct tegra_devclk devclks[] __initdata = {
->  	{ .con_id = "sclk", .dt_id = TEGRA20_CLK_SCLK },
->  	{ .con_id = "hclk", .dt_id = TEGRA20_CLK_HCLK },
->  	{ .con_id = "pclk", .dt_id = TEGRA20_CLK_PCLK },
-> +	{ .con_id = "fuse", .dt_id = TEGRA20_CLK_FUSE },
->  	{ .con_id = "twd", .dt_id = TEGRA20_CLK_TWD },
->  	{ .con_id = "audio", .dt_id = TEGRA20_CLK_AUDIO },
->  	{ .con_id = "audio_2x", .dt_id = TEGRA20_CLK_AUDIO_2X },
-> diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-> index 51c093c96657..6d96b307d48c 100644
-> --- a/drivers/clk/tegra/clk-tegra30.c
-> +++ b/drivers/clk/tegra/clk-tegra30.c
-> @@ -659,7 +659,7 @@ static struct tegra_devclk devclks[] __initdata = {
->  	{ .con_id = "pcie", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_PCIE },
->  	{ .con_id = "afi", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_AFI },
->  	{ .con_id = "pciex", .dev_id = "tegra-pcie", .dt_id = TEGRA30_CLK_PCIEX },
-> -	{ .con_id = "fuse", .dev_id = "fuse-tegra", .dt_id = TEGRA30_CLK_FUSE },
-> +	{ .con_id = "fuse", .dt_id = TEGRA30_CLK_FUSE },
->  	{ .con_id = "fuse_burn", .dev_id = "fuse-tegra", .dt_id = TEGRA30_CLK_FUSE_BURN },
->  	{ .con_id = "apbif", .dev_id = "tegra30-ahub", .dt_id = TEGRA30_CLK_APBIF },
->  	{ .con_id = "hda2hdmi", .dev_id = "tegra30-hda", .dt_id = TEGRA30_CLK_HDA2HDMI },
-> -- 
-> 1.8.4.2
-> 
+> Only arm, i386, ppc, ppc64, sh, and x86_64 support zImage.
+> It's not clear to me what alpha supports (if it supports anything at all?).
+
+Motiviation behind this patchset is secureboot. That is x86 specific
+only and bzImage is most commonly used format on that platform. So it
+makes sense to implement bzImage loader first, IMO.
+
+One should be able to add support for more image loaders later as need
+arises across different architectures.
+
+Thanks
+Vivek
