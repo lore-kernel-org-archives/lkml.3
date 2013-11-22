@@ -1,109 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab3KVJLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 04:11:47 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:34258 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab3KVJLf convert rfc822-to-8bit (ORCPT
+	id S1755477Ab3KVJMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 04:12:00 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38622 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab3KVJLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 04:11:35 -0500
-X-AuditID: cbfee68f-b7f836d000001b39-b5-528f1fc51bdc
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <1385111441.26319.81.camel@kjgkr>
-Subject: Re: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by
- merging for mount performance
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?UTF-8?Q?=E8=B0=AD=E5=A7=9D?= <shu.tan@samsung.com>
-Date: Fri, 22 Nov 2013 18:10:41 +0900
-In-reply-to: <000301cee71f$b0e54160$12afc420$@samsung.com>
-References: <000301cee71f$b0e54160$12afc420$@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zY92j8v1BBqemS1v8b/rIZnFpkbvF
-	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr437zb9aC
-	wzwVPbsvsDUwTubqYuTkkBAwkdh1eQsrhC0mceHeejYQW0hgGaNE88kimJr5014zdzFyAcUX
-	MUqc3HUJrIhXQFDix+R7LCA2s4C6xKR5i4CKOIBsEYlFmwQhwtoSyxbC9L5ilNi8fCULRK+u
-	xIwVx9hB6oUF8iWerEoFMdmA6jfvN4A4QVHi7f67YKeJCChJ/Jq/iBVkDLPAQkaJgwtugp3A
-	IqAq8a//BhNIL6eAlcT1s+kQvZYSq8+cBuvlFxCVOLxwOzPEK0oSu9s72UHmSAicY5dY8Xc2
-	I8QcAYlvkw+xgMyREJCV2HQAql5S4uCKGywTGCVnIXl4FpKHZyE8PAvJwwsYWVYxiqYWJBcU
-	J6UXGesVJ+YWl+al6yXn525ihERp/w7GuwesDzEmA22fyCwlmpwPjPK8knhDYzMjC1MTU2Mj
-	c0sz0oSVxHnvP0wKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCYtnPlpdAwV9U9G+U3teR1
-	LPXVLPnYkjyjkS2Px+G7J8f1joi3D+fr5fEdFc6+FhTe1zmtqVqiw9li5uewyzvvplsYZH/+
-	ltZkfzHlJuN0I7aHKzuLnjpbfTS0ttAXcPy75sxzPfVnE1YXFlbd7DIxnbyq5LOX4an8w88k
-	Dn+cy7GGLYglzVSJpTgj0VCLuag4EQB21EZR6AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd2j8v1BBrfeiFn8b/rIZnFpkbvF
-	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMaPx4nTWgq08FbdXtzA3MLZydTFyckgImEjMn/aaGcIWk7hwbz1b
-	FyMXh5DAIkaJk7susYEkeAUEJX5MvsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPWvGCU2L1/J
-	AlGvKzFjxTF2kHphgXyJJ6tSQUw2AW2JzfsNQCqEBBQl3u6/ywpiiwgoSfyav4gVZAyzwEJG
-	iYMLboKtZRFQlfjXf4MJpJdTwEri+tl0iF5LidVnToP18guIShxeuB3qfCWJ3e2d7BMYhWYh
-	OXoWwtGzkBy9gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwVD+T3sG4qsHiEKMAB6MS
-	D+8Oy74gIdbEsuLK3EOMEhzMSiK81TL9QUK8KYmVValF+fFFpTmpxYcYk4HunsgsJZqcD0w4
-	eSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAqO6hrLVs+6cA
-	3icKN0SCporLXoy4pZGwMeLkI6bovQU8kX3JK5Uvfnl6vnXjhzWbYzMYyrkObdq37l1uX8gi
-	7WMuzauz1l3NOakoVx0uz+Mj66kbNnNftmj3gqW3LTPl/lxYksZ3/qL++n9nbGc/CJyzqX2N
-	kKlIQyFX5RndxgyR2tgt82W0lFiKMxINtZiLihMBo7G5yC4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 22 Nov 2013 04:11:45 -0500
+Message-ID: <528F1FC9.4070306@linaro.org>
+Date: Fri, 22 Nov 2013 14:41:37 +0530
+From: viresh kumar <viresh.kumar@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpufreq: suspend/resume governors with PM notifiers
+References: <0e476d16e0ae4b001f5dd4f9ac191f899095928a.1384510171.git.viresh.kumar@linaro.org> <1531674.UoqyyWSbOg@vostro.rjw.lan> <CAKohpo=e+0cpq5XfWpM6Jm0VrnzzAu-xybpucEG6sRL0ydBmLQ@mail.gmail.com> <2642790.BqNcqy9aCb@vostro.rjw.lan>
+In-Reply-To: <2642790.BqNcqy9aCb@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Friday 22 November 2013 03:44 AM, Rafael J. Wysocki wrote:
+> Short-term.  To be precise, governors may be stopped at the beginning of
+> dpm_suspend_noirq() (that is, where cpuidle_pause() is called).  Analogously,
+> they may be started again in dpm_resume_noirq(), where cpuidle_resume() is
+> called.  That at least would be consistent with what cpuidle already does.
 
-Just one niptick.
+Ahh, I mentioned the location to be after "freeze" as I thought CPUs are removed
+before calling dpm_suspend_noirq(). And yes I was *wrong*..
 
-2013-11-22 (금), 09:09 +0800, Chao Yu:
-> Previously we read sit entries page one by one, this method lost the chance 
-> of reading contiguous page together. So we read pages as contiguous as 
-> possible for better mount performance.
+So, dpm_suspend_noirq() and resume_noirq() looks to be the right place to get
+that stuff in.. And that will fit cleanly in the existing code as well.. Not
+many changes would be required in the $subject patch..
+
+> That said in my opinion the appropriate long-term approach would be to split
+> CPU offline and online each into two parts, the "core" part and the "extras"
+> part, such that the "core" parts would only do the offline/online of the
+> cores themselves.  The rest, such as cpufreq/cpuidle "offline/online" would
+> be done in the "extras" part.
 > 
-> change log:
->  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng 
->    suggested.
->  o add mark_page_accessed() before release page to delay VM reclaiming.
->  o remove '*order' for simplification of function as Jaegeuk Kim suggested.
+> Then, system suspend/resume will only use the "core" parts of CPU offline/online
+> and the handling of the things belonging to "extras" would be carried out
+> through CPU device suspend/resume callbacks.  In turn, the "runtime" CPU offline
+> and online would carry out both the "extras" and "core" parts as it does today.
 > 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/segment.c |  103 +++++++++++++++++++++++++++++++++++++++--------------
->  fs/f2fs/segment.h |    2 ++
->  2 files changed, 78 insertions(+), 27 deletions(-)
-> 
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index 8149eba..998e7d3 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -14,6 +14,7 @@
->  #include <linux/blkdev.h>
->  #include <linux/prefetch.h>
->  #include <linux/vmalloc.h>
-> +#include <linux/swap.h>
->  
->  #include "f2fs.h"
->  #include "segment.h"
-> @@ -1488,41 +1489,89 @@ static int build_curseg(struct f2fs_sb_info *sbi)
->  	return restore_curseg_summaries(sbi);
->  }
->  
-> +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start, int nrpages)
-> +{
-> +	struct address_space *mapping = sbi->meta_inode->i_mapping;
-> +	struct page *page;
-> +	block_t blk_addr, prev_blk_addr = 0;
-> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
+> Makes sense?
 
-Can we remove SIT_BLK_CNT by replacing with sit_i->sit_blocks?
+Yes it does. Very much.
 
--- 
-Jaegeuk Kim
-Samsung
+So, I will probably float a initial patch with the dpm_{suspend|resume}_noirq()
+approach to get things fixed for now. And then will do what you suggested. And
+yes logically this makes sense, a lot of sense. cpuidle/freq are about managing
+CPUs and so we better have a CPU driver here, to take care of suspend/resume paths.
+
+I have few questions regarding the long term solution. There can be only one
+driver for any device, this is how device-driver model is. But there can be many
+users of cpu driver. Like ACPI (which we already have:
+drivers/acpi/processor_driver.c), CPUFreq, CPUIdle and maybe more..
+
+To get all these serviced together we probably need to write another layer on
+top of these to which these will register their callbacks.
+
+Then I started looking into kernel code to understand different frameworks we
+are using and came across: subsys_interface. This is the comment over it:
+
+ * Simple interfaces attached to a subsystem. Multiple interfaces can
+ * attach to a subsystem and its devices. Unlike drivers, they do not
+ * exclusively claim or control devices. Interfaces usually represent
+ * a specific functionality of a subsystem/class of devices.
+
+And it exactly fits our purpose. We don't really need a CPU driver as there are
+multiple frameworks that need it for the same device. And probably we just need
+a interface which would call user specific callbacks (user being: cpufreq,
+cpuidle, maybe more)..
+
+So, what about something like this ?
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index f48370d..523c0bc 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -120,6 +120,45 @@ static DEVICE_ATTR(release, S_IWUSR, NULL, cpu_release_store);
+ #endif /* CONFIG_ARCH_CPU_PROBE_RELEASE */
+ #endif /* CONFIG_HOTPLUG_CPU */
+
++int cpu_subsys_suspend_noirq(struct device *dev)
++{
++       struct bus_type *bus = dev->bus;
++       struct subsys_interface *sif;
++       int ret = 0;
++
++       list_for_each_entry(sif, &bus->p->interfaces, node) {
++               if (sif->pm && sif->pm->suspend_noirq) {
++                       ret = sif->suspend_noirq(dev);
++                       if (ret)
++                               break;
++               }
++       }
++
++       return ret;
++}
++
++int cpu_subsys_resume_noirq(struct device *dev)
++{
++       struct bus_type *bus = dev->bus;
++       struct subsys_interface *sif;
++       int ret = 0;
++
++       list_for_each_entry(sif, &bus->p->interfaces, node) {
++               if (sif->pm && sif->pm->resume_noirq) {
++                       ret = sif->resume_noirq(dev);
++                       if (ret)
++                               break;
++               }
++       }
++
++       return ret;
++}
++
++static const struct dev_pm_ops cpu_subsys_pm_ops = {
++       .suspend_noirq = cpu_subsys_suspend_noirq,
++       .resume_noirq = cpu_subsys_resume_noirq,
++};
++
+ struct bus_type cpu_subsys = {
+        .name = "cpu",
+        .dev_name = "cpu",
+@@ -128,6 +167,7 @@ struct bus_type cpu_subsys = {
+        .online = cpu_subsys_online,
+        .offline = cpu_subsys_offline,
+ #endif
++       .pm = &cpu_subsys_pm_ops,
+ };
+ EXPORT_SYMBOL_GPL(cpu_subsys);
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index b025925..fa01273 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -298,11 +298,16 @@ struct device *driver_find_device(struct device_driver *drv,
+  * @node:       the list of functions registered at the subsystem
+  * @add_dev:    device hookup to device function handler
+  * @remove_dev: device hookup to device function handler
++ * @pm: Power management operations of this interface.
+  *
+  * Simple interfaces attached to a subsystem. Multiple interfaces can
+  * attach to a subsystem and its devices. Unlike drivers, they do not
+  * exclusively claim or control devices. Interfaces usually represent
+  * a specific functionality of a subsystem/class of devices.
++ *
++ * PM callbacks are called from individual subsystems instead of PM core. And
++ * hence might not be available for all subsystems. Currently present for:
++ * cpu_subsys.
+  */
+ struct subsys_interface {
+        const char *name;
+@@ -310,6 +315,7 @@ struct subsys_interface {
+        struct list_head node;
+        int (*add_dev)(struct device *dev, struct subsys_interface *sif);
+        int (*remove_dev)(struct device *dev, struct subsys_interface *sif);
++       const struct dev_pm_ops *pm;
+ };
+
+ int subsys_interface_register(struct subsys_interface *sif);
 
