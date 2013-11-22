@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab3KVQXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 11:23:38 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46489 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab3KVQXg (ORCPT
+	id S932141Ab3KVQXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 11:23:43 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38346 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab3KVQXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 11:23:36 -0500
+	Fri, 22 Nov 2013 11:23:39 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dwmw2@infradead.org, linux-mtd@lists.infradead.org, angus.clark@st.com
 Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 06/23] mtd: st_spi_fsm: Supply defines for the possible flash command opcodes
-Date: Fri, 22 Nov 2013 16:22:43 +0000
-Message-Id: <1385137380-28968-7-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 07/23] mtd: st_spi_fsm: Add support for JEDEC ID extraction
+Date: Fri, 22 Nov 2013 16:22:44 +0000
+Message-Id: <1385137380-28968-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
 References: <1385137380-28968-1-git-send-email-lee.jones@linaro.org>
@@ -21,65 +21,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flash chip commands are issued using a set of predefined opcodes. These
-are mostly the same for all flash devices, but do differ on occasion.
-This patch supplies the majority of the key ones which will be used in
-this driver.
+Once we start supporting devices it will be handy go detect them
+dynamically. This will be done using the chip's unique JEDEC ID. This
+patch allows us to extract a device's JEDEC ID using the a predefined
+FSM register write sequence.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.h | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 55 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-index 6164142..97b4868 100644
---- a/drivers/mtd/devices/st_spi_fsm.h
-+++ b/drivers/mtd/devices/st_spi_fsm.h
-@@ -189,6 +189,44 @@
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 73c55b4..f937329 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -25,6 +25,22 @@
  
- #define STFSM_FLASH_SAFE_FREQ	10000000UL                         /* 10 MHz */
+ #include "st_spi_fsm.h"
  
-+/* Flash Commands */
-+#define FLASH_CMD_WREN		0x06
-+#define FLASH_CMD_WRDI		0x04
-+#define FLASH_CMD_RDID		0x9f
-+#define FLASH_CMD_RDSR		0x05
-+#define FLASH_CMD_RDSR2		0x35
-+#define FLASH_CMD_WRSR		0x01
-+#define FLASH_CMD_SE_4K		0x20
-+#define FLASH_CMD_SE_32K	0x52
-+#define FLASH_CMD_SE		0xd8
-+#define FLASH_CMD_CHIPERASE	0xc7
-+#define FLASH_CMD_WRVCR		0x81
-+#define FLASH_CMD_RDVCR		0x85
++static struct stfsm_seq stfsm_seq_read_jedec = {
++	.data_size = TRANSFER_SIZE(8),
++	.seq_opc[0] = (SEQ_OPC_PADS_1 |
++		       SEQ_OPC_CYCLES(8) |
++		       SEQ_OPC_OPCODE(FLASH_CMD_RDID)),
++	.seq = {
++		STFSM_INST_CMD1,
++		STFSM_INST_DATA_READ,
++		STFSM_INST_STOP,
++	},
++	.seq_cfg = (SEQ_CFG_PADS_1 |
++		    SEQ_CFG_READNOTWRITE |
++		    SEQ_CFG_CSDEASSERT |
++		    SEQ_CFG_STARTSEQ),
++};
 +
-+#define FLASH_CMD_READ		0x03	/* READ */
-+#define FLASH_CMD_READ_FAST	0x0b	/* FAST READ */
-+#define FLASH_CMD_READ_1_1_2	0x3b	/* DUAL OUTPUT READ */
-+#define FLASH_CMD_READ_1_2_2	0xbb	/* DUAL I/O READ */
-+#define FLASH_CMD_READ_1_1_4	0x6b	/* QUAD OUTPUT READ */
-+#define FLASH_CMD_READ_1_4_4	0xeb	/* QUAD I/O READ */
+ static inline int stfsm_is_idle(struct stfsm *fsm)
+ {
+ 	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
+@@ -91,6 +107,42 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+ 	}
+ }
+ 
++static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
++{
++	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
++	uint32_t tmp[2];
 +
-+#define FLASH_CMD_WRITE		0x02	/* PAGE PROGRAM */
-+#define FLASH_CMD_WRITE_1_1_2	0xa2	/* DUAL INPUT PROGRAM */
-+#define FLASH_CMD_WRITE_1_2_2	0xd2	/* DUAL INPUT EXT PROGRAM */
-+#define FLASH_CMD_WRITE_1_1_4	0x32	/* QUAD INPUT PROGRAM */
-+#define FLASH_CMD_WRITE_1_4_4	0x12	/* QUAD INPUT EXT PROGRAM */
++	stfsm_load_seq(fsm, seq);
 +
-+#define FLASH_CMD_EN4B_ADDR	0xb7	/* Enter 4-byte address mode */
-+#define FLASH_CMD_EX4B_ADDR	0xe9	/* Exit 4-byte address mode */
++	stfsm_read_fifo(fsm, tmp, 8);
 +
-+/* READ commands with 32-bit addressing (N25Q256 and S25FLxxxS) */
-+#define FLASH_CMD_READ4		0x13
-+#define FLASH_CMD_READ4_FAST	0x0c
-+#define FLASH_CMD_READ4_1_1_2	0x3c
-+#define FLASH_CMD_READ4_1_2_2	0xbc
-+#define FLASH_CMD_READ4_1_1_4	0x6c
-+#define FLASH_CMD_READ4_1_4_4	0xec
++	memcpy(jedec, tmp, 5);
 +
- struct stfsm {
- 	struct device		*dev;
- 	void __iomem		*base;
++	stfsm_wait_seq(fsm);
++}
++
++static struct flash_info * stfsm_jedec_probe(struct stfsm *fsm)
++{
++	u16                     ext_jedec;
++	u32			jedec;
++	u8			id[5];
++
++	stfsm_read_jedec(fsm, id);
++
++	jedec     = id[0] << 16 | id[1] << 8 | id[2];
++	/*
++	 * JEDEC also defines an optional "extended device information"
++	 * string for after vendor-specific data, after the three bytes
++	 * we use here. Supporting some chips might require using it.
++	 */
++	ext_jedec = id[3] << 8  | id[4];
++
++	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
++		jedec, id[0], id[1], id[2], id[3], id[4]);
++
++	return NULL;
++}
++
+ static void stfsm_clear_fifo(struct stfsm *fsm)
+ {
+ 	uint32_t avail;
+@@ -243,6 +295,9 @@ static int stfsm_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	/* Detect SPI FLASH device */
++	stfsm_jedec_probe(fsm);
++
+ 	platform_set_drvdata(pdev, fsm);
+ 
+ 	fsm->mtd.dev.parent	= &pdev->dev;
 -- 
 1.8.1.2
 
