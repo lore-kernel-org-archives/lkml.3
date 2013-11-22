@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab3KVURk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 15:17:40 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54725 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab3KVURi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:17:38 -0500
+	id S932124Ab3KVUXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 15:23:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477Ab3KVUXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 15:23:02 -0500
+Date: Fri, 22 Nov 2013 21:24:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, viro@ZenIV.linux.org.uk, keescook@chromium.org,
+        mhocko@suse.cz, snanda@chromium.org, dserrg@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] check_unsafe_exec: use while_each_thread() rather
+	than next_thread()
+Message-ID: <20131122202412.GA19563@redhat.com>
+References: <20131122175439.GA31446@redhat.com> <528FB3B4.3030303@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20131122191822.GA16943@redhat.com>
-References: <20131122191803.GA16919@redhat.com> <20131122191822.GA16943@redhat.com>
-From: Sameer Nanda <snanda@chromium.org>
-Date: Fri, 22 Nov 2013 12:17:16 -0800
-X-Google-Sender-Auth: OUdv7q9mkiViDB2n1jzWYydlVdQ
-Message-ID: <CANMivWZ+KZNE6W59MX9xXm24SpUJD+-MbwGCkMX+JAOHtyr3nA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] signals: change do_signal_stop/do_sigaction to use while_each_thread()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528FB3B4.3030303@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 11:18 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Change do_signal_stop() and do_sigaction() to avoid next_thread()
-> and use while_each_thread() instead.
+On 11/22, KOSAKI Motohiro wrote:
 >
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Sameer Nanda <snanda@chromium.org>
+> (11/22/2013 12:54 PM), Oleg Nesterov wrote:
+> > next_thread() should be avoided, change check_unsafe_exec()
+> > to use while_each_thread(). This also saves 32 bytes.
+>
+> Just curious.
+> Why it should be avoided? Just for cleaner code?
 
-> ---
->  kernel/signal.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index ded28b9..086071d 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2047,8 +2047,8 @@ static bool do_signal_stop(int signr)
->                 if (task_set_jobctl_pending(current, signr | gstop))
->                         sig->group_stop_count++;
->
-> -               for (t = next_thread(current); t != current;
-> -                    t = next_thread(t)) {
-> +               t = current;
-> +               while_each_thread(current, t) {
->                         /*
->                          * Setting state to TASK_STOPPED for a group
->                          * stop is always done with the siglock held,
-> @@ -3125,8 +3125,7 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
->                         rm_from_queue_full(&mask, &t->signal->shared_pending);
->                         do {
->                                 rm_from_queue_full(&mask, &t->pending);
-> -                               t = next_thread(t);
-> -                       } while (t != current);
-> +                       } while_each_thread(current, t);
->                 }
->         }
->
-> --
-> 1.5.5.1
->
+Nobody except signal->curr_target actually need next_thread-like
+code, and
 
+> Or is there
+> serious issue?
 
+We need to change (fix) this interface. This particular code is
+fine, p == current. But in general the code like this can loop
+forever if p exits and next_thread(t) can't reach the unhashed
+thread.
 
--- 
-Sameer
+Oleg.
+
