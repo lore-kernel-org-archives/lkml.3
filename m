@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3KVIWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:22:19 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:40523 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3KVIWQ (ORCPT
+	id S1755387Ab3KVIW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:22:28 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59184 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab3KVIWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:22:16 -0500
-From: Kamala R <kamala@aristanetworks.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, Kamala R <kamala@aristanetworks.com>
-Subject: [Patch v2] IPv6: Fixed support for blackhole and prohibit routes
-Date: Fri, 22 Nov 2013 13:51:28 +0530
-Message-Id: <1385108488-32163-1-git-send-email-kamala@aristanetwors.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 22 Nov 2013 03:22:22 -0500
+Message-ID: <528F143B.5020507@gmail.com>
+Date: Fri, 22 Nov 2013 09:22:19 +0100
+From: Andreas Platschek <andi.platschek@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: wharms@bfs.de
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] tty: replace mutex_lock() with tty_write_lock()
+References: <1385061132-7254-1-git-send-email-andi.platschek@gmail.com> <528F112B.4090404@bfs.de>
+In-Reply-To: <528F112B.4090404@bfs.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kamala R <kamala@aristanetworks.com>
+Hi,
 
-The behaviour of blackhole and prohibit routes has been corrected by setting
-the input and output function pointers of the dst variable appropriately. For
-blackhole routes, they are set to dst_discard and to ip6_pkt_prohibit and
-ip6_pkt_prohbit_out respectively for prohibit routes.
+On 11/22/2013 09:09 AM, walter harms wrote:
+>
+> Am 21.11.2013 20:12, schrieb Andreas Platschek:
+>> Use tty_write_lock()/tty_write_unlock() consistently.
+>>
+>> This takes care of the following sparse warning:
+>> drivers/tty/tty_io.c:1169:17: warning: context imbalance in 'tty_write_message' - unexpected unlock
+>>
+>> Signed-off-by: Andreas Platschek <andi.platschek@gmail.com>
+>> ---
+>>  drivers/tty/tty_io.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+>> index 3a1a01a..13dca92 100644
+>> --- a/drivers/tty/tty_io.c
+>> +++ b/drivers/tty/tty_io.c
+>> @@ -1165,7 +1165,7 @@ out:
+>>  void tty_write_message(struct tty_struct *tty, char *msg)
+>>  {
+>>  	if (tty) {
+>> -		mutex_lock(&tty->atomic_write_lock);
+>> +		tty_write_lock(tty,0);
+>>  		tty_lock(tty);
+>>  		if (tty->ops->write && !test_bit(TTY_CLOSING, &tty->flags)) {
+>>  			tty_unlock(tty);
+> i am not an expert on this but you may need to replace that tty_unlock() with tty_write_unlock()
+The tty_unlock() you see in the patch belongs to the tty_lock() right
+after the tty_write_lock(), the tty_write_unlock() is already in place
+without my patch.
 
-Changes from v1: Logic is the same. Changes made for readability and so it
-looks pleasing.
+tty_lock()/tty_unlock() and tty_write_lock()/tty_write_unlock() are
+operating on different mutexes, both are needed here.
 
-Signed-off-by: Kamala R <kamala@aristanetworks.com>
----
- net/ipv6/route.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index f54e3a1..d90b9ab 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1564,21 +1564,24 @@ int ip6_route_add(struct fib6_config *cfg)
- 				goto out;
- 			}
- 		}
--		rt->dst.output = ip6_pkt_discard_out;
--		rt->dst.input = ip6_pkt_discard;
- 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
-+		rt->dst.error = -ENETUNREACH;
- 		switch (cfg->fc_type) {
- 		case RTN_BLACKHOLE:
- 			rt->dst.error = -EINVAL;
-+			rt->dst.output = dst_discard;
-+			rt->dst.input = dst_discard;
- 			break;
- 		case RTN_PROHIBIT:
- 			rt->dst.error = -EACCES;
-+			rt->dst.output = ip6_pkt_prohibit_out;
-+			rt->dst.input = ip6_pkt_prohibit;
- 			break;
- 		case RTN_THROW:
- 			rt->dst.error = -EAGAIN;
--			break;
- 		default:
--			rt->dst.error = -ENETUNREACH;
-+			rt->dst.output = ip6_pkt_discard_out;
-+			rt->dst.input = ip6_pkt_discard;
- 			break;
- 		}
- 		goto install_route;
--- 
-1.7.9.5
+thx!
+Andi
+>
+> re,
+>  wh
 
