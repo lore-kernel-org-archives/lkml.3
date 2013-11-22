@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab3KVDwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 22:52:21 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:45816 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020Ab3KVDwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 22:52:20 -0500
-Date: Thu, 21 Nov 2013 21:51:28 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Joel Fernandes <joelf@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
-        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>,
-        <balbi@ti.com>
-Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly
- clocksource/clockevent system timers
-Message-ID: <20131122035127.GA1417@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1385085414-9034-1-git-send-email-joelf@ti.com>
- <1385085414-9034-6-git-send-email-joelf@ti.com>
+	id S1754548Ab3KVDxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 22:53:33 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48538 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab3KVDx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 22:53:28 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <528ED04E.4060606@jp.fujitsu.com>
+Date: Fri, 22 Nov 2013 12:32:30 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
-Content-Disposition: inline
-In-Reply-To: <1385085414-9034-6-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, jerry.hoemann@hp.com,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo.kernel.org@gmail.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Subject: Re: [RFC v2 0/2] Early use of boot service memory
+References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com> <20131121230744.GA31592@srcf.ucam.org> <528E94D1.2050809@zytor.com> <20131121233705.GA32121@srcf.ucam.org> <528EAF99.1010503@zytor.com> <20131122012524.GA5627@anatevka.fc.hp.com> <CAE9FiQUx5rnA0kpqXRQYtpj9Qk-4bPGaUKEbbF=XHsZbnSd6Rg@mail.gmail.com> <20131122022957.GE31921@redhat.com>
+In-Reply-To: <20131122022957.GE31921@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/11/22 11:29), Vivek Goyal wrote:
+> [..]
+>>> makedumpfile going to cyclic buffer has helped out greatly, but on
+>>> our new systems we're still looking at 512 MB crash kernels.
+>>
+>> I tried 6TiB system/16 PCIE cards, kdump on RHEL 6.5 beta still does not work.
+>> still get OOM.
+>
+> What crashkernel= option you are using?
+>
+> Interesting. So something is consuming lot of memory. How about setting
+> "debug_mem_level 1" in /etc/kdump.conf and regenerate initrd and retry.
+> This time it should output some memory usage info at various points
+> during boot and that can give us some idea who is consuming how much
+> memory.
+>
+> If some module are consuming lot of memory, then you can try "blacklist"
+> option in /etc/kdump.conf to disable those.
+>
+> If it is not modules, then it will concern me because then either
+> kernel is consuming too much memory (which it should not) or for
+> some reason makedumpfile cyclic mode did not work for you properly.
+>
+> While you are re-testing, how about also increasing debug message
+> level of makedumpfile. makedumpfile developers should be able to
+> have a look at that. In /etc/kdump.conf, specify.
+>
+> core_collector makedumpfile -c --message-level 31 -d 31
+>
+> If message level 31 turns out to be too verbose, reduce it as per
+> makedumpfile man page.
+>
 
-Hi,
+The following configuration is more flexible:
 
-On Thu, Nov 21, 2013 at 07:56:51PM -0600, Joel Fernandes wrote:
+core_collector false
+default shell
 
-[...]
+Then crash dump collection fails and emergency shell shows up,
+where you can type a variety of commands.
 
-> New functions for OF-only boot are introduced, and we can soon delete the=
- old
-> versions once we migrate all platforms. Currently only AM335x is migrated=
- and
+If 2nd kernel keeps failing even on this configuration, it's likely
+that kernel side already causes the OOM you're facing before reaching
+invocation of the command specified by core_collector directive.
 
-actually, you don't need to initialize .init_timer at all in DT boot.
-Just use CLKSOURCE_OF_DECLARE() and pass your omap_generic_timer_init()
-as argument (although, I'd call it omap_of_timer_init()).
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
-That will put of_device_id structure on a special section
-(__clksource_of_table) and pass your function as a data argument. That
-function will be called automatically during init.
-
---=20
-balbi
-
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSjtS/AAoJEIaOsuA1yqREKcYP/2GYbNpgOpiH/l8sQDIW5DEr
-gzgopEW5qGhz6DQx1jPQe7F169WIvvz1mXQ7717OKFiOA0YQifxIcoTmdqXzcKAh
-q3+gOrKb2m8t4D/4tHFH6FmjjwQIAzzJbNygMLV58qDWICrWPfQ2vxoJGKhw8OAR
-/0hiCOyWk5CMBIyseHiENw3Wnj0dN/eHvcYY0W5Sm6FLT0El1pwRrzKK0MchpYW2
-LmPv4FJH2KzkQSPolQp0FYVlKJ2f6IbPhzGusY9GQGOr00QDm2J+cH+WR9R2WMoh
-ZD7xjcHSRs7MgRlockUykZ/zqc34F8XNiA3qZSjrrO9KAsw/ttF8tjPD7RCoz8yd
-v2WbrFp/Wd2J+6CSoJ8nzAzCseWh/UuvZ4oF1RSHl9XFTIk7Stpwtk3VhxuQisgE
-lTyzA4z7Xoq8zTCwVt7CVASJdthUb4mqr9p1xLbqmQS3/n1MeB1wm2VdH5KB8BEq
-9vw8jqpT7ie26Vjf+vA328Up7rTkQlifAVwYvWF7w1ZAvDRgDXkqGVuIpHwj1BGc
-iQshAE/4KTdtDnLyW5RmOg0pdqkYog3k30S0hK5hlbZHF/YUi0k9IrG2cW60KYqI
-bi2Jxwe1op2FODBrFD6n5or1GgJlLB/fGCvPVy/WbHlBBd8EejydkK/+6Qb8QER7
-lCHVOuB3Fx17QxQN6+aI
-=0c5Q
------END PGP SIGNATURE-----
-
---tThc/1wpZn/ma/RB--
