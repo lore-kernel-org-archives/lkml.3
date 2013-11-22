@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab3KVR0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:26:18 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:63557 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab3KVR0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:26:17 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] extcon: gpio: Request gpio pin before modifying its state
-Date: Fri, 22 Nov 2013 09:26:01 -0800
-Message-Id: <1385141161-7785-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	id S1755787Ab3KVR2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:28:41 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:43852 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755413Ab3KVR2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:28:40 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Subject: [PATCH v2] powerpc 8xx: defconfig: slice by 4 is more efficient than the default slice by 8 on Powerpc 8xx.
+Message-Id: <20131122172829.CC8EE1A4DE7@localhost.localdomain>
+Date: Fri, 22 Nov 2013 18:28:29 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 338de0ca (extcon: gpio: Use gpio driver/chip debounce if supported)
-introduced a call to gpio_set_debounce() before actually requesting the
-respective gpio pin from the gpio subsystem.
+On PPC_8xx, CRC32_SLICEBY4 is more efficient (almost twice) than CRC32_SLICEBY8,
+as shown below:
 
-The gpio subsystem expects that a gpio pin was requested before modifying its
-state. Not doing so results in a warning from gpiolib, and the gpio pin is
-auto-requested. This in turn causes the subsequent devm_gpio_request_one()
-to fail. So devm_gpio_request_one() must be called prior to calling
-gpio_set_debounce().
+With CRC32_SLICEBY8:
+[    1.109204] crc32: CRC_LE_BITS = 64, CRC_BE BITS = 64
+[    1.114401] crc32: self tests passed, processed 225944 bytes in 15118910 nsec
+[    1.130655] crc32c: CRC_LE_BITS = 64
+[    1.134235] crc32c: self tests passed, processed 225944 bytes in 4479879 nsec
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/extcon/extcon-gpio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+With CRC32_SLICEBY4:
+[    1.097129] crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
+[    1.101878] crc32: self tests passed, processed 225944 bytes in 8616242 nsec
+[    1.116298] crc32c: CRC_LE_BITS = 32
+[    1.119607] crc32c: self tests passed, processed 225944 bytes in 3289576 nsec
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 7e0dff5..4736a9c 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -105,6 +105,12 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 	extcon_data->state_off = pdata->state_off;
- 	if (pdata->state_on && pdata->state_off)
- 		extcon_data->edev.print_state = extcon_gpio_print_state;
-+
-+	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
-+				    pdev->name);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (pdata->debounce) {
- 		ret = gpio_set_debounce(extcon_data->gpio,
- 					pdata->debounce * 1000);
-@@ -117,11 +123,6 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		return ret;
- 
--	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
--				    pdev->name);
--	if (ret < 0)
--		goto err;
--
- 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
- 
- 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
--- 
-1.7.9.7
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
+diff -ur a/arch/powerpc/configs/adder875_defconfig b/arch/powerpc/configs.new/adder875_defconfig
+--- a/arch/powerpc/configs/adder875_defconfig	2013-11-22 18:20:10.342968268 +0100
++++ b/arch/powerpc/configs.new/adder875_defconfig	2013-11-22 18:17:46.499686457 +0100
+@@ -70,3 +70,4 @@
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_INFO=y
+ # CONFIG_RCU_CPU_STALL_DETECTOR is not set
++CONFIG_CRC32_SLICEBY4=y
+diff -ur a/arch/powerpc/configs/ep88xc_defconfig b/arch/powerpc/configs.new/ep88xc_defconfig
+--- a/arch/powerpc/configs/ep88xc_defconfig	2013-11-22 18:20:10.286961148 +0100
++++ b/arch/powerpc/configs.new/ep88xc_defconfig	2013-11-22 18:17:41.992113565 +0100
+@@ -72,3 +72,4 @@
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_INFO=y
+ # CONFIG_RCU_CPU_STALL_DETECTOR is not set
++CONFIG_CRC32_SLICEBY4=y
+diff -ur a/arch/powerpc/configs/mpc866_ads_defconfig b/arch/powerpc/configs.new/mpc866_ads_defconfig
+--- a/arch/powerpc/configs/mpc866_ads_defconfig	2013-11-22 18:20:10.323965853 +0100
++++ b/arch/powerpc/configs.new/mpc866_ads_defconfig	2013-11-22 18:17:32.480904735 +0100
+@@ -55,3 +55,4 @@
+ CONFIG_CRC_CCITT=y
+ # CONFIG_RCU_CPU_STALL_DETECTOR is not set
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_CRC32_SLICEBY4=y
+diff -ur a/arch/powerpc/configs/mpc885_ads_defconfig b/arch/powerpc/configs.new/mpc885_ads_defconfig
+--- a/arch/powerpc/configs/mpc885_ads_defconfig	2013-11-22 18:20:10.326966235 +0100
++++ b/arch/powerpc/configs.new/mpc885_ads_defconfig	2013-11-22 18:17:25.760050546 +0100
+@@ -78,3 +78,4 @@
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_INFO=y
+ # CONFIG_RCU_CPU_STALL_DETECTOR is not set
++CONFIG_CRC32_SLICEBY4=y
+diff -ur a/arch/powerpc/configs/tqm8xx_defconfig b/arch/powerpc/configs.new/tqm8xx_defconfig
+--- a/arch/powerpc/configs/tqm8xx_defconfig	2013-11-22 18:20:10.317965090 +0100
++++ b/arch/powerpc/configs.new/tqm8xx_defconfig	2013-11-22 18:17:14.926673681 +0100
+@@ -84,3 +84,4 @@
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_INFO=y
+ # CONFIG_RCU_CPU_STALL_DETECTOR is not set
++CONFIG_CRC32_SLICEBY4=y
