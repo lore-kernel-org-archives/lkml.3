@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab3KVIKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:10:12 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45715 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab3KVIKI (ORCPT
+	id S1754470Ab3KVIOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:14:53 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:35571 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3KVIOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:10:08 -0500
-Message-ID: <528F115A.8020602@hitachi.com>
-Date: Fri, 22 Nov 2013 17:10:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 22 Nov 2013 03:14:52 -0500
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: Re: [PATCH 2/2] tracing/probes: Fix basic print type functions
-References: <1384749649-31447-1-git-send-email-namhyung@kernel.org> <1384749649-31447-2-git-send-email-namhyung@kernel.org> <20131120152245.GB24734@redhat.com> <87k3g1t1hw.fsf@sejong.aot.lge.com>
-In-Reply-To: <87k3g1t1hw.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <528EBD0B.5010006@innofidei.com>
+References: <1385024065-29965-1-git-send-email-zhanghonghui@innofidei.com>
+	<CACQ1gAiLesYEWmHkivAF=t8ekCFM=yDDyzkJTtduavNjp1g6wA@mail.gmail.com>
+	<528EB1E3.7030101@innofidei.com>
+	<20131122015237.GB3509@localhost>
+	<528EBD0B.5010006@innofidei.com>
+Date: Fri, 22 Nov 2013 09:14:52 +0100
+Message-ID: <CAFLxGvyLEEyc2pFJXFU+aLb-ma3EraHLbdFwMm7bxAXJo9M=jw@mail.gmail.com>
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Hans Zhang <zhanghonghui@innofidei.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/22 15:05), Namhyung Kim wrote:
-> Hi Oleg,
-> 
-> On Wed, 20 Nov 2013 16:22:45 +0100, Oleg Nesterov wrote:
->> On 11/18, Namhyung Kim wrote:
+On Fri, Nov 22, 2013 at 3:10 AM, Hans Zhang <zhanghonghui@innofidei.com> wrote:
+> On 2013/11/22 9:52, Ezequiel Garcia wrote:
+>> On Fri, Nov 22, 2013 at 09:22:43AM +0800, Hans Zhang wrote:
+>>> On 2013/11/21 18:59, Richard Genoud wrote:
 >>>
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
->>> +#if BITS_PER_LONG == 32
->>>  DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
->>> -DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
->>>  DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
->>> +#else /* BITS_PER_LONG == 64 */
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
->>> +DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
->>> +#endif
+>>> Here's my scenario, I want to write nand through mtdblock by dd command
+>> You could get some better support by explaining why do you want to write
+>> to a NAND through mtdblock. It sounds a bit ackward to me, but I'm sure
+>> you have a good reason for it!
 >>
->> I must have missed something... Not only I do not understand why
->> do we need "#if BITS_PER_LONG", I can't understand why
->> DEFINE_BASIC_PRINT_TYPE_FUNC() needs "cast" argument.
->>
->> IOW, how about the patch below instead?
-> 
-> Looks good to me.
-> 
-> Masami, did you have any issue regarding the casts?
+>> Let's hear it :-)
+>
+> Thanks for your reply.
+> This is for my embed system upgrade, I reserved one nand partition for filesystem
+> environment which will load to DDR while uboot booting.
+> This filesystem.uboot file should be able to read both by uboot and kernel, and
+> maybe written by uboot and kernel. There will be no filesystems upon the nand in
+> case the loader may not support some filesystem types while uboot booting.
+>
+> Seems that the trimmed environment of OS has get rid of the mtd-tools, So the dd
+> command was the most convenience tools to use by hand.
 
-Hm, unless compiler doesn't complain about it,I'm OK for that.
-And as far as I tested on x86/x86-64/arm(32), this has no problem. :)
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
+Instead of fixing your userspace you mess around int the kernel?
+Sorry, that's a no-no.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks,
+//richard
