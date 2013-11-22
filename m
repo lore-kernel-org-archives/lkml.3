@@ -1,58 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3KVVOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:14:06 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:37021 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab3KVVOD (ORCPT
+	id S1755918Ab3KVVPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:15:12 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38262 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278Ab3KVVPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:14:03 -0500
+	Fri, 22 Nov 2013 16:15:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <528FBFFA.1000807@hp.com>
-References: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
-	<1385147087-26588-2-git-send-email-Waiman.Long@hp.com>
-	<CA+55aFzkqP84M7L6j__QHuks7DXTQnGqdCo3=a=u7qKdER9rEQ@mail.gmail.com>
-	<528FBFFA.1000807@hp.com>
-Date: Fri, 22 Nov 2013 13:14:03 -0800
-X-Google-Sender-Auth: jz2-irqR10niCvGq_TYFGvUUbG0
-Message-ID: <CA+55aFxW70iKq5YT-icVuvsmH=xapMd5e+OnbL-8JbX7fD4M-Q@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] qrwlock: A queue read/write lock implementation
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
+In-Reply-To: <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
+References: <1385132242-3204-1-git-send-email-jonas.jensen@gmail.com> <1385132242-3204-2-git-send-email-jonas.jensen@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 22 Nov 2013 13:14:28 -0800
+Message-ID: <CAGVrzcZOKegkSTtzF9RyuEhWcz6Popm69ZFirYdTfeXLfVRdhQ@mail.gmail.com>
+Subject: Re: [PATCH 2/5] net: MOXA ART: connect to PHY and add ethtool support
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 12:35 PM, Waiman Long <waiman.long@hp.com> wrote:
+Hello Jonas,
+
+> +       if (!priv->phy_dev)
+> +               return -ENODEV;
+
+This should not be required since you will fail probing the interface
+if you cannot connect to the PHY device.
+
+> +
+> +       return phy_ethtool_gset(priv->phy_dev, cmd);
+> +}
+> +
+> +static int moxart_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
+> +{
+> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +
+> +       if (!priv->phy_dev)
+> +               return -ENODEV;
+
+Same here
+
+> +
+> +       return phy_ethtool_sset(priv->phy_dev, cmd);
+> +}
+> +
+> +static int moxart_nway_reset(struct net_device *ndev)
+> +{
+> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +
+> +       if (!priv->phy_dev)
+> +               return -EINVAL;
+
+And here
+
+[snip]
+
+> +       if (!priv->phy_dev)
+> +               return -ENODEV;
+
+And here
+
+> +
+> +       return phy_mii_ioctl(priv->phy_dev, ir, cmd);
+> +}
+> +
+>  static void moxart_mac_free_memory(struct net_device *ndev)
+>  {
+>         struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> @@ -169,6 +314,10 @@ static int moxart_mac_open(struct net_device *ndev)
+>         moxart_update_mac_address(ndev);
+>         moxart_mac_setup_desc_ring(ndev);
+>         moxart_mac_enable(ndev);
+> +
+> +       if (priv->phy_dev)
+> +               phy_start(priv->phy_dev);
+> +
+>         netif_start_queue(ndev);
 >
-> Yes, the extra latency of the fair lock in earlier patch is due to the need
-> to do a second cmpxchg(). That can be avoided by doing a read first, but
-> that is not good for good cache.  So I optimized it for the default unfair
-> lock. By supporting only one version, there is no need to do a second
-> cmpxchg anymore.
+>         netdev_dbg(ndev, "%s: IMR=0x%x, MACCR=0x%x\n",
+> @@ -184,6 +333,9 @@ static int moxart_mac_stop(struct net_device *ndev)
+>
+>         napi_disable(&priv->napi);
+>
+> +       if (priv->phy_dev)
+> +               phy_stop(priv->phy_dev);
+> +
+>         netif_stop_queue(ndev);
+>
+>         /* disable all interrupts */
+> @@ -429,12 +581,22 @@ static struct net_device_ops moxart_netdev_ops = {
+>         .ndo_set_mac_address    = moxart_set_mac_address,
+>         .ndo_validate_addr      = eth_validate_addr,
+>         .ndo_change_mtu         = eth_change_mtu,
+> +       .ndo_do_ioctl           = moxart_do_ioctl,
+>  };
+>
+> +static void moxart_adjust_link(struct net_device *ndev)
+> +{
+> +#ifdef DEBUG
+> +       struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +
+> +       phy_print_status(priv->phy_dev);
+> +#endif
 
-Ok, thanks.
+This is too simplistic, you should at least do the following:
 
-> I reran the timing test on the 2.93GHz processor. The timing is the
-> practically the same. I reused the old one for the 2.4GHz processor.
+- check for an update in the PHY duplex setting and update the
+Ethernet MAC with this new setting
+- check for an update in the PHY speed settings and update relevant
+MAC registers (RX/TX clock speed, PHY speed etc...)
 
-Sounds good. I just wanted to make sure the numbers were sane.
+Also, it is a good practice to retain the previous link
+state/duplex/speed, compare them against the phydev values and call
+phy_print_status() if there is any change.
 
-            Linus
+> +}
+> +
+>  static int moxart_mac_probe(struct platform_device *pdev)
+>  {
+>         struct device *p_dev = &pdev->dev;
+> -       struct device_node *node = p_dev->of_node;
+> +       struct device_node *node = p_dev->of_node, *phy_node;
+>         struct net_device *ndev;
+>         struct moxart_mac_priv_t *priv;
+>         struct resource *res;
+> @@ -455,6 +617,20 @@ static int moxart_mac_probe(struct platform_device *pdev)
+>         priv = netdev_priv(ndev);
+>         priv->ndev = ndev;
+>
+> +       phy_node = of_parse_phandle(node, "phy-handle", 0);
+> +       if (!phy_node)
+> +               dev_err(p_dev, "of_parse_phandle failed\n");
+> +
+> +       if (phy_node) {
+> +               priv->phy_dev = of_phy_connect(priv->ndev, phy_node,
+> +                                              &moxart_adjust_link,
+> +                                              0, PHY_INTERFACE_MODE_MII);
+
+Unless the hardware supports anything but MII, this is fine. A nicer
+binding would include a "phy-mode" or "phy-connection-type" property
+which describes how the Ethernet MAC and PHY are connected to each
+other. You can then retrieve that property using of_get_phy_mode().
+-- 
+Florian
