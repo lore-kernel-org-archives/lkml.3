@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab3KVVAC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:00:02 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:38996 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab3KVU76 (ORCPT
+	id S932132Ab3KVVAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:00:32 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39041 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab3KVVA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 15:59:58 -0500
+	Fri, 22 Nov 2013 16:00:29 -0500
+Message-ID: <528FC5E8.20406@jp.fujitsu.com>
+Date: Fri, 22 Nov 2013 16:00:24 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
-References: <20131111220626.GA7509@sbohrermbp13-local.rgmadvisors.com>
- <52820030.6000806@huawei.com> <20131112143147.GB6049@dhcp22.suse.cz>
- <20131112155530.GA2860@sbohrermbp13-local.rgmadvisors.com>
- <20131112165504.GF6049@dhcp22.suse.cz> <20131114225649.GA16725@sbohrermbp13-local.rgmadvisors.com>
- <20131115062458.GA9755@mtj.dyndns.org> <20131115075401.GB9755@mtj.dyndns.org> <alpine.LNX.2.00.1311171746160.15789@eggly.anvils>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Fri, 22 Nov 2013 21:59:37 +0100
-Message-ID: <CAJ75kXZYjKwV_XiEB493jNyGRqS395JZyY-S9xQBQJLyaCSOEQ@mail.gmail.com>
-Subject: Re: 3.10.16 cgroup_mutex deadlock
-To: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>
-Cc: Shawn Bohrer <shawn.bohrer@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Markus Blank-Burian <burian@muenster.de>
+To: oleg@redhat.com
+CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        viro@ZenIV.linux.org.uk, keescook@chromium.org, mhocko@suse.cz,
+        snanda@chromium.org, dserrg@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] check_unsafe_exec: kill the dead -EAGAIN and clear_in_exec
+ logic
+References: <20131122175442.GA31453@redhat.com> <528FBE22.5030208@jp.fujitsu.com> <20131122204917.GA20520@redhat.com>
+In-Reply-To: <20131122204917.GA20520@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 18, 2013 at 3:17 AM, Hugh Dickins <hughd@google.com> wrote:
-> Sorry for the delay: I was on the point of reporting success last
-> night, when I tried a debug kernel: and that didn't work so well
-> (got spinlock bad magic report in pwd_adjust_max_active(), and
-> tests wouldn't run at all).
->
-> Even the non-early cgroup_init() is called well before the
-> early_initcall init_workqueues(): though only the debug (lockdep
-> and spinlock debug) kernel appeared to have a problem with that.
->
-> Here's the patch I ended up with successfully on a 3.11.7-based
-> kernel (though below I've rediffed it against 3.11.8): the
-> schedule_work->queue_work hunks are slightly different on 3.11
-> than in your patch against current, and I did alloc_workqueue()
-> from a separate core_initcall.
->
-> The interval between cgroup_init and that is a bit of a worry;
-> but we don't seem to have suffered from the interval between
-> cgroup_init and init_workqueues before (when system_wq is NULL)
-> - though you may have more courage than I to reorder them!
->
-> Initially I backed out my system_highpri_wq workaround, and
-> verified that it was still easy to reproduce the problem with
-> one of our cgroup stresstests.  Yes it was, then your modified
-> patch below convincingly fixed it.
->
-> I ran with Johannes's patch adding extra mem_cgroup_reparent_charges:
-> as I'd expected, that didn't solve this issue (though it's worth
-> our keeping it in to rule out another source of problems).  And I
-> checked back on dumps of failures: they indeed show the tell-tale
-> 256 kworkers doing cgroup_offline_fn, just as you predicted.
+>> I have found no problem in this patch. However, I have a very basic question.
+>> Why do we need to keep fs->in_exec?
+> 
+> To ensure that a sub-thread can't create a new process with the same
+> ->fs while we are doing exec without LSM_UNSAFE_SHARE, I guess. This
+> is only for security/ code.
 
-Hugh, Tejun,
+But in LSM_UNSAFE_SHARE case, we have no check, right? I'm amazing why
+we don't need anything.
 
-Do we have some news about this patch? I'm also hitting this bug on a 3.10.x
 
-Thanks,
--- 
-William
+> 
+>> If it is correct,
+>> can't we move it it to signal->in_exec?
+> 
+> Yes, perhaps, I am thinking about more cleanups too. But not that this
+> will add the subtle change. CLONE_THREAD doesn't require CLONE_FS, so
+> copy_fs() can fail even it the caller doesn't share ->fs with the execing
+> thread. And we still need fs->lock to set signal->in_exec, this looks
+> a bit strange.
+
+Oops. Yes, this is totally odd. Sorry, we need to stop off topic discussion.
+Anyway
+
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+> 
+>> I am not expert in this area and I may overlook something.
+> 
+> Neither me ;) So this patch tries to not change the current logic.
+> 
+> I feel that perhaps we can do more cleanups, but I am not really sure
+> and this needs a separate change.
+
+
+
