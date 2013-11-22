@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3KVRrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:47:36 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:33064 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab3KVRrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:47:33 -0500
+	id S1755979Ab3KVRri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:47:38 -0500
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:37550
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755911Ab3KVRre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 12:47:34 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>
+CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "jlee@suse.com" <jlee@suse.com>,
+        "matt@console-pimps.org" <matt@console-pimps.org>,
+        "richard@nod.at" <richard@nod.at>, "cxie@redhat.com" <cxie@redhat.com>
+Subject: Re: [PATCH] x86, efi: add efi_whitelist_table to use all efi
+ variable storage
+Thread-Topic: [PATCH] x86, efi: add efi_whitelist_table to use all efi
+ variable storage
+Thread-Index: AQHO50xcuy9Y6e7oj0WIb9lvfIqgUpoxhzsA
+Date: Fri, 22 Nov 2013 17:47:31 +0000
+Message-ID: <1385142450.2884.1.camel@x230>
+References: <528C740A.6010407@jp.fujitsu.com>
+	 <1384963376.20536.3.camel@x230> <528DD3E0.3050606@jp.fujitsu.com>
+	 <1385064722.12107.1.camel@x230> <528E9EB2.3060808@jp.fujitsu.com>
+	 <1385078632.12107.3.camel@x230> <528EF87D.4050300@jp.fujitsu.com>
+	 <528EF9CE.2070305@jp.fujitsu.com>
+In-Reply-To: <528EF9CE.2070305@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [209.6.207.143]
+x-forefront-prvs: 0038DE95A2
+x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(199002)(189002)(24454002)(59766001)(69226001)(76786001)(74876001)(76796001)(83072001)(77982001)(33646001)(74706001)(81816001)(56816003)(56776001)(85306002)(77096001)(33716001)(54316002)(50986001)(47976001)(81686001)(19580395003)(2656002)(74662001)(81342001)(74366001)(83322001)(19580405001)(81542001)(47736001)(87936001)(31966008)(49866001)(65816001)(80022001)(4396001)(87266001)(47446002)(80976001)(74502001)(54356001)(66066001)(79102001)(51856001)(63696002)(76482001)(46102001)(53806001)(60764002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB423;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:209.6.207.143;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <5B0F50E015387A4DB48F215A3FAEBCDA@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <20131122160457.GA3951@roeck-us.net>
-References: <CAOMwXhM1Xi=UqpmKNDsOnQLXKo1o+65TZi6AkBk4Ds9wuXSaWQ@mail.gmail.com>
-	<20131119165438.GD30481@roeck-us.net>
-	<20131119180007.GB16693@roeck-us.net>
-	<CAOMwXhOTRVu1EMSNE_muKKfSYBFQ1XVq1EQEL2d+wCwRJ0tkpw@mail.gmail.com>
-	<CAOMwXhN8tZej9=65wyGvsnm64igiLLN6vdsiGaePCozKBs8J7Q@mail.gmail.com>
-	<20131121173458.GC10783@roeck-us.net>
-	<CAOMwXhNzpsiiK5NzxoXM56ACGmHo1gpm3OT6=kw29XQDFmyPAA@mail.gmail.com>
-	<CAOMwXhPUR02fQ1EhV6K9eQW02kNHn55dTEND+R59g1=zC5qDWQ@mail.gmail.com>
-	<528F6BB8.8040504@roeck-us.net>
-	<CAOMwXhNx0v52BvxSWPrHFsGTvxss7N4tZT3gHMFJ8hz_HmvS5w@mail.gmail.com>
-	<20131122160457.GA3951@roeck-us.net>
-Date: Fri, 22 Nov 2013 17:47:33 +0000
-X-Google-Sender-Auth: 8Pm-FNi1Fv7_5krd6Pu3bbWYs_4
-Message-ID: <CAOMwXhO525BAJ+ESLaJ-62vkL7mAxLMULuaphE6YVda02beqfg@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (max6650) Add support for gpiodef
-From: Laszlo Papp <lpapp@kde.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>, hjk@hansjkoch.de,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAMHlubE024703
 
-On Fri, Nov 22, 2013 at 4:04 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Fri, Nov 22, 2013 at 02:50:50PM +0000, Laszlo Papp wrote:
->> On Fri, Nov 22, 2013 at 2:35 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > On 11/22/2013 01:23 AM, Laszlo Papp wrote:
->> >>
->> >> Just to clarify: you want to have ./gpio/gpio-max6650.c?
->> >>
->> > No, I never said that. I wanted you to register the gpio pins
->> > with the gpio subsystem. I didn't ask you to write a separate
->> > driver for it.
->> >
->> > Sure, strictly speaking one could write a top level mfd driver
->> > and separate gpio and hwmon drivers, but at least in my opinion
->> > that would be overkill. I also never suggested this; you brought
->> > the term mfd into the discussion.
->>
->> Why is it an overkill to write a separate gpio driver for this, and
->> potentially also for the gpio status register of this particular MAXIM
->> chip?
->>
->> Other gpio drivers in the gpio folder are also short. This would not
->> become long either.
->>
-> No one prevents you from writing a separate gpio driver. I will certainly
-> not prevent you from doing it. Just don't claim that I requested it.
-> Same is true for an mfd driver; I won't prevent you from writing one.
-> But don't claim that I told you to do it.
+On Fri, 2013-11-22 at 15:29 +0900, Yasuaki Ishimatsu wrote:
 
-I am not sure if you are trying to claim that with this statement a
-separate gpio driver would be acceptable, but it would require a bit
-more work, or whether that you would reject such a driver added.
+> +			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "PRIMEQUEST"),
+
+Can we guarantee that no Primequests have this issue? Can we guarantee
+that that no prior firmware versions have this issue? Can we guarantee
+that no future firmware versions will have this issue?
+
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
