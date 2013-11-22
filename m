@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3KVMOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:14:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54222 "EHLO mga11.intel.com"
+	id S1755622Ab3KVMOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:14:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59658 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab3KVMOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755149Ab3KVMOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Nov 2013 07:14:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,751,1378882800"; 
-   d="scan'208";a="432088718"
+   d="scan'208";a="413007353"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -24,62 +24,60 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thierry Reding <thierry.reding@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/7] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
-Date: Fri, 22 Nov 2013 14:14:27 +0200
-Message-Id: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 2/7] ARM: tegra: add gpiod_lookup table for paz00
+Date: Fri, 22 Nov 2013 14:14:29 +0200
+Message-Id: <1385122474-14926-3-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.3
+In-Reply-To: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-Now that the mainline kernel has full ACPI support for the GPIO descriptor
-interface we can get rid of ACPI specific GPIO functions in favor of GPIO
-descriptor (gpiod_*) interfaces.
+This makes it possible to request the gpio descriptors in
+rfkill-gpio driver regardless of the platform.
 
-This series first converts the existing two users to this interface and
-then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
-called internally in drivers/gpio. We then remove the acpi_gpio.h and
-require all users to user gpiod_* interfaces.
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ arch/arm/mach-tegra/board-paz00.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-This is second version of the series. Changes to the previous [1]:
- * paz00 is passing the lookup table so that we don't need to have gpio
-   conversion function in rfkill-gpio.c anymore.
- * Corrected sdhci-acpi.c to pass con_id and added call to
-   gpiod_direction_input().
-
-I suppose it would make sense to merge the whole series via GPIO or ACPI
-trees because there's a dependency that the first two patches need to be
-applied before last three. Otherwise the drivers in question fail to
-compile.
-
-[1] https://lkml.org/lkml/2013/11/21/317
-
-Heikki Krogerus (3):
-  net: rfkill: gpio: convert to descriptor-based GPIO interface
-  ARM: tegra: add gpiod_lookup table for paz00
-  net: rfkill: gpio: remove gpio conversion support
-
-Mika Westerberg (4):
-  mmc: sdhci-acpi: covert to use GPIO descriptor API
-  gpio / ACPI: register to ACPI events automatically
-  gpio / ACPI: get rid of acpi_gpio.h
-  Documentation / ACPI: update to GPIO descriptor API
-
- Documentation/acpi/enumeration.txt | 36 ++++--------------
- arch/arm/mach-tegra/board-paz00.c  |  9 ++++-
- drivers/gpio/gpiolib-acpi.c        | 20 +++++++---
- drivers/gpio/gpiolib.c             |  5 ++-
- drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
- drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
- drivers/pinctrl/pinctrl-baytrail.c |  4 --
- include/linux/acpi_gpio.h          | 51 -------------------------
- net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
- 9 files changed, 125 insertions(+), 149 deletions(-)
- create mode 100644 drivers/gpio/gpiolib.h
- delete mode 100644 include/linux/acpi_gpio.h
-
+diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+index 06f024070dab..2e132589be78 100644
+--- a/arch/arm/mach-tegra/board-paz00.c
++++ b/arch/arm/mach-tegra/board-paz00.c
+@@ -18,13 +18,12 @@
+  */
+ 
+ #include <linux/platform_device.h>
++#include <linux/gpio/driver.h>
+ #include <linux/rfkill-gpio.h>
+ #include "board.h"
+ 
+ static struct rfkill_gpio_platform_data wifi_rfkill_platform_data = {
+ 	.name		= "wifi_rfkill",
+-	.reset_gpio	= 25, /* PD1 */
+-	.shutdown_gpio	= 85, /* PK5 */
+ 	.type	= RFKILL_TYPE_WLAN,
+ };
+ 
+@@ -36,7 +35,13 @@ static struct platform_device wifi_rfkill_device = {
+ 	},
+ };
+ 
++static struct gpiod_lookup wifi_gpio_lookup[] = {
++	GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio", NULL, 0, 0),
++	GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio", NULL, 1, 0),
++};
++
+ void __init tegra_paz00_wifikill_init(void)
+ {
++	gpiod_add_table(wifi_gpio_lookup, ARRAY_SIZE(wifi_gpio_lookup));
+ 	platform_device_register(&wifi_rfkill_device);
+ }
 -- 
 1.8.4.3
 
