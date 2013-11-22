@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab3KVTCB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:02:01 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33357 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3KVTB7 (ORCPT
+	id S1755995Ab3KVTFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:05:14 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:1196 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560Ab3KVTFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:01:59 -0500
-Message-ID: <528FAA00.9060801@ti.com>
-Date: Fri, 22 Nov 2013 14:01:20 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME
- is set
-References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com> <528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com> <528D1327.7080205@codeaurora.org> <528D1784.8080704@ti.com> <528D1C49.3020301@ti.com> <87ppps6zve.fsf@linaro.org>
-In-Reply-To: <87ppps6zve.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Nov 2013 14:05:10 -0500
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v7 0/4] qrwlock: Introducing a queue read/write lock implementation
+Date: Fri, 22 Nov 2013 14:04:43 -0500
+Message-Id: <1385147087-26588-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 November 2013 01:43 PM, Kevin Hilman wrote:
-> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
-> 
-> [...]
-> 
->>>> It looks like even if you just remove the locks here, the PM core is
->>>> free to call this function with irqs disabled if pm_runtime_irq_safe()
->>>> has been called on the device. Perhaps runtime PM can only do the
->>>> clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
->>>> calls should happen in the system suspend callbacks?
->>>
->>> Even don't know what to say :( On Keystone clk_unprepare()/clk_prepare() are NOPs.
->>> But clk_prepare() has to be called at least once before clk_enable() :((
->>> So, solution with suspend/resume will not fix current problem :( unfortunately.
->>>
->>> FYI, Now pm_clk_suspend/pm_clk_resume are called from arch/arm/mach-keystone/pm_domain.c
->>> (also similar solution is used by Davinci, but issue has not been detected because
->>> PM runtime hasn't been used by Davinci IP drivers before)
->>>
->> One way to deal with this is to have clk_unprepare()/clk_prepare()
->> called from dev_pm_domain ops before calling pm_clk_[suspend/resume]() if we
->> can't have that as part of runtime code.
-> 
-> That doesn't solve the irq_safe problem that Stephen pointed out without
-> being very careful.  Basically, if you have _any_ potentially sleeping
-> calls in this path, you can never allow devices to use
-> pm_runtime_irq_safe().
-> 
-You are right. I realized that after reading the code.
+v6->v7:
+ - Remove support for unfair lock, so only fair qrwlock will be provided.
+ - Move qrwlock.c to the kernel/locking directory.
 
-> Also, I don't like having the clk_enable in the PM core but the
-> clk_prepare in the platform-specific pm_domain.  That seems prone for
-> platforms to get wrong.
-> 
-Agree.
+v5->v6:
+ - Modify queue_read_can_lock() to avoid false positive result.
+ - Move the two slowpath functions' performance tuning change from
+   patch 4 to patch 1.
+ - Add a new optional patch to use the new smp_store_release() function 
+   if that is merged.
 
-> I'll need to think about this a little more before having any idea what
-> to do here.
-> 
-Thanks Kevin for looking into it.
+v4->v5:
+ - Fix wrong definitions for QW_MASK_FAIR & QW_MASK_UNFAIR macros.
+ - Add an optional patch 4 which should only be applied after the
+   mcs_spinlock.h header file is merged.
 
-Regards,
-Santosh
+v3->v4:
+ - Optimize the fast path with better cold cache behavior and
+   performance.
+ - Removing some testing code.
+ - Make x86 use queue rwlock with no user configuration.
+
+v2->v3:
+ - Make read lock stealing the default and fair rwlock an option with
+   a different initializer.
+ - In queue_read_lock_slowpath(), check irq_count() and force spinning
+   and lock stealing in interrupt context.
+ - Unify the fair and classic read-side code path, and make write-side
+   to use cmpxchg with 2 different writer states. This slows down the
+   write lock fastpath to make the read side more efficient, but is
+   still slightly faster than a spinlock.
+
+v1->v2:
+ - Improve lock fastpath performance.
+ - Optionally provide classic read/write lock behavior for backward
+   compatibility.
+ - Use xadd instead of cmpxchg for fair reader code path to make it
+   immute to reader contention.
+ - Run more performance testing.
+
+As mentioned in the LWN article http://lwn.net/Articles/364583/,
+the read/write lock suffer from an unfairness problem that it is
+possible for a stream of incoming readers to block a waiting writer
+from getting the lock for a long time. Also, a waiting reader/writer
+contending a rwlock in local memory will have a higher chance of
+acquiring the lock than a reader/writer in remote node.
+
+This patch set introduces a queue-based read/write lock implementation
+that can largely solve this unfairness problem.
+
+The read lock slowpath will check if the reader is in an interrupt
+context. If so, it will force lock spinning and stealing without
+waiting in a queue. This is to ensure the read lock will be granted
+as soon as possible.
+
+The queue write lock can also be used as a replacement for ticket
+spinlocks that are highly contended if lock size increase is not
+an issue.
+
+This patch set currently provides queue read/write lock support on
+x86 architecture only. Support for other architectures can be added
+later on once architecture specific support infrastructure is added
+and proper testing is done.
+
+The optional patch 3 has a dependency on the the mcs_spinlock.h
+header file which has not been merged yet. So this patch should only
+be applied after the mcs_spinlock.h header file is merged.
+
+The optional patch 4 use the new smp_store_release() and
+smp_load_acquire() functions which are being reviewed & not merged yet.
+
+Waiman Long (4):
+  qrwlock: A queue read/write lock implementation
+  qrwlock x86: Enable x86 to use queue read/write lock
+  qrwlock: Use the mcs_spinlock helper functions for MCS queuing
+  qrwlock: Use smp_store_release() in write_unlock()
+
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 +
+ arch/x86/include/asm/spinlock_types.h |    4 +
+ include/asm-generic/qrwlock.h         |  200 +++++++++++++++++++++++++++++++++
+ kernel/Kconfig.locks                  |    7 +
+ kernel/locking/Makefile               |    1 +
+ kernel/locking/qrwlock.c              |  196 ++++++++++++++++++++++++++++++++
+ 7 files changed, 411 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/qrwlock.h
+ create mode 100644 kernel/locking/qrwlock.c
 
