@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab3KVP5y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:57:54 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:57096 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab3KVP5w (ORCPT
+	id S932215Ab3KVP6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:58:05 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:65266 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755840Ab3KVP6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:57:52 -0500
+	Fri, 22 Nov 2013 10:58:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1311221631100.9932@twin.jikos.cz>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
-	<8761rl73s7.fsf@xmission.com>
-	<20131122015518.GA31921@redhat.com>
-	<CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
-	<20131122134317.GA4046@redhat.com>
-	<CAMuHMdV4=Z8i0u_rWpQU0HHW0mvyv1k-acW1MyT9ZYy=iNwrfg@mail.gmail.com>
-	<alpine.LRH.2.00.1311221631100.9932@twin.jikos.cz>
-Date: Fri, 22 Nov 2013 10:57:51 -0500
-Message-ID: <CACLa4puTT+eP5FkRqLfk60kGzuBLHDC3izzAo5Zewt=QR3QLZw@mail.gmail.com>
-Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
-From: Eric Paris <eparis@parisplace.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+In-Reply-To: <1385085414-9034-6-git-send-email-joelf@ti.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
+	<1385085414-9034-6-git-send-email-joelf@ti.com>
+Date: Fri, 22 Nov 2013 09:58:01 -0600
+Message-ID: <CAL_JsqKS=cGeAhj+K04SOtA8nJRR3MXxS3ry-kzjQOkZx3yK4g@mail.gmail.com>
+Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly
+ clocksource/clockevent system timers
+From: Rob Herring <robherring2@gmail.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
+        jgchunter@gmail.com, rnayak@ti.com, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        benoit.cousson@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 10:33 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Fri, 22 Nov 2013, Geert Uytterhoeven wrote:
+On Thu, Nov 21, 2013 at 7:56 PM, Joel Fernandes <joelf@ti.com> wrote:
+> This work is a migration effort of OMAP system timers to the
+> clocksource/clockevent framework. Consider this as a first-pass in this effort.
+> There are few cleanups that need to be done first. The HWMOD code is
+> intertwined with the timer code. HWMOD code cleanups in the future will
+> hopefully make most of this code go away, so till then we separate out the
+> power/clocks portion of the code from the actual timer bits.  This will
+> facilitate near-future work of adapting the system timer as a clocksource.
 >
->> >> Only arm, i386, ppc, ppc64, sh, and x86_64 support zImage.
->> >> It's not clear to me what alpha supports (if it supports anything at all?).
->> >
->> > Motiviation behind this patchset is secureboot. That is x86 specific
->> > only and bzImage is most commonly used format on that platform. So it
->> > makes sense to implement bzImage loader first, IMO.
->>
->> While secureboot(TM) may be x86-centric
+> New functions for OF-only boot are introduced, and we can soon delete the old
+> versions once we migrate all platforms. Currently only AM335x is migrated and
+> testedA new omap_generic_timer_init function is introduced for DT platforms.
+> Code required earlier for non-DT platforms such as setup of timer IDs and timer
+> parent clock is not required.  parent clocks are automatically setup by the mux
+> clock driver through DT so they no longer need to be hardcoded.
 >
-> And ARM, right?
+> The init code will try to pick the best timer for clocksource and clockevent
+> however bindings are added to force a particular timer as clocksource or
+> clockevent through DT.
 >
->> IIRC actually loading signed kernels and modules didn't originate on
->> x86. Anything can have a bootloader that accepts signed kernel images
->> only.
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> ---
+>  .../devicetree/bindings/arm/omap/timer.txt         |  12 ++
+>  arch/arm/mach-omap2/common.h                       |   1 +
+>  arch/arm/mach-omap2/timer.c                        | 235 +++++++++++++++++++++
+>  3 files changed, 248 insertions(+)
 >
-> Yes, but if you don't have the whole secure boot security model (i.e. root
-> is implicitly untrusted), it's all just a game really.
+> diff --git a/Documentation/devicetree/bindings/arm/omap/timer.txt b/Documentation/devicetree/bindings/arm/omap/timer.txt
+> index d02e27c..6cf7a75 100644
+> --- a/Documentation/devicetree/bindings/arm/omap/timer.txt
+> +++ b/Documentation/devicetree/bindings/arm/omap/timer.txt
+> @@ -32,6 +32,18 @@ Optional properties:
+>  - ti,timer-secure:     Indicates the timer is reserved on a secure OMAP device
+>                         and therefore cannot be used by the kernel.
 >
-> If you are playing this "signed kernel and modules" game, but have trusted
-> root, he's free to replace the bootloader by one that wouldn't be
-> verifying the kernel signature, and reboot into arbitrary kernel.
+> +- ti,timer-clockevent,
+> +  ti,timer-clocksource These properties force the system timer code to choose
+> +                       the particular timer as a clockevent or clocksource.
+> +                       If these properties are not specified, the timer code
+> +                       picks up a "ti,timer-alwon" as the clocksource and a
+> +                       timer containing one of the following properties as
+> +                       the clockevent in the following order:
+> +                               ti,timer-alwon
+> +                               ti,timer-dsp
+> +                               ti,timer-pwm
+> +                               ti,timer-secure
 
-Ignore secureboot completely.
+These properties were added specifically for the reason of avoiding
+linux specific properties like these. When is this not sufficient?
 
-Consider a cloud provider who gives their customer a machine where
-they, the cloud provider, is specifying the kernel and initrd.  This
-is a real thing that people do today.  Root on the machine has ZERO
-control over the kernel, bootloader, and initrd.  Check it out,
-qemu/kvm can do this.  But, there is no way to disable kexec if the
-distro configures it in (well, there is in RHEL at least).  I've
-brought this up before with little useful response from the kexec
-maintainers.  What I'd like is for a kernel trusted by me, the cloud
-operator, to be able to be kexec'd.  I'd rather not have to completely
-turn off kexec...
+And I agree with the comment to use OF_CLKSRC.
 
-Make sense how this is useful for things other than secureboot?  And
-we have users who want this.  This is not a speculative completely
-made up maybe some day someone will want this type idea....
+Rob
