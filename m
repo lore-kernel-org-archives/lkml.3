@@ -1,71 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3KVIxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:53:49 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30424 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab3KVIxp (ORCPT
+	id S1754583Ab3KVI5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:57:14 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:39432 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3KVI5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:53:45 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-18-528f1b97b189
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>, fanofcode.li@samsung.com
-References: 
-In-reply-to: 
-Subject: [f2fs-dev] [PATCH] f2fs: remove unneeded code in punch_hole
-Date: Fri, 22 Nov 2013 16:52:50 +0800
-Message-id: <000201cee760$58df9f10$0a9edd30$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7nX4LVAyOC9UTrStuYb8Cw1/GOlwAAIMXQ
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jQd3p0v1BBtMvqVl83trIbnF9118m
-	i0uL3C327D3JYnF51xw2i9aF55kd2Dx2L/jM5NG3ZRWjx+dNcgHMUVw2Kak5mWWpRfp2CVwZ
-	p+7/ZiqYwlYx+dEFpgbGnyxdjJwcEgImErcer2CFsMUkLtxbz9bFyMUhJDCdUaLtxTRGCOcH
-	o8Sx+xcZQarYBFQklnf8ZwKxRQQUJTa838AOUsQssIlR4vLF50AOB1AHt8Tq5iCQGk4BHol1
-	fzqZQWxhAReJF/PegdksAqoSD4//BbN5BSwl5qzoYISwBSV+TL4Hdh2zgIZE/6INbBC2vMTm
-	NW+ZIS5VkNhx9jUjxA1GEtPvT2SEqBGX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQ
-	XFCclJ5rqFecmFtcmpeul5yfu4kRHA/PpHYwrmywOMQowMGoxMMrYNMXJMSaWFZcmXuIUYKD
-	WUmE99dVoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbG
-	rXaBR5/+FOzYoaylspLz9Mkz/5+cW2d1fFmf+nO9OY9MfZOucxi673158Km6V6X7zFQ+2WLd
-	VOZr2xrcN2xWPKa179vTVJ9Gk6MB19inTxPV6aj7unm5zfPId21BbtX9p20S15tnL/n610Us
-	0m2DhOHL6dw893QzjdlvTzl88O+Nl5JTZY56KLEUZyQaajEXFScCAKAS/yGDAgAA
+	Fri, 22 Nov 2013 03:57:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
+References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com> <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Fri, 22 Nov 2013 14:26:48 +0530
+Message-ID: <CAHfPSqA9w_2FoycJnKGosuTLi6R+0Bwpe_+zx-tp-0JegD7smw@mail.gmail.com>
+Subject: Re: [PATCH 2/4 v10] thermal: samsung: change base_common to more
+ meaningful base_second
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com, t.figa@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because FALLOC_FL_PUNCH_HOLE flag must be ORed with FALLOC_FL_KEEP_SIZE 
-in fallocate, so we could remove the useless 'keep size' branch code which 
-will never be excuted in punch_hole.
+Hello All,
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Fan Li <fanofcode.li@samsung.com>
----
- fs/f2fs/file.c |    6 ------
- 1 file changed, 6 deletions(-)
+On 19 November 2013 18:34, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> On Exynos5440 and Exynos5420 there are registers common
+> across the TMU channels.
+>
+> To support that, we introduced a ADDRESS_MULTIPLE flag in the
+> driver and the 2nd set of register base and size are provided
+> in the "reg" property of the node.
+>
+> As per Amit's suggestion, this patch changes the base_common
+> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> ---
+> Changes since v9:
+> Just respinning
+>
+> Changes since v8:
+>  None
+>  .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
+>  drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
+>  4 files changed, 12 insertions(+), 12 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> index 284f530..116cca0 100644
+> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> @@ -11,8 +11,8 @@
+>  - reg : Address range of the thermal registers. For soc's which has multiple
+>         instances of TMU and some registers are shared across all TMU's like
+>         interrupt related then 2 set of register has to supplied. First set
+> -       belongs to each instance of TMU and second set belongs to common TMU
+> -       registers.
+> +       belongs to each instance of TMU and second set belongs to second set
+> +       of common TMU registers.
+>  - interrupts : Should contain interrupt for thermal system
+>  - clocks : The main clock for TMU device
+>  - clock-names : Thermal system clock name
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index c493245..bbd0fc3 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -41,7 +41,7 @@
+>   * @id: identifier of the one instance of the TMU controller.
+>   * @pdata: pointer to the tmu platform/configuration data
+>   * @base: base address of the single instance of the TMU controller.
+> - * @base_common: base address of the common registers of the TMU controller.
+> + * @base_second: base address of the common registers of the TMU controller.
+>   * @irq: irq number of the TMU controller.
+>   * @soc: id of the SOC type.
+>   * @irq_work: pointer to the irq work structure.
+> @@ -56,7 +56,7 @@ struct exynos_tmu_data {
+>         int id;
+>         struct exynos_tmu_platform_data *pdata;
+>         void __iomem *base;
+> -       void __iomem *base_common;
+> +       void __iomem *base_second;
+>         int irq;
+>         enum soc_type soc;
+>         struct work_struct irq_work;
+> @@ -297,7 +297,7 @@ skip_calib_data:
+>         }
+>         /*Clear the PMIN in the common TMU register*/
+>         if (reg->tmu_pmin && !data->id)
+> -               writel(0, data->base_common + reg->tmu_pmin);
+> +               writel(0, data->base_second + reg->tmu_pmin);
+>  out:
+>         clk_disable(data->clk);
+>         mutex_unlock(&data->lock);
+> @@ -454,7 +454,7 @@ static void exynos_tmu_work(struct work_struct *work)
+>
+>         /* Find which sensor generated this interrupt */
+>         if (reg->tmu_irqstatus) {
+> -               val_type = readl(data->base_common + reg->tmu_irqstatus);
+> +               val_type = readl(data->base_second + reg->tmu_irqstatus);
+>                 if (!((val_type >> data->id) & 0x1))
+>                         goto out;
+>         }
+> @@ -579,7 +579,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+>          * Check if the TMU shares some registers and then try to map the
+>          * memory of common registers.
+>          */
+> -       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
+> +       if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
+>                 return 0;
+>
+>         if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
+> @@ -587,9 +587,9 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+>                 return -ENODEV;
+>         }
+>
+> -       data->base_common = devm_ioremap(&pdev->dev, res.start,
+> +       data->base_second = devm_ioremap(&pdev->dev, res.start,
+>                                         resource_size(&res));
+> -       if (!data->base_common) {
+> +       if (!data->base_second) {
+>                 dev_err(&pdev->dev, "Failed to ioremap memory\n");
+>                 return -ENOMEM;
+>         }
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index 980859a..0d6b32f 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -60,7 +60,7 @@ enum soc_type {
+>   *                     state(active/idle) can be checked.
+>   * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
+>   *                     sample time.
+> - * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
+> + * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
+>   *                     sensors shares some common registers.
+>   * TMU_SUPPORT - macro to compare the above features with the supplied.
+>   */
+> @@ -70,7 +70,7 @@ enum soc_type {
+>  #define TMU_SUPPORT_FALLING_TRIP               BIT(3)
+>  #define TMU_SUPPORT_READY_STATUS               BIT(4)
+>  #define TMU_SUPPORT_EMUL_TIME                  BIT(5)
+> -#define TMU_SUPPORT_SHARED_MEMORY              BIT(6)
+> +#define TMU_SUPPORT_ADDRESS_MULTIPLE           BIT(6)
+>
+>  #define TMU_SUPPORTS(a, b)     (a->features & TMU_SUPPORT_ ## b)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> index 7cdb04e..1d27069 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -255,7 +255,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .type = SOC_ARCH_EXYNOS5440, \
+>         .registers = &exynos5440_tmu_registers, \
+>         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
+> -                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
+> +                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
+>
+>  struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
+>         .tmu_data = {
+> --
+> 1.7.10.4
+>
+Any update on this patch set, its been
+Acked by Amit and Reviewed-by Bartlomiej Zolnierkiewicz
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 7d714f4..0087d2a 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -499,12 +499,6 @@ static int punch_hole(struct inode *inode, loff_t offset, loff_t len, int mode)
- 		}
- 	}
- 
--	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
--		i_size_read(inode) <= (offset + len)) {
--		i_size_write(inode, offset);
--		mark_inode_dirty(inode);
--	}
--
- 	return ret;
- }
- 
+
 -- 
-1.7.9.5
-
+Shine bright,
+(: Nav :)
