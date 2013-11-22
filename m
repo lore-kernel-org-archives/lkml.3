@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab3KVWsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 17:48:55 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:63320 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab3KVWsy (ORCPT
+	id S1756014Ab3KVWxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 17:53:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58200 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab3KVWxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 17:48:54 -0500
-Message-ID: <528FDF52.4030500@gmail.com>
-Date: Fri, 22 Nov 2013 17:48:50 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 22 Nov 2013 17:53:31 -0500
+Date: Fri, 22 Nov 2013 14:53:30 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] fs: sysfs: Add devres support
+Message-ID: <20131122225330.GA25361@kroah.com>
+References: <1363317887-24009-1-git-send-email-linux@roeck-us.net>
+ <20130316162140.GB2630@kroah.com>
+ <20131122224734.GB12800@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Chang <changxiangzhong@gmail.com>, nhorman@tuxdriver.com,
-        davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: sctp: set chunk->tsn_gap_acked at the end of cycle
-References: <1385106589-402-1-git-send-email-changxiangzhong@gmail.com> <528F69B7.7020902@gmail.com> <528FAF50.10100@gmail.com>
-In-Reply-To: <528FAF50.10100@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122224734.GB12800@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 02:24 PM, Chang wrote:
+On Fri, Nov 22, 2013 at 02:47:38PM -0800, Dmitry Torokhov wrote:
+> On Sat, Mar 16, 2013 at 09:21:40AM -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Mar 14, 2013 at 08:24:45PM -0700, Guenter Roeck wrote:
+> > > Provide devres functions for device_create_file, sysfs_create_file,
+> > > and sysfs_create_group plus the respective remove functions.
+> > > 
+> > > Idea is to be able to drop calls to the remove functions from the various
+> > > drivers using those calls.
+> > 
+> > Hm, despite the fact that almost every driver that makes these calls is
+> > broken?  :)
+> > 
+> > > Potential savings are substantial. There are more than 700 calls to
+> > > device_remove_file in the kernel, more than 500 calls to sysfs_remove_group,
+> > > and some 50 calls to sysfs_remove_file (though not all of those use dev->kobj
+> > > as parameter). Expanding the API to sysfs_create_bin_file would add another 80+
+> > > opportunities, and adding sysfs_create_link would create another 100 or so.
+> > 
+> > The idea is nice, but why are these drivers adding sysfs files on their
+> > own?  Are they doing this in a way that is race-free with userspace
+> > (i.e. creating them before userspace is told about the device), or are
+> > they broken and need to have these calls added to the "default
+> > device/driver/bus" attribute list for them instead?
 > 
-> On 11/22/2013 03:27 PM, Vlad Yasevich wrote:
->> On 11/22/2013 02:49 AM, Chang Xiangzhong wrote:
->>> tsn_gap_acked is an important state flag in chunk, which indicates if
->>> the
->>> chunk has been acked in gap reports before.
->> Actually, this bit indicates simply that the chunk has been acked.  It
->> doesn't state whether it's been acked in a gap report or via
->> cumulative tsn.
-> Thanks for pointing this out. Sorry for not having made that clear.
->>
->>> SFR-CACC algorithm depends on this
->>> variable. So set this at the end of each iteration, otherwise the
->>> SFR-CACC
->>> algorithm would never be toggled.
->>>
->>> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
->>> ---
->>>   net/sctp/outqueue.c | 3 ++-
->>>   1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->>> index 1b494fa..bff828c 100644
->>> --- a/net/sctp/outqueue.c
->>> +++ b/net/sctp/outqueue.c
->>> @@ -1396,7 +1396,6 @@ static void sctp_check_transmitted(struct
->>> sctp_outq *q,
->>>                * while DATA was outstanding).
->>>                */
->>>               if (!tchunk->tsn_gap_acked) {
->>> -                tchunk->tsn_gap_acked = 1;
->>>                   if (TSN_lt(*highest_new_tsn_in_sack, tsn))
->>>                       *highest_new_tsn_in_sack = tsn;
->>>                   bytes_acked += sctp_data_size(tchunk);
->>> @@ -1460,6 +1459,8 @@ static void sctp_check_transmitted(struct
->>> sctp_outq *q,
->>>                    */
->>>                   list_add_tail(lchunk, &tlist);
->>>               }
->>> +
->>> +            tchunk->tsn_gap_acked = 1;
->> The current code will set the state if it hasn't been set yet.  Why is
->> this needed?
-> Because in line 1420 ~ 1440 The SFR-CACC algorithms use tsn_gap_acked.
-> That "if block" would never be triggered because the varaiable's been
-> set. That's why I move the "state changing sentence" to the end of the
-> iteration.
->> Now there is an issue with tracking highest_new_tsn_in_sack.  The spec
->> is a little vague on this, but the highest_new_tsn_in_sack only supposed
->> to track tsns that have not been resent.  If a tsn has been reneged, and
->> then sent again, it is not considered 'new' thus should not count
->> toward highest_new_tsn_in_sack.  We currently do not track this right.
-> I'll try to figure this out.
-
-So the solution that's been proposed before is to move the CACC block up
-and merge it with the !tsn_gap_acked block.  This requires additional
-change though to only mark highest_new_tsn if the chunk has not been
-retransmitted (which you've added in a prior patch).
-
--vlad
-
->> -vlad
->>
->> -vlad
->>
->>>           } else {
->>>               if (tchunk->tsn_gap_acked) {
->>>                   pr_debug("%s: receiver reneged on data TSN:0x%x\n",
->>>
+> Just stumbled upon this thread...
 > 
+> There is a need for drivers to add driver-specific attributes to a
+> device. Since they are driver specific they can not go into bus or class
+> or whatever default attributes that are created when device is
+> instantiated, but rather attached to the device when a driver binds to
+> them. An example would be a PS/2 mouse driver allowing user to control
+> report rate and resolution of the device. Since it only applicable to
+> PS/2 mice the knob does not belong to the generic serio layer/bus nor
+> should it go into input layer as it is again PS/2 specific. So psmouse
+> creates it while binding to a serio port.
 
+Yeah, platform drivers also "need" this type of thing as well, so you
+are right, I can't forbit it for everyone.
+
+> Do we send a uevent when driver binds/unbinds from a device?
+
+No, we don't, see kobject_actions[] for what we implement.
+
+> If not I think we should so that userspace can check for additional
+> attributes, if any.
+
+We might be able to do a "change" event for the device itself after it
+has been bound / unbound, but I don't know what userspace will do with
+that information at this point in time (i.e. 10+ years without that
+information...)
+
+thanks,
+
+greg k-h
