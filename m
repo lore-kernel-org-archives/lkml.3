@@ -1,128 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab3KVNaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:30:12 -0500
-Received: from fm2nodo1.polito.it ([130.192.180.12]:48708 "EHLO
-	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3KVNaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:30:10 -0500
-X-AttachExt: patch
-X-ExtScanner: Niversoft's FindAttachments (free)
-Message-ID: <528F5C01.8020304@polito.it>
-Date: Fri, 22 Nov 2013 14:28:33 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755637Ab3KVNaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:30:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab3KVNaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:30:23 -0500
+Date: Fri, 22 Nov 2013 14:30:17 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel
+ loading
+In-Reply-To: <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1311221429470.9932@twin.jikos.cz>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com> <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 3ce1217d6cd5 ima patch causes s390 to crash on boot
-References: <20131122114819.GB4208@osiris>
-In-Reply-To: <20131122114819.GB4208@osiris>
-Content-Type: multipart/mixed;
- boundary="------------060103070904030101070709"
-X-FEAS-SYSTEM-WL: 130.192.180.41
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060103070904030101070709
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, 22 Nov 2013, Geert Uytterhoeven wrote:
 
-On 11/22/2013 12:48 PM, Heiko Carstens wrote:
-> Hi Roberto,
->
-> your patch 3ce1217d6cd5 "ima: define template fields library and new helpers"
-> causes s390 to crash on boot:
->
+> > Why ELF case is so interesting. I have not use kexec to boot ELF
+> > images in years and have not seen others using it too. In fact bzImage
+> > seems to be the most common kernel image format for x86, most of the distros
+> > ship and use.
+> >
+> > So first I did the loader for the common use case. There is no reason
+> > that one can't write another loader for ELF images. It just bloats
+> > the code. Hence I thought that other image loaders can follow slowly. I am
+> > not sure why do you say that bzImage is uninteresting.
+> 
+> Welcome to the non-x86-centric world ;-)
+> 
+> Looking at kexec-tools, all of arm, cris, i386, ia64, m68k, mips, ppc, ppc64,
+> s390, sh, and x86_64 support ELF.
+> Only arm, i386, ppc, ppc64, sh, and x86_64 support zImage.
+> It's not clear to me what alpha supports (if it supports anything at all?).
 
-Hi Heiko
+OTOH, does this feature make any sense whatsover on architectures that 
+don't support secure boot anyway?
 
-thanks for the information. I think this issue is related to the error
-detected by the kbuild test robot. Please, try to apply the attached
-patch to see if it solves the problem.
+-- 
+Jiri Kosina
+SUSE Labs
 
-Thanks
-
-Roberto
-
-
->   IMA: No TPM chip found, activating TPM-bypass!
->   Unable to handle kernel pointer dereference at virtual kernel address 0000000000842000
->   Oops: 0004 [#1] SMP
->   Modules linked in:
->   CPU: 3 PID: 1 Comm: swapper/0 Not tainted 3.12.0-rc2-00098-g3ce1217d6cd5 #17
->   task: 000000003ffa0000 ti: 000000003ff84000 task.ti: 000000003ff84000
->   Krnl PSW : 0704e00180000000 000000000044bf88 (strsep+0x7c/0xa0)
->              R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:2 PM:0 EA:3
->   Krnl GPRS: 000000000000007c 000000000000007c 000000003ff87d90 0000000000821fd8
->              0000000000000000 000000000000007c 0000000000aa37e0 0000000000aa9008
->              0000000000000051 0000000000a114d8 0000000100000002 0000000000842bde
->              0000000000842bdf 00000000006f97f0 000000000040062c 000000003ff87cf0
->   Krnl Code: 000000000044bf7c: a7f4000a           brc     15,44bf90
->              000000000044bf80: b90200cc           ltgr    %r12,%r12
->             #000000000044bf84: a7840006           brc     8,44bf90
->             >000000000044bf88: 9200c000           mvi     0(%r12),0
->              000000000044bf8c: 41c0c001           la      %r12,1(%r12)
->              000000000044bf90: e3c020000024       stg     %r12,0(%r2)
->              000000000044bf96: b904002b           lgr     %r2,%r11
->              000000000044bf9a: ebbcf0700004       lmg     %r11,%r12,112(%r15)
->   Call Trace:
->   ([<00000000004005fe>] ima_init_template+0xa2/0x1bc)
->    [<0000000000a7c896>] ima_init+0x7a/0xa8
->    [<0000000000a7c938>] init_ima+0x24/0x40
->    [<00000000001000e8>] do_one_initcall+0x68/0x128
->    [<0000000000a4eb56>] kernel_init_freeable+0x20a/0x2b4
->    [<00000000006a1ff4>] kernel_init+0x30/0x178
->    [<00000000006b69fe>] kernel_thread_starter+0x6/0xc
->    [<00000000006b69f8>] kernel_thread_starter+0x0/0xc
->   Last Breaking-Event-Address:
->    [<000000000044bf42>] strsep+0x36/0xa0
->
-
-
---------------060103070904030101070709
-Content-Type: text/x-diff;
- name="noderef-ima_template.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="noderef-ima_template.patch"
-
-From: Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] ima: fix coccinelle warnings
-TO: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Roberto Sassu <roberto.sassu@polito.it>
-CC: linux-kernel@vger.kernel.org 
-
-security/integrity/ima/ima_template.c:62:41-47: ERROR: application of sizeof to pointer
-
- sizeof when applied to a pointer typed expression gives the size of
- the pointer
-
-Generated by: coccinelle/misc/noderef.cocci
-
-CC: Roberto Sassu <roberto.sassu@polito.it>
-CC: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
-
- cocci-output-13142-271b5e-ima_template.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -59,7 +59,7 @@ static int template_desc_init_fields(cha
- 	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX)
- 		return -EINVAL;
- 
--	*fields = kzalloc(template_num_fields * sizeof(*fields), GFP_KERNEL);
-+	*fields = kzalloc(template_num_fields * sizeof(**fields), GFP_KERNEL);
- 	if (*fields == NULL) {
- 		result = -ENOMEM;
- 		goto out;
-
---------------060103070904030101070709--
