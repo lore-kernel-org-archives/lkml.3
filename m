@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3KVIUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 03:20:48 -0500
-Received: from relay.parallels.com ([195.214.232.42]:55869 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab3KVIUp (ORCPT
+	id S1755305Ab3KVIWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 03:22:19 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:40523 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab3KVIWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 03:20:45 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: <e1000-devel@lists.sourceforge.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 2/2] e1000: fix possible reset_task running after adapter down
-Date: Fri, 22 Nov 2013 12:20:29 +0400
-Message-ID: <a0339f72560eeee5cad54c9363a5b5f196b83933.1385107870.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <0555e8c422c9d920758399edfa08f72df9120713.1385107870.git.vdavydov@parallels.com>
-References: <0555e8c422c9d920758399edfa08f72df9120713.1385107870.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.24.145]
+	Fri, 22 Nov 2013 03:22:16 -0500
+From: Kamala R <kamala@aristanetworks.com>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, Kamala R <kamala@aristanetworks.com>
+Subject: [Patch v2] IPv6: Fixed support for blackhole and prohibit routes
+Date: Fri, 22 Nov 2013 13:51:28 +0530
+Message-Id: <1385108488-32163-1-git-send-email-kamala@aristanetwors.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On e1000_down(), we should ensure every asynchronous work is canceled
-before proceeding. Since the watchdog_task can schedule other works
-apart from itself, it should be stopped first, but currently it is
-stopped after the reset_task. This can result in the following race
-leading to the reset_task running after the module unload:
+From: Kamala R <kamala@aristanetworks.com>
 
-e1000_down_and_stop():			e1000_watchdog():
-----------------------			-----------------
+The behaviour of blackhole and prohibit routes has been corrected by setting
+the input and output function pointers of the dst variable appropriately. For
+blackhole routes, they are set to dst_discard and to ip6_pkt_prohibit and
+ip6_pkt_prohbit_out respectively for prohibit routes.
 
-cancel_work_sync(reset_task)
-					schedule_work(reset_task)
-cancel_delayed_work_sync(watchdog_task)
+Changes from v1: Logic is the same. Changes made for readability and so it
+looks pleasing.
 
-The patch moves cancel_delayed_work_sync(watchdog_task) at the beginning
-of e1000_down_and_stop() thus ensuring the race is impossible.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Tushar Dave <tushar.n.dave@intel.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamala R <kamala@aristanetworks.com>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/ipv6/route.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index ca0723f..2d914de 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -494,13 +494,20 @@ static void e1000_down_and_stop(struct e1000_adapter *adapter)
- {
- 	set_bit(__E1000_DOWN, &adapter->flags);
- 
--	/* Only kill reset task if adapter is not resetting */
--	if (!test_bit(__E1000_RESETTING, &adapter->flags))
--		cancel_work_sync(&adapter->reset_task);
--
- 	cancel_delayed_work_sync(&adapter->watchdog_task);
-+
-+	/*
-+	 * Since the watchdog task can reschedule other tasks, we should cancel
-+	 * it first, otherwise we can run into the situation when a work is
-+	 * still running after the adapter has been turned down.
-+	 */
-+
- 	cancel_delayed_work_sync(&adapter->phy_info_task);
- 	cancel_delayed_work_sync(&adapter->fifo_stall_task);
-+
-+	/* Only kill reset task if adapter is not resetting */
-+	if (!test_bit(__E1000_RESETTING, &adapter->flags))
-+		cancel_work_sync(&adapter->reset_task);
- }
- 
- void e1000_down(struct e1000_adapter *adapter)
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index f54e3a1..d90b9ab 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1564,21 +1564,24 @@ int ip6_route_add(struct fib6_config *cfg)
+ 				goto out;
+ 			}
+ 		}
+-		rt->dst.output = ip6_pkt_discard_out;
+-		rt->dst.input = ip6_pkt_discard;
+ 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
++		rt->dst.error = -ENETUNREACH;
+ 		switch (cfg->fc_type) {
+ 		case RTN_BLACKHOLE:
+ 			rt->dst.error = -EINVAL;
++			rt->dst.output = dst_discard;
++			rt->dst.input = dst_discard;
+ 			break;
+ 		case RTN_PROHIBIT:
+ 			rt->dst.error = -EACCES;
++			rt->dst.output = ip6_pkt_prohibit_out;
++			rt->dst.input = ip6_pkt_prohibit;
+ 			break;
+ 		case RTN_THROW:
+ 			rt->dst.error = -EAGAIN;
+-			break;
+ 		default:
+-			rt->dst.error = -ENETUNREACH;
++			rt->dst.output = ip6_pkt_discard_out;
++			rt->dst.input = ip6_pkt_discard;
+ 			break;
+ 		}
+ 		goto install_route;
 -- 
-1.7.10.4
+1.7.9.5
 
