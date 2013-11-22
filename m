@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3KVMNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:13:44 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:62433 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab3KVMNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 07:13:42 -0500
-Message-ID: <528F4A78.1080505@linaro.org>
-Date: Fri, 22 Nov 2013 13:13:44 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
-        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
-CC: james.hogan@imgtec.com, jason.low2@hp.com, gregkh@linuxfoundation.org,
-        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
-References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
-In-Reply-To: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755574Ab3KVMOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:14:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:54222 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754837Ab3KVMOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 07:14:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,751,1378882800"; 
+   d="scan'208";a="432088718"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/7] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
+Date: Fri, 22 Nov 2013 14:14:27 +0200
+Message-Id: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 07:37 AM, Alex Shi wrote:
-> The cpu_load decays on time according past cpu load of rq. New sched_avg decays on tasks' load of time. Now we has 2 kind decay for cpu_load. That is a kind of redundancy. And increase the system load in sched_tick etc.
->
-> This patch trying to remove the cpu_load decay. And fixed a nohz_full bug by the way.
->
-> There are 5 load_idx used for cpu_load in sched_domain. busy_idx and idle_idx are not zero usually, but newidle_idx, wake_idx and forkexec_idx are all zero on every arch. A shortcut to remove cpu_Load decay in the first patch. just one line patch for this change. :)
->
-> I have tested the patchset on my pandaES board, 2 cores ARM Cortex A9.
-> hackbench thread/pipe performance increased nearly 10% with this patchset! That do surprise me!
->
-> 	latest kernel 527d1511310a89		+ this patchset
-> hackbench -T -g 10 -f 40
-> 	23.25"					21.7"
-> 	23.16"					19.99"
-> 	24.24"					21.53"
-> hackbench -p -g 10 -f 40
-> 	26.52"					22.48"
-> 	23.89"					24.00"
-> 	25.65"					23.06"
-> hackbench -P -g 10 -f 40
-> 	20.14"					19.37"
-> 	19.96"					19.76"
-> 	21.76"					21.54"
->
-> The git tree for this patchset at:
->   git@github.com:alexshi/power-scheduling.git no-load-idx
-> Since Fengguang had included this tree into his kernel testing system. and I haven't get a regression report until now. I suppose it is fine for x86 system.
->
-> But anyway, since the scheduler change will effect all archs. and hackbench is only benchmark I found now for this patchset. I'd like to see more testing and talking on this patchset.
+Hi all,
 
-Hi Alex,
+Now that the mainline kernel has full ACPI support for the GPIO descriptor
+interface we can get rid of ACPI specific GPIO functions in favor of GPIO
+descriptor (gpiod_*) interfaces.
 
-I tried on my Xeon server (2 x 4 cores) your patchset and got the 
-following result:
+This series first converts the existing two users to this interface and
+then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
+called internally in drivers/gpio. We then remove the acpi_gpio.h and
+require all users to user gpiod_* interfaces.
 
-kernel a5d6e63323fe7799eb0e6  / + patchset
+This is second version of the series. Changes to the previous [1]:
+ * paz00 is passing the lookup table so that we don't need to have gpio
+   conversion function in rfkill-gpio.c anymore.
+ * Corrected sdhci-acpi.c to pass con_id and added call to
+   gpiod_direction_input().
 
-hackbench -T -s 4096 -l 1000 -g 10 -f 40
-	  27.604     	     38.556
-	  27.397	     38.694
-	  26.695	     38.647
-	  25.975	     38.528
-	  29.586	     38.553
-	  25.956	     38.331
-	  27.895	     38.472
-	  26.874	     38.608
-	  26.836	     38.341
-	  28.064	     38.626
-hackbench -p -s 4096 -l 1000 -g 10 -f 40
-	  34.502     	     35.489
-	  34.551	     35.389
-	  34.027	     35.664
-	  34.343	     35.418
-	  34.570	     35.423
-	  34.386	     35.466
-	  34.387	     35.486
-	  33.869	     35.212
-	  34.600	     35.465
-	  34.155	     35.235
-hackbench -P -s 4096 -l 1000 -g 10 -f 40
-	  39.170     	     38.794
-	  39.108	     38.662
-	  39.056	     38.946
-	  39.120	     38.668
-	  38.896	     38.865
-	  39.109	     38.803
-	  39.020	     38.946
-	  39.099	     38.844
-	  38.820	     38.872
-	  38.923	     39.337
+I suppose it would make sense to merge the whole series via GPIO or ACPI
+trees because there's a dependency that the first two patches need to be
+applied before last three. Otherwise the drivers in question fail to
+compile.
 
+[1] https://lkml.org/lkml/2013/11/21/317
 
+Heikki Krogerus (3):
+  net: rfkill: gpio: convert to descriptor-based GPIO interface
+  ARM: tegra: add gpiod_lookup table for paz00
+  net: rfkill: gpio: remove gpio conversion support
+
+Mika Westerberg (4):
+  mmc: sdhci-acpi: covert to use GPIO descriptor API
+  gpio / ACPI: register to ACPI events automatically
+  gpio / ACPI: get rid of acpi_gpio.h
+  Documentation / ACPI: update to GPIO descriptor API
+
+ Documentation/acpi/enumeration.txt | 36 ++++--------------
+ arch/arm/mach-tegra/board-paz00.c  |  9 ++++-
+ drivers/gpio/gpiolib-acpi.c        | 20 +++++++---
+ drivers/gpio/gpiolib.c             |  5 ++-
+ drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
+ drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
+ drivers/pinctrl/pinctrl-baytrail.c |  4 --
+ include/linux/acpi_gpio.h          | 51 -------------------------
+ net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
+ 9 files changed, 125 insertions(+), 149 deletions(-)
+ create mode 100644 drivers/gpio/gpiolib.h
+ delete mode 100644 include/linux/acpi_gpio.h
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.4.3
 
