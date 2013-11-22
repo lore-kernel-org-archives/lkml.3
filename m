@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3KVVup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 16:50:45 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:58230 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab3KVVuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 16:50:44 -0500
+	id S1756131Ab3KVVyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 16:54:33 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:56463 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755278Ab3KVVy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 16:54:29 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 0/2] Add support for hym8563 rtcs
+Date: Fri, 22 Nov 2013 22:54:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>
 MIME-Version: 1.0
-Date: Fri, 22 Nov 2013 19:50:44 -0200
-Message-ID: <CAGG-pURFGv2my_u8Okv5bft1SzpyGH8ccYYonjTFuZ7D=92x1g@mail.gmail.com>
-Subject: [RFC PATCH] double free in decompressor.c
-From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
-To: phillip@squashfs.org.uk
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311222254.07730.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coverity caught double free possibility (CID 1130962).
+This series adds support for the Haoyu Microelectronics HYM8563 rtc. This
+chip is often used in designs around the Cortex-A9 SoCs from Rockchip to
+provide rtc functionality and the 32kHz suspend clock the SoC needs.
 
-I can patch this, but I have to know if is correct to free comp_opts
-in the function squashfs_decompressor_create() or it had to be done in
-the caller. My bet is the caller.
+Heiko Stuebner (2):
+  Documentation: dt: Add dt hym8563 binding
+  rtc: add hym8563 rtc-driver
 
-
-128void *squashfs_decompressor_setup(struct super_block *sb, unsigned
-short flags)
-129{
-130        struct squashfs_sb_info *msblk = sb->s_fs_info;
-131        void *stream, *comp_opts = get_comp_opts(sb, flags);
-132
-
-1. Condition "IS_ERR(comp_opts)", taking false branch
-133        if (IS_ERR(comp_opts))
-134                return comp_opts;
-135
-
-2. freed_arg: "squashfs_decompressor_create(struct squashfs_sb_info *,
-void *)" frees "comp_opts".[show details]
-136        stream = squashfs_decompressor_create(msblk, comp_opts);
-
-3. Condition "IS_ERR(stream)", taking true branch
-137        if (IS_ERR(stream))
-
-CID 1130962 (#1 of 1): Double free (USE_AFTER_FREE)4. double_free:
-Calling "kfree(void const *)" frees pointer "comp_opts" which has
-already been freed.
-138                kfree(comp_opts);
-139
-140        return stream;
-141}
-
+ .../devicetree/bindings/rtc/haoyu,hym8563.txt      |   29 +
+ drivers/rtc/Kconfig                                |   11 +
+ drivers/rtc/Makefile                               |    1 +
+ drivers/rtc/rtc-hym8563.c                          |  619 ++++++++++++++++++++
+ 4 files changed, 660 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+ create mode 100644 drivers/rtc/rtc-hym8563.c
 
 -- 
-Regards,
+1.7.10.4
 
-Geyslan G. Bem
-hackingbits.com
