@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab3KVC0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Nov 2013 21:26:39 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:33854 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3KVC0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Nov 2013 21:26:24 -0500
+	id S1754879Ab3KVCab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Nov 2013 21:30:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63264 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146Ab3KVCa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Nov 2013 21:30:26 -0500
+Date: Thu, 21 Nov 2013 21:29:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: jerry.hoemann@hp.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo.kernel.org@gmail.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Subject: Re: [RFC v2 0/2] Early use of boot service memory
+Message-ID: <20131122022957.GE31921@redhat.com>
+References: <1385067686-73500-1-git-send-email-jerry.hoemann@hp.com>
+ <20131121230744.GA31592@srcf.ucam.org>
+ <528E94D1.2050809@zytor.com>
+ <20131121233705.GA32121@srcf.ucam.org>
+ <528EAF99.1010503@zytor.com>
+ <20131122012524.GA5627@anatevka.fc.hp.com>
+ <CAE9FiQUx5rnA0kpqXRQYtpj9Qk-4bPGaUKEbbF=XHsZbnSd6Rg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGVrzcase25NosVHA74OLnviJj7nU_2Rxki_hvi8bOwznDuWGg@mail.gmail.com>
-References: <1384913496-26261-1-git-send-email-freddy@asix.com.tw>
-	<20131120.004026.2013972041095203460.davem@davemloft.net>
-	<CANEJEGtBmvFNcFzOW9ZnOFd=ZMnz82ajcN52YqW3+n0+=rhxBA@mail.gmail.com>
-	<20131120.135413.920731121262719289.davem@davemloft.net>
-	<CANEJEGtXOjxj+85QVfWFGH6WuxxCz6uAfEuUo7bv9YEwh_8OAw@mail.gmail.com>
-	<CANEJEGu_2YdVOjcnzh30RPMiP0KC5bL6JasxMS_+1xV9poxgQw@mail.gmail.com>
-	<CAGVrzcase25NosVHA74OLnviJj7nU_2Rxki_hvi8bOwznDuWGg@mail.gmail.com>
-Date: Thu, 21 Nov 2013 18:26:22 -0800
-Message-ID: <CANEJEGuo4rbz4hP=RfN8A+4ozjuJ7oZmtLcmkjbkxrGZrpRr5A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Workaround for Suspend/Resume issue of AX88772B under ChromeOS
-From: Grant Grundler <grundler@google.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Freddy Xin <freddy@asix.com.tw>,
-        netdev <netdev@vger.kernel.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, davemloft@davemloft.net,
-        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>, Daniel_ASIX <daniel@asix.com.tw>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUx5rnA0kpqXRQYtpj9Qk-4bPGaUKEbbF=XHsZbnSd6Rg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 5:58 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-...
->> Freddy sent me a patch that saves/restores MII_ADVERTISE and MII_BMCR
->> registers. Testing that now and he'll post if that all works out.
+[..]
+> > makedumpfile going to cyclic buffer has helped out greatly, but on
+> > our new systems we're still looking at 512 MB crash kernels.
+> 
+> I tried 6TiB system/16 PCIE cards, kdump on RHEL 6.5 beta still does not work.
+> still get OOM.
 
-Bad News: Freddy's patch didn't work and needs to be rework it.
+What crashkernel= option you are using?
 
-> That should be enough to ensure the PHY is put back into a consistent
-> state. So long as you are suspending/resuming from a configuration
-> where autoneg was enabled, I would not expect anything bad to happen.
+Interesting. So something is consuming lot of memory. How about setting
+"debug_mem_level 1" in /etc/kdump.conf and regenerate initrd and retry.
+This time it should output some memory usage info at various points 
+during boot and that can give us some idea who is consuming how much
+memory.
 
-Well, I think davem NACK'd that approach (the original patch in this
-thread did that).
+If some module are consuming lot of memory, then you can try "blacklist"
+option in /etc/kdump.conf to disable those.
 
-> If the link was forced, that is a different story.
->
-> One way to make sure this work properly without driver-specific code
-> is to include that functionality into the PHY library. As far as I can
-> see it the asix drivers do not use it but implement the old-style
-> mii_bus interface so that would be a first step.
+If it is not modules, then it will concern me because then either
+kernel is consuming too much memory (which it should not) or for
+some reason makedumpfile cyclic mode did not work for you properly.
 
-AFAICT, many USBNET drivers support mii_bus interface. Can you point
-at a good example of a USBNET driver that is supporting PHY lib?
+While you are re-testing, how about also increasing debug message
+level of makedumpfile. makedumpfile developers should be able to 
+have a look at that. In /etc/kdump.conf, specify.
 
-I also didn't see anything in usbnet_resume() code path that calls
-into a phy lib. So it seems that some infrastructure still needs to
-happen if that's considered a feasible.
+core_collector makedumpfile -c --message-level 31 -d 31
 
-thanks,
-grant
+If message level 31 turns out to be too verbose, reduce it as per
+makedumpfile man page.
 
-> --
-> Florian
+Thanks
+Vivek
