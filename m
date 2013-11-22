@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3KVNu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 08:50:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43138 "EHLO mail.skyhub.de"
+	id S1755792Ab3KVNut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 08:50:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43267 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755490Ab3KVNu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 08:50:26 -0500
-Date: Fri, 22 Nov 2013 14:50:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131122135034.GA20146@nazgul.tnic>
-References: <20131121073410.GA16971@gmail.com>
- <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
- <20131121152804.GI26009@pd.tnic>
- <20131121173714.GD24806@ghostprotocols.net>
- <20131122122701.GA1480@gmail.com>
+	id S1755775Ab3KVNur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 08:50:47 -0500
+Date: Fri, 22 Nov 2013 14:50:43 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel
+ loading
+In-Reply-To: <20131122134600.GC4046@redhat.com>
+Message-ID: <alpine.LNX.2.00.1311221449120.22082@pobox.suse.cz>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com> <8761rl73s7.fsf@xmission.com> <20131122015518.GA31921@redhat.com> <CAMuHMdUVvhKLBfZo2gBf=FoQxMEM42yzBjYS8r5sVfXgp940ng@mail.gmail.com> <alpine.LRH.2.00.1311221429470.9932@twin.jikos.cz>
+ <20131122134600.GC4046@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131122122701.GA1480@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 01:27:01PM +0100, Ingo Molnar wrote:
-> I don't think those other bits should go into this library. rbtree
-> should go into lib/rbtree/, command-line bits into lib/cmdline/, build
-> system helpers into lib/build/, etc.
->
-> Merging unrelated things into a single library is a user-space disease
-> we need not repeat.
+On Fri, 22 Nov 2013, Vivek Goyal wrote:
 
-Well, rbtree is basically rblist.c and the rbtree*.h headers which
-simply wrap the kernel headers.
+> > OTOH, does this feature make any sense whatsover on architectures that 
+> > don't support secure boot anyway?
+> 
+> I guess if signed modules makes sense, then being able to kexec signed
+> kernel images should make sense too, in general.
 
-cmdline is parse-options.c.
+Well, that's really a grey zone, I'd say.
 
-IOW, that's splitting it into too granulary pieces with 1-2 compilation
-units ber library.
+In a non-secureboot environment, if you are root, you are able to issue 
+reboot into a completely different, self-made kernel anyway, independent 
+on whether signed modules are used or not.
 
-And what if there are interdependencies between the stuff split this
-way? That could become very painful and unnecessary.
-
-So having a simple single library which includes generic stuff needed to
-interface with the kernel is much simpler and sane, IMHO.
-
-And, since we're keeping it internal, we can do the split the other way
-around instead - first do the single generic library and then carve out
-a certain subset of functionality if/when it makes sense.
-
-The same approach we can use for the name - first split and work with it
-and change stuff when the need for it arises.
-
-> I'd also not expose any of this externally but straight link it into
-> the individual utilities - that way it does not matter that it's a
-> nice, topical, fine-grained set of functionality.
->
-> I don't think we are ready for (nor do we want the overhead of)
-> maintaining a library ABI at this stage.
->
-> Once things slow down and it's all so robust that we've had at most
-> a handful of commits in tools/lib/ in a full year we can think about
-> exporting it, maybe ...
-
-Right.
+-- 
+Jiri Kosina
+SUSE Labs
