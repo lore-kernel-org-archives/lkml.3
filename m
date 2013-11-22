@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab3KVRFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 12:05:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57170 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3KVRFi (ORCPT
+	id S1755994Ab3KVRGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 12:06:11 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39096 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755723Ab3KVRGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 12:05:38 -0500
-Message-ID: <528F8EC4.9050506@ti.com>
-Date: Fri, 22 Nov 2013 11:05:08 -0600
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 22 Nov 2013 12:06:09 -0500
+Message-ID: <528F8EFB.4040400@vmware.com>
+Date: Fri, 22 Nov 2013 18:06:03 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
-        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>,
-        <balbi@ti.com>
-Subject: Re: [PATCH 6/8] devicetree: doc: Document ti,timer-parent property
-References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-7-git-send-email-joelf@ti.com> <20131122155838.GF10023@atomide.com>
-In-Reply-To: <20131122155838.GF10023@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Daniel Vetter <daniel@ffwll.ch>
+CC: Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [i915] BUG: Bad page state in process Xorg
+References: <1384980928.3312.6.camel@localhost.localdomain> <alpine.DEB.2.00.1311221036020.16356@skynet.skynet.ie> <CAKMK7uGoAN=PHu+=1FmXPGyZxg3+Mm2awJgkOfO8zBDF2-5arQ@mail.gmail.com> <F6786E45-566F-47C5-974A-B2C1B9B674E4@m3y3r.de> <CAKMK7uEHo3N-R5W6m_-gyEkuq0WPN=YUzJUpdG=MeznPcY2Haw@mail.gmail.com>
+In-Reply-To: <CAKMK7uEHo3N-R5W6m_-gyEkuq0WPN=YUzJUpdG=MeznPcY2Haw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 09:58 AM, Tony Lindgren wrote:
-> * Joel Fernandes <joelf@ti.com> [131121 18:00]:
->> +Required properties for system timers (clockevents/clocksource):
->> +- ti,timer-parent:	System timer's parent mux clock needs to be setup.
->> +			This is currently hardcoded in code, for DT boot we
->> +			move this to DT.
->> +
-> 
-> This can be replaced with just clk_set_rate, or clk_set_parent if needed.
-> Or by having a clocks = <&32k_clk> property in the dmtimer node in the
-> .dts file.
-> 
->>  Optional properties:
->>  - ti,timer-alwon:	Indicates the timer is in an alway-on power domain.
-> 
-> Hmm this we may not need, this can probably be deciphered from the compatible
-> flag already?
+On 11/22/2013 05:18 PM, Daniel Vetter wrote:
+> On Fri, Nov 22, 2013 at 4:54 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+>>> Am 22.11.2013 um 11:55 schrieb Daniel Vetter <daniel@ffwll.ch>:
+>>>
+>>> On Fri, Nov 22, 2013 at 11:36 AM, Dave Airlie <airlied@linux.ie> wrote:
+>>>>> Hi,
+>>>> cc'ing mailing list,
+>>>>
+>>>> Daniel any ideas?
+>>> Nope, not really :( And no ideas how to triage this further - if it
+>>> takes 9 days to hit it eventually we'll have a real hard time. Or does
+>>> this happen even after just a short X run?
+>> Seems to happen every time while stopping the x server. Also after a short run time.
+>>
+>> The current fedora 3.11 kernel doesn't show this bug. I'm using fedora 19, with a self compiled kernel.
+>>
+>> I did turn on config-debug-pagealloc but this didn't show any wrongness.
+> In that case I think the bisect is the fastest way to insight - atm
+> I'm really at loss what could be wrong here.
 
-I was thinking maybe we can improve the of_clocksource_init matching
-capabilities to match better, not just on compatible but other properties for
-better selection?
+ From the error messages it looks like whatever's responsible for 
+clearing page->mapping doesn't do it for these pages,
+(shmem code?).
 
-For example, a generic clocksource DT property to say that the timer is in the
-wakeup domain and so should be preferred as the clocksource? Also additional
-properties to force its selection?
+/Thomas
 
-Then we can switch to clocksource_of_init and have it do the selection. Not sure
-if there is such a need or value for other ARM platforms so we may be over
-complicating the framework to handle these quirks. Comments welcomed about it.
-
-thanks,
-
--Joel
-
-> 
-> Then for the users of a specific dmtimer, they can select the right one using
-> the interrupt-parent property:
-> 
-> timer1: timer@0x4800abcd {
-> 	compatible = "ti,omap5430-timer";
-> 	#interrupt-cells = <1>;		/* needs irqchip implemented for dmtimer */
-> 	interrupt-controller;
-> 	#clock-cells = <1>;		/* needs clocksource implemented for dmtimer */
-> 	clock-output-names = "32k", "sys_ck";
-> 	...
-> };
-> 
-> counter32k: counter@4ae04000 {
-> 	compatible = "ti,omap-counter32k";
-> 	#clock-cells = <1>;		/* needs clocksource implemented for 32k counter */
-> 	clock-output-names = "32k";
-> 	...
-> };
-> 
-> timer {
-> 	compatible = "ti,omap5-timer";
-> 	interrupt-parent = <&timer1>;
-> 	interrupts = <1>;
-> 	clocks = <&timer1 0>,		/* use timer1 as clockevent, clock index 0 = 32k, 1 = sys_ck ... */
-> 		 <&counter32k 0>;	/* use 32k counter as clocksource */
-> };
-> 
->>  - ti,timer-dsp:		Indicates the timer can interrupt the on-chip DSP in
-> 
-> This can be probably also be mapped based on the compatible property?
-> 
-> Regards,
-> 
-> Tony
-> 
-
+> -Daniel
