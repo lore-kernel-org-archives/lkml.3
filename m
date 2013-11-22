@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3KVPJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:09:41 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52299 "EHLO comal.ext.ti.com"
+	id S1755902Ab3KVPKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:10:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25219 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755826Ab3KVPJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:09:39 -0500
-Message-ID: <528F7397.5070603@ti.com>
-Date: Fri, 22 Nov 2013 09:09:11 -0600
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755861Ab3KVPKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 10:10:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,752,1378882800"; 
+   d="scan'208";a="438059014"
+Date: Fri, 22 Nov 2013 17:09:59 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] i915, debugfs: Fix uninitialized warning
+Message-ID: <20131122150959.GD10036@intel.com>
+References: <1385048986-14478-1-git-send-email-bp@alien8.de>
+ <CAFLxGvzcAYwdcdNmZt4stTSCueRmStFYt+MqvNAS3BJX7CnUoQ@mail.gmail.com>
+ <20131121162535.GK26009@pd.tnic>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
-        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>
-Subject: Re: [PATCH 5/8] ARM: OMAP2+: timer: Introduce OF-friendly clocksource/clockevent
- system timers
-References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-6-git-send-email-joelf@ti.com> <20131122035127.GA1417@saruman.home>
-In-Reply-To: <20131122035127.GA1417@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131121162535.GK26009@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2013 09:51 PM, Felipe Balbi wrote:
-> Hi,
+On Thu, Nov 21, 2013 at 05:25:35PM +0100, Borislav Petkov wrote:
+> On Thu, Nov 21, 2013 at 05:10:30PM +0100, Richard Weinberger wrote:
+> > > diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+> > > index 6ed45a984230..1191aa47adc9 100644
+> > > --- a/drivers/gpu/drm/i915/i915_debugfs.c
+> > > +++ b/drivers/gpu/drm/i915/i915_debugfs.c
+> > > @@ -2347,7 +2347,7 @@ static int pipe_crc_set_source(struct drm_device *dev, enum pipe pipe,
+> > >  {
+> > >         struct drm_i915_private *dev_priv = dev->dev_private;
+> > >         struct intel_pipe_crc *pipe_crc = &dev_priv->pipe_crc[pipe];
+> > > -       u32 val;
+> > > +       u32 val = 0; /* shut up gcc */
+> > 
+> > Wouldn't it be better to use uninitialized_var() here?
 > 
-> On Thu, Nov 21, 2013 at 07:56:51PM -0600, Joel Fernandes wrote:
+> I remember Linus' rant about this macro so that's why I don't use it
+> anymore.
 > 
-> [...]
-> 
->> New functions for OF-only boot are introduced, and we can soon delete the old
->> versions once we migrate all platforms. Currently only AM335x is migrated and
-> 
-> actually, you don't need to initialize .init_timer at all in DT boot.
+> In this specific case, it doesn't matter whichever we do so I'll let the
+> maintainer make a wish :)
 
-Actually we still do, because the plan is to keep the hwmod stuff that's
-required in timer.c in a custom .init_time, and then of_clocksource_init maybe
-called to do what you're suggesting but (not yet) more on that below.
+IIRC this warning was there for me too on gcc 4.6, but it disappeared
+on gcc 4.7, which is why I decided not to send a patch for it.
 
-> Just use CLKSOURCE_OF_DECLARE() and pass your omap_generic_timer_init()
-> as argument (although, I'd call it omap_of_timer_init()).
-> That will put of_device_id structure on a special section
-> (__clksource_of_table) and pass your function as a data argument. That
-> function will be called automatically during init.
->
-
-I thought of doing that, but currently the timer selection for clocksource
-is not a simple matching of compatible string, rather it is selecting the timer
-based on properties such as ti,timer-alwon and such.
-
-In omap3 for example, there are needs for specific timers and such have been
-provided with the macros passing in timer id etc. Right now, this can be forced
-through DT with the "ti,timer-clocksource" property I introduced. All this
-selection algorithm is too complex to be handle directly by the
-CLOCKSOURCE_OF_DECLARE / clocksource_of_init matching mechanism.
-
-thanks,
-
--Joel
-
-
+-- 
+Ville Syrjälä
+Intel OTC
