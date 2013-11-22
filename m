@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3KVTRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 14:17:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755898Ab3KVTRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 14:17:19 -0500
-Date: Fri, 22 Nov 2013 20:18:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Sameer Nanda <snanda@chromium.org>,
-        Sergey Dyasly <dserrg@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] signals: change do_signal_stop/do_sigaction to use
-	while_each_thread()
-Message-ID: <20131122191822.GA16943@redhat.com>
+	id S1756199Ab3KVTXB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 14:23:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54933 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755619Ab3KVTXA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 14:23:00 -0500
+Message-ID: <528FAF0E.6040802@infradead.org>
+Date: Fri, 22 Nov 2013 11:22:54 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122191803.GA16919@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Adrian Pop <sultryweather@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>
+Subject: Re: linux-next: Tree for Nov 21 (nouveau)
+References: <20131121140411.092318822bbd82b7b47e0d53@canb.auug.org.au> <528E2BC3.4040007@infradead.org> <20131122113748.GB20300@shodan>
+In-Reply-To: <20131122113748.GB20300@shodan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change do_signal_stop() and do_sigaction() to avoid next_thread()
-and use while_each_thread() instead.
+On 11/22/13 03:37, Adrian Pop wrote:
+> Hello!
+> 
+>> on x86_64:
+>>
+>> CONFIG_HWMON is not enabled.
+>>
+>> drivers/gpu/drm/nouveau/nouveau_hwmon.c: In function 'nouveau_hwmon_init':
+>> drivers/gpu/drm/nouveau/nouveau_hwmon.c:633:2: error: 'hwmon' undeclared (first use in this function)
+> 
+> I've attached a patch that fixes the build for me when using this
+> config.
+> 
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+That works.  Thanks.
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index ded28b9..086071d 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2047,8 +2047,8 @@ static bool do_signal_stop(int signr)
- 		if (task_set_jobctl_pending(current, signr | gstop))
- 			sig->group_stop_count++;
- 
--		for (t = next_thread(current); t != current;
--		     t = next_thread(t)) {
-+		t = current;
-+		while_each_thread(current, t) {
- 			/*
- 			 * Setting state to TASK_STOPPED for a group
- 			 * stop is always done with the siglock held,
-@@ -3125,8 +3125,7 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- 			rm_from_queue_full(&mask, &t->signal->shared_pending);
- 			do {
- 				rm_from_queue_full(&mask, &t->pending);
--				t = next_thread(t);
--			} while (t != current);
-+			} while_each_thread(current, t);
- 		}
- 	}
- 
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+
 -- 
-1.5.5.1
-
+~Randy
