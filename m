@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3KVPne (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 10:43:34 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:49890 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3KVPnd (ORCPT
+	id S1755764Ab3KVPoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 10:44:09 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37151 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab3KVPoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 10:43:33 -0500
-Date: Fri, 22 Nov 2013 16:43:29 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131122154317.GB15636@gmail.com>
-References: <20131121100722.GA25459@pd.tnic>
- <20131121111744.GA27513@gmail.com>
- <20131121113014.GA26009@pd.tnic>
- <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
- <20131121152804.GI26009@pd.tnic>
- <20131121173714.GD24806@ghostprotocols.net>
- <20131122122701.GA1480@gmail.com>
- <20131122145756.GB11305@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122145756.GB11305@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Nov 2013 10:44:07 -0500
+Subject: Re: [PATCH 19/22] perf tools: Add filename__read_str util function
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+In-Reply-To: <1385031680-9014-20-git-send-email-jolsa@redhat.com>
+References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
+	 <1385031680-9014-20-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Nov 2013 00:43:59 +0900
+Message-ID: <1385135039.1747.118.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013-11-21 (목), 12:01 +0100, Jiri Olsa:
+> Adding filename__read_str util function to read
+> text file and return it in the char array.
+> 
+> The interface is:
+>   int filename__read_str(const char *filename, char **buf, size_t *sizep)
+> 
+>   Returns 0/-1 if the read suceeded/fail respectively.
+> 
+>   buf  - place to store the data pointer
+>   size - place to store data size
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+[SNIP]
+> +int filename__read_str(const char *filename, char **buf, size_t *sizep)
+> +{
+> +	size_t size = 0, alloc_size = 0;
+> +	void *bf = NULL, *nbf;
+> +	int fd, n, err = 0;
+> +
+> +	fd = open(filename, O_RDONLY);
+> +	if (fd < 0)
+> +		return -errno;
+> +
+> +	do {
+> +		if (size == alloc_size) {
+> +			alloc_size += BUFSIZ;
+> +			nbf = realloc(bf, alloc_size);
+> +			if (!nbf) {
+> +				err = -ENOMEM;
+> +				break;
+> +			}
+> +
+> +			bf = nbf;
+> +		}
+> +
+> +		n = read(fd, bf + size, BUFSIZ);
 
-> Lets experiment at having things at the right granularity, even if 
-> it involves many, directly linked, like libperf.a, libraries, one at 
-> a time, starting with fskapi (or whatever name ends up being 
-> preferred for this initial one).
+Shouldn't it be "read(fd, bf + size, alloc_size - size)"?
+Otherwise there might be a problem if read() returned early for some
+reason with small size and then retry with a full BUFSIZ..
 
-That's fine with me - what I stood up against was the idea to merge 
-into a single place things like the Git helpers, cmdline/option 
-parser, etc.
 
-The naming problem is mostly non-existent if the concepts are kept 
-nicely separate: the best name for the debugfs bits is probably 
-tools/lib/debugfs/, the best name for command line option parser is 
-tools/lib/cmdline/, the best name for trace event parsing is 
-tools/lib/traceevents/ [hey, we already have that one in the right 
-place! ;-)], etc.
+> +		if (n < 0) {
+> +			err = 0;
+
+I think it needs to check the size also since read() might fail at the
+first invocation.  What about this?
+
+		if (n < 0) {
+			if (size)
+				err = 0;
+			else
+				err = -errno;
 
 Thanks,
+Namhyung
 
-	Ingo
+> +			break;
+> +		}
+> +
+> +		size += n;
+> +	} while (n > 0);
+> +
+> +	if (!err) {
+> +		*sizep = size;
+> +		*buf   = bf;
+> +	} else
+> +		free(bf);
+> +
+> +	close(fd);
+> +	return err;
+> +}
+
+
+
