@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab3KVMPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 07:15:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54222 "EHLO mga11.intel.com"
+	id S932090Ab3KVMPd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 07:15:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59658 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab3KVMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755578Ab3KVMOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Nov 2013 07:14:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,751,1378882800"; 
-   d="scan'208";a="437983007"
+   d="scan'208";a="439827944"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -24,9 +24,9 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thierry Reding <thierry.reding@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/7] gpio / ACPI: register to ACPI events automatically
-Date: Fri, 22 Nov 2013 14:14:32 +0200
-Message-Id: <1385122474-14926-6-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 6/7] gpio / ACPI: get rid of acpi_gpio.h
+Date: Fri, 22 Nov 2013 14:14:33 +0200
+Message-Id: <1385122474-14926-7-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -34,184 +34,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of asking each driver to register to ACPI events we can just call
-acpi_gpiochip_register_interrupts() for each chip that has an ACPI handle.
-The function checks chip->to_irq and if it is set to NULL (a GPIO driver
-that doesn't do interrupts) the function does nothing.
+Now that all users of acpi_gpio.h have been moved to user either the GPIO
+descriptor interface or to the internal gpiolib.h we can get rid of
+acpi_gpio.h entirely.
 
-We also add the a new header drivers/gpio/gpiolib.h that is used for
-functions internal to gpiolib and add ACPI GPIO chip registering functions
-to that header.
-
-Once that is done we can remove call to acpi_gpiochip_register_interrupts()
-from its only user, pinctrl-baytrail.c
+Once this is done the only interface to get GPIOs to drivers enumerated
+from ACPI namespace is the descriptor based interface.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/gpio/gpiolib-acpi.c        | 16 ++++++++++++----
- drivers/gpio/gpiolib.c             |  4 ++++
- drivers/gpio/gpiolib.h             | 23 +++++++++++++++++++++++
- drivers/pinctrl/pinctrl-baytrail.c |  4 ----
- include/linux/acpi_gpio.h          |  6 ------
- 5 files changed, 39 insertions(+), 14 deletions(-)
- create mode 100644 drivers/gpio/gpiolib.h
+ drivers/gpio/gpiolib-acpi.c |  4 +++-
+ drivers/gpio/gpiolib.c      |  1 -
+ drivers/gpio/gpiolib.h      | 23 +++++++++++++++++++++++
+ include/linux/acpi_gpio.h   | 45 ---------------------------------------------
+ 4 files changed, 26 insertions(+), 47 deletions(-)
+ delete mode 100644 include/linux/acpi_gpio.h
 
 diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index ae0ffdce8bd5..cb2da66fbbfe 100644
+index cb2da66fbbfe..6c158d9a6efa 100644
 --- a/drivers/gpio/gpiolib-acpi.c
 +++ b/drivers/gpio/gpiolib-acpi.c
-@@ -94,7 +94,7 @@ static void acpi_gpio_evt_dh(acpi_handle handle, void *data)
-  * gpio pins have acpi event methods and assigns interrupt handlers that calls
-  * the acpi event methods for those pins.
-  */
--void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
-+static void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
- {
- 	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
- 	struct acpi_resource *res;
-@@ -192,7 +192,6 @@ void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
- 				irq);
- 	}
- }
--EXPORT_SYMBOL(acpi_gpiochip_request_interrupts);
+@@ -12,11 +12,13 @@
  
- /**
-  * acpi_gpiochip_free_interrupts() - Free GPIO _EVT ACPI event interrupts.
-@@ -203,7 +202,7 @@ EXPORT_SYMBOL(acpi_gpiochip_request_interrupts);
-  * The remaining ACPI event interrupts associated with the chip are freed
-  * automatically.
-  */
--void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
-+static void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
- {
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -230,7 +229,6 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
- 	acpi_detach_data(handle, acpi_gpio_evt_dh);
- 	kfree(evt_pins);
- }
--EXPORT_SYMBOL(acpi_gpiochip_free_interrupts);
- 
- struct acpi_gpio_lookup {
- 	struct acpi_gpio_info info;
-@@ -310,3 +308,13 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
- 	return lookup.desc ? lookup.desc : ERR_PTR(-ENODEV);
- }
- EXPORT_SYMBOL_GPL(acpi_get_gpiod_by_index);
-+
-+void acpi_gpiochip_add(struct gpio_chip *chip)
-+{
-+	acpi_gpiochip_request_interrupts(chip);
-+}
-+
-+void acpi_gpiochip_remove(struct gpio_chip *chip)
-+{
-+	acpi_gpiochip_free_interrupts(chip);
-+}
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 4e10b10d3ddd..70abccf0d144 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -15,6 +15,8 @@
- #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/gpio/consumer.h>
++#include <linux/gpio/driver.h>
+ #include <linux/export.h>
+-#include <linux/acpi_gpio.h>
  #include <linux/acpi.h>
+ #include <linux/interrupt.h>
  
 +#include "gpiolib.h"
 +
- #define CREATE_TRACE_POINTS
- #include <trace/events/gpio.h>
+ struct acpi_gpio_evt_pin {
+ 	struct list_head node;
+ 	acpi_handle *evt_handle;
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 70abccf0d144..a6b82413c290 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -10,7 +10,6 @@
+ #include <linux/seq_file.h>
+ #include <linux/gpio.h>
+ #include <linux/of_gpio.h>
+-#include <linux/acpi_gpio.h>
+ #include <linux/idr.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
+index 2ed23ab8298c..82be586c1f90 100644
+--- a/drivers/gpio/gpiolib.h
++++ b/drivers/gpio/gpiolib.h
+@@ -12,12 +12,35 @@
+ #ifndef GPIOLIB_H
+ #define GPIOLIB_H
  
-@@ -1212,6 +1214,7 @@ int gpiochip_add(struct gpio_chip *chip)
++#include <linux/err.h>
++#include <linux/device.h>
++
++/**
++ * struct acpi_gpio_info - ACPI GPIO specific information
++ * @gpioint: if %true this GPIO is of type GpioInt otherwise type is GpioIo
++ * @active_low: in case of @gpioint, the pin is active low
++ */
++struct acpi_gpio_info {
++	bool gpioint;
++	bool active_low;
++};
++
+ #ifdef CONFIG_ACPI
+ void acpi_gpiochip_add(struct gpio_chip *chip);
+ void acpi_gpiochip_remove(struct gpio_chip *chip);
++
++struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
++					  struct acpi_gpio_info *info);
+ #else
+ static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
+ static inline void acpi_gpiochip_remove(struct gpio_chip *chip) { }
++
++static inline struct gpio_desc *
++acpi_get_gpiod_by_index(struct device *dev, int index,
++			struct acpi_gpio_info *info)
++{
++	return ERR_PTR(-ENOSYS);
++}
  #endif
  
- 	of_gpiochip_add(chip);
-+	acpi_gpiochip_add(chip);
- 
- 	if (status)
- 		goto fail;
-@@ -1253,6 +1256,7 @@ int gpiochip_remove(struct gpio_chip *chip)
- 
- 	gpiochip_remove_pin_ranges(chip);
- 	of_gpiochip_remove(chip);
-+	acpi_gpiochip_remove(chip);
- 
- 	for (id = 0; id < chip->ngpio; id++) {
- 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
-diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-new file mode 100644
-index 000000000000..2ed23ab8298c
---- /dev/null
-+++ b/drivers/gpio/gpiolib.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Internal GPIO functions.
-+ *
-+ * Copyright (C) 2013, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef GPIOLIB_H
-+#define GPIOLIB_H
-+
-+#ifdef CONFIG_ACPI
-+void acpi_gpiochip_add(struct gpio_chip *chip);
-+void acpi_gpiochip_remove(struct gpio_chip *chip);
-+#else
-+static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
-+static inline void acpi_gpiochip_remove(struct gpio_chip *chip) { }
-+#endif
-+
-+#endif /* GPIOLIB_H */
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 2832576d8b12..98b87a59df2d 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -29,7 +29,6 @@
- #include <linux/gpio.h>
- #include <linux/irqdomain.h>
- #include <linux/acpi.h>
--#include <linux/acpi_gpio.h>
- #include <linux/platform_device.h>
- #include <linux/seq_file.h>
- #include <linux/io.h>
-@@ -485,9 +484,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
- 
- 		irq_set_handler_data(hwirq, vg);
- 		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
--
--		/* Register interrupt handlers for gpio signaled acpi events */
--		acpi_gpiochip_request_interrupts(gc);
- 	}
- 
- 	pm_runtime_enable(dev);
+ #endif /* GPIOLIB_H */
 diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
-index d875bc3dba3c..af96a0d452f6 100644
+deleted file mode 100644
+index af96a0d452f6..000000000000
 --- a/include/linux/acpi_gpio.h
-+++ b/include/linux/acpi_gpio.h
-@@ -21,9 +21,6 @@ struct acpi_gpio_info {
- 
- struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
- 					  struct acpi_gpio_info *info);
--void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
--void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
++++ /dev/null
+@@ -1,45 +0,0 @@
+-#ifndef _LINUX_ACPI_GPIO_H_
+-#define _LINUX_ACPI_GPIO_H_
 -
- #else /* CONFIG_GPIO_ACPI */
- 
- static inline struct gpio_desc *
-@@ -33,9 +30,6 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
- 	return ERR_PTR(-ENOSYS);
- }
- 
--static inline void acpi_gpiochip_request_interrupts(struct gpio_chip *chip) { }
--static inline void acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
+-#include <linux/device.h>
+-#include <linux/err.h>
+-#include <linux/errno.h>
+-#include <linux/gpio.h>
+-#include <linux/gpio/consumer.h>
 -
- #endif /* CONFIG_GPIO_ACPI */
- 
- static inline int acpi_get_gpio_by_index(struct device *dev, int index,
+-/**
+- * struct acpi_gpio_info - ACPI GPIO specific information
+- * @gpioint: if %true this GPIO is of type GpioInt otherwise type is GpioIo
+- * @active_low: in case of @gpioint, the pin is active low
+- */
+-struct acpi_gpio_info {
+-	bool gpioint;
+-	bool active_low;
+-};
+-
+-#ifdef CONFIG_GPIO_ACPI
+-
+-struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+-					  struct acpi_gpio_info *info);
+-#else /* CONFIG_GPIO_ACPI */
+-
+-static inline struct gpio_desc *
+-acpi_get_gpiod_by_index(struct device *dev, int index,
+-			struct acpi_gpio_info *info)
+-{
+-	return ERR_PTR(-ENOSYS);
+-}
+-
+-#endif /* CONFIG_GPIO_ACPI */
+-
+-static inline int acpi_get_gpio_by_index(struct device *dev, int index,
+-					 struct acpi_gpio_info *info)
+-{
+-	struct gpio_desc *desc = acpi_get_gpiod_by_index(dev, index, info);
+-
+-	if (IS_ERR(desc))
+-		return PTR_ERR(desc);
+-	return desc_to_gpio(desc);
+-}
+-
+-#endif /* _LINUX_ACPI_GPIO_H_ */
 -- 
 1.8.4.3
 
