@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3KWUZU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 15:25:20 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50350 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755539Ab3KWUZP (ORCPT
+	id S1756257Ab3KWU3j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 15:29:39 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:34453 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab3KWU3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 15:25:15 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52910F27.2040902@roeck-us.net>
-Date: Sat, 23 Nov 2013 12:25:11 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 23 Nov 2013 15:29:38 -0500
 MIME-Version: 1.0
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: New build failures in v3.13-rc1
-References: <5290F68C.4060900@roeck-us.net>	<CAMuHMdW-YO6WyL3F7M+q5PqATPwxD9zKLtA3tCc9-Z2wKo-mPg@mail.gmail.com>	<5290FE63.9020101@roeck-us.net> <CAKv+Gu-QC_z4X53KrYbnuQ6s6rT3-aMrg+OUeHj1k5PzdTU=TA@mail.gmail.com>
-In-Reply-To: <CAKv+Gu-QC_z4X53KrYbnuQ6s6rT3-aMrg+OUeHj1k5PzdTU=TA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL1ERfPExH3igteHko_iVxpG59wM+Xh0F-U1LWwZo0An0eMcGw@mail.gmail.com>
+References: <1385158254-6304-1-git-send-email-ddstreet@ieee.org> <CAL1ERfPExH3igteHko_iVxpG59wM+Xh0F-U1LWwZo0An0eMcGw@mail.gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Sat, 23 Nov 2013 15:29:16 -0500
+X-Google-Sender-Auth: CVeCFuZQPM5TOpphjy5S4WqLw1g
+Message-ID: <CALZtONDZdjsnYNGA2gC4pw5BfS+r2zm+bJzv8G9bBTOuquLHWw@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: reverse zswap_entry tree/refcount relationship
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2013 12:08 PM, Ard Biesheuvel wrote:
-> This is a known issue that will hopefully be sorted shortly:
+On Fri, Nov 22, 2013 at 9:23 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+> Hello Dan,
 >
-> http://marc.info/?l=linux-arm-kernel&m=138515869216723&w=2
+> On Sat, Nov 23, 2013 at 6:10 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>> Currently, zswap_entry_put removes the entry from its tree if
+>> the resulting refcount is 0.  Several places in code put an
+>> entry's initial reference, but they also must remove the entry
+>> from its tree first, which makes the tree removal in zswap_entry_put
+>> redundant.
+>>
+>> I believe this has the refcount model backwards - the initial
+>> refcount reference shouldn't be managed by multiple different places
+>> in code, and the put function shouldn't be removing the entry
+>> from the tree.  I think the correct model is for the tree to be
+>> the owner of the initial entry reference.  This way, the only time
+>> any code needs to put the entry is if it's also done a get previously.
+>> The various places in code that remove the entry from the tree simply
+>> do that, and the zswap_rb_erase function does the put of the initial
+>> reference.
+>>
+>> This patch moves the initial referencing completely into the tree
+>> functions - zswap_rb_insert gets the entry, while zswap_rb_erase
+>> puts the entry.  The zswap_entry_get/put functions are still available
+>> for any code that needs to use an entry outside of the tree lock.
+>> Also, the zswap_entry_find_get function is renamed to zswap_rb_search_get
+>> since the function behavior and return value is closer to zswap_rb_search
+>> than zswap_entry_get.  All code that previously removed the entry from
+>> the tree and put it now only remove the entry from the tree.
+>>
+>> The comment headers for most of the tree insert/search/erase functions
+>> and the get/put functions are updated to clarify if the tree lock
+>> needs to be held as well as when the caller needs to get/put an
+>> entry (i.e. iff the caller is using the entry outside the tree lock).
 >
-I assume you are referring to the arm:allmodconfig build failure.
-Yes, I suspected that Herbert's pull request might fix that.
+> I do not like this patch idea, It breaks the zswap_rb_xxx() purity.
+> I think zswap_rb_xxx() should only focus on rbtree operations.
+>
+> The current code might be redundant, but its logic is clear.
+> So it is not essential need to be changed.
 
-Thanks,
-Guenter
+It makes absolutely no sense to include zswap_rb_erase() inside
+zswap_entry_put() when it's clear that the entry will *never* (with
+the writethrough patch) be on the rb tree when the final refcount is
+put.
 
+It does make sense, IMHO, for the tree to manage the initial refcount.
+
+Alternately, if everyone agrees with you that the tree insert/remove
+shouldn't manage the initial entry refcount, then it seems to me that
+the zswap_rb_erase() call should be removed from zswap_entry_put() and
+all places in the code that call zswap_rb_erase() need to also call
+zswap_entry_put() for the initial refcount (which they already do).
