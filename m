@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab3KWS1P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 13:27:15 -0500
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:54454 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708Ab3KWS1L (ORCPT
+	id S1756193Ab3KWSfS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 13:35:18 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:56894 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab3KWSfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 13:27:11 -0500
-X-Fcrdns: No
-Message-ID: <5290F386.5040806@profihost.ag>
-Date: Sat, 23 Nov 2013 19:27:18 +0100
-From: Stefan Priebe <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 23 Nov 2013 13:35:12 -0500
+Date: Sat, 23 Nov 2013 13:35:08 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH v3.13-rc1 1/2] sysfs: handle duplicate removal attempts in
+ sysfs_remove_group()
+Message-ID: <20131123183508.GA28162@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Chinmay V S <cvs268@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
-References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org> <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com> <20131120175807.GC5380@fieldses.org> <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com> <20131121101101.GA18404@infradead.org> <528FB828.5000301@profihost.ag> <528FC09E.5090004@redhat.com>
-In-Reply-To: <528FC09E.5090004@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ric,
+Hello, Greg.
 
-Am 22.11.2013 21:37, schrieb Ric Wheeler:
-> On 11/22/2013 03:01 PM, Stefan Priebe wrote:
->> Hi Christoph,
->> Am 21.11.2013 11:11, schrieb Christoph Hellwig:
->>>>
->>>> 2. Some drives may implement CMD_FLUSH to return immediately i.e. no
->>>> guarantee the data is actually on disk.
->>>
->>> In which case they aren't spec complicant.  While I've seen countless
->>> data integrity bugs on lower end ATA SSDs I've not seen one that simpliy
->>> ingnores flush.  If you'd want to cheat that bluntly you'd be better
->>> of just claiming to not have a writeback cache.
->>>
->>> You solve your performance problem by completely disabling any chance
->>> of having data integrity guarantees, and do so in a way that is not
->>> detectable for applications or users.
->>>
->>> If you have a workload with lots of small synchronous writes disabling
->>> the writeback cache on the disk does indeed often help, especially with
->>> the non-queueable FLUSH on all but the most recent ATA devices.
->>
->> But this isn't correct for drives with capicitors like Crucial m500,
->> Intel DC S3500, DC S3700 isn't it? Shouldn't the linux kernel has an
->> option to disable this for drives like these?
->> /sys/block/sdX/device/ignore_flush
->
-> If you know 100% for sure that your drive has a non-volatile write
-> cache, you can run the file system without the flushing by mounting "-o
-> nobarrier".  With most devices, this is not needed since they tend to
-> simply ignore the flushes if they know they are power failure safe.
->
-> Block level, we did something similar for users who are not running
-> through a file system for SCSI devices - James added support to echo
-> "temporary" into the sd's device's cache_type field:
->
-> See:
->
-> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=2ee3e26c673e75c05ef8b914f54fadee3d7b9c88
+These are two patches to fix sysfs bugs which are present in rc1 and
+posted previously.  Both deal with spurious triggering of warnings.
+The patches are available in the following git branch.
 
-At least to me this does not work. I get the same awful speed as before 
-- also the I/O waits stay the same. I'm still seeing CMD flushes going 
-to the devices.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-fixes
 
-Is there any way to check whether the temporary got accepted and works?
+The original patches are
 
-I simply executed:
-for i in /sys/class/scsi_disk/*/cache_type; do echo $i; echo temporary 
-write back >$i; done
+ http://lkml.kernel.org/g/1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com
+ http://lkml.kernel.org/g/20131117021736.GA9302@mtj.dyndns.org
 
-Stefan
+I'll base further sysfs/kernfs patches on top of the above branch.
+
+Thanks!
+------- 8< -------
+>From a69cc96d8c434c6cb64847f37caa890af705fc5c Mon Sep 17 00:00:00 2001
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Wed, 20 Nov 2013 11:56:35 +0200
+
+Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
+the behavior so that directory removals will be done recursively. This
+means that the sysfs group might already be removed if its parent directory
+has been removed.
+
+The current code outputs warnings similar to following log snippet when it
+detects that there is no group for the given kobject:
+
+ WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
+ sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
+ Modules linked in:
+ CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
+ Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
+ Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+  0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
+  ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
+  ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
+ Call Trace:
+  [<ffffffff817daab1>] dump_stack+0x45/0x56
+  [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
+  [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
+  [<ffffffff811ad319>] ? sysfs_get_dirent_ns+0x49/0x70
+  [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
+  [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
+  [<ffffffff8142a0d0>] device_del+0x40/0x1b0
+  [<ffffffff8142a24d>] device_unregister+0xd/0x20
+  [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
+  [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
+  [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
+  [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
+  [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
+  [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
+  [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
+  [<ffffffff8142a1b1>] device_del+0x121/0x1b0
+  [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
+  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
+  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
+  [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
+  [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
+  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
+  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
+  [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
+  [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
+  [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
+  [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
+  [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
+  [<ffffffff8105db29>] worker_thread+0x119/0x390
+  [<ffffffff8105da10>] ? manage_workers.isra.25+0x2a0/0x2a0
+  [<ffffffff81063a5d>] kthread+0xcd/0xf0
+  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
+  [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
+  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
+
+On this particular machine I see ~16 of these message during Thunderbolt
+hot-unplug.
+
+Fix this in similar way that was done for sysfs_remove_one() by checking
+if the parent directory has already been removed and bailing out early.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/group.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 1898a10..3796afd 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -206,6 +206,15 @@ void sysfs_remove_group(struct kobject *kobj,
+ 	struct sysfs_dirent *dir_sd = kobj->sd;
+ 	struct sysfs_dirent *sd;
+ 
++	/*
++	 * Sysfs directories are now removed recursively by
++	 * sysfs_remove_dir(). This means that the function can be called
++	 * for a group whose sysfs entry is already removed. In that case
++	 * all its groups are guaranteed to be already removed.
++	 */
++	if (dir_sd->s_flags & SYSFS_FLAG_REMOVED)
++		return;
++
+ 	if (grp->name) {
+ 		sd = sysfs_get_dirent(dir_sd, grp->name);
+ 		if (!sd) {
+-- 
+1.8.4.2
+
