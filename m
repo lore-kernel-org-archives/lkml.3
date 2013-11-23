@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab3KWWcg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:32:36 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:40767 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab3KWWWm (ORCPT
+	id S1756689Ab3KWWdD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:33:03 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58441 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab3KWWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:42 -0500
+	Sat, 23 Nov 2013 17:22:36 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/41] sysfs, kernfs: replace sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with ->priv
-Date: Sat, 23 Nov 2013 17:21:53 -0500
-Message-Id: <1385245346-856-9-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/41] sysfs, kernfs: introduce kernfs_remove[_by_name[_ns]]()
+Date: Sat, 23 Nov 2013 17:21:49 -0500
+Message-Id: <1385245346-856-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,230 +21,266 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A directory sysfs_dirent points to the associated kobj.  A regular or
-bin file points to the associated [bin_]attribute.  This patch
-replaces sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with void *
-->priv.
+Introduce kernfs removal interfaces - kernfs_remove() and
+kernfs_remove_by_name[_ns]().
 
-This is to prepare for kernfs interface so that sysfs can specify the
-private data in the same way for directories and files.  This lower
-debuggability but not by much - the whole thing was overlaid in a
-union anyway.  If debuggability becomes an issue, we can later add
-->priv accessors which explicitly check for the sysfs_dirent type and
-performs casting.
+These are just renames of sysfs_remove() and sysfs_hash_and_remove().
+No functional changes.
 
-This patch doesn't introduce any behavior difference.
+v2: Dummy kernfs_remove_by_name_ns() for !CONFIG_SYSFS updated to
+    return -ENOSYS instead of 0.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/dir.c     |  2 +-
- fs/sysfs/file.c    | 26 +++++++++++++-------------
- fs/sysfs/inode.c   |  2 +-
- fs/sysfs/symlink.c |  2 +-
- fs/sysfs/sysfs.h   | 13 +++++--------
- 5 files changed, 21 insertions(+), 24 deletions(-)
+ fs/sysfs/dir.c         | 20 ++++++++++----------
+ fs/sysfs/file.c        |  6 +++---
+ fs/sysfs/group.c       | 15 +++++++--------
+ fs/sysfs/symlink.c     |  4 ++--
+ fs/sysfs/sysfs.h       |  3 ---
+ include/linux/kernfs.h | 24 ++++++++++++++++++++++++
+ 6 files changed, 46 insertions(+), 26 deletions(-)
 
 diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 5ba8966..aeb08bd 100644
+index 98701c0..edbde4e 100644
 --- a/fs/sysfs/dir.c
 +++ b/fs/sysfs/dir.c
-@@ -681,7 +681,7 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
- 		return -ENOMEM;
- 
- 	sd->s_ns = ns;
--	sd->s_dir.kobj = kobj;
-+	sd->priv = kobj;
- 
- 	/* link in */
- 	sysfs_addrm_start(&acxt);
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 0f3f0a2..9b58d87 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -74,7 +74,7 @@ static struct sysfs_open_file *sysfs_of(struct file *file)
-  */
- static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
- {
--	struct kobject *kobj = sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = sd->s_parent->priv;
- 
- 	if (!sysfs_ignore_lockdep(sd))
- 		lockdep_assert_held(sd);
-@@ -89,7 +89,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
- static int sysfs_seq_show(struct seq_file *sf, void *v)
- {
- 	struct sysfs_open_file *of = sf->private;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	const struct sysfs_ops *ops;
- 	char *buf;
- 	ssize_t count;
-@@ -120,7 +120,7 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
- 	 */
- 	ops = sysfs_file_ops(of->sd);
- 	if (ops->show)
--		count = ops->show(kobj, of->sd->s_attr.attr, buf);
-+		count = ops->show(kobj, of->sd->priv, buf);
- 	else
- 		count = 0;
- 
-@@ -154,8 +154,8 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
- 			      size_t bytes, loff_t *off)
- {
- 	struct sysfs_open_file *of = sysfs_of(file);
--	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct bin_attribute *battr = of->sd->priv;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	loff_t size = file_inode(file)->i_size;
- 	int count = min_t(size_t, bytes, PAGE_SIZE);
- 	loff_t offs = *off;
-@@ -221,7 +221,7 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
- static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 			      size_t count)
- {
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	int rc = 0;
- 
- 	/*
-@@ -236,7 +236,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 	}
- 
- 	if (sysfs_is_bin(of->sd)) {
--		struct bin_attribute *battr = of->sd->s_attr.bin_attr;
-+		struct bin_attribute *battr = of->sd->priv;
- 
- 		rc = -EIO;
- 		if (battr->write)
-@@ -245,7 +245,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 	} else {
- 		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
- 
--		rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
-+		rc = ops->store(kobj, of->sd->priv, buf, count);
- 	}
- 
- 	sysfs_put_active(of->sd);
-@@ -466,8 +466,8 @@ static const struct vm_operations_struct sysfs_bin_vm_ops = {
- static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	struct sysfs_open_file *of = sysfs_of(file);
--	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct bin_attribute *battr = of->sd->priv;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	int rc;
- 
- 	mutex_lock(&of->mutex);
-@@ -607,7 +607,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- static int sysfs_open_file(struct inode *inode, struct file *file)
- {
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = attr_sd->s_parent->priv;
- 	struct sysfs_open_file *of;
- 	bool has_read, has_write, has_mmap;
- 	int error = -EACCES;
-@@ -617,7 +617,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 		return -ENODEV;
- 
- 	if (sysfs_is_bin(attr_sd)) {
--		struct bin_attribute *battr = attr_sd->s_attr.bin_attr;
-+		struct bin_attribute *battr = attr_sd->priv;
- 
- 		has_read = battr->read || battr->mmap;
- 		has_write = battr->write || battr->mmap;
-@@ -848,7 +848,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		return -ENOMEM;
- 
- 	sd->s_ns = ns;
--	sd->s_attr.attr = (void *)attr;
-+	sd->priv = (void *)attr;
- 	sysfs_dirent_init_lockdep(sd);
- 
- 	sysfs_addrm_start(&acxt);
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 5f7e2af..81cc858 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -275,7 +275,7 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		inode->i_fop = &sysfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_BIN_ATTR:
--		bin_attr = sd->s_attr.bin_attr;
-+		bin_attr = sd->priv;
- 		inode->i_size = bin_attr->size;
- 		inode->i_fop = &sysfs_bin_operations;
- 		break;
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 0922c53..352fbbb 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -223,7 +223,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
- 	result = -EINVAL;
- 	if (sysfs_type(sd) != SYSFS_KOBJ_LINK)
- 		goto out;
--	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
-+	if (sd->s_symlink.target_sd->priv != targ)
- 		goto out;
- 
- 	result = kernfs_rename_ns(sd, parent_sd, new, new_ns);
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 2abccfd..a6f3fa3 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -17,8 +17,6 @@ struct sysfs_open_dirent;
- 
- /* type-specific structures for sysfs_dirent->s_* union members */
- struct sysfs_elem_dir {
--	struct kobject		*kobj;
--
- 	unsigned long		subdirs;
- 	/* children rbtree starts here and goes through sd->s_rb */
- 	struct rb_root		children;
-@@ -29,10 +27,6 @@ struct sysfs_elem_symlink {
- };
- 
- struct sysfs_elem_attr {
--	union {
--		struct attribute	*attr;
--		struct bin_attribute	*bin_attr;
--	};
- 	struct sysfs_open_dirent *open;
- };
- 
-@@ -74,6 +68,8 @@ struct sysfs_dirent {
- 		struct sysfs_elem_attr		s_attr;
- 	};
- 
-+	void			*priv;
-+
- 	unsigned short		s_flags;
- 	umode_t			s_mode;
- 	unsigned int		s_ino;
-@@ -103,7 +99,7 @@ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
- 
- #define sysfs_dirent_init_lockdep(sd)				\
- do {								\
--	struct attribute *attr = sd->s_attr.attr;		\
-+	struct attribute *attr = sd->priv;			\
- 	struct lock_class_key *key = attr->key;			\
- 	if (!key)						\
- 		key = &attr->skey;				\
-@@ -114,10 +110,11 @@ do {								\
- /* Test for attributes that want to ignore lockdep for read-locking */
- static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
- {
-+	struct attribute *attr = sd->priv;
- 	int type = sysfs_type(sd);
- 
- 	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
--		sd->s_attr.attr->ignore_lockdep;
-+		attr->ignore_lockdep;
+@@ -829,8 +829,8 @@ static struct sysfs_dirent *sysfs_next_descendant_post(struct sysfs_dirent *pos,
+ 	return pos->s_parent;
  }
  
- #else
+-static void __sysfs_remove(struct sysfs_addrm_cxt *acxt,
+-			   struct sysfs_dirent *sd)
++static void __kernfs_remove(struct sysfs_addrm_cxt *acxt,
++			    struct sysfs_dirent *sd)
+ {
+ 	struct sysfs_dirent *pos, *next;
+ 
+@@ -849,22 +849,22 @@ static void __sysfs_remove(struct sysfs_addrm_cxt *acxt,
+ }
+ 
+ /**
+- * sysfs_remove - remove a sysfs_dirent recursively
++ * kernfs_remove - remove a sysfs_dirent recursively
+  * @sd: the sysfs_dirent to remove
+  *
+  * Remove @sd along with all its subdirectories and files.
+  */
+-void sysfs_remove(struct sysfs_dirent *sd)
++void kernfs_remove(struct sysfs_dirent *sd)
+ {
+ 	struct sysfs_addrm_cxt acxt;
+ 
+ 	sysfs_addrm_start(&acxt);
+-	__sysfs_remove(&acxt, sd);
++	__kernfs_remove(&acxt, sd);
+ 	sysfs_addrm_finish(&acxt);
+ }
+ 
+ /**
+- * sysfs_hash_and_remove - find a sysfs_dirent by name and remove it
++ * kernfs_remove_by_name_ns - find a sysfs_dirent by name and remove it
+  * @dir_sd: parent of the target
+  * @name: name of the sysfs_dirent to remove
+  * @ns: namespace tag of the sysfs_dirent to remove
+@@ -872,8 +872,8 @@ void sysfs_remove(struct sysfs_dirent *sd)
+  * Look for the sysfs_dirent with @name and @ns under @dir_sd and remove
+  * it.  Returns 0 on success, -ENOENT if such entry doesn't exist.
+  */
+-int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
+-			  const void *ns)
++int kernfs_remove_by_name_ns(struct sysfs_dirent *dir_sd, const char *name,
++			     const void *ns)
+ {
+ 	struct sysfs_addrm_cxt acxt;
+ 	struct sysfs_dirent *sd;
+@@ -888,7 +888,7 @@ int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
+ 
+ 	sd = sysfs_find_dirent(dir_sd, name, ns);
+ 	if (sd)
+-		__sysfs_remove(&acxt, sd);
++		__kernfs_remove(&acxt, sd);
+ 
+ 	sysfs_addrm_finish(&acxt);
+ 
+@@ -928,7 +928,7 @@ void sysfs_remove_dir(struct kobject *kobj)
+ 
+ 	if (sd) {
+ 		WARN_ON_ONCE(sysfs_type(sd) != SYSFS_DIR);
+-		sysfs_remove(sd);
++		kernfs_remove(sd);
+ 	}
+ }
+ 
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index b94f936..6e2ee22 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -970,7 +970,7 @@ void sysfs_remove_file_ns(struct kobject *kobj, const struct attribute *attr,
+ {
+ 	struct sysfs_dirent *dir_sd = kobj->sd;
+ 
+-	sysfs_hash_and_remove(dir_sd, attr->name, ns);
++	kernfs_remove_by_name_ns(dir_sd, attr->name, ns);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_remove_file_ns);
+ 
+@@ -998,7 +998,7 @@ void sysfs_remove_file_from_group(struct kobject *kobj,
+ 	else
+ 		dir_sd = sysfs_get(kobj->sd);
+ 	if (dir_sd) {
+-		sysfs_hash_and_remove(dir_sd, attr->name, NULL);
++		kernfs_remove_by_name(dir_sd, attr->name);
+ 		sysfs_put(dir_sd);
+ 	}
+ }
+@@ -1026,7 +1026,7 @@ EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
+ void sysfs_remove_bin_file(struct kobject *kobj,
+ 			   const struct bin_attribute *attr)
+ {
+-	sysfs_hash_and_remove(kobj->sd, attr->attr.name, NULL);
++	kernfs_remove_by_name(kobj->sd, attr->attr.name);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
+ 
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 3796afd..01657c5 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -26,7 +26,7 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 
+ 	if (grp->attrs)
+ 		for (attr = grp->attrs; *attr; attr++)
+-			sysfs_hash_and_remove(dir_sd, (*attr)->name, NULL);
++			kernfs_remove_by_name(dir_sd, (*attr)->name);
+ 	if (grp->bin_attrs)
+ 		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
+ 			sysfs_remove_bin_file(kobj, *bin_attr);
+@@ -49,8 +49,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 			 * re-adding (if required) the file.
+ 			 */
+ 			if (update)
+-				sysfs_hash_and_remove(dir_sd, (*attr)->name,
+-						      NULL);
++				kernfs_remove_by_name(dir_sd, (*attr)->name);
+ 			if (grp->is_visible) {
+ 				mode = grp->is_visible(kobj, *attr, i);
+ 				if (!mode)
+@@ -111,7 +110,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 	error = create_files(sd, kobj, grp, update);
+ 	if (error) {
+ 		if (grp->name)
+-			sysfs_remove(sd);
++			kernfs_remove(sd);
+ 	}
+ 	sysfs_put(sd);
+ 	return error;
+@@ -228,7 +227,7 @@ void sysfs_remove_group(struct kobject *kobj,
+ 
+ 	remove_files(sd, kobj, grp);
+ 	if (grp->name)
+-		sysfs_remove(sd);
++		kernfs_remove(sd);
+ 
+ 	sysfs_put(sd);
+ }
+@@ -279,7 +278,7 @@ int sysfs_merge_group(struct kobject *kobj,
+ 		error = sysfs_add_file(dir_sd, *attr, SYSFS_KOBJ_ATTR);
+ 	if (error) {
+ 		while (--i >= 0)
+-			sysfs_hash_and_remove(dir_sd, (*--attr)->name, NULL);
++			kernfs_remove_by_name(dir_sd, (*--attr)->name);
+ 	}
+ 	sysfs_put(dir_sd);
+ 
+@@ -301,7 +300,7 @@ void sysfs_unmerge_group(struct kobject *kobj,
+ 	dir_sd = sysfs_get_dirent(kobj->sd, grp->name);
+ 	if (dir_sd) {
+ 		for (attr = grp->attrs; *attr; ++attr)
+-			sysfs_hash_and_remove(dir_sd, (*attr)->name, NULL);
++			kernfs_remove_by_name(dir_sd, (*attr)->name);
+ 		sysfs_put(dir_sd);
+ 	}
+ }
+@@ -344,7 +343,7 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+ 
+ 	dir_sd = sysfs_get_dirent(kobj->sd, group_name);
+ 	if (dir_sd) {
+-		sysfs_hash_and_remove(dir_sd, link_name, NULL);
++		kernfs_remove_by_name(dir_sd, link_name);
+ 		sysfs_put(dir_sd);
+ 	}
+ }
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index c660363..71583fc 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -153,7 +153,7 @@ void sysfs_delete_link(struct kobject *kobj, struct kobject *targ,
+ 	if (targ->sd && (kobj->sd->s_flags & SYSFS_FLAG_NS))
+ 		ns = targ->sd->s_ns;
+ 	spin_unlock(&sysfs_symlink_target_lock);
+-	sysfs_hash_and_remove(kobj->sd, name, ns);
++	kernfs_remove_by_name_ns(kobj->sd, name, ns);
+ }
+ 
+ /**
+@@ -170,7 +170,7 @@ void sysfs_remove_link(struct kobject *kobj, const char *name)
+ 	else
+ 		parent_sd = kobj->sd;
+ 
+-	sysfs_hash_and_remove(parent_sd, name, NULL);
++	kernfs_remove_by_name(parent_sd, name);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_remove_link);
+ 
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index e116c21..97625b1 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -173,9 +173,6 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+ 		    struct sysfs_dirent *parent_sd);
+ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+ 		  struct sysfs_dirent *parent_sd);
+-void sysfs_remove(struct sysfs_dirent *sd);
+-int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const char *name,
+-			  const void *ns);
+ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
+ 
+ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 254b9e8..83e151a 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -7,6 +7,30 @@
+ #ifndef __LINUX_KERNFS_H
+ #define __LINUX_KERNFS_H
+ 
++#include <linux/kernel.h>
++
+ struct sysfs_dirent;
+ 
++#ifdef CONFIG_SYSFS
++
++void kernfs_remove(struct sysfs_dirent *sd);
++int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
++			     const void *ns);
++
++#else	/* CONFIG_SYSFS */
++
++static inline void kernfs_remove(struct sysfs_dirent *sd) { }
++
++static inline int kernfs_remove_by_name_ns(struct sysfs_dirent *parent,
++					   const char *name, const void *ns)
++{ return -ENOSYS; }
++
++#endif	/* CONFIG_SYSFS */
++
++static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
++					const char *name)
++{
++	return kernfs_remove_by_name_ns(parent, name, NULL);
++}
++
+ #endif	/* __LINUX_KERNFS_H */
 -- 
 1.8.4.2
 
