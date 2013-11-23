@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab3KWWju (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:39:50 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60810 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab3KWWjs (ORCPT
+	id S932218Ab3KWWkJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:40:09 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:45797 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab3KWWkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:39:48 -0500
-Date: Sat, 23 Nov 2013 14:48:18 -0800 (PST)
-Message-Id: <20131123.144818.2246886107340272240.davem@davemloft.net>
-To: ghorbel@pivasoftware.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ou.ghorbel@gmail.com
-Subject: Re: [PATCH] sit: generate icmpv6 error when receiving icmpv4 error
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1385133800-1562-1-git-send-email-ghorbel@pivasoftware.com>
-References: <1385133800-1562-1-git-send-email-ghorbel@pivasoftware.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 23 Nov 2013 14:39:48 -0800 (PST)
+	Sat, 23 Nov 2013 17:40:07 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com
+Subject: [PATCHSET REPOST driver-core-next] kernfs: implement trusted.* xattr support
+Date: Sat, 23 Nov 2013 17:40:00 -0500
+Message-Id: <1385246402-1407-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oussama Ghorbel <ghorbel@pivasoftware.com>
-Date: Fri, 22 Nov 2013 16:23:20 +0100
+Hello,
 
-> Send icmpv6 error with type "destination unreachable" and code
-> "address unreachable" when receiving icmpv4 error and sufficient
-> data bytes are available
-> This patch enhances the compliance of sit tunnel with section 3.4 of
-> rfc 4213
-> 
-> Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
+This is repost of [L], rebased on top of the refreshed patches.
 
-Applied.
+kernfs inherited "security.*" xattr support from sysfs but for it to
+be useable for cgroupfs, it needs to support "trusted.*" too.  This
+patchset adds "trusted.*" xattr support using simple_xattr*().
+
+Note that the existing "security.*" support is gimped in that it
+doesn't include remove/get/list.  This patchset implements all
+operations for "trusted.*" but doesn't change "security.*" support.
+
+David P. Quigley, can you please comment on this?  It doesn't seem
+like adding it would be too difficult.  Why don't we have it yet?  Are
+they unnecessary?
+
+This patchset contains the following two patches.
+
+ 0001-kernfs-update-sysfs_init_inode_attrs.patch
+ 0002-kernfs-implement-trusted.-xattr-support.patch
+
+0001 preps and 0002 implements.
+
+This patchset is on top of
+
+  v3.13-rc1 6ce4eac1f600 ("Linux 3.13-rc1")
++ [1] sysfs: handle duplicate removal attempts in sysfs_remove_group()
++ [2] sysfs: use a separate locking class for open files depending on mmap
++ [3] sysfs: separate out kernfs, take #3
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-xattr
+
+diffstat follows.  Thanks.
+
+ fs/kernfs/dir.c             |   12 +++-
+ fs/kernfs/inode.c           |  123 ++++++++++++++++++++++++++++----------------
+ fs/kernfs/kernfs-internal.h |   13 +++-
+ fs/kernfs/symlink.c         |    3 +
+ 4 files changed, 103 insertions(+), 48 deletions(-)
+
+--
+tejun
+
+[L] https://lkml.kernel.org/g/1383617322-4386-1-git-send-email-tj@kernel.org
+[1] https://lkml.kernel.org/g/20131123183508.GA28162@mtj.dyndns.org
+[2] https://lkml.kernel.org/g/20131123183540.GB28162@mtj.dyndns.org
+[3] https://lkml.kernel.org/g/1385245346-856-1-git-send-email-tj@kernel.org
