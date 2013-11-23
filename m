@@ -1,54 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab3KWN7F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 08:59:05 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:63576 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab3KWN7B (ORCPT
+	id S1755685Ab3KWOgo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 09:36:44 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:58170 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab3KWOgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 08:59:01 -0500
+	Sat, 23 Nov 2013 09:36:43 -0500
+Date: Sat, 23 Nov 2013 06:36:39 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] remove CONFIG_SCHED_HRTICK
+Message-ID: <20131123143639.GA2735@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <528F71F8.4070902@zytor.com>
-References: <1384903939-3371-1-git-send-email-akinobu.mita@gmail.com>
-	<528D4A1A.2050100@zytor.com>
-	<CAC5umyh0Hfx3NgHX11eqskuifhrdYGB8L1nx1u0YUdBGchRTxw@mail.gmail.com>
-	<528E4CBA.8000808@zytor.com>
-	<CAC5umygUgSjUMFECDXAjmSPzpfUZ6=jRhZWhd5hTT2-eO6Oh6Q@mail.gmail.com>
-	<528F71F8.4070902@zytor.com>
-Date: Sat, 23 Nov 2013 22:59:01 +0900
-Message-ID: <CAC5umyiV2F1LoSaHBf6BENpeBSgW_zZDW_8jNOQkDM_zxEpGHA@mail.gmail.com>
-Subject: Re: [PATCH] x86: enable DMA CMA with swiotlb
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/23 H. Peter Anvin <hpa@zytor.com>:
-> On 11/22/2013 04:27 AM, Akinobu Mita wrote:
->>
->> I'm currently working for integrating DMA CMA with intel-iommu which
->> I can test.  Regardless of which dma ops is actually used, I would
->> like to allocate large contiguous memory with dma_alloc_coherent()
->> and tell the base address to the device.
->>
->> We can use mem= or crashkernel= to reserve host memory, but it is
->> complicated and unables to work with real IOMMU.
->>
->
-> If you have a real iotlb, why would you need contiguous memory?
+It's equivalent to CONFIG_HIGH_RES_TIMERS now that all architectures
+use the generic helpers it relies on.
+    
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Because allocating large memory by dma_alloc_coherent() with intel-iommu
-fails.  intel_alloc_coherent() allocates memory by alloc_pages() and
-then maps it by __intel_map_single().
-
-What I'm trying change wit inte-iommu is adding the same scheme done
-by dma_generic_alloc_coherent(), i.e. trying to allocate memory by
-dma_alloc_from_contiguous() and alloc_pages() is used as a fallback.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a671b58..c4d0371 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1655,12 +1655,6 @@ config HZ
+ 	default 500 if HZ_500
+ 	default 1000
+ 
+-config SCHED_HRTICK
+-	def_bool HIGH_RES_TIMERS
+-
+-config SCHED_HRTICK
+-	def_bool HIGH_RES_TIMERS
+-
+ config THUMB2_KERNEL
+ 	bool "Compile the kernel in Thumb-2 mode" if !CPU_THUMBONLY
+ 	depends on (CPU_V7 || CPU_V7M) && !CPU_V6 && !CPU_V6K
+diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
+index 2a202a8..af81343 100644
+--- a/kernel/Kconfig.hz
++++ b/kernel/Kconfig.hz
+@@ -53,6 +53,3 @@ config HZ
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
+ 	default 1000 if HZ_1000
+-
+-config SCHED_HRTICK
+-	def_bool HIGH_RES_TIMERS
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5ac63c9..2ebc66c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -367,7 +367,7 @@ static struct rq *this_rq_lock(void)
+ 	return rq;
+ }
+ 
+-#ifdef CONFIG_SCHED_HRTICK
++#ifdef CONFIG_HIGH_RES_TIMERS
+ /*
+  * Use HR-timers to deliver accurate preemption points.
+  */
+@@ -492,7 +492,7 @@ static void init_rq_hrtick(struct rq *rq)
+ 	hrtimer_init(&rq->hrtick_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	rq->hrtick_timer.function = hrtick;
+ }
+-#else	/* CONFIG_SCHED_HRTICK */
++#else	/* CONFIG_HIGH_RES_TIMERS */
+ static inline void hrtick_clear(struct rq *rq)
+ {
+ }
+@@ -504,7 +504,7 @@ static inline void init_rq_hrtick(struct rq *rq)
+ static inline void init_hrtick(void)
+ {
+ }
+-#endif	/* CONFIG_SCHED_HRTICK */
++#endif	/* CONFIG_HIGH_RES_TIMERS */
+ 
+ /*
+  * resched_task - mark a task 'to be rescheduled now'.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7c70201..feffcd4 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2034,7 +2034,7 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+ 	update_cfs_rq_blocked_load(cfs_rq, 1);
+ 	update_cfs_shares(cfs_rq);
+ 
+-#ifdef CONFIG_SCHED_HRTICK
++#ifdef CONFIG_HIGH_RES_TIMERS
+ 	/*
+ 	 * queued ticks are scheduled to match the slice, so don't bother
+ 	 * validating it and just reschedule.
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b3c5653..21b50c8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -492,7 +492,7 @@ struct rq {
+ 	unsigned long calc_load_update;
+ 	long calc_load_active;
+ 
+-#ifdef CONFIG_SCHED_HRTICK
++#ifdef CONFIG_HIGH_RES_TIMERS
+ #ifdef CONFIG_SMP
+ 	int hrtick_csd_pending;
+ 	struct call_single_data hrtick_csd;
+@@ -1103,7 +1103,7 @@ static inline u64 sched_avg_period(void)
+ 	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
+ }
+ 
+-#ifdef CONFIG_SCHED_HRTICK
++#ifdef CONFIG_HIGH_RES_TIMERS
+ 
+ /*
+  * Use hrtick when:
+@@ -1128,7 +1128,7 @@ static inline int hrtick_enabled(struct rq *rq)
+ 	return 0;
+ }
+ 
+-#endif /* CONFIG_SCHED_HRTICK */
++#endif /* CONFIG_HIGH_RES_TIMERS */
+ 
+ #ifdef CONFIG_SMP
+ extern void sched_avg_update(struct rq *rq);
