@@ -1,150 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab3KWI74 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 03:59:56 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45986 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3KWI7w (ORCPT
+	id S1753957Ab3KWJEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 04:04:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36813 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3KWJEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 03:59:52 -0500
+	Sat, 23 Nov 2013 04:04:32 -0500
+Date: Sat, 23 Nov 2013 10:04:06 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
+ to memory-barriers.txt
+Message-ID: <20131123090406.GL4971@laptop.programming.kicks-ass.net>
+References: <20131121213055.GA6938@linux.vnet.ibm.com>
+ <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131122153908.GQ10022@twins.programming.kicks-ass.net>
+ <20131122181313.GU4138@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
- <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sat, 23 Nov 2013 17:59:30 +0900
-Message-ID: <CAAVeFuKm=AHf4Az+ZZXwWLtft2_zmCqy2Wscw25cWNCbn2T+dQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] net: rfkill: gpio: remove gpio conversion support
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122181313.GU4138@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 9:14 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->
-> All platforms using this driver are now converted to the new
-> descriptor-based GPIO interface.
->
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  net/rfkill/rfkill-gpio.c | 61 ++++++++++--------------------------------------
->  1 file changed, 12 insertions(+), 49 deletions(-)
->
-> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-> index 503432154616..bd2a5b90400c 100644
-> --- a/net/rfkill/rfkill-gpio.c
-> +++ b/net/rfkill/rfkill-gpio.c
-> @@ -68,35 +68,6 @@ static const struct rfkill_ops rfkill_gpio_ops = {
->         .set_block = rfkill_gpio_set_power,
->  };
->
-> -static int rfkill_gpio_convert_to_desc(struct platform_device *pdev,
-> -                                      struct rfkill_gpio_data *rfkill)
-> -{
-> -       struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
-> -       int ret;
-> -
-> -       if (gpio_is_valid(pdata->reset_gpio)) {
-> -               ret = devm_gpio_request_one(&pdev->dev, pdata->reset_gpio,
-> -                                           0, rfkill->reset_name);
-> -               if (ret) {
-> -                       dev_err(&pdev->dev, "failed to get reset gpio.\n");
-> -                       return ret;
-> -               }
-> -               rfkill->reset_gpio = gpio_to_desc(pdata->reset_gpio);
-> -       }
-> -
-> -       if (gpio_is_valid(pdata->shutdown_gpio)) {
-> -               ret = devm_gpio_request_one(&pdev->dev, pdata->shutdown_gpio,
-> -                                           0, rfkill->shutdown_name);
-> -               if (ret) {
-> -                       dev_err(&pdev->dev, "failed to get shutdown gpio.\n");
-> -                       return ret;
-> -               }
-> -               rfkill->shutdown_gpio = gpio_to_desc(pdata->shutdown_gpio);
-> -       }
-> -
-> -       return 0;
-> -}
-> -
->  static int rfkill_gpio_acpi_probe(struct device *dev,
->                                   struct rfkill_gpio_data *rfkill)
->  {
-> @@ -117,6 +88,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
->         struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
->         struct rfkill_gpio_data *rfkill;
->         const char *clk_name = NULL;
-> +       struct gpio_desc *gpio;
->         int ret;
->         int len;
->
-> @@ -150,29 +122,20 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
->
->         rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
->
-> -       if (pdata && (pdata->reset_gpio || pdata->shutdown_gpio)) {
-> -               ret = rfkill_gpio_convert_to_desc(pdev, rfkill);
-> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
-> +       if (!IS_ERR(gpio)) {
-> +               ret = gpiod_direction_output(gpio, 0);
->                 if (ret)
->                         return ret;
-> -       } else {
-> -               struct gpio_desc *gpio;
-> -
-> -               gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
-> -               if (!IS_ERR(gpio)) {
-> -                       ret = gpiod_direction_output(gpio, 0);
-> -                       if (ret)
-> -                               return ret;
-> -                       rfkill->reset_gpio = gpio;
-> -               }
-> +               rfkill->reset_gpio = gpio;
-> +       }
->
-> -               gpio = devm_gpiod_get_index(&pdev->dev,
-> -                                           rfkill->shutdown_name, 1);
-> -               if (!IS_ERR(gpio)) {
-> -                       ret = gpiod_direction_output(gpio, 0);
-> -                       if (ret)
-> -                               return ret;
-> -                       rfkill->shutdown_gpio = gpio;
-> -               }
-> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
-> +       if (!IS_ERR(gpio)) {
-> +               ret = gpiod_direction_output(gpio, 0);
-> +               if (ret)
-> +                       return ret;
-> +               rfkill->shutdown_gpio = gpio;
->         }
->
->         /* Make sure at-least one of the GPIO is defined and that
+On Fri, Nov 22, 2013 at 10:13:13AM -0800, Paul E. McKenney wrote:
+> How about the following?
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> COMPILER BARRIER
+> ----------------
+> 
+> The Linux kernel has an explicit compiler barrier function that prevents the
+> compiler from moving the memory accesses either side of it to the other side:
+> 
+>         barrier();
+> 
+> This is a general barrier -- there are no read-read or write-write variants
+> of barrier().  Howevever, ACCESS_ONCE() can be thought of as a weak form
+> for barrier() that affects only the specific accesses flagged by the
+> ACCESS_ONCE().
+> 
+> The compiler barrier has no direct effect on the CPU, which may then reorder
+> things however it wishes.
+> 
 
-Wouldn't it be possible (and simpler) to move patch 2 of your series
-to first position, and then to merge patch 1 and 3 together in second
-position? It seems to me that you are basically undoing much of the
-work of your first patch here (notably by removing
-rfkill_gpio_convert_to_desc() which ends up having a very short life)
-and that this could be avoided if you defined the platform lookup
-tables first.
+Seems ok, however this also seems like the natural spot to put that
+chunk about how a compiler can mis-transform stuff without either
+barrier or ACCESS_ONC(); that currently seems spread out over the
+document in some notes.
 
-Doing so would avoid prevent you from using gpio_to_desc() which you
-should never ever use anyway. :P
+The biggest of which seems to have ended up in the GUARANTEES chapter.
