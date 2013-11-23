@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab3KWQsy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 11:48:54 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:21668 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753922Ab3KWQsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 11:48:52 -0500
-X-IronPort-AV: E=Sophos;i="4.93,758,1378857600"; 
-   d="asc'?scan'208";a="77523651"
-Message-ID: <1385225327.21937.59.camel@Abyss>
-Subject: Re: [Xen-devel] [PATCH RESEND v2 2/2] xen: enable vnuma for PV guest
-From: Dario Faggioli <dario.faggioli@citrix.com>
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
-        <stefano.stabellini@eu.citrix.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
-        <mingo@redhat.com>, Elena Ufimtseva <ufimtseva@gmail.com>,
-        <hpa@zytor.com>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
-        <ian.campbell@citrix.com>
-Date: Sat, 23 Nov 2013 17:48:47 +0100
-In-Reply-To: <528B7C29.3050103@citrix.com>
-References: <1384811922-14642-1-git-send-email-ufimtseva@gmail.com>
-	 <1384811922-14642-3-git-send-email-ufimtseva@gmail.com>
-	 <528B5160.5010902@citrix.com> <20131119141620.GD5332@phenom.dumpdata.com>
-	 <528B774F.7090902@citrix.com> <20131119144630.GA5780@phenom.dumpdata.com>
-	 <528B7C29.3050103@citrix.com>
-Organization: Citrix Ltd
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-1UGbpH0IFbbenN8AdV26"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	id S1756156Ab3KWRTk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 12:19:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34460 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab3KWRTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 12:19:39 -0500
+Date: Sat, 23 Nov 2013 09:20:10 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <morbidrsa@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: hub: avoid possible division by zero
+Message-ID: <20131123172010.GA8018@kroah.com>
+References: <1385224294-15461-1-git-send-email-morbidrsa@gmail.com>
 MIME-Version: 1.0
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385224294-15461-1-git-send-email-morbidrsa@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-1UGbpH0IFbbenN8AdV26
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, Nov 23, 2013 at 05:31:34PM +0100, Johannes Thumshirn wrote:
+> Avoid possible division by zero in led_work, if hdev->maxchild is 0.
+> 
+> See also:
+> http://buildbot.llvm.linuxfoundation.org/checker/scan-build-latest/report-b65939.html#EndPath
+> 
+> Signed-off-by: Johannes Thumshirn <morbidrsa@gmail.com>
+> ---
+>  drivers/usb/core/hub.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index a7c04e2..8c7aa4e 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -453,7 +453,8 @@ static void led_work (struct work_struct *work)
+>  	unsigned		changed = 0;
+>  	int			cursor = -1;
+>  
+> -	if (hdev->state != USB_STATE_CONFIGURED || hub->quiescing)
+> +	if (hdev->state != USB_STATE_CONFIGURED || hub->quiescing
+> +		|| hdev->maxchild == 0)
 
-On mar, 2013-11-19 at 14:56 +0000, David Vrabel wrote:
-> The relevant bits in dummy_numa_init are in the error path of
-> xen_numa_init().
->=20
-> I do think this approach (using the provided API to setup the single
-> (dummy) node), is preferable to calling dummy_numa_init().
->=20
-> If I thought the hypervisor ABI was finalized, I'd be happy with this
-> series as-is -- the remaining issues are superficial.
->=20
-So, David, in this regard, what do you think about these (and the
-following messages in the thread?
+And how can maxchild ever be equal to 0?
 
-http://bugs.xenproject.org/xen/mid/%3C528B7D350200007800104840@nat28.tlf.no=
-vell.com%3E
-http://bugs.xenproject.org/xen/mid/%3C1384871712.19880.90.camel@Abyss%3E
-http://bugs.xenproject.org/xen/mid/%3C528B885702000078001048CF@nat28.tlf.no=
-vell.com%3E
-http://bugs.xenproject.org/xen/mid/%3C1384875772.15360.6.camel@Solace%3E
-http://bugs.xenproject.org/xen/mid/%3C528B97C502000078001049AE@nat28.tlf.no=
-vell.com%3E
+Look at where it is assigned (it comes from bNbrPorts in the
+descriptor), in hub_configure() and if it is set to 0, the creation of
+the structure fails and then this code will never run, right?
 
-I think Jan has a point about how we are right now retrieving and
-treating the number of vnodes...
+So I don't think this is needed, and your checker needs to be fixed.
 
-Thanks and Regards,
-Dario
+sorry,
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
------------------------------------------------------------------
-Dario Faggioli, Ph.D, http://about.me/dario.faggioli
-Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
-
-
---=-1UGbpH0IFbbenN8AdV26
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iEYEABECAAYFAlKQ3G8ACgkQk4XaBE3IOsQ8wQCePWy0EzU0NerSqcuFZDEFS7i8
-vQoAn0oISpLQkXcxrEzk9Q/xFI45BEWk
-=f6MP
------END PGP SIGNATURE-----
-
---=-1UGbpH0IFbbenN8AdV26--
+greg k-h
