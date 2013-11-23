@@ -1,29 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab3KWCD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 21:03:56 -0500
-Received: from zm02.ooshare.com ([46.255.201.38]:56986 "EHLO zm02.ooshare.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755923Ab3KWCDx convert rfc822-to-8bit (ORCPT
+	id S1756057Ab3KWCKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 21:10:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34641 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936Ab3KWCKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 21:03:53 -0500
-Date: Sat, 23 Nov 2013 02:39:45 +0100
-X-Mailer: The Bat! (v9.49.74)
-To: <info@gorod51.ru>, <margjohn@tsn.cc>, <chichmarin@narod.ru>,
-        <bill@billsweet.com>, <m.casadei@prosit.ooshare.com>,
-        <linux-kernel@vger.kernel.org>
-From: "netnet61" <cassandra@stade.fr>
-Message-ID: <8716048.20131123030348@stade.fr>
-Subject: =?iso-8859-5?Q?=D2=DE=E1=E1=E2=D0=DD=DE=D2=D8=E2=D5_=D7?=
-	=?iso-8859-5?Q?=E0=D5=DD=D8=D5_=D1=D5=D7_=E2=E0=E3=D4=DD?=
-	=?iso-8859-5?Q?=DE=E1=E2=D5=D9?=
-Reply-To: "netnet61" <cassandra@stade.fr>
+	Fri, 22 Nov 2013 21:10:45 -0500
+Message-ID: <52900E95.3050106@infradead.org>
+Date: Fri, 22 Nov 2013 18:10:29 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-5";
-Content-Transfer-Encoding: 8BIT
+To: Qiang Huang <h.huangqiang@huawei.com>, cl@linux-foundation.org,
+        penberg@kernel.org, mpm@selenic.com
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slab: remove the redundant declaration of kmalloc
+References: <528DA0C0.8010505@huawei.com> <528E5AEF.6020007@infradead.org> <528EAE3E.5080604@huawei.com>
+In-Reply-To: <528EAE3E.5080604@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-восстановите зрение без операционным способом http://glazmen.ru/
+On 11/21/13 17:07, Qiang Huang wrote:
+> On 2013/11/22 3:11, Randy Dunlap wrote:
+>> On 11/20/13 21:57, Qiang Huang wrote:
+>>>
+>>> Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+>>
+>> or use my patch from 2013-09-17:
+>> http://marc.info/?l=linux-mm&m=137944291611467&w=2
+>>
+>> Would be nice to one of these merged...
+> 
+> Yes, sorry for not notice this, merge your patch should be property :)
+> But why it's still not be merged?
+> 
+> Ping...
+
+I don't know.  I'll resend it now.
+
+
+Thanks.
+
+
+-- 
+~Randy
