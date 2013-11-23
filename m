@@ -1,38 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab3KWGfN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 01:35:13 -0500
-Received: from mout.gmx.net ([212.227.15.18]:49239 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab3KWGfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 01:35:10 -0500
-Message-ID: <1385188503.5296.17.camel@marge.simpson.net>
+	id S1754166Ab3KWGiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 01:38:09 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:17407 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab3KWGiG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 01:38:06 -0500
+Message-ID: <1385188681.5402.25.camel@buesod1.americas.hpqcorp.net>
 Subject: Re: [PATCH 0/5] futex: Wakeup optimizations
-From: Mike Galbraith <efault@gmx.de>
+From: Davidlohr Bueso <davidlohr@hp.com>
 To: Darren Hart <dvhart@linux.intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Sat, 23 Nov 2013 07:35:03 +0100
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, efault@gmx.de, jeffm@suse.com,
+        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
+        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
+Date: Fri, 22 Nov 2013 22:38:01 -0800
 In-Reply-To: <1385186145.29354.175.camel@dvhart-mobl4.amr.corp.intel.com>
 References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
 	 <1385186145.29354.175.camel@dvhart-mobl4.amr.corp.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-X-Provags-ID: V03:K0:EGZ5H1ZD/LsFWxWh7Bwzy8kOgwZ0ZDRwejjlIs3xMHokm+Ex1Fi
- sksHcz8/lSZ8p/wq1PUG6HcUxpgKa4w6pWmTGkq1sJZWTYkggJt10Wpm1GyZ0WdAamg5rg5
- y0WnNyRrJWToAfANU/TjXhc9Hc3n55W4+A2PHRx78pIKjkJhKGjEqb9423t6PFv80pEFmoo
- BjycLCw8dG/fR7MjngXKg==
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-22 at 21:55 -0800, Darren Hart wrote: 
-> On Fri, 2013-11-22 at 16:56 -0800, Davidlohr Bueso wrote:
+Hi Darren,
 
+On Fri, 2013-11-22 at 21:55 -0800, Darren Hart wrote:
+> On Fri, 2013-11-22 at 16:56 -0800, Davidlohr Bueso wrote:
+> > We have been dealing with a customer database workload on large
+> > 12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
+> > of contention on some of the locks that serialize internal futex 
+> > data structures. This workload specially suffers in the wakeup 
+> > paths, where waiting on the corresponding hb->lock can account for 
+> > up to ~60% of the time. The result of such calls can mostly be 
+> > classified as (i) nothing to wake up and (ii) wakeup large amount 
+> > of tasks.
+> 
+> With as many cores as you have, have you done any analysis of how
+> effective the hashing algorithm is, and would more buckets relieve someHi 
+> of the contention.... ah, I see below that you did. Nice work.
+> 
+> > Before these patches are applied, we can see this pathological behavior:
+> > 
+> >  37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+> >             --- _raw_spin_lock
+> >              |
+> >              |--97.14%-- futex_wake
+> >              |          do_futex
+> >              |          sys_futex
+> >              |          system_call_fastpath
+> >              |          |
+> >              |          |--99.70%-- 0x7f383fbdea1f
+> >              |          |           yyy
+> > 
+> >  43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
+> >             --- _raw_spin_lock
+> >              |
+> >              |--53.74%-- futex_wake
+> >              |          do_futex
+> >              |          sys_futex
+> >              |          system_call_fastpath
+> >              |          |
+> >              |          |--99.40%-- 0x7fe7d44a4c05
+> >              |          |           zzz
+> >              |--45.90%-- futex_wait_setup
+> >              |          futex_wait
+> >              |          do_futex
+> >              |          sys_futex
+> >              |          system_call_fastpath
+> >              |          0x7fe7ba315789
+> >              |          syscall
+> > 
+> 
+> Sorry to be dense, can you spell out how 60% falls out of these numbers?
+
+By adding the respective percentages of futex_wake()*_raw_spin_lock
+calls.
+
+> 
+> > 
+> > With these patches, contention is practically non existent:
+> > 
+> >  0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
+> >                --- _raw_spin_lock
+> >                 |
+> >                 |--76.06%-- futex_wait_setup
+> >                 |          futex_wait
+> >                 |          do_futex
+> >                 |          sys_futex
+> >                 |          system_call_fastpath
+> >                 |          |
+> >                 |          |--99.90%-- 0x7f3165e63789
+> >                 |          |          syscall|
+> >                            ...
+> >                 |--6.27%-- futex_wake
+> >                 |          do_futex
+> >                 |          sys_futex
+> >                 |          system_call_fastpath
+> >                 |          |
+> >                 |          |--54.56%-- 0x7f317fff2c05
+> >                 ...
+> > 
+> > Patches 1 & 2 are cleanups and micro optimizations.
+> > 
+> > Patch 3 addresses the well known issue of the global hash table.
+> > By creating a larger and NUMA aware table, we can reduce the false
+> > sharing and collisions, thus reducing the chance of different futexes 
+> > using hb->lock.
+> > 
+> > Patch 4 reduces contention on the corresponding hb->lock by not trying to
+> > acquire it if there are no blocked tasks in the waitqueue.
+> > This particularly deals with point (i) above, where we see that it is not
+> > uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
+> > tasks were woken.
+> 
+> Can you determine how much benefit comes from 3 and how much additional
+> benefit comes from 4?
+
+While I don't have specific per-patch data, there are indications that
+the workload mostly deals with a handful of futexes. So its pretty safe
+to assume that patch 4 is the one with the most benefit for _this_
+particular workload.
+
+> 
+> > 
+> > Patch 5 resurrects a two year old idea from Peter Zijlstra to delay
+> > the waking of the blocked tasks to be done without holding the hb->lock:
+> > https://lkml.org/lkml/2011/9/14/118
+> > 
+> > This is useful for locking primitives that can effect multiple wakeups
+> > per operation and want to avoid the futex's internal spinlock contention by
+> > delaying the wakeups until we've released the hb->lock.
+> > This particularly deals with point (ii) above, where we can observe that
+> > in occasions the wake calls end up waking 125 to 200 waiters in what we believe 
+> > are RW locks in the application.
+> > 
 > > This patchset has also been tested on smaller systems for a variety of
 > > benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
 > > hb locks programs. So far, no functional or performance regressions have been seen.
@@ -41,14 +147,10 @@ On Fri, 2013-11-22 at 21:55 -0800, Darren Hart wrote:
 > 
 > Excellent. Would you be able to contribute any of these (C only please)
 > to the stress test group?
+> 
 
-FWIW, I plugged this series into an rt kernel (extra raciness) and beat
-it up a bit on a 64 core box too.  Nothing fell out, nor did futextest
-numbers change outside variance (poor box has 8 whole gig ram, single
-numa node, so kinda crippled/wimpy, and not good box for benchmarking).
+Sure.
 
-What concerned me most about the series was 5/5.. looks like a great
-idea to me, but the original thread did not have a happy ending.
-
--Mike
+Thanks,
+Davidlohr
 
