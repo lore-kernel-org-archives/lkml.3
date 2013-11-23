@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab3KWWWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:22:37 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:52553 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3KWWWd (ORCPT
+	id S932150Ab3KWWWs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:22:48 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:33660 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756389Ab3KWWWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:33 -0500
+	Sat, 23 Nov 2013 17:22:38 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/41] sysfs: drop kobj_ns_type handling, take #2
-Date: Sat, 23 Nov 2013 17:21:46 -0500
-Message-Id: <1385245346-856-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 06/41] sysfs, kernfs: introduce kernfs_rename[_ns]()
+Date: Sat, 23 Nov 2013 17:21:51 -0500
+Message-Id: <1385245346-856-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,484 +21,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way namespace tags are implemented in sysfs is more complicated
-than necessary.  As each tag is a pointer value and required to be
-non-NULL under a namespace enabled parent, there's no need to record
-separately what type each tag is.  If multiple namespace types are
-needed, which currently aren't, we can simply compare the tag to a set
-of allowed tags in the superblock assuming that the tags, being
-pointers, won't have the same value across multiple types.
+Introduce kernfs rename interface, krenfs_rename[_ns]().
 
-This patch rips out kobj_ns_type handling from sysfs.  sysfs now has
-an enable switch to turn on namespace under a node.  If enabled, all
-children are required to have non-NULL namespace tags and filtered
-against the super_block's tag.
+This is just rename of sysfs_rename().  No functional changes.
+Function comment is added to kernfs_rename_ns() and @new_parent_sd is
+renamed to @new_parent for consistency with other kernfs interfaces.
 
-kobject namespace determination is now performed in
-lib/kobject.c::create_dir() making sysfs_read_ns_type() unnecessary.
-The sanity checks are also moved.  create_dir() is restructured to
-ease such addition.  This removes most kobject namespace knowledge
-from sysfs proper which will enable proper separation and layering of
-sysfs.
-
-This is the second try.  The first one was cb26a311578e ("sysfs: drop
-kobj_ns_type handling") which tried to automatically enable namespace
-if there are children with non-NULL namespace tags; however, it was
-broken for symlinks as they should inherit the target's tag iff
-namespace is enabled in the parent.  This led to namespace filtering
-enabled incorrectly for wireless net class devices through phy80211
-symlinks and thus network configuration failure.  a1212d278c05
-("Revert "sysfs: drop kobj_ns_type handling"") reverted the commit.
-
-This shouldn't introduce any behavior changes, for real.
+v2: Dummy implementation for !CONFIG_SYSFS updated to return -ENOSYS.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/sysfs/dir.c        | 92 ++++++++++++++++++++-------------------------------
- fs/sysfs/mount.c      | 24 ++++----------
- fs/sysfs/symlink.c    | 26 ++++-----------
- fs/sysfs/sysfs.h      | 25 ++++----------
- include/linux/sysfs.h |  2 ++
- lib/kobject.c         | 27 ++++++++++++---
- 6 files changed, 79 insertions(+), 117 deletions(-)
+ fs/sysfs/dir.c         | 23 +++++++++++++++--------
+ fs/sysfs/symlink.c     |  2 +-
+ fs/sysfs/sysfs.h       |  3 ---
+ include/linux/kernfs.h |  7 +++++++
+ 4 files changed, 23 insertions(+), 12 deletions(-)
 
 diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 5e73d66..b3cf61d 100644
+index edbde4e..5ba8966 100644
 --- a/fs/sysfs/dir.c
 +++ b/fs/sysfs/dir.c
-@@ -279,7 +279,6 @@ static int sysfs_dentry_delete(const struct dentry *dentry)
- static int sysfs_dentry_revalidate(struct dentry *dentry, unsigned int flags)
- {
- 	struct sysfs_dirent *sd;
--	int type;
- 
- 	if (flags & LOOKUP_RCU)
- 		return -ECHILD;
-@@ -300,13 +299,9 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, unsigned int flags)
- 		goto out_bad;
- 
- 	/* The sysfs dirent has been moved to a different namespace */
--	type = KOBJ_NS_TYPE_NONE;
--	if (sd->s_parent) {
--		type = sysfs_ns_type(sd->s_parent);
--		if (type != KOBJ_NS_TYPE_NONE &&
--				sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns)
--			goto out_bad;
--	}
-+	if (sd->s_parent && (sd->s_parent->s_flags & SYSFS_FLAG_NS) &&
-+	    sysfs_info(dentry->d_sb)->ns != sd->s_ns)
-+		goto out_bad;
- 
- 	mutex_unlock(&sysfs_mutex);
- out_valid:
-@@ -423,13 +418,14 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
- int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
- 		    struct sysfs_dirent *parent_sd)
- {
-+	bool has_ns = parent_sd->s_flags & SYSFS_FLAG_NS;
- 	struct sysfs_inode_attrs *ps_iattr;
- 	int ret;
- 
--	if (!!sysfs_ns_type(parent_sd) != !!sd->s_ns) {
-+	if (has_ns != (bool)sd->s_ns) {
- 		WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
--			sysfs_ns_type(parent_sd) ? "required" : "invalid",
--			parent_sd->s_name, sd->s_name);
-+		     has_ns ? "required" : "invalid",
-+		     parent_sd->s_name, sd->s_name);
- 		return -EINVAL;
+@@ -932,20 +932,27 @@ void sysfs_remove_dir(struct kobject *kobj)
  	}
+ }
  
-@@ -610,12 +606,13 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 				       const void *ns)
+-int sysfs_rename(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent_sd,
+-		 const char *new_name, const void *new_ns)
++/**
++ * kernfs_rename_ns - move and rename a kernfs_node
++ * @sd: target node
++ * @new_parent: new parent to put @sd under
++ * @new_name: new name
++ * @new_ns: new namespace tag
++ */
++int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
++		     const char *new_name, const void *new_ns)
  {
- 	struct rb_node *node = parent_sd->s_dir.children.rb_node;
-+	bool has_ns = parent_sd->s_flags & SYSFS_FLAG_NS;
- 	unsigned int hash;
+ 	int error;
  
--	if (!!sysfs_ns_type(parent_sd) != !!ns) {
-+	if (has_ns != (bool)ns) {
- 		WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
--			sysfs_ns_type(parent_sd) ? "required" : "invalid",
--			parent_sd->s_name, name);
-+		     has_ns ? "required" : "invalid",
-+		     parent_sd->s_name, name);
- 		return NULL;
- 	}
+ 	mutex_lock(&sysfs_mutex);
  
-@@ -667,7 +664,6 @@ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
- EXPORT_SYMBOL_GPL(sysfs_get_dirent_ns);
+ 	error = 0;
+-	if ((sd->s_parent == new_parent_sd) && (sd->s_ns == new_ns) &&
++	if ((sd->s_parent == new_parent) && (sd->s_ns == new_ns) &&
+ 	    (strcmp(sd->s_name, new_name) == 0))
+ 		goto out;	/* nothing to rename */
  
- static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
--		      enum kobj_ns_type type,
- 		      const char *name, const void *ns,
- 		      struct sysfs_dirent **p_sd)
+ 	error = -EEXIST;
+-	if (sysfs_find_dirent(new_parent_sd, new_name, new_ns))
++	if (sysfs_find_dirent(new_parent, new_name, new_ns))
+ 		goto out;
+ 
+ 	/* rename sysfs_dirent */
+@@ -963,11 +970,11 @@ int sysfs_rename(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent_sd,
+ 	 * Move to the appropriate place in the appropriate directories rbtree.
+ 	 */
+ 	sysfs_unlink_sibling(sd);
+-	sysfs_get(new_parent_sd);
++	sysfs_get(new_parent);
+ 	sysfs_put(sd->s_parent);
+ 	sd->s_ns = new_ns;
+ 	sd->s_hash = sysfs_name_hash(sd->s_name, sd->s_ns);
+-	sd->s_parent = new_parent_sd;
++	sd->s_parent = new_parent;
+ 	sysfs_link_sibling(sd);
+ 
+ 	error = 0;
+@@ -981,7 +988,7 @@ int sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
  {
-@@ -681,7 +677,6 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
- 	if (!sd)
- 		return -ENOMEM;
+ 	struct sysfs_dirent *parent_sd = kobj->sd->s_parent;
  
--	sd->s_flags |= (type << SYSFS_NS_TYPE_SHIFT);
- 	sd->s_ns = ns;
- 	sd->s_dir.kobj = kobj;
+-	return sysfs_rename(kobj->sd, parent_sd, new_name, new_ns);
++	return kernfs_rename_ns(kobj->sd, parent_sd, new_name, new_ns);
+ }
  
-@@ -701,33 +696,7 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
- int sysfs_create_subdir(struct kobject *kobj, const char *name,
- 			struct sysfs_dirent **p_sd)
- {
--	return create_dir(kobj, kobj->sd,
--			  KOBJ_NS_TYPE_NONE, name, NULL, p_sd);
--}
--
--/**
-- *	sysfs_read_ns_type: return associated ns_type
-- *	@kobj: the kobject being queried
-- *
-- *	Each kobject can be tagged with exactly one namespace type
-- *	(i.e. network or user).  Return the ns_type associated with
-- *	this object if any
-- */
--static enum kobj_ns_type sysfs_read_ns_type(struct kobject *kobj)
--{
--	const struct kobj_ns_type_operations *ops;
--	enum kobj_ns_type type;
--
--	ops = kobj_child_ns_ops(kobj);
--	if (!ops)
--		return KOBJ_NS_TYPE_NONE;
--
--	type = ops->type;
--	BUG_ON(type <= KOBJ_NS_TYPE_NONE);
--	BUG_ON(type >= KOBJ_NS_TYPES);
--	BUG_ON(!kobj_ns_type_registered(type));
--
--	return type;
-+	return create_dir(kobj, kobj->sd, name, NULL, p_sd);
+ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+@@ -994,7 +1001,7 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+ 	new_parent_sd = new_parent_kobj && new_parent_kobj->sd ?
+ 		new_parent_kobj->sd : &sysfs_root;
+ 
+-	return sysfs_rename(sd, new_parent_sd, sd->s_name, new_ns);
++	return kernfs_rename_ns(sd, new_parent_sd, sd->s_name, new_ns);
  }
  
  /**
-@@ -737,7 +706,6 @@ static enum kobj_ns_type sysfs_read_ns_type(struct kobject *kobj)
-  */
- int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- {
--	enum kobj_ns_type type;
- 	struct sysfs_dirent *parent_sd, *sd;
- 	int error = 0;
- 
-@@ -751,9 +719,7 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- 	if (!parent_sd)
- 		return -ENOENT;
- 
--	type = sysfs_read_ns_type(kobj);
--
--	error = create_dir(kobj, parent_sd, type, kobject_name(kobj), ns, &sd);
-+	error = create_dir(kobj, parent_sd, kobject_name(kobj), ns, &sd);
- 	if (!error)
- 		kobj->sd = sd;
- 	return error;
-@@ -767,13 +733,12 @@ static struct dentry *sysfs_lookup(struct inode *dir, struct dentry *dentry,
- 	struct sysfs_dirent *parent_sd = parent->d_fsdata;
- 	struct sysfs_dirent *sd;
- 	struct inode *inode;
--	enum kobj_ns_type type;
--	const void *ns;
-+	const void *ns = NULL;
- 
- 	mutex_lock(&sysfs_mutex);
- 
--	type = sysfs_ns_type(parent_sd);
--	ns = sysfs_info(dir->i_sb)->ns[type];
-+	if (parent_sd->s_flags & SYSFS_FLAG_NS)
-+		ns = sysfs_info(dir->i_sb)->ns;
- 
- 	sd = sysfs_find_dirent(parent_sd, dentry->d_name.name, ns);
- 
-@@ -1029,6 +994,21 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
- 	return sysfs_rename(sd, new_parent_sd, sd->s_name, new_ns);
- }
- 
-+/**
-+ * sysfs_enable_ns - enable namespace under a directory
-+ * @sd: directory of interest, should be empty
-+ *
-+ * This is to be called right after @sd is created to enable namespace
-+ * under it.  All children of @sd must have non-NULL namespace tags and
-+ * only the ones which match the super_block's tag will be visible.
-+ */
-+void sysfs_enable_ns(struct sysfs_dirent *sd)
-+{
-+	WARN_ON_ONCE(sysfs_type(sd) != SYSFS_DIR);
-+	WARN_ON_ONCE(!RB_EMPTY_ROOT(&sd->s_dir.children));
-+	sd->s_flags |= SYSFS_FLAG_NS;
-+}
-+
- /* Relationship between s_mode and the DT_xxx types */
- static inline unsigned char dt_type(struct sysfs_dirent *sd)
- {
-@@ -1096,15 +1076,15 @@ static int sysfs_readdir(struct file *file, struct dir_context *ctx)
- 	struct dentry *dentry = file->f_path.dentry;
- 	struct sysfs_dirent *parent_sd = dentry->d_fsdata;
- 	struct sysfs_dirent *pos = file->private_data;
--	enum kobj_ns_type type;
--	const void *ns;
--
--	type = sysfs_ns_type(parent_sd);
--	ns = sysfs_info(dentry->d_sb)->ns[type];
-+	const void *ns = NULL;
- 
- 	if (!dir_emit_dots(file, ctx))
- 		return 0;
- 	mutex_lock(&sysfs_mutex);
-+
-+	if (parent_sd->s_flags & SYSFS_FLAG_NS)
-+		ns = sysfs_info(dentry->d_sb)->ns;
-+
- 	for (pos = sysfs_dir_pos(ns, parent_sd, ctx->pos, pos);
- 	     pos;
- 	     pos = sysfs_dir_next_pos(ns, parent_sd, ctx->pos, pos)) {
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 834ec2c..8c24bce 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -36,7 +36,7 @@ static const struct super_operations sysfs_ops = {
- struct sysfs_dirent sysfs_root = {
- 	.s_name		= "",
- 	.s_count	= ATOMIC_INIT(1),
--	.s_flags	= SYSFS_DIR | (KOBJ_NS_TYPE_NONE << SYSFS_NS_TYPE_SHIFT),
-+	.s_flags	= SYSFS_DIR,
- 	.s_mode		= S_IFDIR | S_IRUGO | S_IXUGO,
- 	.s_ino		= 1,
- };
-@@ -77,14 +77,8 @@ static int sysfs_test_super(struct super_block *sb, void *data)
- {
- 	struct sysfs_super_info *sb_info = sysfs_info(sb);
- 	struct sysfs_super_info *info = data;
--	enum kobj_ns_type type;
--	int found = 1;
- 
--	for (type = KOBJ_NS_TYPE_NONE; type < KOBJ_NS_TYPES; type++) {
--		if (sb_info->ns[type] != info->ns[type])
--			found = 0;
--	}
--	return found;
-+	return sb_info->ns == info->ns;
- }
- 
- static int sysfs_set_super(struct super_block *sb, void *data)
-@@ -98,9 +92,7 @@ static int sysfs_set_super(struct super_block *sb, void *data)
- 
- static void free_sysfs_super_info(struct sysfs_super_info *info)
- {
--	int type;
--	for (type = KOBJ_NS_TYPE_NONE; type < KOBJ_NS_TYPES; type++)
--		kobj_ns_drop(type, info->ns[type]);
-+	kobj_ns_drop(KOBJ_NS_TYPE_NET, info->ns);
- 	kfree(info);
- }
- 
-@@ -108,7 +100,6 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
- 	struct sysfs_super_info *info;
--	enum kobj_ns_type type;
- 	struct super_block *sb;
- 	int error;
- 
-@@ -116,18 +107,15 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
- 			return ERR_PTR(-EPERM);
- 
--		for (type = KOBJ_NS_TYPE_NONE; type < KOBJ_NS_TYPES; type++) {
--			if (!kobj_ns_current_may_mount(type))
--				return ERR_PTR(-EPERM);
--		}
-+		if (!kobj_ns_current_may_mount(KOBJ_NS_TYPE_NET))
-+			return ERR_PTR(-EPERM);
- 	}
- 
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
- 	if (!info)
- 		return ERR_PTR(-ENOMEM);
- 
--	for (type = KOBJ_NS_TYPE_NONE; type < KOBJ_NS_TYPES; type++)
--		info->ns[type] = kobj_ns_grab_current(type);
-+	info->ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
- 
- 	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
- 	if (IS_ERR(sb) || sb->s_fs_info != info)
 diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 3ae3f1b..c660363 100644
+index 41138e9..0922c53 100644
 --- a/fs/sysfs/symlink.c
 +++ b/fs/sysfs/symlink.c
-@@ -28,7 +28,6 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
- 	struct sysfs_dirent *target_sd = NULL;
- 	struct sysfs_dirent *sd = NULL;
- 	struct sysfs_addrm_cxt acxt;
--	enum kobj_ns_type ns_type;
- 	int error;
+@@ -226,7 +226,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
+ 	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
+ 		goto out;
  
- 	BUG_ON(!name || !parent_sd);
-@@ -52,29 +51,16 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
- 	if (!sd)
- 		goto out_put;
+-	result = sysfs_rename(sd, parent_sd, new, new_ns);
++	result = kernfs_rename_ns(sd, parent_sd, new, new_ns);
  
--	ns_type = sysfs_ns_type(parent_sd);
--	if (ns_type)
-+	if (parent_sd->s_flags & SYSFS_FLAG_NS)
- 		sd->s_ns = target_sd->s_ns;
- 	sd->s_symlink.target_sd = target_sd;
- 	target_sd = NULL;	/* reference is now owned by the symlink */
- 
- 	sysfs_addrm_start(&acxt);
--	/* Symlinks must be between directories with the same ns_type */
--	if (!ns_type ||
--	    (ns_type == sysfs_ns_type(sd->s_symlink.target_sd->s_parent))) {
--		if (warn)
--			error = sysfs_add_one(&acxt, sd, parent_sd);
--		else
--			error = __sysfs_add_one(&acxt, sd, parent_sd);
--	} else {
--		error = -EINVAL;
--		WARN(1, KERN_WARNING
--			"sysfs: symlink across ns_types %s/%s -> %s/%s\n",
--			parent_sd->s_name,
--			sd->s_name,
--			sd->s_symlink.target_sd->s_parent->s_name,
--			sd->s_symlink.target_sd->s_name);
--	}
-+	if (warn)
-+		error = sysfs_add_one(&acxt, sd, parent_sd);
-+	else
-+		error = __sysfs_add_one(&acxt, sd, parent_sd);
- 	sysfs_addrm_finish(&acxt);
- 
- 	if (error)
-@@ -164,7 +150,7 @@ void sysfs_delete_link(struct kobject *kobj, struct kobject *targ,
- 	 * sysfs_remove_dir() for details.
- 	 */
- 	spin_lock(&sysfs_symlink_target_lock);
--	if (targ->sd && sysfs_ns_type(kobj->sd))
-+	if (targ->sd && (kobj->sd->s_flags & SYSFS_FLAG_NS))
- 		ns = targ->sd->s_ns;
- 	spin_unlock(&sysfs_symlink_target_lock);
- 	sysfs_hash_and_remove(kobj->sd, name, ns);
+ out:
+ 	sysfs_put(sd);
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 0af09fb..e116c21 100644
+index 97625b1..8b3fc21 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -90,11 +90,8 @@ struct sysfs_dirent {
- #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
- #define SYSFS_ACTIVE_REF		(SYSFS_KOBJ_ATTR | SYSFS_KOBJ_BIN_ATTR)
+@@ -185,9 +185,6 @@ void release_sysfs_dirent(struct sysfs_dirent *sd);
+ int sysfs_create_subdir(struct kobject *kobj, const char *name,
+ 			struct sysfs_dirent **p_sd);
  
--/* identify any namespace tag on sysfs_dirents */
--#define SYSFS_NS_TYPE_MASK		0xf00
--#define SYSFS_NS_TYPE_SHIFT		8
+-int sysfs_rename(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent_sd,
+-		 const char *new_name, const void *new_ns);
 -
--#define SYSFS_FLAG_MASK			~(SYSFS_NS_TYPE_MASK|SYSFS_TYPE_MASK)
-+#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
-+#define SYSFS_FLAG_NS			0x01000
- #define SYSFS_FLAG_REMOVED		0x02000
- 
- static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
-@@ -102,15 +99,6 @@ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
- 	return sd->s_flags & SYSFS_TYPE_MASK;
- }
- 
--/*
-- * Return any namespace tags on this dirent.
-- * enum kobj_ns_type is defined in linux/kobject.h
-- */
--static inline enum kobj_ns_type sysfs_ns_type(struct sysfs_dirent *sd)
--{
--	return (sd->s_flags & SYSFS_NS_TYPE_MASK) >> SYSFS_NS_TYPE_SHIFT;
--}
--
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- #define sysfs_dirent_init_lockdep(sd)				\
-@@ -155,12 +143,13 @@ struct sysfs_addrm_cxt {
-  */
- 
- /*
-- * Each sb is associated with a set of namespace tags (i.e.
-- * the network namespace of the task which mounted this sysfs
-- * instance).
-+ * Each sb is associated with one namespace tag, currently the network
-+ * namespace of the task which mounted this sysfs instance.  If multiple
-+ * tags become necessary, make the following an array and compare
-+ * sysfs_dirent tag against every entry.
-  */
- struct sysfs_super_info {
--	void *ns[KOBJ_NS_TYPES];
-+	void *ns;
- };
- #define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
- extern struct sysfs_dirent sysfs_root;
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 6695040..6c85be6 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -220,6 +220,8 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
- void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
- 			const char *name);
- 
-+void sysfs_enable_ns(struct sysfs_dirent *sd);
-+
- int __must_check sysfs_create_group(struct kobject *kobj,
- 				    const struct attribute_group *grp);
- int __must_check sysfs_create_groups(struct kobject *kobj,
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 5b4b888..16e9335 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -65,13 +65,17 @@ static int populate_dir(struct kobject *kobj)
- 
- static int create_dir(struct kobject *kobj)
+ static inline struct sysfs_dirent *__sysfs_get(struct sysfs_dirent *sd)
  {
-+	const struct kobj_ns_type_operations *ops;
- 	int error;
+ 	if (sd) {
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index fe6290d..803d960 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -20,6 +20,8 @@ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ void kernfs_remove(struct sysfs_dirent *sd);
+ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
+ 			     const void *ns);
++int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
++		     const char *new_name, const void *new_ns);
  
- 	error = sysfs_create_dir_ns(kobj, kobject_namespace(kobj));
--	if (!error) {
--		error = populate_dir(kobj);
--		if (error)
--			sysfs_remove_dir(kobj);
-+	if (error)
-+		return error;
+ #else	/* CONFIG_SYSFS */
+ 
+@@ -34,6 +36,11 @@ static inline int kernfs_remove_by_name_ns(struct sysfs_dirent *parent,
+ 					   const char *name, const void *ns)
+ { return -ENOSYS; }
+ 
++static inline int kernfs_rename_ns(struct sysfs_dirent *sd,
++				   struct sysfs_dirent *new_parent,
++				   const char *new_name, const void *new_ns)
++{ return -ENOSYS; }
 +
-+	error = populate_dir(kobj);
-+	if (error) {
-+		sysfs_remove_dir(kobj);
-+		return error;
- 	}
+ #endif	/* CONFIG_SYSFS */
  
- 	/*
-@@ -80,7 +84,20 @@ static int create_dir(struct kobject *kobj)
- 	 */
- 	sysfs_get(kobj->sd);
- 
--	return error;
-+	/*
-+	 * If @kobj has ns_ops, its children need to be filtered based on
-+	 * their namespace tags.  Enable namespace support on @kobj->sd.
-+	 */
-+	ops = kobj_child_ns_ops(kobj);
-+	if (ops) {
-+		BUG_ON(ops->type <= KOBJ_NS_TYPE_NONE);
-+		BUG_ON(ops->type >= KOBJ_NS_TYPES);
-+		BUG_ON(!kobj_ns_type_registered(ops->type));
-+
-+		sysfs_enable_ns(kobj->sd);
-+	}
-+
-+	return 0;
- }
- 
- static int get_kobj_path_length(struct kobject *kobj)
+ static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
 -- 
 1.8.4.2
 
