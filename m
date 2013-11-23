@@ -1,46 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3KWF5N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 00:57:13 -0500
-Received: from gnurou.org ([207.192.72.5]:40446 "EHLO mail.gnurou.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab3KWF5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 00:57:10 -0500
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] gpiolib: fix lookup of platform-mapped GPIOs
-Date: Sat, 23 Nov 2013 14:55:52 +0900
-Message-Id: <1385186152-29188-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1752151Ab3KWGFI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 01:05:08 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:46420 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3KWGFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 01:05:01 -0500
+From: dt.tangr@gmail.com
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, Daniel Tang <dt.tangr@gmail.com>
+Subject: [PATCH] usb: chipidea: add support for USB OTG controller on TI-NSPIRE
+Date: Sat, 23 Nov 2013 17:04:16 +1100
+Message-Id: <5290458b.87c5440a.4c57.ffffc9c8@mx.google.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A typo resulted in GPIO lookup failing unconditionally.
+From: Daniel Tang <dt.tangr@gmail.com>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+The USB controller in TI-NSPIRE calculators are based
+off either Freescale's USB OTG controller or the USB
+controller found in the IMX233, both of which are
+Chipidea compatible.
+
+This patch adds a device tree binding for the controller.
+
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 ---
- drivers/gpio/gpiolib.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../devicetree/bindings/usb/ci13xxx-nspire.txt     | 17 +++++
+ drivers/usb/chipidea/Makefile                      |  1 +
+ drivers/usb/chipidea/ci_hdrc_nspire.c              | 74 ++++++++++++++++++++++
+ 3 files changed, 92 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
+ create mode 100644 drivers/usb/chipidea/ci_hdrc_nspire.c
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 980b08d..86caf17 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -2367,7 +2367,7 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
- 				continue;
- 			}
- 
--			if (chip->ngpio >= p->chip_hwnum) {
-+			if (chip->ngpio <= p->chip_hwnum) {
- 				dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
- 					 chip->label, chip->ngpio);
- 				continue;
--- 
-1.8.4.2
+diff --git a/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt b/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
+new file mode 100644
+index 0000000..5ba8e90
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
+@@ -0,0 +1,17 @@
++* TI-Nspire USB OTG Controller
++
++Required properties:
++- compatible: Should be "zevio,nspire-usb"
++- reg: Should contain registers location and length
++- interrupts: Should contain controller interrupt
++
++Recommended properies:
++- vbus-supply: regulator for vbus
++
++Examples:
++		usb0: usb@B0000000 {
++			reg = <0xB0000000 0x1000>;
++			compatible = "zevio,nspire-usb";
++			interrupts = <8>;
++			vbus-supply = <&vbus_reg>;
++		};
+diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
+index a99d980..245ea4d 100644
+--- a/drivers/usb/chipidea/Makefile
++++ b/drivers/usb/chipidea/Makefile
+@@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_CHIPIDEA_DEBUG)	+= debug.o
+ # Glue/Bridge layers go here
+
+ obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
++obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_nspire.o
+
+ # PCI doesn't provide stubs, need to check
+ ifneq ($(CONFIG_PCI),)
+diff --git a/drivers/usb/chipidea/ci_hdrc_nspire.c b/drivers/usb/chipidea/ci_hdrc_nspire.c
+new file mode 100644
+index 0000000..318761d
+--- /dev/null
++++ b/drivers/usb/chipidea/ci_hdrc_nspire.c
+@@ -0,0 +1,74 @@
++/*
++ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2, as
++ * published by the Free Software Foundation.
++ *
++ * Based off drivers/usb/chipidea/ci_hdrc_msm.c
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/usb/gadget.h>
++#include <linux/usb/chipidea.h>
++
++#include "ci.h"
++
++static struct ci_hdrc_platform_data ci_hdrc_nspire_platdata = {
++	.name			= "ci_hdrc_nspire",
++	.flags			= CI_HDRC_REGS_SHARED,
++	.capoffset              = DEF_CAPOFFSET,
++};
++
++static int ci_hdrc_nspire_probe(struct platform_device *pdev)
++{
++	struct platform_device *ci_pdev;
++
++	dev_dbg(&pdev->dev, "ci_hdrc_nspire_probe\n");
++
++	ci_pdev = ci_hdrc_add_device(&pdev->dev,
++				pdev->resource, pdev->num_resources,
++				&ci_hdrc_nspire_platdata);
++
++	if (IS_ERR(ci_pdev)) {
++		dev_err(&pdev->dev, "ci_hdrc_add_device failed!\n");
++		return PTR_ERR(ci_pdev);
++	}
++
++	platform_set_drvdata(pdev, ci_pdev);
++
++	return 0;
++}
++
++static int ci_hdrc_nspire_remove(struct platform_device *pdev)
++{
++	struct platform_device *ci_pdev = platform_get_drvdata(pdev);
++
++	ci_hdrc_remove_device(ci_pdev);
++
++	return 0;
++}
++
++static const struct of_device_id ci_hdrc_nspire_dt_ids[] = {
++	{ .compatible = "zevio,nspire-usb", },
++	{ /* sentinel */ }
++};
++
++static struct platform_driver ci_hdrc_nspire_driver = {
++	.probe = ci_hdrc_nspire_probe,
++	.remove = ci_hdrc_nspire_remove,
++	.driver = {
++		.name = "nspire_usb",
++		.owner = THIS_MODULE,
++		.of_match_table = ci_hdrc_nspire_dt_ids,
++	},
++};
++
++MODULE_DEVICE_TABLE(of, ci_hdrc_nspire_dt_ids);
++module_platform_driver(ci_hdrc_nspire_driver);
++
++MODULE_ALIAS("platform:nspire_usb");
++MODULE_ALIAS("platform:ci13xxx_nspire");
++MODULE_LICENSE("GPL v2");
+--
+1.8.1.3
 
