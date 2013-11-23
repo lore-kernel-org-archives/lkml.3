@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3KWSP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 13:15:56 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63516 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3KWSPw (ORCPT
+	id S1756239Ab3KWS1P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 13:27:15 -0500
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:54454 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab3KWS1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 13:15:52 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] mtd: nand: davinci: reuse driver for Keystone arch
-Date: Sat, 23 Nov 2013 19:15:29 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        grygorii.strashko@ti.com, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com> <1384964699-15134-2-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1384964699-15134-2-git-send-email-ivan.khoronzhuk@ti.com>
+	Sat, 23 Nov 2013 13:27:11 -0500
+X-Fcrdns: No
+Message-ID: <5290F386.5040806@profihost.ag>
+Date: Sat, 23 Nov 2013 19:27:18 +0100
+From: Stefan Priebe <s.priebe@profihost.ag>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Chinmay V S <cvs268@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org> <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com> <20131120175807.GC5380@fieldses.org> <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com> <20131121101101.GA18404@infradead.org> <528FB828.5000301@profihost.ag> <528FC09E.5090004@redhat.com>
+In-Reply-To: <528FC09E.5090004@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311231915.29643.arnd@arndb.de>
-X-Provags-ID: V02:K0:TrSrLFU8sGImLZT5jQuVxupdrOTlkLEsznkKgL5GbNX
- 0BRYBMFVVjP5Q2W82nyyI4ZVhuKmEYgOAVJXYrD/S5RVobL88J
- mznvIEfvgS/SxwbOBGk8rHY0rMMQpA6aikDkd1rERD9QM92CZ7
- 9uxCmxhwWBp05bC+acjsf/PRx1883a4RXKoCGLGTpa52O2Fsjs
- Gxmd/tdu70BrHeZfgQxiwDsBVO+sZLxtgeUEJXtnDHDApIXomm
- j2slDAQmvLU6QVSi+lQl/UJdzJpT0Bv5YPuZXbq5UIXzq3+fGR
- xirNbQBGiBK6SI/uQs6Pp55gSxSgOTmfTESvo/GOkD8923oM+/
- Q+HwD3EksXBHNbxOdnAc=
+X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 November 2013, Ivan Khoronzhuk wrote:
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -523,6 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
->  #if defined(CONFIG_OF)
->  static const struct of_device_id davinci_nand_of_match[] = {
->         {.compatible = "ti,davinci-nand", },
-> +       {.compatible = "ti,keystone-nand", },
->         {},
->  };
->  MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+Hi Ric,
 
-Same comment as for the watchdog driver: when the devices are actually compatible,
-the driver does not need to know the new string, the preferred method is to
-set both strings from the .dts file.
+Am 22.11.2013 21:37, schrieb Ric Wheeler:
+> On 11/22/2013 03:01 PM, Stefan Priebe wrote:
+>> Hi Christoph,
+>> Am 21.11.2013 11:11, schrieb Christoph Hellwig:
+>>>>
+>>>> 2. Some drives may implement CMD_FLUSH to return immediately i.e. no
+>>>> guarantee the data is actually on disk.
+>>>
+>>> In which case they aren't spec complicant.  While I've seen countless
+>>> data integrity bugs on lower end ATA SSDs I've not seen one that simpliy
+>>> ingnores flush.  If you'd want to cheat that bluntly you'd be better
+>>> of just claiming to not have a writeback cache.
+>>>
+>>> You solve your performance problem by completely disabling any chance
+>>> of having data integrity guarantees, and do so in a way that is not
+>>> detectable for applications or users.
+>>>
+>>> If you have a workload with lots of small synchronous writes disabling
+>>> the writeback cache on the disk does indeed often help, especially with
+>>> the non-queueable FLUSH on all but the most recent ATA devices.
+>>
+>> But this isn't correct for drives with capicitors like Crucial m500,
+>> Intel DC S3500, DC S3700 isn't it? Shouldn't the linux kernel has an
+>> option to disable this for drives like these?
+>> /sys/block/sdX/device/ignore_flush
+>
+> If you know 100% for sure that your drive has a non-volatile write
+> cache, you can run the file system without the flushing by mounting "-o
+> nobarrier".  With most devices, this is not needed since they tend to
+> simply ignore the flushes if they know they are power failure safe.
+>
+> Block level, we did something similar for users who are not running
+> through a file system for SCSI devices - James added support to echo
+> "temporary" into the sd's device's cache_type field:
+>
+> See:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=2ee3e26c673e75c05ef8b914f54fadee3d7b9c88
 
-	Arnd
+At least to me this does not work. I get the same awful speed as before 
+- also the I/O waits stay the same. I'm still seeing CMD flushes going 
+to the devices.
+
+Is there any way to check whether the temporary got accepted and works?
+
+I simply executed:
+for i in /sys/class/scsi_disk/*/cache_type; do echo $i; echo temporary 
+write back >$i; done
+
+Stefan
