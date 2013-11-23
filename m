@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab3KWWYj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:24:39 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:53566 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab3KWWXS (ORCPT
+	id S932302Ab3KWWYy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:24:54 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:39263 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab3KWWXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:23:18 -0500
+	Sat, 23 Nov 2013 17:23:15 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 37/41] sysfs, kernfs: prepare mount path for kernfs
-Date: Sat, 23 Nov 2013 17:22:22 -0500
-Message-Id: <1385245346-856-38-git-send-email-tj@kernel.org>
+Subject: [PATCH 35/41] sysfs, kernfs: make inode number ida per kernfs_root
+Date: Sat, 23 Nov 2013 17:22:20 -0500
+Message-Id: <1385245346-856-36-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,304 +21,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're in the process of separating out core sysfs functionality into
-kernfs which will deal with sysfs_dirents directly.  This patch
-rearranges mount path so that the kernfs and sysfs parts are separate.
+kernfs is being updated to allow multiple sysfs_dirent hierarchies so
+that it can also be used by other users.  Currently, inode number is
+allocated using a global ida, sysfs_ino_ida; however, inos for
+different hierarchies should be handled separately.
 
-* As sysfs_super_info won't be visible outside kernfs proper,
-  kernfs_super_ns() is added to allow kernfs users to access a
-  super_block's namespace tag.
-
-* Generic mount operation is separated out into kernfs_mount_ns().
-  sysfs_mount() now just performs sysfs-specific permission check,
-  acquires namespace tag, and invokes kernfs_mount_ns().
-
-* Generic superblock release is separated out into kernfs_kill_sb()
-  which can be used directly as file_system_type->kill_sb().  As sysfs
-  needs to put the namespace tag, sysfs_kill_sb() wraps
-  kernfs_kill_sb() with ns tag put.
-
-* sysfs_dir_cachep init and sysfs_inode_init() are separated out into
-  kernfs_init().  kernfs_init() uses only small amount of memory and
-  trying to handle and propagate kernfs_init() failure doesn't make
-  much sense.  Use SLAB_PANIC for sysfs_dir_cachep and make
-  sysfs_inode_init() panic on failure.
+This patch makes ino allocation per kernfs_root.  sysfs_ino_ida is
+replaced by kernfs_root->ino_ida and sysfs_new_dirent() is updated to
+take @root and allocate ino from it.  ida_simple_get/remove() are used
+instead of sysfs_ino_lock and sysfs_alloc/free_ino().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/inode.c           |   5 ++-
- fs/kernfs/kernfs-internal.h |   2 +-
- fs/namespace.c              |   2 +
- fs/sysfs/mount.c            | 104 ++++++++++++++++++++++++++++++--------------
- include/linux/kernfs.h      |  28 ++++++++++++
- 5 files changed, 106 insertions(+), 35 deletions(-)
+ fs/kernfs/dir.c             | 47 +++++++++++++--------------------------------
+ fs/kernfs/file.c            |  4 ++--
+ fs/kernfs/kernfs-internal.h |  3 ++-
+ fs/kernfs/symlink.c         |  3 ++-
+ include/linux/kernfs.h      |  4 ++++
+ 5 files changed, 23 insertions(+), 38 deletions(-)
 
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index 9d4fab4..b4cae6f 100644
---- a/fs/kernfs/inode.c
-+++ b/fs/kernfs/inode.c
-@@ -37,9 +37,10 @@ static const struct inode_operations sysfs_inode_operations = {
- 	.setxattr	= sysfs_setxattr,
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 246740a..eaffa83 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -21,9 +21,6 @@ DEFINE_MUTEX(sysfs_mutex);
+ 
+ #define to_sysfs_dirent(X) rb_entry((X), struct sysfs_dirent, s_rb)
+ 
+-static DEFINE_SPINLOCK(sysfs_ino_lock);
+-static DEFINE_IDA(sysfs_ino_ida);
+-
+ /**
+  *	sysfs_name_hash
+  *	@name: Null terminated string to hash
+@@ -205,32 +202,6 @@ static void sysfs_deactivate(struct sysfs_dirent *sd)
+ 	rwsem_release(&sd->dep_map, 1, _RET_IP_);
+ }
+ 
+-static int sysfs_alloc_ino(unsigned int *pino)
+-{
+-	int ino, rc;
+-
+- retry:
+-	spin_lock(&sysfs_ino_lock);
+-	rc = ida_get_new_above(&sysfs_ino_ida, 1, &ino);
+-	spin_unlock(&sysfs_ino_lock);
+-
+-	if (rc == -EAGAIN) {
+-		if (ida_pre_get(&sysfs_ino_ida, GFP_KERNEL))
+-			goto retry;
+-		rc = -ENOMEM;
+-	}
+-
+-	*pino = ino;
+-	return rc;
+-}
+-
+-static void sysfs_free_ino(unsigned int ino)
+-{
+-	spin_lock(&sysfs_ino_lock);
+-	ida_remove(&sysfs_ino_ida, ino);
+-	spin_unlock(&sysfs_ino_lock);
+-}
+-
+ /**
+  * kernfs_get - get a reference count on a sysfs_dirent
+  * @sd: the target sysfs_dirent
+@@ -276,7 +247,7 @@ void kernfs_put(struct sysfs_dirent *sd)
+ 		security_release_secctx(sd->s_iattr->ia_secdata,
+ 					sd->s_iattr->ia_secdata_len);
+ 	kfree(sd->s_iattr);
+-	sysfs_free_ino(sd->s_ino);
++	ida_simple_remove(&root->ino_ida, sd->s_ino);
+ 	kmem_cache_free(sysfs_dir_cachep, sd);
+ 
+ 	sd = parent_sd;
+@@ -285,6 +256,7 @@ void kernfs_put(struct sysfs_dirent *sd)
+ 			goto repeat;
+ 	} else {
+ 		/* just released the root sd, free @root too */
++		ida_destroy(&root->ino_ida);
+ 		kfree(root);
+ 	}
+ }
+@@ -360,10 +332,12 @@ const struct dentry_operations sysfs_dentry_ops = {
+ 	.d_release	= sysfs_dentry_release,
  };
  
--int __init sysfs_inode_init(void)
-+void __init sysfs_inode_init(void)
+-struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type)
++struct sysfs_dirent *sysfs_new_dirent(struct kernfs_root *root,
++				      const char *name, umode_t mode, int type)
  {
--	return bdi_init(&sysfs_backing_dev_info);
-+	if (bdi_init(&sysfs_backing_dev_info))
-+		panic("failed to init sysfs_backing_dev_info");
- }
+ 	char *dup_name = NULL;
+ 	struct sysfs_dirent *sd;
++	int ret;
  
- static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index 466943d..0d94988 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -144,7 +144,7 @@ int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		  struct kstat *stat);
- int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		   size_t size, int flags);
--int sysfs_inode_init(void);
-+void sysfs_inode_init(void);
+ 	if (type & SYSFS_COPY_NAME) {
+ 		name = dup_name = kstrdup(name, GFP_KERNEL);
+@@ -375,8 +349,10 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type)
+ 	if (!sd)
+ 		goto err_out1;
  
- /*
-  * dir.c
-diff --git a/fs/namespace.c b/fs/namespace.c
-index ac2ce8a..a511ea0 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2790,6 +2790,8 @@ void __init mnt_init(void)
- 	for (u = 0; u < HASH_SIZE; u++)
- 		INIT_LIST_HEAD(&mountpoint_hashtable[u]);
+-	if (sysfs_alloc_ino(&sd->s_ino))
++	ret = ida_simple_get(&root->ino_ida, 1, 0, GFP_KERNEL);
++	if (ret < 0)
+ 		goto err_out2;
++	sd->s_ino = ret;
  
-+	kernfs_init();
-+
- 	err = sysfs_init();
- 	if (err)
- 		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index f143b20..5384732 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -86,18 +86,24 @@ static int sysfs_set_super(struct super_block *sb, void *data)
- 	return error;
- }
- 
--static void free_sysfs_super_info(struct sysfs_super_info *info)
-+/**
-+ * kernfs_super_ns - determine the namespace tag of a kernfs super_block
-+ * @sb: super_block of interest
-+ *
-+ * Return the namespace tag associated with kernfs super_block @sb.
-+ */
-+const void *kernfs_super_ns(struct super_block *sb)
- {
--	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)info->ns);
--	kfree(info);
-+	struct sysfs_super_info *info = sysfs_info(sb);
-+
-+	return info->ns;
- }
- 
- static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
--	struct sysfs_super_info *info;
--	struct super_block *sb;
--	int error;
-+	struct dentry *root;
-+	void *ns;
- 
- 	if (!(flags & MS_KERNMOUNT)) {
- 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
-@@ -107,16 +113,44 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 			return ERR_PTR(-EPERM);
- 	}
- 
-+	ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
-+	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns);
-+	if (IS_ERR(root))
-+		kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
-+	return root;
-+}
-+
-+/**
-+ * kernfs_mount_ns - kernfs mount helper
-+ * @fs_type: file_system_type of the fs being mounted
-+ * @flags: mount flags specified for the mount
-+ * @root: kernfs_root of the hierarchy being mounted
-+ * @ns: optional namespace tag of the mount
-+ *
-+ * This is to be called from each kernfs user's file_system_type->mount()
-+ * implementation, which should pass through the specified @fs_type and
-+ * @flags, and specify the hierarchy and namespace tag to mount via @root
-+ * and @ns, respectively.
-+ *
-+ * The return value can be passed to the vfs layer verbatim.
-+ */
-+struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
-+			       struct kernfs_root *root, const void *ns)
-+{
-+	struct super_block *sb;
-+	struct sysfs_super_info *info;
-+	int error;
-+
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
- 	if (!info)
+ 	atomic_set(&sd->s_count, 1);
+ 	atomic_set(&sd->s_active, 0);
+@@ -628,8 +604,11 @@ struct kernfs_root *kernfs_create_root(void *priv)
+ 	if (!root)
  		return ERR_PTR(-ENOMEM);
  
--	info->root = sysfs_root;
--	info->ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
-+	info->root = root;
-+	info->ns = ns;
- 
- 	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
- 	if (IS_ERR(sb) || sb->s_fs_info != info)
--		free_sysfs_super_info(info);
-+		kfree(info);
- 	if (IS_ERR(sb))
- 		return ERR_CAST(sb);
- 	if (!sb->s_root) {
-@@ -133,6 +167,20 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 
- static void sysfs_kill_sb(struct super_block *sb)
- {
-+	kernfs_kill_sb(sb);
-+	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)kernfs_super_ns(sb));
-+}
+-	sd = sysfs_new_dirent("", S_IFDIR | S_IRUGO | S_IXUGO, SYSFS_DIR);
++	ida_init(&root->ino_ida);
 +
-+/**
-+ * kernfs_kill_sb - kill_sb for kernfs
-+ * @sb: super_block being killed
-+ *
-+ * This can be used directly for file_system_type->kill_sb().  If a kernfs
-+ * user needs extra cleanup, it can implement its own kill_sb() and call
-+ * this function at the end.
-+ */
-+void kernfs_kill_sb(struct super_block *sb)
-+{
- 	struct sysfs_super_info *info = sysfs_info(sb);
- 	struct sysfs_dirent *root_sd = sb->s_root->d_fsdata;
++	sd = sysfs_new_dirent(root, "", S_IFDIR | S_IRUGO | S_IXUGO, SYSFS_DIR);
+ 	if (!sd) {
++		ida_destroy(&root->ino_ida);
+ 		kfree(root);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+@@ -674,7 +653,7 @@ struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
+ 	int rc;
  
-@@ -141,7 +189,7 @@ static void sysfs_kill_sb(struct super_block *sb)
- 	 * so we can't find it, before freeing sysfs_super_info.
- 	 */
- 	kill_anon_super(sb);
--	free_sysfs_super_info(info);
-+	kfree(info);
- 	kernfs_put(root_sd);
- }
+ 	/* allocate */
+-	sd = sysfs_new_dirent(name, mode, SYSFS_DIR);
++	sd = sysfs_new_dirent(kernfs_root(parent), name, mode, SYSFS_DIR);
+ 	if (!sd)
+ 		return ERR_PTR(-ENOMEM);
  
-@@ -152,37 +200,29 @@ static struct file_system_type sysfs_fs_type = {
- 	.fs_flags	= FS_USERNS_MOUNT,
- };
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index fa172e8..990c97f 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -775,8 +775,8 @@ struct sysfs_dirent *kernfs_create_file_ns_key(struct sysfs_dirent *parent,
+ 	struct sysfs_dirent *sd;
+ 	int rc;
  
--int __init sysfs_init(void)
-+void __init kernfs_init(void)
- {
--	int err;
--
- 	sysfs_dir_cachep = kmem_cache_create("sysfs_dir_cache",
- 					      sizeof(struct sysfs_dirent),
--					      0, 0, NULL);
--	if (!sysfs_dir_cachep)
--		return -ENOMEM;
-+					      0, SLAB_PANIC, NULL);
-+	sysfs_inode_init();
-+}
+-	sd = sysfs_new_dirent(name, (mode & S_IALLUGO) | S_IFREG,
+-			      SYSFS_KOBJ_ATTR);
++	sd = sysfs_new_dirent(kernfs_root(parent), name,
++			      (mode & S_IALLUGO) | S_IFREG, SYSFS_KOBJ_ATTR);
+ 	if (!sd)
+ 		return ERR_PTR(-ENOMEM);
  
--	err = sysfs_inode_init();
--	if (err)
--		goto out_err;
-+int __init sysfs_init(void)
-+{
-+	int err;
+diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
+index 7dfe062..466943d 100644
+--- a/fs/kernfs/kernfs-internal.h
++++ b/fs/kernfs/kernfs-internal.h
+@@ -160,7 +160,8 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt);
+ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd,
+ 		  struct sysfs_dirent *parent_sd);
+ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
+-struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
++struct sysfs_dirent *sysfs_new_dirent(struct kernfs_root *root,
++				      const char *name, umode_t mode, int type);
  
- 	sysfs_root = kernfs_create_root(NULL);
--	if (IS_ERR(sysfs_root)) {
--		err = PTR_ERR(sysfs_root);
--		goto out_err;
--	}
-+	if (IS_ERR(sysfs_root))
-+		return PTR_ERR(sysfs_root);
-+
- 	sysfs_root_sd = sysfs_root->sd;
+ /*
+  * file.c
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+index af3570b..004c164 100644
+--- a/fs/kernfs/symlink.c
++++ b/fs/kernfs/symlink.c
+@@ -30,7 +30,8 @@ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 	struct sysfs_addrm_cxt acxt;
+ 	int error;
  
- 	err = register_filesystem(&sysfs_fs_type);
--	if (err)
--		goto out_destroy_root;
-+	if (err) {
-+		kernfs_destroy_root(sysfs_root);
-+		return err;
-+	}
+-	sd = sysfs_new_dirent(name, S_IFLNK|S_IRWXUGO, SYSFS_KOBJ_LINK);
++	sd = sysfs_new_dirent(kernfs_root(parent), name, S_IFLNK|S_IRWXUGO,
++			      SYSFS_KOBJ_LINK);
+ 	if (!sd)
+ 		return ERR_PTR(-ENOMEM);
  
- 	return 0;
--
--out_destroy_root:
--	kernfs_destroy_root(sysfs_root);
--out_err:
--	kmem_cache_destroy(sysfs_dir_cachep);
--	sysfs_dir_cachep = NULL;
--	return err;
- }
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index fad8b98..75fcbe5 100644
+index f75548b..fad8b98 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -18,6 +18,8 @@ struct file;
- struct iattr;
- struct seq_file;
- struct vm_area_struct;
-+struct super_block;
-+struct file_system_type;
+@@ -11,6 +11,7 @@
+ #include <linux/err.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
++#include <linux/idr.h>
+ #include <linux/lockdep.h>
  
- struct sysfs_dirent;
- 
-@@ -109,6 +111,13 @@ void kernfs_enable_ns(struct sysfs_dirent *sd);
- int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
- void kernfs_notify(struct sysfs_dirent *sd);
- 
-+const void *kernfs_super_ns(struct super_block *sb);
-+struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
-+			       struct kernfs_root *root, const void *ns);
-+void kernfs_kill_sb(struct super_block *sb);
+ struct file;
+@@ -23,6 +24,9 @@ struct sysfs_dirent;
+ struct kernfs_root {
+ 	/* published fields */
+ 	struct sysfs_dirent	*sd;
 +
-+void kernfs_init(void);
-+
- #else	/* CONFIG_SYSFS */
++	/* private fields, do not use outside kernfs proper */
++	struct ida		ino_ida;
+ };
  
- static inline struct sysfs_dirent *
-@@ -160,6 +169,18 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
- 
- static inline void kernfs_notify(struct sysfs_dirent *sd) { }
- 
-+static inline const void *kernfs_super_ns(struct super_block *sb)
-+{ return NULL; }
-+
-+static inline struct dentry *
-+kernfs_mount_ns(struct file_system_type *fs_type, int flags,
-+		struct kernfs_root *root, const void *ns)
-+{ return ERR_PTR(-ENOSYS); }
-+
-+static inline void kernfs_kill_sb(struct super_block *sb) { }
-+
-+static inline void kernfs_init(void) { }
-+
- #endif	/* CONFIG_SYSFS */
- 
- static inline struct sysfs_dirent *
-@@ -201,4 +222,11 @@ static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
- 	return kernfs_remove_by_name_ns(parent, name, NULL);
- }
- 
-+static inline struct dentry *
-+kernfs_mount(struct file_system_type *fs_type, int flags,
-+	     struct kernfs_root *root)
-+{
-+	return kernfs_mount_ns(fs_type, flags, root, NULL);
-+}
-+
- #endif	/* __LINUX_KERNFS_H */
+ struct sysfs_open_file {
 -- 
 1.8.4.2
 
