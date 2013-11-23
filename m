@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab3KWWXT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:23:19 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:54936 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab3KWWXQ (ORCPT
+	id S932272Ab3KWWXg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:23:36 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:40851 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198Ab3KWWXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:23:16 -0500
+	Sat, 23 Nov 2013 17:23:20 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 36/41] sysfs, kernfs: make super_blocks bind to different kernfs_roots
-Date: Sat, 23 Nov 2013 17:22:21 -0500
-Message-Id: <1385245346-856-37-git-send-email-tj@kernel.org>
+Subject: [PATCH 39/41] sysfs, kernfs: make sysfs_dirent definition public
+Date: Sat, 23 Nov 2013 17:22:24 -0500
+Message-Id: <1385245346-856-40-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,88 +21,314 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs is being updated to allow multiple sysfs_dirent hierarchies so
-that it can also be used by other users.  Currently, sysfs
-super_blocks are always attached to one kernfs_root - sysfs_root - and
-distinguished only by their namespace tags.
+sysfs_dirent includes some information which should be available to
+kernfs users - the type, flags, name and parent pointer.  This patch
+moves sysfs_dirent definition from kernfs/kernfs-internal.h to
+include/linux/kernfs.h so that kernfs users can access them.
 
-This patch adds sysfs_super_info->root and update
-sysfs_fill/test_super() so that super_blocks are identified by the
-combination of both the associated kernfs_root and namespace tag.
-This allows mounting different kernfs hierarchies.
+The type part of flags is exported as enum kernfs_node_type, the flags
+kernfs_node_flag, sysfs_type() and kernfs_enable_ns() are moved to
+include/linux/kernfs.h and the former is updated to return the enum
+type.  sysfs_dirent->s_parent and ->s_name are marked explicitly as
+public.
+
+This patch doesn't introduce any functional changes.
+
+v2: Flags exported too and kernfs_enable_ns() definition moved.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/mount.c | 10 ++++++----
- fs/sysfs/sysfs.h |  6 ++++++
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ fs/kernfs/dir.c             |  15 ------
+ fs/kernfs/kernfs-internal.h |  85 +--------------------------------
+ include/linux/kernfs.h      | 113 ++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 110 insertions(+), 103 deletions(-)
 
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 0b5661b..f143b20 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -37,6 +37,7 @@ struct sysfs_dirent *sysfs_root_sd;
- 
- static int sysfs_fill_super(struct super_block *sb)
- {
-+	struct sysfs_super_info *info = sysfs_info(sb);
- 	struct inode *inode;
- 	struct dentry *root;
- 
-@@ -48,7 +49,7 @@ static int sysfs_fill_super(struct super_block *sb)
- 
- 	/* get root inode, initialize and unlock it */
- 	mutex_lock(&sysfs_mutex);
--	inode = sysfs_get_inode(sb, sysfs_root_sd);
-+	inode = sysfs_get_inode(sb, info->root->sd);
- 	mutex_unlock(&sysfs_mutex);
- 	if (!inode) {
- 		pr_debug("sysfs: could not get root inode\n");
-@@ -61,8 +62,8 @@ static int sysfs_fill_super(struct super_block *sb)
- 		pr_debug("%s: could not get root dentry!\n", __func__);
- 		return -ENOMEM;
- 	}
--	kernfs_get(sysfs_root_sd);
--	root->d_fsdata = sysfs_root_sd;
-+	kernfs_get(info->root->sd);
-+	root->d_fsdata = info->root->sd;
- 	sb->s_root = root;
- 	sb->s_d_op = &sysfs_dentry_ops;
- 	return 0;
-@@ -73,7 +74,7 @@ static int sysfs_test_super(struct super_block *sb, void *data)
- 	struct sysfs_super_info *sb_info = sysfs_info(sb);
- 	struct sysfs_super_info *info = data;
- 
--	return sb_info->ns == info->ns;
-+	return sb_info->root == info->root && sb_info->ns == info->ns;
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index eaffa83..7c5b517 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -895,21 +895,6 @@ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 	return error;
  }
  
- static int sysfs_set_super(struct super_block *sb, void *data)
-@@ -110,6 +111,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	if (!info)
- 		return ERR_PTR(-ENOMEM);
+-/**
+- * kernfs_enable_ns - enable namespace under a directory
+- * @sd: directory of interest, should be empty
+- *
+- * This is to be called right after @sd is created to enable namespace
+- * under it.  All children of @sd must have non-NULL namespace tags and
+- * only the ones which match the super_block's tag will be visible.
+- */
+-void kernfs_enable_ns(struct sysfs_dirent *sd)
+-{
+-	WARN_ON_ONCE(sysfs_type(sd) != SYSFS_DIR);
+-	WARN_ON_ONCE(!RB_EMPTY_ROOT(&sd->s_dir.children));
+-	sd->s_flags |= SYSFS_FLAG_NS;
+-}
+-
+ /* Relationship between s_mode and the DT_xxx types */
+ static inline unsigned char dt_type(struct sysfs_dirent *sd)
+ {
+diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
+index ced0d6d..f33a784 100644
+--- a/fs/kernfs/kernfs-internal.h
++++ b/fs/kernfs/kernfs-internal.h
+@@ -13,102 +13,19 @@
  
-+	info->root = sysfs_root;
- 	info->ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
+ #include <linux/lockdep.h>
+ #include <linux/fs.h>
+-#include <linux/rbtree.h>
+ #include <linux/mutex.h>
  
- 	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 2b217ce..93b4b68 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -20,6 +20,12 @@
+ #include <linux/kernfs.h>
  
- struct sysfs_super_info {
- 	/*
-+	 * The root associated with this super_block.  Each super_block is
-+	 * identified by the root and ns it's associated with.
-+	 */
-+	struct kernfs_root	*root;
+-struct sysfs_open_dirent;
+-
+-/* type-specific structures for sysfs_dirent->s_* union members */
+-struct sysfs_elem_dir {
+-	unsigned long		subdirs;
+-	/* children rbtree starts here and goes through sd->s_rb */
+-	struct rb_root		children;
+-
+-	/*
+-	 * The kernfs hierarchy this directory belongs to.  This fits
+-	 * better directly in sysfs_dirent but is here to save space.
+-	 */
+-	struct kernfs_root	*root;
+-};
+-
+-struct sysfs_elem_symlink {
+-	struct sysfs_dirent	*target_sd;
+-};
+-
+-struct sysfs_elem_attr {
+-	const struct kernfs_ops	*ops;
+-	struct sysfs_open_dirent *open;
+-	loff_t			size;
+-};
+-
+ struct sysfs_inode_attrs {
+ 	struct iattr	ia_iattr;
+ 	void		*ia_secdata;
+ 	u32		ia_secdata_len;
+ };
+ 
+-/*
+- * sysfs_dirent - the building block of sysfs hierarchy.  Each and
+- * every sysfs node is represented by single sysfs_dirent.
+- *
+- * As long as s_count reference is held, the sysfs_dirent itself is
+- * accessible.  Dereferencing s_elem or any other outer entity
+- * requires s_active reference.
+- */
+-struct sysfs_dirent {
+-	atomic_t		s_count;
+-	atomic_t		s_active;
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	struct lockdep_map	dep_map;
+-#endif
+-	struct sysfs_dirent	*s_parent;
+-	const char		*s_name;
+-
+-	struct rb_node		s_rb;
+-
+-	union {
+-		struct completion	*completion;
+-		struct sysfs_dirent	*removed_list;
+-	} u;
+-
+-	const void		*s_ns; /* namespace tag */
+-	unsigned int		s_hash; /* ns + name hash */
+-	union {
+-		struct sysfs_elem_dir		s_dir;
+-		struct sysfs_elem_symlink	s_symlink;
+-		struct sysfs_elem_attr		s_attr;
+-	};
+-
+-	void			*priv;
+-
+-	unsigned short		s_flags;
+-	umode_t			s_mode;
+-	unsigned int		s_ino;
+-	struct sysfs_inode_attrs *s_iattr;
+-};
+-
+ #define SD_DEACTIVATED_BIAS		INT_MIN
+ 
+-#define SYSFS_TYPE_MASK			0x000f
+-#define SYSFS_DIR			0x0001
+-#define SYSFS_KOBJ_ATTR			0x0002
+-#define SYSFS_KOBJ_LINK			0x0004
+-#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
+-#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
+-
+-#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
+-#define SYSFS_FLAG_REMOVED		0x0010
+-#define SYSFS_FLAG_NS			0x0020
+-#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
+-#define SYSFS_FLAG_HAS_MMAP		0x0080
+-#define SYSFS_FLAG_LOCKDEP		0x0100
+-
+-static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+-{
+-	return sd->s_flags & SYSFS_TYPE_MASK;
+-}
++/* SYSFS_TYPE_MASK and types are defined in include/linux/kernfs.h */
+ 
+ /**
+  * kernfs_root - find out the kernfs_root a sysfs_dirent belongs to
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 75fcbe5..f3f873e 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -13,6 +13,9 @@
+ #include <linux/mutex.h>
+ #include <linux/idr.h>
+ #include <linux/lockdep.h>
++#include <linux/rbtree.h>
++#include <linux/atomic.h>
++#include <linux/completion.h>
+ 
+ struct file;
+ struct iattr;
+@@ -21,7 +24,92 @@ struct vm_area_struct;
+ struct super_block;
+ struct file_system_type;
+ 
+-struct sysfs_dirent;
++struct sysfs_open_dirent;
++struct sysfs_inode_attrs;
++
++enum kernfs_node_type {
++	SYSFS_DIR		= 0x0001,
++	SYSFS_KOBJ_ATTR		= 0x0002,
++	SYSFS_KOBJ_LINK		= 0x0004,
++};
++
++#define SYSFS_TYPE_MASK		0x000f
++#define SYSFS_COPY_NAME		(SYSFS_DIR | SYSFS_KOBJ_LINK)
++#define SYSFS_ACTIVE_REF	SYSFS_KOBJ_ATTR
++#define SYSFS_FLAG_MASK		~SYSFS_TYPE_MASK
++
++enum kernfs_node_flag {
++	SYSFS_FLAG_REMOVED	= 0x0010,
++	SYSFS_FLAG_NS		= 0x0020,
++	SYSFS_FLAG_HAS_SEQ_SHOW	= 0x0040,
++	SYSFS_FLAG_HAS_MMAP	= 0x0080,
++	SYSFS_FLAG_LOCKDEP	= 0x0100,
++};
++
++/* type-specific structures for sysfs_dirent->s_* union members */
++struct sysfs_elem_dir {
++	unsigned long		subdirs;
++	/* children rbtree starts here and goes through sd->s_rb */
++	struct rb_root		children;
 +
 +	/*
- 	 * Each sb is associated with one namespace tag, currently the network
- 	 * namespace of the task which mounted this sysfs instance.  If multiple
- 	 * tags become necessary, make the following an array and compare
++	 * The kernfs hierarchy this directory belongs to.  This fits
++	 * better directly in sysfs_dirent but is here to save space.
++	 */
++	struct kernfs_root	*root;
++};
++
++struct sysfs_elem_symlink {
++	struct sysfs_dirent	*target_sd;
++};
++
++struct sysfs_elem_attr {
++	const struct kernfs_ops	*ops;
++	struct sysfs_open_dirent *open;
++	loff_t			size;
++};
++
++/*
++ * sysfs_dirent - the building block of sysfs hierarchy.  Each and every
++ * sysfs node is represented by single sysfs_dirent.  Most fields are
++ * private to kernfs and shouldn't be accessed directly by kernfs users.
++ *
++ * As long as s_count reference is held, the sysfs_dirent itself is
++ * accessible.  Dereferencing s_elem or any other outer entity
++ * requires s_active reference.
++ */
++struct sysfs_dirent {
++	atomic_t		s_count;
++	atomic_t		s_active;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lockdep_map	dep_map;
++#endif
++	/* the following two fields are published */
++	struct sysfs_dirent	*s_parent;
++	const char		*s_name;
++
++	struct rb_node		s_rb;
++
++	union {
++		struct completion	*completion;
++		struct sysfs_dirent	*removed_list;
++	} u;
++
++	const void		*s_ns; /* namespace tag */
++	unsigned int		s_hash; /* ns + name hash */
++	union {
++		struct sysfs_elem_dir		s_dir;
++		struct sysfs_elem_symlink	s_symlink;
++		struct sysfs_elem_attr		s_attr;
++	};
++
++	void			*priv;
++
++	unsigned short		s_flags;
++	umode_t			s_mode;
++	unsigned int		s_ino;
++	struct sysfs_inode_attrs *s_iattr;
++};
+ 
+ struct kernfs_root {
+ 	/* published fields */
+@@ -80,6 +168,26 @@ struct kernfs_ops {
+ #endif
+ };
+ 
++static inline enum kernfs_node_type sysfs_type(struct sysfs_dirent *sd)
++{
++	return sd->s_flags & SYSFS_TYPE_MASK;
++}
++
++/**
++ * kernfs_enable_ns - enable namespace under a directory
++ * @sd: directory of interest, should be empty
++ *
++ * This is to be called right after @sd is created to enable namespace
++ * under it.  All children of @sd must have non-NULL namespace tags and
++ * only the ones which match the super_block's tag will be visible.
++ */
++static inline void kernfs_enable_ns(struct sysfs_dirent *sd)
++{
++	WARN_ON_ONCE(sysfs_type(sd) != SYSFS_DIR);
++	WARN_ON_ONCE(!RB_EMPTY_ROOT(&sd->s_dir.children));
++	sd->s_flags |= SYSFS_FLAG_NS;
++}
++
+ #ifdef CONFIG_SYSFS
+ 
+ struct sysfs_dirent *kernfs_find_and_get_ns(struct sysfs_dirent *parent,
+@@ -107,7 +215,6 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
+ 			     const void *ns);
+ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 		     const char *new_name, const void *new_ns);
+-void kernfs_enable_ns(struct sysfs_dirent *sd);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
+ void kernfs_notify(struct sysfs_dirent *sd);
+ 
+@@ -161,8 +268,6 @@ static inline int kernfs_rename_ns(struct sysfs_dirent *sd,
+ 				   const char *new_name, const void *new_ns)
+ { return -ENOSYS; }
+ 
+-static inline void kernfs_enable_ns(struct sysfs_dirent *sd) { }
+-
+ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
+ { return -ENOSYS; }
 -- 
 1.8.4.2
 
