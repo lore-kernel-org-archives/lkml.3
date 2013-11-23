@@ -1,135 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3KWXGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 18:06:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35752 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3KWXGX (ORCPT
+	id S1756378Ab3KWXHJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 18:07:09 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:56865 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab3KWXHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 18:06:23 -0500
-Date: Sat, 23 Nov 2013 15:07:01 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Message-ID: <20131123230701.GA6183@kroah.com>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
- <346316422.RJFnQfZPnq@vostro.rjw.lan>
- <20131123225358.GB5402@kroah.com>
- <4668705.kv8hgxjqAc@vostro.rjw.lan>
+	Sat, 23 Nov 2013 18:07:07 -0500
+Date: Sat, 23 Nov 2013 18:07:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com
+Subject: [PATCH v4 09/41] sysfs, kernfs: introduce kernfs_create_dir[_ns]()
+Message-ID: <20131123230704.GC29774@mtj.dyndns.org>
+References: <1385245346-856-1-git-send-email-tj@kernel.org>
+ <1385245346-856-10-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4668705.kv8hgxjqAc@vostro.rjw.lan>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1385245346-856-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 12:12:59AM +0100, Rafael J. Wysocki wrote:
-> On Saturday, November 23, 2013 02:53:58 PM Greg Kroah-Hartman wrote:
-> > On Sat, Nov 23, 2013 at 11:56:48PM +0100, Rafael J. Wysocki wrote:
-> > > On Friday, November 22, 2013 08:43:55 AM Bjorn Helgaas wrote:
-> > > > [+cc Rafael, James]
-> > > > 
-> > > > On Tue, Nov 19, 2013 at 11:18 PM, Tejun Heo <tj@kernel.org> wrote:
-> > > > > (cc'ing Bjorn)
-> > > > >
-> > > > > Hello,
-> > > > >
-> > > > > On Tue, Nov 19, 2013 at 03:09:58PM +0200, Mika Westerberg wrote:
-> > > > >> Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
-> > > > >> the behavior so that directory removals will be done recursively. This
-> > > > >> means that the sysfs group might already be removed if its parent directory
-> > > > >> has been removed.
-> > > > >>
-> > > > >> The current code outputs warnings similar to following log snippet when it
-> > > > >> detects that there is no group for the given kobject:
-> > > > >>
-> > > > >>  WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
-> > > > >>  sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
-> > > > >>  Modules linked in:
-> > > > >>  CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
-> > > > >>  Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
-> > > > >>  Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-> > > > >>   0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
-> > > > >>   ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
-> > > > >>   ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
-> > > > >>  Call Trace:
-> > > > >>   [<ffffffff817daab1>] dump_stack+0x45/0x56
-> > > > >>   [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
-> > > > >>   [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
-> > > > >>   [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
-> > > > >>   [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
-> > > > >>   [<ffffffff8142a0d0>] device_del+0x40/0x1b0
-> > > > >>   [<ffffffff8142a24d>] device_unregister+0xd/0x20
-> > > > >>   [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
-> > > > >>   [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
-> > > > >>   [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
-> > > > >>   [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
-> > > > >>   [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
-> > > > >>   [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
-> > > > >>   [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
-> > > > >>   [<ffffffff8142a1b1>] device_del+0x121/0x1b0
-> > > > >>   [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
-> > > > >>   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-> > > > >>   [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-> > > > >>   [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
-> > > > >>   [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
-> > > > >>   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-> > > > >>   [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-> > > > >>   [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
-> > > > >>   [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
-> > > > >>   [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
-> > > > >>   [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
-> > > > >>   [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
-> > > > >>   [<ffffffff8105db29>] worker_thread+0x119/0x390
-> > > > >>   [<ffffffff81063a5d>] kthread+0xcd/0xf0
-> > > > >>   [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
-> > > > >
-> > > > > So, we do have cases where the parent is removed before the child.  I
-> > > > > suppose the parent pci bridge is removed already?  AFAICS this
-> > > > > shouldn't break anything but people did seem to expect the removals to
-> > > > > be ordered from child to parent.  Bjorn, is this something you expect
-> > > > > to happened?
-> > > > 
-> > > > I do not expect a PCI bridge to be removed before the devices below
-> > > > it.  We should be removing all the children before removing the parent
-> > > > bridge.
-> > > > 
-> > > > But is this related to PCI?  I don't see the connection yet.  I tried
-> > > > to look into this a bit (my notes are at
-> > > > https://bugzilla.kernel.org/show_bug.cgi?id=65281), but I haven't
-> > > > figured out the big-picture problem yet.
-> > > 
-> > > OK, so I think I've figured this out.
-> > > 
-> > > As I wrote in the above BZ entry, after the Tejun's patch the
-> > > device_del() in pci_stop_dev() removes the subordinate bus object's
-> > > "power" directory among other things and because of that the warning
-> > > triggers when we do the pci_remove_bus() in pci_remove_bus_device()
-> > > for the same device.
-> > > 
-> > > The appended patch fixes it for me, but Greg has already taken the
-> > > Mika's one, so this one isn't really necessary.  In case you think it
-> > > would be useful to apply it anyway, please let me know and I submit it
-> > > properly with a changelog etc.
-> > 
-> > I can revert Mika's patch, as it would be good to catch these kinds of
-> > errors.
-> 
-> Then we'll need to untangle the SATA/SCSI mess triggered by Bjorn in
-> https://bugzilla.kernel.org/show_bug.cgi?id=65281. ;-)
+Introduce kernfs interface to manipulate a directory which takes and
+returns sysfs_dirents.
 
-I have no objection to fixing that, the scsi sysfs handling is "odd" to
-say the least...
+create_dir() is renamed to kernfs_create_dir_ns() and its argumantes
+and return value are updated.  create_dir() usages are replaced with
+kernfs_create_dir_ns() and sysfs_create_subdir() usages are replaced
+with kernfs_create_dir().  Dup warnings are handled explicitly by
+sysfs users of the kernfs interface.
 
-If someone can unwind it, that would be great to see happen...
+sysfs_enable_ns() is renamed to kernfs_enable_ns().
 
-thanks,
+This patch doesn't introduce any behavior changes.
 
-greg k-h
+v2: Dummy implementation for !CONFIG_SYSFS updated to return -ENOSYS.
+
+v3: kernfs_enable_ns() added.
+
+v4: Refreshed on top of "sysfs: drop kobj_ns_type handling, take #2"
+    so that this patch removes sysfs_enable_ns().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/dir.c         | 54 ++++++++++++++++++++++++++++----------------------
+ fs/sysfs/group.c       |  9 ++++++---
+ fs/sysfs/sysfs.h       |  3 ---
+ include/linux/kernfs.h | 17 ++++++++++++++++
+ include/linux/sysfs.h  |  6 ------
+ lib/kobject.c          |  2 +-
+ 6 files changed, 54 insertions(+), 37 deletions(-)
+
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index aeb08bd..cfbf409 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -666,9 +666,18 @@ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ }
+ EXPORT_SYMBOL_GPL(sysfs_get_dirent_ns);
+ 
+-static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
+-		      const char *name, const void *ns,
+-		      struct sysfs_dirent **p_sd)
++/**
++ * kernfs_create_dir_ns - create a directory
++ * @parent: parent in which to create a new directory
++ * @name: name of the new directory
++ * @priv: opaque data associated with the new directory
++ * @ns: optional namespace tag of the directory
++ *
++ * Returns the created node on success, ERR_PTR() value on failure.
++ */
++struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
++					  const char *name, void *priv,
++					  const void *ns)
+ {
+ 	umode_t mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
+ 	struct sysfs_addrm_cxt acxt;
+@@ -678,28 +687,21 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
+ 	/* allocate */
+ 	sd = sysfs_new_dirent(name, mode, SYSFS_DIR);
+ 	if (!sd)
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	sd->s_ns = ns;
+-	sd->priv = kobj;
++	sd->priv = priv;
+ 
+ 	/* link in */
+ 	sysfs_addrm_start(&acxt);
+-	rc = sysfs_add_one(&acxt, sd, parent_sd);
++	rc = __sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
+ 
+-	if (rc == 0)
+-		*p_sd = sd;
+-	else
+-		sysfs_put(sd);
++	if (!rc)
++		return sd;
+ 
+-	return rc;
+-}
+-
+-int sysfs_create_subdir(struct kobject *kobj, const char *name,
+-			struct sysfs_dirent **p_sd)
+-{
+-	return create_dir(kobj, kobj->sd, name, NULL, p_sd);
++	sysfs_put(sd);
++	return ERR_PTR(rc);
+ }
+ 
+ /**
+@@ -710,7 +712,6 @@ int sysfs_create_subdir(struct kobject *kobj, const char *name,
+ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	struct sysfs_dirent *parent_sd, *sd;
+-	int error = 0;
+ 
+ 	BUG_ON(!kobj);
+ 
+@@ -722,10 +723,15 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ 	if (!parent_sd)
+ 		return -ENOENT;
+ 
+-	error = create_dir(kobj, parent_sd, kobject_name(kobj), ns, &sd);
+-	if (!error)
+-		kobj->sd = sd;
+-	return error;
++	sd = kernfs_create_dir_ns(parent_sd, kobject_name(kobj), kobj, ns);
++	if (IS_ERR(sd)) {
++		if (PTR_ERR(sd) == -EEXIST)
++			sysfs_warn_dup(parent_sd, kobject_name(kobj));
++		return PTR_ERR(sd);
++	}
++
++	kobj->sd = sd;
++	return 0;
+ }
+ 
+ static struct dentry *sysfs_lookup(struct inode *dir, struct dentry *dentry,
+@@ -1005,14 +1011,14 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
+ }
+ 
+ /**
+- * sysfs_enable_ns - enable namespace under a directory
++ * kernfs_enable_ns - enable namespace under a directory
+  * @sd: directory of interest, should be empty
+  *
+  * This is to be called right after @sd is created to enable namespace
+  * under it.  All children of @sd must have non-NULL namespace tags and
+  * only the ones which match the super_block's tag will be visible.
+  */
+-void sysfs_enable_ns(struct sysfs_dirent *sd)
++void kernfs_enable_ns(struct sysfs_dirent *sd)
+ {
+ 	WARN_ON_ONCE(sysfs_type(sd) != SYSFS_DIR);
+ 	WARN_ON_ONCE(!RB_EMPTY_ROOT(&sd->s_dir.children));
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 01657c5..11be6de 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -101,9 +101,12 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 		return -EINVAL;
+ 	}
+ 	if (grp->name) {
+-		error = sysfs_create_subdir(kobj, grp->name, &sd);
+-		if (error)
+-			return error;
++		sd = kernfs_create_dir(kobj->sd, grp->name, kobj);
++		if (IS_ERR(sd)) {
++			if (PTR_ERR(sd) == -EEXIST)
++				sysfs_warn_dup(kobj->sd, grp->name);
++			return PTR_ERR(sd);
++		}
+ 	} else
+ 		sd = kobj->sd;
+ 	sysfs_get(sd);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index a6f3fa3..9ac234e 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -179,9 +179,6 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
+ 
+ void release_sysfs_dirent(struct sysfs_dirent *sd);
+ 
+-int sysfs_create_subdir(struct kobject *kobj, const char *name,
+-			struct sysfs_dirent **p_sd);
+-
+ static inline struct sysfs_dirent *__sysfs_get(struct sysfs_dirent *sd)
+ {
+ 	if (sd) {
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 8cb6738..e8b73d4 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -17,6 +17,9 @@ struct sysfs_dirent;
+ 
+ #ifdef CONFIG_SYSFS
+ 
++struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
++					  const char *name, void *priv,
++					  const void *ns);
+ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 					const char *name,
+ 					struct sysfs_dirent *target);
+@@ -25,11 +28,17 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
+ 			     const void *ns);
+ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 		     const char *new_name, const void *new_ns);
++void kernfs_enable_ns(struct sysfs_dirent *sd);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
+ 
+ #else	/* CONFIG_SYSFS */
+ 
+ static inline struct sysfs_dirent *
++kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
++		     const void *ns)
++{ return ERR_PTR(-ENOSYS); }
++
++static inline struct sysfs_dirent *
+ kernfs_create_link(struct sysfs_dirent *parent, const char *name,
+ 		   struct sysfs_dirent *target)
+ { return ERR_PTR(-ENOSYS); }
+@@ -45,12 +54,20 @@ static inline int kernfs_rename_ns(struct sysfs_dirent *sd,
+ 				   const char *new_name, const void *new_ns)
+ { return -ENOSYS; }
+ 
++static inline void kernfs_enable_ns(struct sysfs_dirent *sd) { }
++
+ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
+ { return -ENOSYS; }
+ 
+ #endif	/* CONFIG_SYSFS */
+ 
++static inline struct sysfs_dirent *
++kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
++{
++	return kernfs_create_dir_ns(parent, name, priv, NULL);
++}
++
+ static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
+ 					const char *name)
+ {
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index e17381a..2bc735d 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -219,8 +219,6 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
+ void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
+ 			const char *name);
+ 
+-void sysfs_enable_ns(struct sysfs_dirent *sd);
+-
+ int __must_check sysfs_create_group(struct kobject *kobj,
+ 				    const struct attribute_group *grp);
+ int __must_check sysfs_create_groups(struct kobject *kobj,
+@@ -354,10 +352,6 @@ static inline void sysfs_delete_link(struct kobject *k, struct kobject *t,
+ {
+ }
+ 
+-static inline void sysfs_enable_ns(struct sysfs_dirent *sd)
+-{
+-}
+-
+ static inline int sysfs_create_group(struct kobject *kobj,
+ 				     const struct attribute_group *grp)
+ {
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 16e9335..b8d848f 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -94,7 +94,7 @@ static int create_dir(struct kobject *kobj)
+ 		BUG_ON(ops->type >= KOBJ_NS_TYPES);
+ 		BUG_ON(!kobj_ns_type_registered(ops->type));
+ 
+-		sysfs_enable_ns(kobj->sd);
++		kernfs_enable_ns(kobj->sd);
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.4.2
+
