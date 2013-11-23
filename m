@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3KWNvy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 08:51:54 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57139 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab3KWNvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 08:51:53 -0500
-Date: Sat, 23 Nov 2013 14:51:50 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] i915, debugfs: Fix uninitialized warning
-Message-ID: <20131123135150.GD24148@pd.tnic>
-References: <1385048986-14478-1-git-send-email-bp@alien8.de>
- <CAFLxGvzcAYwdcdNmZt4stTSCueRmStFYt+MqvNAS3BJX7CnUoQ@mail.gmail.com>
- <20131121162535.GK26009@pd.tnic>
- <20131122150959.GD10036@intel.com>
+	id S1755828Ab3KWN7F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 08:59:05 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:63576 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab3KWN7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 08:59:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131122150959.GD10036@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <528F71F8.4070902@zytor.com>
+References: <1384903939-3371-1-git-send-email-akinobu.mita@gmail.com>
+	<528D4A1A.2050100@zytor.com>
+	<CAC5umyh0Hfx3NgHX11eqskuifhrdYGB8L1nx1u0YUdBGchRTxw@mail.gmail.com>
+	<528E4CBA.8000808@zytor.com>
+	<CAC5umygUgSjUMFECDXAjmSPzpfUZ6=jRhZWhd5hTT2-eO6Oh6Q@mail.gmail.com>
+	<528F71F8.4070902@zytor.com>
+Date: Sat, 23 Nov 2013 22:59:01 +0900
+Message-ID: <CAC5umyiV2F1LoSaHBf6BENpeBSgW_zZDW_8jNOQkDM_zxEpGHA@mail.gmail.com>
+Subject: Re: [PATCH] x86: enable DMA CMA with swiotlb
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 05:09:59PM +0200, Ville Syrjälä wrote:
-> IIRC this warning was there for me too on gcc 4.6, but it disappeared
-> on gcc 4.7, which is why I decided not to send a patch for it.
+2013/11/23 H. Peter Anvin <hpa@zytor.com>:
+> On 11/22/2013 04:27 AM, Akinobu Mita wrote:
+>>
+>> I'm currently working for integrating DMA CMA with intel-iommu which
+>> I can test.  Regardless of which dma ops is actually used, I would
+>> like to allocate large contiguous memory with dma_alloc_coherent()
+>> and tell the base address to the device.
+>>
+>> We can use mem= or crashkernel= to reserve host memory, but it is
+>> complicated and unables to work with real IOMMU.
+>>
+>
+> If you have a real iotlb, why would you need contiguous memory?
 
-A disappearing and reappearing warning happened to me recently too. I
-attributed that to compiler upgrades. With this it will shut up for
-good. :-)
+Because allocating large memory by dma_alloc_coherent() with intel-iommu
+fails.  intel_alloc_coherent() allocates memory by alloc_pages() and
+then maps it by __intel_map_single().
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+What I'm trying change wit inte-iommu is adding the same scheme done
+by dma_generic_alloc_coherent(), i.e. trying to allocate memory by
+dma_alloc_from_contiguous() and alloc_pages() is used as a fallback.
