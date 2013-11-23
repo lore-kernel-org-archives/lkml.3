@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab3KWBev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 20:34:51 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:52464 "EHLO
+	id S932131Ab3KWBkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 20:40:43 -0500
+Received: from ringil.hengli.com.au ([178.18.16.133]:41241 "EHLO
 	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755857Ab3KWBer (ORCPT
+	with ESMTP id S1755857Ab3KWBkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 20:34:47 -0500
-Date: Sat, 23 Nov 2013 09:34:40 +0800
+	Fri, 22 Nov 2013 20:40:41 -0500
+Date: Sat, 23 Nov 2013 09:40:35 +0800
 From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
 Subject: Crypto Update for 3.13
-Message-ID: <20131123013440.GA16502@gondor.apana.org.au>
-References: <20110520235409.GA1722@gondor.apana.org.au>
- <20110724011752.GA14373@gondor.apana.org.au>
+Message-ID: <20131123014035.GA16598@gondor.apana.org.au>
+References: <20110724011752.GA14373@gondor.apana.org.au>
  <20111031040952.GA19659@gondor.apana.org.au>
  <20120106041250.GA7759@gondor.apana.org.au>
  <20121004095357.GA11777@gondor.apana.org.au>
@@ -25,11 +24,12 @@ References: <20110520235409.GA1722@gondor.apana.org.au>
  <20130907035544.GA22658@gondor.apana.org.au>
  <20131107080131.GA32307@gondor.apana.org.au>
  <20131112164151.GA22645@gondor.apana.org.au>
+ <20131123013440.GA16502@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131112164151.GA22645@gondor.apana.org.au>
+In-Reply-To: <20131123013440.GA16502@gondor.apana.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,7 +37,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus:
 
-This is a resend.
+This is a resend with the recipients in the cc field instead of the
+to field.
 
 Here is the crypto update for 3.13:
 
