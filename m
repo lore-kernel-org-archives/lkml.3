@@ -1,135 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab3KWA4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 19:56:53 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:25374 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3KWA4r (ORCPT
+	id S932187Ab3KWA46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 19:56:58 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:41098 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab3KWA4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 19:56:47 -0500
+	Fri, 22 Nov 2013 19:56:54 -0500
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
         tglx@linutronix.de, efault@gmx.de, jeffm@suse.com,
         torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
         aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com, davidlohr@hp.com
-Subject: [PATCH 0/5] futex: Wakeup optimizations
-Date: Fri, 22 Nov 2013 16:56:32 -0800
-Message-Id: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
+Subject: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
+Date: Fri, 22 Nov 2013 16:56:36 -0800
+Message-Id: <1385168197-8612-5-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
+References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have been dealing with a customer database workload on large
-12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
-of contention on some of the locks that serialize internal futex 
-data structures. This workload specially suffers in the wakeup 
-paths, where waiting on the corresponding hb->lock can account for 
-up to ~60% of the time. The result of such calls can mostly be 
-classified as (i) nothing to wake up and (ii) wakeup large amount 
-of tasks.
+In futex_wake() there is clearly no point in taking the hb->lock if
+we know beforehand that there are no tasks to be woken. This comes
+at the smaller cost of doing some atomic operations to keep track of
+the list's size. Specifically, increment the counter when an element is
+added to the list, and decrement when it is removed. Of course, if the
+counter is 0, then there are no tasks blocked on a futex. Some special
+considerations:
 
-Before these patches are applied, we can see this pathological behavior:
+- increment the counter at queue_lock() as we always end up calling
+  queue_me() which adds the element to the list. Upon any error,
+  queue_unlock() is called for housekeeping, for which we decrement
+  to mach the increment done in queue_lock().
 
- 37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-            --- _raw_spin_lock
-             |
-             |--97.14%-- futex_wake
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          |
-             |          |--99.70%-- 0x7f383fbdea1f
-             |          |           yyy
+- decrement the counter at __unqueue_me() to reflect when an element is
+  removed from the queue for wakeup related purposes.
 
- 43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-            --- _raw_spin_lock
-             |
-             |--53.74%-- futex_wake
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          |
-             |          |--99.40%-- 0x7fe7d44a4c05
-             |          |           zzz
-             |--45.90%-- futex_wait_setup
-             |          futex_wait
-             |          do_futex
-             |          sys_futex
-             |          system_call_fastpath
-             |          0x7fe7ba315789
-             |          syscall
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: Tom Vaden <tom.vaden@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ kernel/futex.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-
-With these patches, contention is practically non existent:
-
- 0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
-               --- _raw_spin_lock
-                |
-                |--76.06%-- futex_wait_setup
-                |          futex_wait
-                |          do_futex
-                |          sys_futex
-                |          system_call_fastpath
-                |          |
-                |          |--99.90%-- 0x7f3165e63789
-                |          |          syscall|
-                           ...
-                |--6.27%-- futex_wake
-                |          do_futex
-                |          sys_futex
-                |          system_call_fastpath
-                |          |
-                |          |--54.56%-- 0x7f317fff2c05
-                ...
-
-Patches 1 & 2 are cleanups and micro optimizations.
-
-Patch 3 addresses the well known issue of the global hash table.
-By creating a larger and NUMA aware table, we can reduce the false
-sharing and collisions, thus reducing the chance of different futexes 
-using hb->lock.
-
-Patch 4 reduces contention on the corresponding hb->lock by not trying to
-acquire it if there are no blocked tasks in the waitqueue.
-This particularly deals with point (i) above, where we see that it is not
-uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
-tasks were woken.
-
-Patch 5 resurrects a two year old idea from Peter Zijlstra to delay
-the waking of the blocked tasks to be done without holding the hb->lock:
-https://lkml.org/lkml/2011/9/14/118
-
-This is useful for locking primitives that can effect multiple wakeups
-per operation and want to avoid the futex's internal spinlock contention by
-delaying the wakeups until we've released the hb->lock.
-This particularly deals with point (ii) above, where we can observe that
-in occasions the wake calls end up waking 125 to 200 waiters in what we believe 
-are RW locks in the application.
-
-This patchset has also been tested on smaller systems for a variety of
-benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
-hb locks programs. So far, no functional or performance regressions have been seen.
-Furthermore, no issues were found when running the different tests in the futextest 
-suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
-
-This patchset applies on top of Linus' tree as of v3.13-rc1.
-
-Special thanks to Scott Norton, Tom Vanden and Mark Ray for help presenting, 
-debugging and analyzing the data.
-
-  futex: Misc cleanups
-  futex: Check for pi futex_q only once
-  futex: Larger hash table
-  futex: Avoid taking hb lock if nothing to wakeup
-  sched,futex: Provide delayed wakeup list
-
- include/linux/sched.h |  41 ++++++++++++++++++
- kernel/futex.c        | 113 +++++++++++++++++++++++++++-----------------------
- kernel/sched/core.c   |  19 +++++++++
- 3 files changed, 122 insertions(+), 51 deletions(-)
-
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 5fa9eb0..2f9dd5d 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -152,6 +152,7 @@ static const struct futex_q futex_q_init = {
+  * waiting on a futex.
+  */
+ struct futex_hash_bucket {
++	atomic_t len;
+ 	spinlock_t lock;
+ 	struct plist_head chain;
+ };
+@@ -843,6 +844,7 @@ static void __unqueue_futex(struct futex_q *q)
+ 
+ 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+ 	plist_del(&q->list, &hb->chain);
++	atomic_dec(&hb->len);
+ }
+ 
+ /*
+@@ -999,6 +1001,10 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 		goto out;
+ 
+ 	hb = hash_futex(&key);
++	/* make sure we really have tasks to wakeup */
++	if (atomic_read(&hb->len) == 0)
++		goto out_put_key;
++
+ 	spin_lock(&hb->lock);
+ 
+ 	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+@@ -1019,6 +1025,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 	}
+ 
+ 	spin_unlock(&hb->lock);
++out_put_key:
+ 	put_futex_key(&key);
+ out:
+ 	return ret;
+@@ -1137,7 +1144,9 @@ void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
+ 	 */
+ 	if (likely(&hb1->chain != &hb2->chain)) {
+ 		plist_del(&q->list, &hb1->chain);
++		atomic_dec(&hb1->len);
+ 		plist_add(&q->list, &hb2->chain);
++		atomic_inc(&hb2->len);
+ 		q->lock_ptr = &hb2->lock;
+ 	}
+ 	get_futex_key_refs(key2);
+@@ -1480,6 +1489,8 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ 	struct futex_hash_bucket *hb;
+ 
+ 	hb = hash_futex(&q->key);
++	atomic_inc(&hb->len);
++
+ 	q->lock_ptr = &hb->lock;
+ 
+ 	spin_lock(&hb->lock);
+@@ -1491,6 +1502,7 @@ queue_unlock(struct futex_hash_bucket *hb)
+ 	__releases(&hb->lock)
+ {
+ 	spin_unlock(&hb->lock);
++	atomic_dec(&hb->len);
+ }
+ 
+ /**
+@@ -2222,6 +2234,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+ 		 * Unqueue the futex_q and determine which it was.
+ 		 */
+ 		plist_del(&q->list, &hb->chain);
++		atomic_dec(&hb->len);
+ 
+ 		/* Handle spurious wakeups gracefully */
+ 		ret = -EWOULDBLOCK;
+@@ -2749,6 +2762,7 @@ static int __init futex_init(void)
+ 	for (i = 0; i < futex_hashsize; i++) {
+ 		plist_head_init(&futex_queues[i].chain);
+ 		spin_lock_init(&futex_queues[i].lock);
++		atomic_set(&futex_queues[i].len, 0);
+ 	}
+ 
+ 	return 0;
 -- 
 1.8.1.4
 
