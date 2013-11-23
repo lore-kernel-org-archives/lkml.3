@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3KWWXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:23:16 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:37458 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab3KWWW4 (ORCPT
+	id S932194Ab3KWWXT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:23:19 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:54936 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab3KWWXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:56 -0500
+	Sat, 23 Nov 2013 17:23:16 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 20/41] sysfs, kernfs: add kernfs_ops->seq_{start|next|stop}()
-Date: Sat, 23 Nov 2013 17:22:05 -0500
-Message-Id: <1385245346-856-21-git-send-email-tj@kernel.org>
+Subject: [PATCH 36/41] sysfs, kernfs: make super_blocks bind to different kernfs_roots
+Date: Sat, 23 Nov 2013 17:22:21 -0500
+Message-Id: <1385245346-856-37-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,114 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs_ops currently only supports single_open() behavior which is
-pretty restrictive.  Add optional callbacks ->seq_{start|next|stop}()
-which, when implemented, are invoked for seq_file traversal.  This
-allows full seq_file functionality for kernfs users.  This currently
-doesn't have any user and doesn't change any behavior.
+kernfs is being updated to allow multiple sysfs_dirent hierarchies so
+that it can also be used by other users.  Currently, sysfs
+super_blocks are always attached to one kernfs_root - sysfs_root - and
+distinguished only by their namespace tags.
 
-v2: Refreshed on top of the updated "sysfs, kernfs: prepare read path
-    for kernfs".
+This patch adds sysfs_super_info->root and update
+sysfs_fill/test_super() so that super_blocks are identified by the
+combination of both the associated kernfs_root and namespace tag.
+This allows mounting different kernfs hierarchies.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 39 ++++++++++++++++++++++++++++-----------
- include/linux/kernfs.h |  9 +++++++--
- 2 files changed, 35 insertions(+), 13 deletions(-)
+ fs/sysfs/mount.c | 10 ++++++----
+ fs/sysfs/sysfs.h |  6 ++++++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 9852450..74e3478 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -146,6 +146,7 @@ static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
- static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 0b5661b..f143b20 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -37,6 +37,7 @@ struct sysfs_dirent *sysfs_root_sd;
+ 
+ static int sysfs_fill_super(struct super_block *sb)
  {
- 	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops;
++	struct sysfs_super_info *info = sysfs_info(sb);
+ 	struct inode *inode;
+ 	struct dentry *root;
  
- 	/*
- 	 * @of->mutex nests outside active ref and is just to ensure that
-@@ -155,26 +156,42 @@ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
- 	if (!sysfs_get_active(of->sd))
- 		return ERR_PTR(-ENODEV);
+@@ -48,7 +49,7 @@ static int sysfs_fill_super(struct super_block *sb)
  
--	/*
--	 * The same behavior and code as single_open().  Returns !NULL if
--	 * pos is at the beginning; otherwise, NULL.
--	 */
--	return NULL + !*ppos;
-+	ops = kernfs_ops(of->sd);
-+	if (ops->seq_start) {
-+		return ops->seq_start(sf, ppos);
-+	} else {
-+		/*
-+		 * The same behavior and code as single_open().  Returns
-+		 * !NULL if pos is at the beginning; otherwise, NULL.
-+		 */
-+		return NULL + !*ppos;
-+	}
+ 	/* get root inode, initialize and unlock it */
+ 	mutex_lock(&sysfs_mutex);
+-	inode = sysfs_get_inode(sb, sysfs_root_sd);
++	inode = sysfs_get_inode(sb, info->root->sd);
+ 	mutex_unlock(&sysfs_mutex);
+ 	if (!inode) {
+ 		pr_debug("sysfs: could not get root inode\n");
+@@ -61,8 +62,8 @@ static int sysfs_fill_super(struct super_block *sb)
+ 		pr_debug("%s: could not get root dentry!\n", __func__);
+ 		return -ENOMEM;
+ 	}
+-	kernfs_get(sysfs_root_sd);
+-	root->d_fsdata = sysfs_root_sd;
++	kernfs_get(info->root->sd);
++	root->d_fsdata = info->root->sd;
+ 	sb->s_root = root;
+ 	sb->s_d_op = &sysfs_dentry_ops;
+ 	return 0;
+@@ -73,7 +74,7 @@ static int sysfs_test_super(struct super_block *sb, void *data)
+ 	struct sysfs_super_info *sb_info = sysfs_info(sb);
+ 	struct sysfs_super_info *info = data;
+ 
+-	return sb_info->ns == info->ns;
++	return sb_info->root == info->root && sb_info->ns == info->ns;
  }
  
- static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
- {
--	/*
--	 * The same behavior and code as single_open(), always terminate
--	 * after the initial read.
--	 */
--	++*ppos;
--	return NULL;
-+	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops = kernfs_ops(of->sd);
-+
-+	if (ops->seq_next) {
-+		return ops->seq_next(sf, v, ppos);
-+	} else {
-+		/*
-+		 * The same behavior and code as single_open(), always
-+		 * terminate after the initial read.
-+		 */
-+		++*ppos;
-+		return NULL;
-+	}
- }
+ static int sysfs_set_super(struct super_block *sb, void *data)
+@@ -110,6 +111,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	if (!info)
+ 		return ERR_PTR(-ENOMEM);
  
- static void kernfs_seq_stop(struct seq_file *sf, void *v)
- {
- 	struct sysfs_open_file *of = sf->private;
-+	const struct kernfs_ops *ops = kernfs_ops(of->sd);
-+
-+	if (ops->seq_stop)
-+		ops->seq_stop(sf, v);
++	info->root = sysfs_root;
+ 	info->ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
  
- 	sysfs_put_active(of->sd);
- 	mutex_unlock(&of->mutex);
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index d0912cf..ba993eb 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -37,8 +37,9 @@ struct kernfs_ops {
+ 	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 2b217ce..93b4b68 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -20,6 +20,12 @@
+ 
+ struct sysfs_super_info {
  	/*
- 	 * Read is handled by either seq_file or raw_read().
- 	 *
--	 * If seq_show() is present, seq_file path is active.  The behavior
--	 * is equivalent to single_open().  @sf->private points to the
-+	 * If seq_show() is present, seq_file path is active.  Other seq
-+	 * operations are optional and if not implemented, the behavior is
-+	 * equivalent to single_open().  @sf->private points to the
- 	 * associated sysfs_open_file.
- 	 *
- 	 * read() is bounced through kernel buffer and a read larger than
-@@ -46,6 +47,10 @@ struct kernfs_ops {
- 	 */
- 	int (*seq_show)(struct seq_file *sf, void *v);
- 
-+	void *(*seq_start)(struct seq_file *sf, loff_t *ppos);
-+	void *(*seq_next)(struct seq_file *sf, void *v, loff_t *ppos);
-+	void (*seq_stop)(struct seq_file *sf, void *v);
++	 * The root associated with this super_block.  Each super_block is
++	 * identified by the root and ns it's associated with.
++	 */
++	struct kernfs_root	*root;
 +
- 	ssize_t (*read)(struct sysfs_open_file *of, char *buf, size_t bytes,
- 			loff_t off);
- 
++	/*
+ 	 * Each sb is associated with one namespace tag, currently the network
+ 	 * namespace of the task which mounted this sysfs instance.  If multiple
+ 	 * tags become necessary, make the following an array and compare
 -- 
 1.8.4.2
 
