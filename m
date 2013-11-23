@@ -1,210 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab3KWOmm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 09:42:42 -0500
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:26131
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753475Ab3KWOmj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 09:42:39 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(z579eh551biz1432Ic8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275bh8275dh1de097h186068ha509lz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0hbe9i1155h)
-From: Peter Chen <Peter.Chen@freescale.com>
-To: "dt.tangr@gmail.com" <dt.tangr@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: RE: [PATCH] usb: chipidea: add support for USB OTG controller on
- TI-NSPIRE
-Thread-Topic: [PATCH] usb: chipidea: add support for USB OTG controller on
- TI-NSPIRE
-Thread-Index: AQHO6BIOlw9nbOWvS0WAMkFWG+2nPJoy37hg
-Date: Sat, 23 Nov 2013 14:42:32 +0000
-Message-ID: <F281D0F91ED19E4D8E63A7504E8A64980411E099@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <5290458b.87c5440a.4c57.ffffc9c8@mx.google.com>
-In-Reply-To: <5290458b.87c5440a.4c57.ffffc9c8@mx.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [116.227.135.117]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1756172Ab3KWOp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 09:45:26 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:44980 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751580Ab3KWOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 09:45:24 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] debugfs: Adding support to 16-bit regs and 8-bits regs
+Message-Id: <20131123144520.D0E08432AB@localhost.localdomain>
+Date: Sat, 23 Nov 2013 15:45:20 +0100 (CET)
+X-Antivirus: avast! (VPS 131115-0, 15/11/2013), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Many components still have 16 bits registers and several even have
+8 bits registers. This patch adds structures and functions to deal with
+those registers.
 
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
+diff -urN a/include/linux/debugfs.h b/include/linux/debugfs.h
+--- a/include/linux/debugfs.h	2013-10-25 04:35:01.265939364 +0200
++++ b/include/linux/debugfs.h	2013-10-25 04:34:56.286939344 +0200
+@@ -38,6 +38,28 @@
+ 	void __iomem *base;
+ };
  
-> 
-> From: Daniel Tang <dt.tangr@gmail.com>
-> 
-> The USB controller in TI-NSPIRE calculators are based
-> off either Freescale's USB OTG controller or the USB
-> controller found in the IMX233, both of which are
-> Chipidea compatible.
-> 
-> This patch adds a device tree binding for the controller.
-> 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
-> ---
->  .../devicetree/bindings/usb/ci13xxx-nspire.txt     | 17 +++++
->  drivers/usb/chipidea/Makefile                      |  1 +
->  drivers/usb/chipidea/ci_hdrc_nspire.c              | 74
-> ++++++++++++++++++++++
->  3 files changed, 92 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/ci13xxx-
-> nspire.txt
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_nspire.c
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
-> b/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
-> new file mode 100644
-> index 0000000..5ba8e90
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/ci13xxx-nspire.txt
-
-We have already renamed ci13xxx to ci_hdrc, please using ci-hdrc as
-prefix.
-
-> @@ -0,0 +1,17 @@
-> +* TI-Nspire USB OTG Controller
-> +
-> +Required properties:
-> +- compatible: Should be "zevio,nspire-usb"
-> +- reg: Should contain registers location and length
-> +- interrupts: Should contain controller interrupt
-> +
-> +Recommended properies:
-> +- vbus-supply: regulator for vbus
-> +
-> +Examples:
-> +		usb0: usb@B0000000 {
-> +			reg = <0xB0000000 0x1000>;
-> +			compatible = "zevio,nspire-usb";
-> +			interrupts = <8>;
-> +			vbus-supply = <&vbus_reg>;
-> +		};
-
-No clock information?
-
-> diff --git a/drivers/usb/chipidea/Makefile
-> b/drivers/usb/chipidea/Makefile
-> index a99d980..245ea4d 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_CHIPIDEA_DEBUG)	+= debug.o
->  # Glue/Bridge layers go here
-> 
->  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
-> +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_nspire.o
-> 
->  # PCI doesn't provide stubs, need to check
->  ifneq ($(CONFIG_PCI),)
-> diff --git a/drivers/usb/chipidea/ci_hdrc_nspire.c
-> b/drivers/usb/chipidea/ci_hdrc_nspire.c
-> new file mode 100644
-> index 0000000..318761d
-> --- /dev/null
-> +++ b/drivers/usb/chipidea/ci_hdrc_nspire.c
-> @@ -0,0 +1,74 @@
-> +/*
-> + *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * Based off drivers/usb/chipidea/ci_hdrc_msm.c
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/gadget.h>
-> +#include <linux/usb/chipidea.h>
-> +
-> +#include "ci.h"
-> +
-> +static struct ci_hdrc_platform_data ci_hdrc_nspire_platdata = {
-> +	.name			= "ci_hdrc_nspire",
-> +	.flags			= CI_HDRC_REGS_SHARED,
-> +	.capoffset              = DEF_CAPOFFSET,
-> +};
-> +
-
-Please keep alignment for the assignment.
-
-> +static int ci_hdrc_nspire_probe(struct platform_device *pdev)
-> +{
-> +	struct platform_device *ci_pdev;
-> +
-> +	dev_dbg(&pdev->dev, "ci_hdrc_nspire_probe\n");
-> +
-> +	ci_pdev = ci_hdrc_add_device(&pdev->dev,
-> +				pdev->resource, pdev->num_resources,
-> +				&ci_hdrc_nspire_platdata);
-> +
-> +	if (IS_ERR(ci_pdev)) {
-> +		dev_err(&pdev->dev, "ci_hdrc_add_device failed!\n");
-> +		return PTR_ERR(ci_pdev);
-> +	}
-> +
-> +	platform_set_drvdata(pdev, ci_pdev);
-> +
-> +	return 0;
-> +}
-> +
-> +static int ci_hdrc_nspire_remove(struct platform_device *pdev)
-> +{
-> +	struct platform_device *ci_pdev = platform_get_drvdata(pdev);
-> +
-> +	ci_hdrc_remove_device(ci_pdev);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id ci_hdrc_nspire_dt_ids[] = {
-> +	{ .compatible = "zevio,nspire-usb", },
-> +	{ /* sentinel */ }
-> +};
-> +
-> +static struct platform_driver ci_hdrc_nspire_driver = {
-> +	.probe = ci_hdrc_nspire_probe,
-> +	.remove = ci_hdrc_nspire_remove,
-> +	.driver = {
-> +		.name = "nspire_usb",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = ci_hdrc_nspire_dt_ids,
-> +	},
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, ci_hdrc_nspire_dt_ids);
-> +module_platform_driver(ci_hdrc_nspire_driver);
-> +
-> +MODULE_ALIAS("platform:nspire_usb");
-> +MODULE_ALIAS("platform:ci13xxx_nspire");
-
-ci_hdrc_nspire
-
-Peter
-
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.8.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
++struct debugfs_reg16 {
++	char *name;
++	unsigned long offset;
++};
++
++struct debugfs_regset16 {
++	const struct debugfs_reg16 *regs;
++	int nregs;
++	void __iomem *base;
++};
++
++struct debugfs_reg8 {
++	char *name;
++	unsigned long offset;
++};
++
++struct debugfs_regset8 {
++	const struct debugfs_reg8 *regs;
++	int nregs;
++	void __iomem *base;
++};
++
+ extern struct dentry *arch_debugfs_dir;
+ 
+ #if defined(CONFIG_DEBUG_FS)
+@@ -95,6 +117,20 @@
+ int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+ 			 int nregs, void __iomem *base, char *prefix);
+ 
++struct dentry *debugfs_create_regset16(const char *name, umode_t mode,
++				     struct dentry *parent,
++				     struct debugfs_regset16 *regset);
++
++int debugfs_print_regs16(struct seq_file *s, const struct debugfs_reg16 *regs,
++			 int nregs, void __iomem *base, char *prefix);
++
++struct dentry *debugfs_create_regset8(const char *name, umode_t mode,
++				     struct dentry *parent,
++				     struct debugfs_regset8 *regset);
++
++int debugfs_print_regs8(struct seq_file *s, const struct debugfs_reg8 *regs,
++			 int nregs, void __iomem *base, char *prefix);
++
+ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+ 					struct dentry *parent,
+ 					u32 *array, u32 elements);
+@@ -227,6 +263,20 @@
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline struct dentry *debugfs_create_regset16(const char *name,
++				   umode_t mode, struct dentry *parent,
++				   struct debugfs_regset16 *regset)
++{
++	return ERR_PTR(-ENODEV);
++}
++
++static inline struct dentry *debugfs_create_regset8(const char *name,
++				   umode_t mode, struct dentry *parent,
++				   struct debugfs_regset8 *regset)
++{
++	return ERR_PTR(-ENODEV);
++}
++
+ static inline bool debugfs_initialized(void)
+ {
+ 	return false;
+diff -urN a/fs/debugfs/file.c b/fs/debugfs/file.c
+--- a/fs/debugfs/file.c	2013-10-25 04:37:50.588939338 +0200
++++ b/fs/debugfs/file.c	2013-10-25 04:37:41.478939346 +0200
+@@ -760,4 +760,182 @@
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_regset32);
+ 
++/*
++ * The regset16 stuff is used to print 16-bit registers using the
++ * seq_file utilities. We offer printing a register set in an already-opened
++ * sequential file or create a debugfs file that only prints a regset16.
++ */
++
++/**
++ * debugfs_print_regs16 - use seq_print to describe a set of registers
++ * @s: the seq_file structure being used to generate output
++ * @regs: an array if struct debugfs_reg16 structures
++ * @nregs: the length of the above array
++ * @base: the base address to be used in reading the registers
++ * @prefix: a string to be prefixed to every output line
++ *
++ * This function outputs a text block describing the current values of
++ * some 16-bit hardware registers. It is meant to be used within debugfs
++ * files based on seq_file that need to show registers, intermixed with other
++ * information. The prefix argument may be used to specify a leading string,
++ * because some peripherals have several blocks of identical registers,
++ * for example configuration of dma channels
++ */
++int debugfs_print_regs16(struct seq_file *s, const struct debugfs_reg16 *regs,
++			   int nregs, void __iomem *base, char *prefix)
++{
++	int i, ret = 0;
++
++	for (i = 0; i < nregs; i++, regs++) {
++		if (prefix)
++			ret += seq_printf(s, "%s", prefix);
++		ret += seq_printf(s, "%s = 0x%04x\n", regs->name,
++				  readw(base + regs->offset));
++	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(debugfs_print_regs16);
++
++static int debugfs_show_regset16(struct seq_file *s, void *data)
++{
++	struct debugfs_regset16 *regset = s->private;
++
++	debugfs_print_regs16(s, regset->regs, regset->nregs, regset->base, "");
++	return 0;
++}
++
++static int debugfs_open_regset16(struct inode *inode, struct file *file)
++{
++	return single_open(file, debugfs_show_regset16, inode->i_private);
++}
++
++static const struct file_operations fops_regset16 = {
++	.open =		debugfs_open_regset16,
++	.read =		seq_read,
++	.llseek =	seq_lseek,
++	.release =	single_release,
++};
++
++/**
++ * debugfs_create_regset16 - create a debugfs file that returns register values
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @regset: a pointer to a struct debugfs_regset16, which contains a pointer
++ *          to an array of register definitions, the array size and the base
++ *          address where the register bank is to be found.
++ *
++ * This function creates a file in debugfs with the given name that reports
++ * the names and values of a set of 16-bit registers. If the @mode variable
++ * is so set it can be read from. Writing is not supported.
++ *
++ * This function will return a pointer to a dentry if it succeeds.  This
++ * pointer must be passed to the debugfs_remove() function when the file is
++ * to be removed (no automatic cleanup happens if your module is unloaded,
++ * you are responsible here.)  If an error occurs, %NULL will be returned.
++ *
++ * If debugfs is not enabled in the kernel, the value -%ENODEV will be
++ * returned.  It is not wise to check for this value, but rather, check for
++ * %NULL or !%NULL instead as to eliminate the need for #ifdef in the calling
++ * code.
++ */
++struct dentry *debugfs_create_regset16(const char *name, umode_t mode,
++				       struct dentry *parent,
++				       struct debugfs_regset16 *regset)
++{
++	return debugfs_create_file(name, mode, parent, regset, &fops_regset16);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_regset16);
++
++/*
++ * The regset8 stuff is used to print 8-bit registers using the
++ * seq_file utilities. We offer printing a register set in an already-opened
++ * sequential file or create a debugfs file that only prints a regset8.
++ */
++
++/**
++ * debugfs_print_regs8 - use seq_print to describe a set of registers
++ * @s: the seq_file structure being used to generate output
++ * @regs: an array if struct debugfs_reg8 structures
++ * @nregs: the length of the above array
++ * @base: the base address to be used in reading the registers
++ * @prefix: a string to be prefixed to every output line
++ *
++ * This function outputs a text block describing the current values of
++ * some 8-bit hardware registers. It is meant to be used within debugfs
++ * files based on seq_file that need to show registers, intermixed with other
++ * information. The prefix argument may be used to specify a leading string,
++ * because some peripherals have several blocks of identical registers,
++ * for example configuration of dma channels
++ */
++int debugfs_print_regs8(struct seq_file *s, const struct debugfs_reg8 *regs,
++			   int nregs, void __iomem *base, char *prefix)
++{
++	int i, ret = 0;
++
++	for (i = 0; i < nregs; i++, regs++) {
++		if (prefix)
++			ret += seq_printf(s, "%s", prefix);
++		ret += seq_printf(s, "%s = 0x%02x\n", regs->name,
++				  readb(base + regs->offset));
++	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(debugfs_print_regs8);
++
++static int debugfs_show_regset8(struct seq_file *s, void *data)
++{
++	struct debugfs_regset8 *regset = s->private;
++
++	debugfs_print_regs8(s, regset->regs, regset->nregs, regset->base, "");
++	return 0;
++}
++
++static int debugfs_open_regset8(struct inode *inode, struct file *file)
++{
++	return single_open(file, debugfs_show_regset8, inode->i_private);
++}
++
++static const struct file_operations fops_regset8 = {
++	.open =		debugfs_open_regset8,
++	.read =		seq_read,
++	.llseek =	seq_lseek,
++	.release =	single_release,
++};
++
++/**
++ * debugfs_create_regset8 - create a debugfs file that returns register values
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @regset: a pointer to a struct debugfs_regset8, which contains a pointer
++ *          to an array of register definitions, the array size and the base
++ *          address where the register bank is to be found.
++ *
++ * This function creates a file in debugfs with the given name that reports
++ * the names and values of a set of 8-bit registers. If the @mode variable
++ * is so set it can be read from. Writing is not supported.
++ *
++ * This function will return a pointer to a dentry if it succeeds.  This
++ * pointer must be passed to the debugfs_remove() function when the file is
++ * to be removed (no automatic cleanup happens if your module is unloaded,
++ * you are responsible here.)  If an error occurs, %NULL will be returned.
++ *
++ * If debugfs is not enabled in the kernel, the value -%ENODEV will be
++ * returned.  It is not wise to check for this value, but rather, check for
++ * %NULL or !%NULL instead as to eliminate the need for #ifdef in the calling
++ * code.
++ */
++struct dentry *debugfs_create_regset8(const char *name, umode_t mode,
++				       struct dentry *parent,
++				       struct debugfs_regset8 *regset)
++{
++	return debugfs_create_file(name, mode, parent, regset, &fops_regset8);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_regset8);
++
+ #endif /* CONFIG_HAS_IOMEM */
