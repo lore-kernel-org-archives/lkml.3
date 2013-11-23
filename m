@@ -1,110 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab3KWCkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 21:40:09 -0500
-Received: from plane.gmane.org ([80.91.229.3]:48767 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755981Ab3KWCkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 21:40:06 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Jongman Heo <jongman.heo@samsung.com>
-Subject: Re: Linux 3.13-rc1 is out
-Date: Sat, 23 Nov 2013 02:32:29 +0000 (UTC)
-Message-ID: <loom.20131123T032923-567@post.gmane.org>
-References: <CA+55aFxK5hkhteiL5cyPtHX5reup6aOiHQTCDKKdBsHiWsroGA@mail.gmail.com> <m3li0gndnk.fsf@carbon.jhcloos.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 210.94.41.89 (Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; WOW64; Trident/6.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; MS-RTC LM 8; .NET4.0C))
+	id S1756146Ab3KWCyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 21:54:13 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:44341 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755981Ab3KWCyJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Nov 2013 21:54:09 -0500
+X-AuditID: cbfee61a-b7f4b6d00000761f-df-529018cfbca4
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+References: <000301cee71f$b0e54160$12afc420$@samsung.com>
+ <1385111441.26319.81.camel@kjgkr>
+In-reply-to: <1385111441.26319.81.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by
+ merging for mount performance
+Date: Sat, 23 Nov 2013 10:53:16 +0800
+Message-id: <000c01cee7f7$471c04c0$d5540e40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQK5ip1hYVBPavTw3v39qs6NCq5t6wD/f1vamFTaLBA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jAd3zEhOCDDbt5re4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujLWnmhkL
+	ZgtVfPp4hb2B8RxfFyMnh4SAicSP/nesELaYxIV769m6GLk4hAQWMUos+/eRBcL5wSjR13uN
+	CaSKTUBFYnnHfzBbREBaYtaneWBFzAKzGSV6vjxjBEkICcRKrL35gwXE5hTQk9iwpBGsQVgg
+	X2LqjhvsXYwcHCwCqhK3u6NAwrwClhIXtl5mhbAFJX5MvscCUsIsoC4xZUouSJhZQFviybsL
+	UIcqSOw4+5oR4gQriXV39rBC1IhLbDxyi2UCo9AsJJNmIUyahWTSLCQdCxhZVjGKphYkFxQn
+	peca6hUn5haX5qXrJefnbmIER8AzqR2MKxssDjEKcDAq8fAK2PQFCbEmlhVX5h5ilOBgVhLh
+	nf+6P0iINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QDo8OK
+	e7y3+g733ZC9YHXi+JfNnU5aXO90Gi1uXHQrd48/cvZhmtSfhD+5H5Ys6pn7KHXXbpW0jDUP
+	VkhHyyst5HModzt9ao3J8xkTPxzcsUrgzJ2bC67P3qhe5LxJICR11/wHiecrJp3XmvE3sz3w
+	fCbjlY3r0nj+3JhZEGr0RGqdV5eCwcGEC4pKLMUZiYZazEXFiQDLMbuqfAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Cloos <cloos <at> jhcloos.com> writes:
+Hi,
+
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Friday, November 22, 2013 5:11 PM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> Subject: Re: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
+> 
+> Hi,
+> 
+> Just one niptick.
+> 
+> 2013-11-22 (금), 09:09 +0800, Chao Yu:
+> > Previously we read sit entries page one by one, this method lost the chance
+> > of reading contiguous page together. So we read pages as contiguous as
+> > possible for better mount performance.
+> >
+> > change log:
+> >  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng
+> >    suggested.
+> >  o add mark_page_accessed() before release page to delay VM reclaiming.
+> >  o remove '*order' for simplification of function as Jaegeuk Kim suggested.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/segment.c |  103 +++++++++++++++++++++++++++++++++++++++--------------
+> >  fs/f2fs/segment.h |    2 ++
+> >  2 files changed, 78 insertions(+), 27 deletions(-)
+> >
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 8149eba..998e7d3 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -14,6 +14,7 @@
+> >  #include <linux/blkdev.h>
+> >  #include <linux/prefetch.h>
+> >  #include <linux/vmalloc.h>
+> > +#include <linux/swap.h>
+> >
+> >  #include "f2fs.h"
+> >  #include "segment.h"
+> > @@ -1488,41 +1489,89 @@ static int build_curseg(struct f2fs_sb_info *sbi)
+> >  	return restore_curseg_summaries(sbi);
+> >  }
+> >
+> > +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start, int nrpages)
+> > +{
+> > +	struct address_space *mapping = sbi->meta_inode->i_mapping;
+> > +	struct page *page;
+> > +	block_t blk_addr, prev_blk_addr = 0;
+> > +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
+> 
+> Can we remove SIT_BLK_CNT by replacing with sit_i->sit_blocks?
+
+Because sit_i->sit_blocks is a multiple of segment size(i.e. 512/1024),
+but we may use part of sit_blocks, not all of them. So it's waste to read 
+all of them.
+What's your opinion?
+
+Regards,
+Yu
 
 > 
-> This combination:
-> 
-> # CONFIG_SYSTEM_TRUSTED_KEYRING is not set
-> CONFIG_TRUSTED_KEYS=m
-> 
-> (acquired by oldconfig and N to system keyring)
-> 
-> fails with:
-> 
-> Pass 2
->   CC [M]  crypto/asymmetric_keys/x509_rsakey-asn1.o
->   CC [M]  crypto/asymmetric_keys/x509_cert_parser.o
->   CC [M]  crypto/asymmetric_keys/x509_public_key.o
-> crypto/asymmetric_keys/x509_public_key.c: In 
-function ‘x509_key_preparse’:
-> crypto/asymmetric_keys/x509_public_key.c:237:35: 
-error: ‘system_trusted_keyring’
-> undeclared (first use in this function)
->    ret = x509_validate_trust(cert, system_trusted_keyring);
->                                    ^
-> crypto/asymmetric_keys/x509_public_key.c:237:35: note: each undeclared 
-identifier is reported
-> only once for each function it appears in
-> make[2]: *** [crypto/asymmetric_keys/x509_public_key.o] Error 1
-> make[1]: *** [crypto/asymmetric_keys] Error 2
-> make: *** [crypto] Error 2
-> 
-> Perhaps include/keys/system_keyring.h should have a definition for
-> system_trusted_keyring in the #ifndef CONFIG_SYSTEM_TRUSTED_KEYRING
-> case (which may entail just removing the #ifdef).
-> 
-> Commits b56e5a17b6b9acd1 and 09fbc47373826d67 are relevant.
-> 
-> -JimC
-
-I have same problem too.
-
-Using following band-aid patch (though I'm not sure it's correct), build 
-is ok;
-
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -67,6 +67,7 @@ int integrity_digsig_verify(const unsigned int id, const 
-char *sig, int siglen,
-        return -EOPNOTSUPP;
- }
- 
-+#ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
- int integrity_init_keyring(const unsigned int id)
- {
-        const struct cred *cred = current_cred();
-@@ -84,3 +85,4 @@ int integrity_init_keyring(const unsigned int id)
-                        keyring_name[id], PTR_ERR(keyring[id]));
-        return 0;
- }
-+#endif
-
-But, I encounter another build issue;
-
-  CC      crypto/asymmetric_keys/x509_public_key.o
-crypto/asymmetric_keys/x509_public_key.c: In function 
-â€˜x509_key_preparseâ€™:
-crypto/asymmetric_keys/x509_public_key.c:237:35: error: 
-â€˜system_trusted_keyringâ€™ undeclared (first use in this function)
-   ret = x509_validate_trust(cert, system_trusted_keyring);
-                                   ^
-crypto/asymmetric_keys/x509_public_key.c:237:35: note: each undeclared 
-identifier is reported only once for each function it appears in
-make[2]: *** [crypto/asymmetric_keys/x509_public_key.o] Error 1
-make[1]: *** [crypto/asymmetric_keys] Error 2
-make: *** [crypto] Error 2
-
-
-Looks like it's caused by following combination...
-
-# CONFIG_SYSTEM_TRUSTED_KEYRING is not set
-CONFIG_X509_CERTIFICATE_PARSER=y
-
-
-Jongman Heo
+> --
+> Jaegeuk Kim
+> Samsung
 
