@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab3KWPhc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 10:37:32 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52226 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab3KWPh2 (ORCPT
+	id S932258Ab3KWPi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 10:38:59 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37199 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225Ab3KWPhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 10:37:28 -0500
+	Sat, 23 Nov 2013 10:37:33 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 02/10] posix-timers: Remove dead process posix cpu timers caching
-Date: Sat, 23 Nov 2013 16:37:12 +0100
-Message-Id: <1385221040-24731-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/10] posix-timers: Consolidate posix_cpu_clock_get()
+Date: Sat, 23 Nov 2013 16:37:16 +0100
+Message-Id: <1385221040-24731-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1385221040-24731-1-git-send-email-fweisbec@gmail.com>
 References: <1385221040-24731-1-git-send-email-fweisbec@gmail.com>
@@ -24,27 +24,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we removed dead thread posix cpu timers caching,
-lets remove the dead process wide version. This caching
-is similar to the per thread version but it should be even
-more rare:
+Consolidate the clock sampling common code used for both local
+and remote targets.
 
-* If the process id dead, we are not reading its timers
-status from a thread belonging to its group since they
-are all dead. So this caching only concern remote process
-timers reads. Now posix cpu timers using itimers or timer_settime()
-can't do remote process timers anyway so it's not even clear if there
-is actually a user for this caching.
+Note that this introduces a tiny user ABI change: if a
+PID is passed to clock_gettime() along the clockid,
+we used to forbid a process wide clock sample when that
+PID doesn't belong to a group leader. Now after this patch
+we allow process wide clock samples if that PID belongs to
+the current task, even if the current task is not the
+group leader.
 
-* Unlike per thread timers caching, this only applies to
-zombies targets. Buried targets' process wide timers return
-0 values. But then again, timer_gettime() can't read remote
-process timers, so if the process is dead, there can't be
-any reader left anyway.
-
-Then again this caching seem to complicate the code for
-corner cases that are probably not worth it. So lets get
-rid of it.
+But local process wide clock samples are allowed if PID == 0
+(current task) even if the current task is not the group leader.
+So in the end this should be no big deal as this actually harmonize
+the behaviour when the remote sample is actually a local one.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -54,69 +48,104 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- kernel/posix-cpu-timers.c | 34 +---------------------------------
- 1 file changed, 1 insertion(+), 33 deletions(-)
+ kernel/posix-cpu-timers.c | 64 ++++++++++++++++++++++-------------------------
+ 1 file changed, 30 insertions(+), 34 deletions(-)
 
 diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index b803265..dd75dc4 100644
+index bf49832..7117f6d 100644
 --- a/kernel/posix-cpu-timers.c
 +++ b/kernel/posix-cpu-timers.c
-@@ -453,23 +453,6 @@ void posix_cpu_timers_exit_group(struct task_struct *tsk)
- 		       tsk->se.sum_exec_runtime + sig->sum_sched_runtime);
+@@ -260,30 +260,43 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+ 	return 0;
  }
  
--static void clear_dead_task(struct k_itimer *itimer, unsigned long long now)
--{
--	struct cpu_timer_list *timer = &itimer->it.cpu;
--
--	/*
--	 * That's all for this thread or process.
--	 * We leave our residual in expires to be reported.
--	 */
--	put_task_struct(timer->task);
--	timer->task = NULL;
--	if (timer->expires < now) {
--		timer->expires = 0;
--	} else {
--		timer->expires -= now;
--	}
--}
--
- static inline int expires_gt(cputime_t expires, cputime_t new_exp)
++static int posix_cpu_clock_get_task(struct task_struct *tsk,
++				    const clockid_t which_clock,
++				    struct timespec *tp)
++{
++	int err = -EINVAL;
++	unsigned long long rtn;
++
++	if (CPUCLOCK_PERTHREAD(which_clock)) {
++		if (same_thread_group(tsk, current))
++			err = cpu_clock_sample(which_clock, tsk, &rtn);
++	} else {
++		read_lock(&tasklist_lock);
++
++		if (tsk->sighand && (tsk == current || thread_group_leader(tsk)))
++			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
++
++		read_unlock(&tasklist_lock);
++	}
++
++	if (!err)
++		sample_to_timespec(which_clock, rtn, tp);
++
++	return err;
++}
++
+ 
+ static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
  {
- 	return expires == 0 || expires > new_exp;
-@@ -831,16 +814,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- 			goto dead;
- 		} else {
- 			cpu_timer_sample_group(timer->it_clock, p, &now);
--			if (unlikely(p->exit_state) && thread_group_empty(p)) {
--				read_unlock(&tasklist_lock);
--				/*
--				 * We've noticed that the thread is dead, but
--				 * not yet reaped.  Take this opportunity to
--				 * drop our task ref.
--				 */
--				clear_dead_task(timer, now);
--				goto dead;
--			}
- 		}
- 		read_unlock(&tasklist_lock);
- 	}
-@@ -1090,13 +1063,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
- 			timer->it.cpu.expires = 0;
- 			goto out_unlock;
- 		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+ 	const pid_t pid = CPUCLOCK_PID(which_clock);
+-	int error = -EINVAL;
+-	unsigned long long rtn;
++	int err = -EINVAL;
+ 
+ 	if (pid == 0) {
+ 		/*
+ 		 * Special case constant value for our own clocks.
+ 		 * We don't have to do any lookup to find ourselves.
+ 		 */
+-		if (CPUCLOCK_PERTHREAD(which_clock)) {
 -			/*
--			 * We've noticed that the thread is dead, but
--			 * not yet reaped.  Take this opportunity to
--			 * drop our task ref.
+-			 * Sampling just ourselves we can do with no locking.
 -			 */
-+			/* Optimizations: if the process is dying, no need to rearm */
- 			cpu_timer_sample_group(timer->it_clock, p, &now);
--			clear_dead_task(timer, now);
- 			goto out_unlock;
- 		}
- 		spin_lock(&p->sighand->siglock);
+-			error = cpu_clock_sample(which_clock,
+-						 current, &rtn);
+-		} else {
+-			read_lock(&tasklist_lock);
+-			error = cpu_clock_sample_group(which_clock,
+-						       current, &rtn);
+-			read_unlock(&tasklist_lock);
+-		}
++		err = posix_cpu_clock_get_task(current, which_clock, tp);
+ 	} else {
+ 		/*
+ 		 * Find the given PID, and validate that the caller
+@@ -292,29 +305,12 @@ static int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
+ 		struct task_struct *p;
+ 		rcu_read_lock();
+ 		p = find_task_by_vpid(pid);
+-		if (p) {
+-			if (CPUCLOCK_PERTHREAD(which_clock)) {
+-				if (same_thread_group(p, current)) {
+-					error = cpu_clock_sample(which_clock,
+-								 p, &rtn);
+-				}
+-			} else {
+-				read_lock(&tasklist_lock);
+-				if (thread_group_leader(p) && p->sighand) {
+-					error =
+-					    cpu_clock_sample_group(which_clock,
+-							           p, &rtn);
+-				}
+-				read_unlock(&tasklist_lock);
+-			}
+-		}
++		if (p)
++			err = posix_cpu_clock_get_task(p, which_clock, tp);
+ 		rcu_read_unlock();
+ 	}
+ 
+-	if (error)
+-		return error;
+-	sample_to_timespec(which_clock, rtn, tp);
+-	return 0;
++	return err;
+ }
+ 
+ 
 -- 
 1.8.3.1
 
