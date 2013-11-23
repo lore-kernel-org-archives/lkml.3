@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab3KWVhr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 16:37:47 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43558 "EHLO arroyo.ext.ti.com"
+	id S1756296Ab3KWWGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:06:10 -0500
+Received: from shutemov.name ([204.155.152.216]:45735 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756317Ab3KWVhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 16:37:35 -0500
-Message-ID: <52911FFA.7030002@ti.com>
-Date: Sat, 23 Nov 2013 16:36:58 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755708Ab3KWWGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 17:06:06 -0500
+Date: Sat, 23 Nov 2013 23:10:19 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: David Miller <davem@davemloft.net>, pomac@demius.net, bhelgaas@google.com,
+        pomac@vapor.com, linux-kernel@vger.kernel.org, edumazet@google.com,
+        netdev@vger.kernel.org, alex.aring@gmail.com, stable@vger.kernel.org
+Subject: Re: [OOPS][3.12] BUG: unable to handle kernel NULL pointer
+ dereference at 0000000c
+Message-ID: <20131123211019.GA7084@shutemov.name>
+References: <CAErSpo4jh7pO=jhZTvHD+sT2O12Ly6V3e_oiac8gHqmdmqevkg@mail.gmail.com>
+ <20131115.174426.1448825246187940374.davem@davemloft.net>
+ <20131115233919.GB11450@pomac.netswarm.net>
+ <20131115.185755.1752342950675745464.davem@davemloft.net>
+ <20131118092255.GX31491@secunet.com>
 MIME-Version: 1.0
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-CC: <patches@linaro.org>, <linaro-networking@linaro.org>,
-        <linaro-kernel@lists.linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: keystone: enable big endian support
-References: <1384971859-7748-1-git-send-email-taras.kondratiuk@linaro.org>
-In-Reply-To: <1384971859-7748-1-git-send-email-taras.kondratiuk@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131118092255.GX31491@secunet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 November 2013 01:24 PM, Taras Kondratiuk wrote:
-> Keystone code is big endian compatible,
-> so mark it as one that supports big endian.
+On Mon, Nov 18, 2013 at 10:22:55AM +0100, Steffen Klassert wrote:
+> On Fri, Nov 15, 2013 at 06:57:55PM -0500, David Miller wrote:
+> > From: Ian Kumlien <pomac@demius.net>
+> > Date: Sat, 16 Nov 2013 00:39:19 +0100
+> > 
+> > > On Fri, Nov 15, 2013 at 05:44:26PM -0500, David Miller wrote:
+> > >> From: Bjorn Helgaas <bhelgaas@google.com>
+> > >> Date: Fri, 15 Nov 2013 15:29:53 -0700
+> > >> 
+> > >> > [+cc David, Eric, Alex, netdev]
+> > >> > 
+> > >> > Alex reported a similar issue at
+> > >> > http://marc.info/?l=linux-netdev&m=138355719901790&w=4
+> > >> 
+> > >> Fixed by:
+> > >> 
+> > >> commit 84502b5ef9849a9694673b15c31bd3ac693010ae
+> > >> Author: Steffen Klassert <steffen.klassert@secunet.com>
+> > >> Date:   Wed Oct 30 11:16:28 2013 +0100
+> > > 
+> > > Cherry-picked, compiled and preparing for reboot - thanks!
+> > > 
+> > > Shouldn't this be queued up in stable sometime soonish?
+> > > 
+> > > (Sorry for the change of email address, i had forgot to switch the
+> > > configurations in mutt)
+> > 
+> > Steffen is in charge of IPSEC -stable submissions, please ask him
+> > :-)
 > 
-> Note this patch just allows to select Big endian build
-> for ARCH_KEYSTONE, but it does not enable BE by default.
+> It was intended for v3.12 but the release came before it was merged
+> into the manline. So yes, it should go to the v3.12 stable tree.
 > 
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> ---
-Applied.. Thanks for the patch
+> I've always did stable submissions just by marking them as a
+> candidate for stable, this did not happen here because I hoped
+> it will make it into v3.12. It should apply cleanly to v3.12
+> stable, you could just pick it into you stable queue, or
+> alternatively I can submit to stable.
 
+Any progress with getting the patch into stable?
 
+It's not in v3.12.1 and I don't see it in stable queue.
+
+-- 
+ Kirill A. Shutemov
