@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab3KWW3R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:29:17 -0500
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:47106 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756496Ab3KWWW6 (ORCPT
+	id S932301Ab3KWW3j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:29:39 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:43646 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab3KWWW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:58 -0500
+	Sat, 23 Nov 2013 17:22:57 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/41] sysfs, kernfs: reorganize SYSFS_* constants
-Date: Sat, 23 Nov 2013 17:22:07 -0500
-Message-Id: <1385245346-856-23-git-send-email-tj@kernel.org>
+Subject: [PATCH 21/41] sysfs, kernfs: introduce kernfs_notify()
+Date: Sat, 23 Nov 2013 17:22:06 -0500
+Message-Id: <1385245346-856-22-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,52 +21,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to add one more SYSFS_FLAG_* but we can't use the next higher
-bit, 0x10000, as the flag field is 16bits wide.  The flags are
-currently arranged weirdly - 8 bits are set aside for the type flags
-when there are only three three used, the first flag starts at 0x1000
-instead of 0x0100 and flag literals have 5 digits (20 bits) when only
-4 digits can be used.
+Introduce kernfs interface to wake up poll(2) which takes and returns
+sysfs_dirents.
 
-Rearrange them so that type bits are only the lowest four, flags start
-at 0x0010 and similar flags are grouped.
+sysfs_notify_dirent() is renamed to kernfs_notify() and sysfs_notify()
+is updated so that it doesn't directly grab sysfs_mutex but acquires
+the target sysfs_dirents using sysfs_get_dirent().
+sysfs_notify_dirent() is reimplemented as a dumb inline wrapper around
+kernfs_notify().
 
-This patch doesn't cause any behavior difference.
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/sysfs.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ fs/sysfs/file.c        | 33 ++++++++++++++++++++++-----------
+ include/linux/kernfs.h |  3 +++
+ include/linux/sysfs.h  |  9 +++++----
+ 3 files changed, 30 insertions(+), 15 deletions(-)
 
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index a6542d2..c86456c 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -80,18 +80,18 @@ struct sysfs_dirent {
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 74e3478..a68cbef 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -851,7 +851,13 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
+ }
  
- #define SD_DEACTIVATED_BIAS		INT_MIN
- 
--#define SYSFS_TYPE_MASK			0x00ff
-+#define SYSFS_TYPE_MASK			0x000f
- #define SYSFS_DIR			0x0001
- #define SYSFS_KOBJ_ATTR			0x0002
--#define SYSFS_KOBJ_LINK			0x0008
-+#define SYSFS_KOBJ_LINK			0x0004
- #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
- #define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
- 
- #define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
--#define SYSFS_FLAG_NS			0x01000
--#define SYSFS_FLAG_REMOVED		0x02000
--#define SYSFS_FLAG_HAS_SEQ_SHOW		0x04000
--#define SYSFS_FLAG_HAS_MMAP		0x08000
-+#define SYSFS_FLAG_REMOVED		0x0010
-+#define SYSFS_FLAG_NS			0x0020
-+#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
-+#define SYSFS_FLAG_HAS_MMAP		0x0080
- 
- static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+-void sysfs_notify_dirent(struct sysfs_dirent *sd)
++/**
++ * kernfs_notify - notify a kernfs file
++ * @sd: file to notify
++ *
++ * Notify @sd such that poll(2) on @sd wakes up.
++ */
++void kernfs_notify(struct sysfs_dirent *sd)
  {
+ 	struct sysfs_open_dirent *od;
+ 	unsigned long flags;
+@@ -868,22 +874,27 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
+ 
+ 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
+ }
+-EXPORT_SYMBOL_GPL(sysfs_notify_dirent);
++EXPORT_SYMBOL_GPL(kernfs_notify);
+ 
+ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ {
+-	struct sysfs_dirent *sd = k->sd;
+-
+-	mutex_lock(&sysfs_mutex);
++	struct sysfs_dirent *sd = k->sd, *tmp;
+ 
+ 	if (sd && dir)
+-		sd = sysfs_find_dirent(sd, dir, NULL);
+-	if (sd && attr)
+-		sd = sysfs_find_dirent(sd, attr, NULL);
+-	if (sd)
+-		sysfs_notify_dirent(sd);
++		sd = sysfs_get_dirent(sd, dir);
++	else
++		sysfs_get(sd);
+ 
+-	mutex_unlock(&sysfs_mutex);
++	if (sd && attr) {
++		tmp = sysfs_get_dirent(sd, attr);
++		sysfs_put(sd);
++		sd = tmp;
++	}
++
++	if (sd) {
++		kernfs_notify(sd);
++		sysfs_put(sd);
++	}
+ }
+ EXPORT_SYMBOL_GPL(sysfs_notify);
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index ba993eb..f20796e 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -84,6 +84,7 @@ int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
+ 		     const char *new_name, const void *new_ns);
+ void kernfs_enable_ns(struct sysfs_dirent *sd);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
++void kernfs_notify(struct sysfs_dirent *sd);
+ 
+ #else	/* CONFIG_SYSFS */
+ 
+@@ -120,6 +121,8 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
+ { return -ENOSYS; }
+ 
++static inline void kernfs_notify(struct sysfs_dirent *sd) { }
++
+ #endif	/* CONFIG_SYSFS */
+ 
+ static inline struct sysfs_dirent *
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2bc735d..0ab2b02 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -243,7 +243,6 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+ 				  const char *link_name);
+ 
+ void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
+-void sysfs_notify_dirent(struct sysfs_dirent *sd);
+ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ 					 const unsigned char *name,
+ 					 const void *ns);
+@@ -418,9 +417,6 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
+ 				const char *attr)
+ {
+ }
+-static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+-{
+-}
+ static inline struct sysfs_dirent *
+ sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
+ 		    const void *ns)
+@@ -466,4 +462,9 @@ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
+ 	return sysfs_get_dirent_ns(parent_sd, name, NULL);
+ }
+ 
++static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
++{
++	kernfs_notify(sd);
++}
++
+ #endif /* _SYSFS_H_ */
 -- 
 1.8.4.2
 
