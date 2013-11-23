@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab3KWPgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 10:36:25 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37063 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab3KWPgW (ORCPT
+	id S1756244Ab3KWPh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 10:37:28 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:46758 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756203Ab3KWPhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 10:36:22 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, tomas.winkler@intel.com
-Cc: rdunlap@infradead.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH 2/3] [trivial] mei: Fix typo in mei/nfc.c
-Date: Sun, 24 Nov 2013 00:36:13 +0900
-Message-Id: <1385220974-3469-2-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.5.rc1.28.g7061504
-In-Reply-To: <1385220974-3469-1-git-send-email-standby24x7@gmail.com>
-References: <1385220974-3469-1-git-send-email-standby24x7@gmail.com>
+	Sat, 23 Nov 2013 10:37:25 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] posix cpu timers cleanups for 3.14
+Date: Sat, 23 Nov 2013 16:37:10 +0100
+Message-Id: <1385221040-24731-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in comments and debug messages.
+Ingo, Thomas,
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Please pull the timers/posix-timers-for-tip branch that can be found at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/posix-timers-for-tip
+
+HEAD: 239dd62b5c41bf606f3a3b3adb9e70341a62dbd3
+It passed through 0-day testing.
+
+This is another series of posix cpu timers cleanups. Note it's essentially the same
+as: "posix-timers: Various cleanups" at http://lkml.org/lkml/2013/10/12/107 which
+Peter Zijlstra had a look into. He told me that it looked ok. This version brings
+almost no code change (just fix a NULL check ommitted somewhere), it's mostly a rebase
+against 2.6.12 with refined changelogs.
+
+It's a first pile but more is to come, as I have some more cleanups in mind. Plus
+I plan to integrate more fixes from Kosaki Motohiro.
+
+Changes:
+
+* Remove a few irrelevant optimizations that were complicating the code a lot
+* Consolidate local and remote clock read
+* Remove dead leftovers
+* Optimize the locking by removing unnecessary uses of tasklist lock
+* Various other cleanups...
+
+Thanks,
+	Frederic
 ---
- drivers/misc/mei/nfc.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 994ca4a..7e8590e 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -163,7 +163,7 @@ static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
- 			return 0;
- 
- 		default:
--			dev_err(&dev->pdev->dev, "Unknow radio type 0x%x\n",
-+			dev_err(&dev->pdev->dev, "Unknown radio type 0x%x\n",
- 				ndev->radio_type);
- 
- 			return -EINVAL;
-@@ -175,14 +175,14 @@ static int mei_nfc_build_bus_name(struct mei_nfc_dev *ndev)
- 			ndev->bus_name = "pn544";
- 			return 0;
- 		default:
--			dev_err(&dev->pdev->dev, "Unknow radio type 0x%x\n",
-+			dev_err(&dev->pdev->dev, "Unknown radio type 0x%x\n",
- 				ndev->radio_type);
- 
- 			return -EINVAL;
- 		}
- 
- 	default:
--		dev_err(&dev->pdev->dev, "Unknow vendor ID 0x%x\n",
-+		dev_err(&dev->pdev->dev, "Unknown vendor ID 0x%x\n",
- 			ndev->vendor_id);
- 
- 		return -EINVAL;
-@@ -428,7 +428,7 @@ static void mei_nfc_init(struct work_struct *work)
- 	mutex_unlock(&dev->device_lock);
- 
- 	if (mei_nfc_if_version(ndev) < 0) {
--		dev_err(&dev->pdev->dev, "Could not get the NFC interfave version");
-+		dev_err(&dev->pdev->dev, "Could not get the NFC interface version");
- 
- 		goto err;
- 	}
-@@ -481,7 +481,7 @@ int mei_nfc_host_init(struct mei_device *dev)
- 	struct mei_cl *cl_info, *cl = NULL;
- 	int i, ret;
- 
--	/* already initialzed */
-+	/* already initialized */
- 	if (ndev->cl_info)
- 		return 0;
- 
--- 
-1.8.5.rc1.28.g7061504
+Frederic Weisbecker (10):
+      posix-timers: Remove dead thread posix cpu timers caching
+      posix-timers: Remove dead process posix cpu timers caching
+      posix-timers: Cleanup reaped target handling
+      posix-timers: Remove dead task special case
+      posix-timers: Remove useless clock sample on timers cleanup
+      posix-timers: Consolidate posix_cpu_clock_get()
+      posix-timers: Use sighand lock instead of tasklist_lock for task clock sample
+      posix-timers: Use sighand lock instead of tasklist_lock on timer deletion
+      posix-timers: Remove remaining uses of tasklist_lock
+      posix-timers: Convert abuses of BUG_ON to WARN_ON
 
+
+ kernel/posix-cpu-timers.c | 309 +++++++++++++++++++---------------------------
+ 1 file changed, 129 insertions(+), 180 deletions(-)
