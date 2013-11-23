@@ -1,136 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3KWSfS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 13:35:18 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:56894 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab3KWSfM (ORCPT
+	id S1756261Ab3KWSfq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 13:35:46 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:37523 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab3KWSfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 13:35:12 -0500
-Date: Sat, 23 Nov 2013 13:35:08 -0500
+	Sat, 23 Nov 2013 13:35:43 -0500
+Date: Sat, 23 Nov 2013 13:35:40 -0500
 From: Tejun Heo <tj@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v3.13-rc1 1/2] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Message-ID: <20131123183508.GA28162@mtj.dyndns.org>
+Subject: [PATCH v3.13-rc1 2/2] sysfs: use a separate locking class for open
+ files depending on mmap
+Message-ID: <20131123183540.GB28162@mtj.dyndns.org>
+References: <20131123183508.GA28162@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131123183508.GA28162@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Greg.
+>From 0a0e6b9eec8c8c1168b282150e9de43c2445f475 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Sun, 17 Nov 2013 11:17:36 +0900
 
-These are two patches to fix sysfs bugs which are present in rc1 and
-posted previously.  Both deal with spurious triggering of warnings.
-The patches are available in the following git branch.
+The following two commits implemented mmap support in the regular file
+path and merged bin file support into the regular path.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-fixes
+ 73d9714627ad ("sysfs: copy bin mmap support from fs/sysfs/bin.c to fs/sysfs/file.c")
+ 3124eb1679b2 ("sysfs: merge regular and bin file handling")
 
-The original patches are
+After the merge, the following commands trigger a spurious lockdep
+warning.  "test-mmap-read" simply mmaps the file and dumps the
+content.
 
- http://lkml.kernel.org/g/1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com
- http://lkml.kernel.org/g/20131117021736.GA9302@mtj.dyndns.org
+  $ cat /sys/block/sda/trace/act_mask
+  $ test-mmap-read /sys/devices/pci0000\:00/0000\:00\:03.0/resource0 4096
 
-I'll base further sysfs/kernfs patches on top of the above branch.
+  ======================================================
+  [ INFO: possible circular locking dependency detected ]
+  3.12.0-work+ #378 Not tainted
+  -------------------------------------------------------
+  test-mmap-read/567 is trying to acquire lock:
+   (&of->mutex){+.+.+.}, at: [<ffffffff8120a8df>] sysfs_bin_mmap+0x4f/0x120
 
-Thanks!
-------- 8< -------
->From a69cc96d8c434c6cb64847f37caa890af705fc5c Mon Sep 17 00:00:00 2001
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Wed, 20 Nov 2013 11:56:35 +0200
+  but task is already holding lock:
+   (&mm->mmap_sem){++++++}, at: [<ffffffff8114b399>] vm_mmap_pgoff+0x49/0xa0
 
-Commit bcdde7e221a8 (sysfs: make __sysfs_remove_dir() recursive) changed
-the behavior so that directory removals will be done recursively. This
-means that the sysfs group might already be removed if its parent directory
-has been removed.
+  which lock already depends on the new lock.
 
-The current code outputs warnings similar to following log snippet when it
-detects that there is no group for the given kobject:
 
- WARNING: CPU: 0 PID: 4 at fs/sysfs/group.c:214 sysfs_remove_group+0xc6/0xd0()
- sysfs group ffffffff81c6f1e0 not found for kobject 'host7'
- Modules linked in:
- CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted 3.12.0+ #13
- Hardware name:                  /D33217CK, BIOS GKPPT10H.86A.0042.2013.0422.1439 04/22/2013
- Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-  0000000000000009 ffff8801002459b0 ffffffff817daab1 ffff8801002459f8
-  ffff8801002459e8 ffffffff810436b8 0000000000000000 ffffffff81c6f1e0
-  ffff88006d440358 ffff88006d440188 ffff88006e8b4c28 ffff880100245a48
- Call Trace:
-  [<ffffffff817daab1>] dump_stack+0x45/0x56
-  [<ffffffff810436b8>] warn_slowpath_common+0x78/0xa0
-  [<ffffffff81043727>] warn_slowpath_fmt+0x47/0x50
-  [<ffffffff811ad319>] ? sysfs_get_dirent_ns+0x49/0x70
-  [<ffffffff811ae526>] sysfs_remove_group+0xc6/0xd0
-  [<ffffffff81432f7e>] dpm_sysfs_remove+0x3e/0x50
-  [<ffffffff8142a0d0>] device_del+0x40/0x1b0
-  [<ffffffff8142a24d>] device_unregister+0xd/0x20
-  [<ffffffff8144131a>] scsi_remove_host+0xba/0x110
-  [<ffffffff8145f526>] ata_host_detach+0xc6/0x100
-  [<ffffffff8145f578>] ata_pci_remove_one+0x18/0x20
-  [<ffffffff812e8f48>] pci_device_remove+0x28/0x60
-  [<ffffffff8142d854>] __device_release_driver+0x64/0xd0
-  [<ffffffff8142d8de>] device_release_driver+0x1e/0x30
-  [<ffffffff8142d257>] bus_remove_device+0xf7/0x140
-  [<ffffffff8142a1b1>] device_del+0x121/0x1b0
-  [<ffffffff812e43d4>] pci_stop_bus_device+0x94/0xa0
-  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-  [<ffffffff812e437b>] pci_stop_bus_device+0x3b/0xa0
-  [<ffffffff812e44dd>] pci_stop_and_remove_bus_device+0xd/0x20
-  [<ffffffff812fc743>] trim_stale_devices+0x73/0xe0
-  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-  [<ffffffff812fc78b>] trim_stale_devices+0xbb/0xe0
-  [<ffffffff812fcb6e>] acpiphp_check_bridge+0x7e/0xd0
-  [<ffffffff812fd90d>] hotplug_event+0xcd/0x160
-  [<ffffffff812fd9c5>] hotplug_event_work+0x25/0x60
-  [<ffffffff81316749>] acpi_hotplug_work_fn+0x17/0x22
-  [<ffffffff8105cf3a>] process_one_work+0x17a/0x430
-  [<ffffffff8105db29>] worker_thread+0x119/0x390
-  [<ffffffff8105da10>] ? manage_workers.isra.25+0x2a0/0x2a0
-  [<ffffffff81063a5d>] kthread+0xcd/0xf0
-  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
-  [<ffffffff817eb33c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81063990>] ? kthread_create_on_node+0x180/0x180
+  the existing dependency chain (in reverse order) is:
 
-On this particular machine I see ~16 of these message during Thunderbolt
-hot-unplug.
+  -> #3 (&mm->mmap_sem){++++++}:
+  ...
+  -> #2 (sr_mutex){+.+.+.}:
+  ...
+  -> #1 (&bdev->bd_mutex){+.+.+.}:
+  ...
+  -> #0 (&of->mutex){+.+.+.}:
+  ...
 
-Fix this in similar way that was done for sysfs_remove_one() by checking
-if the parent directory has already been removed and bailing out early.
+  other info that might help us debug this:
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+  Chain exists of:
+   &of->mutex --> sr_mutex --> &mm->mmap_sem
+
+   Possible unsafe locking scenario:
+
+	 CPU0                    CPU1
+	 ----                    ----
+    lock(&mm->mmap_sem);
+				 lock(sr_mutex);
+				 lock(&mm->mmap_sem);
+    lock(&of->mutex);
+
+   *** DEADLOCK ***
+
+  1 lock held by test-mmap-read/567:
+   #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8114b399>] vm_mmap_pgoff+0x49/0xa0
+
+  stack backtrace:
+  CPU: 3 PID: 567 Comm: test-mmap-read Not tainted 3.12.0-work+ #378
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+   ffffffff81ed41a0 ffff880009441bc8 ffffffff81611ad2 ffffffff81eccb80
+   ffff880009441c08 ffffffff8160f215 ffff880009441c60 ffff880009c75208
+   0000000000000000 ffff880009c751e0 ffff880009c75208 ffff880009c74ac0
+  Call Trace:
+   [<ffffffff81611ad2>] dump_stack+0x4e/0x7a
+   [<ffffffff8160f215>] print_circular_bug+0x2b0/0x2bf
+   [<ffffffff8109ca0a>] __lock_acquire+0x1a3a/0x1e60
+   [<ffffffff8109d6ba>] lock_acquire+0x9a/0x1d0
+   [<ffffffff81615547>] mutex_lock_nested+0x67/0x3f0
+   [<ffffffff8120a8df>] sysfs_bin_mmap+0x4f/0x120
+   [<ffffffff8115d363>] mmap_region+0x3b3/0x5b0
+   [<ffffffff8115d8ae>] do_mmap_pgoff+0x34e/0x3d0
+   [<ffffffff8114b3ba>] vm_mmap_pgoff+0x6a/0xa0
+   [<ffffffff8115be3e>] SyS_mmap_pgoff+0xbe/0x250
+   [<ffffffff81008282>] SyS_mmap+0x22/0x30
+   [<ffffffff8161a4d2>] system_call_fastpath+0x16/0x1b
+
+This happens because one file nests sr_mutex, which nests mm->mmap_sem
+under it, under of->mutex while mmap implementation naturally nests
+of->mutex under mm->mmap_sem.  The warning is false positive as
+of->mutex is per open-file and the two paths belong to two different
+files.  This warning didn't trigger before regular and bin file
+supports were merged because only bin file supported mmap and the
+other side of locking happened only on regular files which used
+equivalent but separate locking.
+
+It'd be best if we give separate locking classes per file but we can't
+easily do that.  Let's differentiate on ->mmap() for now.  Later we'll
+add explicit file operations struct and can add per-ops lockdep key
+there.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Dave Jones <davej@redhat.com>
 ---
- fs/sysfs/group.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/sysfs/file.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 1898a10..3796afd 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -206,6 +206,15 @@ void sysfs_remove_group(struct kobject *kobj,
- 	struct sysfs_dirent *dir_sd = kobj->sd;
- 	struct sysfs_dirent *sd;
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 79b5da2..b94f936 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -609,7 +609,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
+ 	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
+ 	struct sysfs_open_file *of;
+-	bool has_read, has_write;
++	bool has_read, has_write, has_mmap;
+ 	int error = -EACCES;
  
+ 	/* need attr_sd for attr and ops, its parent for kobj */
+@@ -621,6 +621,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 
+ 		has_read = battr->read || battr->mmap;
+ 		has_write = battr->write || battr->mmap;
++		has_mmap = battr->mmap;
+ 	} else {
+ 		const struct sysfs_ops *ops = sysfs_file_ops(attr_sd);
+ 
+@@ -632,6 +633,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 
+ 		has_read = ops->show;
+ 		has_write = ops->store;
++		has_mmap = false;
+ 	}
+ 
+ 	/* check perms and supported operations */
+@@ -649,7 +651,23 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	if (!of)
+ 		goto err_out;
+ 
+-	mutex_init(&of->mutex);
 +	/*
-+	 * Sysfs directories are now removed recursively by
-+	 * sysfs_remove_dir(). This means that the function can be called
-+	 * for a group whose sysfs entry is already removed. In that case
-+	 * all its groups are guaranteed to be already removed.
++	 * The following is done to give a different lockdep key to
++	 * @of->mutex for files which implement mmap.  This is a rather
++	 * crude way to avoid false positive lockdep warning around
++	 * mm->mmap_sem - mmap nests @of->mutex under mm->mmap_sem and
++	 * reading /sys/block/sda/trace/act_mask grabs sr_mutex, under
++	 * which mm->mmap_sem nests, while holding @of->mutex.  As each
++	 * open file has a separate mutex, it's okay as long as those don't
++	 * happen on the same file.  At this point, we can't easily give
++	 * each file a separate locking class.  Let's differentiate on
++	 * whether the file has mmap or not for now.
 +	 */
-+	if (dir_sd->s_flags & SYSFS_FLAG_REMOVED)
-+		return;
++	if (has_mmap)
++		mutex_init(&of->mutex);
++	else
++		mutex_init(&of->mutex);
 +
- 	if (grp->name) {
- 		sd = sysfs_get_dirent(dir_sd, grp->name);
- 		if (!sd) {
+ 	of->sd = attr_sd;
+ 	of->file = file;
+ 
 -- 
 1.8.4.2
 
