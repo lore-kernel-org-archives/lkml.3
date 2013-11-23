@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab3KWWbs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:31:48 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:56905 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3KWWWr (ORCPT
+	id S932332Ab3KWWcF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:32:05 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:53839 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab3KWWWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:47 -0500
+	Sat, 23 Nov 2013 17:22:45 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 13/41] sysfs, kernfs: prepare open, release, poll paths for kernfs
-Date: Sat, 23 Nov 2013 17:21:58 -0500
-Message-Id: <1385245346-856-14-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/41] sysfs, kernfs: prepare write path for kernfs
+Date: Sat, 23 Nov 2013 17:21:56 -0500
+Message-Id: <1385245346-856-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -23,113 +23,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 We're in the process of separating out core sysfs functionality into
 kernfs which will deal with sysfs_dirents directly.  This patch
-prepares the rest - open, release and poll.  There isn't much to do.
-Just renaming is enough.  As sysfs_file_operations and
-sysfs_bin_operations are identical now, use the same file_operations
-for both - kernfs_file_operations.
+rearranges write path so that the kernfs and sysfs parts are separate.
 
-This patch doesn't introduce any behavior changes.
+kernfs_file_write() handles all boilerplate work including buffer
+management and locking and invokes sysfs_kf_write() or
+sysfs_kf_bin_write() depending on the file type which deals with the
+interaction with kobj store or bin_attribute write method.
+
+While this patch changes the order of some operations, it shouldn't
+change any visible behavior.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c  | 24 +++++++-----------------
- fs/sysfs/inode.c |  4 ++--
- fs/sysfs/sysfs.h |  3 +--
- 3 files changed, 10 insertions(+), 21 deletions(-)
+ fs/sysfs/file.c | 103 +++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 50 insertions(+), 53 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 2e24e89..a43df04 100644
+index b695b8b..2f849e8 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -668,7 +668,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- 	kfree(od);
+@@ -267,61 +267,50 @@ static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
+ 		return seq_read(file, user_buf, count, ppos);
  }
  
--static int sysfs_open_file(struct inode *inode, struct file *file)
-+static int kernfs_file_open(struct inode *inode, struct file *file)
+-/**
+- * flush_write_buffer - push buffer to kobject
+- * @of: open file
+- * @buf: data buffer for file
+- * @off: file offset to write to
+- * @count: number of bytes
+- *
+- * Get the correct pointers for the kobject and the attribute we're dealing
+- * with, then call the store() method for it with @buf.
+- */
+-static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+-			      size_t count)
++/* kernfs write callback for regular sysfs files */
++static ssize_t sysfs_kf_write(struct sysfs_open_file *of, char *buf,
++			      size_t count, loff_t pos)
  {
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
- 	struct kobject *kobj = attr_sd->s_parent->priv;
-@@ -771,7 +771,7 @@ err_out:
- 	return error;
++	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
+ 	struct kobject *kobj = of->sd->s_parent->priv;
+-	int rc = 0;
+ 
+-	/*
+-	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
+-	 * nests outside active ref and is just to ensure that the ops
+-	 * aren't called concurrently for the same open file.
+-	 */
+-	mutex_lock(&of->mutex);
+-	if (!sysfs_get_active(of->sd)) {
+-		mutex_unlock(&of->mutex);
+-		return -ENODEV;
+-	}
++	if (!count)
++		return 0;
+ 
+-	if (sysfs_is_bin(of->sd)) {
+-		struct bin_attribute *battr = of->sd->priv;
++	return ops->store(kobj, of->sd->priv, buf, count);
++}
+ 
+-		rc = -EIO;
+-		if (battr->write)
+-			rc = battr->write(of->file, kobj, battr, buf, off,
+-					  count);
+-	} else {
+-		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
++/* kernfs write callback for bin sysfs files */
++static ssize_t sysfs_kf_bin_write(struct sysfs_open_file *of, char *buf,
++				  size_t count, loff_t pos)
++{
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
++	loff_t size = file_inode(of->file)->i_size;
+ 
+-		rc = ops->store(kobj, of->sd->priv, buf, count);
++	if (size) {
++		if (size <= pos)
++			return 0;
++		count = min_t(ssize_t, count, size - pos);
+ 	}
++	if (!count)
++		return 0;
+ 
+-	sysfs_put_active(of->sd);
+-	mutex_unlock(&of->mutex);
++	if (!battr->write)
++		return -EIO;
+ 
+-	return rc;
++	return battr->write(of->file, kobj, battr, buf, pos, count);
  }
  
--static int sysfs_release(struct inode *inode, struct file *filp)
-+static int kernfs_file_release(struct inode *inode, struct file *filp)
- {
- 	struct sysfs_dirent *sd = filp->f_path.dentry->d_fsdata;
- 	struct sysfs_open_file *of = sysfs_of(filp);
-@@ -822,7 +822,7 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd)
-  * to see if it supports poll (Neither 'poll' nor 'select' return
-  * an appropriate error code).  When in doubt, set a suitable timeout value.
+ /**
+- * sysfs_write_file - write an attribute
++ * kernfs_file_write - kernfs vfs write callback
+  * @file: file pointer
+  * @user_buf: data to write
+  * @count: number of bytes
+  * @ppos: starting offset
+  *
+- * Copy data in from userland and pass it to the matching
+- * sysfs_ops->store() by invoking flush_write_buffer().
++ * Copy data in from userland and pass it to the matching kernfs write
++ * operation.
+  *
+  * There is no easy way for us to know if userspace is only doing a partial
+  * write, so we don't support them. We expect the entire buffer to come on
+@@ -329,23 +318,13 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+  * modify only the the value you're changing, then write entire buffer
+  * back.
   */
--static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
-+static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+-static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+-				size_t count, loff_t *ppos)
++static ssize_t kernfs_file_write(struct file *file, const char __user *user_buf,
++				 size_t count, loff_t *ppos)
  {
- 	struct sysfs_open_file *of = sysfs_of(filp);
- 	struct sysfs_dirent *attr_sd = filp->f_path.dentry->d_fsdata;
-@@ -881,24 +881,14 @@ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
- }
- EXPORT_SYMBOL_GPL(sysfs_notify);
+ 	struct sysfs_open_file *of = sysfs_of(file);
+ 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+-	loff_t size = file_inode(file)->i_size;
+ 	char *buf;
  
--const struct file_operations sysfs_file_operations = {
-+const struct file_operations kernfs_file_operations = {
- 	.read		= kernfs_file_read,
- 	.write		= kernfs_file_write,
- 	.llseek		= generic_file_llseek,
- 	.mmap		= kernfs_file_mmap,
--	.open		= sysfs_open_file,
--	.release	= sysfs_release,
--	.poll		= sysfs_poll,
--};
+-	if (sysfs_is_bin(of->sd) && size) {
+-		if (size <= *ppos)
+-			return 0;
+-		len = min_t(ssize_t, len, size - *ppos);
+-	}
 -
--const struct file_operations sysfs_bin_operations = {
--	.read		= kernfs_file_read,
--	.write		= kernfs_file_write,
--	.llseek		= generic_file_llseek,
--	.mmap		= kernfs_file_mmap,
--	.open		= sysfs_open_file,
--	.release	= sysfs_release,
--	.poll		= sysfs_poll,
-+	.open		= kernfs_file_open,
-+	.release	= kernfs_file_release,
-+	.poll		= kernfs_file_poll,
- };
+-	if (!len)
+-		return 0;
+-
+ 	buf = kmalloc(len + 1, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+@@ -356,7 +335,25 @@ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+ 	}
+ 	buf[len] = '\0';	/* guarantee string termination */
  
- int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 81cc858..4c463da 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -272,12 +272,12 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		break;
- 	case SYSFS_KOBJ_ATTR:
- 		inode->i_size = PAGE_SIZE;
--		inode->i_fop = &sysfs_file_operations;
-+		inode->i_fop = &kernfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_BIN_ATTR:
- 		bin_attr = sd->priv;
- 		inode->i_size = bin_attr->size;
--		inode->i_fop = &sysfs_bin_operations;
-+		inode->i_fop = &kernfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_LINK:
- 		inode->i_op = &sysfs_symlink_inode_operations;
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 9ac234e..619250d 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -212,8 +212,7 @@ int sysfs_inode_init(void);
- /*
-  * file.c
-  */
--extern const struct file_operations sysfs_file_operations;
--extern const struct file_operations sysfs_bin_operations;
-+extern const struct file_operations kernfs_file_operations;
+-	len = flush_write_buffer(of, buf, *ppos, len);
++	/*
++	 * @of->mutex nests outside active ref and is just to ensure that
++	 * the ops aren't called concurrently for the same open file.
++	 */
++	mutex_lock(&of->mutex);
++	if (!sysfs_get_active(of->sd)) {
++		mutex_unlock(&of->mutex);
++		len = -ENODEV;
++		goto out_free;
++	}
++
++	if (sysfs_is_bin(of->sd))
++		len = sysfs_kf_bin_write(of, buf, len, *ppos);
++	else
++		len = sysfs_kf_write(of, buf, len, *ppos);
++
++	sysfs_put_active(of->sd);
++	mutex_unlock(&of->mutex);
++
+ 	if (len > 0)
+ 		*ppos += len;
+ out_free:
+@@ -878,7 +875,7 @@ EXPORT_SYMBOL_GPL(sysfs_notify);
  
- int sysfs_add_file(struct sysfs_dirent *dir_sd,
- 		   const struct attribute *attr, int type);
+ const struct file_operations sysfs_file_operations = {
+ 	.read		= kernfs_file_read,
+-	.write		= sysfs_write_file,
++	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+@@ -887,7 +884,7 @@ const struct file_operations sysfs_file_operations = {
+ 
+ const struct file_operations sysfs_bin_operations = {
+ 	.read		= kernfs_file_read,
+-	.write		= sysfs_write_file,
++	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
+ 	.mmap		= sysfs_bin_mmap,
+ 	.open		= sysfs_open_file,
 -- 
 1.8.4.2
 
