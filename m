@@ -1,52 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3KWCKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 21:10:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34641 "EHLO
+	id S1756164Ab3KWCOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 21:14:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34668 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab3KWCKp (ORCPT
+	with ESMTP id S1756002Ab3KWCOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 21:10:45 -0500
-Message-ID: <52900E95.3050106@infradead.org>
-Date: Fri, 22 Nov 2013 18:10:29 -0800
+	Fri, 22 Nov 2013 21:14:41 -0500
+Message-ID: <52900F8E.5000004@infradead.org>
+Date: Fri, 22 Nov 2013 18:14:38 -0800
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Qiang Huang <h.huangqiang@huawei.com>, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slab: remove the redundant declaration of kmalloc
-References: <528DA0C0.8010505@huawei.com> <528E5AEF.6020007@infradead.org> <528EAE3E.5080604@huawei.com>
-In-Reply-To: <528EAE3E.5080604@huawei.com>
+To: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>,
+        Qiang Huang <h.huangqiang@huawei.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Subject: [PATCH resend] slab.h: remove duplicate kmalloc declaration and fix
+ kernel-doc warnings
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/13 17:07, Qiang Huang wrote:
-> On 2013/11/22 3:11, Randy Dunlap wrote:
->> On 11/20/13 21:57, Qiang Huang wrote:
->>>
->>> Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
->>
->> or use my patch from 2013-09-17:
->> http://marc.info/?l=linux-mm&m=137944291611467&w=2
->>
->> Would be nice to one of these merged...
-> 
-> Yes, sorry for not notice this, merge your patch should be property :)
-> But why it's still not be merged?
-> 
-> Ping...
+From: Randy Dunlap <rdunlap@infradead.org>
 
-I don't know.  I'll resend it now.
+Fix kernel-doc warning for duplicate definition of 'kmalloc':
 
+Documentation/DocBook/kernel-api.xml:9483: element refentry: validity error : ID API-kmalloc already defined
+<refentry id="API-kmalloc">
 
-Thanks.
+Also combine the kernel-doc info from the 2 kmalloc definitions into one
+block and remove the "see kcalloc" comment since kmalloc now contains the
+@flags info.
 
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: Christoph Lameter <cl@linux.com>
+---
+ include/linux/slab.h |  102 ++++++++++++++++++-----------------------
+ 1 file changed, 46 insertions(+), 56 deletions(-)
 
--- 
-~Randy
+--- lnx-312-rc1.orig/include/linux/slab.h
++++ lnx-312-rc1/include/linux/slab.h
+@@ -381,10 +381,55 @@ static __always_inline void *kmalloc_lar
+ /**
+  * kmalloc - allocate memory
+  * @size: how many bytes of memory are required.
+- * @flags: the type of memory to allocate (see kcalloc).
++ * @flags: the type of memory to allocate.
+  *
+  * kmalloc is the normal method of allocating memory
+  * for objects smaller than page size in the kernel.
++ *
++ * The @flags argument may be one of:
++ *
++ * %GFP_USER - Allocate memory on behalf of user.  May sleep.
++ *
++ * %GFP_KERNEL - Allocate normal kernel ram.  May sleep.
++ *
++ * %GFP_ATOMIC - Allocation will not sleep.  May use emergency pools.
++ *   For example, use this inside interrupt handlers.
++ *
++ * %GFP_HIGHUSER - Allocate pages from high memory.
++ *
++ * %GFP_NOIO - Do not do any I/O at all while trying to get memory.
++ *
++ * %GFP_NOFS - Do not make any fs calls while trying to get memory.
++ *
++ * %GFP_NOWAIT - Allocation will not sleep.
++ *
++ * %GFP_THISNODE - Allocate node-local memory only.
++ *
++ * %GFP_DMA - Allocation suitable for DMA.
++ *   Should only be used for kmalloc() caches. Otherwise, use a
++ *   slab created with SLAB_DMA.
++ *
++ * Also it is possible to set different flags by OR'ing
++ * in one or more of the following additional @flags:
++ *
++ * %__GFP_COLD - Request cache-cold pages instead of
++ *   trying to return cache-warm pages.
++ *
++ * %__GFP_HIGH - This allocation has high priority and may use emergency pools.
++ *
++ * %__GFP_NOFAIL - Indicate that this allocation is in no way allowed to fail
++ *   (think twice before using).
++ *
++ * %__GFP_NORETRY - If memory is not immediately available,
++ *   then give up at once.
++ *
++ * %__GFP_NOWARN - If allocation fails, don't issue any warnings.
++ *
++ * %__GFP_REPEAT - If allocation fails initially, try once more before failing.
++ *
++ * There are other flags available as well, but these are not intended
++ * for general use, and so are not documented here. For a full list of
++ * potential flags, always refer to linux/gfp.h.
+  */
+ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+ {
+@@ -495,61 +540,6 @@ int cache_show(struct kmem_cache *s, str
+ void print_slabinfo_header(struct seq_file *m);
+ 
+ /**
+- * kmalloc - allocate memory
+- * @size: how many bytes of memory are required.
+- * @flags: the type of memory to allocate.
+- *
+- * The @flags argument may be one of:
+- *
+- * %GFP_USER - Allocate memory on behalf of user.  May sleep.
+- *
+- * %GFP_KERNEL - Allocate normal kernel ram.  May sleep.
+- *
+- * %GFP_ATOMIC - Allocation will not sleep.  May use emergency pools.
+- *   For example, use this inside interrupt handlers.
+- *
+- * %GFP_HIGHUSER - Allocate pages from high memory.
+- *
+- * %GFP_NOIO - Do not do any I/O at all while trying to get memory.
+- *
+- * %GFP_NOFS - Do not make any fs calls while trying to get memory.
+- *
+- * %GFP_NOWAIT - Allocation will not sleep.
+- *
+- * %GFP_THISNODE - Allocate node-local memory only.
+- *
+- * %GFP_DMA - Allocation suitable for DMA.
+- *   Should only be used for kmalloc() caches. Otherwise, use a
+- *   slab created with SLAB_DMA.
+- *
+- * Also it is possible to set different flags by OR'ing
+- * in one or more of the following additional @flags:
+- *
+- * %__GFP_COLD - Request cache-cold pages instead of
+- *   trying to return cache-warm pages.
+- *
+- * %__GFP_HIGH - This allocation has high priority and may use emergency pools.
+- *
+- * %__GFP_NOFAIL - Indicate that this allocation is in no way allowed to fail
+- *   (think twice before using).
+- *
+- * %__GFP_NORETRY - If memory is not immediately available,
+- *   then give up at once.
+- *
+- * %__GFP_NOWARN - If allocation fails, don't issue any warnings.
+- *
+- * %__GFP_REPEAT - If allocation fails initially, try once more before failing.
+- *
+- * There are other flags available as well, but these are not intended
+- * for general use, and so are not documented here. For a full list of
+- * potential flags, always refer to linux/gfp.h.
+- *
+- * kmalloc is the normal method of allocating memory
+- * in the kernel.
+- */
+-static __always_inline void *kmalloc(size_t size, gfp_t flags);
+-
+-/**
+  * kmalloc_array - allocate memory for an array.
+  * @n: number of elements.
+  * @size: element size.
