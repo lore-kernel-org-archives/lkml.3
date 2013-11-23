@@ -1,286 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab3KWOp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 09:45:26 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:44980 "EHLO mailhub1.si.c-s.fr"
+	id S1755605Ab3KWPbM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 10:31:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab3KWOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 09:45:24 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] debugfs: Adding support to 16-bit regs and 8-bits regs
-Message-Id: <20131123144520.D0E08432AB@localhost.localdomain>
-Date: Sat, 23 Nov 2013 15:45:20 +0100 (CET)
-X-Antivirus: avast! (VPS 131115-0, 15/11/2013), Outbound message
-X-Antivirus-Status: Clean
+	id S1753922Ab3KWPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 10:31:10 -0500
+Date: Sat, 23 Nov 2013 16:32:18 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, viro@ZenIV.linux.org.uk, keescook@chromium.org,
+        mhocko@suse.cz, snanda@chromium.org, dserrg@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] check_unsafe_exec: kill the dead -EAGAIN and
+	clear_in_exec logic
+Message-ID: <20131123153218.GA22071@redhat.com>
+References: <20131122175442.GA31453@redhat.com> <528FBE22.5030208@jp.fujitsu.com> <20131122204917.GA20520@redhat.com> <528FC5E8.20406@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528FC5E8.20406@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many components still have 16 bits registers and several even have
-8 bits registers. This patch adds structures and functions to deal with
-those registers.
+On 11/22, KOSAKI Motohiro wrote:
+>
+> >> I have found no problem in this patch. However, I have a very basic question.
+> >> Why do we need to keep fs->in_exec?
+> >
+> > To ensure that a sub-thread can't create a new process with the same
+> > ->fs while we are doing exec without LSM_UNSAFE_SHARE, I guess. This
+> > is only for security/ code.
+>
+> But in LSM_UNSAFE_SHARE case, we have no check, right? I'm amazing why
+> we don't need anything.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Yes. We rely on security/ code in this case, it can nack this exec if it
+looks unsafe.
 
-diff -urN a/include/linux/debugfs.h b/include/linux/debugfs.h
---- a/include/linux/debugfs.h	2013-10-25 04:35:01.265939364 +0200
-+++ b/include/linux/debugfs.h	2013-10-25 04:34:56.286939344 +0200
-@@ -38,6 +38,28 @@
- 	void __iomem *base;
- };
- 
-+struct debugfs_reg16 {
-+	char *name;
-+	unsigned long offset;
-+};
-+
-+struct debugfs_regset16 {
-+	const struct debugfs_reg16 *regs;
-+	int nregs;
-+	void __iomem *base;
-+};
-+
-+struct debugfs_reg8 {
-+	char *name;
-+	unsigned long offset;
-+};
-+
-+struct debugfs_regset8 {
-+	const struct debugfs_reg8 *regs;
-+	int nregs;
-+	void __iomem *base;
-+};
-+
- extern struct dentry *arch_debugfs_dir;
- 
- #if defined(CONFIG_DEBUG_FS)
-@@ -95,6 +117,20 @@
- int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
- 			 int nregs, void __iomem *base, char *prefix);
- 
-+struct dentry *debugfs_create_regset16(const char *name, umode_t mode,
-+				     struct dentry *parent,
-+				     struct debugfs_regset16 *regset);
-+
-+int debugfs_print_regs16(struct seq_file *s, const struct debugfs_reg16 *regs,
-+			 int nregs, void __iomem *base, char *prefix);
-+
-+struct dentry *debugfs_create_regset8(const char *name, umode_t mode,
-+				     struct dentry *parent,
-+				     struct debugfs_regset8 *regset);
-+
-+int debugfs_print_regs8(struct seq_file *s, const struct debugfs_reg8 *regs,
-+			 int nregs, void __iomem *base, char *prefix);
-+
- struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
- 					struct dentry *parent,
- 					u32 *array, u32 elements);
-@@ -227,6 +263,20 @@
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static inline struct dentry *debugfs_create_regset16(const char *name,
-+				   umode_t mode, struct dentry *parent,
-+				   struct debugfs_regset16 *regset)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
-+static inline struct dentry *debugfs_create_regset8(const char *name,
-+				   umode_t mode, struct dentry *parent,
-+				   struct debugfs_regset8 *regset)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
- static inline bool debugfs_initialized(void)
- {
- 	return false;
-diff -urN a/fs/debugfs/file.c b/fs/debugfs/file.c
---- a/fs/debugfs/file.c	2013-10-25 04:37:50.588939338 +0200
-+++ b/fs/debugfs/file.c	2013-10-25 04:37:41.478939346 +0200
-@@ -760,4 +760,182 @@
- }
- EXPORT_SYMBOL_GPL(debugfs_create_regset32);
- 
-+/*
-+ * The regset16 stuff is used to print 16-bit registers using the
-+ * seq_file utilities. We offer printing a register set in an already-opened
-+ * sequential file or create a debugfs file that only prints a regset16.
-+ */
-+
-+/**
-+ * debugfs_print_regs16 - use seq_print to describe a set of registers
-+ * @s: the seq_file structure being used to generate output
-+ * @regs: an array if struct debugfs_reg16 structures
-+ * @nregs: the length of the above array
-+ * @base: the base address to be used in reading the registers
-+ * @prefix: a string to be prefixed to every output line
-+ *
-+ * This function outputs a text block describing the current values of
-+ * some 16-bit hardware registers. It is meant to be used within debugfs
-+ * files based on seq_file that need to show registers, intermixed with other
-+ * information. The prefix argument may be used to specify a leading string,
-+ * because some peripherals have several blocks of identical registers,
-+ * for example configuration of dma channels
-+ */
-+int debugfs_print_regs16(struct seq_file *s, const struct debugfs_reg16 *regs,
-+			   int nregs, void __iomem *base, char *prefix)
-+{
-+	int i, ret = 0;
-+
-+	for (i = 0; i < nregs; i++, regs++) {
-+		if (prefix)
-+			ret += seq_printf(s, "%s", prefix);
-+		ret += seq_printf(s, "%s = 0x%04x\n", regs->name,
-+				  readw(base + regs->offset));
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(debugfs_print_regs16);
-+
-+static int debugfs_show_regset16(struct seq_file *s, void *data)
-+{
-+	struct debugfs_regset16 *regset = s->private;
-+
-+	debugfs_print_regs16(s, regset->regs, regset->nregs, regset->base, "");
-+	return 0;
-+}
-+
-+static int debugfs_open_regset16(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_show_regset16, inode->i_private);
-+}
-+
-+static const struct file_operations fops_regset16 = {
-+	.open =		debugfs_open_regset16,
-+	.read =		seq_read,
-+	.llseek =	seq_lseek,
-+	.release =	single_release,
-+};
-+
-+/**
-+ * debugfs_create_regset16 - create a debugfs file that returns register values
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @regset: a pointer to a struct debugfs_regset16, which contains a pointer
-+ *          to an array of register definitions, the array size and the base
-+ *          address where the register bank is to be found.
-+ *
-+ * This function creates a file in debugfs with the given name that reports
-+ * the names and values of a set of 16-bit registers. If the @mode variable
-+ * is so set it can be read from. Writing is not supported.
-+ *
-+ * This function will return a pointer to a dentry if it succeeds.  This
-+ * pointer must be passed to the debugfs_remove() function when the file is
-+ * to be removed (no automatic cleanup happens if your module is unloaded,
-+ * you are responsible here.)  If an error occurs, %NULL will be returned.
-+ *
-+ * If debugfs is not enabled in the kernel, the value -%ENODEV will be
-+ * returned.  It is not wise to check for this value, but rather, check for
-+ * %NULL or !%NULL instead as to eliminate the need for #ifdef in the calling
-+ * code.
-+ */
-+struct dentry *debugfs_create_regset16(const char *name, umode_t mode,
-+				       struct dentry *parent,
-+				       struct debugfs_regset16 *regset)
-+{
-+	return debugfs_create_file(name, mode, parent, regset, &fops_regset16);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_regset16);
-+
-+/*
-+ * The regset8 stuff is used to print 8-bit registers using the
-+ * seq_file utilities. We offer printing a register set in an already-opened
-+ * sequential file or create a debugfs file that only prints a regset8.
-+ */
-+
-+/**
-+ * debugfs_print_regs8 - use seq_print to describe a set of registers
-+ * @s: the seq_file structure being used to generate output
-+ * @regs: an array if struct debugfs_reg8 structures
-+ * @nregs: the length of the above array
-+ * @base: the base address to be used in reading the registers
-+ * @prefix: a string to be prefixed to every output line
-+ *
-+ * This function outputs a text block describing the current values of
-+ * some 8-bit hardware registers. It is meant to be used within debugfs
-+ * files based on seq_file that need to show registers, intermixed with other
-+ * information. The prefix argument may be used to specify a leading string,
-+ * because some peripherals have several blocks of identical registers,
-+ * for example configuration of dma channels
-+ */
-+int debugfs_print_regs8(struct seq_file *s, const struct debugfs_reg8 *regs,
-+			   int nregs, void __iomem *base, char *prefix)
-+{
-+	int i, ret = 0;
-+
-+	for (i = 0; i < nregs; i++, regs++) {
-+		if (prefix)
-+			ret += seq_printf(s, "%s", prefix);
-+		ret += seq_printf(s, "%s = 0x%02x\n", regs->name,
-+				  readb(base + regs->offset));
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(debugfs_print_regs8);
-+
-+static int debugfs_show_regset8(struct seq_file *s, void *data)
-+{
-+	struct debugfs_regset8 *regset = s->private;
-+
-+	debugfs_print_regs8(s, regset->regs, regset->nregs, regset->base, "");
-+	return 0;
-+}
-+
-+static int debugfs_open_regset8(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_show_regset8, inode->i_private);
-+}
-+
-+static const struct file_operations fops_regset8 = {
-+	.open =		debugfs_open_regset8,
-+	.read =		seq_read,
-+	.llseek =	seq_lseek,
-+	.release =	single_release,
-+};
-+
-+/**
-+ * debugfs_create_regset8 - create a debugfs file that returns register values
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @regset: a pointer to a struct debugfs_regset8, which contains a pointer
-+ *          to an array of register definitions, the array size and the base
-+ *          address where the register bank is to be found.
-+ *
-+ * This function creates a file in debugfs with the given name that reports
-+ * the names and values of a set of 8-bit registers. If the @mode variable
-+ * is so set it can be read from. Writing is not supported.
-+ *
-+ * This function will return a pointer to a dentry if it succeeds.  This
-+ * pointer must be passed to the debugfs_remove() function when the file is
-+ * to be removed (no automatic cleanup happens if your module is unloaded,
-+ * you are responsible here.)  If an error occurs, %NULL will be returned.
-+ *
-+ * If debugfs is not enabled in the kernel, the value -%ENODEV will be
-+ * returned.  It is not wise to check for this value, but rather, check for
-+ * %NULL or !%NULL instead as to eliminate the need for #ifdef in the calling
-+ * code.
-+ */
-+struct dentry *debugfs_create_regset8(const char *name, umode_t mode,
-+				       struct dentry *parent,
-+				       struct debugfs_regset8 *regset)
-+{
-+	return debugfs_create_file(name, mode, parent, regset, &fops_regset8);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_regset8);
-+
- #endif /* CONFIG_HAS_IOMEM */
+IOW. If LSM_UNSAFE_SHARE is not set, we promise that this fs has a single
+user: the execing thread (it will kill other subthreads which can have the
+same fs). That is why we need to cancel any attempt to create another
+CLONE_FS process in between.
+
+But let me repeat this is only my speculations, I know nothing about selinux
+and selinux_bprm_set_creds() in particular. Although it looks obvious that
+potentially exec with the shared ->fs has the additional security problems.
+
+Kosaki, thank you for review!
+
+Oleg.
+
