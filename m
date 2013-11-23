@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab3KWW2O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:28:14 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:45971 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab3KWWXD (ORCPT
+	id S932286Ab3KWW2w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:28:52 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:50921 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab3KWWXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:23:03 -0500
+	Sat, 23 Nov 2013 17:23:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 25/41] sysfs, kernfs: move internal decls to fs/kernfs/kernfs-internal.h
-Date: Sat, 23 Nov 2013 17:22:10 -0500
-Message-Id: <1385245346-856-26-git-send-email-tj@kernel.org>
+Subject: [PATCH 23/41] sysfs, kernfs: revamp sysfs_dirent active_ref lockdep annotation
+Date: Sat, 23 Nov 2013 17:22:08 -0500
+Message-Id: <1385245346-856-24-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,260 +21,274 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move data structure, constant and basic accessor declarations from
-fs/sysfs/sysfs.h to fs/kernfs/kernfs-internal.h.  The two files
-currently include each other.  Once kernfs / sysfs separation is
-complete, the cross inclusions will be removed.  Inclusion protectors
-are added to fs/sysfs/sysfs.h to allow cross-inclusion.
+Currently, sysfs_dirent active_ref lockdep annotation uses
+attribute->[s]key as the lockdep key, which forces
+kernfs_create_file_ns() to assume that sysfs_dirent->priv is pointing
+to a struct attribute which may not be true for non-sysfs users.  This
+patch restructures the lockdep annotation such that
 
-This patch doesn't introduce any functional changes.
+* kernfs_ops contains lockdep_key which is used by default for files
+  created kernfs_create_file_ns().
+
+* kernfs_create_file_ns_key() is introduced which takes an extra @key
+  argument.  The created file will use the specified key for
+  active_ref lockdep annotation.  If NULL is specified, lockdep for
+  the file is disabled.
+
+* sysfs_add_file_mode_ns() is updated to use
+  kernfs_create_file_ns_key() with the appropriate key from the
+  attribute or NULL if ignore_lockdep is set.
+
+This makes the lockdep annotation properly contained in kernfs while
+allowing sysfs to cleanly keep its current behavior.  This patch
+doesn't introduce any behavior differences.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/kernfs-internal.h | 115 ++++++++++++++++++++++++++++++++++++++++++++
- fs/sysfs/sysfs.h            | 102 +++------------------------------------
- 2 files changed, 121 insertions(+), 96 deletions(-)
- create mode 100644 fs/kernfs/kernfs-internal.h
+ fs/sysfs/dir.c         |  4 ++--
+ fs/sysfs/file.c        | 35 ++++++++++++++++++++++++-----------
+ fs/sysfs/sysfs.h       | 32 +-------------------------------
+ include/linux/kernfs.h | 37 +++++++++++++++++++++++++++++--------
+ 4 files changed, 56 insertions(+), 52 deletions(-)
 
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-new file mode 100644
-index 0000000..5a2c3a1
---- /dev/null
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -0,0 +1,115 @@
-+/*
-+ * fs/kernfs/kernfs-internal.h - kernfs internal header file
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <teheo@suse.de>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#ifndef __KERNFS_INTERNAL_H
-+#define __KERNFS_INTERNAL_H
-+
-+#include <linux/lockdep.h>
-+#include <linux/fs.h>
-+#include <linux/rbtree.h>
-+
-+#include <linux/kernfs.h>
-+
-+struct sysfs_open_dirent;
-+
-+/* type-specific structures for sysfs_dirent->s_* union members */
-+struct sysfs_elem_dir {
-+	unsigned long		subdirs;
-+	/* children rbtree starts here and goes through sd->s_rb */
-+	struct rb_root		children;
-+};
-+
-+struct sysfs_elem_symlink {
-+	struct sysfs_dirent	*target_sd;
-+};
-+
-+struct sysfs_elem_attr {
-+	const struct kernfs_ops	*ops;
-+	struct sysfs_open_dirent *open;
-+	loff_t			size;
-+};
-+
-+struct sysfs_inode_attrs {
-+	struct iattr	ia_iattr;
-+	void		*ia_secdata;
-+	u32		ia_secdata_len;
-+};
-+
-+/*
-+ * sysfs_dirent - the building block of sysfs hierarchy.  Each and
-+ * every sysfs node is represented by single sysfs_dirent.
-+ *
-+ * As long as s_count reference is held, the sysfs_dirent itself is
-+ * accessible.  Dereferencing s_elem or any other outer entity
-+ * requires s_active reference.
-+ */
-+struct sysfs_dirent {
-+	atomic_t		s_count;
-+	atomic_t		s_active;
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e88e9a9..8f2d577 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -150,7 +150,7 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
+ 	if (!atomic_inc_unless_negative(&sd->s_active))
+ 		return NULL;
+ 
+-	if (likely(!sysfs_ignore_lockdep(sd)))
++	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
+ 		rwsem_acquire_read(&sd->dep_map, 0, 1, _RET_IP_);
+ 	return sd;
+ }
+@@ -169,7 +169,7 @@ void sysfs_put_active(struct sysfs_dirent *sd)
+ 	if (unlikely(!sd))
+ 		return;
+ 
+-	if (likely(!sysfs_ignore_lockdep(sd)))
++	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
+ 		rwsem_release(&sd->dep_map, 1, _RET_IP_);
+ 	v = atomic_dec_return(&sd->s_active);
+ 	if (likely(v != SD_DEACTIVATED_BIAS))
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index a68cbef..e4eca28 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -58,7 +58,7 @@ static struct sysfs_open_file *sysfs_of(struct file *file)
+  */
+ static const struct kernfs_ops *kernfs_ops(struct sysfs_dirent *sd)
+ {
+-	if (!sysfs_ignore_lockdep(sd))
++	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
+ 		lockdep_assert_held(sd);
+ 	return sd->s_attr.ops;
+ }
+@@ -71,7 +71,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
+ {
+ 	struct kobject *kobj = sd->s_parent->priv;
+ 
+-	if (!sysfs_ignore_lockdep(sd))
++	if (sd->s_flags & SYSFS_FLAG_LOCKDEP)
+ 		lockdep_assert_held(sd);
+ 	return kobj->ktype ? kobj->ktype->sysfs_ops : NULL;
+ }
+@@ -942,6 +942,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 			   const struct attribute *attr, bool is_bin,
+ 			   umode_t mode, const void *ns)
+ {
++	struct lock_class_key *key = NULL;
+ 	const struct kernfs_ops *ops;
+ 	struct sysfs_dirent *sd;
+ 	loff_t size;
+@@ -981,8 +982,12 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		size = battr->size;
+ 	}
+ 
+-	sd = kernfs_create_file_ns(dir_sd, attr->name, mode, size,
+-				   ops, (void *)attr, ns);
 +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map	dep_map;
++	if (!attr->ignore_lockdep)
++		key = attr->key ?: (struct lock_class_key *)&attr->skey;
 +#endif
-+	struct sysfs_dirent	*s_parent;
-+	const char		*s_name;
++	sd = kernfs_create_file_ns_key(dir_sd, attr->name, mode, size,
++				       ops, (void *)attr, ns, key);
+ 	if (IS_ERR(sd)) {
+ 		if (PTR_ERR(sd) == -EEXIST)
+ 			sysfs_warn_dup(dir_sd, attr->name);
+@@ -992,7 +997,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ }
+ 
+ /**
+- * kernfs_create_file_ns - create a file
++ * kernfs_create_file_ns_key - create a file
+  * @parent: directory to create the file in
+  * @name: name of the file
+  * @mode: mode of the file
+@@ -1000,14 +1005,16 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+  * @ops: kernfs operations for the file
+  * @priv: private data for the file
+  * @ns: optional namespace tag of the file
++ * @key: lockdep key for the file's active_ref, %NULL to disable lockdep
+  *
+  * Returns the created node on success, ERR_PTR() value on error.
+  */
+-struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
+-					   const char *name,
+-					   umode_t mode, loff_t size,
+-					   const struct kernfs_ops *ops,
+-					   void *priv, const void *ns)
++struct sysfs_dirent *kernfs_create_file_ns_key(struct sysfs_dirent *parent,
++					       const char *name,
++					       umode_t mode, loff_t size,
++					       const struct kernfs_ops *ops,
++					       void *priv, const void *ns,
++					       struct lock_class_key *key)
+ {
+ 	struct sysfs_addrm_cxt acxt;
+ 	struct sysfs_dirent *sd;
+@@ -1022,7 +1029,13 @@ struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
+ 	sd->s_attr.size = size;
+ 	sd->s_ns = ns;
+ 	sd->priv = priv;
+-	sysfs_dirent_init_lockdep(sd);
 +
-+	struct rb_node		s_rb;
-+
-+	union {
-+		struct completion	*completion;
-+		struct sysfs_dirent	*removed_list;
-+	} u;
-+
-+	const void		*s_ns; /* namespace tag */
-+	unsigned int		s_hash; /* ns + name hash */
-+	union {
-+		struct sysfs_elem_dir		s_dir;
-+		struct sysfs_elem_symlink	s_symlink;
-+		struct sysfs_elem_attr		s_attr;
-+	};
-+
-+	void			*priv;
-+
-+	unsigned short		s_flags;
-+	umode_t			s_mode;
-+	unsigned int		s_ino;
-+	struct sysfs_inode_attrs *s_iattr;
-+};
-+
-+#define SD_DEACTIVATED_BIAS		INT_MIN
-+
-+#define SYSFS_TYPE_MASK			0x000f
-+#define SYSFS_DIR			0x0001
-+#define SYSFS_KOBJ_ATTR			0x0002
-+#define SYSFS_KOBJ_LINK			0x0004
-+#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
-+#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
-+
-+#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
-+#define SYSFS_FLAG_REMOVED		0x0010
-+#define SYSFS_FLAG_NS			0x0020
-+#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
-+#define SYSFS_FLAG_HAS_MMAP		0x0080
-+#define SYSFS_FLAG_LOCKDEP		0x0100
-+
-+static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
-+{
-+	return sd->s_flags & SYSFS_TYPE_MASK;
-+}
-+
-+/*
-+ * Context structure to be used while adding/removing nodes.
-+ */
-+struct sysfs_addrm_cxt {
-+	struct sysfs_dirent	*removed;
-+};
-+
-+#include "../sysfs/sysfs.h"
-+
-+#endif	/* __KERNFS_INTERNAL_H */
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	if (key) {
++		lockdep_init_map(&sd->dep_map, "s_active", key, 0);
++		sd->s_flags |= SYSFS_FLAG_LOCKDEP;
++	}
++#endif
+ 
+ 	/*
+ 	 * sd->s_attr.ops is accesible only while holding active ref.  We
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 85315e2..f8c936f 100644
+index c86456c..e93f8b8 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -8,103 +8,11 @@
-  * This file is released under the GPLv2.
-  */
+@@ -92,43 +92,13 @@ struct sysfs_dirent {
+ #define SYSFS_FLAG_NS			0x0020
+ #define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
+ #define SYSFS_FLAG_HAS_MMAP		0x0080
++#define SYSFS_FLAG_LOCKDEP		0x0100
  
--#include <linux/lockdep.h>
--#include <linux/kobject_ns.h>
--#include <linux/fs.h>
--#include <linux/rbtree.h>
-+#ifndef __SYSFS_INTERNAL_H
-+#define __SYSFS_INTERNAL_H
+ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ {
+ 	return sd->s_flags & SYSFS_TYPE_MASK;
+ }
  
--struct sysfs_open_dirent;
--
--/* type-specific structures for sysfs_dirent->s_* union members */
--struct sysfs_elem_dir {
--	unsigned long		subdirs;
--	/* children rbtree starts here and goes through sd->s_rb */
--	struct rb_root		children;
--};
--
--struct sysfs_elem_symlink {
--	struct sysfs_dirent	*target_sd;
--};
--
--struct sysfs_elem_attr {
--	const struct kernfs_ops	*ops;
--	struct sysfs_open_dirent *open;
--	loff_t			size;
--};
--
--struct sysfs_inode_attrs {
--	struct iattr	ia_iattr;
--	void		*ia_secdata;
--	u32		ia_secdata_len;
--};
--
--/*
-- * sysfs_dirent - the building block of sysfs hierarchy.  Each and
-- * every sysfs node is represented by single sysfs_dirent.
-- *
-- * As long as s_count reference is held, the sysfs_dirent itself is
-- * accessible.  Dereferencing s_elem or any other outer entity
-- * requires s_active reference.
-- */
--struct sysfs_dirent {
--	atomic_t		s_count;
--	atomic_t		s_active;
 -#ifdef CONFIG_DEBUG_LOCK_ALLOC
--	struct lockdep_map	dep_map;
--#endif
--	struct sysfs_dirent	*s_parent;
--	const char		*s_name;
 -
--	struct rb_node		s_rb;
+-#define sysfs_dirent_init_lockdep(sd)				\
+-do {								\
+-	struct attribute *attr = sd->priv;			\
+-	struct lock_class_key *key = attr->key;			\
+-	if (!key)						\
+-		key = &attr->skey;				\
+-								\
+-	lockdep_init_map(&sd->dep_map, "s_active", key, 0);	\
+-} while (0)
 -
--	union {
--		struct completion	*completion;
--		struct sysfs_dirent	*removed_list;
--	} u;
--
--	const void		*s_ns; /* namespace tag */
--	unsigned int		s_hash; /* ns + name hash */
--	union {
--		struct sysfs_elem_dir		s_dir;
--		struct sysfs_elem_symlink	s_symlink;
--		struct sysfs_elem_attr		s_attr;
--	};
--
--	void			*priv;
--
--	unsigned short		s_flags;
--	umode_t			s_mode;
--	unsigned int		s_ino;
--	struct sysfs_inode_attrs *s_iattr;
--};
--
--#define SD_DEACTIVATED_BIAS		INT_MIN
--
--#define SYSFS_TYPE_MASK			0x000f
--#define SYSFS_DIR			0x0001
--#define SYSFS_KOBJ_ATTR			0x0002
--#define SYSFS_KOBJ_LINK			0x0004
--#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
--#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
--
--#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
--#define SYSFS_FLAG_REMOVED		0x0010
--#define SYSFS_FLAG_NS			0x0020
--#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
--#define SYSFS_FLAG_HAS_MMAP		0x0080
--#define SYSFS_FLAG_LOCKDEP		0x0100
--
--static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+-/* Test for attributes that want to ignore lockdep for read-locking */
+-static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
 -{
--	return sd->s_flags & SYSFS_TYPE_MASK;
+-	struct attribute *attr = sd->priv;
+-
+-	return sysfs_type(sd) == SYSFS_KOBJ_ATTR && attr->ignore_lockdep;
 -}
 -
--/*
-- * Context structure to be used while adding/removing nodes.
-- */
--struct sysfs_addrm_cxt {
--	struct sysfs_dirent	*removed;
--};
-+#include "../kernfs/kernfs-internal.h"
-+#include <linux/sysfs.h>
- 
+-#else
+-
+-#define sysfs_dirent_init_lockdep(sd) do {} while (0)
+-
+-static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
+-{
+-	return true;
+-}
+-
+-#endif
+-
  /*
-  * mount.c
-@@ -175,3 +83,5 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
- extern const struct inode_operations sysfs_symlink_inode_operations;
- int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
- 			 const char *name);
+  * Context structure to be used while adding/removing nodes.
+  */
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index f20796e..105d09d 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -11,6 +11,7 @@
+ #include <linux/err.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
++#include <linux/lockdep.h>
+ 
+ struct file;
+ struct iattr;
+@@ -62,6 +63,10 @@ struct kernfs_ops {
+ 			 loff_t off);
+ 
+ 	int (*mmap)(struct sysfs_open_file *of, struct vm_area_struct *vma);
 +
-+#endif	/* __SYSFS_INTERNAL_H */
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lock_class_key	lockdep_key;
++#endif
+ };
+ 
+ #ifdef CONFIG_SYSFS
+@@ -69,11 +74,12 @@ struct kernfs_ops {
+ struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
+ 					  const char *name, void *priv,
+ 					  const void *ns);
+-struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
+-					   const char *name,
+-					   umode_t mode, loff_t size,
+-					   const struct kernfs_ops *ops,
+-					   void *priv, const void *ns);
++struct sysfs_dirent *kernfs_create_file_ns_key(struct sysfs_dirent *parent,
++					       const char *name,
++					       umode_t mode, loff_t size,
++					       const struct kernfs_ops *ops,
++					       void *priv, const void *ns,
++					       struct lock_class_key *key);
+ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 					const char *name,
+ 					struct sysfs_dirent *target);
+@@ -94,9 +100,10 @@ kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline struct sysfs_dirent *
+-kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
+-		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
+-		      void *priv, const void *ns)
++kernfs_create_file_ns_key(struct sysfs_dirent *parent, const char *name,
++			  umode_t mode, loff_t size,
++			  const struct kernfs_ops *ops, void *priv,
++			  const void *ns, struct lock_class_key *key)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline struct sysfs_dirent *
+@@ -132,6 +139,20 @@ kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
+ }
+ 
+ static inline struct sysfs_dirent *
++kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
++		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
++		      void *priv, const void *ns)
++{
++	struct lock_class_key *key = NULL;
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	key = (struct lock_class_key *)&ops->lockdep_key;
++#endif
++	return kernfs_create_file_ns_key(parent, name, mode, size, ops, priv,
++					 ns, key);
++}
++
++static inline struct sysfs_dirent *
+ kernfs_create_file(struct sysfs_dirent *parent, const char *name, umode_t mode,
+ 		   loff_t size, const struct kernfs_ops *ops, void *priv)
+ {
 -- 
 1.8.4.2
 
