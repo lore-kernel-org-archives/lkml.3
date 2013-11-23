@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab3KWUf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 15:35:59 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:45255 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755539Ab3KWUf4 (ORCPT
+	id S1756356Ab3KWUgH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 15:36:07 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39476 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756260Ab3KWUgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 15:35:56 -0500
+	Sat, 23 Nov 2013 15:36:03 -0500
+Date: Sat, 23 Nov 2013 21:36:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Howard Chu <hyc@symas.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Chinmay V S <cvs268@gmail.com>,
+        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        matthew@wil.cx
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+Message-ID: <20131123203600.GA791@amd.pavel.ucw.cz>
+References: <528CA73B.9070604@profihost.ag>
+ <20131120125446.GA6284@infradead.org>
+ <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com>
+ <528CC36A.7080003@profihost.ag>
+ <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com>
+ <20131120153703.GA23160@thunk.org>
+ <528CDD19.5060002@symas.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfNWXFmKFbVf2H1G7A=rVfxh+0ScN_yn_YcH=VsUr3bVjg@mail.gmail.com>
-References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
- <1385158216-6247-1-git-send-email-ddstreet@ieee.org> <CAL1ERfNWXFmKFbVf2H1G7A=rVfxh+0ScN_yn_YcH=VsUr3bVjg@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Sat, 23 Nov 2013 15:35:35 -0500
-X-Google-Sender-Auth: BtHmqs7TwWOI_j-t0MWosTHRH_g
-Message-ID: <CALZtONByDcL+yd3rMfFmrW_a2dV3ZV8XKiWcxba-oWTWeGNVVQ@mail.gmail.com>
-Subject: Re: [PATCH v3] mm/zswap: change zswap to writethrough cache
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Seth Jennings <sjennings@variantweb.net>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528CDD19.5060002@symas.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 9:37 PM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> Hello Dan,
->
-> On Sat, Nov 23, 2013 at 6:10 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->> Currently, zswap is writeback cache; stored pages are not sent
->> to swap disk, and when zswap wants to evict old pages it must
->> first write them back to swap cache/disk manually.  This avoids
->> swap out disk I/O up front, but only moves that disk I/O to
->> the writeback case (for pages that are evicted), and adds the
->> overhead of having to uncompress the evicted pages, and adds the
->> need for an additional free page (to store the uncompressed page)
->> at a time of likely high memory pressure.  Additionally, being
->> writeback adds complexity to zswap by having to perform the
->> writeback on page eviction.
->>
->> This changes zswap to writethrough cache by enabling
->> frontswap_writethrough() before registering, so that any
->> successful page store will also be written to swap disk.  All the
->> writeback code is removed since it is no longer needed, and the
->> only operation during a page eviction is now to remove the entry
->> from the tree and free it.
->
-> I agree with Seth, It is not good to embedded device.
-> May be we can find its place in others like server.
-> I guess it is good to medium workload when swap io is not frequent.
->
-> My suggestion is would you please make it configurable so that user
-> can choice to use writethrough or writeback mode?
->
+On Wed 2013-11-20 08:02:33, Howard Chu wrote:
+> Theodore Ts'o wrote:
+> >Historically, Intel has been really good about avoiding this, but
+> >since they've moved to using 3rd party flash controllers, I now advise
+> >everyone who plans to use any flash storage, regardless of the
+> >manufacturer, to do their own explicit power fail testing (hitting the
+> >reset button is not good enough, you need to kick the power plug out
+> >of the wall, or better yet, use a network controlled power switch you
+> >so you can repeat the power fail test dozens or hundreds of times for
+> >your qualification run) before being using flash storage in a mission
+> >critical situation where you care about data integrity after a power
+> >fail event.
+> 
+> Speaking of which, what would you use to automate this sort of test?
+> I'm thinking an SSD connected by eSATA, with an external power
+> supply, and the host running inside a VM. Drop power to the drive at
+> the same time as doing a kill -9 on the VM, then you can resume the
+> VM pretty quickly instead of waiting for a full reboot sequence.
 
-Having to support both significantly increases complexity and I think
-would make further improvements more difficult.  My opinion is the
-writeback code should be removed.  Is there anyone else who thinks
-both should be available by a param?
+I was just pulling power on sata drive.
+
+It uncovered "interesting" stuff. I plugged power back, and kernel
+re-estabilished communication with that drive, but any settings with
+hdparm were forgotten. I'd say there's some room for improvement
+there...
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
