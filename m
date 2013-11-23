@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab3KWWaV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:30:21 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:34032 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756465Ab3KWWWy (ORCPT
+	id S1756732Ab3KWWan (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:30:43 -0500
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:43487 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab3KWWWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:54 -0500
+	Sat, 23 Nov 2013 17:22:53 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 18/41] sysfs, kernfs: introduce kernfs_create_file[_ns]()
-Date: Sat, 23 Nov 2013 17:22:03 -0500
-Message-Id: <1385245346-856-19-git-send-email-tj@kernel.org>
+Subject: [PATCH 17/41] sysfs, kernfs: remove SYSFS_KOBJ_BIN_ATTR
+Date: Sat, 23 Nov 2013 17:22:02 -0500
+Message-Id: <1385245346-856-18-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,157 +21,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce kernfs interface to create a file which takes and returns
-sysfs_dirents.
+After kernfs_ops and sysfs_dirent->s_attr.size addition, the
+distinction between SYSFS_KOBJ_BIN_ATTR and SYSFS_KOBJ_ATTR is only
+necessary while creating files to decide which kernfs_ops to use.
+Afterwards, they behave exactly the same.
 
-The actual file creation part is separated out from
-sysfs_add_file_mode_ns() into kernfs_create_file_ns().  The former now
-only decides the kernfs_ops to use and the file's size and invokes the
-latter.
+This patch removes SYSFS_KOBJ_BIN_ATTR along with sysfs_is_bin().
+sysfs_add_file[_mode_ns]() are updated to take bool @is_bin instead of
+@type.
 
-This patch doesn't introduce behavior changes.
-
-v2: Dummy implementation for !CONFIG_SYSFS updated to return -ENOSYS.
+This patch doesn't introduce any behavior changes.  This completely
+isolates the distinction between the two sysfs file types in the sysfs
+layer proper.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 53 +++++++++++++++++++++++++++++++++++++++-----------
- include/linux/kernfs.h | 18 +++++++++++++++++
- 2 files changed, 60 insertions(+), 11 deletions(-)
+ fs/sysfs/file.c  | 23 ++++++++---------------
+ fs/sysfs/group.c |  5 ++---
+ fs/sysfs/inode.c |  1 -
+ fs/sysfs/sysfs.h | 11 ++++-------
+ 4 files changed, 14 insertions(+), 26 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index e2ce674..69cca0f 100644
+index 0b0cec8..e2ce674 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -912,14 +912,11 @@ static const struct kernfs_ops sysfs_bin_kfops_rw = {
+@@ -47,11 +47,6 @@ struct sysfs_open_dirent {
+ 	struct list_head	files; /* goes through sysfs_open_file.list */
+ };
+ 
+-static bool sysfs_is_bin(struct sysfs_dirent *sd)
+-{
+-	return sysfs_type(sd) == SYSFS_KOBJ_BIN_ATTR;
+-}
+-
+ static struct sysfs_open_file *sysfs_of(struct file *file)
+ {
+ 	return ((struct seq_file *)file->private_data)->private;
+@@ -916,7 +911,7 @@ static const struct kernfs_ops sysfs_bin_kfops_rw = {
+ };
  
  int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 			   const struct attribute *attr, bool is_bin,
--			   umode_t amode, const void *ns)
-+			   umode_t mode, const void *ns)
+-			   const struct attribute *attr, int type,
++			   const struct attribute *attr, bool is_bin,
+ 			   umode_t amode, const void *ns)
  {
--	umode_t mode = (amode & S_IALLUGO) | S_IFREG;
- 	const struct kernfs_ops *ops;
--	struct sysfs_addrm_cxt acxt;
- 	struct sysfs_dirent *sd;
+ 	umode_t mode = (amode & S_IALLUGO) | S_IFREG;
+@@ -926,7 +921,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
  	loff_t size;
--	int rc;
+ 	int rc;
  
- 	if (!is_bin) {
+-	if (type == SYSFS_KOBJ_ATTR) {
++	if (!is_bin) {
  		struct kobject *kobj = dir_sd->priv;
-@@ -956,14 +953,47 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		const struct sysfs_ops *sysfs_ops = kobj->ktype->sysfs_ops;
+ 
+@@ -961,7 +956,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
  		size = battr->size;
  	}
  
--	sd = sysfs_new_dirent(attr->name, mode, SYSFS_KOBJ_ATTR);
-+	sd = kernfs_create_file_ns(dir_sd, attr->name, mode, size,
-+				   ops, (void *)attr, ns);
-+	if (IS_ERR(sd)) {
-+		if (PTR_ERR(sd) == -EEXIST)
-+			sysfs_warn_dup(dir_sd, attr->name);
-+		return PTR_ERR(sd);
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * kernfs_create_file_ns - create a file
-+ * @parent: directory to create the file in
-+ * @name: name of the file
-+ * @mode: mode of the file
-+ * @size: size of the file
-+ * @ops: kernfs operations for the file
-+ * @priv: private data for the file
-+ * @ns: optional namespace tag of the file
-+ *
-+ * Returns the created node on success, ERR_PTR() value on error.
-+ */
-+struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
-+					   const char *name,
-+					   umode_t mode, loff_t size,
-+					   const struct kernfs_ops *ops,
-+					   void *priv, const void *ns)
-+{
-+	struct sysfs_addrm_cxt acxt;
-+	struct sysfs_dirent *sd;
-+	int rc;
-+
-+	sd = sysfs_new_dirent(name, (mode & S_IALLUGO) | S_IFREG,
-+			      SYSFS_KOBJ_ATTR);
+-	sd = sysfs_new_dirent(attr->name, mode, type);
++	sd = sysfs_new_dirent(attr->name, mode, SYSFS_KOBJ_ATTR);
  	if (!sd)
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
+ 		return -ENOMEM;
  
- 	sd->s_attr.ops = ops;
- 	sd->s_attr.size = size;
- 	sd->s_ns = ns;
--	sd->priv = (void *)attr;
-+	sd->priv = priv;
- 	sysfs_dirent_init_lockdep(sd);
+@@ -991,11 +986,10 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 	return rc;
+ }
  
- 	/*
-@@ -977,13 +1007,14 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		sd->s_flags |= SYSFS_FLAG_HAS_MMAP;
- 
- 	sysfs_addrm_start(&acxt);
--	rc = sysfs_add_one(&acxt, sd, dir_sd);
-+	rc = __sysfs_add_one(&acxt, sd, parent);
- 	sysfs_addrm_finish(&acxt);
- 
--	if (rc)
-+	if (rc) {
- 		sysfs_put(sd);
 -
--	return rc;
-+		return ERR_PTR(rc);
-+	}
-+	return sd;
- }
- 
  int sysfs_add_file(struct sysfs_dirent *dir_sd, const struct attribute *attr,
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 97c6c0f..d0912cf 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -64,6 +64,11 @@ struct kernfs_ops {
- struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
- 					  const char *name, void *priv,
- 					  const void *ns);
-+struct sysfs_dirent *kernfs_create_file_ns(struct sysfs_dirent *parent,
-+					   const char *name,
-+					   umode_t mode, loff_t size,
-+					   const struct kernfs_ops *ops,
-+					   void *priv, const void *ns);
- struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
- 					const char *name,
- 					struct sysfs_dirent *target);
-@@ -83,6 +88,12 @@ kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
- { return ERR_PTR(-ENOSYS); }
- 
- static inline struct sysfs_dirent *
-+kernfs_create_file_ns(struct sysfs_dirent *parent, const char *name,
-+		      umode_t mode, loff_t size, const struct kernfs_ops *ops,
-+		      void *priv, const void *ns)
-+{ return ERR_PTR(-ENOSYS); }
-+
-+static inline struct sysfs_dirent *
- kernfs_create_link(struct sysfs_dirent *parent, const char *name,
- 		   struct sysfs_dirent *target)
- { return ERR_PTR(-ENOSYS); }
-@@ -112,6 +123,13 @@ kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
- 	return kernfs_create_dir_ns(parent, name, priv, NULL);
+-		   int type)
++		   bool is_bin)
+ {
+-	return sysfs_add_file_mode_ns(dir_sd, attr, type, attr->mode, NULL);
++	return sysfs_add_file_mode_ns(dir_sd, attr, is_bin, attr->mode, NULL);
  }
  
-+static inline struct sysfs_dirent *
-+kernfs_create_file(struct sysfs_dirent *parent, const char *name, umode_t mode,
-+		   loff_t size, const struct kernfs_ops *ops, void *priv)
-+{
-+	return kernfs_create_file_ns(parent, name, mode, size, ops, priv, NULL);
-+}
-+
- static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
- 					const char *name)
+ /**
+@@ -1009,8 +1003,7 @@ int sysfs_create_file_ns(struct kobject *kobj, const struct attribute *attr,
  {
+ 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 
+-	return sysfs_add_file_mode_ns(kobj->sd, attr, SYSFS_KOBJ_ATTR,
+-				      attr->mode, ns);
++	return sysfs_add_file_mode_ns(kobj->sd, attr, false, attr->mode, ns);
+ 
+ }
+ EXPORT_SYMBOL_GPL(sysfs_create_file_ns);
+@@ -1049,7 +1042,7 @@ int sysfs_add_file_to_group(struct kobject *kobj,
+ 	if (!dir_sd)
+ 		return -ENOENT;
+ 
+-	error = sysfs_add_file(dir_sd, attr, SYSFS_KOBJ_ATTR);
++	error = sysfs_add_file(dir_sd, attr, false);
+ 	sysfs_put(dir_sd);
+ 
+ 	return error;
+@@ -1141,7 +1134,7 @@ int sysfs_create_bin_file(struct kobject *kobj,
+ {
+ 	BUG_ON(!kobj || !kobj->sd || !attr);
+ 
+-	return sysfs_add_file(kobj->sd, &attr->attr, SYSFS_KOBJ_BIN_ATTR);
++	return sysfs_add_file(kobj->sd, &attr->attr, true);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_create_bin_file);
+ 
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 11be6de..d7f4f6e 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -55,8 +55,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 				if (!mode)
+ 					continue;
+ 			}
+-			error = sysfs_add_file_mode_ns(dir_sd, *attr,
+-						       SYSFS_KOBJ_ATTR,
++			error = sysfs_add_file_mode_ns(dir_sd, *attr, false,
+ 						       (*attr)->mode | mode,
+ 						       NULL);
+ 			if (unlikely(error))
+@@ -278,7 +277,7 @@ int sysfs_merge_group(struct kobject *kobj,
+ 		return -ENOENT;
+ 
+ 	for ((i = 0, attr = grp->attrs); *attr && !error; (++i, ++attr))
+-		error = sysfs_add_file(dir_sd, *attr, SYSFS_KOBJ_ATTR);
++		error = sysfs_add_file(dir_sd, *attr, false);
+ 	if (error) {
+ 		while (--i >= 0)
+ 			kernfs_remove_by_name(dir_sd, (*--attr)->name);
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index 037a892..b3c717a 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -269,7 +269,6 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
+ 		inode->i_fop = &sysfs_dir_operations;
+ 		break;
+ 	case SYSFS_KOBJ_ATTR:
+-	case SYSFS_KOBJ_BIN_ATTR:
+ 		inode->i_size = sd->s_attr.size;
+ 		inode->i_fop = &kernfs_file_operations;
+ 		break;
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index d40e85e..28898fa 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -83,10 +83,9 @@ struct sysfs_dirent {
+ #define SYSFS_TYPE_MASK			0x00ff
+ #define SYSFS_DIR			0x0001
+ #define SYSFS_KOBJ_ATTR			0x0002
+-#define SYSFS_KOBJ_BIN_ATTR		0x0004
+ #define SYSFS_KOBJ_LINK			0x0008
+ #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
+-#define SYSFS_ACTIVE_REF		(SYSFS_KOBJ_ATTR | SYSFS_KOBJ_BIN_ATTR)
++#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
+ 
+ #define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
+ #define SYSFS_FLAG_NS			0x01000
+@@ -115,10 +114,8 @@ do {								\
+ static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
+ {
+ 	struct attribute *attr = sd->priv;
+-	int type = sysfs_type(sd);
+ 
+-	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
+-		attr->ignore_lockdep;
++	return sysfs_type(sd) == SYSFS_KOBJ_ATTR && attr->ignore_lockdep;
+ }
+ 
+ #else
+@@ -219,10 +216,10 @@ int sysfs_inode_init(void);
+ extern const struct file_operations kernfs_file_operations;
+ 
+ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+-		   const struct attribute *attr, int type);
++		   const struct attribute *attr, bool is_bin);
+ 
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+-			   const struct attribute *attr, int type,
++			   const struct attribute *attr, bool is_bin,
+ 			   umode_t amode, const void *ns);
+ void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
+ 
 -- 
 1.8.4.2
 
