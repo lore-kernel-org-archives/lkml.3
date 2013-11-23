@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3KXAAe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 19:00:34 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60158 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab3KXAAd (ORCPT
+	id S1756377Ab3KXABs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 19:01:48 -0500
+Received: from forward18.mail.yandex.net ([95.108.253.143]:36023 "EHLO
+	forward18.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755840Ab3KXABq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 19:00:33 -0500
-Message-ID: <5291419D.60307@gmail.com>
-Date: Sat, 23 Nov 2013 17:00:29 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 23 Nov 2013 19:01:46 -0500
+X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Nov 2013 19:01:45 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <5290F68C.4060900@roeck-us.net>
+References: <5290F68C.4060900@roeck-us.net>
+Subject: Re: New build failures in v3.13-rc1
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 0/3] perf tools: Add data file write interface
-References: <1385130268-10664-1-git-send-email-jolsa@redhat.com> <528F71DB.30603@gmail.com> <20131123094455.GA10130@krava.redhat.com>
-In-Reply-To: <20131123094455.GA10130@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <14411385250870@web21g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sun, 24 Nov 2013 03:54:30 +0400
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/13, 2:44 AM, Jiri Olsa wrote:
+23.11.2013, 22:40, "Guenter Roeck" <linux@roeck-us.net>:
+> =======================
+> Building sparc64:allmodconfig ... failed
+> --------------
+> Error log:
+> arch/sparc/kernel/kgdb_64.c: In function 'kgdb_trap':
+> arch/sparc/kernel/kgdb_64.c:162:7: error: implicit declaration of function 'exception_enter' [-Werror=implicit-function-declaration]
+> arch/sparc/kernel/kgdb_64.c:176:2: error: implicit declaration of function 'exception_exit' [-Werror=implicit-function-declaration]
+> cc1: all warnings being treated as errors
+> make[2]: *** [arch/sparc/kernel/kgdb_64.o] Error 1
 >
-> so.. I understand you'll make changes anyway
-> and dont mind to rebase? ;-)
+> Introduced by commit 812cb83a5 (sparc64: Implement HAVE_CONTEXT_TRACKING).
+>
+> Reverting that commit fixes the problem.
+>
 
-I can rebase.
+The patch below fixes the problem:
 
-David
-
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+---
+ arch/sparc/kernel/kgdb_64.c | 1 +
+ 1 file changed, 1 insertion(+)
+diff --git a/arch/sparc/kernel/kgdb_64.c b/arch/sparc/kernel/kgdb_64.c
+index 60b19f5..b45fe3f 100644
+--- a/arch/sparc/kernel/kgdb_64.c
++++ b/arch/sparc/kernel/kgdb_64.c
+@@ -6,6 +6,7 @@
+ #include <linux/kgdb.h>
+ #include <linux/kdebug.h>
+ #include <linux/ftrace.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/kdebug.h>
