@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab3KWI70 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 03:59:26 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:11974 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750719Ab3KWI7Z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 03:59:25 -0500
-Date: Sat, 23 Nov 2013 03:59:23 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 05/22] tools lib traceevent: Add hrtimer plugin
-Message-ID: <20131123035923.11ceea9f@gandalf.local.home>
-In-Reply-To: <1385130809.1747.38.camel@leonhard>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	<1385031680-9014-6-git-send-email-jolsa@redhat.com>
-	<1385130809.1747.38.camel@leonhard>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1755493Ab3KWI74 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 03:59:56 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:45986 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3KWI7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 03:59:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sat, 23 Nov 2013 17:59:30 +0900
+Message-ID: <CAAVeFuKm=AHf4Az+ZZXwWLtft2_zmCqy2Wscw25cWNCbn2T+dQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] net: rfkill: gpio: remove gpio conversion support
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013 23:33:29 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On Fri, Nov 22, 2013 at 9:14 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>
+> All platforms using this driver are now converted to the new
+> descriptor-based GPIO interface.
+>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  net/rfkill/rfkill-gpio.c | 61 ++++++++++--------------------------------------
+>  1 file changed, 12 insertions(+), 49 deletions(-)
+>
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> index 503432154616..bd2a5b90400c 100644
+> --- a/net/rfkill/rfkill-gpio.c
+> +++ b/net/rfkill/rfkill-gpio.c
+> @@ -68,35 +68,6 @@ static const struct rfkill_ops rfkill_gpio_ops = {
+>         .set_block = rfkill_gpio_set_power,
+>  };
+>
+> -static int rfkill_gpio_convert_to_desc(struct platform_device *pdev,
+> -                                      struct rfkill_gpio_data *rfkill)
+> -{
+> -       struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+> -       int ret;
+> -
+> -       if (gpio_is_valid(pdata->reset_gpio)) {
+> -               ret = devm_gpio_request_one(&pdev->dev, pdata->reset_gpio,
+> -                                           0, rfkill->reset_name);
+> -               if (ret) {
+> -                       dev_err(&pdev->dev, "failed to get reset gpio.\n");
+> -                       return ret;
+> -               }
+> -               rfkill->reset_gpio = gpio_to_desc(pdata->reset_gpio);
+> -       }
+> -
+> -       if (gpio_is_valid(pdata->shutdown_gpio)) {
+> -               ret = devm_gpio_request_one(&pdev->dev, pdata->shutdown_gpio,
+> -                                           0, rfkill->shutdown_name);
+> -               if (ret) {
+> -                       dev_err(&pdev->dev, "failed to get shutdown gpio.\n");
+> -                       return ret;
+> -               }
+> -               rfkill->shutdown_gpio = gpio_to_desc(pdata->shutdown_gpio);
+> -       }
+> -
+> -       return 0;
+> -}
+> -
+>  static int rfkill_gpio_acpi_probe(struct device *dev,
+>                                   struct rfkill_gpio_data *rfkill)
+>  {
+> @@ -117,6 +88,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>         struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+>         struct rfkill_gpio_data *rfkill;
+>         const char *clk_name = NULL;
+> +       struct gpio_desc *gpio;
+>         int ret;
+>         int len;
+>
+> @@ -150,29 +122,20 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>
+>         rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
+>
+> -       if (pdata && (pdata->reset_gpio || pdata->shutdown_gpio)) {
+> -               ret = rfkill_gpio_convert_to_desc(pdev, rfkill);
+> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+> +       if (!IS_ERR(gpio)) {
+> +               ret = gpiod_direction_output(gpio, 0);
+>                 if (ret)
+>                         return ret;
+> -       } else {
+> -               struct gpio_desc *gpio;
+> -
+> -               gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+> -               if (!IS_ERR(gpio)) {
+> -                       ret = gpiod_direction_output(gpio, 0);
+> -                       if (ret)
+> -                               return ret;
+> -                       rfkill->reset_gpio = gpio;
+> -               }
+> +               rfkill->reset_gpio = gpio;
+> +       }
+>
+> -               gpio = devm_gpiod_get_index(&pdev->dev,
+> -                                           rfkill->shutdown_name, 1);
+> -               if (!IS_ERR(gpio)) {
+> -                       ret = gpiod_direction_output(gpio, 0);
+> -                       if (ret)
+> -                               return ret;
+> -                       rfkill->shutdown_gpio = gpio;
+> -               }
+> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
+> +       if (!IS_ERR(gpio)) {
+> +               ret = gpiod_direction_output(gpio, 0);
+> +               if (ret)
+> +                       return ret;
+> +               rfkill->shutdown_gpio = gpio;
+>         }
+>
+>         /* Make sure at-least one of the GPIO is defined and that
 
-> 2013-11-21 (목), 12:01 +0100, Jiri Olsa:
-> > Backporting hrtimer plugin.
-> > 
-> > Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-> > 
-> > This plugin adds function field resolving for following
-> > tracepoint events:
-> >   timer:hrtimer_expire_entry
-> >   timer:hrtimer_start
-> > 
-> > The diff of 'perf script' output generated by old and new code:
-> > (data was generated by 'perf record -e 'timer:hrtimer*' -a')
-> > 
-> > --- script.hrtimer.old
-> > +++ script.hrtimer.new
-> > -         swapper     0 [000] 27405.519092: timer:hrtimer_start: [FAILED TO PARSE] hrtimer=0xffff88021e20e800 function=0xffffffff810c0e10 expires=27398383000000 softexpires=27398383000000
-> > +         swapper     0 [000] 27405.519103: timer:hrtimer_start: hrtimer=0xffff88021e20e800 function=tick_sched_timer expires=27398383000000 softexpires=27398383000000
-> > -         swapper     0 [001] 27405.519544: timer:hrtimer_expire_entry: [FAILED TO PARSE] hrtimer=0xffff880211334058 now=27398294182491 function=0xffffffff81086f20
-> > +         swapper     0 [001] 27405.519544: timer:hrtimer_expire_entry: hrtimer=0xffff880211334058 now=27398294182491 function=posix_timer_fn/0x0
-> > 
-> > Check the 'function' field is translated into the function name.
-> 
-> [SNIP]
-> > +	if (!fn) {
-> > +		trace_seq_printf(s, " function=MISSING");
-> > +	} else {
-> > +		unsigned long long function;
-> > +		const char *func;
-> > +
-> > +		if (pevent_read_number_field(fn, data, &function))
-> > +			trace_seq_printf(s, " function=INVALID");
-> > +
-> > +		func = pevent_find_function(pevent, function);
-> > +
-> > +		trace_seq_printf(s, " function=%s", func);
-> 
-> Shouldn't it be like below?
-> 
-> 		if (pevent_read_number_field(fn, data, &function))
-> 			trace_seq_printf(s, " function=INVALID");
-> 		else {
-> 			func = pevent_find_function(pevent, function);
-> 			trace_seq_printf(s, " function=%s", func);
-> 		}
-> 
-> Otherwise it'll print "function=XXX" twice if pevent_read_number_field()
-> failed.
-> 
+Wouldn't it be possible (and simpler) to move patch 2 of your series
+to first position, and then to merge patch 1 and 3 together in second
+position? It seems to me that you are basically undoing much of the
+work of your first patch here (notably by removing
+rfkill_gpio_convert_to_desc() which ends up having a very short life)
+and that this could be avoided if you defined the platform lookup
+tables first.
 
-Nice catch, but lets keep the backport and fixes separate.
-
-Actually, this was one of the first plugins I wrote, and since then, I
-added a function tat does this for you. The proper change is to rip
-this out and use:
-
-	pevent_print_func_field()
-
-instead. That function does the checks properly.
-
--- Steve
+Doing so would avoid prevent you from using gpio_to_desc() which you
+should never ever use anyway. :P
