@@ -1,193 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3KWIpI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 03:45:08 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:45928 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3KWIpG (ORCPT
+	id S1754875Ab3KWIwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 03:52:25 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36829 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753299Ab3KWIwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 03:45:06 -0500
-MIME-Version: 1.0
-X-Originating-IP: [1.38.24.201]
-In-Reply-To: <CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-Date: Sat, 23 Nov 2013 14:15:05 +0530
-Message-ID: <CAAhSdy0MCGB0EtA08weUU9vS1WZ9xNSD8sLnwwuO_an5t0WsTg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Anup Patel <anup@brainfault.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Feng Kan <fkan@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Vinayak Kale <vinayak.kale@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Kumar Sankaran <ksankaran@apm.com>, Loc Ho <lho@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 23 Nov 2013 03:52:24 -0500
+Date: Sat, 23 Nov 2013 03:52:21 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 04/22] tools lib traceevent: Add jbd2 plugin
+Message-ID: <20131123035221.73f67ab7@gandalf.local.home>
+In-Reply-To: <1385130477.1747.33.camel@leonhard>
+References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
+	<1385031680-9014-5-git-send-email-jolsa@redhat.com>
+	<1385130477.1747.33.camel@leonhard>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 2:11 PM, Anup Patel <anup@brainfault.org> wrote:
-> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> [dropping <patches@apm.com> from the CC list, as someone seems to have
->>  tripped on the config file, and I'm tired of getting bounces]
->>
->> Feng,
->>
->> On 19/11/13 21:42, Feng Kan wrote:
->>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
->>> X-Gene implementation, the FIQ bypass must be enabled at all time.
->>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
->>
->> How comes? Are only PPIs affected? When you say "some PPIs", can you be
->> more specific?
->>
->>> Signed-off-by: Feng Kan <fkan@apm.com>
->>> ---
->>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
->>>  include/linux/irqchip/arm-gic.h |    4 ++--
->>>  2 files changed, 13 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index d0e9480..aa7342e 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -65,6 +65,7 @@ struct gic_chip_data {
->>>  #endif
->>>       struct irq_domain *domain;
->>>       unsigned int gic_irqs;
->>> +     unsigned int bypass_flag;
->>>  #ifdef CONFIG_GIC_NON_BANKED
->>>       void __iomem *(*get_base)(union gic_base *);
->>>  #endif
->>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>
->>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  void gic_cpu_if_down(void)
->>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->>>
->>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
->>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
->>>
->>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>                          void __iomem *dist_base, void __iomem *cpu_base,
->>> -                        u32 percpu_offset, struct device_node *node)
->>> +                        u32 percpu_offset, u32 bypass_val,
->>> +                        struct device_node *node)
->>>  {
->>>       irq_hw_number_t hwirq_base;
->>>       struct gic_chip_data *gic;
->>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>
->>>       set_handle_irq(gic_handle_irq);
->>>
->>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
->>
->> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
->>
->>>       gic_chip.flags |= gic_arch_extn.flags;
->>>       gic_dist_init(gic);
->>>       gic_cpu_init(gic);
->>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>       void __iomem *cpu_base;
->>>       void __iomem *dist_base;
->>>       u32 percpu_offset;
->>> +     u32 bypass_val;
->>>       int irq;
->>>
->>>       if (WARN_ON(!node))
->>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->>>               percpu_offset = 0;
->>>
->>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
->>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
->>> +             bypass_val = 0;
->>
->> [adding Mark on Cc, so he can comment on the DT parts]
->>
->> Where's the DT documentation update? Also, as this is an
->> implementation-specific quirk, you should consider using a separate
->> compatible string and move the handling of this issue into some X-Gene
->> specific code.
->
-> Adding separate compatible string for X-Gene specific GIC will break
-> VGIC code for X-Gene because VGIC code looks for DT node compatible
-> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
-> code for X-Gene.
->
-> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
-> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
-> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
-> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
-> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
-> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
-> PPI28 (Legacy-FIQ).
->
-> We should have more cleaner and optional device tree binding for GIC
-> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
-> and FIQBypDisGrp1 bits for X-Gene.
->
-> Regards,
-> Anup
+On Fri, 22 Nov 2013 23:27:57 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Adding Kumar Sankaran.
+> [SNIP]
+> > +#define MINORBITS	20
+> > +#define MINORMASK	((1U << MINORBITS) - 1)
+> > +
+> > +#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
+> > +#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
+> > +
+> > +unsigned long long process_jbd2_dev_to_name(struct trace_seq *s,
+> > +					    unsigned long long *args)
+> 
+> Isn't it better to make these functions static?
 
->
->>
->>> +     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, bypass_val, node);
->>>
->>>       if (parent) {
->>>               irq = irq_of_parse_and_map(node, 0);
->>> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
->>> index 0e5d9ec..999515b 100644
->>> --- a/include/linux/irqchip/arm-gic.h
->>> +++ b/include/linux/irqchip/arm-gic.h
->>> @@ -64,14 +64,14 @@ struct device_node;
->>>  extern struct irq_chip gic_arch_extn;
->>>
->>>  void gic_init_bases(unsigned int, int, void __iomem *, void __iomem *,
->>> -                 u32 offset, struct device_node *);
->>> +                 u32 offset, u32 bypass_val, struct device_node *);
->>>  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
->>>  void gic_cpu_if_down(void);
->>>
->>>  static inline void gic_init(unsigned int nr, int start,
->>>                           void __iomem *dist , void __iomem *cpu)
->>>  {
->>> -     gic_init_bases(nr, start, dist, cpu, 0, NULL);
->>> +     gic_init_bases(nr, start, dist, cpu, 0, 0, NULL);
->>>  }
->>>
->>>  #endif /* __ASSEMBLY */
->>>
->>
->> Cheers,
->>
->>         M.
->> --
->> Jazz is not dead. It just smells funny...
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Yeah, but that was my mistake. Lets keep the fix separate from the
+backport though. Thanks!
+
+> 
+> 
+> > +{
+> > +	unsigned int dev = args[0];
+> > +
+> > +	trace_seq_printf(s, "%d:%d", MAJOR(dev), MINOR(dev));
+> > +	return 0;
+> > +}
+> > +
+> > +unsigned long long process_jiffies_to_msecs(struct trace_seq *s,
+> > +					    unsigned long long *args)
+> > +{
+> > +	unsigned long long jiffies = args[0];
+> > +
+> > +	trace_seq_printf(s, "%lld", jiffies);
+> > +	return jiffies;
+> > +}
+> > +
+> > +int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+> > +{
+> > +	pevent_register_print_function(pevent,
+> > +				       process_jbd2_dev_to_name,
+> > +				       PEVENT_FUNC_ARG_STRING,
+> 
+> Actually the function returns long long not string.  But it seems the
+> current code doesn't care about the return type.
+
+Actually it's not representing what process_jbd2_dev_to_name() returns
+(which will always return unsigned long long), but what
+"jbd2_dev_to_name()" returns that is (was) defined in the kernel. That
+was:
+
+	const char *jbd2_dev_to_name(dev_t device)
+
+When registering a function to handle, you need to express the
+prototype of that function (not the handler). The third argument is the
+ret_type of that function.
+
+But this is interesting, the ret_type doesn't seem to be used in
+event_parse.c. The return value of the callback is only done in
+eval_num_arg() where we could put a warning if the ret_type is not a
+number.
+
+Funny thing is, this patch is irrelevant with todays kernel due to this
+commit:
+
+commit 4862fd6047ed02e2726667c54d35f538eecc56aa
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Sun Jul 10 22:05:08 2011 -0400
+
+    jbd2: remove jbd2_dev_to_name() from jbd2 tracepoints
+    
+    Using function calls in TP_printk causes perf heartburn, so print the
+    MAJOR/MINOR device numbers instead.
+    
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+
+
+
+> 
+> 
+> > +				       "jbd2_dev_to_name",
+> > +				       PEVENT_FUNC_ARG_INT,
+> > +				       PEVENT_FUNC_ARG_VOID);
+> > +
+> > +	pevent_register_print_function(pevent,
+> > +				       process_jiffies_to_msecs,
+> > +				       PEVENT_FUNC_ARG_LONG,
+> > +				       "jiffies_to_msecs",
+> > +				       PEVENT_FUNC_ARG_LONG,
+> > +				       PEVENT_FUNC_ARG_VOID);
+> > +	return 0;
+> > +}
+> 
+> Shouldn't it unregister these functions when unloaded?
+
+Probably ;-)
+
+-- Steve
+
+> 
+> Thanks,
+> Namhyung
+> 
+
