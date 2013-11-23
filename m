@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3KWLsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 06:48:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37848 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab3KWLsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 06:48:42 -0500
-Date: Sat, 23 Nov 2013 12:48:15 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        tglx@linutronix.de, efault@gmx.de, jeffm@suse.com,
-        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
-        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Subject: Re: [PATCH 5/5] sched,futex: Provide delayed wakeup list
-Message-ID: <20131123114815.GC16796@laptop.programming.kicks-ass.net>
-References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
- <1385168197-8612-6-git-send-email-davidlohr@hp.com>
+	id S1755432Ab3KWLz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 06:55:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752744Ab3KWLzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 06:55:55 -0500
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Madper Xie <cxie@redhat.com>
+To: "'linux-kernel\@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>
+Cc: "matt.fleming\@intel.com" <matt.fleming@intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "richard\@nod.at" <richard@nod.at>, Tony Luck <tony.luck@gmail.com>
+Subject: [PATCH v2] efi-pstore: Make efi-pstore return a unique id
+Date: Sat, 23 Nov 2013 19:55:37 +0800
+Message-ID: <87bo1bnxhi.fsf@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385168197-8612-6-git-send-email-davidlohr@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 04:56:37PM -0800, Davidlohr Bueso wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> 
-> Original patchset: https://lkml.org/lkml/2011/9/14/118
-> 
-> This is useful for locking primitives that can effect multiple
-> wakeups per operation and want to avoid lock internal lock contention
-> by delaying the wakeups until we've released the lock internal locks.
-> 
-> Alternatively it can be used to avoid issuing multiple wakeups, and
-> thus save a few cycles, in packet processing. Queue all target tasks
-> and wakeup once you've processed all packets. That way you avoid
-> waking the target task multiple times if there were multiple packets
-> for the same task.
-> 
-> This patch adds the needed infrastructure into the scheduler code
-> and uses the new wake_list to delay the futex wakeups until
-> after we've released the hash bucket locks. This avoids the newly
-> woken tasks from immediately getting stuck on the hb->lock.
-> 
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Darren Hart <dvhart@linux.intel.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Jeff Mahoney <jeffm@suse.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Scott Norton <scott.norton@hp.com>
-> Cc: Tom Vaden <tom.vaden@hp.com>
-> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-> Cc: Waiman Long <Waiman.Long@hp.com>
-> Tested-by: Jason Low <jason.low2@hp.com>
-> [forward ported]
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> ---
-> Please note that in the original thread there was some debate
-> about spurious wakeups (https://lkml.org/lkml/2011/9/17/31), so
-> you can consider this more of an RFC patch if folks believe that
-> this functionality is incomplete/buggy.
 
-Right, from what I remember, this patch can cause spurious wakeups, and
-while all our regular sleeping lock / wait thingies can deal with this,
-not all creative schedule() usage in the tree can deal with this.
+Pstore fs expects that backends provide a uniqued id which could avoid
+pstore making entries as duplication or denominating entries the same
+name. So I combine the timestamp, part and count into id.
 
-There's about ~1400 (or there were that many 2 years ago, might be more
-by now) schedule() calls, many of which are open coded wait constructs
-of which most are buggy in one way or another.
+Signed-off-by: Madper Xie <cxie@redhat.com>
+---
+ drivers/firmware/efi/efi-pstore.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-So we first need to audit / fix all those before we can do this one.
+diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
+index 5002d50..c6075f8 100644
+--- a/drivers/firmware/efi/efi-pstore.c
++++ b/drivers/firmware/efi/efi-pstore.c
+@@ -39,6 +39,12 @@ struct pstore_read_data {
+ 	char **buf;
+ };
+ 
++static inline u64 generic_id(unsigned long timestamp,
++			     unsigned int part, int count)
++{
++	return (timestamp * 100 + part) * 1000 + count;
++}
++
+ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+ {
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+@@ -57,7 +63,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+ 
+ 	if (sscanf(name, "dump-type%u-%u-%d-%lu-%c",
+ 		   cb_data->type, &part, &cnt, &time, &data_type) == 5) {
+-		*cb_data->id = part;
++		*cb_data->id = generic_id(time, part, cnt);
+ 		*cb_data->count = cnt;
+ 		cb_data->timespec->tv_sec = time;
+ 		cb_data->timespec->tv_nsec = 0;
+@@ -67,7 +73,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+ 			*cb_data->compressed = false;
+ 	} else if (sscanf(name, "dump-type%u-%u-%d-%lu",
+ 		   cb_data->type, &part, &cnt, &time) == 4) {
+-		*cb_data->id = part;
++		*cb_data->id = generic_id(time, part, cnt);
+ 		*cb_data->count = cnt;
+ 		cb_data->timespec->tv_sec = time;
+ 		cb_data->timespec->tv_nsec = 0;
+@@ -79,7 +85,7 @@ static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
+ 		 * which doesn't support holding
+ 		 * multiple logs, remains.
+ 		 */
+-		*cb_data->id = part;
++		*cb_data->id = generic_id(time, part, 0);
+ 		*cb_data->count = 0;
+ 		cb_data->timespec->tv_sec = time;
+ 		cb_data->timespec->tv_nsec = 0;
+@@ -199,14 +205,15 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+ 	char name[DUMP_NAME_LEN];
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+ 	int found, i;
++	unsigned int part;
+ 
+-	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
+-		time.tv_sec);
++	part = (id / 1000) % 100;
++	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count, time.tv_sec);
+ 
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = name[i];
+ 
+-	edata.id = id;
++	edata.id = part;
+ 	edata.type = type;
+ 	edata.count = count;
+ 	edata.time = time;
+-- 
+1.8.4.2
 
-I used to have a patch to schedule() that would always immediately fall
-through and only actually block on the second call; it illustrated the
-problem really well, in fact so well the kernels fails to boot most
-times.
