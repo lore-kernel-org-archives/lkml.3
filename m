@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab3KXDhc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 22:37:32 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36345 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756259Ab3KXDhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 22:37:31 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] CMA: Fix the phys_addr_t print types
-Date: Sat, 23 Nov 2013 22:37:01 -0500
-Message-ID: <1385264221-29952-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755520Ab3KXDlr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 22:41:47 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:48814 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab3KXDln convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 22:41:43 -0500
+Date: Sat, 23 Nov 2013 17:31:05 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2] Documentation: gpiolib: document new interface
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+In-Reply-To: <CACRpkdZc0DWHe6AmawYp=SY=5==SUuJUHDETUTDw-6PbhR3tUg@mail.gmail.com>
+	(from linus.walleij@linaro.org on Mon Nov 18 03:34:20 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1385249465.1974.280@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise prints would truncate the variables on LPAE machines.
+On 11/18/2013 03:34:20 AM, Linus Walleij wrote:
+> On Sat, Nov 16, 2013 at 1:34 PM, Alexandre Courbot  
+> <acourbot@nvidia.com> wrote:
+> 
+> > The first version received zero feedback, hopefully this one will  
+> get more
+> > attention. :) Not much changes, just some more proofreading and the  
+> fixes
+> > and improvements that came from it. It looks ok as far as I am  
+> concerned.
+> 
+> Sorry I was swamped with other stuff...
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- drivers/base/dma-contiguous.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+I'm 8 gazillion messages behind myself.
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 165c2c2..b303a98 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -201,9 +201,8 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
- 	phys_addr_t alignment;
- 	int ret = 0;
- 
--	pr_debug("%s(size %lx, base %08lx, limit %08lx)\n", __func__,
--		 (unsigned long)size, (unsigned long)base,
--		 (unsigned long)limit);
-+	pr_info("%s(size %pa, base %pa, limit %pa)\n", __func__,
-+		 &size, &base, &limit);
- 
- 	/* Sanity checks */
- 	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-@@ -250,8 +249,8 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
- 	*res_cma = cma;
- 	cma_area_count++;
- 
--	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
--		(unsigned long)base);
-+	pr_info("CMA: reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
-+		&base);
- 
- 	/* Architecture specific contiguous memory fixup. */
- 	dma_contiguous_early_fixup(base, size);
--- 
-1.7.9.5
+Also Balsa's threading mode is broken so I tend to flag users when I'm  
+in a hurry (alphabetical sort works) and when they change names  
+midconversation I tend not to notice they've posted more on a topic.  
+(Switching email clients is on my todo list.)
 
+> > Linus, I hope this can be merged during the -rc cycle of 3.13,  
+> since the
+> > gpiod_ interface is going to be introduced there. It would not make  
+> much
+> > sense for it to come without its documentation.
+> 
+> You're right of course. I'll read through it and apply fixes on top
+> (or squash into your patch.)
+> 
+> Formal stuff:
+> Don't we need an 00-INDEX file?
+> (Maybe Rob can tell whether this is desirable.)
+
+A 00-INDEX file wouldn't hurt, but it can always be added later. No  
+reason to hold up the series for that. (I was using them to generate  
+html indexes for kernel.org/doc but after the breakin they eliminated  
+all non-git functionality so I haven't been able to update it since.  
+They replaced kernel.org/doc/Documentation with a raw git checkout, and  
+I expect them to replace kernel.org/doc/menuconfig with a raw git  
+checkout any day now.)
+
+That said, a 00-INDEX file would let you know where to start reading to  
+find the file with the intro paragraph at the start of the old file,  
+the bit explaining what GPIO is. Here the first file alphabetically is  
+"board.txt", and I have no idea why it's named that, given how it  
+starts. (I was sort of hoping that somebody who already knows the  
+subsystem would comment before I do. I have no way of knowing if this  
+documentation is _right_.)
+
+Aforementioned first paragraph:
+
+> +This document explains how GPIOs can be assigned to given devices  
+> and functions.
+
+> +Note that it only applies to the new descriptor-based interface. For  
+> a
+> +description of the deprecated integer-based GPIO interface please  
+> refer to
+> +gpio-legacy.txt (actually, there is no real mapping possible with  
+> the old
+> +interface; you just fetch an integer from somewhere and request the
+> +corresponding GPIO.
+
+Here's how I'd rewrite that:
+
+"This document explains how to assign GPIOs to devices and functions  
+using the descriptor-based GPIO interface. (For a description of the  
+deprecated integer-based interface see gpio-legacy.txt.)"
+
+Some reasons:
+
+1) The word "given" made me think "assigned to" and "given" were  
+alternate ways of saying the same thing. I know what you mean, but had  
+to read it twice to follow, and I don't think "given" adds anything  
+here but potential confusion.
+
+2) Describing an interface as "new" is problematic; it will stop being  
+new long before the documentation is updated to stop calling it that.  
+Either say which kernel version it was introduced in or don't.
+
+3) Does the kernel still use the old one? Is it scheduled to be  
+removed? Why was it deprecated? Should software that uses it be  
+rewritten to use the new one? What kind of timetable are we talking  
+about? If you're not going to answer obvious questions, don't open the  
+can of worms of comparing them (at least not here).
+
+4) Warnings against the old interface belong in the document describing  
+the old interface. (The sentence fragment and unbalanced parentheses  
+was just gravy.)
+
+But I really don't have time to go through every paragraph like that,  
+and was hoping the gpio guys would (or just sign off on it so I don't  
+have to)...
+
+Rob
