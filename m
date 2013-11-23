@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3KWBIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Nov 2013 20:08:13 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:38690 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab3KWBIJ (ORCPT
+	id S1756135Ab3KWBJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Nov 2013 20:09:00 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24916 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755798Ab3KWBI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Nov 2013 20:08:09 -0500
+	Fri, 22 Nov 2013 20:08:58 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19G/IyTtvoZcVxsf/+wrh5z
+Date: Fri, 22 Nov 2013 17:08:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
+ populating interrupts
+Message-ID: <20131123010850.GN10023@atomide.com>
+References: <20131123004334.GJ10023@atomide.com>
+ <20131123005509.GJ16735@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20131123004340.GA22310@srcf.ucam.org>
-References: <CA+55aFxK5hkhteiL5cyPtHX5reup6aOiHQTCDKKdBsHiWsroGA@mail.gmail.com>
-	<20131123004340.GA22310@srcf.ucam.org>
-Date: Fri, 22 Nov 2013 17:08:08 -0800
-X-Google-Sender-Auth: LRaeRpe-vt-Sj5A1aQgS1VuFrVk
-Message-ID: <CA+55aFxEguBBH5B9J9=FLvph5EkLSOjzKc99hHpEDrRgkNHvZg@mail.gmail.com>
-Subject: Re: Linux 3.13-rc1 is out
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131123005509.GJ16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 4:43 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
-> I'd sent a pull yesterday (http://lkml.org/lkml/2013/11/21/599 ) which
-> may have missed your cutoff, but it seems worth checking.
+* Russell King - ARM Linux <linux@arm.linux.org.uk> [131122 16:56]:
+> On Fri, Nov 22, 2013 at 04:43:35PM -0800, Tony Lindgren wrote:
+> > +		/* See of_device_resource_notify for populating interrupts */
+> > +		for (i = 0; i < num_irq; i++, res++) {
+> > +			res->flags = IORESOURCE_IRQ;
+> > +			res->start = -EPROBE_DEFER;
+> > +			res->end = -EPROBE_DEFER;
+> 
+> NAK.  Definitely a bad idea to start introducing magic values other into
+> resources.  Please don't do this.
 
-No, it didn't miss my cutoff, and it wasn't even eaten by the gmail
-spam filters, but it *had* missed my normal pattern for checking that
-I had merged all git pull requests, which is why I had overlooked it.
+Do you have any better ideas on how to sort out this issue then?
 
-Pulled now (going through the allmodconfig build test before being
-pushed out shortly).
-
-Btw, the reason it missed my normal check is that I search for
-"in:inbox git pull" as a sanity check that I don't have anything
-pending. Now, *most* of the time I tend to catch things regardless
-just by virtue of reading email carefully, but when I'm busy it
-definitely helps if your email matches that pattern.
-
-The easiest (and most common) way to do that is to have the subject
-line be something like
-
-    [GIT PULL] sound fixes #2 for 3.13-rc1
-
-but there are other patterns. For example, David Miller tends to have
-instead a subject line like
-
-    [GIT] Networking
-
-and then "Please pull" in the body of the email. So the "in:inbox git
-pull" thing basically catches pretty much everybody.
-
-Except for you...
-
-You use David Miller's subject line, but you don't have the "please
-pull" part, so your email missed my "did I pull everything that I had
-pending" check.
-
-For very similar reasons, for people sending me a patch, it really
-*really* helps if there's a "[patch]" (possibly with a n/m number
-pattern) in the subject line..  Or make sure you send me a git diff,
-because I also tend to search for the string "diff --git". Of course,
-the main person who sends me patches is Andrew Morton, so I mostly
-just search for "from:akpm" :)
-
-               Linus
+Tony
