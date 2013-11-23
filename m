@@ -1,175 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3KWIM2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 03:12:28 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42882 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750925Ab3KWIM0 (ORCPT
+	id S1754403Ab3KWIWS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 03:22:18 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:43322 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3KWIWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 03:12:26 -0500
-Date: Sat, 23 Nov 2013 03:12:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 01/22] tools lib traceevent: Add plugin support
-Message-ID: <20131123031219.5426ffa9@gandalf.local.home>
-In-Reply-To: <1385129826.1747.22.camel@leonhard>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	<1385031680-9014-2-git-send-email-jolsa@redhat.com>
-	<1385129826.1747.22.camel@leonhard>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 23 Nov 2013 03:22:14 -0500
+Message-ID: <529065B3.6060905@gmail.com>
+Date: Sat, 23 Nov 2013 09:22:11 +0100
+From: Chang <changxiangzhong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Vlad Yasevich <vyasevich@gmail.com>, nhorman@tuxdriver.com,
+        davem@davemloft.net
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: sctp: set chunk->tsn_gap_acked at the end of cycle
+References: <1385106589-402-1-git-send-email-changxiangzhong@gmail.com> <528F69B7.7020902@gmail.com> <528FAF50.10100@gmail.com> <528FDF52.4030500@gmail.com>
+In-Reply-To: <528FDF52.4030500@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013 23:17:06 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
 
-> > 
-> [SNIP[
-> > +static void
-> > +load_plugin(struct pevent *pevent, const char *path,
-> > +	    const char *file, void *data)
-> > +{
-> > +	struct plugin_list **plugin_list = data;
-> > +	pevent_plugin_load_func func;
-> > +	struct plugin_list *list;
-> > +	const char *alias;
-> > +	char *plugin;
-> > +	void *handle;
-> > +
-> > +	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-> 
-> I'd like not to see this malloc_or_die() anymore in a new code.  Just
-> returning after showing a warning looks enough here.
+On 11/22/2013 11:48 PM, Vlad Yasevich wrote:
+> On 11/22/2013 02:24 PM, Chang wrote:
+>> On 11/22/2013 03:27 PM, Vlad Yasevich wrote:
+>>> On 11/22/2013 02:49 AM, Chang Xiangzhong wrote:
+>>>> tsn_gap_acked is an important state flag in chunk, which indicates if
+>>>> the
+>>>> chunk has been acked in gap reports before.
+>>> Actually, this bit indicates simply that the chunk has been acked.  It
+>>> doesn't state whether it's been acked in a gap report or via
+>>> cumulative tsn.
+>> Thanks for pointing this out. Sorry for not having made that clear.
+>>>> SFR-CACC algorithm depends on this
+>>>> variable. So set this at the end of each iteration, otherwise the
+>>>> SFR-CACC
+>>>> algorithm would never be toggled.
+>>>>
+>>>> Signed-off-by: Chang Xiangzhong <changxiangzhong@gmail.com>
+>>>> ---
+>>>>    net/sctp/outqueue.c | 3 ++-
+>>>>    1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+>>>> index 1b494fa..bff828c 100644
+>>>> --- a/net/sctp/outqueue.c
+>>>> +++ b/net/sctp/outqueue.c
+>>>> @@ -1396,7 +1396,6 @@ static void sctp_check_transmitted(struct
+>>>> sctp_outq *q,
+>>>>                 * while DATA was outstanding).
+>>>>                 */
+>>>>                if (!tchunk->tsn_gap_acked) {
+>>>> -                tchunk->tsn_gap_acked = 1;
+>>>>                    if (TSN_lt(*highest_new_tsn_in_sack, tsn))
+>>>>                        *highest_new_tsn_in_sack = tsn;
+>>>>                    bytes_acked += sctp_data_size(tchunk);
+>>>> @@ -1460,6 +1459,8 @@ static void sctp_check_transmitted(struct
+>>>> sctp_outq *q,
+>>>>                     */
+>>>>                    list_add_tail(lchunk, &tlist);
+>>>>                }
+>>>> +
+>>>> +            tchunk->tsn_gap_acked = 1;
+>>> The current code will set the state if it hasn't been set yet.  Why is
+>>> this needed?
+>> Because in line 1420 ~ 1440 The SFR-CACC algorithms use tsn_gap_acked.
+>> That "if block" would never be triggered because the varaiable's been
+>> set. That's why I move the "state changing sentence" to the end of the
+>> iteration.
+>>> Now there is an issue with tracking highest_new_tsn_in_sack.  The spec
+>>> is a little vague on this, but the highest_new_tsn_in_sack only supposed
+>>> to track tsns that have not been resent.  If a tsn has been reneged, and
+>>> then sent again, it is not considered 'new' thus should not count
+>>> toward highest_new_tsn_in_sack.  We currently do not track this right.
+>> I'll try to figure this out.
+> So the solution that's been proposed before is to move the CACC block up
+> and merge it with the !tsn_gap_acked block.  This requires additional
+> change though to only mark highest_new_tsn if the chunk has not been
+> retransmitted (which you've added in a prior patch).
+>
+> -vlad
+Yeah, I've mixed that up with a prior patch. How was the previous patch? 
+Was it approved?
+-chang
+>>> -vlad
+>>>
+>>> -vlad
+>>>
+>>>>            } else {
+>>>>                if (tchunk->tsn_gap_acked) {
+>>>>                    pr_debug("%s: receiver reneged on data TSN:0x%x\n",
+>>>>
 
-Yeah I agree. This is a relic from my code. I think it's OK to add
-here, as it is pretty much direct port of my code, and then we can just
-add a patch against it to remove it.
-
-> 
-> > +
-> > +	strcpy(plugin, path);
-> > +	strcat(plugin, "/");
-> > +	strcat(plugin, file);
-> > +
-> > +	handle = dlopen(plugin, RTLD_NOW | RTLD_GLOBAL);
-> 
-> Why RTLD_NOW and RTLD_GLOBAL?  Hmm.. maybe using _NOW is needed to
-> prevent a runtime error, but not sure why _GLOBAL is needed.
-
-Yes, we want to make sure all symbols defined are available at time of
-load, otherwise bail out.
-
-> 
-> IIUC _GLOBAL is for exporting symbols to *other libraries*.  Is it
-> intended for this plugin support?
-
-That was the plan. To have one plugin supply a set of functions that
-other plugins may use. That is what GLOBAL is for, right?  I don't
-recall if I every did this, but it was something I wanted for future
-work.
-
-Now if we don't need it, we could remove it, but is it bad to have?
-
-
-> 
-> 
-> > +	if (!handle) {
-> > +		warning("could not load plugin '%s'\n%s\n",
-> > +			plugin, dlerror());
-> > +		goto out_free;
-> > +	}
-> > +
-> > +	alias = dlsym(handle, PEVENT_PLUGIN_ALIAS_NAME);
-> > +	if (!alias)
-> > +		alias = file;
-> 
-> So this 'alias' is not used anywhere in the current code, right?
-> Do you plan to add the option processing soon?
-
-I believe he is, and hopefully he will, because I want to forward port
-this code to have trace-cmd use it. The end result should be a separate
-library that we all can use.
-
-It may be best to add the above alias when we add option support. But
-it doesn't hurt to include it now, as long as we plan to add that in
-the near future.
-
-> 
-> > +
-> > +	func = dlsym(handle, PEVENT_PLUGIN_LOADER_NAME);
-> > +	if (!func) {
-> > +		warning("could not find func '%s' in plugin '%s'\n%s\n",
-> > +			PEVENT_PLUGIN_LOADER_NAME, plugin, dlerror());
-> > +		goto out_free;
-> > +	}
-> > +
-> > +	list = malloc_or_die(sizeof(*list));
-> 
-> Ditto.  Please check return value and handle error properly.
-
-I agree, but lets make that a separate patch, such that we see the
-changes between the backport and updates.
-
-> 
-> 
-> > +	list->next = *plugin_list;
-> > +	list->handle = handle;
-> > +	list->name = plugin;
-> > +	*plugin_list = list;
-> > +
-> > +	pr_stat("registering plugin: %s", plugin);
-> > +	func(pevent);
-> > +	return;
-> > +
-> > + out_free:
-> > +	free(plugin);
-> > +}
-> > +
-> > +static void
-> > +load_plugins_dir(struct pevent *pevent, const char *suffix,
-> > +		 const char *path,
-> > +		 void (*load_plugin)(struct pevent *pevent,
-> > +				     const char *path,
-> > +				     const char *name,
-> > +				     void *data),
-> 
-> Doesn't gcc complain about the name shadows other function?  Anyway I
-> think we should avoid using same name - probably using typedef for the
-> function might be helpful.
-
-I agree here too, but again, lets keep the backport and fixes as
-separate patches.
-
--- Steve
-
-> 
-> 
-> > +		 void *data)
-> [SNIP]
-> > +	/*
-> > +	 * Now let the home directory override the environment
-> > +	 * or system defaults.
-> > +	 */
-> > +	home = getenv("HOME");
-> > +	if (!home)
-> > +		return;
-> > +
-> > +	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
-> 
-> Ditto.
-> 
-> Thanks,
-> Namhyung
