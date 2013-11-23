@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3KWMGS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 07:06:18 -0500
-Received: from ring0.de ([91.143.88.219]:55656 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943Ab3KWMGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 07:06:13 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sat, 23 Nov 2013 13:06:06 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-iio@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio:light:tsl2563: Add DT support
-Message-ID: <20131123120606.GA21861@earth.universe>
-Mail-Followup-To: Jonathan Cameron <jic23@kernel.org>,
-	Grant Likely <grant.likely@secretlab.ca>, linux-iio@vger.kernel.org,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-	Peter Meerwald <pmeerw@pmeerw.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Bill Pemberton <wfp5p@virginia.edu>,
-	Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1382565063-17083-1-git-send-email-sre@debian.org>
- <20131025191028.8C140C40422@trevor.secretlab.ca>
- <20131025230906.GB8657@earth.universe>
- <52909685.6040606@kernel.org>
+	id S1756082Ab3KWMJy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 07:09:54 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:35085 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab3KWMJv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 07:09:51 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
-Content-Disposition: inline
-In-Reply-To: <52909685.6040606@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 23 Nov 2013 13:09:51 +0100
+X-Google-Sender-Auth: 9GKCK-ZcSBnLGHZ2iShz-7nXwnk
+Message-ID: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
+Subject: assoc_array.c uninitialized variable (was: Re: [PATCH 02/10] Add a
+ generic associative array implementation.)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 17, 2013 at 10:43 PM, David Howells <dhowells@redhat.com> wrote:
+> +/*
+> + * Handle insertion into a terminal node.
+> + */
+> +static bool assoc_array_insert_into_terminal_node(struct assoc_array_edit *edit,
+> +                                                 const struct assoc_array_ops *ops,
+> +                                                 const void *index_key,
+> +                                                 struct assoc_array_walk_result *result)
+> +{
+> +       struct assoc_array_shortcut *shortcut, *new_s0;
+> +       struct assoc_array_node *node, *new_n0, *new_n1, *side;
+> +       struct assoc_array_ptr *ptr;
+> +       unsigned long dissimilarity, base_seg, blank;
+> +       size_t keylen;
+> +       bool have_meta;
+> +       int level, diff;
+> +       int slot, next_slot, free_slot, i, j;
 
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+lib/assoc_array.c: In function ‘assoc_array_insert_into_terminal_node’:
+lib/assoc_array.c:502: warning: ‘j’ may be used uninitialized in this function
 
-On Sat, Nov 23, 2013 at 11:50:29AM +0000, Jonathan Cameron wrote:
-> On 10/26/13 00:09, Sebastian Reichel wrote:
-> > Hi Grant,
-> >=20
-> > On Fri, Oct 25, 2013 at 08:10:28PM +0100, Grant Likely wrote:
-> >>> +  - cover-comp-gain : integer used as multiplier for gain +         =
-             compensation (default =3D 1)
-> >>=20
-> >> Should be taos,cover-comp-gain
-> >=20
-> > Has been updated to "amstaos,cover-comp-gain" in the latest patches, se=
-e https://lkml.org/lkml/2013/10/25/59
-> >=20
-> >> Otherwise looks fine to me.
-> >=20
-> > Is this an acked-by?
-> It's good enough for me to take the patch  :)
-> >=20
-> >>> +	else if (np) +		of_property_read_u32_index(np, "cover-comp-gain", 0=
-, +							&chip->cover_comp_gain);
-> >>=20
-> >> of_property_read_u32() should be sufficient. You don't need the _index=
- variant.
-> >=20
-> > ah, I missed the function when skipping over linux/of.h. I will sent an=
-other update.
->
-> Did you do this? Latest I seem to have is V3 and that doesn't have
-> this change.
+> +       /* Begin by finding two matching leaves.  There have to be at least two
+> +        * that match - even if there are meta pointers - because any leaf that
+> +        * would match a slot with a meta pointer in it must be somewhere
+> +        * behind that meta pointer and cannot be here.  Further, given N
+> +        * remaining leaf slots, we now have N+1 leaves to go in them.
+> +        */
+> +       for (i = 0; i < ASSOC_ARRAY_FAN_OUT; i++) {
+> +               slot = edit->segment_cache[i];
+> +               if (slot != 0xff)
+> +                       for (j = i + 1; j < ASSOC_ARRAY_FAN_OUT + 1; j++)
 
-Sorry, I forgot, that I still had work to do for this patch :(
+j is initialized here, but only if slot != 0xff.
 
-> I've made the obvious change to your V3 and applied it.
+The comment above states "there have to be at least two that match",
+so this may be a false positive, but better safe than sorry.
 
-Thanks for taking care of it.
+> +                               if (edit->segment_cache[j] == slot)
+> +                                       goto found_slot_for_multiple_occupancy;
+> +       }
+> +found_slot_for_multiple_occupancy:
+> +       pr_devel("same slot: %x %x [%02x]\n", i, j, slot);
+> +       BUG_ON(i >= ASSOC_ARRAY_FAN_OUT);
+> +       BUG_ON(j >= ASSOC_ARRAY_FAN_OUT + 1);
+> +       BUG_ON(slot >= ASSOC_ARRAY_FAN_OUT);
 
--- Sebastian
+Gr{oetje,eeting}s,
 
---4Ckj6UjgE2iN1+kY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+                        Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-iQIcBAEBCAAGBQJSkJouAAoJENju1/PIO/qa9J4P/iOU2SZH78u/hdaMUWsANdPU
-eXexPX7duUQAMn3Uxfi91k7Rgtob7VAJ9CZF2josPHqFak0moky4WRpydlqj55XH
-tJFIFlXPfZPvTNdkWpJFNOFX438Hz9wcrZuzfUKwXrUANRp9gzS4f4T35yrsFro2
-EzOTjHSFhn51l5YUL1/77fasRX2khAXb+jW458uvL7LCKRUhKXTQwd773Q43zyTQ
-7OMXnri4exJFj8YcHtKkDnxvbZFLqvM5Gh8zMfxQ8V4pmSuqZauyFVTEpBS3rW1A
-8vOPJTvsB9V81vQdnjA+Me6TNGvDoaoPlrMqVjKnpdjuaqd57DgGS9jYcxloEUoL
-xAOr+D5kkAAQUm9TS5ESaEU2mGf2XQZ/1FvK412kD2AT8C6pRLNaFRl4KIa2tkOe
-sG/rkImVA6bMvp6qv+L7TiPexbL+x/d2RPxJNYY2rFtf7tqm/BGJFrAYvo5h/9bw
-T/edFds+Y87KrLv1Vq3LRnuGiRma+cepiMqh8ooSfUFXNwLvWU8RE8HwZ78DWYO2
-9d51kbZoVhQruJgXDmWv4H3+AA7e3tLRcXja5QinP4si4GXsSlaOb6qhrmXmD2Yp
-DS4ct8GA1BM7eOs+wE699lsQvQzvGZFb+ZZUZ0xzlFJe6yaV9xNGMvQPcea2BZE3
-W/bAkO7/9AbAao5A9gu8
-=O9Sy
------END PGP SIGNATURE-----
-
---4Ckj6UjgE2iN1+kY--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
