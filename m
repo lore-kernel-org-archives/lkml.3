@@ -1,156 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3KWGiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 01:38:09 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:17407 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3KWGiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 01:38:06 -0500
-Message-ID: <1385188681.5402.25.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/5] futex: Wakeup optimizations
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Darren Hart <dvhart@linux.intel.com>
+	id S1752314Ab3KWGwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 01:52:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64525 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab3KWGwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 01:52:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,757,1378882800"; 
+   d="scan'208";a="440345699"
+Message-ID: <1385189526.29354.197.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH 3/5] futex: Larger hash table
+From: Darren Hart <dvhart@linux.intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
         tglx@linutronix.de, efault@gmx.de, jeffm@suse.com,
         torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
         aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Fri, 22 Nov 2013 22:38:01 -0800
-In-Reply-To: <1385186145.29354.175.camel@dvhart-mobl4.amr.corp.intel.com>
+Date: Fri, 22 Nov 2013 22:52:06 -0800
+In-Reply-To: <1385168197-8612-4-git-send-email-davidlohr@hp.com>
 References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
-	 <1385186145.29354.175.camel@dvhart-mobl4.amr.corp.intel.com>
+	 <1385168197-8612-4-git-send-email-davidlohr@hp.com>
+Organization: Intel
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Darren,
+On Fri, 2013-11-22 at 16:56 -0800, Davidlohr Bueso wrote:
+> Currently, the futex global hash table suffers from it's fixed, smallish
+> (for today's standards) size of 256 entries, as well as its lack of NUMA
+> awareness. Large systems, using many futexes, can be prone to high amounts
+> of collisions; where these futexes hash to the same bucket and lead to
+> extra contention on the same hb->lock. Furthermore, cacheline bouncing is a
+> reality when we have multiple hb->locks residing on the same cacheline and
+> different futexes hash to adjacent buckets.
+> 
+> This patch keeps the current static size of 16 entries for small systems,
+> or otherwise, 256 * ncpus (or larger as we need to round the number to a
+> power of 2). Note that this number of CPUs accounts for all CPUs that can
+> ever be available in the system, taking into consideration things like
+> hotpluging. While we do impose extra overhead at bootup by making the hash
+> table larger, this is a one time thing, and does not shadow the benefits
+> of this patch.
+> 
+> Also, similar to other core kernel components (pid, dcache, tcp), by using
+> alloc_large_system_hash() we benefit from its NUMA awareness and thus the
+> table is distributed among the nodes instead of in a single one. We impose
+> this function's minimum limit of 256 entries, so that in worst case scenarios
+> or issues, we still end up using the current amount anyways.
+> 
+> For a custom microbenchmark that pounds on the uaddr hashing -- making the wait
+> path fail at futex_wait_setup() returning -EWOULDBLOCK for large amounts of futexes,
+> we can see the following benefits on a 80-core, 8-socket 1Tb server:
+> 
+> +---------+----------------------------------+------------------------------------------+----------+
+> | threads | baseline (ops/sec) [insns/cycle] | large hash table (ops/sec) [insns/cycle] | increase |
+> +---------+----------------------------------+------------------------------------------+----------+
+> |     512 | 34429    [0.07]                  | 255274    [0.48]                         | +641.45% |
+> |     256 | 65452    [0.07]                  | 443563    [0.41]                         | +577.69% |
+> |     128 | 125111   [0.07]                  | 742613    [0.33]                         | +493.56% |
+> |      80 | 203642   [0.09]                  | 1028147   [0.29]                         | +404.87% |
+> |      64 | 262944   [0.09]                  | 997300    [0.28]                         | +279.28% |
+> |      32 | 642390   [0.24]                  | 965996    [0.27]                         | +50.37   |
+> +---------+----------------------------------+------------------------------------------+----------+
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Darren Hart <dvhart@linux.intel.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Jeff Mahoney <jeffm@suse.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Scott Norton <scott.norton@hp.com>
+> Cc: Tom Vaden <tom.vaden@hp.com>
+> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  kernel/futex.c | 26 +++++++++++++++++++++-----
+>  1 file changed, 21 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 0768c68..5fa9eb0 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -63,6 +63,7 @@
+>  #include <linux/sched/rt.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/freezer.h>
+> +#include <linux/bootmem.h>
+>  
+>  #include <asm/futex.h>
+>  
+> @@ -70,7 +71,11 @@
+>  
+>  int __read_mostly futex_cmpxchg_enabled;
+>  
+> -#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
+> +#if CONFIG_BASE_SMALL
+> +static unsigned long futex_hashsize = 16;
+> +#else
+> +static unsigned long futex_hashsize;
+> +#endif
+>  
+>  /*
+>   * Futex flags used to encode options to functions and preserve them across
+> @@ -151,7 +156,11 @@ struct futex_hash_bucket {
+>  	struct plist_head chain;
+>  };
+>  
+> -static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
+> +#if CONFIG_BASE_SMALL
+> +static struct futex_hash_bucket futex_queues[futex_hashsize];
+> +#else
+> +static struct futex_hash_bucket *futex_queues;
+> +#endif
 
-On Fri, 2013-11-22 at 21:55 -0800, Darren Hart wrote:
-> On Fri, 2013-11-22 at 16:56 -0800, Davidlohr Bueso wrote:
-> > We have been dealing with a customer database workload on large
-> > 12Tb, 240 core 16 socket NUMA system that exhibits high amounts 
-> > of contention on some of the locks that serialize internal futex 
-> > data structures. This workload specially suffers in the wakeup 
-> > paths, where waiting on the corresponding hb->lock can account for 
-> > up to ~60% of the time. The result of such calls can mostly be 
-> > classified as (i) nothing to wake up and (ii) wakeup large amount 
-> > of tasks.
-> 
-> With as many cores as you have, have you done any analysis of how
-> effective the hashing algorithm is, and would more buckets relieve someHi 
-> of the contention.... ah, I see below that you did. Nice work.
-> 
-> > Before these patches are applied, we can see this pathological behavior:
-> > 
-> >  37.12%  826174  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-> >             --- _raw_spin_lock
-> >              |
-> >              |--97.14%-- futex_wake
-> >              |          do_futex
-> >              |          sys_futex
-> >              |          system_call_fastpath
-> >              |          |
-> >              |          |--99.70%-- 0x7f383fbdea1f
-> >              |          |           yyy
-> > 
-> >  43.71%  762296  xxx  [kernel.kallsyms] [k] _raw_spin_lock
-> >             --- _raw_spin_lock
-> >              |
-> >              |--53.74%-- futex_wake
-> >              |          do_futex
-> >              |          sys_futex
-> >              |          system_call_fastpath
-> >              |          |
-> >              |          |--99.40%-- 0x7fe7d44a4c05
-> >              |          |           zzz
-> >              |--45.90%-- futex_wait_setup
-> >              |          futex_wait
-> >              |          do_futex
-> >              |          sys_futex
-> >              |          system_call_fastpath
-> >              |          0x7fe7ba315789
-> >              |          syscall
-> > 
-> 
-> Sorry to be dense, can you spell out how 60% falls out of these numbers?
+Something in me squirms at the #if/#else here, but I'll leave that to
+the tip maintainers to call out if they are so inclined. Same below.
+Otherwise, looks reasonable to me.
 
-By adding the respective percentages of futex_wake()*_raw_spin_lock
-calls.
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 
-> 
-> > 
-> > With these patches, contention is practically non existent:
-> > 
-> >  0.10%     49   xxx  [kernel.kallsyms]   [k] _raw_spin_lock
-> >                --- _raw_spin_lock
-> >                 |
-> >                 |--76.06%-- futex_wait_setup
-> >                 |          futex_wait
-> >                 |          do_futex
-> >                 |          sys_futex
-> >                 |          system_call_fastpath
-> >                 |          |
-> >                 |          |--99.90%-- 0x7f3165e63789
-> >                 |          |          syscall|
-> >                            ...
-> >                 |--6.27%-- futex_wake
-> >                 |          do_futex
-> >                 |          sys_futex
-> >                 |          system_call_fastpath
-> >                 |          |
-> >                 |          |--54.56%-- 0x7f317fff2c05
-> >                 ...
-> > 
-> > Patches 1 & 2 are cleanups and micro optimizations.
-> > 
-> > Patch 3 addresses the well known issue of the global hash table.
-> > By creating a larger and NUMA aware table, we can reduce the false
-> > sharing and collisions, thus reducing the chance of different futexes 
-> > using hb->lock.
-> > 
-> > Patch 4 reduces contention on the corresponding hb->lock by not trying to
-> > acquire it if there are no blocked tasks in the waitqueue.
-> > This particularly deals with point (i) above, where we see that it is not
-> > uncommon for up to 90% of wakeup calls end up returning 0, indicating that no
-> > tasks were woken.
-> 
-> Can you determine how much benefit comes from 3 and how much additional
-> benefit comes from 4?
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
-While I don't have specific per-patch data, there are indications that
-the workload mostly deals with a handful of futexes. So its pretty safe
-to assume that patch 4 is the one with the most benefit for _this_
-particular workload.
-
-> 
-> > 
-> > Patch 5 resurrects a two year old idea from Peter Zijlstra to delay
-> > the waking of the blocked tasks to be done without holding the hb->lock:
-> > https://lkml.org/lkml/2011/9/14/118
-> > 
-> > This is useful for locking primitives that can effect multiple wakeups
-> > per operation and want to avoid the futex's internal spinlock contention by
-> > delaying the wakeups until we've released the hb->lock.
-> > This particularly deals with point (ii) above, where we can observe that
-> > in occasions the wake calls end up waking 125 to 200 waiters in what we believe 
-> > are RW locks in the application.
-> > 
-> > This patchset has also been tested on smaller systems for a variety of
-> > benchmarks, including java workloads, kernel builds and custom bang-the-hell-out-of
-> > hb locks programs. So far, no functional or performance regressions have been seen.
-> > Furthermore, no issues were found when running the different tests in the futextest 
-> > suite: http://git.kernel.org/cgit/linux/kernel/git/dvhart/futextest.git/
-> 
-> Excellent. Would you be able to contribute any of these (C only please)
-> to the stress test group?
-> 
-
-Sure.
-
-Thanks,
-Davidlohr
 
