@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3KWTgS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 14:36:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab3KWTgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 14:36:16 -0500
-Message-ID: <5291038E.4000908@redhat.com>
-Date: Sat, 23 Nov 2013 14:35:42 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
+	id S1756292Ab3KWTiF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 14:38:05 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:60974 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab3KWTiC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 14:38:02 -0500
+Message-ID: <52910417.3080803@gmail.com>
+Date: Sat, 23 Nov 2013 14:37:59 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Stefan Priebe <s.priebe@profihost.ag>,
-        Christoph Hellwig <hch@infradead.org>, Chinmay V S <cvs268@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
-References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <20131120155507.GA5380@fieldses.org> <CAK-9PRCQ6qWvzpdvK8BswpS+TfgM7NeoRaVdChFHhyDjwtUGTw@mail.gmail.com> <20131120175807.GC5380@fieldses.org> <CAK-9PRDNxHAX70cN88kRt03FkYbDB_x1cFQQYmVzqiCX=aZD6w@mail.gmail.com> <20131121101101.GA18404@infradead.org> <528FB828.5000301@profihost.ag> <528FC09E.5090004@redhat.com> <5290F386.5040806@profihost.ag>
-In-Reply-To: <5290F386.5040806@profihost.ag>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Chang <changxiangzhong@gmail.com>, nhorman@tuxdriver.com,
+        davem@davemloft.net
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: sctp: set chunk->tsn_gap_acked at the end of cycle
+References: <1385106589-402-1-git-send-email-changxiangzhong@gmail.com> <528F69B7.7020902@gmail.com> <528FAF50.10100@gmail.com> <528FDF52.4030500@gmail.com> <52908E04.40200@gmail.com>
+In-Reply-To: <52908E04.40200@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2013 01:27 PM, Stefan Priebe wrote:
-> Hi Ric,
->
-> Am 22.11.2013 21:37, schrieb Ric Wheeler:
->> On 11/22/2013 03:01 PM, Stefan Priebe wrote:
->>> Hi Christoph,
->>> Am 21.11.2013 11:11, schrieb Christoph Hellwig:
->>>>>
->>>>> 2. Some drives may implement CMD_FLUSH to return immediately i.e. no
->>>>> guarantee the data is actually on disk.
->>>>
->>>> In which case they aren't spec complicant.  While I've seen countless
->>>> data integrity bugs on lower end ATA SSDs I've not seen one that simpliy
->>>> ingnores flush.  If you'd want to cheat that bluntly you'd be better
->>>> of just claiming to not have a writeback cache.
->>>>
->>>> You solve your performance problem by completely disabling any chance
->>>> of having data integrity guarantees, and do so in a way that is not
->>>> detectable for applications or users.
->>>>
->>>> If you have a workload with lots of small synchronous writes disabling
->>>> the writeback cache on the disk does indeed often help, especially with
->>>> the non-queueable FLUSH on all but the most recent ATA devices.
->>>
->>> But this isn't correct for drives with capicitors like Crucial m500,
->>> Intel DC S3500, DC S3700 isn't it? Shouldn't the linux kernel has an
->>> option to disable this for drives like these?
->>> /sys/block/sdX/device/ignore_flush
->>
->> If you know 100% for sure that your drive has a non-volatile write
->> cache, you can run the file system without the flushing by mounting "-o
->> nobarrier".  With most devices, this is not needed since they tend to
->> simply ignore the flushes if they know they are power failure safe.
->>
->> Block level, we did something similar for users who are not running
->> through a file system for SCSI devices - James added support to echo
->> "temporary" into the sd's device's cache_type field:
->>
->> See:
->>
->> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=2ee3e26c673e75c05ef8b914f54fadee3d7b9c88 
->>
->
-> At least to me this does not work. I get the same awful speed as before - also 
-> the I/O waits stay the same. I'm still seeing CMD flushes going to the devices.
->
-> Is there any way to check whether the temporary got accepted and works?
->
-> I simply executed:
-> for i in /sys/class/scsi_disk/*/cache_type; do echo $i; echo temporary write 
-> back >$i; done
->
-> Stefan
+On 11/23/2013 06:14 AM, Chang wrote:
+> Hi,
+> Could you please why a **reneged** newly acked TSN doesn't qualify the
+> highest_new_tsn? What's the wrongs of doing that?
+> 
+> I've been thinking a few scenarios, but I couldn't figure out what's
+> wrong with that.
+> 
 
-What kernel are you running?  This is a new addition....
+The spec is a bit conflicting on this topic.  Here is what it says
 
-Also, you can "cat" the same file to see what it says.
+Section 7.2.4
+   Miss indications SHOULD follow the HTNA (Highest TSN Newly
+   Acknowledged) algorithm.  For each incoming SACK, miss indications
+   are incremented only for missing TSNs prior to the highest TSN newly
+   acknowledged in the SACK.  A newly acknowledged DATA chunk is one not
+   previously acknowledged in a SACK.
 
-Regards,
 
-Ric
+But section 6.2.1 says:
+      iii) If the SACK is missing a TSN that was previously acknowledged
+           via a Gap Ack Block (e.g., the data receiver reneged on the
+           data), then consider the corresponding DATA that might be
+           possibly missing: Count one miss indication towards Fast
+           Retransmit as described in Section 7.2.4, and if no
+           retransmit timer is running for the destination address to
+           which the DATA chunk was originally transmitted, then T3-rtx
+           is started for that destination address.
+
+So, the question becomes does the reneged tsn update HTNA counter?  It
+has been acked by a previous SACK, but 6.2.1 says to treat as missing.
+
+The more I look at this the more I think we should continue doing what
+we are doing which is following section 6.2.1.
+
+-vlad
 
