@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab3KWWWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:22:46 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:64698 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab3KWWWe (ORCPT
+	id S1756761Ab3KWWbs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:31:48 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:56905 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab3KWWWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:22:34 -0500
+	Sat, 23 Nov 2013 17:22:47 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/41] sysfs, kernfs: add skeletons for kernfs
-Date: Sat, 23 Nov 2013 17:21:48 -0500
-Message-Id: <1385245346-856-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/41] sysfs, kernfs: prepare open, release, poll paths for kernfs
+Date: Sat, 23 Nov 2013 17:21:58 -0500
+Message-Id: <1385245346-856-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
 References: <1385245346-856-1-git-send-email-tj@kernel.org>
@@ -21,177 +21,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Core sysfs implementation will be separated into kernfs so that it can
-be used by other non-kobject users.
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+prepares the rest - open, release and poll.  There isn't much to do.
+Just renaming is enough.  As sysfs_file_operations and
+sysfs_bin_operations are identical now, use the same file_operations
+for both - kernfs_file_operations.
 
-This patch creates fs/kernfs/ directory and makes boilerplate changes.
-kernfs interface will be directly based on sysfs_dirent and its
-forward declaration is moved to include/linux/kernfs.h which is
-included from include/linux/sysfs.h.  sysfs core implementation will
-be gradually separated out and moved to kernfs.
-
-This patch doesn't introduce any functional changes.
-
-v2: mount.c added.
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/Makefile            |  2 +-
- fs/kernfs/Makefile     |  5 +++++
- fs/kernfs/dir.c        |  9 +++++++++
- fs/kernfs/file.c       |  9 +++++++++
- fs/kernfs/inode.c      |  9 +++++++++
- fs/kernfs/mount.c      |  9 +++++++++
- fs/kernfs/symlink.c    |  9 +++++++++
- include/linux/kernfs.h | 12 ++++++++++++
- include/linux/sysfs.h  |  3 +--
- 9 files changed, 64 insertions(+), 3 deletions(-)
- create mode 100644 fs/kernfs/Makefile
- create mode 100644 fs/kernfs/dir.c
- create mode 100644 fs/kernfs/file.c
- create mode 100644 fs/kernfs/inode.c
- create mode 100644 fs/kernfs/mount.c
- create mode 100644 fs/kernfs/symlink.c
- create mode 100644 include/linux/kernfs.h
+ fs/sysfs/file.c  | 24 +++++++-----------------
+ fs/sysfs/inode.c |  4 ++--
+ fs/sysfs/sysfs.h |  3 +--
+ 3 files changed, 10 insertions(+), 21 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 4fe6df3..39a824f 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -53,7 +53,7 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
- obj-y				+= quota/
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 2e24e89..a43df04 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -668,7 +668,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
+ 	kfree(od);
+ }
  
- obj-$(CONFIG_PROC_FS)		+= proc/
--obj-$(CONFIG_SYSFS)		+= sysfs/
-+obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
- obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
- obj-y				+= devpts/
+-static int sysfs_open_file(struct inode *inode, struct file *file)
++static int kernfs_file_open(struct inode *inode, struct file *file)
+ {
+ 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
+ 	struct kobject *kobj = attr_sd->s_parent->priv;
+@@ -771,7 +771,7 @@ err_out:
+ 	return error;
+ }
  
-diff --git a/fs/kernfs/Makefile b/fs/kernfs/Makefile
-new file mode 100644
-index 0000000..674337c
---- /dev/null
-+++ b/fs/kernfs/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the kernfs pseudo filesystem
-+#
-+
-+obj-y		:= mount.o inode.o dir.o file.o symlink.o
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-new file mode 100644
-index 0000000..1061602
---- /dev/null
-+++ b/fs/kernfs/dir.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/dir.c - kernfs directory implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-new file mode 100644
-index 0000000..90b1e88
---- /dev/null
-+++ b/fs/kernfs/file.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/file.c - kernfs file implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-new file mode 100644
-index 0000000..86bfeea
---- /dev/null
-+++ b/fs/kernfs/inode.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/inode.c - kernfs inode implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-new file mode 100644
-index 0000000..872e262
---- /dev/null
-+++ b/fs/kernfs/mount.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/mount.c - kernfs mount implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
-new file mode 100644
-index 0000000..2578715
---- /dev/null
-+++ b/fs/kernfs/symlink.c
-@@ -0,0 +1,9 @@
-+/*
-+ * fs/kernfs/symlink.c - kernfs symlink implementation
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-new file mode 100644
-index 0000000..254b9e8
---- /dev/null
-+++ b/include/linux/kernfs.h
-@@ -0,0 +1,12 @@
-+/*
-+ * kernfs.h - pseudo filesystem decoupled from vfs locking
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#ifndef __LINUX_KERNFS_H
-+#define __LINUX_KERNFS_H
-+
-+struct sysfs_dirent;
-+
-+#endif	/* __LINUX_KERNFS_H */
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 6c85be6..f82ec46 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -12,6 +12,7 @@
- #ifndef _SYSFS_H_
- #define _SYSFS_H_
+-static int sysfs_release(struct inode *inode, struct file *filp)
++static int kernfs_file_release(struct inode *inode, struct file *filp)
+ {
+ 	struct sysfs_dirent *sd = filp->f_path.dentry->d_fsdata;
+ 	struct sysfs_open_file *of = sysfs_of(filp);
+@@ -822,7 +822,7 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd)
+  * to see if it supports poll (Neither 'poll' nor 'select' return
+  * an appropriate error code).  When in doubt, set a suitable timeout value.
+  */
+-static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
++static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(filp);
+ 	struct sysfs_dirent *attr_sd = filp->f_path.dentry->d_fsdata;
+@@ -881,24 +881,14 @@ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ }
+ EXPORT_SYMBOL_GPL(sysfs_notify);
  
-+#include <linux/kernfs.h>
- #include <linux/compiler.h>
- #include <linux/errno.h>
- #include <linux/list.h>
-@@ -175,8 +176,6 @@ struct sysfs_ops {
- 	ssize_t	(*store)(struct kobject *, struct attribute *, const char *, size_t);
+-const struct file_operations sysfs_file_operations = {
++const struct file_operations kernfs_file_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
+ 	.mmap		= kernfs_file_mmap,
+-	.open		= sysfs_open_file,
+-	.release	= sysfs_release,
+-	.poll		= sysfs_poll,
+-};
+-
+-const struct file_operations sysfs_bin_operations = {
+-	.read		= kernfs_file_read,
+-	.write		= kernfs_file_write,
+-	.llseek		= generic_file_llseek,
+-	.mmap		= kernfs_file_mmap,
+-	.open		= sysfs_open_file,
+-	.release	= sysfs_release,
+-	.poll		= sysfs_poll,
++	.open		= kernfs_file_open,
++	.release	= kernfs_file_release,
++	.poll		= kernfs_file_poll,
  };
  
--struct sysfs_dirent;
--
- #ifdef CONFIG_SYSFS
+ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index 81cc858..4c463da 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -272,12 +272,12 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
+ 		break;
+ 	case SYSFS_KOBJ_ATTR:
+ 		inode->i_size = PAGE_SIZE;
+-		inode->i_fop = &sysfs_file_operations;
++		inode->i_fop = &kernfs_file_operations;
+ 		break;
+ 	case SYSFS_KOBJ_BIN_ATTR:
+ 		bin_attr = sd->priv;
+ 		inode->i_size = bin_attr->size;
+-		inode->i_fop = &sysfs_bin_operations;
++		inode->i_fop = &kernfs_file_operations;
+ 		break;
+ 	case SYSFS_KOBJ_LINK:
+ 		inode->i_op = &sysfs_symlink_inode_operations;
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 9ac234e..619250d 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -212,8 +212,7 @@ int sysfs_inode_init(void);
+ /*
+  * file.c
+  */
+-extern const struct file_operations sysfs_file_operations;
+-extern const struct file_operations sysfs_bin_operations;
++extern const struct file_operations kernfs_file_operations;
  
- int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+ int sysfs_add_file(struct sysfs_dirent *dir_sd,
+ 		   const struct attribute *attr, int type);
 -- 
 1.8.4.2
 
