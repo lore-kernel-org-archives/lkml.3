@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab3KYROc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 12:14:32 -0500
-Received: from ring0.de ([91.143.88.219]:37760 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976Ab3KYRO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 12:14:29 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Mon, 25 Nov 2013 18:14:21 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-Cc: Pavel Machek <pavel@ucw.cz>, pali.rohar@gmail.com, anton@enomsg.org,
-        dwmw2@infradead.org, tony@atomide.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        aaro.koskinen@iki.fi
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131125171420.GA12995@earth.universe>
-Mail-Followup-To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
-	Pavel Machek <pavel@ucw.cz>, pali.rohar@gmail.com, anton@enomsg.org,
-	dwmw2@infradead.org, tony@atomide.com, linux@arm.linux.org.uk,
-	linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-	aaro.koskinen@iki.fi
-References: <1851041258.29554.1385398914287.JavaMail.apache@mail83.abv.bg>
+	id S1757297Ab3KYRQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 12:16:22 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:43781 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab3KYRQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 12:16:20 -0500
+Date: Sat, 23 Nov 2013 09:17:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] documentation: Add needed ACCESS_ONCE() calls
+ to memory-barriers.txt
+Message-ID: <20131123171719.GN4138@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131121213055.GA6938@linux.vnet.ibm.com>
+ <1385069489-7898-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131122153908.GQ10022@twins.programming.kicks-ass.net>
+ <20131122181313.GU4138@linux.vnet.ibm.com>
+ <20131123090406.GL4971@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1851041258.29554.1385398914287.JavaMail.apache@mail83.abv.bg>
+In-Reply-To: <20131123090406.GL4971@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112517-0928-0000-0000-000003C4619D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 23, 2013 at 10:04:06AM +0100, Peter Zijlstra wrote:
+> On Fri, Nov 22, 2013 at 10:13:13AM -0800, Paul E. McKenney wrote:
+> > How about the following?
+> > 
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > COMPILER BARRIER
+> > ----------------
+> > 
+> > The Linux kernel has an explicit compiler barrier function that prevents the
+> > compiler from moving the memory accesses either side of it to the other side:
+> > 
+> >         barrier();
+> > 
+> > This is a general barrier -- there are no read-read or write-write variants
+> > of barrier().  Howevever, ACCESS_ONCE() can be thought of as a weak form
+> > for barrier() that affects only the specific accesses flagged by the
+> > ACCESS_ONCE().
+> > 
+> > The compiler barrier has no direct effect on the CPU, which may then reorder
+> > things however it wishes.
+> > 
+> 
+> Seems ok, however this also seems like the natural spot to put that
+> chunk about how a compiler can mis-transform stuff without either
+> barrier or ACCESS_ONC(); that currently seems spread out over the
+> document in some notes.
+> 
+> The biggest of which seems to have ended up in the GUARANTEES chapter.
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good point!  I believe that the spread-out stuff is still needed, so I
+will add a summary of that information here, perhaps based in part on
+Jon Corbet's ACCESS_ONCE() article (http://lwn.net/Articles/508991/).
 
-On Mon, Nov 25, 2013 at 07:01:54PM +0200, =D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=
-=BE =D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2 wrote:
->> Now.. Imagine phone left in car in charger (on sun). Likely
->> temperature will reach high values, kernel is charging, dsme will
->> reboot the system, but kernel will start charging again, dsme will
->> reboot again, ...
->>
->> And it is not only high temperatures that are problem for li-ion
->> charging; battery should not be fast charged below 5C and should not
->> be charged below 0C. (Again, both are likely to happen if you leave
->> your phone in car).
->>
->> AFAICT, we should simply disable charging below 5C or above 45C.
->=20
-> AFAIK dsme will not restart it, but power it off, so the above
-> scenario won't happen.
+Seem reasonable?
 
-Just assume what happens, when dsme does not start (e.g. system boot
-hangs).
+							Thanx, Paul
 
-If everything is controlled from userspace, charger would not start
-(-> safe!). If everything is controlled by the kernel, temperature
-safety checks are taken (-> safe!). But in the currently proposed
-variant: No safety checks.
-
--- Sebastian
-
-
---ibTvN161/egqYuK8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSk4VsAAoJENju1/PIO/qaEGcP/jYZKDCBRL4EB9qg7PofQDMn
-kFoXcwp9wNPFP/JW78Gm0u5217oCTxZA4YQBt7N+Cfn//aJAMwJguJPbd5D0hyCu
-SV7M0Wv4R7odatvk/OXcWGfvk9Ofid+6eaZRPDRwnDw6VTmHgmj15FdRk7a/w7K7
-5IhZmAh4TBbIW2nKCF9mpZX5vqGBkvDvr5g+zQA6i9P3AtGaHDlYuTyQHIgX+DrW
-urltahuq8BdhOFTefcQ3cnOI7Hap3h7ng24eXfkIVYkZv8vez7TrURzyTn+3ETqd
-zyDRsLspvSKZUqTYd+kN/NkhYMhqtkBduZMkcOPA0htLFPp5Hz/Y2bNEH6VOBbi4
-BLlqFREZBLgdL20O5+XsI3bwYjk/++wU4P15KeYrdDKOMC8d8W0e4oPlB4UDWw7s
-iMe4gBXhgXup0sCn9/oebteRMoeQ0BnG9OtJUgt1Xn7RezIhC5DFAldejkEGSlWb
-hMhZjGqAYhmj9JUGriklZSkUUR1yPuufDM0WmrK1t4zziq5XKIAEWb7ZAY3e1F2V
-jObaCj4vGTJi/ZGyyeUC1p1hiJ2EdZ61GIf58cWt0fhisjrbSIbopE4h5Xzt4lLc
-Y5ZbWyiMCCwK8ZqjbDNQFDr+m9XS1gFGJGOwKEFLNV6/eGjQ90OoRxvBryX2DYci
-Fy/43Q/U8g9ksFw6LVx3
-=rFmr
------END PGP SIGNATURE-----
-
---ibTvN161/egqYuK8--
