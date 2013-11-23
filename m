@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab3KWMJy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 07:09:54 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:35085 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab3KWMJv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 07:09:51 -0500
+	id S1756184Ab3KWMKH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 07:10:07 -0500
+Received: from ring0.de ([91.143.88.219]:55671 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752898Ab3KWMKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 07:10:01 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: spinics.net]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Sat, 23 Nov 2013 13:09:52 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Tony Lindgren <tony@atomide.com>, Matt Mackall <mpm@selenic.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] hwrng: OMAP3 ROM Random Number Generator support
+Message-ID: <20131123120951.GB21861@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Herbert Xu <herbert@gondor.hengli.com.au>,
+	Tony Lindgren <tony@atomide.com>, Matt Mackall <mpm@selenic.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	Joe Perches <joe@perches.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+	linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1379534757-20870-1-git-send-email-pali.rohar@gmail.com>
+ <201311182251.35704@pali>
+ <20131119021409.GA2820@gondor.apana.org.au>
+ <201311231037.13908@pali>
 MIME-Version: 1.0
-Date: Sat, 23 Nov 2013 13:09:51 +0100
-X-Google-Sender-Auth: 9GKCK-ZcSBnLGHZ2iShz-7nXwnk
-Message-ID: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
-Subject: assoc_array.c uninitialized variable (was: Re: [PATCH 02/10] Add a
- generic associative array implementation.)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="NDin8bjvE/0mNLFQ"
+Content-Disposition: inline
+In-Reply-To: <201311231037.13908@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 10:43 PM, David Howells <dhowells@redhat.com> wrote:
-> +/*
-> + * Handle insertion into a terminal node.
-> + */
-> +static bool assoc_array_insert_into_terminal_node(struct assoc_array_edit *edit,
-> +                                                 const struct assoc_array_ops *ops,
-> +                                                 const void *index_key,
-> +                                                 struct assoc_array_walk_result *result)
-> +{
-> +       struct assoc_array_shortcut *shortcut, *new_s0;
-> +       struct assoc_array_node *node, *new_n0, *new_n1, *side;
-> +       struct assoc_array_ptr *ptr;
-> +       unsigned long dissimilarity, base_seg, blank;
-> +       size_t keylen;
-> +       bool have_meta;
-> +       int level, diff;
-> +       int slot, next_slot, free_slot, i, j;
 
-lib/assoc_array.c: In function ‘assoc_array_insert_into_terminal_node’:
-lib/assoc_array.c:502: warning: ‘j’ may be used uninitialized in this function
+--NDin8bjvE/0mNLFQ
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +       /* Begin by finding two matching leaves.  There have to be at least two
-> +        * that match - even if there are meta pointers - because any leaf that
-> +        * would match a slot with a meta pointer in it must be somewhere
-> +        * behind that meta pointer and cannot be here.  Further, given N
-> +        * remaining leaf slots, we now have N+1 leaves to go in them.
-> +        */
-> +       for (i = 0; i < ASSOC_ARRAY_FAN_OUT; i++) {
-> +               slot = edit->segment_cache[i];
-> +               if (slot != 0xff)
-> +                       for (j = i + 1; j < ASSOC_ARRAY_FAN_OUT + 1; j++)
+On Sat, Nov 23, 2013 at 10:37:13AM +0100, Pali Roh=E1r wrote:
+> Now 3.13-rc1 is out, but your tree was not merged. Can you=20
+> try to ping Linus what happened?
 
-j is initialized here, but only if slot != 0xff.
+See here: http://www.spinics.net/lists/arm-kernel/msg288508.html
 
-The comment above states "there have to be at least two that match",
-so this may be a false positive, but better safe than sorry.
+-- Sebastian
 
-> +                               if (edit->segment_cache[j] == slot)
-> +                                       goto found_slot_for_multiple_occupancy;
-> +       }
-> +found_slot_for_multiple_occupancy:
-> +       pr_devel("same slot: %x %x [%02x]\n", i, j, slot);
-> +       BUG_ON(i >= ASSOC_ARRAY_FAN_OUT);
-> +       BUG_ON(j >= ASSOC_ARRAY_FAN_OUT + 1);
-> +       BUG_ON(slot >= ASSOC_ARRAY_FAN_OUT);
+--NDin8bjvE/0mNLFQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Gr{oetje,eeting}s,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-                        Geert
+iQIcBAEBCAAGBQJSkJsPAAoJENju1/PIO/qaHpoP/jq80GqizwWhSWhR7YxDOlCD
+WGKMO0xGqIazW+EN0jjx9Ol1MnAJKZgKeKIv1hykHo9vXZIqJrGOsI/jA0IrofEG
+XdLwqwvj7xAoFWYXMIsrKA98fn2/1FsVr52kKU0Wbr9OZQ7W/25lCkablcbX2cI5
+4xCxNMtPgoBk9MZ+g6pGbEqnV3VWamBfBzDa9UpDgywOr9PLvbtzelROkdBkjQKd
+mlnSQ0JnCD1we6eDS1OVPfvnSuOXXW1Gcj4KrWfJC44FyYUl4fq4mwcCA12wT/ts
+o+ecpqk+R76Kq8y9oFZ8lzPJuYU0OyLjZyp2g786i9VPu0xX7zD04T3eCUierESA
+jfmrn5aYmXATnq34ZDSn8RjXFv1qG+Q85sK8lHDjLnm2ctVuxO48z1yKEKVf0c1X
+Q9fB4QDv9aqvGMlEjEiRCVNWBJWarAfKeQrZpM9vIvPpRov+ICfcBi73cXG8K87P
+89Mv3zN/9DPTdJOQAsd6d8xiaOvWabRSE9RPCht3GZYmQ7Zw46A+D+X67SzlmEZw
+gheO2/0nR+1d9gbdCrZ2lkvI+wX1diOtfDq5FBXZbZBT1sxiWpeMVWET0+WHEj3g
+fuNo3SlkEskeREXRlhcQeM2Puoy6GNHAYj8qx7PVwWCu38sSXP49ws6lXnrUACTJ
+OZQ2rBEhabAzg4wBBJad
+=9/GX
+-----END PGP SIGNATURE-----
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--NDin8bjvE/0mNLFQ--
