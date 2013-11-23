@@ -1,180 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab3KWWky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:40:54 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60506 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab3KWWkI (ORCPT
+	id S1756517Ab3KWWlT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:41:19 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:33566 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756294Ab3KWWlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:40:08 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/2] kernfs: update sysfs_init_inode_attrs()
-Date: Sat, 23 Nov 2013 17:40:01 -0500
-Message-Id: <1385246402-1407-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1385246402-1407-1-git-send-email-tj@kernel.org>
-References: <1385246402-1407-1-git-send-email-tj@kernel.org>
+	Sat, 23 Nov 2013 17:41:17 -0500
+Date: Sat, 23 Nov 2013 23:41:16 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Kamala R <kamala@aristanetworks.com>
+Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v2] IPv6: Fixed support for blackhole and prohibit routes
+Message-ID: <20131123224116.GH15822@order.stressinduktion.org>
+Mail-Followup-To: Kamala R <kamala@aristanetworks.com>,
+	netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
+	linux-kernel@vger.kernel.org
+References: <1385108488-32163-1-git-send-email-kamala@aristanetwors.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1385108488-32163-1-git-send-email-kamala@aristanetwors.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs_init_inode_attrs() is a bit clumsy to use requiring the caller
-to check whether @sd->s_iattr is already set or not.  Rename it to
-sysfs_inode_attrs(), update it to check whether @sd->s_iattr is
-already initialized before trying to initialize it and return
-@sd->s_iattr.  This simplifies the callers.
+On Fri, Nov 22, 2013 at 01:51:28PM +0530, Kamala R wrote:
+> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+> index f54e3a1..d90b9ab 100644
+> --- a/net/ipv6/route.c
+> +++ b/net/ipv6/route.c
+> @@ -1564,21 +1564,24 @@ int ip6_route_add(struct fib6_config *cfg)
+>  				goto out;
+>  			}
+>  		}
+> -		rt->dst.output = ip6_pkt_discard_out;
+> -		rt->dst.input = ip6_pkt_discard;
+>  		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
+> +		rt->dst.error = -ENETUNREACH;
+>  		switch (cfg->fc_type) {
+>  		case RTN_BLACKHOLE:
+>  			rt->dst.error = -EINVAL;
+> +			rt->dst.output = dst_discard;
+> +			rt->dst.input = dst_discard;
+>  			break;
+>  		case RTN_PROHIBIT:
+>  			rt->dst.error = -EACCES;
+> +			rt->dst.output = ip6_pkt_prohibit_out;
+> +			rt->dst.input = ip6_pkt_prohibit;
+>  			break;
+>  		case RTN_THROW:
+>  			rt->dst.error = -EAGAIN;
+> -			break;
+>  		default:
+> -			rt->dst.error = -ENETUNREACH;
+> +			rt->dst.output = ip6_pkt_discard_out;
+> +			rt->dst.input = ip6_pkt_discard;
+>  			break;
+>  		}
+>  		goto install_route;
 
-While at it,
-
-* Rename struct sysfs_inode_attrs pointer variables to "attrs".  As
-  kernfs no longer deals with "struct attribute", this isn't confusing
-  and makes it easier to distinguish from struct iattr pointers.
-
-* A new field will be added to sysfs_inode_attrs.  Reindent in
-  preparation.
-
-This patch doesn't introduce any behavior changes.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/kernfs/inode.c           | 60 ++++++++++++++++++++-------------------------
- fs/kernfs/kernfs-internal.h |  6 ++---
- 2 files changed, 29 insertions(+), 37 deletions(-)
-
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index b4cae6f..a1f8382 100644
---- a/fs/kernfs/inode.c
-+++ b/fs/kernfs/inode.c
-@@ -43,15 +43,17 @@ void __init sysfs_inode_init(void)
- 		panic("failed to init sysfs_backing_dev_info");
- }
- 
--static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
-+static struct sysfs_inode_attrs *sysfs_inode_attrs(struct sysfs_dirent *sd)
- {
--	struct sysfs_inode_attrs *attrs;
- 	struct iattr *iattrs;
- 
--	attrs = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
--	if (!attrs)
-+	if (sd->s_iattr)
-+		return sd->s_iattr;
-+
-+	sd->s_iattr = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
-+	if (!sd->s_iattr)
- 		return NULL;
--	iattrs = &attrs->ia_iattr;
-+	iattrs = &sd->s_iattr->ia_iattr;
- 
- 	/* assign default attributes */
- 	iattrs->ia_mode = sd->s_mode;
-@@ -59,26 +61,20 @@ static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
- 	iattrs->ia_gid = GLOBAL_ROOT_GID;
- 	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
- 
--	return attrs;
-+	return sd->s_iattr;
- }
- 
- static int __kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
- {
--	struct sysfs_inode_attrs *sd_attrs;
-+	struct sysfs_inode_attrs *attrs;
- 	struct iattr *iattrs;
- 	unsigned int ia_valid = iattr->ia_valid;
- 
--	sd_attrs = sd->s_iattr;
-+	attrs = sysfs_inode_attrs(sd);
-+	if (!attrs)
-+		return -ENOMEM;
- 
--	if (!sd_attrs) {
--		/* setting attributes for the first time, allocate now */
--		sd_attrs = sysfs_init_inode_attrs(sd);
--		if (!sd_attrs)
--			return -ENOMEM;
--		sd->s_iattr = sd_attrs;
--	}
--	/* attributes were changed at least once in past */
--	iattrs = &sd_attrs->ia_iattr;
-+	iattrs = &attrs->ia_iattr;
- 
- 	if (ia_valid & ATTR_UID)
- 		iattrs->ia_uid = iattr->ia_uid;
-@@ -143,22 +139,19 @@ out:
- static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata,
- 			       u32 *secdata_len)
- {
--	struct sysfs_inode_attrs *iattrs;
-+	struct sysfs_inode_attrs *attrs;
- 	void *old_secdata;
- 	size_t old_secdata_len;
- 
--	if (!sd->s_iattr) {
--		sd->s_iattr = sysfs_init_inode_attrs(sd);
--		if (!sd->s_iattr)
--			return -ENOMEM;
--	}
-+	attrs = sysfs_inode_attrs(sd);
-+	if (!attrs)
-+		return -ENOMEM;
- 
--	iattrs = sd->s_iattr;
--	old_secdata = iattrs->ia_secdata;
--	old_secdata_len = iattrs->ia_secdata_len;
-+	old_secdata = attrs->ia_secdata;
-+	old_secdata_len = attrs->ia_secdata_len;
- 
--	iattrs->ia_secdata = *secdata;
--	iattrs->ia_secdata_len = *secdata_len;
-+	attrs->ia_secdata = *secdata;
-+	attrs->ia_secdata_len = *secdata_len;
- 
- 	*secdata = old_secdata;
- 	*secdata_len = old_secdata_len;
-@@ -216,17 +209,16 @@ static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
- 
- static void sysfs_refresh_inode(struct sysfs_dirent *sd, struct inode *inode)
- {
--	struct sysfs_inode_attrs *iattrs = sd->s_iattr;
-+	struct sysfs_inode_attrs *attrs = sd->s_iattr;
- 
- 	inode->i_mode = sd->s_mode;
--	if (iattrs) {
-+	if (attrs) {
- 		/* sysfs_dirent has non-default attributes
- 		 * get them from persistent copy in sysfs_dirent
- 		 */
--		set_inode_attr(inode, &iattrs->ia_iattr);
--		security_inode_notifysecctx(inode,
--					    iattrs->ia_secdata,
--					    iattrs->ia_secdata_len);
-+		set_inode_attr(inode, &attrs->ia_iattr);
-+		security_inode_notifysecctx(inode, attrs->ia_secdata,
-+					    attrs->ia_secdata_len);
- 	}
- 
- 	if (sysfs_type(sd) == SYSFS_DIR)
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index d1ff591..f25b354 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -18,9 +18,9 @@
- #include <linux/kernfs.h>
- 
- struct sysfs_inode_attrs {
--	struct iattr	ia_iattr;
--	void		*ia_secdata;
--	u32		ia_secdata_len;
-+	struct iattr		ia_iattr;
-+	void			*ia_secdata;
-+	u32			ia_secdata_len;
- };
- 
- #define SD_DEACTIVATED_BIAS		INT_MIN
--- 
-1.8.4.2
+I like it more if a variable is only assigned once. Otherwise it is fine by
+me. 
 
