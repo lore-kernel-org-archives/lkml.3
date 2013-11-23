@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab3KWWkP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:40:15 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:47743 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab3KWWkJ (ORCPT
+	id S932252Ab3KWWky (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:40:54 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60506 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab3KWWkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:40:09 -0500
+	Sat, 23 Nov 2013 17:40:08 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>,
-        "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Subject: [PATCH 2/2] kernfs: implement "trusted.*" xattr support
-Date: Sat, 23 Nov 2013 17:40:02 -0500
-Message-Id: <1385246402-1407-3-git-send-email-tj@kernel.org>
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/2] kernfs: update sysfs_init_inode_attrs()
+Date: Sat, 23 Nov 2013 17:40:01 -0500
+Message-Id: <1385246402-1407-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385246402-1407-1-git-send-email-tj@kernel.org>
 References: <1385246402-1407-1-git-send-email-tj@kernel.org>
@@ -22,212 +21,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs inherited "security.*" xattr support from sysfs.  This patch
-extends xattr support to "trusted.*" using simple_xattr_*().  As
-trusted xattrs are restricted to CAP_SYS_ADMIN, simple_xattr_*() which
-uses kernel memory for storage shouldn't be problematic.
+sysfs_init_inode_attrs() is a bit clumsy to use requiring the caller
+to check whether @sd->s_iattr is already set or not.  Rename it to
+sysfs_inode_attrs(), update it to check whether @sd->s_iattr is
+already initialized before trying to initialize it and return
+@sd->s_iattr.  This simplifies the callers.
 
-Note that the existing "security.*" support doesn't implement
-get/remove/list and the this patch only implements those ops for
-"trusted.*".  We probably want to extend those ops to include support
-for "security.*".
+While at it,
 
-This patch will allow using kernfs from cgroup which requires
-"trusted.*" xattr support.
+* Rename struct sysfs_inode_attrs pointer variables to "attrs".  As
+  kernfs no longer deals with "struct attribute", this isn't confusing
+  and makes it easier to distinguish from struct iattr pointers.
+
+* A new field will be added to sysfs_inode_attrs.  Reindent in
+  preparation.
+
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
- fs/kernfs/dir.c             | 12 ++++++---
- fs/kernfs/inode.c           | 63 +++++++++++++++++++++++++++++++++++++++------
- fs/kernfs/kernfs-internal.h |  7 +++++
- fs/kernfs/symlink.c         |  3 +++
- 4 files changed, 74 insertions(+), 11 deletions(-)
+ fs/kernfs/inode.c           | 60 ++++++++++++++++++++-------------------------
+ fs/kernfs/kernfs-internal.h |  6 ++---
+ 2 files changed, 29 insertions(+), 37 deletions(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index f51e062..a441e3b 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -243,9 +243,12 @@ void kernfs_put(struct sysfs_dirent *sd)
- 		kernfs_put(sd->s_symlink.target_sd);
- 	if (sysfs_type(sd) & SYSFS_COPY_NAME)
- 		kfree(sd->s_name);
--	if (sd->s_iattr && sd->s_iattr->ia_secdata)
--		security_release_secctx(sd->s_iattr->ia_secdata,
--					sd->s_iattr->ia_secdata_len);
-+	if (sd->s_iattr) {
-+		if (sd->s_iattr->ia_secdata)
-+			security_release_secctx(sd->s_iattr->ia_secdata,
-+						sd->s_iattr->ia_secdata_len);
-+		simple_xattrs_free(&sd->s_iattr->xattrs);
-+	}
- 	kfree(sd->s_iattr);
- 	ida_simple_remove(&root->ino_ida, sd->s_ino);
- 	kmem_cache_free(sysfs_dir_cachep, sd);
-@@ -718,6 +721,9 @@ const struct inode_operations sysfs_dir_inode_operations = {
- 	.setattr	= sysfs_setattr,
- 	.getattr	= sysfs_getattr,
- 	.setxattr	= sysfs_setxattr,
-+	.removexattr	= sysfs_removexattr,
-+	.getxattr	= sysfs_getxattr,
-+	.listxattr	= sysfs_listxattr,
- };
- 
- static struct sysfs_dirent *sysfs_leftmost_descendant(struct sysfs_dirent *pos)
 diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index a1f8382..18ad431 100644
+index b4cae6f..a1f8382 100644
 --- a/fs/kernfs/inode.c
 +++ b/fs/kernfs/inode.c
-@@ -35,6 +35,9 @@ static const struct inode_operations sysfs_inode_operations = {
- 	.setattr	= sysfs_setattr,
- 	.getattr	= sysfs_getattr,
- 	.setxattr	= sysfs_setxattr,
-+	.removexattr	= sysfs_removexattr,
-+	.getxattr	= sysfs_getxattr,
-+	.listxattr	= sysfs_listxattr,
- };
+@@ -43,15 +43,17 @@ void __init sysfs_inode_init(void)
+ 		panic("failed to init sysfs_backing_dev_info");
+ }
  
- void __init sysfs_inode_init(void)
-@@ -61,6 +64,8 @@ static struct sysfs_inode_attrs *sysfs_inode_attrs(struct sysfs_dirent *sd)
+-static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
++static struct sysfs_inode_attrs *sysfs_inode_attrs(struct sysfs_dirent *sd)
+ {
+-	struct sysfs_inode_attrs *attrs;
+ 	struct iattr *iattrs;
+ 
+-	attrs = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
+-	if (!attrs)
++	if (sd->s_iattr)
++		return sd->s_iattr;
++
++	sd->s_iattr = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
++	if (!sd->s_iattr)
+ 		return NULL;
+-	iattrs = &attrs->ia_iattr;
++	iattrs = &sd->s_iattr->ia_iattr;
+ 
+ 	/* assign default attributes */
+ 	iattrs->ia_mode = sd->s_mode;
+@@ -59,26 +61,20 @@ static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
  	iattrs->ia_gid = GLOBAL_ROOT_GID;
  	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
  
-+	simple_xattrs_init(&sd->s_iattr->xattrs);
-+
- 	return sd->s_iattr;
+-	return attrs;
++	return sd->s_iattr;
  }
  
-@@ -162,23 +167,25 @@ int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		size_t size, int flags)
+ static int __kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
  {
- 	struct sysfs_dirent *sd = dentry->d_fsdata;
+-	struct sysfs_inode_attrs *sd_attrs;
 +	struct sysfs_inode_attrs *attrs;
- 	void *secdata;
- 	int error;
- 	u32 secdata_len = 0;
+ 	struct iattr *iattrs;
+ 	unsigned int ia_valid = iattr->ia_valid;
  
--	if (!sd)
--		return -EINVAL;
+-	sd_attrs = sd->s_iattr;
 +	attrs = sysfs_inode_attrs(sd);
 +	if (!attrs)
 +		return -ENOMEM;
  
- 	if (!strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN)) {
- 		const char *suffix = name + XATTR_SECURITY_PREFIX_LEN;
- 		error = security_inode_setsecurity(dentry->d_inode, suffix,
- 						value, size, flags);
- 		if (error)
--			goto out;
-+			return error;
- 		error = security_inode_getsecctx(dentry->d_inode,
- 						&secdata, &secdata_len);
- 		if (error)
--			goto out;
-+			return error;
+-	if (!sd_attrs) {
+-		/* setting attributes for the first time, allocate now */
+-		sd_attrs = sysfs_init_inode_attrs(sd);
+-		if (!sd_attrs)
+-			return -ENOMEM;
+-		sd->s_iattr = sd_attrs;
+-	}
+-	/* attributes were changed at least once in past */
+-	iattrs = &sd_attrs->ia_iattr;
++	iattrs = &attrs->ia_iattr;
  
- 		mutex_lock(&sysfs_mutex);
- 		error = sysfs_sd_setsecdata(sd, &secdata, &secdata_len);
-@@ -186,10 +193,50 @@ int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 
- 		if (secdata)
- 			security_release_secctx(secdata, secdata_len);
--	} else
--		return -EINVAL;
--out:
--	return error;
-+		return error;
-+	} else if (!strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN)) {
-+		return simple_xattr_set(&attrs->xattrs, name, value, size,
-+					flags);
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+int sysfs_removexattr(struct dentry *dentry, const char *name)
-+{
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
+ 	if (ia_valid & ATTR_UID)
+ 		iattrs->ia_uid = iattr->ia_uid;
+@@ -143,22 +139,19 @@ out:
+ static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata,
+ 			       u32 *secdata_len)
+ {
+-	struct sysfs_inode_attrs *iattrs;
 +	struct sysfs_inode_attrs *attrs;
-+
+ 	void *old_secdata;
+ 	size_t old_secdata_len;
+ 
+-	if (!sd->s_iattr) {
+-		sd->s_iattr = sysfs_init_inode_attrs(sd);
+-		if (!sd->s_iattr)
+-			return -ENOMEM;
+-	}
 +	attrs = sysfs_inode_attrs(sd);
 +	if (!attrs)
 +		return -ENOMEM;
-+
-+	return simple_xattr_remove(&attrs->xattrs, name);
-+}
-+
-+ssize_t sysfs_getxattr(struct dentry *dentry, const char *name, void *buf,
-+		       size_t size)
-+{
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
-+	struct sysfs_inode_attrs *attrs;
-+
-+	attrs = sysfs_inode_attrs(sd);
-+	if (!attrs)
-+		return -ENOMEM;
-+
-+	return simple_xattr_get(&attrs->xattrs, name, buf, size);
-+}
-+
-+ssize_t sysfs_listxattr(struct dentry *dentry, char *buf, size_t size)
-+{
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
-+	struct sysfs_inode_attrs *attrs;
-+
-+	attrs = sysfs_inode_attrs(sd);
-+	if (!attrs)
-+		return -ENOMEM;
-+
-+	return simple_xattr_list(&attrs->xattrs, buf, size);
- }
  
- static inline void set_default_inode_attr(struct inode *inode, umode_t mode)
+-	iattrs = sd->s_iattr;
+-	old_secdata = iattrs->ia_secdata;
+-	old_secdata_len = iattrs->ia_secdata_len;
++	old_secdata = attrs->ia_secdata;
++	old_secdata_len = attrs->ia_secdata_len;
+ 
+-	iattrs->ia_secdata = *secdata;
+-	iattrs->ia_secdata_len = *secdata_len;
++	attrs->ia_secdata = *secdata;
++	attrs->ia_secdata_len = *secdata_len;
+ 
+ 	*secdata = old_secdata;
+ 	*secdata_len = old_secdata_len;
+@@ -216,17 +209,16 @@ static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
+ 
+ static void sysfs_refresh_inode(struct sysfs_dirent *sd, struct inode *inode)
+ {
+-	struct sysfs_inode_attrs *iattrs = sd->s_iattr;
++	struct sysfs_inode_attrs *attrs = sd->s_iattr;
+ 
+ 	inode->i_mode = sd->s_mode;
+-	if (iattrs) {
++	if (attrs) {
+ 		/* sysfs_dirent has non-default attributes
+ 		 * get them from persistent copy in sysfs_dirent
+ 		 */
+-		set_inode_attr(inode, &iattrs->ia_iattr);
+-		security_inode_notifysecctx(inode,
+-					    iattrs->ia_secdata,
+-					    iattrs->ia_secdata_len);
++		set_inode_attr(inode, &attrs->ia_iattr);
++		security_inode_notifysecctx(inode, attrs->ia_secdata,
++					    attrs->ia_secdata_len);
+ 	}
+ 
+ 	if (sysfs_type(sd) == SYSFS_DIR)
 diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index f25b354..910e485 100644
+index d1ff591..f25b354 100644
 --- a/fs/kernfs/kernfs-internal.h
 +++ b/fs/kernfs/kernfs-internal.h
-@@ -14,6 +14,7 @@
- #include <linux/lockdep.h>
- #include <linux/fs.h>
- #include <linux/mutex.h>
-+#include <linux/xattr.h>
- 
+@@ -18,9 +18,9 @@
  #include <linux/kernfs.h>
  
-@@ -21,6 +22,8 @@ struct sysfs_inode_attrs {
- 	struct iattr		ia_iattr;
- 	void			*ia_secdata;
- 	u32			ia_secdata_len;
-+
-+	struct simple_xattrs	xattrs;
+ struct sysfs_inode_attrs {
+-	struct iattr	ia_iattr;
+-	void		*ia_secdata;
+-	u32		ia_secdata_len;
++	struct iattr		ia_iattr;
++	void			*ia_secdata;
++	u32			ia_secdata_len;
  };
  
  #define SD_DEACTIVATED_BIAS		INT_MIN
-@@ -81,6 +84,10 @@ int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		  struct kstat *stat);
- int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		   size_t size, int flags);
-+int sysfs_removexattr(struct dentry *dentry, const char *name);
-+ssize_t sysfs_getxattr(struct dentry *dentry, const char *name, void *buf,
-+		       size_t size);
-+ssize_t sysfs_listxattr(struct dentry *dentry, char *buf, size_t size);
- void sysfs_inode_init(void);
- 
- /*
-diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
-index 12569a7..adf2875 100644
---- a/fs/kernfs/symlink.c
-+++ b/fs/kernfs/symlink.c
-@@ -140,6 +140,9 @@ static void sysfs_put_link(struct dentry *dentry, struct nameidata *nd,
- 
- const struct inode_operations sysfs_symlink_inode_operations = {
- 	.setxattr	= sysfs_setxattr,
-+	.removexattr	= sysfs_removexattr,
-+	.getxattr	= sysfs_getxattr,
-+	.listxattr	= sysfs_listxattr,
- 	.readlink	= generic_readlink,
- 	.follow_link	= sysfs_follow_link,
- 	.put_link	= sysfs_put_link,
 -- 
 1.8.4.2
 
