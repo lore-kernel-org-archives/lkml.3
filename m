@@ -1,47 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab3KWW0F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 17:26:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35551 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756384Ab3KWWZ5 (ORCPT
+	id S1756543Ab3KWWXI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 17:23:08 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:33026 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344Ab3KWWWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 17:25:57 -0500
-Date: Sat, 23 Nov 2013 14:26:34 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3.13-rc1 1/2] sysfs: handle duplicate removal attempts
- in sysfs_remove_group()
-Message-ID: <20131123222634.GA4419@kroah.com>
-References: <20131123183508.GA28162@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131123183508.GA28162@mtj.dyndns.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 23 Nov 2013 17:22:46 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 12/41] sysfs, kernfs: prepare mmap path for kernfs
+Date: Sat, 23 Nov 2013 17:21:57 -0500
+Message-Id: <1385245346-856-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1385245346-856-1-git-send-email-tj@kernel.org>
+References: <1385245346-856-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 01:35:08PM -0500, Tejun Heo wrote:
-> Hello, Greg.
-> 
-> These are two patches to fix sysfs bugs which are present in rc1 and
-> posted previously.  Both deal with spurious triggering of warnings.
-> The patches are available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-fixes
-> 
-> The original patches are
-> 
->  http://lkml.kernel.org/g/1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com
->  http://lkml.kernel.org/g/20131117021736.GA9302@mtj.dyndns.org
-> 
-> I'll base further sysfs/kernfs patches on top of the above branch.
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+rearranges mmap path so that the kernfs and sysfs parts are separate.
 
-Both now applied, thanks.
+sysfs_kf_bin_mmap() which handles the interaction with bin_attribute
+mmap method is factored out of sysfs_bin_mmap(), which is renamed to
+kernfs_file_mmap().  All vma ops are renamed accordingly.
 
-greg k-h
+sysfs_bin_mmap() is updated such that it can be used for both file
+types.  This will eventually allow using the same file_operations for
+both file types, which is necessary to separate out kernfs.
+
+This patch doesn't introduce any behavior changes.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/file.c | 69 ++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 39 insertions(+), 30 deletions(-)
+
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 2f849e8..2e24e89 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -361,7 +361,19 @@ out_free:
+ 	return len;
+ }
+ 
+-static void sysfs_bin_vma_open(struct vm_area_struct *vma)
++static int sysfs_kf_bin_mmap(struct sysfs_open_file *of,
++			     struct vm_area_struct *vma)
++{
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
++
++	if (!battr->mmap)
++		return -ENODEV;
++
++	return battr->mmap(of->file, kobj, battr, vma);
++}
++
++static void kernfs_vma_open(struct vm_area_struct *vma)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -378,7 +390,7 @@ static void sysfs_bin_vma_open(struct vm_area_struct *vma)
+ 	sysfs_put_active(of->sd);
+ }
+ 
+-static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++static int kernfs_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -398,8 +410,8 @@ static int sysfs_bin_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	return ret;
+ }
+ 
+-static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
+-				  struct vm_fault *vmf)
++static int kernfs_vma_page_mkwrite(struct vm_area_struct *vma,
++				   struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -421,8 +433,8 @@ static int sysfs_bin_page_mkwrite(struct vm_area_struct *vma,
+ 	return ret;
+ }
+ 
+-static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
+-			    void *buf, int len, int write)
++static int kernfs_vma_access(struct vm_area_struct *vma, unsigned long addr,
++			     void *buf, int len, int write)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -443,8 +455,8 @@ static int sysfs_bin_access(struct vm_area_struct *vma, unsigned long addr,
+ }
+ 
+ #ifdef CONFIG_NUMA
+-static int sysfs_bin_set_policy(struct vm_area_struct *vma,
+-				struct mempolicy *new)
++static int kernfs_vma_set_policy(struct vm_area_struct *vma,
++				 struct mempolicy *new)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -464,8 +476,8 @@ static int sysfs_bin_set_policy(struct vm_area_struct *vma,
+ 	return ret;
+ }
+ 
+-static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
+-					      unsigned long addr)
++static struct mempolicy *kernfs_vma_get_policy(struct vm_area_struct *vma,
++					       unsigned long addr)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -485,8 +497,9 @@ static struct mempolicy *sysfs_bin_get_policy(struct vm_area_struct *vma,
+ 	return pol;
+ }
+ 
+-static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
+-			     const nodemask_t *to, unsigned long flags)
++static int kernfs_vma_migrate(struct vm_area_struct *vma,
++			      const nodemask_t *from, const nodemask_t *to,
++			      unsigned long flags)
+ {
+ 	struct file *file = vma->vm_file;
+ 	struct sysfs_open_file *of = sysfs_of(file);
+@@ -507,36 +520,31 @@ static int sysfs_bin_migrate(struct vm_area_struct *vma, const nodemask_t *from,
+ }
+ #endif
+ 
+-static const struct vm_operations_struct sysfs_bin_vm_ops = {
+-	.open		= sysfs_bin_vma_open,
+-	.fault		= sysfs_bin_fault,
+-	.page_mkwrite	= sysfs_bin_page_mkwrite,
+-	.access		= sysfs_bin_access,
++static const struct vm_operations_struct kernfs_vm_ops = {
++	.open		= kernfs_vma_open,
++	.fault		= kernfs_vma_fault,
++	.page_mkwrite	= kernfs_vma_page_mkwrite,
++	.access		= kernfs_vma_access,
+ #ifdef CONFIG_NUMA
+-	.set_policy	= sysfs_bin_set_policy,
+-	.get_policy	= sysfs_bin_get_policy,
+-	.migrate	= sysfs_bin_migrate,
++	.set_policy	= kernfs_vma_set_policy,
++	.get_policy	= kernfs_vma_get_policy,
++	.migrate	= kernfs_vma_migrate,
+ #endif
+ };
+ 
+-static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
++static int kernfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+-	struct bin_attribute *battr = of->sd->priv;
+-	struct kobject *kobj = of->sd->s_parent->priv;
+ 	int rc;
+ 
+ 	mutex_lock(&of->mutex);
+ 
+-	/* need of->sd for battr, its parent for kobj */
+ 	rc = -ENODEV;
+ 	if (!sysfs_get_active(of->sd))
+ 		goto out_unlock;
+ 
+-	if (!battr->mmap)
+-		goto out_put;
+-
+-	rc = battr->mmap(file, kobj, battr, vma);
++	if (sysfs_is_bin(of->sd))
++		rc = sysfs_kf_bin_mmap(of, vma);
+ 	if (rc)
+ 		goto out_put;
+ 
+@@ -563,7 +571,7 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ 	rc = 0;
+ 	of->mmapped = 1;
+ 	of->vm_ops = vma->vm_ops;
+-	vma->vm_ops = &sysfs_bin_vm_ops;
++	vma->vm_ops = &kernfs_vm_ops;
+ out_put:
+ 	sysfs_put_active(of->sd);
+ out_unlock:
+@@ -877,6 +885,7 @@ const struct file_operations sysfs_file_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
++	.mmap		= kernfs_file_mmap,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+ 	.poll		= sysfs_poll,
+@@ -886,7 +895,7 @@ const struct file_operations sysfs_bin_operations = {
+ 	.read		= kernfs_file_read,
+ 	.write		= kernfs_file_write,
+ 	.llseek		= generic_file_llseek,
+-	.mmap		= sysfs_bin_mmap,
++	.mmap		= kernfs_file_mmap,
+ 	.open		= sysfs_open_file,
+ 	.release	= sysfs_release,
+ 	.poll		= sysfs_poll,
+-- 
+1.8.4.2
+
