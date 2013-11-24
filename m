@@ -1,24 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab3KXA1B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 19:27:01 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41062 "EHLO
+	id S1756419Ab3KXAaR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 19:30:17 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41072 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab3KXA06 (ORCPT
+	with ESMTP id S1755583Ab3KXAaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 19:26:58 -0500
-Date: Sun, 24 Nov 2013 00:26:50 +0000
+	Sat, 23 Nov 2013 19:30:14 -0500
+Date: Sun, 24 Nov 2013 00:29:45 +0000
 From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
 To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 5/7] n_tty: Refactor input_available_p() by
- call site
-Message-ID: <20131124002650.74902872@alan.etchedpixels.co.uk>
-In-Reply-To: <1385135965-4235-6-git-send-email-peter@hurleysoftware.com>
-References: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>
-	<1385135965-4235-6-git-send-email-peter@hurleysoftware.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Margarita Manterola <margamanterola@gmail.com>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, bug-readline@gnu.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: Large pastes into readline enabled programs causes breakage
+ from v2.6.31 onwards
+Message-ID: <20131124002945.19bde9ab@alan.etchedpixels.co.uk>
+In-Reply-To: <528F54A2.5000802@hurleysoftware.com>
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
+	<CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com>
+	<201309030717.57866.a.miskiewicz@gmail.com>
+	<201310241800.18490.a.miskiewicz@gmail.com>
+	<20131029135036.GA30992@gnuservers.com.ar>
+	<5270EBA9.6070302@hurleysoftware.com>
+	<20131117182906.GE30012@xo-6d-61-c0.localdomain>
+	<528D946B.8030000@hurleysoftware.com>
+	<528F54A2.5000802@hurleysoftware.com>
 Organization: Intel Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -28,13 +39,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013 10:59:23 -0500
-Peter Hurley <peter@hurleysoftware.com> wrote:
+> 7) Rescan line discipline buffer when changing from non-canonical to canonical
+> mode. The real problem with this approach (besides the inefficiency) is that this
+> solution could break some (admittedly unknown) program that contrived to exchange
+> data in non-canonical mode but read in canonical mode (just not exceeding the
+> line discipline buffer limit).
 
-> Distinguish if caller is n_tty_poll() or n_tty_read(), and
-> set the read/wakeup threshold accordingly.
-> 
-> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+See bugzilla 55981, 55991 btw
 
-Doh ignore previous.. yes that patch is right.  I should pay attention to
-0/7 8)
+Alan
