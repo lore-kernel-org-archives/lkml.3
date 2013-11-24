@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3KXGdp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 01:33:45 -0500
-Received: from gnurou.org ([207.192.72.5]:41162 "EHLO mail.gnurou.org"
+	id S1756619Ab3KXGdw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 01:33:52 -0500
+Received: from gnurou.org ([207.192.72.5]:41189 "EHLO mail.gnurou.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab3KXGdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 01:33:42 -0500
+	id S1756167Ab3KXGdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 01:33:43 -0500
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Stephen Warren <swarren@wwwdotorg.org>,
@@ -18,58 +18,35 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         gnurou@gmail.com, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v11 0/7] ARM: support for the Trusted Foundations secure monitor
-Date: Sun, 24 Nov 2013 15:30:45 +0900
-Message-Id: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v11 2/7] of: add vendor prefix for Trusted Logic Mobility
+Date: Sun, 24 Nov 2013 15:30:47 +0900
+Message-Id: <1385274652-16415-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
+References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New rebase that should be ready-to-apply on the latest Tegra tree. The last
-remaining blocker is Russell's approval for this series and it is my hope to
-obtain it with this version.
+Add the "tlm" prefix for Trusted Logic Mobility.
 
-There has been quite some debate around this series, notably about the SMC
-calling conventions and whether the firmware interface should be moved out of
-arch/arm. I hope that all the questions have been answered and that we can move
-forward with this series that enables NVIDIA-branded retail Tegra devices to run
-mainline.
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-Changes since v10:
-- Rebased on top of more recent sources since some files have been renamed in
-  mach-tegra.
-- Gave a final proof-read and extensive testing.
-
-Alexandre Courbot (7):
-  ARM: add basic support for Trusted Foundations
-  of: add vendor prefix for Trusted Logic Mobility
-  of: add Trusted Foundations bindings documentation
-  ARM: tegra: add support for Trusted Foundations
-  ARM: tegra: split setting of CPU reset handler
-  ARM: tegra: set CPU reset handler using firmware
-  ARM: tegra: support Trusted Foundations by default
-
- .../arm/firmware/tlm,trusted-foundations.txt       | 20 ++++++
- Documentation/devicetree/bindings/arm/tegra.txt    |  5 ++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- arch/arm/Kconfig                                   |  2 +
- arch/arm/Makefile                                  |  1 +
- arch/arm/configs/tegra_defconfig                   |  1 +
- arch/arm/firmware/Kconfig                          | 28 ++++++++
- arch/arm/firmware/Makefile                         |  1 +
- arch/arm/firmware/trusted_foundations.c            | 81 ++++++++++++++++++++++
- arch/arm/include/asm/trusted_foundations.h         | 67 ++++++++++++++++++
- arch/arm/mach-tegra/Kconfig                        |  1 +
- arch/arm/mach-tegra/reset.c                        | 40 ++++++++---
- arch/arm/mach-tegra/tegra.c                        |  2 +
- 13 files changed, 239 insertions(+), 11 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/firmware/tlm,trusted-foundations.txt
- create mode 100644 arch/arm/firmware/Kconfig
- create mode 100644 arch/arm/firmware/Makefile
- create mode 100644 arch/arm/firmware/trusted_foundations.c
- create mode 100644 arch/arm/include/asm/trusted_foundations.h
-
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index e306917..5aa905e 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -73,6 +73,7 @@ st	STMicroelectronics
+ ste	ST-Ericsson
+ stericsson	ST-Ericsson
+ ti	Texas Instruments
++tlm	Trusted Logic Mobility
+ toshiba	Toshiba Corporation
+ toumaz	Toumaz
+ v3	V3 Semiconductor
 -- 
 1.8.4.2
 
