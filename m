@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3KXVBB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 16:01:01 -0500
-Received: from ring0.de ([91.143.88.219]:33462 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab3KXVA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 16:00:58 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 24 Nov 2013 22:00:43 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi,
-        pavel@ucw.cz
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131124210041.GA12180@earth.universe>
-Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	Anton Vorontsov <anton@enomsg.org>,
-	David Woodhouse <dwmw2@infradead.org>,
-	Tony Lindgren <tony@atomide.com>,
-	Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-	linux-omap@vger.kernel.org, freemangordon@abv.bg,
-	aaro.koskinen@iki.fi, pavel@ucw.cz
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201311242001.16299@pali>
- <20131124192608.GA11338@earth.universe>
- <201311242041.47075@pali>
+	id S1753330Ab3KXVES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 16:04:18 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43353 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab3KXVEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 16:04:14 -0500
+Message-ID: <529269CC.3050007@kernel.org>
+Date: Sun, 24 Nov 2013 21:04:12 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
-Content-Disposition: inline
-In-Reply-To: <201311242041.47075@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: NeilBrown <neilb@suse.de>, Sebastian Reichel <sre@debian.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH v2] itg3200: add dt support.
+References: <20131119113013.39dae3cd@notabene.brown>	<20131119014938.GA20782@earth.universe> <20131119164839.7cd3f4f1@notabene.brown>
+In-Reply-To: <20131119164839.7cd3f4f1@notabene.brown>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
---Qxx1br4bt0+wmkIi
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/19/13 05:48, NeilBrown wrote:
+> On Tue, 19 Nov 2013 02:49:38 +0100 Sebastian Reichel <sre@debian.org> wrote:
+> 
+>> Hi,
+>> 
+>> On Tue, Nov 19, 2013 at 11:30:13AM +1100, NeilBrown wrote:
+>>> No new configuration, just a 'compatible' string and documentation.
+>> 
+>> itg3200 looks like a candidate for the list of trivial i2c devices [0] to me.
+>> 
+>> [0] Documentation/devicetree/bindings/i2c/trivial-devices.txt
+>> 
+>> -- Sebastian
+> 
+> Hmmm... a file that isn't referenced anywhere else in the kernel documentation so is unlikely to be found except by
+> people who know it is there....
+> 
+> I can see that having lots of files for trivial devices is rather clumsy, but there must be a better way. I don't
+> suppose we could just put the documentation in the device-driver file in some format similar to kernel-doc and just
+> extract it if it is wanted separately?  I think people read code a lot more than they read documentation. I know I
+> do.
+> 
+> But I can re-send with an update to trivial-devices.txt is that is what is wanted.
+Given that typically people will need to grep for the name of the actual
+device they have to find the docs (not always obvious where in the documentation
+their bindings will lie), it perhaps makes sense to put these simple devices
+in trivial-devices.txt.
 
-On Sun, Nov 24, 2013 at 08:41:46PM +0100, Pali Roh=E1r wrote:
-> On Sunday 24 November 2013 20:26:09 Sebastian Reichel wrote:
-> > On Sun, Nov 24, 2013 at 08:01:16PM +0100, Pali Roh=E1r wrote:
-> > > Currently on Maemo 5 this is handled in userspace (with open
-> > > source dsme daemon).
-> >=20
-> > I assume it currently also takes care of the bq2415x watchdog?
-> > That means if the daemon dies charging will stop, because the
-> > watchdog does no longer trigger.
-> >=20
-> > When your patch is applied you have introduced a safety issue.
-> > When the daemon dies charging will continue and temperature is
-> > no longer checked.
-> >=20
-> > -- Sebastian
->=20
-> No dsme checking battery temperature and does not handle bq24510=20
-> timer (previously this was in closed bme daemon which=20
-> functionality is now in kernel drivers).
-
-Ok, so then the temperature checks are done by bme.
-
-> But dsme daemon also kicking tlw4030 watchdog, so when daemon dies
-> after 30s tlw4030 reboot device.
-
-Yes, but that does not matter if it does not take care of the
-charging. If the dsme daemon is not started for some reason
-phone will not be rebootet and phone charges.
-
-> But right you can implement correctly this in userspace (e.g.=20
-> when daemon not running/crashed, you can restart daemon or reboot=20
-> system or disable charing, whatever...) and you do not need to=20
-> have it in kernel...
-
-That does not change the fact, that the kernel openes a safety issue
-in default configuration. To be on the safe side charging must be
-disabled until some safety checking daemon enables it.
-
--- Sebastian
-
---Qxx1br4bt0+wmkIi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
+Anyhow, it is how it is currently done and we can always unwind it later to separate
+files so, yes - please do move this and if missing add the invense entry as well
+as Mark has requested.
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCAAGBQJSkmj4AAoJENju1/PIO/qawdQP/jtB4+Ua9MfCJrPTzWXe2uSH
-GzYT+K/j0ygcbHtyF9ILL6d3mxEOubzkayyeGORw8S+Snwti4gLWr28C6njG87Ck
-JnhatWGIItPRRliBmcyjfIHVjENkW/JwbeICCi5HeeUs5ZxAdlltVbCzycDCmlUy
-6kLik0CpIiceigvVihcvWNbfYwcxk9BwgwlROzmgynUGg2vARCNUsOIs3HUGydsG
-b4c2WEiwOGz2UBhfPIcvjIKcImDNG3sDlgW8u+yPFf6TbhQw0g+iQsgoh2IqoJLk
-tZNguTXLyMdaCNejhpXWIgtI6R0Qxja9g53bxtrk2uj7ikdQRJZaE5SwyXVsmnDj
-uY/0A9t2SByWiSdmHHZa2O9/urabi1Un9NEdWcbu0Z7nH4tsa96ExmT8Uujx7VNC
-M9Cobq5EhXLVqEDUgn88VPOWuyd8K494TGZl5hNbH+N5HS3KLPOLWeZjaZPHXL30
-meIpzdfhJXFhep3Ni+GtNhNYT9h7PSOWXILFvgs07Ovudm3u+gmgny/A+qslSzNB
-ArjrL4lEB+zYtCv8/Vr+u6421i1nZCzIEck/KHEwIrnQNehvSz4qkD6wTHCEEkF5
-iIcjDLixWYZztZ7yRx5AIAcWwTSrYNdJ5pgURILIxjGRjcoUEu2FF0LP2+iddrOu
-r9zB2Dgd7x3XkJi438Ym
-=ylqx
+iQIcBAEBAgAGBQJSkmnMAAoJEFSFNJnE9BaI2QQP/R9wloBWmMKiuF+2MFD4qPSM
+GCgKVVptzk/qgV1TYvj7OsuYigGkCcVdTptRg3uDgrg2gL/1beYz8HqbeIRALcCp
+G2rPKhFGF9R6LalHUU0eMVGvvTqUe7J2gXCnxoINp0QM+fAyFfkMk5FZJJur4drI
+GnwroRToRcrIRloIFNstDc5m5/jphshCB++sEDh/uTZT64ZcH5VKlcsHmuzMGOEm
+VO/gebr5kHogGA54HUB4C8psrMJncKm3XFt57yq9tkhHkDk/VijDdROuhbOMY/K0
+6eLLl7oIUkYtQ0AOowg2pDG3B5mvBexfi2W5JWf9yxiK/GBE54OQwyPNXWSeR4Jo
+yLFs+anAtoNVYJuX5O0hs5NXzAJCAhcsXVggzKAmBY5IQkUZ5HzyBxwpH7aB1c1N
+xZY89s1gx4Fke3GNPxqQ7tTDnFy5qZvnZ1/RM0F1j6D6zVMVSM5rRtjZrn3jdpue
+gvzoYSV7f6la+BVj6S2tR2bEFkEssiaUkPn844e+EPZ+iSt8rLVD7WRA0M7bVp4t
+R5ruRioF7D3LGzSfJwhna5/SNCytKuUBKc98PL0VZRx1707GAa2Ucl/YAIp/Gnkh
+ERq9T5GbeT+9zMAfQpeE7Jaz+CwrS8ib0ul+IZzA9q+CqOdZZo3/xjdkQjSw9D9C
+IL28pFxuFOKYabdZ9kQC
+=EsOI
 -----END PGP SIGNATURE-----
-
---Qxx1br4bt0+wmkIi--
