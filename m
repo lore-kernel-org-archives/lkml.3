@@ -1,81 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab3KXVES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 16:04:18 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43353 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab3KXVEO (ORCPT
+	id S1752943Ab3KXVTZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 16:19:25 -0500
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:58833 "EHLO
+	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab3KXVTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 16:04:14 -0500
-Message-ID: <529269CC.3050007@kernel.org>
-Date: Sun, 24 Nov 2013 21:04:12 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Sebastian Reichel <sre@debian.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH v2] itg3200: add dt support.
-References: <20131119113013.39dae3cd@notabene.brown>	<20131119014938.GA20782@earth.universe> <20131119164839.7cd3f4f1@notabene.brown>
-In-Reply-To: <20131119164839.7cd3f4f1@notabene.brown>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Nov 2013 16:19:23 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 16:19:22 EST
+From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+To: linux-crypto@vger.kernel.org
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Yonan <james@openvpn.net>, Daniel Borkmann <dborkman@redhat.com>,
+        Florian Weimer <fw@deneb.enyo.de>, linux-kernel@vger.kernel.org,
+        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+Subject: [PATCH] crypto: more robust crypto_memneq
+Date: Sun, 24 Nov 2013 19:12:15 -0200
+Message-Id: <1385327535-27991-1-git-send-email-cesarb@cesarb.eti.br>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Disabling compiler optimizations can be fragile, since a new
+optimization could be added to -O0 or -Os that breaks the assumptions
+the code is making.
 
-On 11/19/13 05:48, NeilBrown wrote:
-> On Tue, 19 Nov 2013 02:49:38 +0100 Sebastian Reichel <sre@debian.org> wrote:
-> 
->> Hi,
->> 
->> On Tue, Nov 19, 2013 at 11:30:13AM +1100, NeilBrown wrote:
->>> No new configuration, just a 'compatible' string and documentation.
->> 
->> itg3200 looks like a candidate for the list of trivial i2c devices [0] to me.
->> 
->> [0] Documentation/devicetree/bindings/i2c/trivial-devices.txt
->> 
->> -- Sebastian
-> 
-> Hmmm... a file that isn't referenced anywhere else in the kernel documentation so is unlikely to be found except by
-> people who know it is there....
-> 
-> I can see that having lots of files for trivial devices is rather clumsy, but there must be a better way. I don't
-> suppose we could just put the documentation in the device-driver file in some format similar to kernel-doc and just
-> extract it if it is wanted separately?  I think people read code a lot more than they read documentation. I know I
-> do.
-> 
-> But I can re-send with an update to trivial-devices.txt is that is what is wanted.
-Given that typically people will need to grep for the name of the actual
-device they have to find the docs (not always obvious where in the documentation
-their bindings will lie), it perhaps makes sense to put these simple devices
-in trivial-devices.txt.
+Instead of disabling compiler optimizations, use a dummy inline assembly
+(based on RELOC_HIDE) to block the problematic kinds of optimization,
+while still allowing other optimizations to be applied to the code.
 
-Anyhow, it is how it is currently done and we can always unwind it later to separate
-files so, yes - please do move this and if missing add the invense entry as well
-as Mark has requested.
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+The dummy inline assembly is added after every OR, and has the
+accumulator variable as its input and output. The compiler is forced to
+assume that the dummy inline assembly could both depend on the
+accumulator variable and change the accumulator variable, so it is
+forced to compute the value correctly before the inline assembly, and
+cannot assume anything about its value after the inline assembly.
 
-iQIcBAEBAgAGBQJSkmnMAAoJEFSFNJnE9BaI2QQP/R9wloBWmMKiuF+2MFD4qPSM
-GCgKVVptzk/qgV1TYvj7OsuYigGkCcVdTptRg3uDgrg2gL/1beYz8HqbeIRALcCp
-G2rPKhFGF9R6LalHUU0eMVGvvTqUe7J2gXCnxoINp0QM+fAyFfkMk5FZJJur4drI
-GnwroRToRcrIRloIFNstDc5m5/jphshCB++sEDh/uTZT64ZcH5VKlcsHmuzMGOEm
-VO/gebr5kHogGA54HUB4C8psrMJncKm3XFt57yq9tkhHkDk/VijDdROuhbOMY/K0
-6eLLl7oIUkYtQ0AOowg2pDG3B5mvBexfi2W5JWf9yxiK/GBE54OQwyPNXWSeR4Jo
-yLFs+anAtoNVYJuX5O0hs5NXzAJCAhcsXVggzKAmBY5IQkUZ5HzyBxwpH7aB1c1N
-xZY89s1gx4Fke3GNPxqQ7tTDnFy5qZvnZ1/RM0F1j6D6zVMVSM5rRtjZrn3jdpue
-gvzoYSV7f6la+BVj6S2tR2bEFkEssiaUkPn844e+EPZ+iSt8rLVD7WRA0M7bVp4t
-R5ruRioF7D3LGzSfJwhna5/SNCytKuUBKc98PL0VZRx1707GAa2Ucl/YAIp/Gnkh
-ERq9T5GbeT+9zMAfQpeE7Jaz+CwrS8ib0ul+IZzA9q+CqOdZZo3/xjdkQjSw9D9C
-IL28pFxuFOKYabdZ9kQC
-=EsOI
------END PGP SIGNATURE-----
+This change should be enough to make crypto_memneq work correctly (with
+data-independent timing) even if it is inlined at its call sites. That
+can be done later in a followup patch.
+
+Compile-tested on x86_64.
+
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+---
+ crypto/Makefile |  5 ----
+ crypto/memneq.c | 82 +++++++++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 57 insertions(+), 30 deletions(-)
+
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 989c510..b29402a 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -2,11 +2,6 @@
+ # Cryptographic API
+ #
+ 
+-# memneq MUST be built with -Os or -O0 to prevent early-return optimizations
+-# that will defeat memneq's actual purpose to prevent timing attacks.
+-CFLAGS_REMOVE_memneq.o := -O1 -O2 -O3
+-CFLAGS_memneq.o := -Os
+-
+ obj-$(CONFIG_CRYPTO) += crypto.o
+ crypto-y := api.o cipher.o compress.o memneq.o
+ 
+diff --git a/crypto/memneq.c b/crypto/memneq.c
+index cd01622..fce066c 100644
+--- a/crypto/memneq.c
++++ b/crypto/memneq.c
+@@ -63,6 +63,9 @@
+ 
+ #ifndef __HAVE_ARCH_CRYPTO_MEMNEQ
+ 
++/* Make the optimizer believe the variable can be manipulated arbitrarily. */
++#define OPTIMIZER_HIDE_VAR(var) __asm__ ("" : "=r" (var) : "0" (var))
++
+ /* Generic path for arbitrary size */
+ static inline unsigned long
+ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+@@ -72,6 +75,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 	while (size >= sizeof(unsigned long)) {
+ 		neq |= *(unsigned long *)a ^ *(unsigned long *)b;
++		OPTIMIZER_HIDE_VAR(neq);
+ 		a += sizeof(unsigned long);
+ 		b += sizeof(unsigned long);
+ 		size -= sizeof(unsigned long);
+@@ -79,6 +83,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
+ 	while (size > 0) {
+ 		neq |= *(unsigned char *)a ^ *(unsigned char *)b;
++		OPTIMIZER_HIDE_VAR(neq);
+ 		a += 1;
+ 		b += 1;
+ 		size -= 1;
+@@ -89,33 +94,60 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
+ /* Loop-free fast-path for frequently used 16-byte size */
+ static inline unsigned long __crypto_memneq_16(const void *a, const void *b)
+ {
++	unsigned long neq = 0;
++
+ #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+-	if (sizeof(unsigned long) == 8)
+-		return ((*(unsigned long *)(a)   ^ *(unsigned long *)(b))
+-		      | (*(unsigned long *)(a+8) ^ *(unsigned long *)(b+8)));
+-	else if (sizeof(unsigned int) == 4)
+-		return ((*(unsigned int *)(a)    ^ *(unsigned int *)(b))
+-                      | (*(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4))
+-		      | (*(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8))
+-	              | (*(unsigned int *)(a+12) ^ *(unsigned int *)(b+12)));
+-	else
++	if (sizeof(unsigned long) == 8) {
++		neq |= *(unsigned long *)(a)   ^ *(unsigned long *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned long *)(a+8) ^ *(unsigned long *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++	} else if (sizeof(unsigned int) == 4) {
++		neq |= *(unsigned int *)(a)    ^ *(unsigned int *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++	        neq |= *(unsigned int *)(a+12) ^ *(unsigned int *)(b+12);
++		OPTIMIZER_HIDE_VAR(neq);
++	} else {
+ #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
+-		return ((*(unsigned char *)(a)    ^ *(unsigned char *)(b))
+-		      | (*(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1))
+-		      | (*(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2))
+-		      | (*(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3))
+-		      | (*(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4))
+-		      | (*(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5))
+-		      | (*(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6))
+-		      | (*(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7))
+-		      | (*(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8))
+-		      | (*(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9))
+-		      | (*(unsigned char *)(a+10) ^ *(unsigned char *)(b+10))
+-		      | (*(unsigned char *)(a+11) ^ *(unsigned char *)(b+11))
+-		      | (*(unsigned char *)(a+12) ^ *(unsigned char *)(b+12))
+-		      | (*(unsigned char *)(a+13) ^ *(unsigned char *)(b+13))
+-		      | (*(unsigned char *)(a+14) ^ *(unsigned char *)(b+14))
+-		      | (*(unsigned char *)(a+15) ^ *(unsigned char *)(b+15)));
++		neq |= *(unsigned char *)(a)    ^ *(unsigned char *)(b);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+10) ^ *(unsigned char *)(b+10);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+11) ^ *(unsigned char *)(b+11);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+12) ^ *(unsigned char *)(b+12);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+13) ^ *(unsigned char *)(b+13);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+14) ^ *(unsigned char *)(b+14);
++		OPTIMIZER_HIDE_VAR(neq);
++		neq |= *(unsigned char *)(a+15) ^ *(unsigned char *)(b+15);
++		OPTIMIZER_HIDE_VAR(neq);
++	}
++
++	return neq;
+ }
+ 
+ /* Compare two areas of memory without leaking timing information,
+-- 
+1.8.3.1
+
