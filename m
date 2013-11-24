@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3KXKl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 05:41:58 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39481 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab3KXKlz (ORCPT
+	id S1752208Ab3KXKvz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 05:51:55 -0500
+Received: from mail.unimetro.ed.ao ([41.221.245.42]:39707 "EHLO
+	mail.unimetro.ed.ao" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab3KXKvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 05:41:55 -0500
-Date: Sun, 24 Nov 2013 21:41:49 +1100
-From: Austin Boyle <boyle.austin@gmail.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] max17042: Fix build errors caused by missing REGMAP_I2C
- config
-Message-Id: <20131124214149.cf1b6444d6e43d637ea7e34b@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 24 Nov 2013 05:51:52 -0500
+Message-ID: <5936ea52adbc5cfe393c2ac56614e929.squirrel@41.221.245.42>
+Date: Sat, 23 Nov 2013 23:33:40 -0200
+Subject: Profitable & Important
+From: "BUSINESS" <ju09145@gmail.com>
+Reply-To: wa60shu@qq.com
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-max17042 now uses regmap interface but does not enable config option. This patch fixes the following build errors:
+Good day,
 
-drivers/power/max17042_battery.c:661:15: error: variable ‘max17042_regmap_config’ has initializer but incomplete type
-drivers/power/max17042_battery.c:662:2: error: unknown field ‘reg_bits’ specified in initializer
-drivers/power/max17042_battery.c:662:2: warning: excess elements in struct initializer
-drivers/power/max17042_battery.c:662:2: warning: (near initialization for ‘max17042_regmap_config’)
-drivers/power/max17042_battery.c:663:2: error: unknown field ‘val_bits’ specified in initializer
-drivers/power/max17042_battery.c:663:2: warning: excess elements in struct initializer
-drivers/power/max17042_battery.c:663:2: warning: (near initialization for ‘max17042_regmap_config’)
-drivers/power/max17042_battery.c:664:2: error: unknown field ‘val_format_endian’ specified in initializer
-drivers/power/max17042_battery.c:664:23: error: ‘REGMAP_ENDIAN_NATIVE’ undeclared here (not in a function)
-drivers/power/max17042_battery.c:664:2: warning: excess elements in struct initializer
-drivers/power/max17042_battery.c:664:2: warning: (near initialization for ‘max17042_regmap_config’)
-drivers/power/max17042_battery.c: In function ‘max17042_probe’:
-drivers/power/max17042_battery.c:684:2: error: implicit declaration of function ‘devm_regmap_init_i2c’
+I have a business proposal which will be of
+great benefit to you. Contact me for details
+through:
 
-Signed-off-by: Austin Boyle <boyle.austin@gmail.com>
----
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 5e2054a..85ad58c 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -196,6 +196,7 @@ config BATTERY_MAX17040
- config BATTERY_MAX17042
- 	tristate "Maxim MAX17042/17047/17050/8997/8966 Fuel Gauge"
- 	depends on I2C
-+	select REGMAP_I2C
- 	help
- 	  MAX17042 is fuel-gauge systems for lithium-ion (Li+) batteries
- 	  in handheld and portable equipment. The MAX17042 is configured
+Email: wa60shu@qq.com
+
+I await your prompt response.
+
+Thanks.
+wa60shu@qq.com
+
+
