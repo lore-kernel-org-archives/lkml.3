@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3KXUyC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 15:54:02 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60176 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752554Ab3KXUyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 15:54:00 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Date: Sun, 24 Nov 2013 22:06:45 +0100
-Message-ID: <4523614.I5MBhorHFt@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5291C948.1080305@gmail.com>
-References: <20131117195358.GO27323@pd.tnic> <alpine.DEB.2.02.1311222322480.30673@ionos.tec.linutronix.de> <5291C948.1080305@gmail.com>
+	id S1753044Ab3KXVBB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 16:01:01 -0500
+Received: from ring0.de ([91.143.88.219]:33462 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab3KXVA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 16:00:58 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Sun, 24 Nov 2013 22:00:43 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi,
+        pavel@ucw.cz
+Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
+ automode
+Message-ID: <20131124210041.GA12180@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Anton Vorontsov <anton@enomsg.org>,
+	David Woodhouse <dwmw2@infradead.org>,
+	Tony Lindgren <tony@atomide.com>,
+	Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+	linux-omap@vger.kernel.org, freemangordon@abv.bg,
+	aaro.koskinen@iki.fi, pavel@ucw.cz
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <201311242001.16299@pali>
+ <20131124192608.GA11338@earth.universe>
+ <201311242041.47075@pali>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
+Content-Disposition: inline
+In-Reply-To: <201311242041.47075@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 24, 2013 10:39:20 AM Francis Moreau wrote:
-> Hello Thomas
-> 
-> On 11/22/2013 11:27 PM, Thomas Gleixner wrote:
-> > On Fri, 22 Nov 2013, Rafael J. Wysocki wrote:
-> >> On Friday, November 22, 2013 10:36:23 PM Francis Moreau wrote:
-> >>> Ok, I've finally managed to find out the bad commit:
-> >>> ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
-> >>> over system PM transitions
-> >>>
-> >>> I verified that the parent commit doesn't have the problem.
-> >>
-> >> Interesting.
-> >>
-> >>> Rafael, you're the man now ;)
-> >>
-> >> I kind of don't see how that commit may result in behavior that you
-> >> described earlier in the thread.
-> >>
-> >> You get a memory corruption that seems to have started to happen because
-> >> we're holding an additional lock over suspend resume now.  Something's fishy
-> >> on that machine and we need to figure out what it is.
-> > 
-> > The hickup happens in the timer softirq.
-> > 
-> > @Francis: Did you try to enable DEBUG_OBJECTS.*. If not please give it
-> > 	  a try.
-> 
-> This looks like it was a good idea.
-> 
-> The kernel now outputs the following traces after resuming.
-> 
-> [   26.973928] WARNING: CPU: 0 PID: 4 at lib/debugobjects.c:260
-> debug_print_object+0x83/0xa0()
-> [   26.973932] ODEBUG: free active (active state 0) object type:
-> timer_list hint: delayed_work_timer_fn+0x0/0x20
-> [   26.973972] Modules linked in: x86_pkg_temp_thermal intel_powerclamp
-> rtsx_pci_ms coretemp memstick kvm_intel i2c_i801 iTCO_wdt
-> iTCO_vendor_support i915 i2c_algo_bit intel_agp intel_gtt drm_kms_helper
-> r8169 drm kvm mii agpgart i2c_core lpc_ich ac shpchp crc32c_intel
-> battery thermal wmi evdev mei_me video mei button mperf processor
-> serio_raw microcode ext4 crc16 mbcache jbd2 sr_mod cdrom sd_mod
-> usb_storage rtsx_pci_sdmmc mmc_core ahci libahci libata ehci_pci
-> ehci_hcd xhci_hcd scsi_mod rtsx_pci usbcore usb_common
-> [   26.974013] CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted
-> 3.11.0-rc2-ARCH #64
-> [   26.974014] Hardware name: CLEVO CO.                        W55xEU
->                        /W55xEU                          , BIOS 4.6.5
-> 03/05/2013
-> [   26.974019] Workqueue: kacpi_hotplug hotplug_event_work
-> [   26.974020]  0000000000000009 ffff880407d0da18 ffffffff81459fe9
-> ffff880407d0da60
-> [   26.974023]  ffff880407d0da50 ffffffff8104dc7d ffff880407fad488
-> ffffffff81836fc0
-> [   26.974025]  ffffffff81701358 ffffffff81afef70 0000000000000003
-> ffff880407d0dab0
-> [   26.974027] Call Trace:
-> [   26.974031]  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
-> [   26.974043]  [<ffffffff8104dc7d>] warn_slowpath_common+0x7d/0xa0
-> [   26.974044]  [<ffffffff8104dcec>] warn_slowpath_fmt+0x4c/0x50
-> [   26.974047]  [<ffffffff81261433>] debug_print_object+0x83/0xa0
-> [   26.974050]  [<ffffffff8106b820>] ? queue_work_on+0x50/0x50
-> [   26.974053]  [<ffffffff81261c2b>] __debug_check_no_obj_freed+0x1fb/0x240
-> [   26.974059]  [<ffffffffa008e959>] ? rtsx_pci_remove+0x119/0x1d0
-> [rtsx_pci]
 
-So a device driven by rtsx_pcr.c is removed after resume.  Without the commit
-you've bisected it is removed as well, but that happens during resume, so
-rtsx_pci_resume() is likely not called in that case.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I bet that there's a bug either in rtsx_pci_remove() or in rtsx_pci_resume().
-The latter definitely should check if the device is actually still present
-before scheduling the delayed work, but then the Boris' patch should take care
-of that anyway.
+On Sun, Nov 24, 2013 at 08:41:46PM +0100, Pali Roh=E1r wrote:
+> On Sunday 24 November 2013 20:26:09 Sebastian Reichel wrote:
+> > On Sun, Nov 24, 2013 at 08:01:16PM +0100, Pali Roh=E1r wrote:
+> > > Currently on Maemo 5 this is handled in userspace (with open
+> > > source dsme daemon).
+> >=20
+> > I assume it currently also takes care of the bq2415x watchdog?
+> > That means if the daemon dies charging will stop, because the
+> > watchdog does no longer trigger.
+> >=20
+> > When your patch is applied you have introduced a safety issue.
+> > When the daemon dies charging will continue and temperature is
+> > no longer checked.
+> >=20
+> > -- Sebastian
+>=20
+> No dsme checking battery temperature and does not handle bq24510=20
+> timer (previously this was in closed bme daemon which=20
+> functionality is now in kernel drivers).
 
-Thanks!
+Ok, so then the temperature checks are done by bme.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> But dsme daemon also kicking tlw4030 watchdog, so when daemon dies
+> after 30s tlw4030 reboot device.
+
+Yes, but that does not matter if it does not take care of the
+charging. If the dsme daemon is not started for some reason
+phone will not be rebootet and phone charges.
+
+> But right you can implement correctly this in userspace (e.g.=20
+> when daemon not running/crashed, you can restart daemon or reboot=20
+> system or disable charing, whatever...) and you do not need to=20
+> have it in kernel...
+
+That does not change the fact, that the kernel openes a safety issue
+in default configuration. To be on the safe side charging must be
+disabled until some safety checking daemon enables it.
+
+-- Sebastian
+
+--Qxx1br4bt0+wmkIi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSkmj4AAoJENju1/PIO/qawdQP/jtB4+Ua9MfCJrPTzWXe2uSH
+GzYT+K/j0ygcbHtyF9ILL6d3mxEOubzkayyeGORw8S+Snwti4gLWr28C6njG87Ck
+JnhatWGIItPRRliBmcyjfIHVjENkW/JwbeICCi5HeeUs5ZxAdlltVbCzycDCmlUy
+6kLik0CpIiceigvVihcvWNbfYwcxk9BwgwlROzmgynUGg2vARCNUsOIs3HUGydsG
+b4c2WEiwOGz2UBhfPIcvjIKcImDNG3sDlgW8u+yPFf6TbhQw0g+iQsgoh2IqoJLk
+tZNguTXLyMdaCNejhpXWIgtI6R0Qxja9g53bxtrk2uj7ikdQRJZaE5SwyXVsmnDj
+uY/0A9t2SByWiSdmHHZa2O9/urabi1Un9NEdWcbu0Z7nH4tsa96ExmT8Uujx7VNC
+M9Cobq5EhXLVqEDUgn88VPOWuyd8K494TGZl5hNbH+N5HS3KLPOLWeZjaZPHXL30
+meIpzdfhJXFhep3Ni+GtNhNYT9h7PSOWXILFvgs07Ovudm3u+gmgny/A+qslSzNB
+ArjrL4lEB+zYtCv8/Vr+u6421i1nZCzIEck/KHEwIrnQNehvSz4qkD6wTHCEEkF5
+iIcjDLixWYZztZ7yRx5AIAcWwTSrYNdJ5pgURILIxjGRjcoUEu2FF0LP2+iddrOu
+r9zB2Dgd7x3XkJi438Ym
+=ylqx
+-----END PGP SIGNATURE-----
+
+--Qxx1br4bt0+wmkIi--
