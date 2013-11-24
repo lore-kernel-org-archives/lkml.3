@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab3KXDqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 22:46:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53387 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab3KXDqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 22:46:03 -0500
-Message-ID: <52917661.6050005@ti.com>
-Date: Sat, 23 Nov 2013 22:45:37 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756642Ab3KXDqe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 22:46:34 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:57259 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab3KXDqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 22:46:32 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] CMA: Fix the phys_addr_t print types
-References: <1385264221-29952-1-git-send-email-santosh.shilimkar@ti.com> <20131124034426.GB3873@kroah.com>
-In-Reply-To: <20131124034426.GB3873@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>
+References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
+	<1385168197-8612-5-git-send-email-davidlohr@hp.com>
+	<CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com>
+	<1385176773.5402.14.camel@buesod1.americas.hpqcorp.net>
+	<alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>
+Date: Sat, 23 Nov 2013 19:46:31 -0800
+X-Google-Sender-Auth: 8ZsYCH_m-2f-154OVDMfU_uhD_c
+Message-ID: <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        tom.vaden@hp.com, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 November 2013 10:44 PM, Greg Kroah-Hartman wrote:
-> On Sat, Nov 23, 2013 at 10:37:01PM -0500, Santosh Shilimkar wrote:
->> @@ -250,8 +249,8 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->>  	*res_cma = cma;
->>  	cma_area_count++;
->>  
->> -	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
->> -		(unsigned long)base);
->> +	pr_info("CMA: reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
->> +		&base);
-> 
-> Why is this pr_info() at all?  That's just noise, please move it to
-> pr_debug().
-> 
-Marek can comment better but I think its useful print to know CMA
-reserved memory size.
+On Sat, Nov 23, 2013 at 5:16 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Now the question is why we queue the waiter _AFTER_ reading the user
+> space value. The comment in the code is pretty non sensical:
+>
+>    * On the other hand, we insert q and release the hash-bucket only
+>    * after testing *uaddr.  This guarantees that futex_wait() will NOT
+>    * absorb a wakeup if *uaddr does not match the desired values
+>    * while the syscall executes.
+>
+> There is no reason why we cannot queue _BEFORE_ reading the user space
+> value. We just have to dequeue in all the error handling cases, but
+> for the fast path it does not matter at all.
+>
+> CPU 0                                   CPU 1
+>
+>     val = *futex;
+>     futex_wait(futex, val);
+>
+>     spin_lock(&hb->lock);
+>
+>     plist_add(hb, self);
+>     smp_wmb();
+>
+>     uval = *futex;
+>                                         *futex = newval;
+>                                         futex_wake();
+>
+>                                         smp_rmb();
+>                                         if (plist_empty(hb))
+>                                            return;
+> ...
 
-regards,
-Santosh
+This would seem to be a nicer approach indeed, without needing the
+extra atomics.
 
+Davidlohr, mind trying Thomas' approach?
+
+             Linus
