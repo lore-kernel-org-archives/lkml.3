@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab3KXEaU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 23:30:20 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49445 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab3KXEaR (ORCPT
+	id S1756580Ab3KXE4V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 23:56:21 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:44940 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3KXE4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 23:30:17 -0500
-Message-ID: <529180DB.2000400@gmail.com>
-Date: Sun, 24 Nov 2013 12:30:19 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Kuo <rkuo@codeaurora.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-CC: linux-hexagon@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: hexagon: include: asm: add "vga.h" in Kbuild
-References: <528AF461.4020502@gmail.com>
-In-Reply-To: <528AF461.4020502@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Nov 2013 23:56:15 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-a2-529186ed3049
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: avoid lock debugging overhead
+Date: Sun, 24 Nov 2013 13:55:17 +0900
+Message-id: <1385268917-13853-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zA923bRODDM42yFpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlTHr9DbWgoPsFefu
+	XWdrYFzJ1sXIwSEhYCIx511yFyMnkCkmceHeejYQW0hgGaPEtF3hEHETieO9L5i6GLmA4tMZ
+	JVac/soC4TQzSZw8e4wZZBCbgLbE5v0GIA0iAswSC6aeZwSpYRaYwCjxf9F7FpCEMNCkpceP
+	sIPYLAKqElfb5oFt4xVwl9g97w0TxDZtiW3PJzJC2LfZJDYezIaoF5D4NvkQC8TRshKbDjBD
+	lEhKHFxxg2UCo+ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCHh17eD8eYB60OMyUDj
+	JjJLiSbnA8M3ryTe0NjMyMLUxNTYyNzSjDRhJXHeRQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8x
+	MnFwSjUwJnzdt7qj46f6gWTtA6edV5X0P+pS+njb7NbX+zyJCva6UjLm107fFFjTemPrQvEG
+	+1OTH1Sv3MYjE1r7x/5q+h//heyXxZRF6nrmuxzhjas7dHD76RssmrdCWdrlXefk7rx1tjG1
+	/bnkQ/7GuYtT2Srq5sjWT/y98ceeYtXgj3f+TvyzcabvJCWW4oxEQy3mouJEANePLbBVAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQd23bRODDD7MkrS4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjFj1ultrAUH2SvO3bvO1sC4kq2LkZNDQsBE4njvCyYIW0ziwr31QHEuDiGB
+	6YwSK05/ZYFwmpkkTp49xtzFyMHBJqAtsXm/AUiDiACzxIKp5xlBapgFJjBK/F/0ngUkIQw0
+	denxI+wgNouAqsTVtnlg23gF3CV2z3sDtU1bYtvziYwTGLkXMDKsYhRNLUguKE5KzzXSK07M
+	LS7NS9dLzs/dxAgO8WfSOxhXNVgcYhTgYFTi4W10nBgkxJpYVlyZe4hRgoNZSYTXuxUoxJuS
+	WFmVWpQfX1Sak1p8iDEZaPtEZinR5Hxg/OWVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9
+	sSQ1OzW1ILUIZgsTB6dUA2Ot3xu36xmpSoz8SaFSk/wXpMkJN/H9f33wEOujMDGjxKNm+d5t
+	207kO2lxlb1uszh9YuPcW/qfnh3z9+28vaH72qPF5w6cYM5YkqneaXvy/lrH9qCAquR/CY/r
+	L9ZM7GHPt5IKcWLqE32S8rHkcLvLL4Z2lYO/Li5Wr4xM39v9dOWKE3pLK5VYijMSDbWYi4oT
+	AVL+rXO1AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+If CONFIG_F2FS_CHECK_FS is unset, we don't need to add any debugging overhead.
 
-Please help check it when you have time, thanks.
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/f2fs.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-I changed my mail address -- I have to leave original company, so at
-present, I need be as a volunteer to Public Open Source (just like
-another quite a few volunteers).
-
-Within this month, I still want to let hexagon pass allmodconfig, hope
-we can continue (in the future, at least, as a volunteer, I still plan
-to provide 1-3 patches per month to upstream kernel).
-
-
-BTW: in fact, my original contributions to upstream kernel have given me
-much help for finding/changing 'jobs' (but sorry, I can not be sure
-whether I can still mainly focus on upstream kernel, next).
-
-
-:-)
-
-Thanks.
-
-On 11/19/2013 01:17 PM, Chen Gang wrote:
-> Need include generic "vga.h", or can not pass compiling with
-> allmodconfig, the related error:
-> 
->     CC [M]  drivers/gpu/drm/drm_irq.o
->   In file included from include/linux/vgaarb.h:34:0,
->                    from drivers/gpu/drm/drm_irq.c:42:
->   include/video/vga.h:22:21: fatal error: asm/vga.h: No such file or directory
-> 
-> Also move "preempt.h" upper to match sort order.
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  arch/hexagon/include/asm/Kbuild |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-> index 67c3450..424e28e 100644
-> --- a/arch/hexagon/include/asm/Kbuild
-> +++ b/arch/hexagon/include/asm/Kbuild
-> @@ -31,6 +31,7 @@ generic-y += pci.h
->  generic-y += percpu.h
->  generic-y += poll.h
->  generic-y += posix_types.h
-> +generic-y += preempt.h
->  generic-y += resource.h
->  generic-y += rwsem.h
->  generic-y += scatterlist.h
-> @@ -52,5 +53,5 @@ generic-y += trace_clock.h
->  generic-y += types.h
->  generic-y += ucontext.h
->  generic-y += unaligned.h
-> +generic-y += vga.h
->  generic-y += xor.h
-> -generic-y += preempt.h
-> 
-
-
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 72718ef..417280a 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -22,8 +22,10 @@
+ 
+ #ifdef CONFIG_F2FS_CHECK_FS
+ #define f2fs_bug_on(condition)	BUG_ON(condition)
++#define f2fs_down_write(x, y)	down_write_nest_lock(x, y)
+ #else
+ #define f2fs_bug_on(condition)
++#define f2fs_down_write(x, y)	down_write(x)
+ #endif
+ 
+ /*
+@@ -556,7 +558,7 @@ static inline void f2fs_unlock_op(struct f2fs_sb_info *sbi)
+ 
+ static inline void f2fs_lock_all(struct f2fs_sb_info *sbi)
+ {
+-	down_write_nest_lock(&sbi->cp_rwsem, &sbi->cp_mutex);
++	f2fs_down_write(&sbi->cp_rwsem, &sbi->cp_mutex);
+ }
+ 
+ static inline void f2fs_unlock_all(struct f2fs_sb_info *sbi)
 -- 
-Chen Gang
+1.8.4.474.g128a96c
+
