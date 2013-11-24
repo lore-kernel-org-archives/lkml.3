@@ -1,161 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab3KXHiG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 02:38:06 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:61556 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab3KXHiE (ORCPT
+	id S1755423Ab3KXITg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 03:19:36 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38123 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab3KXITf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 02:38:04 -0500
-From: dt.tangr@gmail.com
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, Daniel Tang <dt.tangr@gmail.com>
-Subject: [PATCHv2] usb: chipidea: add support for USB OTG controller on TI-NSPIRE
-Date: Sun, 24 Nov 2013 18:37:47 +1100
-Message-Id: <1385278667-91856-1-git-send-email-dt.tangr@gmail.com>
-X-Mailer: git-send-email 1.8.1.3
+	Sun, 24 Nov 2013 03:19:35 -0500
+Message-ID: <5291B694.8040003@hitachi.com>
+Date: Sun, 24 Nov 2013 17:19:32 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] uprobes: Add uprobe_task->dup_work/dup_addr
+References: <20131108190003.GA12755@redhat.com> <20131111071151.GA2559@linux.vnet.ibm.com> <20131111165543.GA12233@redhat.com> <20131112174302.GH2559@linux.vnet.ibm.com> <20131112192038.GA7748@redhat.com>
+In-Reply-To: <20131112192038.GA7748@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Tang <dt.tangr@gmail.com>
+Ping?
 
-Changelog v2:
- * Rename ci13xxx to ci_hdrc
- * Fixed alignment issues
+Is this already pulled?
+I think it is enough discussed and reviewed.
 
-The USB controller in TI-NSPIRE calculators are based off either Freescale's
-USB OTG controller or the USB controller found in the IMX233, both of which
-are Chipidea compatible.
+Thank you,
 
-This patch adds a device tree binding for the controller.
+(2013/11/13 4:20), Oleg Nesterov wrote:
+> On 11/12, Srikar Dronamraju wrote:
+>>
+>> Okay, moving to arch_uprobe_task is fine. I probably got confused by
+>> "First of all it is not really needed,"
+> 
+> OK, this doesn't look good, I agree.
+> 
+> Please see v2 below, I tried to improve the changelog.
+> 
+>>> OK. How about dup_xol_work/dup_xol_vaddr ?
+>>
+>> Yes fine with me.
+> 
+> Done.
+> 
+> I added your ack optimistically, please let me know if you think I
+> should change something else.
+> 
+> Oleg.
+> ---
+> 
+> Subject: [PATCH] uprobes: Add uprobe_task->dup_xol_work/dup_xol_addr
+> 
+> uprobe_task->vaddr is a bit strange. The generic code uses it only
+> to pass the additional argument to arch_uprobe_pre_xol(), and since
+> it is always equal to instruction_pointer() this looks even more
+> strange.
+> 
+> And both utask->vaddr and and utask->autask have the same scope,
+> they only have the meaning when the task executes the probed insn
+> out-of-line, so it is safe to reuse both in UTASK_RUNNING state.
+> 
+> This all means that logically ->vaddr belongs to arch_uprobe_task
+> and we should probably move it there, arch_uprobe_pre_xol() can
+> record instruction_pointer() itself.
+> 
+> OTOH, it is also used by uprobe_copy_process() and dup_xol_work()
+> for another purpose, this doesn't look clean and doesn't allow to
+> move this member into arch_uprobe_task.
+> 
+> This patch adds the union with 2 anonymous structs into uprobe_task.
+> 
+> The first struct is autask + vaddr, this way we "almost" move vaddr
+> into autask.
+> 
+> The second struct has 2 new members for uprobe_copy_process() paths:
+> ->dup_xol_addr which can be used instead ->vaddr, and ->dup_xol_work
+> which can be used to avoid kmalloc() and simplify the code.
+> 
+> Note that this union will likely have another member(s), we need
+> something like "private_data_for_handlers" so that the tracing
+> handlers could use it to communicate with call_fetch() methods.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  include/linux/uprobes.h |   21 ++++++++++++++++-----
+>  kernel/events/uprobes.c |   16 ++++------------
+>  2 files changed, 20 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 319eae7..2225542 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -26,6 +26,7 @@
+>  
+>  #include <linux/errno.h>
+>  #include <linux/rbtree.h>
+> +#include <linux/types.h>
+>  
+>  struct vm_area_struct;
+>  struct mm_struct;
+> @@ -72,14 +73,24 @@ enum uprobe_task_state {
+>   */
+>  struct uprobe_task {
+>  	enum uprobe_task_state		state;
+> -	struct arch_uprobe_task		autask;
+>  
+> -	struct return_instance		*return_instances;
+> -	unsigned int			depth;
+> -	struct uprobe			*active_uprobe;
+> +	union {
+> +		struct {
+> +			struct arch_uprobe_task	autask;
+> +			unsigned long		vaddr;
+> +		};
+> +
+> +		struct {
+> +			struct callback_head	dup_xol_work;
+> +			unsigned long		dup_xol_addr;
+> +		};
+> +	};
+>  
+> +	struct uprobe			*active_uprobe;
+>  	unsigned long			xol_vaddr;
+> -	unsigned long			vaddr;
+> +
+> +	struct return_instance		*return_instances;
+> +	unsigned int			depth;
+>  };
+>  
+>  /*
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 24b7d6c..df4ef09 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1403,12 +1403,10 @@ static void uprobe_warn(struct task_struct *t, const char *msg)
+>  
+>  static void dup_xol_work(struct callback_head *work)
+>  {
+> -	kfree(work);
+> -
+>  	if (current->flags & PF_EXITING)
+>  		return;
+>  
+> -	if (!__create_xol_area(current->utask->vaddr))
+> +	if (!__create_xol_area(current->utask->dup_xol_addr))
+>  		uprobe_warn(current, "dup xol area");
+>  }
+>  
+> @@ -1419,7 +1417,6 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+>  {
+>  	struct uprobe_task *utask = current->utask;
+>  	struct mm_struct *mm = current->mm;
+> -	struct callback_head *work;
+>  	struct xol_area *area;
+>  
+>  	t->utask = NULL;
+> @@ -1441,14 +1438,9 @@ void uprobe_copy_process(struct task_struct *t, unsigned long flags)
+>  	if (mm == t->mm)
+>  		return;
+>  
+> -	/* TODO: move it into the union in uprobe_task */
+> -	work = kmalloc(sizeof(*work), GFP_KERNEL);
+> -	if (!work)
+> -		return uprobe_warn(t, "dup xol area");
+> -
+> -	t->utask->vaddr = area->vaddr;
+> -	init_task_work(work, dup_xol_work);
+> -	task_work_add(t, work, true);
+> +	t->utask->dup_xol_addr = area->vaddr;
+> +	init_task_work(&t->utask->dup_xol_work, dup_xol_work);
+> +	task_work_add(t, &t->utask->dup_xol_work, true);
+>  }
+>  
+>  /*
+> 
 
-Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
----
- .../devicetree/bindings/usb/ci-hdrc-nspire.txt     | 17 +++++
- drivers/usb/chipidea/Makefile                      |  1 +
- drivers/usb/chipidea/ci_hdrc_nspire.c              | 74 ++++++++++++++++++++++
- 3 files changed, 92 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-nspire.txt
- create mode 100644 drivers/usb/chipidea/ci_hdrc_nspire.c
 
-diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-nspire.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-nspire.txt
-new file mode 100644
-index 0000000..5ba8e90
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/ci-hdrc-nspire.txt
-@@ -0,0 +1,17 @@
-+* TI-Nspire USB OTG Controller
-+
-+Required properties:
-+- compatible: Should be "zevio,nspire-usb"
-+- reg: Should contain registers location and length
-+- interrupts: Should contain controller interrupt
-+
-+Recommended properies:
-+- vbus-supply: regulator for vbus
-+
-+Examples:
-+		usb0: usb@B0000000 {
-+			reg = <0xB0000000 0x1000>;
-+			compatible = "zevio,nspire-usb";
-+			interrupts = <8>;
-+			vbus-supply = <&vbus_reg>;
-+		};
-diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-index a99d980..245ea4d 100644
---- a/drivers/usb/chipidea/Makefile
-+++ b/drivers/usb/chipidea/Makefile
-@@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_CHIPIDEA_DEBUG)	+= debug.o
- # Glue/Bridge layers go here
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
- obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
-+obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_nspire.o
-
- # PCI doesn't provide stubs, need to check
- ifneq ($(CONFIG_PCI),)
-diff --git a/drivers/usb/chipidea/ci_hdrc_nspire.c b/drivers/usb/chipidea/ci_hdrc_nspire.c
-new file mode 100644
-index 0000000..5d408c3
---- /dev/null
-+++ b/drivers/usb/chipidea/ci_hdrc_nspire.c
-@@ -0,0 +1,74 @@
-+/*
-+ *	Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * Based off drivers/usb/chipidea/ci_hdrc_msm.c
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/usb/gadget.h>
-+#include <linux/usb/chipidea.h>
-+
-+#include "ci.h"
-+
-+static struct ci_hdrc_platform_data ci_hdrc_nspire_platdata = {
-+	.name			= "ci_hdrc_nspire",
-+	.flags			= CI_HDRC_REGS_SHARED,
-+	.capoffset		= DEF_CAPOFFSET,
-+};
-+
-+static int ci_hdrc_nspire_probe(struct platform_device *pdev)
-+{
-+	struct platform_device *ci_pdev;
-+
-+	dev_dbg(&pdev->dev, "ci_hdrc_nspire_probe\n");
-+
-+	ci_pdev = ci_hdrc_add_device(&pdev->dev,
-+				pdev->resource, pdev->num_resources,
-+				&ci_hdrc_nspire_platdata);
-+
-+	if (IS_ERR(ci_pdev)) {
-+		dev_err(&pdev->dev, "ci_hdrc_add_device failed!\n");
-+		return PTR_ERR(ci_pdev);
-+	}
-+
-+	platform_set_drvdata(pdev, ci_pdev);
-+
-+	return 0;
-+}
-+
-+static int ci_hdrc_nspire_remove(struct platform_device *pdev)
-+{
-+	struct platform_device *ci_pdev = platform_get_drvdata(pdev);
-+
-+	ci_hdrc_remove_device(ci_pdev);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id ci_hdrc_nspire_dt_ids[] = {
-+	{ .compatible = "zevio,nspire-usb", },
-+	{ /* sentinel */ }
-+};
-+
-+static struct platform_driver ci_hdrc_nspire_driver = {
-+	.probe = ci_hdrc_nspire_probe,
-+	.remove = ci_hdrc_nspire_remove,
-+	.driver = {
-+		.name = "nspire_usb",
-+		.owner = THIS_MODULE,
-+		.of_match_table = ci_hdrc_nspire_dt_ids,
-+	},
-+};
-+
-+MODULE_DEVICE_TABLE(of, ci_hdrc_nspire_dt_ids);
-+module_platform_driver(ci_hdrc_nspire_driver);
-+
-+MODULE_ALIAS("platform:nspire_usb");
-+MODULE_ALIAS("platform:ci_hdrc_nspire");
-+MODULE_LICENSE("GPL v2");
---
-1.8.1.3
 
