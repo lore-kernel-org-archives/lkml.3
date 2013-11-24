@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab3KXCjD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 21:39:03 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47070 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756143Ab3KXCi7 (ORCPT
+	id S1756429Ab3KXCnU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 21:43:20 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:49266 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3KXCnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 21:38:59 -0500
-Message-ID: <529166C0.8040001@hurleysoftware.com>
-Date: Sat, 23 Nov 2013 21:38:56 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 23 Nov 2013 21:43:18 -0500
+Message-ID: <529167C4.601@gmail.com>
+Date: Sat, 23 Nov 2013 21:43:16 -0500
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 7/7] n_tty: trace input/read flow control
-References: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>	<1385135965-4235-8-git-send-email-peter@hurleysoftware.com> <20131124002513.0a806665@alan.etchedpixels.co.uk>
-In-Reply-To: <20131124002513.0a806665@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Pavel Machek <pavel@ucw.cz>
+CC: Howard Chu <hyc@symas.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chinmay V S <cvs268@gmail.com>,
+        Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        matthew@wil.cx
+Subject: Re: Why is O_DSYNC on linux so slow / what's wrong with my SSD?
+References: <528CA73B.9070604@profihost.ag> <20131120125446.GA6284@infradead.org> <CAK-9PRAManphkxT3ub0DfW8hx=xbq+ZeqUB0E0CEnFTfF7AQuw@mail.gmail.com> <528CC36A.7080003@profihost.ag> <CAK-9PRDyGhXPef-Vbt83Os-oowFZ2HzSZVY9PH3rSdnTwNmf2w@mail.gmail.com> <20131120153703.GA23160@thunk.org> <528CDD19.5060002@symas.com> <20131123203600.GA791@amd.pavel.ucw.cz> <529133CC.4070904@gmail.com> <20131124002236.GA10600@amd.pavel.ucw.cz>
+In-Reply-To: <20131124002236.GA10600@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2013 07:25 PM, One Thousand Gnomes wrote:
-> On Fri, 22 Nov 2013 10:59:25 -0500
-> Peter Hurley <peter@hurleysoftware.com> wrote:
+On 11/23/2013 07:22 PM, Pavel Machek wrote:
+> On Sat 2013-11-23 18:01:32, Ric Wheeler wrote:
+>> On 11/23/2013 03:36 PM, Pavel Machek wrote:
+>>> On Wed 2013-11-20 08:02:33, Howard Chu wrote:
+>>>> Theodore Ts'o wrote:
+>>>>> Historically, Intel has been really good about avoiding this, but
+>>>>> since they've moved to using 3rd party flash controllers, I now advise
+>>>>> everyone who plans to use any flash storage, regardless of the
+>>>>> manufacturer, to do their own explicit power fail testing (hitting the
+>>>>> reset button is not good enough, you need to kick the power plug out
+>>>>> of the wall, or better yet, use a network controlled power switch you
+>>>>> so you can repeat the power fail test dozens or hundreds of times for
+>>>>> your qualification run) before being using flash storage in a mission
+>>>>> critical situation where you care about data integrity after a power
+>>>>> fail event.
+>>>> Speaking of which, what would you use to automate this sort of test?
+>>>> I'm thinking an SSD connected by eSATA, with an external power
+>>>> supply, and the host running inside a VM. Drop power to the drive at
+>>>> the same time as doing a kill -9 on the VM, then you can resume the
+>>>> VM pretty quickly instead of waiting for a full reboot sequence.
+>>> I was just pulling power on sata drive.
+>>>
+>>> It uncovered "interesting" stuff. I plugged power back, and kernel
+>>> re-estabilished communication with that drive, but any settings with
+>>> hdparm were forgotten. I'd say there's some room for improvement
+>>> there...
+>> Hi Pavel,
+>>
+>> When you drop power, your drive normally loses temporary settings
+>> (like a change to write cache, etc).
+>>
+>> Depending on the class of the device, there are ways to make that
+>> permanent (look at hdparm or sdparm for details).
+>>
+>> This is a feature of the drive and its firmware, not something we
+>> reset in the device each time it re-appears.
+> Yes, and I'm arguing that is a bug (as in, < 0.01% people are using
+> hdparm correctly).
+
+Almost no end users use hdparm. Those who do should read the man page and add 
+the -K flag :)
+
+Or system scripts that tweak should invoke it with the right flags.....
+
+Ric
+
+> So you used hparm to disable write cache so that ext3 can be safely
+> used on your hdd. Now you have glitch on power. Then, system continues
+> to operate in dangerous mode until reboot.
 >
->> Instrument .receive_buf() and read() paths with trace_printk's
->> to aid in debugging flow control changes.
+> I guess it would be safer not to reattach drives after power
+> fail... (also I wonder what this does to data integrity. Drive lost
+> content of its writeback cache, but kernel continues... Journal will
+> not prevent data corruption in this case).
 >
-> tty devices have a device, we have a dev_dbg() layer. The old tty trace
-> predates this but there isn't really any excuse for not using it now that
-> I can see ?
-
-I was using the ftrace facility because it has significantly less performance
-impact than printk (which was an important factor while debugging flow control
-problems).
-
-That said, I could further macro-ize n_tty_trace() with selectable facility
-(which would be useful when debugging problems that end in cpu death).
-
-Regards,
-Peter Hurley
+> 									Pavel
 
