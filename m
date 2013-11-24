@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3KXRCm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 12:02:42 -0500
-Received: from slmp-550-94.slc.westdc.net ([50.115.112.57]:56318 "EHLO
-	slmp-550-94.slc.westdc.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753579Ab3KXRCl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 12:02:41 -0500
-X-Greylist: delayed 2383 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 12:02:41 EST
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.6 \(1510\))
-Subject: Re: small regression: hwmon: (applesmc) Check key count before proceeding - 5f4513864304672e6ea9eac60583eeac32e679f2
-From: Chris Murphy <bugzilla@colorremedies.com>
-In-Reply-To: <52922FDC.7070006@euromail.se>
-Date: Sun, 24 Nov 2013 10:02:22 -0700
-Cc: Michele Baldessari <michele@acksyn.org>, jwboyer@fedoraproject.org,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Chris Murphy <chris@cmurf.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E32ACDC7-AF59-4BD0-9CAF-02DF37806B67@colorremedies.com>
-References: <20131124092359.4241e633@fante.int.rhx> <5291CA7B.3080904@euromail.se> <76837691-ED07-4448-BC56-9D16EA321970@colorremedies.com> <52922FDC.7070006@euromail.se>
-To: Henrik Rydberg <rydberg@euromail.se>
-X-Mailer: Apple Mail (2.1510)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - slmp-550-94.slc.westdc.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - colorremedies.com
-X-Get-Message-Sender-Via: slmp-550-94.slc.westdc.net: authenticated_id: whatever@colorremedies.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752947Ab3KXRFF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 12:05:05 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55518 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753052Ab3KXRFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 12:05:02 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+0G68b1BvnBpZ9ZJWhBebGr05HdKfMsnc=
+Date: Sun, 24 Nov 2013 12:04:46 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] irqchip: orion: reverse irq handling priority
+Message-ID: <20131124170446.GH29241@titan.lakedaemon.net>
+References: <1384525354-901-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1384525354-901-2-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384525354-901-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 24, 2013, at 9:57 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-
-> Hi Chris,
+On Fri, Nov 15, 2013 at 03:22:32PM +0100, Sebastian Hesselbarth wrote:
+> Non-DT irq handlers were working through irq causes from most-significant
+> to least-significant bit, while DT irqchip driver does it the other way
+> round. This revealed some more HW issues on Kirkwood peripheral IP, where
+> spurious sdio irqs can happen although IP's irq enable registers are all
+> zero. Although, not directly related with the described issue, reverse
+> irq bit handling back to original order by replacing ffs() with fls().
 > 
->> Well, it seems to be a another one off event. It's the same hardware as
-> before, and it was booting from a USB stick containing Fedora 20 final test
-> candidate 2 which uses kernel 3.11.8. An immediate reboot did not reproduce the
-> problem, nor multiple subsequent reboots. I think I previously mentioned a
-> preponderance of these events happen when booting from USB sticks.
-> 
-> Ok, thanks, that makes sense. So at least one problem is still there, but
-> possibly very difficult to hit.
-> 
->> It would be nice to have an identical model for this testing. I suspect most users wouldn't go to the trouble to report the occasional, seemingly one off,
-> events like this. So unfortunately it's  uncertain if the hardware I have has a
-> unique problem, or if it's a model specific behavior.
-> 
-> I will keep this in mind next time I see this particular model. It is also
-> possible that the SMC needs to be reset after having testing various more or
-> less successful patches. Given the tiny cross-section, it looks like this one
-> can rest for now.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/irqchip/irq-orion.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-This SMC has been reset within that past week, after a rest without its battery or power for about 2 weeks. So unless the SMC is particularly prone to corruption, I think the cause is elsewhere.
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-OS X always says this battery needs servicing, but doesn't elaborate. The manifestation is merely limited battery life, about 1 hour. All testing is always done with power connected.
+thx,
 
-
-Chris Murphy
+Jason.
