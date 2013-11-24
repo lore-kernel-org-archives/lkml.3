@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab3KXLUa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 06:20:30 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56853 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab3KXLU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 06:20:26 -0500
-Date: Sun, 24 Nov 2013 12:20:25 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>, rjw@rjwysocki.net
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: IRQF_RESUME_EARLY and errors in dpm_suspend_noirq
-Message-ID: <20131124112025.GA24020@amd.pavel.ucw.cz>
-References: <201311201020.08158.heiko@sntech.de>
- <528C86C2.1070206@nvidia.com>
- <201311232225.48973.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311232225.48973.heiko@sntech.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752268Ab3KXLew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 06:34:52 -0500
+Received: from oproxy18-pub.mail.unifiedlayer.com ([69.89.17.20]:58568 "HELO
+	oproxy18-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751986Ab3KXLet convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 06:34:49 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 06:34:49 EST
+Subject: Re: [PATCH] MAINTAINERS: Add an entry for the Macintosh HFSPlus Filesystem
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <CAMuHMdV6hBgin-sXLPGCLMqvhEZ5g1k5pc13D2dw6G1fpZYusg@mail.gmail.com>
+Date: Sun, 24 Nov 2013 15:29:32 +0300
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6C942C94-FAC1-4542-8A79-7580471B49F3@dubeyko.com>
+References: <1384461563-4487-1-git-send-email-geert@linux-m68k.org> <20131114210617.4e68b086@alan.etchedpixels.co.uk> <B586EBD8-8CB6-4E65-BC01-7B038A1885D3@dubeyko.com> <CAMuHMdV6hBgin-sXLPGCLMqvhEZ5g1k5pc13D2dw6G1fpZYusg@mail.gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-(Oops, it seems that this thread uses Rafael's old address, and that
-it bounces, added address from maintainers to cc.)
+On Nov 24, 2013, at 12:15 PM, Geert Uytterhoeven wrote:
 
-								Pavel
+> Hence Orphan doesn't mean there are no active users, only that there's no active
+> maintainter listed.
+> 
+> If you want to become the maintainer for hfs+, I'm happy to send a v2
+> of the patch,
+> adding you as the maintainer, with status Supported/Maintained/Odd Fixes.
+> 
 
-On Sat 2013-11-23 22:25:48, Heiko Stübner wrote:
-> Hi Laxman,
-> 
-> Am Mittwoch, 20. November 2013, 10:54:10 schrieb Laxman Dewangan:
-> > > I may be blind, but where get the early-irqs resumed in the error
-> > > path of dpm_suspend_noirq?
-> > > 
-> > > When a suspend_noirq callback returns an error, dpm_resume_noirq gets
-> > > called, which only calls resume_device_irqs while the
-> > > suspend_device_irqs call in dpm_suspend_noirq suspends all irqs. So it
-> > > does not seem that the early-irqs get resumed at all in this case.
-> > 
-> > I also faced same issue in our suspend failure path and posted fix
-> > sometime ago as
-> > https://lkml.org/lkml/2013/8/13/373
-> > 
-> > It is still under review.
-> 
-> From the thread on lkml.org it looks like it got no reaction at all - maybe 
-> was just overlooked. So maybe it would be good to re-send it.
-> 
-> As it is not visible on lkml.org, did you also include stable@kernel.org, as 
-> the issue started in 2011?
-> 
-> > You can try this patch if it resolve the issue.
-> 
-> Your patch looks a lot more sophisticated than my current band-aid fix :-) by 
-> using the fact that irqs won't get resumed twice on their own.
-> 
-> So if you repost your patch you could add an
-> 
-> Acked-by: Heiko Stuebner <heiko@sntech.de>
-> 
-> 
-> Heiko
+Yes, I think that I am ready to play the role of maintainer for HFS+ file system driver.
+Because I have plans of new feature implementation in HFS+ driver and also
+I am implementing continuously new features in HFS+ driver in the background of
+my main activity. Also I participate in reviewing of new HFS+ related patches.
+So, it is possible to say that I am actively looking after the HFS+ file system driver.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Vyacheslav Dubeyko.
+
