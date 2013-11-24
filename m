@@ -1,187 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3KXVTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 16:19:25 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:58833 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab3KXVTX (ORCPT
+	id S1753438Ab3KXVTx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 16:19:53 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60045 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753017Ab3KXVT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 16:19:23 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 16:19:22 EST
-From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-To: linux-crypto@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Yonan <james@openvpn.net>, Daniel Borkmann <dborkman@redhat.com>,
-        Florian Weimer <fw@deneb.enyo.de>, linux-kernel@vger.kernel.org,
-        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-Subject: [PATCH] crypto: more robust crypto_memneq
-Date: Sun, 24 Nov 2013 19:12:15 -0200
-Message-Id: <1385327535-27991-1-git-send-email-cesarb@cesarb.eti.br>
-X-Mailer: git-send-email 1.8.3.1
+	Sun, 24 Nov 2013 16:19:29 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Kukjin Kim <kgene@kernel.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
+Date: Sun, 24 Nov 2013 22:32:13 +0100
+Message-ID: <2065978.h16hV1Cgky@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <528FB2EC.2020202@wwwdotorg.org>
+References: <cover.1385118255.git.viresh.kumar@linaro.org> <CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com> <528FB2EC.2020202@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling compiler optimizations can be fragile, since a new
-optimization could be added to -O0 or -Os that breaks the assumptions
-the code is making.
+On Friday, November 22, 2013 12:39:24 PM Stephen Warren wrote:
+> On 11/22/2013 05:52 AM, Viresh Kumar wrote:
+> > On 22 November 2013 18:07, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> On Friday, November 22, 2013 04:59:49 PM Viresh Kumar wrote:
+> >>> Some platforms might want to change frequency before suspending governors. Like:
+> >>> - Some platform which want to set freq to max to speed up suspend/hibernation
+> >>>   process.
+> >>> - Some platform (like: Tegra or exynos), set this to min or bootloader's
+> >>>   frequency.
+> >>>
+> >>> This patch adds an option for those, so that they can specify this at call to
+> >>> ->init(), so that cpufreq core can take care of this before suspending system.
+> >>>
+> >>> If this variable is not updated by ->init() then its value would be zero and so
+> >>> core wouldn't do anything.
+> >>>
+> >>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >>
+> >> I don't think this is generally necessary, because the suspend/resume routines
+> >> added by patch [1/2] will be executed very late during suspend or very early
+> >> during resume and it shouldn't really matter what performance levels the CPUs
+> >> are at then.
+> > 
+> > There are few things here:
+> > - I feel that the current place from where we have suspended stuff is not gonna
+> > fly. We are doing that in noirq and probably devices which might be required
+> > during frequency transitions might already be down.. So we *may* need to
+> > move that in dpm_suspend()..
+> > - Secondly I want to understand why Tegra/Exynos has such code which I
+> > mentioned above..
+> > 
+> > @Stephen, Kukjin and other samsung folks: Please provide some input here,
+> > before your systems break in mainline :)
+> 
+> I believe we set the clock to a low value because fast clocks consume
+> more power. Tegra architecturally supports a number of different suspend
+> levels. Only some of those actually power off or gate the clock source
+> itself.
 
-Instead of disabling compiler optimizations, use a dummy inline assembly
-(based on RELOC_HIDE) to block the problematic kinds of optimization,
-while still allowing other optimizations to be applied to the code.
+Hmm.
 
-The dummy inline assembly is added after every OR, and has the
-accumulator variable as its input and output. The compiler is forced to
-assume that the dummy inline assembly could both depend on the
-accumulator variable and change the accumulator variable, so it is
-forced to compute the value correctly before the inline assembly, and
-cannot assume anything about its value after the inline assembly.
+Viresh, maybe make it possible for the cpufreq driver to provide suspend/resume
+callbacks to be executed by cpufreq_suspend() and cpufreq_resume() introduced
+by [1/2]?  Then Tegra could set the frequencies to what it wants from there
+before the governors are stopped.
 
-This change should be enough to make crypto_memneq work correctly (with
-data-independent timing) even if it is inlined at its call sites. That
-can be done later in a followup patch.
+Thanks!
 
-Compile-tested on x86_64.
-
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
----
- crypto/Makefile |  5 ----
- crypto/memneq.c | 82 +++++++++++++++++++++++++++++++++++++++------------------
- 2 files changed, 57 insertions(+), 30 deletions(-)
-
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 989c510..b29402a 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -2,11 +2,6 @@
- # Cryptographic API
- #
- 
--# memneq MUST be built with -Os or -O0 to prevent early-return optimizations
--# that will defeat memneq's actual purpose to prevent timing attacks.
--CFLAGS_REMOVE_memneq.o := -O1 -O2 -O3
--CFLAGS_memneq.o := -Os
--
- obj-$(CONFIG_CRYPTO) += crypto.o
- crypto-y := api.o cipher.o compress.o memneq.o
- 
-diff --git a/crypto/memneq.c b/crypto/memneq.c
-index cd01622..fce066c 100644
---- a/crypto/memneq.c
-+++ b/crypto/memneq.c
-@@ -63,6 +63,9 @@
- 
- #ifndef __HAVE_ARCH_CRYPTO_MEMNEQ
- 
-+/* Make the optimizer believe the variable can be manipulated arbitrarily. */
-+#define OPTIMIZER_HIDE_VAR(var) __asm__ ("" : "=r" (var) : "0" (var))
-+
- /* Generic path for arbitrary size */
- static inline unsigned long
- __crypto_memneq_generic(const void *a, const void *b, size_t size)
-@@ -72,6 +75,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 	while (size >= sizeof(unsigned long)) {
- 		neq |= *(unsigned long *)a ^ *(unsigned long *)b;
-+		OPTIMIZER_HIDE_VAR(neq);
- 		a += sizeof(unsigned long);
- 		b += sizeof(unsigned long);
- 		size -= sizeof(unsigned long);
-@@ -79,6 +83,7 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
- 	while (size > 0) {
- 		neq |= *(unsigned char *)a ^ *(unsigned char *)b;
-+		OPTIMIZER_HIDE_VAR(neq);
- 		a += 1;
- 		b += 1;
- 		size -= 1;
-@@ -89,33 +94,60 @@ __crypto_memneq_generic(const void *a, const void *b, size_t size)
- /* Loop-free fast-path for frequently used 16-byte size */
- static inline unsigned long __crypto_memneq_16(const void *a, const void *b)
- {
-+	unsigned long neq = 0;
-+
- #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
--	if (sizeof(unsigned long) == 8)
--		return ((*(unsigned long *)(a)   ^ *(unsigned long *)(b))
--		      | (*(unsigned long *)(a+8) ^ *(unsigned long *)(b+8)));
--	else if (sizeof(unsigned int) == 4)
--		return ((*(unsigned int *)(a)    ^ *(unsigned int *)(b))
--                      | (*(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4))
--		      | (*(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8))
--	              | (*(unsigned int *)(a+12) ^ *(unsigned int *)(b+12)));
--	else
-+	if (sizeof(unsigned long) == 8) {
-+		neq |= *(unsigned long *)(a)   ^ *(unsigned long *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned long *)(a+8) ^ *(unsigned long *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	} else if (sizeof(unsigned int) == 4) {
-+		neq |= *(unsigned int *)(a)    ^ *(unsigned int *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned int *)(a+4)  ^ *(unsigned int *)(b+4);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned int *)(a+8)  ^ *(unsigned int *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	        neq |= *(unsigned int *)(a+12) ^ *(unsigned int *)(b+12);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	} else {
- #endif /* CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS */
--		return ((*(unsigned char *)(a)    ^ *(unsigned char *)(b))
--		      | (*(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1))
--		      | (*(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2))
--		      | (*(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3))
--		      | (*(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4))
--		      | (*(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5))
--		      | (*(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6))
--		      | (*(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7))
--		      | (*(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8))
--		      | (*(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9))
--		      | (*(unsigned char *)(a+10) ^ *(unsigned char *)(b+10))
--		      | (*(unsigned char *)(a+11) ^ *(unsigned char *)(b+11))
--		      | (*(unsigned char *)(a+12) ^ *(unsigned char *)(b+12))
--		      | (*(unsigned char *)(a+13) ^ *(unsigned char *)(b+13))
--		      | (*(unsigned char *)(a+14) ^ *(unsigned char *)(b+14))
--		      | (*(unsigned char *)(a+15) ^ *(unsigned char *)(b+15)));
-+		neq |= *(unsigned char *)(a)    ^ *(unsigned char *)(b);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+1)  ^ *(unsigned char *)(b+1);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+2)  ^ *(unsigned char *)(b+2);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+3)  ^ *(unsigned char *)(b+3);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+4)  ^ *(unsigned char *)(b+4);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+5)  ^ *(unsigned char *)(b+5);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+6)  ^ *(unsigned char *)(b+6);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+7)  ^ *(unsigned char *)(b+7);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+8)  ^ *(unsigned char *)(b+8);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+9)  ^ *(unsigned char *)(b+9);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+10) ^ *(unsigned char *)(b+10);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+11) ^ *(unsigned char *)(b+11);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+12) ^ *(unsigned char *)(b+12);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+13) ^ *(unsigned char *)(b+13);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+14) ^ *(unsigned char *)(b+14);
-+		OPTIMIZER_HIDE_VAR(neq);
-+		neq |= *(unsigned char *)(a+15) ^ *(unsigned char *)(b+15);
-+		OPTIMIZER_HIDE_VAR(neq);
-+	}
-+
-+	return neq;
- }
- 
- /* Compare two areas of memory without leaking timing information,
 -- 
-1.8.3.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
