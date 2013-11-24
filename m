@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab3KXPOn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 10:14:43 -0500
-Received: from mout.gmx.net ([212.227.15.19]:58207 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489Ab3KXPOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 10:14:25 -0500
-Message-ID: <529217CD.1000204@gmx.de>
-Date: Sun, 24 Nov 2013 16:14:21 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752788Ab3KXPOX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 10:14:23 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:38073 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab3KXPOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 10:14:22 -0500
+Message-ID: <529217C7.6030304@cogentembedded.com>
+Date: Sun, 24 Nov 2013 19:14:15 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: UML devel <user-mode-linux-devel@lists.sourceforge.net>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: why does index in truncate_inode_pages_range() grows so much ?
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:Qdw7haRx6w/yIZ26CH0SbtZurbgx22B+XoiwEvNUIamyylZDm3f
- BHsi6ivH++eWhehAsPaxA2hz4bWxbbNYpYcHEmzPcWTx9xnzKeg8a4tEWiQ4tjqOdu9IYDB
- LvZEivncEZtBae1r8tbcEPOtBys1IoiuVw7MzEY/8A2YLh1O2JVCUd/+Gn+UqI6IxdT5l8K
- sFx1uGDnUBCfeInCaYQPg==
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org
+CC: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com>
+In-Reply-To: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At a 32 bit guest UML with current kernel git tree I putted a printk
-into that function :
+Hello.
 
-void truncate_inode_pages_range(struct address_space *mapping,
-                                loff_t lstart, loff_t lend)
-{
-...
+On 24-11-2013 3:28, Santosh Shilimkar wrote:
 
+> Building ARM with NO_BOOTMEM generates below warning. Using min_t
 
-                cond_resched();
-                index++;
-		printk ("            <------------
+    Where is that below? :-)
 
+> to find the correct alignment avoids the warning.
 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-
-and got (while fuzzying the UML guest with trinity) this output in the
-UML guest:
+WBR, Sergei
 
 
-Nov 24 12:06:53 trinity kernel: index:42 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:43 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:5 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1035468800 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:16 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:4 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:2 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:4184867847 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:3 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1727 end:4294967295
-Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
-
-
-I'm wondering if index is expected to become sometimes so big.
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
