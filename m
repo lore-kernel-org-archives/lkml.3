@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3KXJsO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 04:48:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44839 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3KXJsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 04:48:11 -0500
-Message-ID: <5291CB01.1010506@ti.com>
-Date: Sun, 24 Nov 2013 15:16:41 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752000Ab3KXK2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 05:28:36 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:39426 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab3KXK2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 05:28:32 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH v2 3/3] RX-51: Add platform data for bq24150a charger
+Date: Sun, 24 Nov 2013 11:28:26 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <1384856285-19593-4-git-send-email-pali.rohar@gmail.com> <20131119133212.GF14587@amd.pavel.ucw.cz>
+In-Reply-To: <20131119133212.GF14587@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
- is used
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528307F0.6000805@ti.com> <52838941.4060207@ti.com> <5284ABB9.70608@ti.com> <5284DFE7.70308@ti.com> <528E3DD4.7030607@ti.com> <528F968F.40306@ti.com>
-In-Reply-To: <528F968F.40306@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: multipart/signed;
+  boundary="nextPart1556635.STb31pS9vA";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201311241128.27783@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 November 2013 11:08 PM, Santosh Shilimkar wrote:
-> On Thursday 21 November 2013 12:07 PM, Nori, Sekhar wrote:
->> On 11/14/2013 8:06 PM, Santosh Shilimkar wrote:
->>> On Thursday 14 November 2013 05:53 AM, Nori, Sekhar wrote:
->>>> On Wednesday 13 November 2013 07:44 PM, Santosh Shilimkar wrote:
->>>>> On Wednesday 13 November 2013 12:02 AM, Sekhar Nori wrote:
->>>>>> On Monday 11 November 2013 10:40 PM, Khoronzhuk, Ivan wrote:
->>>>>>> If Davinci AEMIF is used we don't need to set timings and bus width.
->>>>>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
->>>>>>>
->>>>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>>>> ---
->>>>>>>  drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
->>>>>>>  1 file changed, 15 insertions(+), 7 deletions(-)
->>>>>>>
->>>>>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
->>>>>>> index 4705214..879e915 100644
->>>>>>> --- a/drivers/mtd/nand/davinci_nand.c
->>>>>>> +++ b/drivers/mtd/nand/davinci_nand.c
->>>>>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
->>>>>>>                 goto err_clk_enable;
->>>>>>>         }
->>>>>>>
->>>>>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
->>>>>>
->>>>>> This is a hack! Just because AEMIF driver is enabled, it does not
->>>>>> guarantee that the timings have been setup by it. Instead of configuring
->>>>>> timings in two drivers, why not just convert everyone over to use the
->>>>>> new driver. Dont worry about breaking old platforms, I will help test
->>>>>> and ack them.
->>>>>>
->>>>> How about you take a stab at and convert the DaVinci code over to make
->>>>> use of new driver. We are trying to re-use as much as possible from the
->>>>> common drivers and also making an option so that the DaVinci arch can
->>>>> move over to these drivers if they want to.
->>>>
->>>> Sure I could.
->>>>
->>> Thanks
->>>
->>>> Ivan,
->>>>
->>>> The AEMIF driver does not use platfrom_data currently. Is that something
->>>> you can add or you want me to take a stab at that as well?
->>>>
->>> The AEMIF new driver is device tree only and thats the direction. So the
->>> better thing would be to convert Davinci to DT and then make use of this
->>> new driver. Thats how most of the new drivers used on arm socs are
->>> moving. Adding platform data to new driver is a step in backward
->>> direction so I would want to avoid that.
->>
->> Yes, that would be the ideal way. But the reality is that there is close
->> to zero chance of all the DaVinci platforms using AEMIF ever getting
->> converted to DT. This means that we will never be able to get rid of
->> this piece of code.
->>
-> Well that means some of those platforms support will get deprecated
-> soon considering other basic frameworks like irq, timer wheel etc
-> is assuming the DT direction. But its your call because if you
-> want those platforms to live, you need to convert them to DT.
->  
->> I do agree platform data is not the direction you want to take on ARM
->> but at the same time its not really a deprecated mechanism as far as the
->> broader kernel is concerned.
->>
->> So, can we consider adding platform data mechanism to the AEMIF driver?
->>
-> Sorry but answer is "NO". If the above hack is really bothering you,
-> we can actually rip out the above code in question and move it
-> to mach-davinci. Infact thats the best direction to make the
-> mtd nandn driver independent of any platform quirks(dt, pdata etc)
-> 
-> Ivan already has a patch to do that and he is going to post
-> that patch. With that patch, we won't need $subject patch.
-> 
+--nextPart1556635.STb31pS9vA
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Okay I will wait for the patch.
+On Tuesday 19 November 2013 14:32:13 Pavel Machek wrote:
+> On Tue 2013-11-19 11:18:05, Pali Roh=C3=A1r wrote:
+> > This patch will register bq24150a charger in RX-51 board
+> > data.
+> >=20
+> > So finally charging battery on Nokia N900 (RX-51) working
+> > automatically without any proprietary Nokia bits in
+> > userspace.
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+>=20
+> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+>=20
+> 									Pavel
+> BTW, current code says:
+>=20
+> That seems to limit charging voltage to 3.9V, with comment
+> saying 4.11V... which means battery will not be charged
+> fully. does it make sense to raise limit to 4.11V here?
+>=20
+> Aha, and actually will not 4.2V requested by
+> rx51_bq24150a_platform_data trigger -EINVAL?
+>=20
+> /* set battery regulation voltage in mV */
+> static int bq2415x_set_battery_regulation_voltage(struct
+> bq2415x_device *bq,
+>                                                   int mV)
+> {
+>         int val =3D (mV/10 - 350) / 2;
+>=20
+>         if (val < 0)
+>                 val =3D 0;
+>         else if (val > 94) /* FIXME: Max is 94 or 122 ? Set
+> max value ? */
+>                 return -EINVAL;
+>=20
+>         return bq2415x_i2c_write_mask(bq, BQ2415X_REG_VOLTAGE,
+> val, BQ2415X_MASK_VO, BQ2415X_SHIFT_VO); }
+>=20
 
-Thanks,
-Sekhar
+Above bq2415x_set_battery_regulation_voltage function is updated=20
+in 3.13, see commit 3ed5cd79b82e9a055e0df3275eeb471ea0f1e2d7.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1556635.STb31pS9vA
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKR1MsACgkQi/DJPQPkQ1JltgCeMYUnBvg86S//Y/0rhoI9nY5m
+WFYAoIaEIr+7xEuVolWQgMu94lqecd2b
+=Vh3g
+-----END PGP SIGNATURE-----
+
+--nextPart1556635.STb31pS9vA--
