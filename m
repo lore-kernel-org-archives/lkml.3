@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3KXPGA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 10:06:00 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:52564 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab3KXPF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 10:05:56 -0500
-Date: Sun, 24 Nov 2013 10:05:52 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Gwendal Grignou <gwendal@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Message-ID: <20131124150552.GB22740@htj.dyndns.org>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
- <20131123230701.GA6183@kroah.com>
- <2196420.QNWb3mfseF@vostro.rjw.lan>
- <3805095.rqdZNnA0Ng@vostro.rjw.lan>
+	id S1752934Ab3KXPOn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 10:14:43 -0500
+Received: from mout.gmx.net ([212.227.15.19]:58207 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab3KXPOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 10:14:25 -0500
+Message-ID: <529217CD.1000204@gmx.de>
+Date: Sun, 24 Nov 2013 16:14:21 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3805095.rqdZNnA0Ng@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: UML devel <user-mode-linux-devel@lists.sourceforge.net>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: why does index in truncate_inode_pages_range() grows so much ?
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:Qdw7haRx6w/yIZ26CH0SbtZurbgx22B+XoiwEvNUIamyylZDm3f
+ BHsi6ivH++eWhehAsPaxA2hz4bWxbbNYpYcHEmzPcWTx9xnzKeg8a4tEWiQ4tjqOdu9IYDB
+ LvZEivncEZtBae1r8tbcEPOtBys1IoiuVw7MzEY/8A2YLh1O2JVCUd/+Gn+UqI6IxdT5l8K
+ sFx1uGDnUBCfeInCaYQPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Gwendal, hi!)
+At a 32 bit guest UML with current kernel git tree I putted a printk
+into that function :
 
-On Sun, Nov 24, 2013 at 02:09:09AM +0100, Rafael J. Wysocki wrote:
-> On Sunday, November 24, 2013 12:36:03 AM Rafael J. Wysocki wrote:
-> > On Saturday, November 23, 2013 03:07:01 PM Greg Kroah-Hartman wrote:
-> > > On Sun, Nov 24, 2013 at 12:12:59AM +0100, Rafael J. Wysocki wrote:
-> > > > On Saturday, November 23, 2013 02:53:58 PM Greg Kroah-Hartman wrote:
-> 
-> [...]
-> 
-> > > > > 
-> > > > > I can revert Mika's patch, as it would be good to catch these kinds of
-> > > > > errors.
-> > > > 
-> > > > Then we'll need to untangle the SATA/SCSI mess triggered by Bjorn in
-> > > > https://bugzilla.kernel.org/show_bug.cgi?id=65281. ;-)
-> > > 
-> > > I have no objection to fixing that, the scsi sysfs handling is "odd" to
-> > > say the least...
-> > > 
-> > > If someone can unwind it, that would be great to see happen...
-> > 
-> > Well, if I'm bored to death during the xmas holidays, I may look into that.
-> 
-> In fact, I'm not exactly sure why ata_port_detach() calls ata_tport_delete()
-> before scsi_remove_host()?  Is there any particular reason?  Because that
-> doesn't seem to be exactly right ...
+void truncate_inode_pages_range(struct address_space *mapping,
+                                loff_t lstart, loff_t lend)
+{
+...
 
-No idea.  Gwendal?
 
-Thanks.
+                cond_resched();
+                index++;
+		printk ("            <------------
+
+
+
+
+and got (while fuzzying the UML guest with trinity) this output in the
+UML guest:
+
+
+Nov 24 12:06:53 trinity kernel: index:42 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:43 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:5 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1035468800 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:16 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:4 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:2 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:4184867847 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:3 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1727 end:4294967295
+Nov 24 12:06:53 trinity kernel: index:1 end:4294967295
+
+
+I'm wondering if index is expected to become sometimes so big.
 
 -- 
-tejun
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
