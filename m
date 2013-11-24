@@ -1,151 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3KXXgs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 18:36:48 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38870 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab3KXXgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 18:36:46 -0500
-Date: Sun, 24 Nov 2013 17:36:35 -0600
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-Subject: [PATCH 1/1] rsxx: Reset the pcie slot of adapter trains incorrectly.
-Message-ID: <20131124233635.GA1428@oc6784271780.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112423-9332-0000-0000-0000024770A2
+	id S1752233Ab3KXXja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 18:39:30 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42136 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751787Ab3KXXjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 18:39:24 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 3/9] mm: shmem: save one radix tree lookup when truncating swapped pages
+Date: Sun, 24 Nov 2013 18:38:22 -0500
+Message-Id: <1385336308-27121-4-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
+References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Page cache radix tree slots are usually stabilized by the page lock,
+but shmem's swap cookies have no such thing.  Because the overall
+truncation loop is lockless, the swap entry is currently confirmed by
+a tree lookup and then deleted by another tree lookup under the same
+tree lock region.
 
-This patch contains a software workaround for a firmware bug that
-can cause the pcie adapter to train to a width below the desired
-width of x8.
+Use radix_tree_delete_item() instead, which does the verification and
+deletion with only one lookup.  This also allows removing the
+delete-only special case from shmem_radix_tree_replace().
 
-It will reset the adapter 3 times before the driver gives up and
-informs the user that the link width has been trained to something
-unexpected.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/shmem.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
-
-
-
-diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
-index a8de2ee..d15b678 100644
---- a/drivers/block/rsxx/core.c
-+++ b/drivers/block/rsxx/core.c
-@@ -42,6 +42,8 @@
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 8297623..7c67249 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -242,19 +242,17 @@ static int shmem_radix_tree_replace(struct address_space *mapping,
+ 			pgoff_t index, void *expected, void *replacement)
+ {
+ 	void **pslot;
+-	void *item = NULL;
++	void *item;
  
- #define NO_LEGACY 0
- #define SYNC_START_TIMEOUT (10 * 60) /* 10 minutes */
-+#define EXPECTED_LINK_WIDTH 8
-+#define MAX_RETRAIN_CNT     3
- 
- MODULE_DESCRIPTION("IBM Flash Adapter 900GB Full Height Device Driver");
- MODULE_AUTHOR("Joshua Morris/Philip Kelleher, IBM");
-@@ -600,6 +602,50 @@ static int card_shutdown(struct rsxx_cardinfo *card)
+ 	VM_BUG_ON(!expected);
++	VM_BUG_ON(!replacement);
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree, index);
+-	if (pslot)
+-		item = radix_tree_deref_slot_protected(pslot,
+-							&mapping->tree_lock);
++	if (!pslot)
++		return -ENOENT;
++	item = radix_tree_deref_slot_protected(pslot, &mapping->tree_lock);
+ 	if (item != expected)
+ 		return -ENOENT;
+-	if (replacement)
+-		radix_tree_replace_slot(pslot, replacement);
+-	else
+-		radix_tree_delete(&mapping->page_tree, index);
++	radix_tree_replace_slot(pslot, replacement);
  	return 0;
  }
  
-+static void rsxx_reset_slot(struct rsxx_cardinfo *card)
-+{
-+	if (card->retrain_cnt >= MAX_RETRAIN_CNT) {
-+		dev_warn(CARD_TO_DEV(card), "Failed to train the adapter to x%d "
-+					    "(is x%d), performance degradation "
-+					    "possible", EXPECTED_LINK_WIDTH,
-+					    card->link_width);
-+		return;
-+	}
-+
-+	pci_cfg_access_lock(card->dev);
-+	pci_set_pcie_reset_state(card->dev, pcie_warm_reset);
-+	msleep(500);
-+	pci_set_pcie_reset_state(card->dev, pcie_deassert_reset);
-+	msleep(2000);
-+	pci_cfg_access_unlock(card->dev);
-+
-+}
-+
-+static void rsxx_verify_link_width(struct rsxx_cardinfo *card)
-+{
-+	int pos;
-+	u16 reg16;
-+
-+	card->retrain_cnt = 0;
-+
-+	do {
-+		pos = pci_find_capability(card->dev, PCI_CAP_ID_EXP);
-+		pci_read_config_word(card->dev,
-+				     pos + PCI_EXP_LNKSTA,
-+				     &reg16);
-+		card->link_width = (reg16 & PCI_EXP_LNKSTA_NLW) >> 4;
-+
-+		if (card->link_width != EXPECTED_LINK_WIDTH) {
-+			card->retrain_cnt++;
-+			rsxx_reset_slot(card);
-+		} else {
-+			pci_restore_state(card->dev);
-+			break;
-+		}
-+
-+	} while (card->retrain_cnt < MAX_RETRAIN_CNT);
-+}
-+
- static int rsxx_eeh_frozen(struct pci_dev *dev)
+@@ -386,14 +384,15 @@ export:
+ static int shmem_free_swap(struct address_space *mapping,
+ 			   pgoff_t index, void *radswap)
  {
- 	struct rsxx_cardinfo *card = pci_get_drvdata(dev);
-@@ -723,6 +769,8 @@ static pci_ers_result_t rsxx_slot_reset(struct pci_dev *dev)
- 	dev_warn(&dev->dev,
- 		"IBM Flash Adapter PCI: recovering from slot reset.\n");
+-	int error;
++	void *old;
  
-+	rsxx_verify_link_width(card);
-+
- 	st = pci_enable_device(dev);
- 	if (st)
- 		goto failed_hw_setup;
-@@ -837,6 +885,14 @@ static int rsxx_pci_probe(struct pci_dev *dev,
- 	if (st)
- 		goto failed_ida_get;
+ 	spin_lock_irq(&mapping->tree_lock);
+-	error = shmem_radix_tree_replace(mapping, index, radswap, NULL);
++	old = radix_tree_delete_item(&mapping->page_tree, index, radswap);
+ 	spin_unlock_irq(&mapping->tree_lock);
+-	if (!error)
+-		free_swap_and_cache(radix_to_swp_entry(radswap));
+-	return error;
++	if (old != radswap)
++		return -ENOENT;
++	free_swap_and_cache(radix_to_swp_entry(radswap));
++	return 0;
+ }
  
-+	st = pci_save_state(dev);
-+	if (st) {
-+		dev_err(CARD_TO_DEV(card), "Failed to save PCI config space\n");
-+		goto failed_enable;
-+	}
-+
-+	rsxx_verify_link_width(card);
-+
- 	st = pci_enable_device(dev);
- 	if (st)
- 		goto failed_enable;
-diff --git a/drivers/block/rsxx/rsxx_priv.h b/drivers/block/rsxx/rsxx_priv.h
-index 6bbc64d..348dbbb 100644
---- a/drivers/block/rsxx/rsxx_priv.h
-+++ b/drivers/block/rsxx/rsxx_priv.h
-@@ -52,7 +52,7 @@ struct proc_cmd;
- #define RS70_PCI_REV_SUPPORTED	4
- 
- #define DRIVER_NAME "rsxx"
--#define DRIVER_VERSION "4.0.3.2516"
-+#define DRIVER_VERSION "4.0.4"
- 
- /* Block size is 4096 */
- #define RSXX_HW_BLK_SHIFT		12
-@@ -122,6 +122,8 @@ struct rsxx_cardinfo {
- 	struct pci_dev		*dev;
- 	unsigned int		halt;
- 	unsigned int		eeh_state;
-+	unsigned short		link_width;
-+	unsigned int		retrain_cnt;
- 
- 	void			__iomem *regmap;
- 	spinlock_t		irq_lock;
+ /*
+-- 
+1.8.4.2
 
