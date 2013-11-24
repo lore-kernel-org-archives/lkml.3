@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3KXQx0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 11:53:26 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:38718 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab3KXQxZ (ORCPT
+	id S1753461Ab3KXQzH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 11:55:07 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38955 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753134Ab3KXQzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 11:53:25 -0500
-X-SENDER-IP: [85.230.168.69]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArshAIIuklJV5qhFPGdsb2JhbAANTItFsWaDA4EzAwEBAQE4gloBAQEBAgF4AQULCw4TFgQLCQMCAQIBMRQGDQEHAQGHdwurYZEzF48HB4QzA6wQgT8
-X-IronPort-AV: E=Sophos;i="4.93,763,1378850400"; 
-   d="scan'208";a="660942358"
-Message-ID: <52922FDC.7070006@euromail.se>
-Date: Sun, 24 Nov 2013 17:57:00 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sun, 24 Nov 2013 11:55:03 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/31g71XjA0gFCIbIeKwAk2YWgB6ixkkls=
+Date: Sun, 24 Nov 2013 11:54:53 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dove: Fix typo in device_type property of phy node
+Message-ID: <20131124165453.GF29241@titan.lakedaemon.net>
+References: <1384440899-3622-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-To: Chris Murphy <bugzilla@colorremedies.com>
-CC: Michele Baldessari <michele@acksyn.org>, jwboyer@fedoraproject.org,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Chris Murphy <chris@cmurf.com>
-Subject: Re: small regression: hwmon: (applesmc) Check key count before proceeding
- - 5f4513864304672e6ea9eac60583eeac32e679f2
-References: <20131124092359.4241e633@fante.int.rhx> <5291CA7B.3080904@euromail.se> <76837691-ED07-4448-BC56-9D16EA321970@colorremedies.com>
-In-Reply-To: <76837691-ED07-4448-BC56-9D16EA321970@colorremedies.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384440899-3622-1-git-send-email-srinivas.kandagatla@st.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Thu, Nov 14, 2013 at 02:54:59PM +0000, Srinivas Kandagatla wrote:
+> This patch fixes a typo for device_type property of phy node.
+> This can work as of today but once a checks are added in generic code
+> this typo will stop phy from working.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  arch/arm/boot/dts/dove.dtsi |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Well, it seems to be a another one off event. It's the same hardware as
-before, and it was booting from a USB stick containing Fedora 20 final test
-candidate 2 which uses kernel 3.11.8. An immediate reboot did not reproduce the
-problem, nor multiple subsequent reboots. I think I previously mentioned a
-preponderance of these events happen when booting from USB sticks.
+Applied to mvebu/dt with Andrew's Ack.  I had to hand add it due to the
+reworking of dove.dtsi last time around.  I've attached my version, let
+me know if it looks amiss.
 
-Ok, thanks, that makes sense. So at least one problem is still there, but
-possibly very difficult to hit.
+thx,
 
-> It would be nice to have an identical model for this testing. I suspect most users wouldn't go to the trouble to report the occasional, seemingly one off,
-events like this. So unfortunately it's  uncertain if the hardware I have has a
-unique problem, or if it's a model specific behavior.
+Jason.
 
-I will keep this in mind next time I see this particular model. It is also
-possible that the SMC needs to be reset after having testing various more or
-less successful patches. Given the tiny cross-section, it looks like this one
-can rest for now.
+----------->8---------------------
+commit 9e52c63992c19b1d2e9a6b6b8ba61aaf35e9fd17
+Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Date:   Sun Nov 24 16:47:51 2013 +0000
 
-Thanks,
-Henrik
+    ARM: dove: Fix typo in device_type property of phy node
+    
+    This patch fixes a typo for device_type property of phy node.
+    This can work as of today but once a checks are added in generic code
+    this typo will stop phy from working.
+    
+    Acked-by: Andrew Lunn <andrew@lunn.ch>
+    Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+index 113a8bc7bee7..abd7a6fd77f1 100644
+--- a/arch/arm/boot/dts/dove.dtsi
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -559,7 +559,7 @@
+ 				status = "disabled";
+ 
+ 				ethphy: ethernet-phy {
+-					device-type = "ethernet-phy";
++					device_type = "ethernet-phy";
+ 					/* set phy address in board file */
+ 				};
+ 			};
