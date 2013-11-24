@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3KXQeQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 11:34:16 -0500
-Received: from ring0.de ([91.143.88.219]:60706 "EHLO smtp.ring0.de"
+	id S1753112Ab3KXQg5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 11:36:57 -0500
+Received: from mout.web.de ([212.227.15.14]:52057 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab3KXQeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 11:34:12 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sun, 24 Nov 2013 17:33:44 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Cc: linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv7 0/4] twl4030-pwrbutton DT binding
-Message-ID: <20131124163343.GA31845@earth.universe>
-Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1383948687-32279-1-git-send-email-sre@debian.org>
+	id S1752667Ab3KXQg4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 11:36:56 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
-Content-Disposition: inline
-In-Reply-To: <1383948687-32279-1-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <trinity-1c222a26-5aad-4747-9ae3-69cce71bd67e-1385311014634@3capp-webde-bs35>
+From: devzero@web.de
+To: linux-kernel@vger.kernel.org
+Subject: Grub2 skips standard linux initialization code ?
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 24 Nov 2013 17:36:54 +0100 (CET)
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:U1NwtwK2VKTTQ08CMJsMNbAE9DeZpDS/bCrKdDyUqtd
+ N+Cz7/wYX8z0Ly5pHmG4M9/AWrI14hWgqaNhFho87CV2XLnqf1
+ OOtq5Gn7MgQp/hHSonhZUDCaSI2MjxzKRCZr1rscPlWU1QDdUn
+ EqvR4uZhH66AiRTMcu5Nd0ucYcnwA6o5S5RPKsmU9+kSPgvNEx
+ u62d3C4fyEE1jO/JBP076rD36hNd3Vz0FNwjN2DZszab46cJm3
+ IlBONmrCHkiyT75cla6CvktL1MKdzR1cU7chL0vOdP2mKRmHLS
+ TOuzAa7QXAVNbwNsSf5dtU0xUQ7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, 
 
---gBBFr7Ir9EOA20Yy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+regarding https://bugs.launchpad.net/ubuntu/+source/syslinux/+bug/930447 
 
-Hi,
+Grub2 "accidentally" heals a problem for systems which cannot boot PAE enabled kernels.  This happens because grub2 apparently jumps into the kernel at a different entry point, so CPUID checking (check for PAE for example) apparently does not occur.
 
-On Fri, Nov 08, 2013 at 11:11:23PM +0100, Sebastian Reichel wrote:
-> This is the seventh iteration of DT support for the TWL4030
-> power button.
+Here are some 100 affected users (including me) which cannot boot recent Ubuntu (not even lubuntu, which is meant for that) Installation disk on their older hardware, which makes installation a pain.
 
-Dmitry, can you add this patchset to your queue?
+This is because Pentium M cpu´s for example often can do PAE, but they incorrectly report.
 
-It got no further comments in two weeks.
+The ubuntu installer disc does "traditional" boot via syslinux, whereas the installed system boots via grub2. That explains why you can upgrade from ubuntu 12.04 to 13.10 and have a workable system, but you cannot freshly install 13.10.   The most absurd thing is: You cannot even install Lubuntu or Xubuntu, which is especially designed to be used on older hardware. I guess Pentium M is a process which is still widely used.
 
--- Sebastian
+My question is:
+1. Why does Grub2 think it`s good to skip x86 linux initializiation code? Is that good or bad?
+2. Besides that, wouldn`t it be extremly helpful to add a quirk or skip routine to the kernel initialization code? (kernelparam: "no-pae-ceck" for example). 
 
---gBBFr7Ir9EOA20Yy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSkipnAAoJENju1/PIO/qaD1MP/jIOAhmJR0OZ4ZUjcyXkF0N7
-jgxFASP+bevTniHUZWUlNueEgazCzIW6oZIVTi5rmlvTspccljy93siz+B+7Pglo
-QafcgGzVsqJpIHLBwl3lhLhoMUCChdQKJKHkII0LxslgiJrEwRUg85P9pRPy1E2a
-uuo8SWzCFQNGx4D6E3jhRekZnvUNKKg/4cztkp9r2SBkVE5q/0lVL3i6zkDkOSdu
-1/kbzOGYOdbKI96bvonIGVL+u6WrY8RJXeQSCs+DY6W42ODHZEUHkwTM65nXDlgd
-Kxuat0KcqVzwCgQeJYblpnHhFc8HAs8GBsfaE3qi2HAFwNGtcxbs5LEejLSLklbA
-3fU3s/xdgEyYEfqDP+cRr6rxceKoApKOrz1a6B2bNvakkaDOG01tcEZYev0pJslx
-yROjdg/ZShnbOBCa+i35SdoiWYzzCg0GaPPmWll8szQMOEosfZelh0xBXmJFVof4
-D+NEvEbAF2AGjGBkbCIHfe5wPfsxXqKOBcuo7TZt13YHc8svBEDBq3gTFMIBg86W
-obNQJDAaJ5XNcSj1ULB4jLGQ98RLE+XRFEuV5Y2Max3kwG741Vbli6FXoKYZ3igL
-H9bVPO7NlIeZiSoaS8e4yr3i+k94IE7iQT+M9pswgSCXhL6JdhApZnrJaJtj4ZdB
-FT6ke0gModLcxBGVY9TH
-=csXG
------END PGP SIGNATURE-----
-
---gBBFr7Ir9EOA20Yy--
+regards
+roland
