@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab3KXXlT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 18:41:19 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42161 "EHLO zene.cmpxchg.org"
+	id S1752891Ab3KXXlq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 18:41:46 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42146 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab3KXXj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 18:39:27 -0500
+	id S1751980Ab3KXXj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 18:39:26 -0500
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
@@ -23,9 +23,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
         Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
         linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 9/9] mm: keep page cache radix tree nodes in check
-Date: Sun, 24 Nov 2013 18:38:28 -0500
-Message-Id: <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 4/9] mm: filemap: move radix tree hole searching here
+Date: Sun, 24 Nov 2013 18:38:23 -0500
+Message-Id: <1385336308-27121-5-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
 References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
@@ -33,629 +33,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, page cache radix tree nodes were freed after reclaim
-emptied out their page pointers.  But now reclaim stores shadow
-entries in their place, which are only reclaimed when the inodes
-themselves are reclaimed.  This is problematic for bigger files that
-are still in use after they have a significant amount of their cache
-reclaimed, without any of those pages actually refaulting.  The shadow
-entries will just sit there and waste memory.  In the worst case, the
-shadow entries will accumulate until the machine runs out of memory.
+The radix tree hole searching code is only used for page cache, for
+example the readahead code trying to get a a picture of the area
+surrounding a fault.
 
-To get this under control, the VM will track radix tree nodes
-exclusively containing shadow entries on a per-NUMA node list.  A
-simple shrinker will reclaim these nodes on memory pressure.
+It sufficed to rely on the radix tree definition of holes, which is
+"empty tree slot".  But this is about to change, though, as shadow
+page descriptors will be stored in the page cache after the actual
+pages get evicted from memory.
 
-A few things need to be stored in the radix tree node to implement the
-shadow node LRU and allow tree deletions coming from the list:
-
-1. There is no index available that would describe the reverse path
-   from the node up to the tree root, which is needed to perform a
-   deletion.  To solve this, encode in each node its offset inside the
-   parent.  This can be stored in the unused upper bits of the same
-   member that stores the node's height at no extra space cost.
-
-2. The number of shadow entries needs to be counted in addition to the
-   regular entries, to quickly detect when the node is ready to go to
-   the shadow node LRU list.  The current entry count is an unsigned
-   int but the maximum number of entries is 64, so a shadow counter
-   can easily be stored in the unused upper bits.
-
-3. Tree modification needs the lock, which is located in the address
-   space, so store a backpointer to it.  The parent pointer is in a
-   union with the 2-word rcu_head, so the backpointer comes at no
-   extra cost as well.
-
-4. The node needs to be linked to an LRU list, which requires a list
-   head inside the node.  This does increase the size of the node, but
-   it does not change the number of objects that fit into a slab page.
+Move the functions over to mm/filemap.c and make them native page
+cache operations, where they can later be adapted to handle the new
+definition of "page cache hole".
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/super.c                    |   4 +-
- fs/xfs/xfs_buf.c              |   2 +-
- fs/xfs/xfs_qm.c               |   2 +-
- include/linux/list_lru.h      |   2 +-
- include/linux/radix-tree.h    |  30 +++++++---
- include/linux/swap.h          |   1 +
- include/linux/vm_event_item.h |   1 +
- lib/radix-tree.c              |  36 +++++++-----
- mm/filemap.c                  |  70 ++++++++++++++++++++----
- mm/list_lru.c                 |   4 +-
- mm/truncate.c                 |  19 ++++++-
- mm/vmstat.c                   |   2 +
- mm/workingset.c               | 124 ++++++++++++++++++++++++++++++++++++++++++
- 13 files changed, 255 insertions(+), 42 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c |  2 +-
+ include/linux/pagemap.h          |  5 +++
+ include/linux/radix-tree.h       |  4 ---
+ lib/radix-tree.c                 | 75 ---------------------------------------
+ mm/filemap.c                     | 76 ++++++++++++++++++++++++++++++++++++++++
+ mm/readahead.c                   |  4 +--
+ 6 files changed, 84 insertions(+), 82 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 0225c20..a958d52 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -196,9 +196,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 		INIT_HLIST_BL_HEAD(&s->s_anon);
- 		INIT_LIST_HEAD(&s->s_inodes);
+diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+index e242bbf..fdb74cb 100644
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -1220,7 +1220,7 @@ static u64 pnfs_num_cont_bytes(struct inode *inode, pgoff_t idx)
+ 	end = DIV_ROUND_UP(i_size_read(inode), PAGE_CACHE_SIZE);
+ 	if (end != NFS_I(inode)->npages) {
+ 		rcu_read_lock();
+-		end = radix_tree_next_hole(&mapping->page_tree, idx + 1, ULONG_MAX);
++		end = page_cache_next_hole(mapping, idx + 1, ULONG_MAX);
+ 		rcu_read_unlock();
+ 	}
  
--		if (list_lru_init(&s->s_dentry_lru))
-+		if (list_lru_init(&s->s_dentry_lru, NULL))
- 			goto err_out;
--		if (list_lru_init(&s->s_inode_lru))
-+		if (list_lru_init(&s->s_inode_lru, NULL))
- 			goto err_out_dentry_lru;
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75..c73130c 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -243,6 +243,11 @@ static inline struct page *page_cache_alloc_readahead(struct address_space *x)
  
- 		INIT_LIST_HEAD(&s->s_mounts);
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index 2634700..c49cbce 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -1670,7 +1670,7 @@ xfs_alloc_buftarg(
- 	if (xfs_setsize_buftarg_early(btp, bdev))
- 		goto error;
+ typedef int filler_t(void *, struct page *);
  
--	if (list_lru_init(&btp->bt_lru))
-+	if (list_lru_init(&btp->bt_lru, NULL))
- 		goto error;
- 
- 	btp->bt_shrinker.count_objects = xfs_buftarg_shrink_count;
-diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
-index 3e6c2e6..57d6aa9 100644
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -831,7 +831,7 @@ xfs_qm_init_quotainfo(
- 
- 	qinf = mp->m_quotainfo = kmem_zalloc(sizeof(xfs_quotainfo_t), KM_SLEEP);
- 
--	if ((error = list_lru_init(&qinf->qi_lru))) {
-+	if ((error = list_lru_init(&qinf->qi_lru, NULL))) {
- 		kmem_free(qinf);
- 		mp->m_quotainfo = NULL;
- 		return error;
-diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-index 3ce5417..b970a45 100644
---- a/include/linux/list_lru.h
-+++ b/include/linux/list_lru.h
-@@ -32,7 +32,7 @@ struct list_lru {
- };
- 
- void list_lru_destroy(struct list_lru *lru);
--int list_lru_init(struct list_lru *lru);
-+int list_lru_init(struct list_lru *lru, struct lock_class_key *key);
- 
- /**
-  * list_lru_add: add an element to the lru list's tail
++pgoff_t page_cache_next_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan);
++pgoff_t page_cache_prev_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan);
++
+ extern struct page * find_get_page(struct address_space *mapping,
+ 				pgoff_t index);
+ extern struct page * find_lock_page(struct address_space *mapping,
 diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index 13636c4..29df11f 100644
+index 1bf0a9c..e8be53e 100644
 --- a/include/linux/radix-tree.h
 +++ b/include/linux/radix-tree.h
-@@ -72,21 +72,35 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
- #define RADIX_TREE_TAG_LONGS	\
- 	((RADIX_TREE_MAP_SIZE + BITS_PER_LONG - 1) / BITS_PER_LONG)
- 
-+#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
-+#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
-+					  RADIX_TREE_MAP_SHIFT))
-+
-+/* Height component in node->path */
-+#define RADIX_TREE_HEIGHT_SHIFT	(RADIX_TREE_MAX_PATH + 1)
-+#define RADIX_TREE_HEIGHT_MASK	((1UL << RADIX_TREE_HEIGHT_SHIFT) - 1)
-+
-+/* Internally used bits of node->count */
-+#define RADIX_TREE_COUNT_SHIFT	(RADIX_TREE_MAP_SHIFT + 1)
-+#define RADIX_TREE_COUNT_MASK	((1UL << RADIX_TREE_COUNT_SHIFT) - 1)
-+
- struct radix_tree_node {
--	unsigned int	height;		/* Height from the bottom */
-+	unsigned int	path;	/* Offset in parent & height from the bottom */
- 	unsigned int	count;
- 	union {
--		struct radix_tree_node *parent;	/* Used when ascending tree */
--		struct rcu_head	rcu_head;	/* Used when freeing node */
-+		/* Used when ascending tree */
-+		struct {
-+			struct radix_tree_node *parent;
-+			void *private;
-+		};
-+		/* Used when freeing node */
-+		struct rcu_head	rcu_head;
- 	};
-+	struct list_head lru;
- 	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
- 	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
- };
- 
--#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
--#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
--					  RADIX_TREE_MAP_SHIFT))
--
- /* root tags are stored in gfp_mask, shifted by __GFP_BITS_SHIFT */
- struct radix_tree_root {
- 	unsigned int		height;
-@@ -251,7 +265,7 @@ void *__radix_tree_lookup(struct radix_tree_root *root, unsigned long index,
- 			  struct radix_tree_node **nodep, void ***slotp);
- void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
- void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
--bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
-+bool __radix_tree_delete_node(struct radix_tree_root *root,
- 			      struct radix_tree_node *node);
- void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
- void *radix_tree_delete(struct radix_tree_root *, unsigned long);
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index b83cf61..102e37b 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -264,6 +264,7 @@ struct swap_list_t {
- void *workingset_eviction(struct address_space *mapping, struct page *page);
- bool workingset_refault(void *shadow);
- void workingset_activation(struct page *page);
-+extern struct list_lru workingset_shadow_nodes;
- 
- /* linux/mm/page_alloc.c */
- extern unsigned long totalram_pages;
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 1855f0a..0b15c59 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -76,6 +76,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- #endif
- 		NR_TLB_LOCAL_FLUSH_ALL,
- 		NR_TLB_LOCAL_FLUSH_ONE,
-+		WORKINGSET_NODES_RECLAIMED,
- 		NR_VM_EVENT_ITEMS
- };
- 
+@@ -227,10 +227,6 @@ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
+ unsigned int radix_tree_gang_lookup_slot(struct radix_tree_root *root,
+ 			void ***results, unsigned long *indices,
+ 			unsigned long first_index, unsigned int max_items);
+-unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan);
+-unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan);
+ int radix_tree_preload(gfp_t gfp_mask);
+ int radix_tree_maybe_preload(gfp_t gfp_mask);
+ void radix_tree_init(void);
 diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e601c56..1865cd2 100644
+index f442e32..e8adb5d 100644
 --- a/lib/radix-tree.c
 +++ b/lib/radix-tree.c
-@@ -342,7 +342,8 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
- 
- 		/* Increase the height.  */
- 		newheight = root->height+1;
--		node->height = newheight;
-+		BUG_ON(newheight & ~RADIX_TREE_HEIGHT_MASK);
-+		node->path = newheight;
- 		node->count = 1;
- 		node->parent = NULL;
- 		slot = root->rnode;
-@@ -400,11 +401,12 @@ int __radix_tree_create(struct radix_tree_root *root, unsigned long index,
- 			/* Have to add a child node.  */
- 			if (!(slot = radix_tree_node_alloc(root)))
- 				return -ENOMEM;
--			slot->height = height;
-+			slot->path = height;
- 			slot->parent = node;
- 			if (node) {
- 				rcu_assign_pointer(node->slots[offset], slot);
- 				node->count++;
-+				slot->path |= offset << RADIX_TREE_HEIGHT_SHIFT;
- 			} else
- 				rcu_assign_pointer(root->rnode, ptr_to_indirect(slot));
- 		}
-@@ -496,7 +498,7 @@ void *__radix_tree_lookup(struct radix_tree_root *root, unsigned long index,
- 	}
- 	node = indirect_to_ptr(node);
- 
--	height = node->height;
-+	height = node->path & RADIX_TREE_HEIGHT_MASK;
- 	if (index > radix_tree_maxindex(height))
- 		return NULL;
- 
-@@ -702,7 +704,7 @@ int radix_tree_tag_get(struct radix_tree_root *root,
- 		return (index == 0);
- 	node = indirect_to_ptr(node);
- 
--	height = node->height;
-+	height = node->path & RADIX_TREE_HEIGHT_MASK;
- 	if (index > radix_tree_maxindex(height))
- 		return 0;
- 
-@@ -739,7 +741,7 @@ void **radix_tree_next_chunk(struct radix_tree_root *root,
- {
- 	unsigned shift, tag = flags & RADIX_TREE_ITER_TAG_MASK;
- 	struct radix_tree_node *rnode, *node;
--	unsigned long index, offset;
-+	unsigned long index, offset, height;
- 
- 	if ((flags & RADIX_TREE_ITER_TAGGED) && !root_tag_get(root, tag))
- 		return NULL;
-@@ -770,7 +772,8 @@ void **radix_tree_next_chunk(struct radix_tree_root *root,
- 		return NULL;
- 
- restart:
--	shift = (rnode->height - 1) * RADIX_TREE_MAP_SHIFT;
-+	height = rnode->path & RADIX_TREE_HEIGHT_MASK;
-+	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
- 	offset = index >> shift;
- 
- 	/* Index outside of the tree */
-@@ -1140,7 +1143,7 @@ static unsigned long __locate(struct radix_tree_node *slot, void *item,
- 	unsigned int shift, height;
- 	unsigned long i;
- 
--	height = slot->height;
-+	height = slot->path & RADIX_TREE_HEIGHT_MASK;
- 	shift = (height-1) * RADIX_TREE_MAP_SHIFT;
- 
- 	for ( ; height > 1; height--) {
-@@ -1203,7 +1206,8 @@ unsigned long radix_tree_locate_item(struct radix_tree_root *root, void *item)
- 		}
- 
- 		node = indirect_to_ptr(node);
--		max_index = radix_tree_maxindex(node->height);
-+		max_index = radix_tree_maxindex(node->path &
-+						RADIX_TREE_HEIGHT_MASK);
- 		if (cur_index > max_index)
- 			break;
- 
-@@ -1297,7 +1301,7 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
-  *
-  *	Returns %true if @node was freed, %false otherwise.
-  */
--bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
-+bool __radix_tree_delete_node(struct radix_tree_root *root,
- 			      struct radix_tree_node *node)
- {
- 	bool deleted = false;
-@@ -1316,9 +1320,10 @@ bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
- 
- 		parent = node->parent;
- 		if (parent) {
--			index >>= RADIX_TREE_MAP_SHIFT;
-+			unsigned int offset;
- 
--			parent->slots[index & RADIX_TREE_MAP_MASK] = NULL;
-+			offset = node->path >> RADIX_TREE_HEIGHT_SHIFT;
-+			parent->slots[offset] = NULL;
- 			parent->count--;
- 		} else {
- 			root_tag_clear_all(root);
-@@ -1382,7 +1387,7 @@ void *radix_tree_delete_item(struct radix_tree_root *root,
- 	node->slots[offset] = NULL;
- 	node->count--;
- 
--	__radix_tree_delete_node(root, index, node);
-+	__radix_tree_delete_node(root, node);
- 
- 	return entry;
+@@ -946,81 +946,6 @@ next:
  }
-@@ -1415,9 +1420,12 @@ int radix_tree_tagged(struct radix_tree_root *root, unsigned int tag)
- EXPORT_SYMBOL(radix_tree_tagged);
+ EXPORT_SYMBOL(radix_tree_range_tag_if_tagged);
  
- static void
--radix_tree_node_ctor(void *node)
-+radix_tree_node_ctor(void *arg)
- {
--	memset(node, 0, sizeof(struct radix_tree_node));
-+	struct radix_tree_node *node = arg;
-+
-+	memset(node, 0, sizeof(*node));
-+	INIT_LIST_HEAD(&node->lru);
- }
- 
- static __init unsigned long __maxindex(unsigned int height)
+-
+-/**
+- *	radix_tree_next_hole    -    find the next hole (not-present entry)
+- *	@root:		tree root
+- *	@index:		index key
+- *	@max_scan:	maximum range to search
+- *
+- *	Search the set [index, min(index+max_scan-1, MAX_INDEX)] for the lowest
+- *	indexed hole.
+- *
+- *	Returns: the index of the hole if found, otherwise returns an index
+- *	outside of the set specified (in which case 'return - index >= max_scan'
+- *	will be true). In rare cases of index wrap-around, 0 will be returned.
+- *
+- *	radix_tree_next_hole may be called under rcu_read_lock. However, like
+- *	radix_tree_gang_lookup, this will not atomically search a snapshot of
+- *	the tree at a single point in time. For example, if a hole is created
+- *	at index 5, then subsequently a hole is created at index 10,
+- *	radix_tree_next_hole covering both indexes may return 10 if called
+- *	under rcu_read_lock.
+- */
+-unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+-				unsigned long index, unsigned long max_scan)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < max_scan; i++) {
+-		if (!radix_tree_lookup(root, index))
+-			break;
+-		index++;
+-		if (index == 0)
+-			break;
+-	}
+-
+-	return index;
+-}
+-EXPORT_SYMBOL(radix_tree_next_hole);
+-
+-/**
+- *	radix_tree_prev_hole    -    find the prev hole (not-present entry)
+- *	@root:		tree root
+- *	@index:		index key
+- *	@max_scan:	maximum range to search
+- *
+- *	Search backwards in the range [max(index-max_scan+1, 0), index]
+- *	for the first hole.
+- *
+- *	Returns: the index of the hole if found, otherwise returns an index
+- *	outside of the set specified (in which case 'index - return >= max_scan'
+- *	will be true). In rare cases of wrap-around, ULONG_MAX will be returned.
+- *
+- *	radix_tree_next_hole may be called under rcu_read_lock. However, like
+- *	radix_tree_gang_lookup, this will not atomically search a snapshot of
+- *	the tree at a single point in time. For example, if a hole is created
+- *	at index 10, then subsequently a hole is created at index 5,
+- *	radix_tree_prev_hole covering both indexes may return 5 if called under
+- *	rcu_read_lock.
+- */
+-unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+-				   unsigned long index, unsigned long max_scan)
+-{
+-	unsigned long i;
+-
+-	for (i = 0; i < max_scan; i++) {
+-		if (!radix_tree_lookup(root, index))
+-			break;
+-		index--;
+-		if (index == ULONG_MAX)
+-			break;
+-	}
+-
+-	return index;
+-}
+-EXPORT_SYMBOL(radix_tree_prev_hole);
+-
+ /**
+  *	radix_tree_gang_lookup - perform multiple lookup on a radix tree
+  *	@root:		radix tree root
 diff --git a/mm/filemap.c b/mm/filemap.c
-index 30a74be..79a7546 100644
+index ae4846f..0746b7a 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -110,14 +110,48 @@
- static void page_cache_tree_delete(struct address_space *mapping,
- 				   struct page *page, void *shadow)
- {
--	if (shadow) {
--		void **slot;
-+	struct radix_tree_node *node;
-+	unsigned long index;
-+	unsigned int offset;
-+	unsigned int tag;
-+	void **slot;
- 
--		slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
--		radix_tree_replace_slot(slot, shadow);
-+	VM_BUG_ON(!PageLocked(page));
-+
-+	__radix_tree_lookup(&mapping->page_tree, page->index, &node, &slot);
-+
-+	if (shadow)
- 		mapping->nrshadows++;
--	} else
--		radix_tree_delete(&mapping->page_tree, page->index);
-+
-+	if (!node) {
-+		/* Clear direct pointer tags in root node */
-+		mapping->page_tree.gfp_mask &= __GFP_BITS_MASK;
-+		radix_tree_replace_slot(slot, shadow);
-+		return;
-+	}
-+
-+	/* Clear tree tags for the removed page */
-+	index = page->index;
-+	offset = index & RADIX_TREE_MAP_MASK;
-+	for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
-+		if (test_bit(offset, node->tags[tag]))
-+			radix_tree_tag_clear(&mapping->page_tree, index, tag);
-+	}
-+
-+	/* Delete page, swap shadow entry */
-+	radix_tree_replace_slot(slot, shadow);
-+	node->count--;
-+	if (shadow)
-+		node->count += 1U << RADIX_TREE_COUNT_SHIFT;
-+	else
-+		if (__radix_tree_delete_node(&mapping->page_tree, node))
-+			return;
-+
-+	/* Only shadow entries in there, keep track of this node */
-+	if (!(node->count & RADIX_TREE_COUNT_MASK) && list_empty(&node->lru)) {
-+		node->private = mapping;
-+		list_lru_add(&workingset_shadow_nodes, &node->lru);
-+	}
+@@ -686,6 +686,82 @@ int __lock_page_or_retry(struct page *page, struct mm_struct *mm,
  }
  
- /*
-@@ -463,22 +497,34 @@ EXPORT_SYMBOL_GPL(replace_page_cache_page);
- static int page_cache_tree_insert(struct address_space *mapping,
- 				  struct page *page, void **shadowp)
- {
-+	struct radix_tree_node *node;
- 	void **slot;
-+	int error;
- 
--	slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
--	if (slot) {
-+	error = __radix_tree_create(&mapping->page_tree, page->index,
-+				    &node, &slot);
-+	if (error)
-+		return error;
-+	if (*slot) {
- 		void *p;
- 
- 		p = radix_tree_deref_slot_protected(slot, &mapping->tree_lock);
- 		if (!radix_tree_exceptional_entry(p))
- 			return -EEXIST;
--		radix_tree_replace_slot(slot, page);
--		mapping->nrshadows--;
- 		if (shadowp)
- 			*shadowp = p;
--		return 0;
-+		mapping->nrshadows--;
-+		if (node)
-+			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
- 	}
--	return radix_tree_insert(&mapping->page_tree, page->index, page);
-+	radix_tree_replace_slot(slot, page);
-+	if (node) {
-+		node->count++;
-+		/* Installed page, can't be shadow-only anymore */
-+		if (!list_empty(&node->lru))
-+			list_lru_del(&workingset_shadow_nodes, &node->lru);
-+	}
-+	return 0;
- }
- 
- static int __add_to_page_cache_locked(struct page *page,
-diff --git a/mm/list_lru.c b/mm/list_lru.c
-index 72f9dec..c357e8f 100644
---- a/mm/list_lru.c
-+++ b/mm/list_lru.c
-@@ -114,7 +114,7 @@ restart:
- }
- EXPORT_SYMBOL_GPL(list_lru_walk_node);
- 
--int list_lru_init(struct list_lru *lru)
-+int list_lru_init(struct list_lru *lru, struct lock_class_key *key)
- {
- 	int i;
- 	size_t size = sizeof(*lru->node) * nr_node_ids;
-@@ -126,6 +126,8 @@ int list_lru_init(struct list_lru *lru)
- 	nodes_clear(lru->active_nodes);
- 	for (i = 0; i < nr_node_ids; i++) {
- 		spin_lock_init(&lru->node[i].lock);
-+		if (key)
-+			lockdep_set_class(&lru->node[i].lock, key);
- 		INIT_LIST_HEAD(&lru->node[i].list);
- 		lru->node[i].nr_items = 0;
- 	}
-diff --git a/mm/truncate.c b/mm/truncate.c
-index cbd0167..9cf5f88 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -25,6 +25,9 @@
- static void clear_exceptional_entry(struct address_space *mapping,
- 				    pgoff_t index, void *entry)
- {
-+	struct radix_tree_node *node;
-+	void **slot;
-+
- 	/* Handled by shmem itself */
- 	if (shmem_mapping(mapping))
- 		return;
-@@ -35,8 +38,20 @@ static void clear_exceptional_entry(struct address_space *mapping,
- 	 * without the tree itself locked.  These unlocked entries
- 	 * need verification under the tree lock.
- 	 */
--	if (radix_tree_delete_item(&mapping->page_tree, index, entry) == entry)
--		mapping->nrshadows--;
-+	if (!__radix_tree_lookup(&mapping->page_tree, index, &node, &slot))
-+		goto unlock;
-+	if (*slot != entry)
-+		goto unlock;
-+	radix_tree_replace_slot(slot, NULL);
-+	mapping->nrshadows--;
-+	if (!node)
-+		goto unlock;
-+	node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
-+	/* No more shadow entries, stop tracking the node */
-+	if (!(node->count >> RADIX_TREE_COUNT_SHIFT) && !list_empty(&node->lru))
-+		list_lru_del(&workingset_shadow_nodes, &node->lru);
-+	__radix_tree_delete_node(&mapping->page_tree, node);
-+unlock:
- 	spin_unlock_irq(&mapping->tree_lock);
- }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 3ac830d..c5f33d2 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -859,6 +859,8 @@ const char * const vmstat_text[] = {
- 	"nr_tlb_local_flush_all",
- 	"nr_tlb_local_flush_one",
- 
-+	"workingset_nodes_reclaimed",
-+
- #endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
- #endif /* CONFIG_PROC_FS || CONFIG_SYSFS || CONFIG_NUMA */
-diff --git a/mm/workingset.c b/mm/workingset.c
-index 478060f..ba8f0dd 100644
---- a/mm/workingset.c
-+++ b/mm/workingset.c
-@@ -251,3 +251,127 @@ void workingset_activation(struct page *page)
- {
- 	atomic_long_inc(&page_zone(page)->inactive_age);
- }
-+
-+/*
-+ * Page cache radix tree nodes containing only shadow entries can grow
-+ * excessively on certain workloads.  That's why they are tracked on
-+ * per-(NUMA)node lists and pushed back by a shrinker, but with a
-+ * slightly higher threshold than regular shrinkers so we don't
-+ * discard the entries too eagerly - after all, during light memory
-+ * pressure is exactly when we need them.
+ /**
++ * page_cache_next_hole - find the next hole (not-present entry)
++ * @mapping: mapping
++ * @index: index
++ * @max_scan: maximum range to search
 + *
-+ * The list_lru lock nests inside the IRQ-safe mapping->tree_lock, so
-+ * we have to disable IRQs for any list_lru operation as well.
++ * Search the set [index, min(index+max_scan-1, MAX_INDEX)] for the
++ * lowest indexed hole.
++ *
++ * Returns: the index of the hole if found, otherwise returns an index
++ * outside of the set specified (in which case 'return - index >=
++ * max_scan' will be true). In rare cases of index wrap-around, 0 will
++ * be returned.
++ *
++ * page_cache_next_hole may be called under rcu_read_lock. However,
++ * like radix_tree_gang_lookup, this will not atomically search a
++ * snapshot of the tree at a single point in time. For example, if a
++ * hole is created at index 5, then subsequently a hole is created at
++ * index 10, page_cache_next_hole covering both indexes may return 10
++ * if called under rcu_read_lock.
 + */
-+
-+struct list_lru workingset_shadow_nodes;
-+
-+static unsigned long count_shadow_nodes(struct shrinker *shrinker,
-+					struct shrink_control *sc)
++pgoff_t page_cache_next_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan)
 +{
-+	unsigned long count;
++	unsigned long i;
 +
-+	local_irq_disable();
-+	count = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
-+	local_irq_enable();
-+
-+	return count;
-+}
-+
-+#define NOIRQ_BATCH 32
-+
-+static enum lru_status shadow_lru_isolate(struct list_head *item,
-+					  spinlock_t *lru_lock,
-+					  void *arg)
-+{
-+	struct address_space *mapping;
-+	struct radix_tree_node *node;
-+	unsigned long *batch = arg;
-+	unsigned int i;
-+
-+	node = container_of(item, struct radix_tree_node, lru);
-+	mapping = node->private;
-+
-+	/* Don't disable IRQs for too long */
-+	if (--(*batch) == 0) {
-+		spin_unlock_irq(lru_lock);
-+		*batch = NOIRQ_BATCH;
-+		spin_lock_irq(lru_lock);
-+		return LRU_RETRY;
++	for (i = 0; i < max_scan; i++) {
++		if (!radix_tree_lookup(&mapping->page_tree, index))
++			break;
++		index++;
++		if (index == 0)
++			break;
 +	}
 +
-+	/* Coming from the list, inverse the lock order */
-+	if (!spin_trylock(&mapping->tree_lock))
-+		return LRU_SKIP;
++	return index;
++}
++EXPORT_SYMBOL(page_cache_next_hole);
 +
-+	/*
-+	 * The nodes should only contain one or more shadow entries,
-+	 * no pages, so we expect to be able to remove them all and
-+	 * delete and free the empty node afterwards.
-+	 */
++/**
++ * page_cache_prev_hole - find the prev hole (not-present entry)
++ * @mapping: mapping
++ * @index: index
++ * @max_scan: maximum range to search
++ *
++ * Search backwards in the range [max(index-max_scan+1, 0), index] for
++ * the first hole.
++ *
++ * Returns: the index of the hole if found, otherwise returns an index
++ * outside of the set specified (in which case 'index - return >=
++ * max_scan' will be true). In rare cases of wrap-around, ULONG_MAX
++ * will be returned.
++ *
++ * page_cache_prev_hole may be called under rcu_read_lock. However,
++ * like radix_tree_gang_lookup, this will not atomically search a
++ * snapshot of the tree at a single point in time. For example, if a
++ * hole is created at index 10, then subsequently a hole is created at
++ * index 5, page_cache_prev_hole covering both indexes may return 5 if
++ * called under rcu_read_lock.
++ */
++pgoff_t page_cache_prev_hole(struct address_space *mapping,
++			     pgoff_t index, unsigned long max_scan)
++{
++	unsigned long i;
 +
-+	BUG_ON(!node->count);
-+	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
-+
-+	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
-+		if (node->slots[i]) {
-+			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
-+			node->slots[i] = NULL;
-+			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
-+			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
-+			BUG_ON(!mapping->nrshadows);
-+			mapping->nrshadows--;
-+		}
++	for (i = 0; i < max_scan; i++) {
++		if (!radix_tree_lookup(&mapping->page_tree, index))
++			break;
++		index--;
++		if (index == ULONG_MAX)
++			break;
 +	}
-+	list_del_init(&node->lru);
-+	BUG_ON(node->count);
-+	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-+		BUG();
 +
-+	spin_unlock(&mapping->tree_lock);
-+
-+	count_vm_event(WORKINGSET_NODES_RECLAIMED);
-+
-+	return LRU_REMOVED;
++	return index;
 +}
++EXPORT_SYMBOL(page_cache_prev_hole);
 +
-+static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
-+				       struct shrink_control *sc)
-+{
-+	unsigned long batch = NOIRQ_BATCH;
-+	unsigned long freed;
-+
-+	local_irq_disable();
-+	freed = list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
-+				   shadow_lru_isolate, &batch, &sc->nr_to_scan);
-+	local_irq_enable();
-+
-+	return freed;
-+}
-+
-+static struct shrinker workingset_shadow_shrinker = {
-+	.count_objects = count_shadow_nodes,
-+	.scan_objects = scan_shadow_nodes,
-+	.seeks = DEFAULT_SEEKS * 4,
-+	.flags = SHRINKER_NUMA_AWARE,
-+};
-+
-+static struct lock_class_key shadow_nodes_key;
-+
-+static int __init workingset_init(void)
-+{
-+	int ret;
-+
-+	ret = list_lru_init(&workingset_shadow_nodes, &shadow_nodes_key);
-+	if (ret)
-+		goto err;
-+	ret = register_shrinker(&workingset_shadow_shrinker);
-+	if (ret)
-+		goto err_list_lru;
-+	return 0;
-+err_list_lru:
-+	list_lru_destroy(&workingset_shadow_nodes);
-+err:
-+	return ret;
-+}
-+module_init(workingset_init);
++/**
+  * find_get_page - find and get a page reference
+  * @mapping: the address_space to search
+  * @offset: the page index
+diff --git a/mm/readahead.c b/mm/readahead.c
+index e4ed041..9eeeeda 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -351,7 +351,7 @@ static pgoff_t count_history_pages(struct address_space *mapping,
+ 	pgoff_t head;
+ 
+ 	rcu_read_lock();
+-	head = radix_tree_prev_hole(&mapping->page_tree, offset - 1, max);
++	head = page_cache_prev_hole(mapping, offset - 1, max);
+ 	rcu_read_unlock();
+ 
+ 	return offset - 1 - head;
+@@ -430,7 +430,7 @@ ondemand_readahead(struct address_space *mapping,
+ 		pgoff_t start;
+ 
+ 		rcu_read_lock();
+-		start = radix_tree_next_hole(&mapping->page_tree, offset+1,max);
++		start = page_cache_next_hole(mapping, offset + 1, max);
+ 		rcu_read_unlock();
+ 
+ 		if (!start || start - offset > max)
 -- 
 1.8.4.2
 
