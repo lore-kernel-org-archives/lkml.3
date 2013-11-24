@@ -1,109 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab3KXDVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 22:21:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36638 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab3KXDVP (ORCPT
+	id S1756508Ab3KXD0O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 22:26:14 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37856 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756255Ab3KXD0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 22:21:15 -0500
-Date: Sat, 23 Nov 2013 19:21:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: Re: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-Message-ID: <20131124032153.GA25485@kroah.com>
-References: <cover.1383181113.git.lv.zheng@intel.com>
- <2226874.g7cLvQ5SiE@vostro.rjw.lan>
- <20131031120850.GA17048@kroah.com>
- <18963273.JtsE7nd0JW@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
+	Sat, 23 Nov 2013 22:26:13 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/stWx2HRA8TcWIPNfx8mGACLNF5Et6NtY=
+Date: Sat, 23 Nov 2013 22:26:06 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: mturquette@linaro.org, gregory.clement@free-electrons.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Subject: Re: [PATCH] clk: mvebu: staticize of_cpu_clk_setup
+Message-ID: <20131124032606.GU29241@titan.lakedaemon.net>
+References: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 02:58:16AM +0000, Zheng, Lv wrote:
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Thursday, October 31, 2013 8:22 PM
-> > 
-> > On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
-> > > On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
-> > > > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
-> > > > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
-> > > > > issues found in recent platforms.  These fixes make Linux AML interpreter
-> > > > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
-> > > > > be based on such improvements, thus they are good materials for stable.
-> > > > >
-> > > > > This patch set can be safely applied to linux-3.8:
-> > > > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
-> > > > >
-> > > > > The patch set has passed build/boot tests on the following machines:
-> > > > >   Dell Inspiron Mini 1010 (i386)
-> > > > >   HP Compaq 8200 Elite SFF PC (x86-64)
-> > > > >
-> > > > > Bob Moore (4):
-> > > > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
-> > > > >     possible.
-> > > > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
-> > > > >     BufferField refs.
-> > > > >   ACPICA: Return error if DerefOf resolves to a null package element.
-> > > > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
-> > > > >     field.
-> > > >
-> > > > Hi Greg,
-> > > >
-> > > > Please take patches [1-4/4] for stable.
-> > >
-> > > "Which" stable tree?
-> > >
-> > > I don't do 3.8, it's long been end-of-life, although one company is
-> > > trying to keep it alive, but that's not me.
-> > >
-> > > I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
-> > > one(s) should these be applied to?
-> > 
-> > 3.10.x and 3.11.x then.
-> > 
-> > Lv, do the original mainline commits apply to these kernels?
-> > 
-> > Rafael
+On Thu, Nov 07, 2013 at 04:59:33PM +0800, Jisheng Zhang wrote:
+> This symbol is used only in this file. The patch fix the following
+> sparse warning:
+> warning: symbol 'of_cpu_clk_setup' was not declared. Should it be static?
 > 
-> Hi, Rafael and Greg
-> 
-> I checked the back port dependencies since v3.8:
-> 1. [PATCH 1] belongs to v3.9.
-> 2. [PATCH 4] includes an empty line belonging to a coding style fix affecting this series (between [PATCH 3] and [PATCH 4]).
-> Thus,
-> 1. For v3.10:
->     [PATCH 1]: It's already in the repo, so please drop it.
->     [PATCH 2-4]: They can be used directly as 3.10.x stable materials.
-> 2. For v3.11:
->     [PATCH 1]: It's already in the repo, so please drop it.
->     [PATCH 2-3]: They can be used directly as 3.11.x stable materials.
->     [PATCH 4]: The original commit from Linus' tree should be used instead.
-> 
->  I checked the commit log since v3.4.
->  There is no functional change done to the AML executer between v3.4 and v3.8.
->  The problem is there is a coding style fix affecting this series (between v3.4 and [PATCH 1]).
->  I generated the following diff block before applying [PATCH 1], and obtained a successful build/boot to a v3.4 kernel with these patches applied.
-> Thus,
-> 1. For v3.4:
->     [PATCH 1]: You can merge this diff block to [PATCH 1] or simply modify the [PATCH 1] by manually adding this white space.
->     [PATCH 2-4]: They can be used directly as 3.4.x stable materials.
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> ---
+>  drivers/clk/mvebu/clk-cpu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ok, I think I have this all properly queued up for 3.4, 3.10, and
-3.11-stable trees, can you please check and verify I didn't mess
-anything up?
+Applied to mvebu/clk with Gregory and my Acks destined for the clock
+tree.
 
-thanks,
+thx,
 
-greg k-h
+Jason.
