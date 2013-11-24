@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab3KXJbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 04:31:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58624 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3KXJbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 04:31:44 -0500
-Date: Sun, 24 Nov 2013 10:31:43 +0100
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: recursive locking (coredump/vfs_write)
-Message-ID: <20131124093143.GA25132@quack.suse.cz>
-References: <20131113211147.GA30263@redhat.com>
- <20131122211156.GA7520@quack.suse.cz>
- <20131122235217.GK10323@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122235217.GK10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756503Ab3KXJdb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 04:33:31 -0500
+Received: from palahniuk.acksyn.org ([5.9.7.26]:50235 "EHLO
+	palahniuk.acksyn.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab3KXJd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 04:33:27 -0500
+X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 04:33:27 EST
+Date: Sun, 24 Nov 2013 09:23:59 +0000
+From: Michele Baldessari <michele@acksyn.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: <jwboyer@fedoraproject.org>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        bugzilla@colorremedies.com
+Subject: small regression: hwmon: (applesmc) Check key count before
+ proceeding - 5f4513864304672e6ea9eac60583eeac32e679f2
+Message-ID: <20131124092359.4241e633@fante.int.rhx>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-11-13 23:52:18, Al Viro wrote:
-> On Fri, Nov 22, 2013 at 10:11:56PM +0100, Jan Kara wrote:
-> >   Hi,
-> > 
-> > On Wed 13-11-13 16:11:47, Dave Jones wrote:
-> > > here's another one..
-> > > 
-> > > 
-> > > =============================================
-> > > [ INFO: possible recursive locking detected ]
-> > > 3.12.0+ #2 Not tainted
-> > > ---------------------------------------------
-> > > trinity-child3/13302 is trying to acquire lock:
-> > >  (sb_writers#5){.+.+.+}, at: [<ffffffff811b7013>] vfs_write+0x173/0x1f0
-> > > 
-> > > but task is already holding lock:
-> > >  (sb_writers#5){.+.+.+}, at: [<ffffffff8122006d>] do_coredump+0xf1d/0x1070
-> >   Thanks for report. Attached patch should fix this. Al, can you please
-> > merge it?
-> 
-> No.  It's already fixed in mainline by commit 52da40.
-  Ah, right. After pull I can see that change. Sorry for the noise.
+Hi Henrik & Guenther,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+via commit 5f4513864304672e6ea9eac60583eeac32e679f2 the following
+code was added:
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 62c2e32..98814d1 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -525,16 +525,25 @@ static int applesmc_init_smcreg_try(void)
+ {
+        struct applesmc_registers *s = &smcreg;
+        bool left_light_sensor, right_light_sensor;
++       unsigned int count;
+        u8 tmp[1];
+        int ret;
+ 
+        if (s->init_complete)
+                return 0;
+ 
+-       ret = read_register_count(&s->key_count);
++       ret = read_register_count(&count);
+        if (ret)
+                return ret;
+ 
++       if (s->cache && s->key_count != count) {
++               pr_warn("key count changed from %d to %d\n",
++                       s->key_count, count);
++               kfree(s->cache);
++               s->cache = NULL;
++       }
++       s->key_count = count;
++
+        if (!s->cache)
+                s->cache = kcalloc(s->key_count, sizeof(*s->cache),
+GFP_KERNEL); if (!s->cache)
+
+The issue Chris has seen in Fedora on one MacBookPro4,1
+(https://bugzilla.redhat.com/show_bug.cgi?id=1033414) is that this
+machine returns a huge number from read_register_count() so now we will
+try to allocate an insane amount of memory and we will barf:
+[    8.603053] applesmc: key count changed from 261 to 1392508929
+
+Dmidecode for this box is here:
+https://bugzilla.redhat.com/attachment.cgi?id=828118
+
+Do we need to special case this specific machine/smc version or should
+we limit the kcalloc() call to a somewhat sane limit? Other thoughts?
+
+Thanks,
+Michele
