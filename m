@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3KXQg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 11:36:57 -0500
-Received: from mout.web.de ([212.227.15.14]:52057 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab3KXQg4 convert rfc822-to-8bit (ORCPT
+	id S1753063Ab3KXQoo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 11:44:44 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56553 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab3KXQoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 11:36:56 -0500
+	Sun, 24 Nov 2013 11:44:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX183YWiNoBbjnUGHzo1vPEWSzSkSAeNxyg0=
+Date: Sun, 24 Nov 2013 11:44:24 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: orion5x: Fix typo in device_type property of phy
+ node
+Message-ID: <20131124164424.GE29241@titan.lakedaemon.net>
+References: <1384440788-3529-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Message-ID: <trinity-1c222a26-5aad-4747-9ae3-69cce71bd67e-1385311014634@3capp-webde-bs35>
-From: devzero@web.de
-To: linux-kernel@vger.kernel.org
-Subject: Grub2 skips standard linux initialization code ?
-Content-Type: text/plain; charset=UTF-8
-Date: Sun, 24 Nov 2013 17:36:54 +0100 (CET)
-Importance: normal
-Sensitivity: Normal
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-X-Provags-ID: V03:K0:U1NwtwK2VKTTQ08CMJsMNbAE9DeZpDS/bCrKdDyUqtd
- N+Cz7/wYX8z0Ly5pHmG4M9/AWrI14hWgqaNhFho87CV2XLnqf1
- OOtq5Gn7MgQp/hHSonhZUDCaSI2MjxzKRCZr1rscPlWU1QDdUn
- EqvR4uZhH66AiRTMcu5Nd0ucYcnwA6o5S5RPKsmU9+kSPgvNEx
- u62d3C4fyEE1jO/JBP076rD36hNd3Vz0FNwjN2DZszab46cJm3
- IlBONmrCHkiyT75cla6CvktL1MKdzR1cU7chL0vOdP2mKRmHLS
- TOuzAa7QXAVNbwNsSf5dtU0xUQ7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384440788-3529-1-git-send-email-srinivas.kandagatla@st.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On Thu, Nov 14, 2013 at 02:53:08PM +0000, Srinivas Kandagatla wrote:
+> This patch fixes a typo for device_type property of phy node.
+> This can work as of today but once a checks are added in generic code
+> this typo will stop phy from working.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  .../dts/orion5x-lacie-ethernet-disk-mini-v2.dts    |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-regarding https://bugs.launchpad.net/ubuntu/+source/syslinux/+bug/930447 
+Applied to mvebu/dt with Andrew's Ack.
 
-Grub2 "accidentally" heals a problem for systems which cannot boot PAE enabled kernels.  This happens because grub2 apparently jumps into the kernel at a different entry point, so CPUID checking (check for PAE for example) apparently does not occur.
+thx,
 
-Here are some 100 affected users (including me) which cannot boot recent Ubuntu (not even lubuntu, which is meant for that) Installation disk on their older hardware, which makes installation a pain.
-
-This is because Pentium M cpu´s for example often can do PAE, but they incorrectly report.
-
-The ubuntu installer disc does "traditional" boot via syslinux, whereas the installed system boots via grub2. That explains why you can upgrade from ubuntu 12.04 to 13.10 and have a workable system, but you cannot freshly install 13.10.   The most absurd thing is: You cannot even install Lubuntu or Xubuntu, which is especially designed to be used on older hardware. I guess Pentium M is a process which is still widely used.
-
-My question is:
-1. Why does Grub2 think it`s good to skip x86 linux initializiation code? Is that good or bad?
-2. Besides that, wouldn`t it be extremly helpful to add a quirk or skip routine to the kernel initialization code? (kernelparam: "no-pae-ceck" for example). 
-
-regards
-roland
+Jason.
