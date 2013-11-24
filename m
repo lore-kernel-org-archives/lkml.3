@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab3KXAZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 19:25:27 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41057 "EHLO
+	id S1756366Ab3KXA1B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 19:27:01 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41062 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380Ab3KXAZX (ORCPT
+	with ESMTP id S1755965Ab3KXA06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 19:25:23 -0500
-Date: Sun, 24 Nov 2013 00:25:13 +0000
+	Sat, 23 Nov 2013 19:26:58 -0500
+Date: Sun, 24 Nov 2013 00:26:50 +0000
 From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
 To: Peter Hurley <peter@hurleysoftware.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 7/7] n_tty: trace input/read flow control
-Message-ID: <20131124002513.0a806665@alan.etchedpixels.co.uk>
-In-Reply-To: <1385135965-4235-8-git-send-email-peter@hurleysoftware.com>
+Subject: Re: [PATCH tty-next 5/7] n_tty: Refactor input_available_p() by
+ call site
+Message-ID: <20131124002650.74902872@alan.etchedpixels.co.uk>
+In-Reply-To: <1385135965-4235-6-git-send-email-peter@hurleysoftware.com>
 References: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>
-	<1385135965-4235-8-git-send-email-peter@hurleysoftware.com>
+	<1385135965-4235-6-git-send-email-peter@hurleysoftware.com>
 Organization: Intel Corporation
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -27,14 +28,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Nov 2013 10:59:25 -0500
+On Fri, 22 Nov 2013 10:59:23 -0500
 Peter Hurley <peter@hurleysoftware.com> wrote:
 
-> Instrument .receive_buf() and read() paths with trace_printk's
-> to aid in debugging flow control changes.
+> Distinguish if caller is n_tty_poll() or n_tty_read(), and
+> set the read/wakeup threshold accordingly.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-tty devices have a device, we have a dev_dbg() layer. The old tty trace
-predates this but there isn't really any excuse for not using it now that
-I can see ?
-
-Alan
+Doh ignore previous.. yes that patch is right.  I should pay attention to
+0/7 8)
