@@ -1,116 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab3KXEYV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Nov 2013 23:24:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54236 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab3KXEYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Nov 2013 23:24:19 -0500
-Date: Sun, 24 Nov 2013 15:24:03 +1100
-From: NeilBrown <neilb@suse.de>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Joern Engel <joern@logfs.org>,
-        Prasad Joshi <prasadjoshi.linux@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: Re: [PATCH] block: submit_bio_wait() conversions
-Message-ID: <20131124152403.2206a8cc@notabene.brown>
-In-Reply-To: <1385265810-16095-1-git-send-email-kmo@daterainc.com>
-References: <1385265810-16095-1-git-send-email-kmo@daterainc.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/OI_i1A26nP+M3CNhEyD2Asr"; protocol="application/pgp-signature"
+	id S1756641Ab3KXE05 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Nov 2013 23:26:57 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:52823 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab3KXE0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Nov 2013 23:26:55 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68e-b7f7e6d00000477d-46-5291800dd354
+Content-transfer-encoding: 8BIT
+Message-id: <1385267160.26319.98.camel@kjgkr>
+Subject: Re: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by
+ merging for mount performance
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?Q?=E8=B0=AD=E5=A7=9D?= <shu.tan@samsung.com>
+Date: Sun, 24 Nov 2013 13:26:00 +0900
+In-reply-to: <000301cee71f$b0e54160$12afc420$@samsung.com>
+References: <000301cee71f$b0e54160$12afc420$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zQ13eholBBtdeq1r8b/rIZnFpkbvF
+	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoEr4/ahbewF
+	O/kqPrdsZmxg3MHdxcjBISFgItH+y7WLkRPIFJO4cG89WxcjF4eQwDJGib9Xr7FAJEwkjvy8
+	CZWYzihx//4xNpAEr4CgxI/J91hABjELyEscuZQNEmYWUJeYNG8RM0T9K0aJH6s/MUPU60pc
+	mTWVEaReWCBf4smqVBCTTUBbYvN+A5AKIQFFibf777KC2CICShK/5i9iBRnDLLCQUeLggptg
+	a1kEVCXun3rJDNLLKWAlcf1sOkSvpcTqM6fBevkFRCUOL9zODHG+ksTu9k52kDkSAqfYJY5M
+	+soIMUdA4tvkQyyQcJCV2HQAql5S4uCKGywTGCVmIXlyFsKTs5A8uYCReRWjaGpBckFxUnqR
+	kV5xYm5xaV66XnJ+7iZGSNT17WC8ecD6EGMy0MaJzFKiyfnAqM0riTc0NjOyMDUxNTYytzQj
+	TVhJnHfRw6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxruVhnSam5/g2esS68OH+5tYqx
+	zaZIw42XjkTMX+B9fl7hat7irY4PEha2fT2QZ7NO4pb4zFcam+7YG8rEcO48NLX/dNb9awYi
+	5ZkVNrftLhhuFvuuacjz59QVA2afzebPORi+vJwk25O7/L6yiafA1j7F4Jgbf2+8K67YskeB
+	q32ZmZj+AXYlluKMREMt5qLiRAAGsPuj0AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQV3eholBBq96FC3+N31ks7i0yN1i
+	z96TLBaXd81hs2hdeJ7ZgdVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmHH70Db2gp18FZ9bNjM2MO7g7mLk5JAQMJE48vMmG4QtJnHh3nog
+	m4tDSGA6o8T9+8fAErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj6V4wSP1Z/Yoao
+	15W4MmsqI0i9sEC+xJNVqSAmm4C2xOb9BiAVQgKKEm/332UFsUUElCR+zV/ECjKGWWAho8TB
+	BRD3sAioStw/9ZIZpJdTwEri+tl0iF5LidVnToP18guIShxeuJ0Z4nwlid3tnewTGIVmITl6
+	FsLRs5AcvYCReRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcFQ/k97BuKrB4hCjAAejEg9v
+	o+PEICHWxLLiytxDjBIczEoivF3xQCHelMTKqtSi/Pii0pzU4kOMyUB3T2SWEk3OByacvJJ4
+	Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgTJOcWvI7Q83plcbb
+	+L8JtmVZSb9VE/Ztq9Jt/sqkOnfrrVOX/LIlmLcfaZy20/58s7WkiIlnkKFChX6S4t97f7v+
+	T9ulUC0y8bLby2CWPxp3yr/LfHZ4sfuKcmtr7e5PuRpbvVmVf31U/Ol3/nXqq5a0tdbOS6aI
+	7K4or1scJW9zgPNQ1uoiJZbijERDLeai4kQA5Jpfdy4DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/OI_i1A26nP+M3CNhEyD2Asr
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Sat, 23 Nov 2013 20:03:30 -0800 Kent Overstreet <kmo@daterainc.com> wrot=
-e:
-
-> It was being open coded in a few places.
->=20
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Joern Engel <joern@logfs.org>
-> Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: Chris Mason <chris.mason@fusionio.com>
-
-Acked-by: NeilBrown <neilb@suse.de>
-
-for the drivers/md/md.c bits, however...
-
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index b6b7a28..8700de3 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -776,16 +776,10 @@ void md_super_wait(struct mddev *mddev)
->  	finish_wait(&mddev->sb_wait, &wq);
+2013-11-22 (금), 09:09 +0800, Chao Yu:
+> Previously we read sit entries page one by one, this method lost the chance 
+> of reading contiguous page together. So we read pages as contiguous as 
+> possible for better mount performance.
+> 
+> change log:
+>  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng 
+>    suggested.
+>  o add mark_page_accessed() before release page to delay VM reclaiming.
+>  o remove '*order' for simplification of function as Jaegeuk Kim suggested.
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/segment.c |  103 +++++++++++++++++++++++++++++++++++++++--------------
+>  fs/f2fs/segment.h |    2 ++
+>  2 files changed, 78 insertions(+), 27 deletions(-)
+> 
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 8149eba..998e7d3 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/blkdev.h>
+>  #include <linux/prefetch.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/swap.h>
+>  
+>  #include "f2fs.h"
+>  #include "segment.h"
+> @@ -1488,41 +1489,89 @@ static int build_curseg(struct f2fs_sb_info *sbi)
+>  	return restore_curseg_summaries(sbi);
 >  }
-> =20
-> -static void bi_complete(struct bio *bio, int error)
-> -{
-> -	complete((struct completion*)bio->bi_private);
-> -}
-> -
->  int sync_page_io(struct md_rdev *rdev, sector_t sector, int size,
->  		 struct page *page, int rw, bool metadata_op)
->  {
->  	struct bio *bio =3D bio_alloc_mddev(GFP_NOIO, 1, rdev->mddev);
-> -	struct completion event;
->  	int ret;
-> =20
->  	rw |=3D REQ_SYNC;
-        ^^^^^^^^^^^^^^^
+>  
+> +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start, int nrpages)
+> +{
+> +	struct address_space *mapping = sbi->meta_inode->i_mapping;
+> +	struct page *page;
+> +	block_t blk_addr, prev_blk_addr = 0;
+> +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
+> +	int blkno = start;
+> +
+> +	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
+> +
+> +		blk_addr = current_sit_addr(sbi, start * SIT_ENTRY_PER_BLOCK);
 
-you could remove this line as well, as submit_bio_wait sets this flag for u=
-s.
-
-
-> @@ -801,11 +795,7 @@ int sync_page_io(struct md_rdev *rdev, sector_t sect=
-or, int size,
->  	else
->  		bio->bi_sector =3D sector + rdev->data_offset;
->  	bio_add_page(bio, page, size, 0);
-> -	init_completion(&event);
-> -	bio->bi_private =3D &event;
-> -	bio->bi_end_io =3D bi_complete;
-> -	submit_bio(rw, bio);
-> -	wait_for_completion(&event);
-> +	submit_bio_wait(rw, bio);
-> =20
->  	ret =3D test_bit(BIO_UPTODATE, &bio->bi_flags);
->  	bio_put(bio);
-
+Should be:
+	blk_addr = current_sit_addr(sbi, blkno * SIT_ENTRY_PER_BLOCK);
+	                                -------
+I'll fix this and merge the patch though.
 Thanks,
-NeilBrown
 
---Sig_/OI_i1A26nP+M3CNhEyD2Asr
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- 
+Jaegeuk Kim
+Samsung
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBUpF/Yznsnt1WYoG5AQI7CA/9E4jsGi8VCKjBEKA5M9Lk2z0Zldf7gk+q
-s5JtZPZStkQBgiZzo4tz7OKZznMhzrEnViYLxbT8rgupSaIvCrJs0Yzu+JH2euzD
-KbPjEx8aadMoo/cuScgyu5LlSoPpf9jS6kJcBCLLkNUpCGlw+SHDYSZej04ExUS1
-4isVSNJ9GzzeyHPo7C6s0ucN6VCLHBpIBBUvZ9Ptkj4UxRNcIml3oeN9APp2klxM
-AAZQLwgW0a8nerDyqo6H/ekh53s+TwfRRa7uosmNB3YyNHeFKGvyJqF83i3AIKBJ
-eh3v6ApDjRsmnVr5YIeZnkI/qG50GpA6SjhdMhGatnPQt2DVlh5PuxB0BQYc6g0a
-ks4e/80t1XB6rJQMnszdNLkd48xSTlQfn/pLAW2tItT9VlLNNH9+2q6P9xQ+qIF/
-WQVWc7PTBXx6r4IWLM+bEI0T5D6u4IH3CAb4d4ZixfR204+DTY1HvfKe5f9s+ZXS
-/U2QxWYnRPFRgpdobdgDHMc24F0XQyebXIcBVaDWC2DELxWYyDrgFAP4eOaafBu7
-pJinkEpKAnUvMmU65ehpKxME71i4sSUu51ujTwJakytZ+oxaJ/70TnejqzTdi54s
-v3xi7jDPxAzY2OepfknGGCb6/0KZin4rwap0PxxwR4hodKppKwJTy9qI/mCqheF+
-Iel+AL7Bg2Y=
-=f7aL
------END PGP SIGNATURE-----
-
---Sig_/OI_i1A26nP+M3CNhEyD2Asr--
