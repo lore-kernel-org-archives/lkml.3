@@ -1,116 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab3KXJlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 04:41:45 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:45276 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab3KXJln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 04:41:43 -0500
-Message-ID: <5291C9F8.5090105@gmail.com>
-Date: Sun, 24 Nov 2013 10:42:16 +0100
-From: Francis Moreau <francis.moro@gmail.com>
+	id S1752008Ab3KXJsO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 04:48:14 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44839 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab3KXJsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 04:48:11 -0500
+Message-ID: <5291CB01.1010506@ti.com>
+Date: Sun, 24 Nov 2013 15:16:41 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Jingoo Han <jg1.han@samsung.com>, "'Borislav Petkov'" <bp@alien8.de>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <24318767.PoCLxGCZH4@vostro.rjw.lan> <528FCE57.2000805@gmail.com> <2363041.q8n2SXViVK@vostro.rjw.lan>
-In-Reply-To: <2363041.q8n2SXViVK@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 10/12] mtd: nand: davinci: don't set timings if AEMIF
+ is used
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-11-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D53@DNCE04.ent.ti.com> <528307F0.6000805@ti.com> <52838941.4060207@ti.com> <5284ABB9.70608@ti.com> <5284DFE7.70308@ti.com> <528E3DD4.7030607@ti.com> <528F968F.40306@ti.com>
+In-Reply-To: <528F968F.40306@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rafael,
-
-On 11/22/2013 11:08 PM, Rafael J. Wysocki wrote:
-> On Friday, November 22, 2013 10:36:23 PM Francis Moreau wrote:
->> On 11/22/2013 01:54 PM, Rafael J. Wysocki wrote:
->>> On Friday, November 22, 2013 10:57:25 AM Francis Moreau wrote:
->>>> Le 22/11/2013 08:43, Francis Moreau a écrit :
->>>>> Le 21/11/2013 12:17, Jingoo Han a écrit :
->>>>> [...]
+On Friday 22 November 2013 11:08 PM, Santosh Shilimkar wrote:
+> On Thursday 21 November 2013 12:07 PM, Nori, Sekhar wrote:
+>> On 11/14/2013 8:06 PM, Santosh Shilimkar wrote:
+>>> On Thursday 14 November 2013 05:53 AM, Nori, Sekhar wrote:
+>>>> On Wednesday 13 November 2013 07:44 PM, Santosh Shilimkar wrote:
+>>>>> On Wednesday 13 November 2013 12:02 AM, Sekhar Nori wrote:
+>>>>>> On Monday 11 November 2013 10:40 PM, Khoronzhuk, Ivan wrote:
+>>>>>>> If Davinci AEMIF is used we don't need to set timings and bus width.
+>>>>>>> It is done by AEMIF driver (drivers/memory/davinci-aemfi.c).
 >>>>>>>
->>>>>>>> Also I took a look at the changes between v3.11 and v3.12 in this area
->>>>>>>> and those changes match the issue I'm facing:
->>>>>>>>
->>>>>>>> $ git log --oneline v3.11..v3.12 -- drivers/mfd/rtsx_pcr.c
->>>>>>>> 09fd867 mfd: rtsx: Copyright modifications
->>>>>>>> eb891c6 mfd: rtsx: Configure to enter a deeper power-saving mode in S3
->>>>>>>> 7140812 mfd: rtsx: Move some actions from rtsx_pci_init_hw to individual
->>>>>>>> extra_init_hw
->>>>>>>> 5947c16 mfd: rtsx: Add shutdown callback in rtsx_pci_driver
->>>>>>>> 773ccdf mfd: rtsx: Read vendor setting from config space
+>>>>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>>>>> ---
+>>>>>>>  drivers/mtd/nand/davinci_nand.c |   22 +++++++++++++++-------
+>>>>>>>  1 file changed, 15 insertions(+), 7 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+>>>>>>> index 4705214..879e915 100644
+>>>>>>> --- a/drivers/mtd/nand/davinci_nand.c
+>>>>>>> +++ b/drivers/mtd/nand/davinci_nand.c
+>>>>>>> @@ -742,27 +742,35 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+>>>>>>>                 goto err_clk_enable;
+>>>>>>>         }
+>>>>>>>
+>>>>>>> +#if !IS_ENABLED(CONFIG_TI_DAVINCI_AEMIF)
 >>>>>>
->>>>>> In my opinion, rtsx_pci_resume()/rtsx_pci_suspend() in realtek PCIe card
->>>>>> reader driver may make the kernel panic.
+>>>>>> This is a hack! Just because AEMIF driver is enabled, it does not
+>>>>>> guarantee that the timings have been setup by it. Instead of configuring
+>>>>>> timings in two drivers, why not just convert everyone over to use the
+>>>>>> new driver. Dont worry about breaking old platforms, I will help test
+>>>>>> and ack them.
 >>>>>>
->>>>>> I think that the commit "mfd: rtsx: Configure to enter a deeper
->>>>>> power-saving mode in S3" may be the culprit.
->>>>>
->>>>> Unfortunately no, reverting this commit on top of v3.12 doesn't help. I
->>>>> also reverted 7140812, 5947c16 but it didn't improve anything.
->>>>>
->>>>> The good news is that I managed to have a "light" kernel configuration
->>>>> which is faster to build and more important it seems that the bug is
->>>>> almost 100% reproductible now.
->>>>>
->>>>> So I'll try to do another git-bisect session later.
+>>>>> How about you take a stab at and convert the DaVinci code over to make
+>>>>> use of new driver. We are trying to re-use as much as possible from the
+>>>>> common drivers and also making an option so that the DaVinci arch can
+>>>>> move over to these drivers if they want to.
 >>>>
->>>> So after bisecting between v3.11..v3.12 range, git bisect told me:
+>>>> Sure I could.
 >>>>
->>>> the first bad commit is 551f5c74e17ba9257cdc35bf657ee448cad2d5b0
->>>>
->>>> Merge branch 'acpi-processor'
->>>>
->>>>     * acpi-processor:
->>>>       ACPI / processor: Acquire writer lock to update CPU maps
->>>>       ACPI / processor: Remove acpi_processor_get_limit_info()
->>>>
->>>> The two commits brought by the merge are not the culprits because
->>>> reseting HEAD on "ACPI / processor: Acquire writer lock to update CPU
->>>> maps" doesn't have the issue anymore.
->>>>
->>>> At that point I'm not sure how to bisect futher.
+>>> Thanks
 >>>
->>> Does the second parent of this merge (that is, 8462d9df9d50) have the problem?
->>>
+>>>> Ivan,
+>>>>
+>>>> The AEMIF driver does not use platfrom_data currently. Is that something
+>>>> you can add or you want me to take a stab at that as well?
+>>>>
+>>> The AEMIF new driver is device tree only and thats the direction. So the
+>>> better thing would be to convert Davinci to DT and then make use of this
+>>> new driver. Thats how most of the new drivers used on arm socs are
+>>> moving. Adding platform data to new driver is a step in backward
+>>> direction so I would want to avoid that.
 >>
->> Yes it does.
+>> Yes, that would be the ideal way. But the reality is that there is close
+>> to zero chance of all the DaVinci platforms using AEMIF ever getting
+>> converted to DT. This means that we will never be able to get rid of
+>> this piece of code.
 >>
->> Ok, I've finally managed to find out the bad commit:
->> ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
->> over system PM transitions
+> Well that means some of those platforms support will get deprecated
+> soon considering other basic frameworks like irq, timer wheel etc
+> is assuming the DT direction. But its your call because if you
+> want those platforms to live, you need to convert them to DT.
+>  
+>> I do agree platform data is not the direction you want to take on ARM
+>> but at the same time its not really a deprecated mechanism as far as the
+>> broader kernel is concerned.
 >>
->> I verified that the parent commit doesn't have the problem.
+>> So, can we consider adding platform data mechanism to the AEMIF driver?
+>>
+> Sorry but answer is "NO". If the above hack is really bothering you,
+> we can actually rip out the above code in question and move it
+> to mach-davinci. Infact thats the best direction to make the
+> mtd nandn driver independent of any platform quirks(dt, pdata etc)
 > 
-> Interesting.
-> 
->> Rafael, you're the man now ;)
-> 
-> I kind of don't see how that commit may result in behavior that you
-> described earlier in the thread.
-> 
-> You get a memory corruption that seems to have started to happen because
-> we're holding an additional lock over suspend resume now.  Something's fishy
-> on that machine and we need to figure out what it is.
-> 
-> Please file a bug at bugzilla.kernel.org against ACPI and assign it to me.
-> Please put all of the relevant info in there and attach the output of dmesg
-> after a fresh boot and the output of acpidump from the affected machine to
-> the bug entry.
+> Ivan already has a patch to do that and he is going to post
+> that patch. With that patch, we won't need $subject patch.
 > 
 
-I just sent a new trace with DEBUG_OBJECTS enabled which seems to give
-some interesting traces.
+Okay I will wait for the patch.
 
-If nothing can be found from them, I'll do the bug report.
-
-Thanks.
+Thanks,
+Sekhar
