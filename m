@@ -1,276 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab3KXRSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 12:18:09 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50993 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab3KXRSF convert rfc822-to-8bit (ORCPT
+	id S1756472Ab3KXRWA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 12:22:00 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:38711 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab3KXRV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 12:18:05 -0500
+	Sun, 24 Nov 2013 12:21:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
-	<1384856285-19593-1-git-send-email-pali.rohar@gmail.com>
-	<1384856285-19593-3-git-send-email-pali.rohar@gmail.com>
-Date: Sun, 24 Nov 2013 18:18:03 +0100
-Message-ID: <CAOf5uwkrep0PhOn67+9PHmP2A2Jxrp9DNK3BRp9D_sYu_PYvvw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
-From: Michael Trimarchi <michael@amarulasolutions.com>
-To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Sun, 24 Nov 2013 09:21:57 -0800
+Message-ID: <CAJusiZVq3O1rok20HyYaoJDWxjtBdvMbDtjCif+sCyKPzpXMNA@mail.gmail.com>
+Subject: AF_ALG buggy with sendfile
+From: Shawn Landden <shawnlandden@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, herbert@gondor.hengli.com.au,
+        linux-crypto@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7bdc131e08105a04ebef7c26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--047d7bdc131e08105a04ebef7c26
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Tue, Nov 19, 2013 at 11:18 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> This patch removing set_mode_hook function from board data and replacing it with
-> new string variable of notifier power supply device. After this change it is
-> possible to add DT support because driver does not need specific board function
-> anymore. Only static data and name of power supply device is required.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/power/bq2415x_charger.c       |   77 +++++++++++++++++++++++++--------
->  include/linux/power/bq2415x_charger.h |   48 +++-----------------
->  2 files changed, 65 insertions(+), 60 deletions(-)
->
-> diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-> index 0727f92..d89583d 100644
-> --- a/drivers/power/bq2415x_charger.c
-> +++ b/drivers/power/bq2415x_charger.c
-> @@ -1,7 +1,7 @@
->  /*
->   * bq2415x charger driver
->   *
-> - * Copyright (C) 2011-2012  Pali Rohár <pali.rohar@gmail.com>
-> + * Copyright (C) 2011-2013  Pali Rohár <pali.rohar@gmail.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
-> @@ -170,6 +170,7 @@ struct bq2415x_device {
->         struct bq2415x_platform_data init_data;
->         struct power_supply charger;
->         struct delayed_work work;
-> +       struct notifier_block nb;
->         enum bq2415x_mode reported_mode;/* mode reported by hook function */
->         enum bq2415x_mode mode;         /* current configured mode */
->         enum bq2415x_chip chip;
-> @@ -791,24 +792,53 @@ static int bq2415x_set_mode(struct bq2415x_device *bq, enum bq2415x_mode mode)
->
->  }
->
-> -/* hook function called by other driver which set reported mode */
-> -static void bq2415x_hook_function(enum bq2415x_mode mode, void *data)
-> +static int bq2415x_notifier_call(struct notifier_block *nb,
-> +               unsigned long val, void *v)
->  {
-> -       struct bq2415x_device *bq = data;
-> +       struct bq2415x_device *bq =
-> +               container_of(nb, struct bq2415x_device, nb);
-> +       struct power_supply *psy = v;
-> +       enum bq2415x_mode mode;
-> +       union power_supply_propval prop;
-> +       int ret;
-> +       int mA;
->
-> -       if (!bq)
-> -               return;
-> +       if (val != PSY_EVENT_PROP_CHANGED)
-> +               return NOTIFY_OK;
-> +
-> +       if (strcmp(psy->name, bq->init_data.notify_device) != 0)
-> +               return NOTIFY_OK;
-> +
-> +       dev_dbg(bq->dev, "notifier call was called\n");
-> +
-> +       ret = psy->get_property(psy, POWER_SUPPLY_PROP_CURRENT_MAX, &prop);
-> +       if (ret != 0)
-> +               return NOTIFY_OK;
+If I use sendfile() to send to a accept()ed AF_ALG socket set up for
+"hash", I get the wrong
+answer, if I read() and then write() I get the right answer. None of
+the system calls return an error.
 
-So you can read this value without any type of synchronization with
-the power_supply_core
-and sysfs implementation?
+test case attached.
 
+-- 
 
-Michael
+---
+Shawn Landden
++1 360 389 3001 (SMS preferred)
 
-> +
-> +       mA = prop.intval;
-> +
-> +       if (mA == 0)
-> +               mode = BQ2415X_MODE_OFF;
-> +       else if (mA < 500)
-> +               mode = BQ2415X_MODE_NONE;
-> +       else if (mA < 1800)
-> +               mode = BQ2415X_MODE_HOST_CHARGER;
-> +       else
-> +               mode = BQ2415X_MODE_DEDICATED_CHARGER;
-> +
-> +       if (bq->reported_mode == mode)
-> +               return NOTIFY_OK;
->
-> -       dev_dbg(bq->dev, "hook function was called\n");
->         bq->reported_mode = mode;
->
->         /* if automode is not enabled do not tell about reported_mode */
->         if (bq->automode < 1)
-> -               return;
-> +               return NOTIFY_OK;
->
->         sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
->         bq2415x_set_mode(bq, bq->reported_mode);
->
-> +       return NOTIFY_OK;
->  }
->
->  /**** timer functions ****/
-> @@ -1508,6 +1538,7 @@ static int bq2415x_probe(struct i2c_client *client,
->         int num;
->         char *name;
->         struct bq2415x_device *bq;
-> +       struct power_supply *psy;
->
->         if (!client->dev.platform_data) {
->                 dev_err(&client->dev, "platform data not set\n");
-> @@ -1569,16 +1600,27 @@ static int bq2415x_probe(struct i2c_client *client,
->                 goto error_4;
->         }
->
-> -       if (bq->init_data.set_mode_hook) {
-> -               if (bq->init_data.set_mode_hook(
-> -                               bq2415x_hook_function, bq)) {
-> -                       bq->automode = 1;
-> +       if (bq->init_data.notify_device) {
-> +               bq->nb.notifier_call = bq2415x_notifier_call;
-> +               ret = power_supply_reg_notifier(&bq->nb);
-> +               if (ret) {
-> +                       dev_err(bq->dev, "failed to reg notifier: %d\n", ret);
-> +                       goto error_5;
-> +               }
-> +               psy = power_supply_get_by_name(bq->init_data.notify_device);
-> +               if (psy) {
-> +                       /* Query for initial reported_mode and set it */
-> +                       bq2415x_notifier_call(&bq->nb,
-> +                                       PSY_EVENT_PROP_CHANGED, psy);
->                         bq2415x_set_mode(bq, bq->reported_mode);
-> -                       dev_info(bq->dev, "automode enabled\n");
->                 } else {
-> -                       bq->automode = -1;
-> -                       dev_info(bq->dev, "automode failed\n");
-> +                       dev_info(bq->dev, "notifier power supply device (%s) "
-> +                               "for automode is not registred yet... "
-> +                               "automode will not work without that device\n",
-> +                               bq->init_data.notify_device);
->                 }
-> +               bq->automode = 1;
-> +               dev_info(bq->dev, "automode enabled\n");
->         } else {
->                 bq->automode = -1;
->                 dev_info(bq->dev, "automode not supported\n");
-> @@ -1590,6 +1632,7 @@ static int bq2415x_probe(struct i2c_client *client,
->         dev_info(bq->dev, "driver registered\n");
->         return 0;
->
-> +error_5:
->  error_4:
->         bq2415x_sysfs_exit(bq);
->  error_3:
-> @@ -1610,8 +1653,8 @@ static int bq2415x_remove(struct i2c_client *client)
->  {
->         struct bq2415x_device *bq = i2c_get_clientdata(client);
->
-> -       if (bq->init_data.set_mode_hook)
-> -               bq->init_data.set_mode_hook(NULL, NULL);
-> +       if (bq->init_data.notify_device)
-> +               power_supply_unreg_notifier(&bq->nb);
->
->         bq2415x_sysfs_exit(bq);
->         bq2415x_power_supply_exit(bq);
-> diff --git a/include/linux/power/bq2415x_charger.h b/include/linux/power/bq2415x_charger.h
-> index 8dcc0f4..50762af 100644
-> --- a/include/linux/power/bq2415x_charger.h
-> +++ b/include/linux/power/bq2415x_charger.h
-> @@ -1,7 +1,7 @@
->  /*
->   * bq2415x charger driver
->   *
-> - * Copyright (C) 2011-2012  Pali Rohár <pali.rohar@gmail.com>
-> + * Copyright (C) 2011-2013  Pali Rohár <pali.rohar@gmail.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
-> @@ -31,46 +31,9 @@
->   * termination current. It it is less or equal to zero, configuring charge
->   * and termination current will not be possible.
->   *
-> - * Function set_mode_hook is needed for automode (setting correct current
-> - * limit when charger is connected/disconnected or setting boost mode).
-> - * When is NULL, automode function is disabled. When is not NULL, it must
-> - * have this prototype:
-> - *
-> - *    int (*set_mode_hook)(
-> - *      void (*hook)(enum bq2415x_mode mode, void *data),
-> - *      void *data)
-> - *
-> - * hook is hook function (see below) and data is pointer to driver private
-> - * data
-> - *
-> - * bq2415x driver will call it as:
-> - *
-> - *    platform_data->set_mode_hook(bq2415x_hook_function, bq2415x_device);
-> - *
-> - * Board/platform function set_mode_hook return non zero value when hook
-> - * function was successful registered. Platform code should call that hook
-> - * function (which get from pointer, with data) every time when charger
-> - * was connected/disconnected or require to enable boost mode. bq2415x
-> - * driver then will set correct current limit, enable/disable charger or
-> - * boost mode.
-> - *
-> - * Hook function has this prototype:
-> - *
-> - *    void hook(enum bq2415x_mode mode, void *data);
-> - *
-> - * mode is bq2415x mode (charger or boost)
-> - * data is pointer to driver private data (which get from
-> - * set_charger_type_hook)
-> - *
-> - * When bq driver is being unloaded, it call function:
-> - *
-> - *    platform_data->set_mode_hook(NULL, NULL);
-> - *
-> - * (hook function and driver private data are NULL)
-> - *
-> - * After that board/platform code must not call driver hook function! It
-> - * is possible that pointer to hook function will not be valid and calling
-> - * will cause undefined result.
-> + * For automode support is needed to provide name of power supply device
-> + * in value notify_device. Device driver must immediately report property
-> + * POWER_SUPPLY_PROP_CURRENT_MAX when current changed.
->   */
->
->  /* Supported modes with maximal current limit */
-> @@ -89,8 +52,7 @@ struct bq2415x_platform_data {
->         int charge_current;             /* mA */
->         int termination_current;        /* mA */
->         int resistor_sense;             /* m ohm */
-> -       int (*set_mode_hook)(void (*hook)(enum bq2415x_mode mode, void *data),
-> -                            void *data);
-> +       const char *notify_device;      /* name */
->  };
->
->  #endif
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--047d7bdc131e08105a04ebef7c26
+Content-Type: text/x-csrc; charset=US-ASCII; name="af_alg.c"
+Content-Disposition: attachment; filename="af_alg.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hoek04oa0
+
+CiNpbmNsdWRlIDxzeXMvc2VuZGZpbGUuaD4KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4KI2luY2x1
+ZGUgPGxpbnV4L2lmX2FsZy5oPgojaW5jbHVkZSA8c3RkaW8uaD4KI2luY2x1ZGUgPHN5cy9zdGF0
+Lmg+CiNpbmNsdWRlIDxmY250bC5oPgoKaW50IG1haW4odm9pZCkKewoJaW50IG9wZmQ7CglpbnQg
+dGZtZmQ7CglzdHJ1Y3Qgc29ja2FkZHJfYWxnIHNhID0gewoJCS5zYWxnX2ZhbWlseSA9IEFGX0FM
+RywKCQkuc2FsZ190eXBlID0gImhhc2giLAoJCS5zYWxnX25hbWUgPSAic2hhMSIKCX07CgljaGFy
+IGJ1ZjJbMTAwMDAwMDBdOwoJY2hhciBidWZbMjBdOwoJaW50IGk7CglzdHJ1Y3Qgc3RhdCBzdDsK
+Cgl0Zm1mZCA9IHNvY2tldChBRl9BTEcsIFNPQ0tfU0VRUEFDS0VULCAwKTsKCgliaW5kKHRmbWZk
+LCAoc3RydWN0IHNvY2thZGRyICopJnNhLCBzaXplb2Yoc2EpKTsKCglvcGZkID0gYWNjZXB0KHRm
+bWZkLCBOVUxMLCAwKTsKCiAgICAgICAgaW50IHRydWUgPSBvcGVuKCIvYmluL3RydWUiLCBPX1JE
+T05MWSk7CiAgICAgICAgZnN0YXQodHJ1ZSwgJnN0KTsKCiAgICAgICAgc2VuZGZpbGUob3BmZCwg
+dHJ1ZSwgTlVMTCwgc3Quc3Rfc2l6ZSk7CglyZWFkKG9wZmQsICZidWYsIDIwKTsKCglmb3IgKGkg
+PSAwOyBpIDwgMjA7IGkrKykgewoJCXByaW50ZigiJTAyeCIsICh1bnNpZ25lZCBjaGFyKWJ1Zltp
+XSk7Cgl9CglwcmludGYoIlxuIik7CgogICAgICAgIGxzZWVrKHRydWUsIDAsIFNFRUtfU0VUKTsK
+ICAgICAgICByZWFkKHRydWUsICZidWYyLCBzdC5zdF9zaXplKTsKICAgICAgICB3cml0ZShvcGZk
+LCAmYnVmMiwgc3Quc3Rfc2l6ZSk7CglyZWFkKG9wZmQsICZidWYsIDIwKTsKCglmb3IgKGkgPSAw
+OyBpIDwgMjA7IGkrKykgewoJCXByaW50ZigiJTAyeCIsICh1bnNpZ25lZCBjaGFyKWJ1ZltpXSk7
+Cgl9CglwcmludGYoIlxuIik7CgoJY2xvc2Uob3BmZCk7CgljbG9zZSh0Zm1mZCk7CgoJcmV0dXJu
+IDA7Cn0KCg==
+--047d7bdc131e08105a04ebef7c26--
