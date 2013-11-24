@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab3KXLew (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 06:34:52 -0500
-Received: from oproxy18-pub.mail.unifiedlayer.com ([69.89.17.20]:58568 "HELO
-	oproxy18-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751986Ab3KXLet convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 06:34:49 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Nov 2013 06:34:49 EST
-Subject: Re: [PATCH] MAINTAINERS: Add an entry for the Macintosh HFSPlus Filesystem
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-In-Reply-To: <CAMuHMdV6hBgin-sXLPGCLMqvhEZ5g1k5pc13D2dw6G1fpZYusg@mail.gmail.com>
-Date: Sun, 24 Nov 2013 15:29:32 +0300
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6C942C94-FAC1-4542-8A79-7580471B49F3@dubeyko.com>
-References: <1384461563-4487-1-git-send-email-geert@linux-m68k.org> <20131114210617.4e68b086@alan.etchedpixels.co.uk> <B586EBD8-8CB6-4E65-BC01-7B038A1885D3@dubeyko.com> <CAMuHMdV6hBgin-sXLPGCLMqvhEZ5g1k5pc13D2dw6G1fpZYusg@mail.gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-X-Mailer: Apple Mail (2.1085)
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
+	id S1752450Ab3KXLmu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 06:42:50 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:59955 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab3KXLmp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 06:42:45 -0500
+From: "Geyslan G. Bem" <geyslan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Geyslan G. Bem" <geyslan@gmail.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
+        linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [PATCH] selinux: fix possible memory leak
+Date: Sun, 24 Nov 2013 08:37:01 -0300
+Message-Id: <1385293021-2767-1-git-send-email-geyslan@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Free 'ctx_str' when necessary.
 
-On Nov 24, 2013, at 12:15 PM, Geert Uytterhoeven wrote:
+Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+---
+ security/selinux/xfrm.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-> Hence Orphan doesn't mean there are no active users, only that there's no active
-> maintainter listed.
-> 
-> If you want to become the maintainer for hfs+, I'm happy to send a v2
-> of the patch,
-> adding you as the maintainer, with status Supported/Maintained/Odd Fixes.
-> 
-
-Yes, I think that I am ready to play the role of maintainer for HFS+ file system driver.
-Because I have plans of new feature implementation in HFS+ driver and also
-I am implementing continuously new features in HFS+ driver in the background of
-my main activity. Also I participate in reviewing of new HFS+ related patches.
-So, it is possible to say that I am actively looking after the HFS+ file system driver.
-
-Thanks,
-Vyacheslav Dubeyko.
+diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
+index a91d205..cf79a45 100644
+--- a/security/selinux/xfrm.c
++++ b/security/selinux/xfrm.c
+@@ -327,19 +327,22 @@ int selinux_xfrm_state_alloc_acquire(struct xfrm_state *x,
+ 		return rc;
+ 
+ 	ctx = kmalloc(sizeof(*ctx) + str_len, GFP_ATOMIC);
+-	if (!ctx)
+-		return -ENOMEM;
++	if (!ctx) {
++		rc = -ENOMEM;
++		goto out;
++	}
+ 
+ 	ctx->ctx_doi = XFRM_SC_DOI_LSM;
+ 	ctx->ctx_alg = XFRM_SC_ALG_SELINUX;
+ 	ctx->ctx_sid = secid;
+ 	ctx->ctx_len = str_len;
+ 	memcpy(ctx->ctx_str, ctx_str, str_len);
+-	kfree(ctx_str);
+ 
+ 	x->security = ctx;
+ 	atomic_inc(&selinux_xfrm_refcount);
+-	return 0;
++out:
++	kfree(ctx_str);
++	return rc;
+ }
+ 
+ /*
+-- 
+1.8.4.2
 
