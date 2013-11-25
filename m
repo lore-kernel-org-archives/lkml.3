@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab3KYOGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59008 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754586Ab3KYNxq (ORCPT
+	id S1757446Ab3KYOGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55364 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757308Ab3KYOGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:46 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Nov 2013 09:06:09 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 3/6] watchdog: davinci: add GET_TIMELEFT option support
+Date: Mon, 25 Nov 2013 16:04:42 +0200
+Message-ID: <1385388285-10553-4-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Dr Nicholas J Bailey" <nicholas.bailey@glasgow.ac.uk>,
-        fzu@wemgehoertderstaat.de, "Daniel Mack" <zonque@gmail.com>,
-        "Takashi Iwai" <tiwai@suse.de>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.135566227@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 47/87] ALSA: snd-usb-usx2y: remove bogus frame checks
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+Currently, the davinci watchdog can be read while counting,
+so we can add ability to report the remaining time before
+the system will reboot.
 
-------------------
-
-From: Daniel Mack <zonque@gmail.com>
-
-commit a9d14bc0b188a822e42787d01e56c06fe9750162 upstream.
-
-The frame check in i_usX2Y_urb_complete() and
-i_usX2Y_usbpcm_urb_complete() is bogus and produces false positives as
-described in this LAU thread:
-
-  http://linuxaudio.org/mailarchive/lau/2013/5/20/200177
-
-This patch removes the check code entirely.
-
-Cc: fzu@wemgehoertderstaat.de
-Reported-by: Dr Nicholas J Bailey <nicholas.bailey@glasgow.ac.uk>
-Suggested-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 ---
- sound/usb/usx2y/usbusx2yaudio.c | 22 +++-------------------
- sound/usb/usx2y/usx2yhwdeppcm.c |  7 +------
- 2 files changed, 4 insertions(+), 25 deletions(-)
+ drivers/watchdog/davinci_wdt.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -299,19 +299,6 @@ static void usX2Y_error_urb_status(struc
- 	usX2Y_clients_stop(usX2Y);
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index 4c3f417..d342fc2 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -116,6 +116,31 @@ static int davinci_wdt_ping(struct watchdog_device *wdd)
+ 	return 0;
  }
  
--static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
--				 struct snd_usX2Y_substream *subs, struct urb *urb)
--{
--	snd_printk(KERN_ERR
--"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
--"Most propably some urb of usb-frame %i is still missing.\n"
--"Cause could be too long delays in usb-hcd interrupt handling.\n",
--		   usb_get_current_frame_number(usX2Y->dev),
--		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
--		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
--	usX2Y_clients_stop(usX2Y);
--}
--
- static void i_usX2Y_urb_complete(struct urb *urb)
- {
- 	struct snd_usX2Y_substream *subs = urb->context;
-@@ -328,12 +315,9 @@ static void i_usX2Y_urb_complete(struct
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
++static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
++{
++	u64 timer_counter;
++	unsigned long freq;
++	u32 val;
++	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
 +
-+	subs->completed_urb = urb;
++	/* if timeout has occured then return 0 */
++	val = ioread32(davinci_wdt->base + WDTCR);
++	if (val & WDFLAG)
++		return 0;
 +
- 	{
- 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
- 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
++	freq = clk_get_rate(davinci_wdt->clk);
++
++	if (!freq)
++		return 0;
++
++	timer_counter = ioread32(davinci_wdt->base + TIM12);
++	timer_counter |= ((u64)ioread32(davinci_wdt->base + TIM34) << 32);
++
++	do_div(timer_counter, freq);
++
++	return wdd->timeout - timer_counter;
++}
++
+ static const struct watchdog_info davinci_wdt_info = {
+ 	.options = WDIOF_KEEPALIVEPING,
+ 	.identity = "DaVinci Watchdog",
+@@ -126,6 +151,7 @@ static const struct watchdog_ops davinci_wdt_ops = {
+ 	.start		= davinci_wdt_start,
+ 	.stop		= davinci_wdt_ping,
+ 	.ping		= davinci_wdt_ping,
++	.get_timeleft	= davinci_wdt_get_timeleft,
+ };
  
-+	subs->completed_urb = urb;
- 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
- 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
- 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+ static int davinci_wdt_probe(struct platform_device *pdev)
+-- 
+1.7.9.5
 
