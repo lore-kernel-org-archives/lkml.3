@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3KYJBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:01:30 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:60393 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab3KYIzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:55:45 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH 13/24] mips: Remove #include <uapi/asm/types.h> from <asm/types.h>
-Date: Mon, 25 Nov 2013 09:55:23 +0100
-Message-Id: <1385369734-24893-14-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+	id S1754445Ab3KYJG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:06:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab3KYJB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 04:01:27 -0500
+Message-Id: <20131125090040.188406259@dhcp-16-126.nay.redhat.com>
+User-Agent: quilt/0.60-1
+Date: Mon, 25 Nov 2013 16:56:42 +0800
+From: dyoung@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        matt@console-pimps.org, toshi.kani@hp.com,
+        Dave Young <dyoung@redhat.com>
+Subject: [patch 12/12 v4] x86: do not use __va for getting setup_data virt addr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Everything in arch/mips/include/uapi/asm/types.h is protected by
-"#ifndef __KERNEL__", so it's unused for kernelspace.
+Hi,
+References: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
+Content-Disposition: inline; filename=12-x86-kdebugfs-use-ioremap.patch
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>>
-Cc: linux-mips@linux-mips.org
+__va does not work in case memmap=exactmap, so let's always use ioremap_cache.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- arch/mips/include/asm/types.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/x86/kernel/kdebugfs.c |   35 +++++++++++------------------------
+ 1 file changed, 11 insertions(+), 24 deletions(-)
 
-diff --git a/arch/mips/include/asm/types.h b/arch/mips/include/asm/types.h
-index a845aafedee4..4d5ce4c9c924 100644
---- a/arch/mips/include/asm/types.h
-+++ b/arch/mips/include/asm/types.h
-@@ -11,8 +11,7 @@
- #ifndef _ASM_TYPES_H
- #define _ASM_TYPES_H
+--- efi.orig/arch/x86/kernel/kdebugfs.c
++++ efi/arch/x86/kernel/kdebugfs.c
+@@ -33,7 +33,6 @@ static ssize_t setup_data_read(struct fi
+ 	struct setup_data_node *node = file->private_data;
+ 	unsigned long remain;
+ 	loff_t pos = *ppos;
+-	struct page *pg;
+ 	void *p;
+ 	u64 pa;
  
--# include <asm-generic/int-ll64.h>
--#include <uapi/asm/types.h>
-+#include <asm-generic/int-ll64.h>
+@@ -47,18 +46,12 @@ static ssize_t setup_data_read(struct fi
+ 		count = node->len - pos;
  
- /*
-  * These aren't exported outside the kernel to avoid name space clashes
--- 
-1.7.9.5
+ 	pa = node->paddr + sizeof(struct setup_data) + pos;
+-	pg = pfn_to_page((pa + count - 1) >> PAGE_SHIFT);
+-	if (PageHighMem(pg)) {
+-		p = ioremap_cache(pa, count);
+-		if (!p)
+-			return -ENXIO;
+-	} else
+-		p = __va(pa);
++	p = ioremap_cache(pa, count);
++	if (!p)
++		return -ENXIO;
+ 
+ 	remain = copy_to_user(user_buf, p, count);
+-
+-	if (PageHighMem(pg))
+-		iounmap(p);
++	iounmap(p);
+ 
+ 	if (remain)
+ 		return -EFAULT;
+@@ -109,7 +102,6 @@ static int __init create_setup_data_node
+ 	struct setup_data *data;
+ 	int error;
+ 	struct dentry *d;
+-	struct page *pg;
+ 	u64 pa_data;
+ 	int no = 0;
+ 
+@@ -126,16 +118,12 @@ static int __init create_setup_data_node
+ 			goto err_dir;
+ 		}
+ 
+-		pg = pfn_to_page((pa_data+sizeof(*data)-1) >> PAGE_SHIFT);
+-		if (PageHighMem(pg)) {
+-			data = ioremap_cache(pa_data, sizeof(*data));
+-			if (!data) {
+-				kfree(node);
+-				error = -ENXIO;
+-				goto err_dir;
+-			}
+-		} else
+-			data = __va(pa_data);
++		data = ioremap_cache(pa_data, sizeof(*data));
++		if (!data) {
++			kfree(node);
++			error = -ENXIO;
++			goto err_dir;
++		}
+ 
+ 		node->paddr = pa_data;
+ 		node->type = data->type;
+@@ -143,8 +131,7 @@ static int __init create_setup_data_node
+ 		error = create_setup_data_node(d, no, node);
+ 		pa_data = data->next;
+ 
+-		if (PageHighMem(pg))
+-			iounmap(data);
++		iounmap(data);
+ 		if (error)
+ 			goto err_dir;
+ 		no++;
 
