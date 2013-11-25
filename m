@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab3KYKMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:12:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:10816 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab3KYKMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:12:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,766,1378882800"; 
-   d="scan'208";a="433252542"
-Date: Mon, 25 Nov 2013 12:18:25 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 6/7] gpio / ACPI: get rid of acpi_gpio.h
-Message-ID: <20131125101825.GT2281@intel.com>
-References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
- <1385122474-14926-7-git-send-email-mika.westerberg@linux.intel.com>
- <CAAVeFuK_76Rnqa8E0DpME8Eyc3vh63HmyHx=zbeyaKz7aXm=rA@mail.gmail.com>
- <20131125085454.GN2281@intel.com>
- <52930F74.7060808@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52930F74.7060808@nvidia.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753072Ab3KYKMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:12:37 -0500
+Received: from cloud1-vm137.de-nserver.de ([178.250.10.41]:50801 "EHLO
+	cloud1-vm137.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752904Ab3KYKMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:12:34 -0500
+From: Stefan Priebe <s.priebe@profihost.ag>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, rwheeler@redhat.com,
+        JBottomley@Parallels.com, Stefan Priebe <s.priebe@profihost.ag>
+Subject: [PATCH] Commit 39c60a0948cc '[SCSI] sd: fix array cache flushing bug causing performance problems' added a possibility to temporary disable the write cache and skip flushing. But when setting temporary it forgots to revalidate the disk. Change sd_store_cache_type to goto out in case of cache_override.
+Date: Mon, 25 Nov 2013 11:03:15 +0100
+Message-Id: <1385373795-3293-1-git-send-email-s.priebe@profihost.ag>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 05:51:00PM +0900, Alex Courbot wrote:
-> I just wondered if these headers should not be split by GPIO
-> providers, but if you prefer it that way I'm fine with it too. We
-> can move stuff later if needed.
-> 
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-Thanks!
+Signed-off-by: Stefan Priebe <s.priebe@profihost.ag>
+---
+ drivers/scsi/sd.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-BTW, I noticed that I missed removing EXPORT_SYMBOL_GPL() from
-acpi_get_gpiod_by_index(). I'm folding that change to this patch for the
-next version if nobody objects.
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 734a29a..ccc6242 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -174,7 +174,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	if (sdkp->cache_override) {
+ 		sdkp->WCE = wce;
+ 		sdkp->RCD = rcd;
+-		return count;
++		goto out;
+ 	}
+ 
+ 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
+@@ -194,6 +194,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 			sd_print_sense_hdr(sdkp, &sshdr);
+ 		return -EINVAL;
+ 	}
++out:
+ 	revalidate_disk(sdkp->disk);
+ 	return count;
+ }
+-- 
+1.7.10.4
+
