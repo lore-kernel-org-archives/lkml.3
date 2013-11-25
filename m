@@ -1,45 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3KYSPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:15:15 -0500
-Received: from canaima.inia.gob.ve ([190.202.124.227]:51771 "EHLO
-	canaima.inia.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab3KYSPM (ORCPT
+	id S1754364Ab3KYSQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:16:17 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:60283 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab3KYSQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:15:12 -0500
-Date: Mon, 25 Nov 2013 18:14:14 +0000
-Message-ID: <20131125181414.Horde.CIy0uztFZg-da0WDg0CFeQ1@webmail.inia.gob.ve>
-From: gerente Webmail <info@inmail24.com>
-Subject: Su =?utf-8?b?YnV6w7Nu?=
-Reply-to: System_manager@mail2world.com
-User-Agent: Internet Messaging Program (IMP) H5 (6.0.2)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
-MIME-Version: 1.0
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-To: undisclosed-recipients:;
+	Mon, 25 Nov 2013 13:16:14 -0500
+From: Matt Porter <matt.porter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v3 0/9] USB Device Controller support for BCM281xx
+Date: Mon, 25 Nov 2013 13:15:58 -0500
+Message-Id: <1385403367-18144-1-git-send-email-matt.porter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes since v2:
+	- Rebased on 3.13-rc1
+	- Fix braces in phy_get_bus_width()/phy_set_bus_width()
+	- Drop generic phy conversion to use the same support from
+	  the Exynos generic phy conversion series
+	- Modify dts support to match the "device" phy name required
+	  in the v3 Exynos generic phy conversion
+	- Add s3c-hsotg phy_init/phy_exit support
+	- Fix typo on reg property in kona phy binding
+	- Replace phy driver reg struct with offset defines
+	- Move phy soft reset to phy driver init
+	- Fix dts node names to match ePAPR conventions
 
-PROPIETARIO WEBMAIL ATENCIÓN;
+Changes since v1:
+	- Convert USB phy driver to generic phy subsystem
+	- Add phy bus width apis
+	- Drop dwc2 phy bus width DT property in favor of querying the
+	  phy provider for bus width
+	- Add generic phy/clock properties to dwc2 DT binding
+	- Add generic phy subsystem support to s3c-hsotg with the
+	  existing usb phy and pdata phy methods as a fallback
+	- Split bindings out to separate patches to match the latest
+	  DT binding review guidelines
 
-Su buzón ha superado el límite de almacenamiento es de 5 GB, según lo  
-definido por el administrador, que se ejecuta en 10.9GB, es posible  
-que no pueda enviar o recibir correo nuevo hasta que vuelva a validar  
-su correo del buzón. Para revalidar su buzón de correo, enviar la  
-siguiente información a continuación:
+This series adds USB Device Controller support for the Broadcom
+BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
+s3c-hsotg is used to support UDC operation.
 
-nombre:
-Nombre de usuario:
-contraseña:
-Confirme Contraseña:
-Número de teléfono móvil:
-E-mail:
+Part 1 adds phy bus width support to the generic phy subsystem
 
-Si no se puede validar su buzón de correo, el correo será desactivado!
+Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
+the dwc2 binding, adds phy_init/phy_exit support, and supports fetching
+phy bus width using the generic phy layer.
 
-¡gracias
-gerente Webmail
+Parts 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
+
+Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
+in the kernel.
+
+This series depends on:
+	- "Update Kona drivers to use clocks" series
+	  https://lkml.org/lkml/2013/11/14/450
+	- "Add new Exynos USB 2.0 PHY driver" series
+	  https://lkml.org/lkml/2013/11/5/271
+
+Matt Porter (9):
+  phy: add phy_get_bus_width()/phy_set_bus_width() calls
+  staging: dwc2: update DT binding to add generic clock/phy properties
+  usb: gadget: s3c-hsotg: enable build for other platforms
+  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
+  usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
+  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
+  phy: add Broadcom Kona USB2 PHY DT binding
+  phy: add Broadcom Kona USB2 PHY driver
+  ARM: dts: add usb udc support to bcm281xx
+
+ .../devicetree/bindings/phy/bcm-kona-usb2-phy.txt  |  15 ++
+ Documentation/devicetree/bindings/staging/dwc2.txt |  10 ++
+ arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
+ arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
+ arch/arm/boot/dts/bcm28155-ap.dts                  |   8 ++
+ drivers/phy/Kconfig                                |   6 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-bcm-kona-usb2.c                    | 158 +++++++++++++++++++++
+ drivers/usb/gadget/Kconfig                         |   7 +-
+ drivers/usb/gadget/s3c-hsotg.c                     |  22 ++-
+ drivers/usb/gadget/s3c-hsotg.h                     |   1 +
+ include/linux/phy/phy.h                            |  20 +++
+ 12 files changed, 265 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt
+ create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
+
+-- 
+1.8.4
 
