@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab3KYN5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:57:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59010 "EHLO
+	id S1756625Ab3KYN5H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:57:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58966 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753993Ab3KYNyB (ORCPT
+	by vger.kernel.org with ESMTP id S1754293Ab3KYNyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:54:01 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Fan Yong" <yong.fan@whamcloud.com>,
-        "Andreas Dilger" <adilger@whamcloud.com>,
-        "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Bernd Schubert" <bernd.schubert@itwm.fraunhofer.de>,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        stable@vger.kernel.org, "Mathias Krause" <minipli@googlemail.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.618642845@decadent.org.uk>
+Message-ID: <lsq.1385387069.863894134@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 23/87] ext4: return 32/64-bit dir name hash according
- to usage type
+Subject: [PATCH 3.2 05/87] proc connector: fix info leaks
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,373 +31,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fan Yong <yong.fan@whamcloud.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit d1f5273e9adb40724a85272f248f210dc4ce919a upstream.
+[ Upstream commit e727ca82e0e9616ab4844301e6bae60ca7327682 ]
 
-Traditionally ext2/3/4 has returned a 32-bit hash value from llseek()
-to appease NFSv2, which can only handle a 32-bit cookie for seekdir()
-and telldir().  However, this causes problems if there are 32-bit hash
-collisions, since the NFSv2 server can get stuck resending the same
-entries from the directory repeatedly.
+Initialize event_data for all possible message types to prevent leaking
+kernel stack contents to userland (up to 20 bytes). Also set the flags
+member of the connector message to 0 to prevent leaking two more stack
+bytes this way.
 
-Allow ext4 to return a full 64-bit hash (both major and minor) for
-telldir to decrease the chance of hash collisions.  This still needs
-integration on the NFS side.
-
-Patch-updated-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-(blame me if something is not correct)
-
-Signed-off-by: Fan Yong <yong.fan@whamcloud.com>
-Signed-off-by: Andreas Dilger <adilger@whamcloud.com>
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: stable@vger.kernel.org  # v2.6.15+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/dir.c  |  214 ++++++++++++++++++++++++++++++++++++++++++++------------
- fs/ext4/ext4.h |    6 +-
- fs/ext4/hash.c |    4 +-
- 3 files changed, 176 insertions(+), 48 deletions(-)
+ drivers/connector/cn_proc.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/fs/ext4/dir.c
-+++ b/fs/ext4/dir.c
-@@ -32,24 +32,8 @@ static unsigned char ext4_filetype_table
- 	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
- };
+diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
+index 46bbf43..66d5384 100644
+--- a/drivers/connector/cn_proc.c
++++ b/drivers/connector/cn_proc.c
+@@ -64,6 +64,7 @@ void proc_fork_connector(struct task_struct *task)
  
--static int ext4_readdir(struct file *, void *, filldir_t);
- static int ext4_dx_readdir(struct file *filp,
- 			   void *dirent, filldir_t filldir);
--static int ext4_release_dir(struct inode *inode,
--				struct file *filp);
--
--const struct file_operations ext4_dir_operations = {
--	.llseek		= ext4_llseek,
--	.read		= generic_read_dir,
--	.readdir	= ext4_readdir,		/* we take BKL. needed?*/
--	.unlocked_ioctl = ext4_ioctl,
--#ifdef CONFIG_COMPAT
--	.compat_ioctl	= ext4_compat_ioctl,
--#endif
--	.fsync		= ext4_sync_file,
--	.release	= ext4_release_dir,
--};
--
+ 	msg = (struct cn_msg*)buffer;
+ 	ev = (struct proc_event*)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -79,6 +80,7 @@ void proc_fork_connector(struct task_struct *task)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	/*  If cn_netlink_send() failed, the data is not sent */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
+ }
+@@ -95,6 +97,7 @@ void proc_exec_connector(struct task_struct *task)
  
- static unsigned char get_dtype(struct super_block *sb, int filetype)
- {
-@@ -60,6 +44,26 @@ static unsigned char get_dtype(struct su
- 	return (ext4_filetype_table[filetype]);
+ 	msg = (struct cn_msg*)buffer;
+ 	ev = (struct proc_event*)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -105,6 +108,7 @@ void proc_exec_connector(struct task_struct *task)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
  }
  
-+/**
-+ * Check if the given dir-inode refers to an htree-indexed directory
-+ * (or a directory which chould potentially get coverted to use htree
-+ * indexing).
-+ *
-+ * Return 1 if it is a dx dir, 0 if not
-+ */
-+static int is_dx_dir(struct inode *inode)
-+{
-+	struct super_block *sb = inode->i_sb;
-+
-+	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
-+		     EXT4_FEATURE_COMPAT_DIR_INDEX) &&
-+	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
-+	     ((inode->i_size >> sb->s_blocksize_bits) == 1)))
-+		return 1;
-+
-+	return 0;
-+}
-+
- /*
-  * Return 0 if the directory entry is OK, and 1 if there is a problem
-  *
-@@ -115,18 +119,13 @@ static int ext4_readdir(struct file *fil
- 	unsigned int offset;
- 	int i, stored;
- 	struct ext4_dir_entry_2 *de;
--	struct super_block *sb;
- 	int err;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
-+	struct super_block *sb = inode->i_sb;
- 	int ret = 0;
- 	int dir_has_error = 0;
+@@ -121,6 +125,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
  
--	sb = inode->i_sb;
--
--	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
--				    EXT4_FEATURE_COMPAT_DIR_INDEX) &&
--	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
--	     ((inode->i_size >> sb->s_blocksize_bits) == 1))) {
-+	if (is_dx_dir(inode)) {
- 		err = ext4_dx_readdir(filp, dirent, filldir);
- 		if (err != ERR_BAD_DX_DIR) {
- 			ret = err;
-@@ -254,22 +253,134 @@ out:
- 	return ret;
+ 	msg = (struct cn_msg*)buffer;
+ 	ev = (struct proc_event*)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	ev->what = which_id;
+ 	ev->event_data.id.process_pid = task->pid;
+ 	ev->event_data.id.process_tgid = task->tgid;
+@@ -144,6 +149,7 @@ void proc_id_connector(struct task_struct *task, int which_id)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
  }
  
-+static inline int is_32bit_api(void)
-+{
-+#ifdef CONFIG_COMPAT
-+	return is_compat_task();
-+#else
-+	return (BITS_PER_LONG == 32);
-+#endif
-+}
-+
- /*
-  * These functions convert from the major/minor hash to an f_pos
-- * value.
-+ * value for dx directories
-  *
-- * Currently we only use major hash numer.  This is unfortunate, but
-- * on 32-bit machines, the same VFS interface is used for lseek and
-- * llseek, so if we use the 64 bit offset, then the 32-bit versions of
-- * lseek/telldir/seekdir will blow out spectacularly, and from within
-- * the ext2 low-level routine, we don't know if we're being called by
-- * a 64-bit version of the system call or the 32-bit version of the
-- * system call.  Worse yet, NFSv2 only allows for a 32-bit readdir
-- * cookie.  Sigh.
-+ * Upper layer (for example NFS) should specify FMODE_32BITHASH or
-+ * FMODE_64BITHASH explicitly. On the other hand, we allow ext4 to be mounted
-+ * directly on both 32-bit and 64-bit nodes, under such case, neither
-+ * FMODE_32BITHASH nor FMODE_64BITHASH is specified.
-  */
--#define hash2pos(major, minor)	(major >> 1)
--#define pos2maj_hash(pos)	((pos << 1) & 0xffffffff)
--#define pos2min_hash(pos)	(0)
-+static inline loff_t hash2pos(struct file *filp, __u32 major, __u32 minor)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return major >> 1;
-+	else
-+		return ((__u64)(major >> 1) << 32) | (__u64)minor;
-+}
-+
-+static inline __u32 pos2maj_hash(struct file *filp, loff_t pos)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return (pos << 1) & 0xffffffff;
-+	else
-+		return ((pos >> 32) << 1) & 0xffffffff;
-+}
-+
-+static inline __u32 pos2min_hash(struct file *filp, loff_t pos)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return 0;
-+	else
-+		return pos & 0xffffffff;
-+}
-+
-+/*
-+ * Return 32- or 64-bit end-of-file for dx directories
-+ */
-+static inline loff_t ext4_get_htree_eof(struct file *filp)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return EXT4_HTREE_EOF_32BIT;
-+	else
-+		return EXT4_HTREE_EOF_64BIT;
-+}
-+
-+
-+/*
-+ * ext4_dir_llseek() based on generic_file_llseek() to handle both
-+ * non-htree and htree directories, where the "offset" is in terms
-+ * of the filename hash value instead of the byte offset.
-+ *
-+ * NOTE: offsets obtained *before* ext4_set_inode_flag(dir, EXT4_INODE_INDEX)
-+ *       will be invalid once the directory was converted into a dx directory
-+ */
-+loff_t ext4_dir_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct inode *inode = file->f_mapping->host;
-+	loff_t ret = -EINVAL;
-+	int dx_dir = is_dx_dir(inode);
-+
-+	mutex_lock(&inode->i_mutex);
-+
-+	/* NOTE: relative offsets with dx directories might not work
-+	 *       as expected, as it is difficult to figure out the
-+	 *       correct offset between dx hashes */
-+
-+	switch (origin) {
-+	case SEEK_END:
-+		if (unlikely(offset > 0))
-+			goto out_err; /* not supported for directories */
-+
-+		/* so only negative offsets are left, does that have a
-+		 * meaning for directories at all? */
-+		if (dx_dir)
-+			offset += ext4_get_htree_eof(file);
-+		else
-+			offset += inode->i_size;
-+		break;
-+	case SEEK_CUR:
-+		/*
-+		 * Here we special-case the lseek(fd, 0, SEEK_CUR)
-+		 * position-querying operation.  Avoid rewriting the "same"
-+		 * f_pos value back to the file because a concurrent read(),
-+		 * write() or lseek() might have altered it
-+		 */
-+		if (offset == 0) {
-+			offset = file->f_pos;
-+			goto out_ok;
-+		}
-+
-+		offset += file->f_pos;
-+		break;
-+	}
-+
-+	if (unlikely(offset < 0))
-+		goto out_err;
-+
-+	if (!dx_dir) {
-+		if (offset > inode->i_sb->s_maxbytes)
-+			goto out_err;
-+	} else if (offset > ext4_get_htree_eof(file))
-+		goto out_err;
-+
-+	/* Special lock needed here? */
-+	if (offset != file->f_pos) {
-+		file->f_pos = offset;
-+		file->f_version = 0;
-+	}
-+
-+out_ok:
-+	ret = offset;
-+out_err:
-+	mutex_unlock(&inode->i_mutex);
-+
-+	return ret;
-+}
+@@ -159,6 +165,7 @@ void proc_sid_connector(struct task_struct *task)
  
- /*
-  * This structure holds the nodes of the red-black tree used to store
-@@ -330,15 +441,16 @@ static void free_rb_tree_fname(struct rb
+ 	msg = (struct cn_msg *)buffer;
+ 	ev = (struct proc_event *)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -169,6 +176,7 @@ void proc_sid_connector(struct task_struct *task)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
  }
  
+@@ -184,6 +192,7 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
  
--static struct dir_private_info *ext4_htree_create_dir_info(loff_t pos)
-+static struct dir_private_info *ext4_htree_create_dir_info(struct file *filp,
-+							   loff_t pos)
- {
- 	struct dir_private_info *p;
- 
- 	p = kzalloc(sizeof(struct dir_private_info), GFP_KERNEL);
- 	if (!p)
- 		return NULL;
--	p->curr_hash = pos2maj_hash(pos);
--	p->curr_minor_hash = pos2min_hash(pos);
-+	p->curr_hash = pos2maj_hash(filp, pos);
-+	p->curr_minor_hash = pos2min_hash(filp, pos);
- 	return p;
+ 	msg = (struct cn_msg *)buffer;
+ 	ev = (struct proc_event *)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -202,6 +211,7 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
  }
  
-@@ -429,7 +541,7 @@ static int call_filldir(struct file *fil
- 		       "null fname?!?\n");
- 		return 0;
- 	}
--	curr_pos = hash2pos(fname->hash, fname->minor_hash);
-+	curr_pos = hash2pos(filp, fname->hash, fname->minor_hash);
- 	while (fname) {
- 		error = filldir(dirent, fname->name,
- 				fname->name_len, curr_pos,
-@@ -454,13 +566,13 @@ static int ext4_dx_readdir(struct file *
- 	int	ret;
+@@ -217,6 +227,7 @@ void proc_comm_connector(struct task_struct *task)
  
- 	if (!info) {
--		info = ext4_htree_create_dir_info(filp->f_pos);
-+		info = ext4_htree_create_dir_info(filp, filp->f_pos);
- 		if (!info)
- 			return -ENOMEM;
- 		filp->private_data = info;
- 	}
- 
--	if (filp->f_pos == EXT4_HTREE_EOF)
-+	if (filp->f_pos == ext4_get_htree_eof(filp))
- 		return 0;	/* EOF */
- 
- 	/* Some one has messed with f_pos; reset the world */
-@@ -468,8 +580,8 @@ static int ext4_dx_readdir(struct file *
- 		free_rb_tree_fname(&info->root);
- 		info->curr_node = NULL;
- 		info->extra_fname = NULL;
--		info->curr_hash = pos2maj_hash(filp->f_pos);
--		info->curr_minor_hash = pos2min_hash(filp->f_pos);
-+		info->curr_hash = pos2maj_hash(filp, filp->f_pos);
-+		info->curr_minor_hash = pos2min_hash(filp, filp->f_pos);
- 	}
- 
- 	/*
-@@ -501,7 +613,7 @@ static int ext4_dx_readdir(struct file *
- 			if (ret < 0)
- 				return ret;
- 			if (ret == 0) {
--				filp->f_pos = EXT4_HTREE_EOF;
-+				filp->f_pos = ext4_get_htree_eof(filp);
- 				break;
- 			}
- 			info->curr_node = rb_first(&info->root);
-@@ -521,7 +633,7 @@ static int ext4_dx_readdir(struct file *
- 			info->curr_minor_hash = fname->minor_hash;
- 		} else {
- 			if (info->next_hash == ~0) {
--				filp->f_pos = EXT4_HTREE_EOF;
-+				filp->f_pos = ext4_get_htree_eof(filp);
- 				break;
- 			}
- 			info->curr_hash = info->next_hash;
-@@ -540,3 +652,15 @@ static int ext4_release_dir(struct inode
- 
- 	return 0;
+ 	msg = (struct cn_msg *)buffer;
+ 	ev = (struct proc_event *)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -228,6 +239,7 @@ void proc_comm_connector(struct task_struct *task)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
  }
-+
-+const struct file_operations ext4_dir_operations = {
-+	.llseek		= ext4_dir_llseek,
-+	.read		= generic_read_dir,
-+	.readdir	= ext4_readdir,
-+	.unlocked_ioctl = ext4_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= ext4_compat_ioctl,
-+#endif
-+	.fsync		= ext4_sync_file,
-+	.release	= ext4_release_dir,
-+};
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1597,7 +1597,11 @@ struct dx_hash_info
- 	u32		*seed;
- };
  
--#define EXT4_HTREE_EOF	0x7fffffff
-+
-+/* 32 and 64 bit signed EOF for dx directories */
-+#define EXT4_HTREE_EOF_32BIT   ((1UL  << (32 - 1)) - 1)
-+#define EXT4_HTREE_EOF_64BIT   ((1ULL << (64 - 1)) - 1)
-+
+@@ -243,6 +255,7 @@ void proc_exit_connector(struct task_struct *task)
  
- /*
-  * Control parameters used by ext4_htree_next_block
---- a/fs/ext4/hash.c
-+++ b/fs/ext4/hash.c
-@@ -200,8 +200,8 @@ int ext4fs_dirhash(const char *name, int
- 		return -1;
- 	}
- 	hash = hash & ~1;
--	if (hash == (EXT4_HTREE_EOF << 1))
--		hash = (EXT4_HTREE_EOF-1) << 1;
-+	if (hash == (EXT4_HTREE_EOF_32BIT << 1))
-+		hash = (EXT4_HTREE_EOF_32BIT - 1) << 1;
- 	hinfo->hash = hash;
- 	hinfo->minor_hash = minor_hash;
- 	return 0;
+ 	msg = (struct cn_msg*)buffer;
+ 	ev = (struct proc_event*)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -255,6 +268,7 @@ void proc_exit_connector(struct task_struct *task)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
+ }
+ 
+@@ -278,6 +292,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
+ 
+ 	msg = (struct cn_msg*)buffer;
+ 	ev = (struct proc_event*)msg->data;
++	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	msg->seq = rcvd_seq;
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+ 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
+@@ -287,6 +302,7 @@ static void cn_proc_ack(int err, int rcvd_seq, int rcvd_ack)
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = rcvd_ack + 1;
+ 	msg->len = sizeof(*ev);
++	msg->flags = 0; /* not used */
+ 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
+ }
+ 
 
