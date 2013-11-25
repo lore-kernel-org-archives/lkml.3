@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab3KYTnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:43:02 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55410 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab3KYTm7 (ORCPT
+	id S1757242Ab3KYTnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:43:37 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:37927 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3KYTng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:42:59 -0500
-Date: Mon, 25 Nov 2013 20:42:56 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jan Kara <jack@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: ARM: nommu: Boot hang after VFS: Mounted root (ext2 filesystem)
- on device 1:0.
-Message-ID: <20131125194256.GC28642@pengutronix.de>
-References: <1385393160.4753.4.camel@phoenix>
+	Mon, 25 Nov 2013 14:43:36 -0500
+Date: Mon, 25 Nov 2013 11:41:16 -0800
+From: Olof Johansson <olof@lixom.net>
+To: sfr@canb.auug.org.au
+Cc: olof@lixom.net, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        matthew.garrett@nebula.com
+Subject: Request to add chromeos platform tree to -next
+Message-ID: <20131125194116.GA22485@quad.lixom.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385393160.4753.4.camel@phoenix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Stephen,
 
-On Mon, Nov 25, 2013 at 11:26:00PM +0800, Axel Lin wrote:
-> I got hangup at boot after "VFS: Mounted root (ext2 filesystem) on device 1:0.".
-> I'm using ext2 initrd as root.
-which mainline version are you using? I don't know your problem, and I'm
-not using ext2 on my nommu target. So the only thing I can offer you is
-testing the same version.
+I'm starting a git repo for the chromeos platform glue (x86 and ARM down
+the road, so far just x86 contents). Can you please add to linux-next?
 
-Best regards
-Uwe
+git://git.kernel.org/pub/scm/linux/kernel/git/olof/chrome-platform.git
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Branch is for-next.
+
+
+Thanks!
+
+-Olof
