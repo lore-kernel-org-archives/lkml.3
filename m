@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3KYMHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:07:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50894 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3KYMHd (ORCPT
+	id S1753932Ab3KYMH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:07:56 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53444 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3KYMHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:07:33 -0500
-Message-ID: <52933D46.6090901@ti.com>
-Date: Mon, 25 Nov 2013 14:06:30 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 25 Nov 2013 07:07:51 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>, <mhocko@suse.cz>
+CC: <glommer@openvz.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>
+Subject: [PATCH v11 05/15] memcg: move stop and resume accounting functions
+Date: Mon, 25 Nov 2013 16:07:38 +0400
+Message-ID: <dd12f72351d8ada63c576ee809713d5e47c8187a.1385377616.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1385377616.git.vdavydov@parallels.com>
+References: <cover.1385377616.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Strashko Grygorii <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 1/6] watchdog: davinci: change driver to use WDT core
-References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <1384795139-19466-2-git-send-email-ivan.khoronzhuk@ti.com> <52933AE4.3070608@ti.com>
-In-Reply-To: <52933AE4.3070608@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain
+X-Originating-IP: [10.30.24.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 01:56 PM, Sekhar Nori wrote:
-> On Monday 18 November 2013 10:48 PM, Ivan Khoronzhuk wrote:
->> @@ -211,29 +129,34 @@ static int davinci_wdt_probe(struct platform_device *pdev)
->>
->>   	clk_prepare_enable(wdt_clk);
->>
->> -	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
->> -		heartbeat = DEFAULT_HEARTBEAT;
->> +	wdd			= &wdt_wdd;
->> +	wdd->info		= &davinci_wdt_info;
->> +	wdd->ops		= &davinci_wdt_ops;
->> +	wdd->min_timeout 	= 1;
->> +	wdd->max_timeout 	= MAX_HEARTBEAT;
->
-> Some checkpatch warnings. Please fix.
->
-> WARNING: please, no space before tabs
-> #273: FILE: drivers/watchdog/davinci_wdt.c:135:
-> +^Iwdd->min_timeout ^I= 1;$
->
-> WARNING: please, no space before tabs
-> #274: FILE: drivers/watchdog/davinci_wdt.c:136:
-> +^Iwdd->max_timeout ^I= MAX_HEARTBEAT;$
->
-> total: 0 errors, 2 warnings, 0 checks, 249 lines checked
->
-> Thanks,
-> sekhar
->
+From: Glauber Costa <glommer@openvz.org>
 
-Thanks, I will
+I need to move this up a bit, and I am doing it in a separate patch just to
+reduce churn in the patch that needs it.
 
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/memcontrol.c |   62 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9ba9975..e9bdcf3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3010,6 +3010,37 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+ 	return cache_from_memcg_idx(cachep, memcg_cache_idx(p->memcg));
+ }
+ 
++/*
++ * During the creation a new cache, we need to disable our accounting mechanism
++ * altogether. This is true even if we are not creating, but rather just
++ * enqueing new caches to be created.
++ *
++ * This is because that process will trigger allocations; some visible, like
++ * explicit kmallocs to auxiliary data structures, name strings and internal
++ * cache structures; some well concealed, like INIT_WORK() that can allocate
++ * objects during debug.
++ *
++ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
++ * to it. This may not be a bounded recursion: since the first cache creation
++ * failed to complete (waiting on the allocation), we'll just try to create the
++ * cache again, failing at the same point.
++ *
++ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
++ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
++ * inside the following two functions.
++ */
++static inline void memcg_stop_kmem_account(void)
++{
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account++;
++}
++
++static inline void memcg_resume_kmem_account(void)
++{
++	VM_BUG_ON(!current->mm);
++	current->memcg_kmem_skip_account--;
++}
++
+ #ifdef CONFIG_SLABINFO
+ static int mem_cgroup_slabinfo_read(struct cgroup_subsys_state *css,
+ 				    struct cftype *cft, struct seq_file *m)
+@@ -3278,37 +3309,6 @@ out:
+ 	kfree(s->memcg_params);
+ }
+ 
+-/*
+- * During the creation a new cache, we need to disable our accounting mechanism
+- * altogether. This is true even if we are not creating, but rather just
+- * enqueing new caches to be created.
+- *
+- * This is because that process will trigger allocations; some visible, like
+- * explicit kmallocs to auxiliary data structures, name strings and internal
+- * cache structures; some well concealed, like INIT_WORK() that can allocate
+- * objects during debug.
+- *
+- * If any allocation happens during memcg_kmem_get_cache, we will recurse back
+- * to it. This may not be a bounded recursion: since the first cache creation
+- * failed to complete (waiting on the allocation), we'll just try to create the
+- * cache again, failing at the same point.
+- *
+- * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
+- * memcg_kmem_skip_account. So we enclose anything that might allocate memory
+- * inside the following two functions.
+- */
+-static inline void memcg_stop_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account++;
+-}
+-
+-static inline void memcg_resume_kmem_account(void)
+-{
+-	VM_BUG_ON(!current->mm);
+-	current->memcg_kmem_skip_account--;
+-}
+-
+ static void kmem_cache_destroy_work_func(struct work_struct *w)
+ {
+ 	struct kmem_cache *cachep;
 -- 
-Regards,
-Ivan Khoronzhuk
+1.7.10.4
+
