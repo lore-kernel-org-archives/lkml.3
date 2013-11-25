@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab3KYD1b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 22:27:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:30452 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301Ab3KYD1a (ORCPT
+	id S1753548Ab3KYD3i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 22:29:38 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:11903 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab3KYD3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 22:27:30 -0500
-X-AuditID: cbfee68e-b7f7e6d00000477d-26-5292c3a1017d
+	Sun, 24 Nov 2013 22:29:36 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-b6-5292c41f1e7f
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Lee Jones'" <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "=?iso-8859-1?Q?'Uwe_Kleine-K=F6nig'?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        "'Marc Reilly'" <marc@cpdesign.com.au>
-Subject: [PATCH] mfd: mc13xxx: remove unnecessary spi_set_drvdata()
-Date: Mon, 25 Nov 2013 12:27:29 +0900
-Message-id: <002601cee98e$44f75210$cee5f630$%han@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] misc: eeprom_93xx46: remove unnecessary spi_set_drvdata()
+Date: Mon, 25 Nov 2013 12:29:35 +0900
+Message-id: <002701cee98e$90423910$b0c6ab30$%han@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-1
+Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7pjkTa060eOFAWTu+craBbmDLVng==
+Thread-index: Ac7pjoxg5BwYMENSRGq+2VMv0pzXYw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zI92FhycFGWz/LmlxeeElVov7X48y
-	WlzeNYfN4uLcDSwWp7tZLW5PnMzowObxb9cpNo871/awecw7GejR/9fAo2/LKkaPz5vkAtii
-	uGxSUnMyy1KL9O0SuDIuPXzCVHCZteJRx3yWBsbTLF2MHBwSAiYStyeLdDFyApliEhfurWfr
-	YuTiEBJYxihxffd7FoiEiUTvnIPMEInpjBJ/Ty9hgXB+MUpM/LCCEaSKTUBN4suXw+wgtgiQ
-	fXPPLCaQImaBB4wSDztOsoEkhAWcJX4f/coKYrMIqErsencFrJlXwFbi38d2NghbUOLH5Htg
-	q5kFdCR6v39jhrDlJTavecsMcba6xKO/uhC79CQmbzjGBlEiIrHvxTtGkL0SAufYJRac2McI
-	sUtA4tvkQ1Avy0psOsAM8ZmkxMEVN1gmMIrNQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelF
-	RnrFibnFpXnpesn5uZsYIZHYt4Px5gHrQ4zJQOsnMkuJJucDIzmvJN7Q2MzIwtTE1NjI3NKM
-	NGElcd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDO4Kjit9v/8NytfZ3Wva2fDDUb
-	NW63mSjpZPHnTsuqzbiv3qbutpxbeXu92Kes3UXKYYtrv+3h1Pr9m+PkdR++mjeGByqDP0h8
-	ra2Xc+Lc76RW7///+73jnqfX54UF8d0yXLc+eVnT3MbuD4lus5/cWjT7R4Xso0VNrvGfujbd
-	eF+gXKn1T0OJpTgj0VCLuag4EQCxi+4R2gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jQd2FhycFGbRNFLO4vPASq8X9r0cZ
-	LS7vmsNmcXHuBhaL092sFrcnTmZ0YPP4t+sUm8eda3vYPOadDPTo/2vg0bdlFaPH501yAWxR
-	DYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBHKCmU
-	JeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzLj18wlRwmbXiUcd8lgbG0yxd
-	jJwcEgImEr1zDjJD2GISF+6tZ+ti5OIQEpjOKPH39BIWCOcXo8TEDysYQarYBNQkvnw5zA5i
-	iwDZN/fMYgIpYhZ4wCjxsOMkG0hCWMBZ4vfRr6wgNouAqsSud1fAmnkFbCX+fWxng7AFJX5M
-	vgd2BrOAjkTv92/MELa8xOY1b4FsDqCT1CUe/dWF2KUnMXnDMTaIEhGJfS/eMU5gFJiFZNIs
-	JJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBkf5MagfjygaLQ4wCHIxK
-	PLwWlZOChFgTy4orcw8xSnAwK4nw7qkDCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MAnl
-	lcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOj3LkNnmpd/5y3
-	qLS+9Px5hzd/z8HXu6w+VyZpOp516wt7k9mdfXaKeTSThJJel4zd7cW1xdw5Ss/8w5Y/lazQ
-	qQ2uie74mfX1pIzLVYY139U9Ai/3ey7iUu/T4d+14f7+ncuvOBTnGk49o84Q37xYnNn02Kld
-	tuV/WtksJRYGRsp/33TwrYASS3FGoqEWc1FxIgDAcqUEOAMAAA==
+x-cr-hashedpuzzle: FHGW I+VM KPWK LSmy N0a3 VfU9 XUSj cYDg cqE+ iyMo k4AC k+d5
+ laLX mPMh opJu
+ qKpW;4;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGcAcgBlAGcAawBoAEAAbABpAG4AdQB4AGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{AA26723B-FC07-4F18-8B2B-8149409B1461};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
+ 25 Nov 2013 03:29:29
+ GMT;WwBQAEEAVABDAEgAXQAgAG0AaQBzAGMAOgAgAGUAZQBwAHIAbwBtAF8AOQAzAHgAeAA0ADYAOgAgAHIAZQBtAG8AdgBlACAAdQBuAG4AZQBjAGUAcwBzAGEAcgB5ACAAcwBwAGkAXwBzAGUAdABfAGQAcgB2AGQAYQB0AGEAKAApAA==
+x-cr-puzzleid: {AA26723B-FC07-4F18-8B2B-8149409B1461}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zA135I5OCDBrOGFj8nXSM3aJ58Xo2
+	i8sLL7FaXN41h82BxeP3r0mMHvvnrmH36NuyitHj8ya5AJYoLpuU1JzMstQifbsErozVfRvY
+	CzrYKq5fXMvUwNjL2sXIySEhYCJx89gVdghbTOLCvfVsXYxcHEICyxgl7nesY4YpujpzKQtE
+	YhGjxMQ3W6CqfjFKzH2/kwWkik1ATeLLl8Ngo0QETCU2vp/CCGIzC6RLPDx1hQ3EFhbwkljX
+	uR1sNYuAqsSZRbfANvAK2Eqcb37JBmELSvyYfI8FoldLYv3O40wQtrzE5jVvgeo5gC5Sl3j0
+	VxdilZ7Eyo6vUCUiEvtevGMEuU1CYAqrxMIPn5gg6k0l7mwzhYifYpf4takd6gYBiW+TD7FA
+	1MhKbDoA9bCkxMEVN1gmMErMQnLRLCQXzUJy0SwkqxcwsqxiFE0tSC4oTkovMtIrTswtLs1L
+	10vOz93ECInLvh2MNw9YH2JMBlo/kVlKNDkfGNd5JfGGxmZGFqYmpsZG5pZmpAkrifMuepgU
+	JCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHR2MI96lhZzOO4h1mvg4IO5K3vMrn8wfZXQtFB
+	I2FXT8bMW7wP3CNbHr0475fxYc7Tb0n6Ak2h7u1WM+YuKnepMpvK4BL/47N8xNzTLslS7Htc
+	zB8cCG2NOLSZm6+i3szh9KrODEEBrjeOr7/7bFw2N3jWSptl4rXpd5NSzVm/Gd85yX745nMl
+	luKMREMt5qLiRACFU5LO4QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jAV35I5OCDGZM07H4O+kYu0Xz4vVs
+	FpcXXmK1uLxrDpsDi8fvX5MYPfbPXcPu0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZq/s2sBd0sFVcv7iWqYGxl7WLkZNDQsBE4urMpSwQtpjEhXvr
+	2boYuTiEBBYxSkx8swXK+cUoMff9TrAqNgE1iS9fDrOD2CICphIb309hBLGZBdIlHp66wgZi
+	Cwt4Sazr3A62gUVAVeLMolvMIDavgK3E+eaXbBC2oMSPyfdYIHq1JNbvPM4EYctLbF7zFqie
+	A+gidYlHf3UhVulJrOz4ClUiIrHvxTtGkNskBKawSiz88IkJot5U4s420wmMQrOQbJiFZMMs
+	JBtmIRm1gJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw1D+T2sG4ssHiEKMAB6MSD69F
+	5aQgIdbEsuLK3EOMEhzMSiK8e+qAQrwpiZVVqUX58UWlOanFhxiTgQEwkVlKNDkfmJDySuIN
+	jU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHR8u0x+5lqKWdEHhUE
+	T6sS9Vxcf/qmr4v3NrN/W1ut+eI2XnWMt2RutEv8+v/eJfm29HdbFik5BU6eebvq7c61f+QV
+	2DQFmbesTLieP3Vf1OHrt2bZ73jL9ZhdVbRh3Zv69bo5/xVXsBw91qf7UODRiqMVd9/anBbc
+	x7b0X6mhvu6e8yZv15Z/VWIpzkg01GIuKk4EAEJCNXI+AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,21 +65,21 @@ device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/mc13xxx-spi.c |    1 -
+ drivers/misc/eeprom/eeprom_93xx46.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
-index 5f14ef6..cbcc86d 100644
---- a/drivers/mfd/mc13xxx-spi.c
-+++ b/drivers/mfd/mc13xxx-spi.c
-@@ -149,7 +149,6 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 		ret = PTR_ERR(mc13xxx->regmap);
- 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
- 				ret);
--		spi_set_drvdata(spi, NULL);
- 		return ret;
- 	}
+diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
+index 3a015ab..78e55b5 100644
+--- a/drivers/misc/eeprom/eeprom_93xx46.c
++++ b/drivers/misc/eeprom/eeprom_93xx46.c
+@@ -378,7 +378,6 @@ static int eeprom_93xx46_remove(struct spi_device *spi)
+ 		device_remove_file(&spi->dev, &dev_attr_erase);
  
+ 	sysfs_remove_bin_file(&spi->dev.kobj, &edev->bin);
+-	spi_set_drvdata(spi, NULL);
+ 	kfree(edev);
+ 	return 0;
+ }
 -- 
 1.7.10.4
 
