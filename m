@@ -1,200 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757144Ab3KYQvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:51:21 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:52432 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab3KYQvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:51:18 -0500
-Date: Mon, 25 Nov 2013 11:51:13 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, glommer@openvz.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v11 07/15] memcg: scan cache objects hierarchically
-Message-ID: <20131125165113.GC22729@cmpxchg.org>
-References: <cover.1385377616.git.vdavydov@parallels.com>
- <840647939662771e06c375350f3ccb11dd4c6dc1.1385377616.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <840647939662771e06c375350f3ccb11dd4c6dc1.1385377616.git.vdavydov@parallels.com>
+	id S1757225Ab3KYQwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:52:41 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:47913 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab3KYQwi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:52:38 -0500
+From: Andy Whitcroft <apw@canonical.com>
+To: Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        xen-devel@lists.xenproject.org
+Cc: Andy Whitcroft <apw@canonical.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] xen-netback: include definition of csum_ipv6_magic
+Date: Mon, 25 Nov 2013 16:52:34 +0000
+Message-Id: <1385398354-21636-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 04:07:40PM +0400, Vladimir Davydov wrote:
-> From: Glauber Costa <glommer@openvz.org>
-> 
-> When reaching shrink_slab, we should descent in children memcg searching
-> for objects that could be shrunk. This is true even if the memcg does
-> not have kmem limits on, since the kmem res_counter will also be billed
-> against the user res_counter of the parent.
-> 
-> It is possible that we will free objects and not free any pages, that
-> will just harm the child groups without helping the parent group at all.
-> But at this point, we basically are prepared to pay the price.
-> 
-> Signed-off-by: Glauber Costa <glommer@openvz.org>
-> Cc: Dave Chinner <dchinner@redhat.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/memcontrol.h |    6 ++++
->  mm/memcontrol.c            |   13 +++++++++
->  mm/vmscan.c                |   65 ++++++++++++++++++++++++++++++++++++--------
->  3 files changed, 73 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index d16ba51..a513fad 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -488,6 +488,7 @@ static inline bool memcg_kmem_enabled(void)
->  	return static_key_false(&memcg_kmem_enabled_key);
->  }
->  
-> +bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg);
->  bool memcg_kmem_is_active(struct mem_cgroup *memcg);
->  
->  /*
-> @@ -624,6 +625,11 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
->  }
->  #else
->  
-> +static inline bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
-> +{
-> +	return false;
-> +}
-> +
->  static inline bool memcg_kmem_is_active(struct mem_cgroup *memcg)
->  {
->  	return false;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9be1e8b..f5d7128 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2995,6 +2995,19 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->  }
->  
->  #ifdef CONFIG_MEMCG_KMEM
-> +bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
-> +{
-> +	struct mem_cgroup *iter;
-> +
-> +	for_each_mem_cgroup_tree(iter, memcg) {
-> +		if (memcg_kmem_is_active(iter)) {
-> +			mem_cgroup_iter_break(memcg, iter);
-> +			return true;
-> +		}
-> +	}
-> +	return false;
-> +}
-> +
->  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
->  {
->  	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index cdfc364..36fc133 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -149,7 +149,7 @@ static bool global_reclaim(struct scan_control *sc)
->  static bool has_kmem_reclaim(struct scan_control *sc)
->  {
->  	return !sc->target_mem_cgroup ||
-> -		memcg_kmem_is_active(sc->target_mem_cgroup);
-> +		memcg_kmem_should_reclaim(sc->target_mem_cgroup);
->  }
->  
->  static unsigned long
-> @@ -360,12 +360,35 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
->   *
->   * Returns the number of slab objects which we shrunk.
->   */
-> +static unsigned long
-> +shrink_slab_one(struct shrink_control *shrinkctl, struct shrinker *shrinker,
-> +		unsigned long nr_pages_scanned, unsigned long lru_pages)
+We are now using csum_ipv6_magic, include the appropriate header.
+Avoids the following error:
 
-one what?
+    drivers/net/xen-netback/netback.c:1313:4: error: implicit declaration of function 'csum_ipv6_magic' [-Werror=implicit-function-declaration]
+        tcph->check = ~csum_ipv6_magic(&ipv6h->saddr,
 
-> +{
-> +	unsigned long freed = 0;
-> +
-> +	for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-> +		if (!node_online(shrinkctl->nid))
-> +			continue;
-> +
-> +		if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
-> +		    (shrinkctl->nid != 0))
-> +			break;
-> +
-> +		freed += shrink_slab_node(shrinkctl, shrinker,
-> +			 nr_pages_scanned, lru_pages);
-> +
-> +	}
-> +
-> +	return freed;
-> +}
-> +
->  unsigned long shrink_slab(struct shrink_control *shrinkctl,
->  			  unsigned long nr_pages_scanned,
->  			  unsigned long lru_pages)
->  {
->  	struct shrinker *shrinker;
->  	unsigned long freed = 0;
-> +	struct mem_cgroup *root = shrinkctl->target_mem_cgroup;
->  
->  	if (nr_pages_scanned == 0)
->  		nr_pages_scanned = SWAP_CLUSTER_MAX;
-> @@ -390,19 +413,39 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
->  		if (shrinkctl->target_mem_cgroup &&
->  		    !(shrinker->flags & SHRINKER_MEMCG_AWARE))
->  			continue;
-> +		/*
-> +		 * In a hierarchical chain, it might be that not all memcgs are
-> +		 * kmem active. kmemcg design mandates that when one memcg is
-> +		 * active, its children will be active as well. But it is
-> +		 * perfectly possible that its parent is not.
-> +		 *
-> +		 * We also need to make sure we scan at least once, for the
-> +		 * global case. So if we don't have a target memcg (saved in
-> +		 * root), we proceed normally and expect to break in the next
-> +		 * round.
-> +		 */
-> +		do {
-> +			struct mem_cgroup *memcg = shrinkctl->target_mem_cgroup;
->  
-> -		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-> -			if (!node_online(shrinkctl->nid))
-> -				continue;
-> -
-> -			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
-> -			    (shrinkctl->nid != 0))
-> +			if (!memcg || memcg_kmem_is_active(memcg))
-> +				freed += shrink_slab_one(shrinkctl, shrinker,
-> +					 nr_pages_scanned, lru_pages);
-> +			/*
-> +			 * For non-memcg aware shrinkers, we will arrive here
-> +			 * at first pass because we need to scan the root
-> +			 * memcg.  We need to bail out, since exactly because
-> +			 * they are not memcg aware, instead of noticing they
-> +			 * have nothing to shrink, they will just shrink again,
-> +			 * and deplete too many objects.
-> +			 */
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ drivers/net/xen-netback/netback.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I actually found the code easier to understand without this comment.
+    Found while trying to couple latest kernels for arm64 platforms.
+    Looks like it got missed in the transition.
 
-> +			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE))
->  				break;
-> +			shrinkctl->target_mem_cgroup =
-> +				mem_cgroup_iter(root, memcg, NULL);
+    -apw
 
-The target memcg is always the same, don't change this.  Look at the
-lru scan code for reference.  Iterate zones (nodes in this case)
-first, then iterate the memcgs in each zone (node), look up the lruvec
-and then call shrink_slab_lruvec(lruvec, ...).
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 919b650..64f0e0d 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -39,6 +39,7 @@
+ #include <linux/udp.h>
+ 
+ #include <net/tcp.h>
++#include <net/ip6_checksum.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/events.h>
+-- 
+1.8.3.2
+
