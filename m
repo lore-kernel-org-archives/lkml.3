@@ -1,34 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3KYOGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59037 "EHLO
+	id S1757384Ab3KYOGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58946 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754619Ab3KYNxr (ORCPT
+	by vger.kernel.org with ESMTP id S1754597Ab3KYNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:47 -0500
+	Mon, 25 Nov 2013 08:53:46 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
-        "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
-        "Jens Axboe" <axboe@kernel.dk>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Simon Baatz" <gmbnomis@gmail.com>,
-        "Ming Lei" <ming.lei@canonical.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Aaro Koskinen" <aaro.koskinen@iki.fi>,
-        "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Tejun Heo" <tj@kernel.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+CC: akpm@linux-foundation.org, "Paul Mackerras" <paulus@samba.org>,
+        "Alexander Graf" <agraf@suse.de>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.245392394@decadent.org.uk>
+Message-ID: <lsq.1385387069.767457033@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 87/87] lib/scatterlist.c: don't flush_kernel_dcache_page
- on slab page
+Subject: [PATCH 3.2 56/87] KVM: PPC: Book3S HV: Fix typo in saving DSCR
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -41,60 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
+commit cfc860253abd73e1681696c08ea268d33285a2c4 upstream.
 
-Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
-functions") introduces two sg buffer copy helpers, and calls
-flush_kernel_dcache_page() on pages in SG list after these pages are
-written to.
+This fixes a typo in the code that saves the guest DSCR (Data Stream
+Control Register) into the kvm_vcpu_arch struct on guest exit.  The
+effect of the typo was that the DSCR value was saved in the wrong place,
+so changes to the DSCR by the guest didn't persist across guest exit
+and entry, and some host kernel memory got corrupted.
 
-Unfortunately, the commit may introduce a potential bug:
-
- - Before sending some SCSI commands, kmalloc() buffer may be passed to
-   block layper, so flush_kernel_dcache_page() can see a slab page
-   finally
-
- - According to cachetlb.txt, flush_kernel_dcache_page() is only called
-   on "a user page", which surely can't be a slab page.
-
- - ARCH's implementation of flush_kernel_dcache_page() may use page
-   mapping information to do optimization so page_mapping() will see the
-   slab page, then VM_BUG_ON() is triggered.
-
-Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-before calling flush_kernel_dcache_page().
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Tested-by: Simon Baatz <gmbnomis@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/scatterlist.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -419,7 +419,8 @@ void sg_miter_stop(struct sg_mapping_ite
- 	if (miter->addr) {
- 		miter->__offset += miter->consumed;
+--- a/arch/powerpc/kvm/book3s_hv_rmhandlers.S
++++ b/arch/powerpc/kvm/book3s_hv_rmhandlers.S
+@@ -922,7 +922,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
+ BEGIN_FTR_SECTION
+ 	mfspr	r8, SPRN_DSCR
+ 	ld	r7, HSTATE_DSCR(r13)
+-	std	r8, VCPU_DSCR(r7)
++	std	r8, VCPU_DSCR(r9)
+ 	mtspr	SPRN_DSCR, r7
+ END_FTR_SECTION_IFSET(CPU_FTR_ARCH_206)
  
--		if (miter->__flags & SG_MITER_TO_SG)
-+		if ((miter->__flags & SG_MITER_TO_SG) &&
-+		    !PageSlab(miter->page))
- 			flush_kernel_dcache_page(miter->page);
- 
- 		if (miter->__flags & SG_MITER_ATOMIC) {
 
