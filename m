@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab3KYOCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58938 "EHLO
+	id S1757036Ab3KYOCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58993 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754228Ab3KYNxt (ORCPT
+	by vger.kernel.org with ESMTP id S1754377Ab3KYNxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:49 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
-        "Shuduo Sang" <sangshuduo@gmail.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
+        "Nicholas Bellinger" <nab@linux-iscsi.org>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.223849261@decadent.org.uk>
+Message-ID: <lsq.1385387069.619375578@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 45/87] iwlwifi: add new pci id for 6x35 series
+Subject: [PATCH 3.2 77/87] target/pscsi: fix return value check
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,33 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuduo Sang <sangshuduo@gmail.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 20ecf9fd3bebc4147e2996c08a75d6f0229b90df upstream.
+commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
 
-some new thinkpad laptops use intel chip with new pci id need be added
-lspci -vnn output:
- Network controller [0280]: Intel Corporation Centrino Advanced-N 6235
- [8086:088f] (rev 24)
- Subsystem: Intel Corporation Device [8086:5260]
+In case of error, the function scsi_host_lookup() returns NULL
+pointer not ERR_PTR(). The IS_ERR() test in the return value check
+should be replaced with NULL test.
 
-Signed-off-by: Shuduo Sang <sangshuduo@gmail.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: pscsi_configure_device() returns a pointer]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_pscsi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-pci.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-pci.c
-@@ -340,6 +340,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088F, 0x5260, iwl6035_2agn_cfg)},
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -129,10 +129,10 @@ static int pscsi_pmode_enable_hba(struct
+ 	 * pSCSI Host ID and enable for phba mode
+ 	 */
+ 	sh = scsi_host_lookup(phv->phv_host_id);
+-	if (IS_ERR(sh)) {
++	if (!sh) {
+ 		pr_err("pSCSI: Unable to locate SCSI Host for"
+ 			" phv_host_id: %d\n", phv->phv_host_id);
+-		return PTR_ERR(sh);
++		return -EINVAL;
+ 	}
  
- /* 105 Series */
- 	{IWL_PCI_DEVICE(0x0894, 0x0022, iwl105_bgn_cfg)},
+ 	phv->phv_lld_host = sh;
+@@ -564,10 +564,10 @@ static struct se_device *pscsi_create_vi
+ 			sh = phv->phv_lld_host;
+ 		} else {
+ 			sh = scsi_host_lookup(pdv->pdv_host_id);
+-			if (IS_ERR(sh)) {
++			if (!sh) {
+ 				pr_err("pSCSI: Unable to locate"
+ 					" pdv_host_id: %d\n", pdv->pdv_host_id);
+-				return ERR_CAST(sh);
++				return ERR_PTR(-EINVAL);
+ 			}
+ 		}
+ 	} else {
 
