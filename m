@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab3KYIEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 03:04:50 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:46854 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab3KYIEt (ORCPT
+	id S1752659Ab3KYINk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 03:13:40 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:55578 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3KYINi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:04:49 -0500
-X-AuditID: 9c93017e-b7ba2ae00000088c-67-5293049fe118
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tracing: Introduce "pseudo registers" for FETCH_MTD_reg
-References: <20131123201543.GA22148@redhat.com>
-	<20131123201605.GB22148@redhat.com> <5291ABA5.7030505@hitachi.com>
-Date: Mon, 25 Nov 2013 17:04:47 +0900
-In-Reply-To: <5291ABA5.7030505@hitachi.com> (Masami Hiramatsu's message of
-	"Sun, 24 Nov 2013 16:32:53 +0900")
-Message-ID: <877gbwsy8w.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 25 Nov 2013 03:13:38 -0500
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: "chaowang@redhat.com" <chaowang@redhat.com>
+CC: "bhe@redhat.com" <bhe@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+Thread-Topic: /proc/vmcore mmap() failure issue
+Thread-Index: AQHO5olZ18hsX/7760SqeZbh92xDy5o1nPpw
+Date: Mon, 25 Nov 2013 08:09:47 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971C5AAC@BPXM01GP.gisp.nec.co.jp>
+References: <20131113204130.GD7613@redhat.com>
+ <5284A689.70903@jp.fujitsu.com> <20131114151359.GA3913@redhat.com>
+ <5285EC60.1060906@jp.fujitsu.com> <20131115142617.GC6637@redhat.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp>
+ <528B3585.5080606@jp.fujitsu.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+ <20131121071441.GA2207@dhcp16-109.nay.redhat.com>
+In-Reply-To: <20131121071441.GA2207@dhcp16-109.nay.redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Nov 2013 16:32:53 +0900, Masami Hiramatsu wrote:
-> (2013/11/24 5:16), Oleg Nesterov wrote:
->> The probe can dump the registers or memory, but it is not possible
->> to dump, say, current->pid. This patch adds the pseudo regs table,
->> currently it has only two methods to get current/smp_processor_id
->> but it can be trivially extended.
->
-> Good catch! :)
->
->> This syntax is %%pseudo-reg-name, I agree in advance with any other
->> naming.
->
-> For this kind of use, kprobe-tracer already provides '$' prefix :)
-> e.g. $stack, $retval etc. Please see parse_probe_vars in trace_probe.c.
->
-> So, $current and $cpu is better for me.
+Hello WANG,
 
-Agreed.
+On 2013/11/21 16:15:22, kexec <kexec-bounces@lists.infradead.org> wrote:
+> > How about this fail back structure instead of such an extra option ?
+> > 
+> > Thanks
+> > Atsushi Kumagai
+> > 
+> > From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> > Date: Wed, 20 Nov 2013 14:10:19 +0900
+> > Subject: [PATCH] Fall back to read() when mmap() fails.
+> > 
+> > Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> > ---
+> >  makedumpfile.c | 10 +++++++++-
+> >  1 file changed, 9 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/makedumpfile.c b/makedumpfile.c
+> > index ca03440..f583602 100644
+> > --- a/makedumpfile.c
+> > +++ b/makedumpfile.c
+> > @@ -324,7 +324,15 @@ read_from_vmcore(off_t offset, void *bufptr, unsigned long size)
+> >  		if (!read_with_mmap(offset, bufptr, size)) {
+> >  			ERRMSG("Can't read the dump memory(%s) with mmap().\n",
+> >  			       info->name_memory);
+> > -			return FALSE;
+> > +
+> > +			ERRMSG("This kernel might have some problems about mmap().\n");
+> > +			ERRMSG("read() will be used instead of mmap() from now.\n");
+> > +
+> > +			/*
+> > +			 * Fall back to read().
+> > +			 */
+> > +			info->flag_usemmap = FALSE;
+> > +			read_from_vmcore(offset, bufptr, size);
+> 
+> Hi, Atsushi
+> 
+> I've got such a workstation too. And I confirm this patch works for me.
 
-Thanks,
-Namhyung
+Thanks for your testing !
+
+> However, I have a question:
+> Why not switch to mmap() back after read()?
+
+I made this patch as a general safety net, not only for the partial page
+issue.
+When facing unknown issues related mmap(), the kernel may have some bugs
+and mmap() can fail for every pages. In the worst case, most all mmap()
+will fail and try read() with error messages after every fail, but this
+patch will prevent the chattering of the switch and so many error messages.
+
+
+Thanks
+Atsushi Kumagai
+
+> Thanks
+> WANG Chao
+> 
+> >  		}
+> >  	} else {
+> >  		if (lseek(info->fd_memory, offset, SEEK_SET) == failed) {
+> > -- 
+> > 1.8.0.2
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
