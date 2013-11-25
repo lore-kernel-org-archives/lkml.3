@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab3KYObP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:31:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46118 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab3KYObM (ORCPT
+	id S1758523Ab3KYObd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:31:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58913 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754144Ab3KYNxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:31:12 -0500
-Date: Mon, 25 Nov 2013 06:31:54 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: 3.12.1 Virt dev invalid for slot_id 0x1
-Message-ID: <20131125143154.GA4003@kroah.com>
-References: <528E975B.5010200@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 25 Nov 2013 08:53:34 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <528E975B.5010200@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Markus Trippelsdorf" <markus@trippelsdorf.de>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.699254835@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 30/87] perf tools: Fix getrusage() related build
+ failure on glibc trunk
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 04:29:31PM -0700, Shuah Khan wrote:
-> I started seeing the following on my Samsung Series on 3.12.1
-> 
-> Is this bad? Looks like the following WARN_ON is firing:
-> 
-> drivers/usb/host/xhci.c:
-> 
->          if (WARN_ON(!virt_dev)) {
->                  /*
->                   * In plug/unplug torture test with an NEC controller,
->                   * a zero-dereference was observed once due to virt_dev 
-> = 0.
->                   * Print useful debug rather than crash if it is 
-> observed again!
->                   */
->                  xhci_warn(xhci, "Virt dev invalid for slot_id 0x%x!\n",
->                          udev->slot_id);
->                  return -EINVAL;
->          }
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-I suggest sending this to the linux-usb@vger mailing list and cc: the
-xhci author/maintainer so they are aware of this.
+------------------
 
-thanks,
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-greg k-h
+commit 7b78f13603c6fcb64e020a0bbe31a651ea2b657b upstream.
+
+On a system running glibc trunk perf doesn't build:
+
+    CC builtin-sched.o
+builtin-sched.c: In function ‘get_cpu_usage_nsec_parent’: builtin-sched.c:399:16: error: storage size of ‘ru’ isn’t known builtin-sched.c:403:2: error: implicit declaration of function ‘getrusage’ [-Werror=implicit-function-declaration]
+    [...]
+
+Fix it by including sys/resource.h.
+
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120404084527.GA294@x4
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ tools/perf/builtin-sched.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -14,6 +14,7 @@
+ #include "util/debug.h"
+ 
+ #include <sys/prctl.h>
++#include <sys/resource.h>
+ 
+ #include <semaphore.h>
+ #include <pthread.h>
+
