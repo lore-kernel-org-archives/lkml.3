@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3KYOGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58864 "EHLO
+	id S1757313Ab3KYOGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:09 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58928 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753660Ab3KYNxr (ORCPT
+	by vger.kernel.org with ESMTP id S1754252Ab3KYNxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:47 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Eric Sandeen" <sandeen@redhat.com>, "Jan Kara" <jack@suse.cz>
+CC: akpm@linux-foundation.org, "Chris Metcalf" <cmetcalf@tilera.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.994048708@decadent.org.uk>
+Message-ID: <lsq.1385387069.735047398@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 26/87] ext3: return 32/64-bit dir name hash according
- to usage type
+Subject: [PATCH 3.2 40/87] tile: use a more conservative __my_cpu_offset
+ in CONFIG_PREEMPT
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,342 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit d7dab39b6e16d5eea78ed3c705d2a2d0772b4f06 upstream.
+commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
 
-This is based on commit d1f5273e9adb40724a85272f248f210dc4ce919a
-ext4: return 32/64-bit dir name hash according to usage type
-by Fan Yong <yong.fan@whamcloud.com>
+It turns out the kernel relies on barrier() to force a reload of the
+percpu offset value.  Since we can't easily modify the definition of
+barrier() to include "tp" as an output register, we instead provide a
+definition of __my_cpu_offset as extended assembly that includes a fake
+stack read to hazard against barrier(), forcing gcc to know that it
+must reread "tp" and recompute anything based on "tp" after a barrier.
 
-Traditionally ext2/3/4 has returned a 32-bit hash value from llseek()
-to appease NFSv2, which can only handle a 32-bit cookie for seekdir()
-and telldir().  However, this causes problems if there are 32-bit hash
-collisions, since the NFSv2 server can get stuck resending the same
-entries from the directory repeatedly.
+This fixes observed hangs in the slub allocator when we are looping
+on a percpu cmpxchg_double.
 
-Allow ext3 to return a full 64-bit hash (both major and minor) for
-telldir to decrease the chance of hash collisions.
+A similar fix for ARMv7 was made in June in change 509eb76ebf97.
 
-This patch does implement a new ext3_dir_llseek op, because with 64-bit
-hashes, nfs will attempt to seek to a hash "offset" which is much
-larger than ext3's s_maxbytes.  So for dx dirs, we call
-generic_file_llseek_size() with the appropriate max hash value as the
-maximum seekable size.  Otherwise we just pass through to
-generic_file_llseek().
-
-Patch-updated-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Patch-updated-by: Eric Sandeen <sandeen@redhat.com>
-(blame us if something is not correct)
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext3/dir.c           |  167 ++++++++++++++++++++++++++++++++++-------------
- fs/ext3/hash.c          |    4 +-
- include/linux/ext3_fs.h |    6 +-
- 3 files changed, 129 insertions(+), 48 deletions(-)
+ arch/tile/include/asm/percpu.h | 34 +++++++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
---- a/fs/ext3/dir.c
-+++ b/fs/ext3/dir.c
-@@ -25,6 +25,7 @@
- #include <linux/jbd.h>
- #include <linux/ext3_fs.h>
- #include <linux/buffer_head.h>
-+#include <linux/compat.h>
- #include <linux/slab.h>
- #include <linux/rbtree.h>
+--- a/arch/tile/include/asm/percpu.h
++++ b/arch/tile/include/asm/percpu.h
+@@ -15,9 +15,37 @@
+ #ifndef _ASM_TILE_PERCPU_H
+ #define _ASM_TILE_PERCPU_H
  
-@@ -32,24 +33,8 @@ static unsigned char ext3_filetype_table
- 	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
- };
- 
--static int ext3_readdir(struct file *, void *, filldir_t);
- static int ext3_dx_readdir(struct file * filp,
- 			   void * dirent, filldir_t filldir);
--static int ext3_release_dir (struct inode * inode,
--				struct file * filp);
--
--const struct file_operations ext3_dir_operations = {
--	.llseek		= generic_file_llseek,
--	.read		= generic_read_dir,
--	.readdir	= ext3_readdir,		/* we take BKL. needed?*/
--	.unlocked_ioctl	= ext3_ioctl,
--#ifdef CONFIG_COMPAT
--	.compat_ioctl	= ext3_compat_ioctl,
--#endif
--	.fsync		= ext3_sync_file,	/* BKL held */
--	.release	= ext3_release_dir,
--};
--
- 
- static unsigned char get_dtype(struct super_block *sb, int filetype)
- {
-@@ -60,6 +45,25 @@ static unsigned char get_dtype(struct su
- 	return (ext3_filetype_table[filetype]);
- }
- 
-+/**
-+ * Check if the given dir-inode refers to an htree-indexed directory
-+ * (or a directory which chould potentially get coverted to use htree
-+ * indexing).
-+ *
-+ * Return 1 if it is a dx dir, 0 if not
+-register unsigned long __my_cpu_offset __asm__("tp");
+-#define __my_cpu_offset __my_cpu_offset
+-#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
++register unsigned long my_cpu_offset_reg asm("tp");
++
++#ifdef CONFIG_PREEMPT
++/*
++ * For full preemption, we can't just use the register variable
++ * directly, since we need barrier() to hazard against it, causing the
++ * compiler to reload anything computed from a previous "tp" value.
++ * But we also don't want to use volatile asm, since we'd like the
++ * compiler to be able to cache the value across multiple percpu reads.
++ * So we use a fake stack read as a hazard against barrier().
++ * The 'U' constraint is like 'm' but disallows postincrement.
 + */
-+static int is_dx_dir(struct inode *inode)
++static inline unsigned long __my_cpu_offset(void)
 +{
-+	struct super_block *sb = inode->i_sb;
-+
-+	if (EXT3_HAS_COMPAT_FEATURE(inode->i_sb,
-+		     EXT3_FEATURE_COMPAT_DIR_INDEX) &&
-+	    ((EXT3_I(inode)->i_flags & EXT3_INDEX_FL) ||
-+	     ((inode->i_size >> sb->s_blocksize_bits) == 1)))
-+		return 1;
-+
-+	return 0;
++	unsigned long tp;
++	register unsigned long *sp asm("sp");
++	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
++	return tp;
 +}
- 
- int ext3_check_dir_entry (const char * function, struct inode * dir,
- 			  struct ext3_dir_entry_2 * de,
-@@ -99,18 +103,13 @@ static int ext3_readdir(struct file * fi
- 	unsigned long offset;
- 	int i, stored;
- 	struct ext3_dir_entry_2 *de;
--	struct super_block *sb;
- 	int err;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
-+	struct super_block *sb = inode->i_sb;
- 	int ret = 0;
- 	int dir_has_error = 0;
- 
--	sb = inode->i_sb;
--
--	if (EXT3_HAS_COMPAT_FEATURE(inode->i_sb,
--				    EXT3_FEATURE_COMPAT_DIR_INDEX) &&
--	    ((EXT3_I(inode)->i_flags & EXT3_INDEX_FL) ||
--	     ((inode->i_size >> sb->s_blocksize_bits) == 1))) {
-+	if (is_dx_dir(inode)) {
- 		err = ext3_dx_readdir(filp, dirent, filldir);
- 		if (err != ERR_BAD_DX_DIR) {
- 			ret = err;
-@@ -232,22 +231,87 @@ out:
- 	return ret;
- }
- 
-+static inline int is_32bit_api(void)
-+{
-+#ifdef CONFIG_COMPAT
-+	return is_compat_task();
++#define __my_cpu_offset __my_cpu_offset()
 +#else
-+	return (BITS_PER_LONG == 32);
-+#endif
-+}
-+
- /*
-  * These functions convert from the major/minor hash to an f_pos
-- * value.
-+ * value for dx directories
-+ *
-+ * Upper layer (for example NFS) should specify FMODE_32BITHASH or
-+ * FMODE_64BITHASH explicitly. On the other hand, we allow ext3 to be mounted
-+ * directly on both 32-bit and 64-bit nodes, under such case, neither
-+ * FMODE_32BITHASH nor FMODE_64BITHASH is specified.
-+ */
-+static inline loff_t hash2pos(struct file *filp, __u32 major, __u32 minor)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return major >> 1;
-+	else
-+		return ((__u64)(major >> 1) << 32) | (__u64)minor;
-+}
-+
-+static inline __u32 pos2maj_hash(struct file *filp, loff_t pos)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return (pos << 1) & 0xffffffff;
-+	else
-+		return ((pos >> 32) << 1) & 0xffffffff;
-+}
-+
-+static inline __u32 pos2min_hash(struct file *filp, loff_t pos)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return 0;
-+	else
-+		return pos & 0xffffffff;
-+}
-+
 +/*
-+ * Return 32- or 64-bit end-of-file for dx directories
++ * We don't need to hazard against barrier() since "tp" doesn't ever
++ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
++ * changes at function call points, at which we are already re-reading
++ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
 + */
-+static inline loff_t ext3_get_htree_eof(struct file *filp)
-+{
-+	if ((filp->f_mode & FMODE_32BITHASH) ||
-+	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
-+		return EXT3_HTREE_EOF_32BIT;
-+	else
-+		return EXT3_HTREE_EOF_64BIT;
-+}
-+
-+
-+/*
-+ * ext3_dir_llseek() calls generic_file_llseek[_size]() to handle both
-+ * non-htree and htree directories, where the "offset" is in terms
-+ * of the filename hash value instead of the byte offset.
-  *
-- * Currently we only use major hash numer.  This is unfortunate, but
-- * on 32-bit machines, the same VFS interface is used for lseek and
-- * llseek, so if we use the 64 bit offset, then the 32-bit versions of
-- * lseek/telldir/seekdir will blow out spectacularly, and from within
-- * the ext2 low-level routine, we don't know if we're being called by
-- * a 64-bit version of the system call or the 32-bit version of the
-- * system call.  Worse yet, NFSv2 only allows for a 32-bit readdir
-- * cookie.  Sigh.
-+ * Because we may return a 64-bit hash that is well beyond s_maxbytes,
-+ * we need to pass the max hash as the maximum allowable offset in
-+ * the htree directory case.
-+ *
-+ * NOTE: offsets obtained *before* ext3_set_inode_flag(dir, EXT3_INODE_INDEX)
-+ *       will be invalid once the directory was converted into a dx directory
-  */
--#define hash2pos(major, minor)	(major >> 1)
--#define pos2maj_hash(pos)	((pos << 1) & 0xffffffff)
--#define pos2min_hash(pos)	(0)
-+loff_t ext3_dir_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct inode *inode = file->f_mapping->host;
-+	int dx_dir = is_dx_dir(inode);
-+
-+	if (likely(dx_dir))
-+		return generic_file_llseek_size(file, offset, origin,
-+					        ext3_get_htree_eof(file));
-+	else
-+		return generic_file_llseek(file, offset, origin);
-+}
- 
- /*
-  * This structure holds the nodes of the red-black tree used to store
-@@ -308,15 +372,16 @@ static void free_rb_tree_fname(struct rb
- }
- 
- 
--static struct dir_private_info *ext3_htree_create_dir_info(loff_t pos)
-+static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
-+							   loff_t pos)
- {
- 	struct dir_private_info *p;
- 
- 	p = kzalloc(sizeof(struct dir_private_info), GFP_KERNEL);
- 	if (!p)
- 		return NULL;
--	p->curr_hash = pos2maj_hash(pos);
--	p->curr_minor_hash = pos2min_hash(pos);
-+	p->curr_hash = pos2maj_hash(filp, pos);
-+	p->curr_minor_hash = pos2min_hash(filp, pos);
- 	return p;
- }
- 
-@@ -406,7 +471,7 @@ static int call_filldir(struct file * fi
- 		printk("call_filldir: called with null fname?!?\n");
- 		return 0;
- 	}
--	curr_pos = hash2pos(fname->hash, fname->minor_hash);
-+	curr_pos = hash2pos(filp, fname->hash, fname->minor_hash);
- 	while (fname) {
- 		error = filldir(dirent, fname->name,
- 				fname->name_len, curr_pos,
-@@ -431,13 +496,13 @@ static int ext3_dx_readdir(struct file *
- 	int	ret;
- 
- 	if (!info) {
--		info = ext3_htree_create_dir_info(filp->f_pos);
-+		info = ext3_htree_create_dir_info(filp, filp->f_pos);
- 		if (!info)
- 			return -ENOMEM;
- 		filp->private_data = info;
- 	}
- 
--	if (filp->f_pos == EXT3_HTREE_EOF)
-+	if (filp->f_pos == ext3_get_htree_eof(filp))
- 		return 0;	/* EOF */
- 
- 	/* Some one has messed with f_pos; reset the world */
-@@ -445,8 +510,8 @@ static int ext3_dx_readdir(struct file *
- 		free_rb_tree_fname(&info->root);
- 		info->curr_node = NULL;
- 		info->extra_fname = NULL;
--		info->curr_hash = pos2maj_hash(filp->f_pos);
--		info->curr_minor_hash = pos2min_hash(filp->f_pos);
-+		info->curr_hash = pos2maj_hash(filp, filp->f_pos);
-+		info->curr_minor_hash = pos2min_hash(filp, filp->f_pos);
- 	}
- 
- 	/*
-@@ -478,7 +543,7 @@ static int ext3_dx_readdir(struct file *
- 			if (ret < 0)
- 				return ret;
- 			if (ret == 0) {
--				filp->f_pos = EXT3_HTREE_EOF;
-+				filp->f_pos = ext3_get_htree_eof(filp);
- 				break;
- 			}
- 			info->curr_node = rb_first(&info->root);
-@@ -498,7 +563,7 @@ static int ext3_dx_readdir(struct file *
- 			info->curr_minor_hash = fname->minor_hash;
- 		} else {
- 			if (info->next_hash == ~0) {
--				filp->f_pos = EXT3_HTREE_EOF;
-+				filp->f_pos = ext3_get_htree_eof(filp);
- 				break;
- 			}
- 			info->curr_hash = info->next_hash;
-@@ -517,3 +582,15 @@ static int ext3_release_dir (struct inod
- 
- 	return 0;
- }
-+
-+const struct file_operations ext3_dir_operations = {
-+	.llseek		= ext3_dir_llseek,
-+	.read		= generic_read_dir,
-+	.readdir	= ext3_readdir,
-+	.unlocked_ioctl = ext3_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= ext3_compat_ioctl,
++#define __my_cpu_offset my_cpu_offset_reg
 +#endif
-+	.fsync		= ext3_sync_file,
-+	.release	= ext3_release_dir,
-+};
---- a/fs/ext3/hash.c
-+++ b/fs/ext3/hash.c
-@@ -200,8 +200,8 @@ int ext3fs_dirhash(const char *name, int
- 		return -1;
- 	}
- 	hash = hash & ~1;
--	if (hash == (EXT3_HTREE_EOF << 1))
--		hash = (EXT3_HTREE_EOF-1) << 1;
-+	if (hash == (EXT3_HTREE_EOF_32BIT << 1))
-+		hash = (EXT3_HTREE_EOF_32BIT - 1) << 1;
- 	hinfo->hash = hash;
- 	hinfo->minor_hash = minor_hash;
- 	return 0;
---- a/include/linux/ext3_fs.h
-+++ b/include/linux/ext3_fs.h
-@@ -781,7 +781,11 @@ struct dx_hash_info
- 	u32		*seed;
- };
- 
--#define EXT3_HTREE_EOF	0x7fffffff
 +
-+/* 32 and 64 bit signed EOF for dx directories */
-+#define EXT3_HTREE_EOF_32BIT   ((1UL  << (32 - 1)) - 1)
-+#define EXT3_HTREE_EOF_64BIT   ((1ULL << (64 - 1)) - 1)
-+
++#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
  
- /*
-  * Control parameters used by ext3_htree_next_block
+ #include <asm-generic/percpu.h>
+ 
 
