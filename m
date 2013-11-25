@@ -1,94 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3KYVTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 16:19:47 -0500
-Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:37195 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751083Ab3KYVTo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 16:19:44 -0500
-X-Greylist: delayed 2400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 16:19:44 EST
-Message-ID: <5293ACA6.7060403@bracey.fi>
-Date: Mon, 25 Nov 2013 22:01:42 +0200
-From: Kevin Bracey <kevin@bracey.fi>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1752361Ab3KYVWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 16:22:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49925 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab3KYVWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 16:22:14 -0500
+Date: Mon, 25 Nov 2013 15:21:01 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>
+Subject: Re: [PATCH v3 04/10] usb: dwc3: use quirks to know if a particualr
+ platform doesn't have PHY
+Message-ID: <20131125212101.GR18046@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
+ <1385373690-12170-5-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Kyungmin Park <kmpark@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using
- pinfunc.
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com> <528BB1F2.4080107@wwwdotorg.org> <CAD=FV=XS0dbE7zfgDGVdp84h4fHH6tfO8aN_HNh1LbOjYy51aQ@mail.gmail.com> <528BB913.6080409@wwwdotorg.org> <CAH9JG2UjnL5bZzNUuJhWY3GpwPD=rJvR2O4Hcpm33G+prSS=BA@mail.gmail.com> <CACRpkdbyjm0X9RX+8WjqQxBPyRjBOAunkqVcO-0KUd1PTdGavA@mail.gmail.com>
-In-Reply-To: <CACRpkdbyjm0X9RX+8WjqQxBPyRjBOAunkqVcO-0KUd1PTdGavA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12454986245928554717
-X-Ovh-Remote: 62.183.157.30 (62-183-157-30.bb.dnainternet.fi)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hdoY8pikdvrkIRAT"
+Content-Disposition: inline
+In-Reply-To: <1385373690-12170-5-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/11/2013 16:34, Linus Walleij wrote:
-> On Wed, Nov 20, 2013 at 1:02 AM, Kyungmin Park <kmpark@infradead.org> wrote:
->> On Wed, Nov 20, 2013 at 4:16 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> I think that last point should be addressed by having a driver that owns
->>> the GPIO set it to the desired output level, and the implementation of
->> Some pins are not connected (NC). At that cases, there's no drivers to
->> handle it. To reduce power leakage, it sets proper configuration with
->> values instead of reset values.
-> This is correspondant to the PIN_CONFIG_OUTPUT from
-> include/linux/pinctrl/pinconf-generic.h
+--hdoY8pikdvrkIRAT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Indeed it is - I was waiting for someone to point that out. Now we've 
-got there...
+On Mon, Nov 25, 2013 at 03:31:24PM +0530, Kishon Vijay Abraham I wrote:
+> There can be systems which does not have an external phy, so get
+> phy only if no quirks are added that indicates the PHY is not present.
+> Introduced two quirk flags to indicate the *absence* of usb2 phy and
+> usb3 phy. Also remove checking if return value is -ENXIO since it's now
+> changed to always enable usb_phy layer.
+>=20
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/usb/dwc3/Kconfig         |    1 +
+>  drivers/usb/dwc3/core.c          |   93 ++++++++++++++++++++------------=
+------
+>  drivers/usb/dwc3/core.h          |   15 ++++++
+>  drivers/usb/dwc3/platform_data.h |    5 ++
+>  4 files changed, 69 insertions(+), 45 deletions(-)
+>=20
+> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> index 70fc430..8e385b4 100644
+> --- a/drivers/usb/dwc3/Kconfig
+> +++ b/drivers/usb/dwc3/Kconfig
+> @@ -1,6 +1,7 @@
+>  config USB_DWC3
+>  	tristate "DesignWare USB3 DRD Core Support"
+>  	depends on (USB || USB_GADGET) && HAS_DMA
+> +	select USB_PHY
 
-I've been working on extending the shmobile PFC driver to provide 
-"gpio-mode" and implement PIN_CONFIG_OUTPUT as described by 
-Documentation/pinctrl.txt, primarily to handle sleep states, but I have 
-begun to wonder about the initial state problem, as discussed here.
+no more selects, we've already had too many problems caused by bogus
+usage of select.
 
-As far as I can see, we can't currently specify "fallback" states for 
-pins, which is one of Tomasz' key requirements.
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 986674f..f20f4a1 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/of.h>
+> +#include <linux/of_device.h>
+> =20
+>  #include <linux/usb/ch9.h>
+>  #include <linux/usb/gadget.h>
+> @@ -351,13 +352,28 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+> =20
+>  #define DWC3_ALIGN_MASK		(16 - 1)
+> =20
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id of_dwc3_match[] =3D {
+> +	{
+> +		.compatible =3D "snps,dwc3"
+> +	},
+> +	{
+> +		.compatible =3D "synopsys,dwc3"
+> +	},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_dwc3_match);
+> +#endif
+> +
 
-We can specify "hog" states, and we can specify "default for a driver", 
-but not "default before/in absence of a driver" or "sleep in absence of 
-a driver". Having a hog precludes any finer driver control, AFAICT.
+you can split this patch a little bit just to make it easier to review
+because there are a few changes which are really obvious:
 
-Some of our existing pre-pinconf board files have a "unused pins" table 
-which is used to claim and pull GPIOs. I've converted that to "hog" 
-pinconf, but that only works because the table omits all pins used by 
-drivers. And, unsurprisingly, that's been error-prone; if those tables 
-originally covered all unused pins, they don't any more.
+a) move of_device_id higher in source code so you can use it from probe.
+	while at that, aso use of_match_device() and return early if it
+	doesn't match anything.
 
-I'd like confidence that we can get every pin into the correct state by 
-having a fully-populated table containing all pins, that can be used 
-regardless of which drivers start. I think what we're lacking is a "weak 
-hog". Whatever you call that. :)
+b) introduce struct dwc3_data.
 
-That would also specify the state to fallback to when a group is 
-released (where we currently do pinmux_disable_setting).
+c) initialize of_id->data field.
 
-Thoughts?
+d) start using struct dwc3_data
 
-Kevin
+this will make to put all obvious changes (a-c) in separate patches so
+review can focus on (d).
 
+--=20
+balbi
 
+--hdoY8pikdvrkIRAT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSk789AAoJEIaOsuA1yqREUA4QAKJ5mdE8Hv9U3G/Uwaood3de
+RZRxtYtpd1hAJWNcRKRN8JhnZ4FsQnjsTOTT6AiWXlNuprgUtcText9xoK0YX9RD
+m/D7peeSwXWvC5OwEkXJfDgi6GhqFya2nyLAyx/WZAM7buHXiW3S1ffOr3RP5MkX
+loTIZzzjssHZN9/3lAdqAUKmwLpfu+b9P1sl6zF4i83cFWZWiin81dSryM9Eg2CP
+S30q5VsT8n6HCOEv8At5JV3SxgSOZgtc5pv7EE4loBzUhLgb/LdaXTHfzXBRPPux
+plJ+DVVzdKIrI4eO9StGfUytIQM/DDfGq76wIvwFSfnsopmJ5+ZFR50uxf4nS5Mn
++vpxkVC00uDgBzMLegGdahqOcYNyRA5fSYMClLi1VRe0bfDg7JipAll+VkzV/iZI
+WUcxta96WctOH0SbtwC8vqSDkHGiERt+E3OWLpkBZiUeCrLrooXqspJHyGt0Ws+J
+Nrzvy55Oc3/t/khbzJLrEeUJqVv3Dh8UcyEkPM9clRfrZtQJ2D01AgZAMC9ry07x
+RTs+Aelj2IzgZKtXINJXey4bCglk71h8okVCPK7vxdJNhEQlB/YOCRWwZuq9/84i
+G6Jk9PDDrqQ/KnVzalOoXOG/Es+vycXyd2A9DqB+IZRgocPBKR/cOkru6sQB7ogf
+h9/lh5qS/k/TZwcyohE2
+=X7UI
+-----END PGP SIGNATURE-----
+
+--hdoY8pikdvrkIRAT--
