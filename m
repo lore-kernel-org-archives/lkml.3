@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab3KYMLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:11:01 -0500
-Received: from relay.parallels.com ([195.214.232.42]:53459 "EHLO
+	id S1754571Ab3KYMMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:12:23 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53432 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab3KYMHw (ORCPT
+	with ESMTP id S1753871Ab3KYMHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:07:52 -0500
+	Mon, 25 Nov 2013 07:07:51 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>, <mhocko@suse.cz>
 CC: <glommer@openvz.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH v11 08/15] vmscan: take at least one pass with shrinkers
-Date: Mon, 25 Nov 2013 16:07:41 +0400
-Message-ID: <2ddb3940d9a96ba6625809a17e23ccb4e65fe29d.1385377616.git.vdavydov@parallels.com>
+Subject: [PATCH v11 00/15] kmemcg shrinkers
+Date: Mon, 25 Nov 2013 16:07:33 +0400
+Message-ID: <cover.1385377616.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1385377616.git.vdavydov@parallels.com>
-References: <cover.1385377616.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.30.24.145]
@@ -24,70 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+This patchset implements targeted shrinking for memcg when kmem limits are
+present. So far, we've been accounting kernel objects but failing allocations
+when short of memory. This is because our only option would be to call the
+global shrinker, depleting objects from all caches and breaking isolation.
 
-In very low free kernel memory situations, it may be the case that we
-have less objects to free than our initial batch size. If this is the
-case, it is better to shrink those, and open space for the new workload
-then to keep them and fail the new allocations.
+The main idea is to associate per-memcg lists with each of the LRUs. The main
+LRU still provides a single entry point and when adding or removing an element
+from the LRU, we use the page information to figure out which memcg it belongs
+to and relay it to the right list.
 
-In particular, we are concerned with the direct reclaim case for memcg.
-Although this same technique can be applied to other situations just as well,
-we will start conservative and apply it for that case, which is the one
-that matters the most.
+The bulk of the code is written by Glauber Costa. The only change I introduced
+myself in this iteration is reworking per-memcg LRU lists. Instead of extending
+the existing list_lru structure, which seems to be neat as is, I introduced a
+new one, memcg_list_lru, which aggregates list_lru objects for each kmem-active
+memcg and keeps them uptodate as memcgs are created/destroyed. I hope this
+simplified call paths and made the code easier to read.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-CC: Dave Chinner <dchinner@redhat.com>
-CC: Carlos Maiolino <cmaiolino@redhat.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Al Viro <viro@zeniv.linux.org.uk>
----
- mm/vmscan.c |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+The patchset is based on top of Linux 3.13-rc1.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 36fc133..bfedcdc 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -311,20 +311,33 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
- 				nr_pages_scanned, lru_pages,
- 				max_pass, delta, total_scan);
- 
--	while (total_scan >= batch_size) {
-+	do {
- 		unsigned long ret;
-+		unsigned long nr_to_scan = min(batch_size, total_scan);
-+		struct mem_cgroup *memcg = shrinkctl->target_mem_cgroup;
-+
-+		/*
-+		 * Differentiate between "few objects" and "no objects"
-+		 * as returned by the count step.
-+		 */
-+		if (!total_scan)
-+			break;
-+
-+		if ((total_scan < batch_size) &&
-+		   !(memcg && memcg_kmem_is_active(memcg)))
-+			break;
- 
--		shrinkctl->nr_to_scan = batch_size;
-+		shrinkctl->nr_to_scan = nr_to_scan;
- 		ret = shrinker->scan_objects(shrinker, shrinkctl);
- 		if (ret == SHRINK_STOP)
- 			break;
- 		freed += ret;
- 
--		count_vm_events(SLABS_SCANNED, batch_size);
--		total_scan -= batch_size;
-+		count_vm_events(SLABS_SCANNED, nr_to_scan);
-+		total_scan -= nr_to_scan;
- 
- 		cond_resched();
--	}
-+	} while (total_scan >= batch_size);
- 
- 	/*
- 	 * move the unused scan count back into the shrinker in a
+Any comments and proposals are appreciated.
+
+== Known issues ==
+
+ * In case kmem limit is less than sum mem limit, reaching memcg kmem limit
+   will result in an attempt to shrink all memcg slabs (see
+   try_to_free_mem_cgroup_kmem()). Although this is better than simply failing
+   allocation as it works now, it is still to be improved.
+
+ * Since FS shrinkers can't be executed on __GFP_FS allocations, such
+   allocations will fail if memcg kmem limit is less than sum mem limit and the
+   memcg kmem usage is close to its limit. Glauber proposed to schedule a
+   worker which would shrink kmem in the background on such allocations.
+   However, this approach does not eliminate failures completely, it just makes
+   them rarer. I'm thinking on implementing soft limits for memcg kmem so that
+   striking the soft limit will trigger the reclaimer, but won't fail the
+   allocation. I would appreciate any other proposals on how this can be fixed.
+
+ * Only dcache and icache are reclaimed on memcg pressure. Other FS objects are
+   left for global pressure only. However, it should not be a serious problem
+   to make them reclaimable too by passing on memcg to the FS-layer and letting
+   each FS decide if its internal objects are shrinkable on memcg pressure.
+
+== Changes from v10 ==
+
+ * Rework per-memcg list_lru infrastructure.
+
+Previous iteration (with full changelog) can be found here:
+
+http://www.spinics.net/lists/linux-fsdevel/msg66632.html
+
+Glauber Costa (12):
+  memcg: make cache index determination more robust
+  memcg: consolidate callers of memcg_cache_id
+  vmscan: also shrink slab in memcg pressure
+  memcg: move initialization to memcg creation
+  memcg: move stop and resume accounting functions
+  memcg: per-memcg kmem shrinking
+  memcg: scan cache objects hierarchically
+  vmscan: take at least one pass with shrinkers
+  memcg: allow kmem limit to be resized down
+  vmpressure: in-kernel notifications
+  memcg: reap dead memcgs upon global memory pressure
+  memcg: flush memcg items upon memcg destruction
+
+Vladimir Davydov (3):
+  memcg,list_lru: add per-memcg LRU list infrastructure
+  memcg,list_lru: add function walking over all lists of a per-memcg
+    LRU
+  super: make icache, dcache shrinkers memcg-aware
+
+ fs/dcache.c                |   25 +-
+ fs/inode.c                 |   16 +-
+ fs/internal.h              |    9 +-
+ fs/super.c                 |   45 +--
+ include/linux/fs.h         |    4 +-
+ include/linux/list_lru.h   |   77 +++++
+ include/linux/memcontrol.h |   23 ++
+ include/linux/shrinker.h   |    6 +-
+ include/linux/swap.h       |    2 +
+ include/linux/vmpressure.h |    5 +
+ mm/memcontrol.c            |  709 +++++++++++++++++++++++++++++++++++++++-----
+ mm/vmpressure.c            |   53 +++-
+ mm/vmscan.c                |  178 +++++++++--
+ 13 files changed, 1018 insertions(+), 134 deletions(-)
+
 -- 
 1.7.10.4
 
