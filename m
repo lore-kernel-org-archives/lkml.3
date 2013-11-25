@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab3KYNQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:16:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57231 "EHLO
+	id S1756705Ab3KYNQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:16:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57229 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab3KYNIW (ORCPT
+	with ESMTP id S1754543Ab3KYNIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:08:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>,
+Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 51/78] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
-Date: Mon, 25 Nov 2013 13:06:38 +0000
-Message-Id: <1385384825-21681-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 53/78] usb: wusbcore: set the RPIPE wMaxPacketSize value correctly
+Date: Mon, 25 Nov 2013 13:06:40 +0000
+Message-Id: <1385384825-21681-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
+commit 7b6bc07ab554e929c85d51b3d5b26cf7f12c6a3b upstream.
 
-The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
-the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
-the max sector to 65535 bytes.
+For isochronous endpoints, set the RPIPE wMaxPacketSize value using
+wOverTheAirPacketSize from the endpoint companion descriptor instead of
+wMaxPacketSize from the normal endpoint descriptor.
 
-INFO: task flush-11:0:663 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
- ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
- ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
- ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
-Call Trace:
- [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
- [<ffffffff81604338>] schedule+0x18/0x30
- [<ffffffff81604392>] io_schedule+0x42/0x60
- [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
- [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff812eb382>] ? elv_merge+0x42/0x210
- [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
- [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
- [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
- [<ffffffff81141422>] submit_bh+0xf2/0x130
- [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
- [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
- [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
- [<ffffffff81144a20>] block_write_full_page+0x10/0x20
- [<ffffffff81148703>] blkdev_writepage+0x13/0x20
- [<ffffffff810d7525>] __writepage+0x15/0x40
- [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
- [<ffffffff810d7510>] ? __writepage+0x0/0x40
- [<ffffffff810d7e42>] generic_writepages+0x22/0x30
- [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
- [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
- [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
- [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
- [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
- [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
- [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
- [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
- [<ffffffff8106522e>] kthread+0x8e/0xa0
- [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
- [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
- [<ffffffff810651a0>] ? kthread+0x0/0xa0
- [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
-
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/wusbcore/wa-rpipe.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 9e47300..705658d 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4075,6 +4075,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
- 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
-+	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
- 
- 	/* Devices we expect to fail diagnostics */
- 
+diff --git a/drivers/usb/wusbcore/wa-rpipe.c b/drivers/usb/wusbcore/wa-rpipe.c
+index f0d546c..ca1031b 100644
+--- a/drivers/usb/wusbcore/wa-rpipe.c
++++ b/drivers/usb/wusbcore/wa-rpipe.c
+@@ -332,7 +332,10 @@ static int rpipe_aim(struct wa_rpipe *rpipe, struct wahc *wa,
+ 	/* FIXME: compute so seg_size > ep->maxpktsize */
+ 	rpipe->descr.wBlocks = cpu_to_le16(16);		/* given */
+ 	/* ep0 maxpktsize is 0x200 (WUSB1.0[4.8.1]) */
+-	rpipe->descr.wMaxPacketSize = cpu_to_le16(ep->desc.wMaxPacketSize);
++	if (usb_endpoint_xfer_isoc(&ep->desc))
++		rpipe->descr.wMaxPacketSize = epcd->wOverTheAirPacketSize;
++	else
++		rpipe->descr.wMaxPacketSize = ep->desc.wMaxPacketSize;
+ 	rpipe->descr.bHSHubAddress = 0;			/* reserved: zero */
+ 	rpipe->descr.bHSHubPort = wusb_port_no_to_idx(urb->dev->portnum);
+ 	/* FIXME: use maximum speed as supported or recommended by device */
 -- 
 1.8.3.2
 
