@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab3KYK3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:29:18 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:58844 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3KYK3R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:29:17 -0500
-From: James Bottomley <jbottomley@parallels.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Thread-Topic: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Thread-Index: AQHO55mz/5WOCjnY10a/r5QcfC5U6Zox74EAgARZtYA=
-Date: Mon, 25 Nov 2013 10:29:00 +0000
-Message-ID: <1385375339.2354.28.camel@dabdike>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
-	 <20131120061830.GA16081@mtj.dyndns.org>
-	 <CAErSpo5s9chjgSaA2kqE_72f=+2Lq9HQLM3xstw8Avg+Nx63xA@mail.gmail.com>
-	 <20131122160252.GA8981@mtj.dyndns.org>
-In-Reply-To: <20131122160252.GA8981@mtj.dyndns.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [195.214.232.10]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <40D3E5B41E38204DA8EAC6B2D79E98CA@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1752760Ab3KYKbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:31:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42778 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab3KYKbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:31:22 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v4 0/8] x86: use new text_poke_bp in ftrace
+Date: Mon, 25 Nov 2013 11:30:35 +0100
+Message-Id: <1385375443-22160-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-22 at 11:02 -0500, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Nov 22, 2013 at 08:43:55AM -0700, Bjorn Helgaas wrote:
-> > > So, we do have cases where the parent is removed before the child.  I
-> > > suppose the parent pci bridge is removed already?  AFAICS this
-> > > shouldn't break anything but people did seem to expect the removals to
-> > > be ordered from child to parent.  Bjorn, is this something you expect
-> > > to happened?
-> > 
-> > I do not expect a PCI bridge to be removed before the devices below
-> > it.  We should be removing all the children before removing the parent
-> > bridge.
-> > 
-> > But is this related to PCI?  I don't see the connection yet.  I tried
-> 
-> I'm not sure.  It was from thunderbolt and nobody is reporting it on
-> other interconnects, so it could be.
-> 
-> > to look into this a bit (my notes are at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=65281), but I haven't
-> > figured out the big-picture problem yet.
-> > 
-> > I don't have warm fuzzies that adding a "have we already removed this"
-> > check is the best resolution, but maybe that's just because I don't
-> > understand the problem.
-> 
-> Yeah, the whole thing is sorta pointless.  Just issuing removal and
-> continuing on should do, IMHO.
+The commit fd4363fff3d9 (x86: Introduce int3 (breakpoint)-based instruction
+patching) uses the same technique that has been used in ftrace since 08d636b
+("ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine")
 
-I'd go for that as well.  We have huge problems with the _del calls
-because visibility is strict hierarchy and it's not always easy to work
-out who's underneath us.
+This patch set merge the two implementations and remove duplicities from
+the ftrace side.
 
-It's going to be really annoying when refcounting works perfectly for
-objects, so you can just do puts in any order, but you have to have
-_del() called to remove subordinate objects before their parent.
+    + First four patches improve the generic int3-based framework to be usable
+      with ftrace. All the changes are based on ideas already used in ftrace.
+      They are needed to keep the functionality and efficiency.
 
-James
+    + The 5th patch speedups the original ftrace code but it is useful also
+      with the generic functions.
 
+    + The last three patches modifies different parts of the current
+      x86-specific ftrace implementation and use the generic functions there.
+
+
+Changes in v4:
+
+    + reverted one change in text_poke in the first patch as suggested by
+      Masami Hiramatsu; it means to still call BUG_ON() when the error is
+      unclear
+
+Changes in v3:
+
+    + use the new text_poke_part only in text_poke_bp_list because it
+      works only with read-write code
+    + update all text_poke functions to return error instead on calling BUG()
+    + handle text_poke* function return values whenever they were used
+
+Changes in v2:
+
+    + check for number of CPUs instead of enabling IRQs when syncing CPUs;
+      suggested by Steven Rostedt, Paul E. McKenney, and Masami Hiramatsu
+    + return error codes in text_poke_part and text_poke_bp; needed by ftrace
+    + reverted changes in text_poke_bp; it patches only single address again
+    + introduce text_poke_bp_iter for patching multiple addresses:
+	+ uses iterator and callbacks instead of copying data
+	+ checks old code before patching
+	+ returns error code and more info about error; needed by ftrace
+	+ provides recovery mechanism in case of errors
+    + update ftrace.c to use the new text_poke_bp_iter
+    + split notrace __probe_kernel_read into separate patch because it
+      is useful for original ftrace code as well
+    + rebased on current kernel tip and updated performance statistics;
+      it started to be slower on idle machine after the commit commit
+      c229828ca6bc62d6c654 (rcu: Throttle rcu_try_advance_all_cbs() execution)
+
+I tried to switch between 7 tracers: blk, branch, function_graph, wakeup_rt,
+irqsoff, function, and nop. Every tracer has also been enabled and disabled.
+With 500 cycles, I got these times before the change:
+
+    real    18m2.477s     18m8.654s     18m9.196s
+    user    0m0.008s      0m0.008s	0m0.012s
+    sys     0m17.316s     0m17.104s	0m17.300s
+
+and after
+
+    real    17m19.055s    17m29.200s    17m27.456
+    user    0m0.052s      0m0.056s	0m0.052s
+    sys     0m20.236s     0m20.068s	0m20.264s
+
+The patches are against kernel/git/tip/tip.git on top of the commit
+af7949e870d4632b Merge branch 'tools/kvm perf fixes'
+
+Petr Mladek (8):
+  x86: allow to handle errors in text_poke function family
+  x86: allow to call text_poke_bp during boot
+  x86: add generic function to modify more calls using int3 framework
+  x86: speed up int3-based patching using direct write
+  x86: do not trace __probe_kernel_read
+  x86: modify ftrace function using the new int3-based framework
+  x86: patch all traced function calls using the int3-based framework
+  x86: enable/disable ftrace graph call using new int3-based framework
+
+ arch/x86/include/asm/alternative.h |  43 ++-
+ arch/x86/kernel/alternative.c      | 369 +++++++++++++++++++++---
+ arch/x86/kernel/ftrace.c           | 571 ++++++++-----------------------------
+ arch/x86/kernel/jump_label.c       |  11 +-
+ arch/x86/kernel/kgdb.c             |  11 +-
+ arch/x86/kernel/kprobes/core.c     |  10 +-
+ arch/x86/kernel/kprobes/opt.c      |   8 +-
+ arch/x86/kernel/traps.c            |  10 -
+ include/linux/ftrace.h             |   6 -
+ mm/maccess.c                       |   2 +-
+ 10 files changed, 527 insertions(+), 514 deletions(-)
+
+-- 
+1.8.4
