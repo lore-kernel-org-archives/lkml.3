@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab3KYQRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:17:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44962 "EHLO mx1.redhat.com"
+	id S1754853Ab3KYQOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:14:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10035 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755257Ab3KYQOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:14:19 -0500
+	id S1751809Ab3KYQOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:14:16 -0500
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, linux-mips@linux-mips.org
-Subject: [PATCH v2 07/11] mips: use generic fixmap.h
-Date: Mon, 25 Nov 2013 11:14:01 -0500
-Message-Id: <1385396045-15852-8-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>, linux-hexagon@vger.kernel.org
+Subject: [PATCH v2 04/11] hexagon: use generic fixmap.h
+Date: Mon, 25 Nov 2013 11:13:58 -0500
+Message-Id: <1385396045-15852-5-git-send-email-msalter@redhat.com>
 In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -19,34 +19,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
-CC: linux-mips@linux-mips.org
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
+CC: linux-hexagon@vger.kernel.org
 ---
- arch/mips/include/asm/fixmap.h | 33 +--------------------------------
- 1 file changed, 1 insertion(+), 32 deletions(-)
+ arch/hexagon/include/asm/fixmap.h | 40 +--------------------------------------
+ 1 file changed, 1 insertion(+), 39 deletions(-)
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index dfaaf49..8c012af 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -71,38 +71,7 @@ enum fixed_addresses {
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
+diff --git a/arch/hexagon/include/asm/fixmap.h b/arch/hexagon/include/asm/fixmap.h
+index b75b6bf..1387f84 100644
+--- a/arch/hexagon/include/asm/fixmap.h
++++ b/arch/hexagon/include/asm/fixmap.h
+@@ -26,45 +26,7 @@
+  */
+ #include <asm/mem-layout.h>
  
--#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
--#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
+-/*
+- * Full fixmap support involves set_fixmap() functions, but
+- * these may not be needed if all we're after is an area for
+- * highmem kernel mappings.
+- */
+-#define	__fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
+-#define	__virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
 -
 -extern void __this_fixmap_does_not_exist(void);
 -
--/*
-- * 'index to address' translation. If anyone tries to use the idx
-- * directly without tranlation, we catch the bug with a NULL-deference
-- * kernel oops. Illegal ranges of incoming indices are caught too.
+-/**
+- * fix_to_virt -- "index to address" translation.
+- *
+- * If anyone tries to use the idx directly without translation,
+- * we catch the bug with a NULL-deference kernel oops. Illegal
+- * ranges of incoming indices are caught too.
 - */
 -static inline unsigned long fix_to_virt(const unsigned int idx)
 -{
 -	/*
--	 * this branch gets completely eliminated after inlining,
+-	 * This branch gets completely eliminated after inlining,
 -	 * except when someone tries to use fixaddr indices in an
 -	 * illegal way. (such as mixing up address types or using
 -	 * out-of-range indices).
@@ -67,8 +74,8 @@ index dfaaf49..8c012af 100644
 -}
 +#include <asm-generic/fixmap.h>
  
- #define kmap_get_fixmap_pte(vaddr)					\
- 	pte_offset_kernel(pmd_offset(pud_offset(pgd_offset_k(vaddr), (vaddr)), (vaddr)), (vaddr))
+ #define kmap_get_fixmap_pte(vaddr) \
+ 	pte_offset_kernel(pmd_offset(pud_offset(pgd_offset_k(vaddr), \
 -- 
 1.8.3.1
 
