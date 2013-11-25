@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3KYMn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:43:28 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19782 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab3KYMn0 (ORCPT
+	id S1753459Ab3KYMrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:47:47 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:37620 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3KYMro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:43:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 25 Nov 2013 04:41:04 -0800
-Date: Mon, 25 Nov 2013 14:42:40 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
-Message-ID: <20131125124240.GG26617@tbergstrom-lnx.Nvidia.com>
-References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
- <20131122134035.GD26617@tbergstrom-lnx.Nvidia.com>
+	Mon, 25 Nov 2013 07:47:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131122134035.GD26617@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1385372437-20958-1-git-send-email-ian.campbell@citrix.com>
+References: <1385372437-20958-1-git-send-email-ian.campbell@citrix.com>
+Date: Mon, 25 Nov 2013 07:47:43 -0500
+Message-ID: <CA+5PVA4u7U6GarwnYdtj-N1pOm-9TMQJMX_2D045vk3FA=XPxg@mail.gmail.com>
+Subject: Re: [PATCH] powerpc/4xx: Fix warning in kilauea.dtb
+From: Josh Boyer <jwboyer@gmail.com>
+To: Ian Campbell <ian.campbell@citrix.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Rupjyoti Sarmah <rsarmah@apm.com>, Tirumala R Marri <tmarri@apm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 02:40:35PM +0100, Peter De Schrijver wrote:
-> On Wed, Oct 30, 2013 at 01:41:29AM +0100, Peter De Schrijver wrote:
-> > Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
-> > Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
-> I will squash this into the next tegra-clk-next as the previous pull request
-> has never made it.
-> 
+On Mon, Nov 25, 2013 at 4:40 AM, Ian Campbell <ian.campbell@citrix.com> wrote:
+> Currently I see:
+>   DTC     arch/powerpc/boot/kilauea.dtb
+> Warning (reg_format): "reg" property in /plb/ppc4xx-msi@C10000000 has invalid length (12 bytes) (#address-cells == 1, #size-cells == 1)
+>
+> It appears that unlike the other platforms handled by 3fb7933850fa
+> "powerpc/4xx: Adding PCIe MSI support" this platform does not use address-cells=2.
+>
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Acked-by: Josh Boyer <jwboyer@gmail.com>
+> Cc: Rupjyoti Sarmah <rsarmah@apm.com>
+> Cc: Tirumala R Marri <tmarri@apm.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+> Resending, this hasn't been picked up since June
+> http://patchwork.ozlabs.org/patch/248234/
 
-Looking again at this, I think the Tegra114 and generic PLL part of the patch
-better stays as a separate patch. The Tegra124 bit will be squashed into the
-Tegra124 support patch.
+Ben, please pick this up.
 
-Cheers,
+josh
 
-Peter.
+> ---
+>  arch/powerpc/boot/dts/kilauea.dts |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/powerpc/boot/dts/kilauea.dts b/arch/powerpc/boot/dts/kilauea.dts
+> index 1613d6e..5ba7f01 100644
+> --- a/arch/powerpc/boot/dts/kilauea.dts
+> +++ b/arch/powerpc/boot/dts/kilauea.dts
+> @@ -406,7 +406,7 @@
+>
+>                 MSI: ppc4xx-msi@C10000000 {
+>                         compatible = "amcc,ppc4xx-msi", "ppc4xx-msi";
+> -                       reg = < 0x0 0xEF620000 0x100>;
+> +                       reg = <0xEF620000 0x100>;
+>                         sdr-base = <0x4B0>;
+>                         msi-data = <0x00000000>;
+>                         msi-mask = <0x44440000>;
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
