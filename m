@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3KYOyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:54:21 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57511 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3KYOyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:54:17 -0500
-Message-ID: <52936451.1020406@ti.com>
-Date: Mon, 25 Nov 2013 16:53:05 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756805Ab3KYOyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:54:40 -0500
+Received: from mout.gmx.net ([212.227.15.19]:49674 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756617Ab3KYOyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:54:38 -0500
+Message-ID: <529364AC.8000305@gmx.de>
+Date: Mon, 25 Nov 2013 15:54:36 +0100
+From: Michael Lawnick <ml.lawnick@gmx.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: Re: [PATCH v3 5/6] watchdog: davinci: reuse driver for keystone arch
-References: <1385388498-12448-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1385388498-12448-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+References: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+X-Provags-ID: V03:K0:lG3Blr1Mgzr4m02fu7WrB/pj56ZJtQDHcFHxHlt5hBfcOITzRBw
+ ekSFusVHXtb3HMS1O54dXYapilOmB2Nsb3RKJF+PNTwYJTplhkhY8AiBmuz43FX7nF15/pG
+ zEGSpeYFOe+b8IJV/VALKXMdc+Zx9PDsyhhymDhwbSW6PvFbA9GyRKPA+Fp+Y2MkcISIx2p
+ 5YDpia0nH17e4mojIJrQA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 04:08 PM, Ivan Khoronzhuk wrote:
-> The keystone arch uses the same IP watchdog, so add "ti,keystone-wdt"
-> compatible and correct identity.
->
-> The Keystone arch is using clocks in DT and source clock for watchdog
-> has to be specified, so add this to binding.
->
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->   .../devicetree/bindings/watchdog/davinci-wdt.txt   |   12 ++++++++++--
->   drivers/watchdog/Kconfig                           |    4 ++--
->   drivers/watchdog/davinci_wdt.c                     |    2 +-
->   3 files changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-> index e450134..4d89317 100644
-> --- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-> +++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-> @@ -1,11 +1,18 @@
-> -DaVinci Watchdog Timer (WDT) Controller
-> +Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
->
->   Required properties:
-> -- compatible : Should be "ti,davinci-wdt"
-> +- compatible : Should be "ti,davinci-wdt" or "ti,keystone-wdt"
->   - reg : Should contain WDT registers location and length
->
->   Optional properties:
->   - timeout-sec : Contains the watchdog timeout in seconds
-> +- clocks : the clock feeding the watchdog timer.
-> +	   Needed if platform uses clocks.
-> +	   See clock-bindings.txt
-> +
-> +Documentation:
-> +Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
-> +Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
->
->   Examples:
->
-> @@ -13,4 +20,5 @@ wdt: wdt@2320000 {
->   	compatible = "ti,davinci-wdt";
->   	reg = <0x02320000 0x80>;
->   	timeout-sec = <30>;
-> +	clocks = <&clkwdtimer0>;
->   };
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index eb8c89d..01f3f81 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -270,12 +270,12 @@ config IOP_WATCHDOG
->
->   config DAVINCI_WATCHDOG
->   	tristate "DaVinci watchdog"
-> -	depends on ARCH_DAVINCI
-> +	depends on ARCH_DAVINCI || ARCH_KEYSTONE
->   	select WATCHDOG_CORE
->   	select WATCHDOG_NOWAYOUT
->   	help
->   	  Say Y here if to include support for the watchdog timer
-> -	  in the DaVinci DM644x/DM646x processors.
-> +	  in the DaVinci DM644x/DM646x or Keystone processors.
->   	  To compile this driver as a module, choose M here: the
->   	  module will be called davinci_wdt.
->
-> diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-> index d342fc2..9128c74 100644
-> --- a/drivers/watchdog/davinci_wdt.c
-> +++ b/drivers/watchdog/davinci_wdt.c
-> @@ -143,7 +143,7 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
->
->   static const struct watchdog_info davinci_wdt_info = {
->   	.options = WDIOF_KEEPALIVEPING,
-> -	.identity = "DaVinci Watchdog",
-> +	.identity = "DaVinci/Keystone Watchdog",
->   };
->
->   static const struct watchdog_ops davinci_wdt_ops = {
->
+Hi,
 
-Sorry for mess, ignore this patch.
-Now it is in reply to Update Davinci watchdog driver
+Am 25.11.2013 14:43, schrieb Mike Looijmans:
+> Leaving the mux enabled causes needless I2C traffic on the downstream
+> bus. De-selecting after every request causes excess I2C traffic and
+> switching.
+>
+> This patch implements a hybrid solution: After 200ms of inactivity,
+> the mux is disabled.
+...
 
--- 
-Regards,
-Ivan Khoronzhuk
+Have you checked against behavior on cascaded muxes?
+At least your desired timing will not look as expected.
+200 ms: disable mux1
+201 ms: enable mux1 - disable mux2
+202 ms: enable mux2 - disable mux3
+401 ms: disable mux1
+402 ms: enable mux1 - disable mux2
+602 ms: disable mux1
+And on full second temperature sensor behind mux3 is read again ...
+
+KR
+Michael
+
+
+
