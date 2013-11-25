@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab3KYKJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:09:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39884 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab3KYKJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:09:33 -0500
-Message-ID: <529320E8.7030703@ti.com>
-Date: Mon, 25 Nov 2013 12:05:28 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752575Ab3KYKML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:12:11 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:50401 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab3KYKMJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:12:09 -0500
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] PM / Clocks: fix pm_clk_resume/suspend if CONFIG_PM_RUNTIME
- is set
-References: <1384954307-27094-1-git-send-email-grygorii.strashko@ti.com> <528D0296.1070001@codeaurora.org> <528D082C.3040405@ti.com> <528D1327.7080205@codeaurora.org> <528D1784.8080704@ti.com> <528D1C49.3020301@ti.com> <87ppps6zve.fsf@linaro.org> <528FAA00.9060801@ti.com>
-In-Reply-To: <528FAA00.9060801@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+In-Reply-To: <1385373313.2354.16.camel@dabdike>
+References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+	<1385369734-24893-9-git-send-email-geert@linux-m68k.org>
+	<1385373313.2354.16.camel@dabdike>
+Date: Mon, 25 Nov 2013 11:12:08 +0100
+X-Google-Sender-Auth: 3eH30MJNyPVJEPK90rI0VqkmCq0
+Message-ID: <CAMuHMdUV4R0BK-eKkXeDD9B0pRLJjziUkvXZVvfWmuaK=dv9Mg@mail.gmail.com>
+Subject: Re: [PATCH 08/24] parisc/uapi: Use Kbuild logic to provide <asm/types.h>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 09:01 PM, Santosh Shilimkar wrote:
-> On Friday 22 November 2013 01:43 PM, Kevin Hilman wrote:
->> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
->>
->> [...]
->>
->>>>> It looks like even if you just remove the locks here, the PM core is
->>>>> free to call this function with irqs disabled if pm_runtime_irq_safe()
->>>>> has been called on the device. Perhaps runtime PM can only do the
->>>>> clk_enable()/clk_disable() part and the clk_unprepare()/clk_prepare()
->>>>> calls should happen in the system suspend callbacks?
->>>>
->>>> Even don't know what to say :( On Keystone clk_unprepare()/clk_prepare() are NOPs.
->>>> But clk_prepare() has to be called at least once before clk_enable() :((
->>>> So, solution with suspend/resume will not fix current problem :( unfortunately.
->>>>
->>>> FYI, Now pm_clk_suspend/pm_clk_resume are called from arch/arm/mach-keystone/pm_domain.c
->>>> (also similar solution is used by Davinci, but issue has not been detected because
->>>> PM runtime hasn't been used by Davinci IP drivers before)
->>>>
->>> One way to deal with this is to have clk_unprepare()/clk_prepare()
->>> called from dev_pm_domain ops before calling pm_clk_[suspend/resume]() if we
->>> can't have that as part of runtime code.
->>
->> That doesn't solve the irq_safe problem that Stephen pointed out without
->> being very careful.  Basically, if you have _any_ potentially sleeping
->> calls in this path, you can never allow devices to use
->> pm_runtime_irq_safe().
->>
-> You are right. I realized that after reading the code.
-> 
->> Also, I don't like having the clk_enable in the PM core but the
->> clk_prepare in the platform-specific pm_domain.  That seems prone for
->> platforms to get wrong.
->>
-> Agree.
-> 
->> I'll need to think about this a little more before having any idea what
->> to do here.
->>
-> Thanks Kevin for looking into it.
+On Mon, Nov 25, 2013 at 10:55 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Mon, 2013-11-25 at 09:55 +0100, Geert Uytterhoeven wrote:
+>> Uapi <asm-generic/types.h> just includes <asm-generic/int-ll64.h>
+>
+> This really doesn't look like a good idea:  Firstly the default of
+> asm-generic/types.h should *not* be int-ll64, because that's for 32 bit
+> only and most processors are moving towards 64 bit.  Secondly parisc
 
-May be it can be solved through CCF by introducing additional flag like
-CLK_SET_NO_PREPARE for cases when clocks perpetration isn't really needed.
-So, when this flag is set CCF will just auto-increment "prepare_count" 
-when clock is registered.
+In kernelspace, both 32 and 64 bit are ll64.
 
-Of Course, this will not solve the case when clock need to be prepared and
-driver wants to use PM Runtime, but for SoCs like Keystone that can be
-fast & simple solution. 
+> currently only has a 32 bit userspace, which is why the file is a simple
+> include of int-ll64.h; however, people are working on 64 bit userspace
 
+Sorry, I didn't know you support 32 bit userspace only.
 
-Regards,
-- grygrorii
+> (albeit very slowly) and that file would then have to change.  If we
+> take the file away someone will forget to add the changed file back.
+
+However, is this a "new" 64 bit userspace ABI? If yes, you may want to
+consider using ll64 in userspace on 64 bit too, like all "new" 64 bit ports
+do (arm64, s390, sparc, tile, x86). Only legacy alpha, ia64, mips and
+old ppc use l64.
+
+Or follow the ppc64 road:
+
+/*
+ * This is here because we used to use l64 for 64bit powerpc
+ * and we don't want to impact user mode with our change to ll64
+ * in the kernel.
+ *
+ * However, some user programs are fine with this.  They can
+ * flag __SANE_USERSPACE_TYPES__ to get int-ll64.h here.
+ */
+#ifndef __KERNEL__
+#if !defined(__SANE_USERSPACE_TYPES__) && defined(__powerpc64__)
+# include <asm-generic/int-l64.h>
+#else
+# include <asm-generic/int-ll64.h>
+#endif
+#endif
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
