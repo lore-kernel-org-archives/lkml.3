@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab3KYPSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:18:44 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56252 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab3KYPSk (ORCPT
+	id S1754487Ab3KYPYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:24:49 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:33127 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab3KYPYr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:18:40 -0500
-Date: Mon, 25 Nov 2013 16:18:39 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131125151838.GD21526@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201311242041.47075@pali>
- <20131125140127.GA24125@amd.pavel.ucw.cz>
- <201311251510.00987@pali>
+	Mon, 25 Nov 2013 10:24:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311251510.00987@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131125091651.GA32081@e106331-lin.cambridge.arm.com>
+References: <1385155032-9032-1-git-send-email-robherring2@gmail.com>
+	<A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
+	<528FD003.8090607@gmail.com>
+	<20131125091651.GA32081@e106331-lin.cambridge.arm.com>
+Date: Mon, 25 Nov 2013 09:24:46 -0600
+Message-ID: <CAL_JsqKArowT_DE8-vCJvmOSxjp+X9bngCXXsgjBK7G3wPZ7wA@mail.gmail.com>
+Subject: Re: [PATCH] dt-bindings: add ARMv8 PMU binding
+From: Rob Herring <robherring2@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Kumar Gala <galak@codeaurora.org>, devicetree <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-11-25 15:10:00, Pali Rohár wrote:
-> On Monday 25 November 2013 15:01:27 Pavel Machek wrote:
-> > Where can I get dsme sources?
-> > 									Pavel
-> 
-> dsme daemon: https://gitorious.org/community-ssu/dsme
-> dsme thermal plugin: https://gitorious.org/rx51-bme-replacement/dsme-thermalobject-surface
-> 
-> dsme thermal plugin is responsible for checking temperature of 
-> battery and send it to dsme damon. dsme daemon itself checking 
-> temperature limits and do something (e.g reboot device)
+On Mon, Nov 25, 2013 at 3:16 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Fri, Nov 22, 2013 at 09:43:31PM +0000, Rob Herring wrote:
+>> On 11/22/2013 03:38 PM, Kumar Gala wrote:
+>> >
+>> > On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> >
+>> >> From: Rob Herring <rob.herring@calxeda.com>
+>> >>
+>> >> Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
+>> >>
+>> >> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> >> Cc: Will Deacon <will.deacon@arm.com>
+>> >> Cc: Pawel Moll <pawel.moll@arm.com>
+>> >> Cc: Mark Rutland <mark.rutland@arm.com>
+>> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> >> ---
+>> >> Documentation/devicetree/bindings/arm/pmu.txt | 1 +
+>> >> 1 file changed, 1 insertion(+)
+>> >>
+>> >> diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
+>> >> index 343781b..3e1e498 100644
+>> >> --- a/Documentation/devicetree/bindings/arm/pmu.txt
+>> >> +++ b/Documentation/devicetree/bindings/arm/pmu.txt
+>> >> @@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
+>> >> Required properties:
+>> >>
+>> >> - compatible : should be one of
+>> >> +  "arm,armv8-pmuv3”
+>> >
+>> > what about arm,armv8-pmu-v3?
+>>
+>> I'm just documenting what is already being used:
+>>
+>> arch/arm64/boot/dts/foundation-v8.dts:          compatible =
+>> "arm,armv8-pmuv3";
+>> arch/arm64/boot/dts/rtsm_ve-aemv8a.dts:         compatible =
+>> "arm,armv8-pmuv3";
+>>
+>> Do we want to change those?
+>
+> It would probably have been nicer to have the '-' from the start, but
+> adding it now is only going to expand the set of compatible strings for
+> no appreciable benefit.
+>
+> I don't see any value in adding a new form of the string, and we can't
+> change the existing one as it's already in use.
 
-Thanks for links!
-
-AFAICT.... dsme daemon does some kind of system management, not
-directly controlling charging, right? It does monitor system temperature.
-
-Now.. Imagine phone left in car in charger (on sun). Likely
-temperature will reach high values, kernel is charging, dsme will
-reboot the system, but kernel will start charging again, dsme will
-reboot again, ...
-
-And it is not only high temperatures that are problem for li-ion
-charging; battery should not be fast charged below 5C and should not
-be charged below 0C. (Again, both are likely to happen if you leave
-your phone in car).
-
-AFAICT, we should simply disable charging below 5C or above 45C.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Is that an ack then?
