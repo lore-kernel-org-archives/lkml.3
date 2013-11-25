@@ -1,224 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3KYACu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 19:02:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56695 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752104Ab3KYABp (ORCPT
+	id S1752870Ab3KYAD0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 19:03:26 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:58007 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3KYADV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 19:01:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH 1/4] ACPI / bind: Simplify child device lookups
-Date: Mon, 25 Nov 2013 01:10:52 +0100
-Message-ID: <3586671.1gUWMiGnWE@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2610478.KxPMyuOMok@vostro.rjw.lan>
-References: <2610478.KxPMyuOMok@vostro.rjw.lan>
+	Sun, 24 Nov 2013 19:03:21 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1385336527-27304-1-git-send-email-richard@nod.at>
+References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
+	<1385336527-27304-1-git-send-email-richard@nod.at>
+Date: Sun, 24 Nov 2013 16:03:21 -0800
+X-Google-Sender-Auth: lMybOOJzrWC5idzERjiuq8bSTQ4
+Message-ID: <CAJusiZXDaKva-+t-cD5oWYodwt-evTWv-xj+z7j3oJFhBk01aw@mail.gmail.com>
+Subject: Re: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set MSG_SENDPAGE_NOTLAST
+From: Shawn Landden <shawn@churchofgit.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Tom Herbert <therbert@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sun, Nov 24, 2013 at 3:42 PM, Richard Weinberger <richard@nod.at> wrote:
+> Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+> added an internal flag MSG_SENDPAGE_NOTLAST.
+> We have to ensure that MSG_MORE is also set if we set MSG_SENDPAGE_NOTLAST.
+> Otherwise users that check against MSG_MORE will not see it.
+>
+> This fixes sendfile() on AF_ALG.
+>
+> Cc: Tom Herbert <therbert@google.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: <stable@vger.kernel.org> # 3.4.x
 
-Now that we create a struct acpi_device object for every ACPI
-namespace node representing a device, it is not necessary to
-use acpi_walk_namespace() for child device lookup in
-acpi_find_child() any more.  Instead, we can simply walk the
-list of children of the given struct acpi_device object and
-return the matching one (or the one which is the best match if
-there are more of them).  The checks done during the matching
-loop can be simplified too so that the secondary namespace walks
-in find_child_checks() are not necessary any more.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The offending commit also got backported to the 3.2 stable kernel, so
+we need this fix there as well.
 ---
- drivers/acpi/glue.c     |  134 ++++++++++++++++++------------------------------
- include/acpi/acpi_bus.h |    3 +
- 2 files changed, 56 insertions(+), 81 deletions(-)
-
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -82,107 +82,79 @@ static struct acpi_bus_type *acpi_get_bu
- #define FIND_CHILD_MIN_SCORE	1
- #define FIND_CHILD_MAX_SCORE	2
- 
--static acpi_status acpi_dev_present(acpi_handle handle, u32 lvl_not_used,
--				  void *not_used, void **ret_p)
--{
--	struct acpi_device *adev = NULL;
--
--	acpi_bus_get_device(handle, &adev);
--	if (adev) {
--		*ret_p = handle;
--		return AE_CTRL_TERMINATE;
--	}
--	return AE_OK;
--}
--
--static int do_find_child_checks(acpi_handle handle, bool is_bridge)
-+static int find_child_checks(struct acpi_device *adev, bool check_children)
- {
- 	bool sta_present = true;
- 	unsigned long long sta;
- 	acpi_status status;
- 
--	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
-+	status = acpi_evaluate_integer(adev->handle, "_STA", NULL, &sta);
- 	if (status == AE_NOT_FOUND)
- 		sta_present = false;
- 	else if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
- 		return -ENODEV;
- 
--	if (is_bridge) {
--		void *test = NULL;
-+	if (check_children && list_empty(&adev->children))
-+		return -ENODEV;
- 
--		/* Check if this object has at least one child device. */
--		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
--				    acpi_dev_present, NULL, NULL, &test);
--		if (!test)
--			return -ENODEV;
--	}
- 	return sta_present ? FIND_CHILD_MAX_SCORE : FIND_CHILD_MIN_SCORE;
- }
- 
--struct find_child_context {
--	u64 addr;
--	bool is_bridge;
--	acpi_handle ret;
--	int ret_score;
--};
--
--static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
--				 void *data, void **not_used)
-+struct acpi_device *acpi_find_child_device(struct acpi_device *parent,
-+					   u64 address, bool check_children)
- {
--	struct find_child_context *context = data;
--	unsigned long long addr;
--	acpi_status status;
--	int score;
-+	struct acpi_device *adev, *ret = NULL;
-+	int ret_score = 0;
- 
--	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
--	if (ACPI_FAILURE(status) || addr != context->addr)
--		return AE_OK;
--
--	if (!context->ret) {
--		/* This is the first matching object.  Save its handle. */
--		context->ret = handle;
--		return AE_OK;
--	}
--	/*
--	 * There is more than one matching object with the same _ADR value.
--	 * That really is unexpected, so we are kind of beyond the scope of the
--	 * spec here.  We have to choose which one to return, though.
--	 *
--	 * First, check if the previously found object is good enough and return
--	 * its handle if so.  Second, check the same for the object that we've
--	 * just found.
--	 */
--	if (!context->ret_score) {
--		score = do_find_child_checks(context->ret, context->is_bridge);
--		if (score == FIND_CHILD_MAX_SCORE)
--			return AE_CTRL_TERMINATE;
--		else
--			context->ret_score = score;
--	}
--	score = do_find_child_checks(handle, context->is_bridge);
--	if (score == FIND_CHILD_MAX_SCORE) {
--		context->ret = handle;
--		return AE_CTRL_TERMINATE;
--	} else if (score > context->ret_score) {
--		context->ret = handle;
--		context->ret_score = score;
-+	list_for_each_entry(adev, &parent->children, node) {
-+		unsigned long long addr;
-+		acpi_status status;
-+		int score;
-+
-+		status = acpi_evaluate_integer(adev->handle, METHOD_NAME__ADR,
-+					       NULL, &addr);
-+		if (ACPI_FAILURE(status) || addr != address)
-+			continue;
-+
-+		if (!ret) {
-+			/* This is the first matching object.  Save it. */
-+			ret = adev;
-+			continue;
-+		}
-+		/*
-+		 * There is more than one matching device object with the same
-+		 * _ADR value.  That really is unexpected, so we are kind of
-+		 * beyond the scope of the spec here.  We have to choose which
-+		 * one to return, though.
-+		 *
-+		 * First, check if the previously found object is good enough
-+		 * and return it if so.  Second, do the same for the object that
-+		 * we've just found.
-+		 */
-+		if (!ret_score) {
-+			ret_score = find_child_checks(ret, check_children);
-+			if (ret_score == FIND_CHILD_MAX_SCORE)
-+				return ret;
-+		}
-+		score = find_child_checks(adev, check_children);
-+		if (score == FIND_CHILD_MAX_SCORE) {
-+			return adev;
-+		} else if (score > ret_score) {
-+			ret = adev;
-+			ret_score = score;
-+		}
- 	}
--	return AE_OK;
-+	return ret;
- }
- 
--acpi_handle acpi_find_child(acpi_handle parent, u64 addr, bool is_bridge)
-+acpi_handle acpi_find_child(acpi_handle handle, u64 addr, bool is_bridge)
- {
--	if (parent) {
--		struct find_child_context context = {
--			.addr = addr,
--			.is_bridge = is_bridge,
--		};
--
--		acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, do_find_child,
--				    NULL, &context, NULL);
--		return context.ret;
--	}
--	return NULL;
-+	struct acpi_device *parent;
-+
-+	if (!handle || acpi_bus_get_device(handle, &parent))
-+		return NULL;
-+
-+	return acpi_find_child_device(parent, addr, is_bridge);
- }
- EXPORT_SYMBOL_GPL(acpi_find_child);
- 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -433,6 +433,9 @@ struct acpi_pci_root {
- };
- 
- /* helper */
-+
-+struct acpi_device *acpi_find_child_device(struct acpi_device *parent,
-+					   u64 address, bool check_children);
- acpi_handle acpi_find_child(acpi_handle, u64, bool);
- static inline acpi_handle acpi_get_child(acpi_handle handle, u64 addr)
- {
-
+Shawn Landden
++1 360 389 3001 (SMS preferred)
