@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3KYNxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:53:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58843 "EHLO
+	id S1754559Ab3KYNxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:53:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58839 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753509Ab3KYNxa (ORCPT
+	by vger.kernel.org with ESMTP id S1752536Ab3KYNxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:30 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,11 +14,11 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <edumazet@google.com>, "Jiri Benc" <jbenc@redhat.com>
+        "=?UTF-8?q?Salva=20Peir=C3=B3?=" <speiro@ai2.upv.es>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.63519382@decadent.org.uk>
+Message-ID: <lsq.1385387069.929981141@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 06/87] ipv4: fix ineffective source address selection
+Subject: [PATCH 3.2 17/87] wanxl: fix info leak in ioctl
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Benc <jbenc@redhat.com>
+From: Salva Peiró <speiro@ai2.upv.es>
 
-[ Upstream commit 0a7e22609067ff524fc7bbd45c6951dd08561667 ]
+[ Upstream commit 2b13d06c9584b4eb773f1e80bbaedab9a1c344e1 ]
 
-When sending out multicast messages, the source address in inet->mc_addr is
-ignored and rewritten by an autoselected one. This is caused by a typo in
-commit 813b3b5db831 ("ipv4: Use caller's on-stack flowi as-is in output
-route lookups").
+The wanxl_ioctl() code fails to initialize the two padding bytes of
+struct sync_serial_settings after the ->loopback member. Add an explicit
+memset(0) before filling the structure to avoid the info leak.
 
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/route.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wan/wanxl.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 94cdbc5..12742b8 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2726,7 +2726,7 @@ static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
- 							      RT_SCOPE_LINK);
- 			goto make_route;
+diff --git a/drivers/net/wan/wanxl.c b/drivers/net/wan/wanxl.c
+index 44b7071..c643d77 100644
+--- a/drivers/net/wan/wanxl.c
++++ b/drivers/net/wan/wanxl.c
+@@ -355,6 +355,7 @@ static int wanxl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 			ifr->ifr_settings.size = size; /* data size wanted */
+ 			return -ENOBUFS;
  		}
--		if (fl4->saddr) {
-+		if (!fl4->saddr) {
- 			if (ipv4_is_multicast(fl4->daddr))
- 				fl4->saddr = inet_select_addr(dev_out, 0,
- 							      fl4->flowi4_scope);
++		memset(&line, 0, sizeof(line));
+ 		line.clock_type = get_status(port)->clocking;
+ 		line.clock_rate = 0;
+ 		line.loopback = 0;
 
