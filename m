@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab3KYOXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:23:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42663 "EHLO
+	id S1757456Ab3KYOXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:23:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42680 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757931Ab3KYOSD (ORCPT
+	with ESMTP id S1754950Ab3KYOSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:18:03 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/25] perf top: Make -g refer to callchains
-Date: Mon, 25 Nov 2013 11:17:33 -0300
-Message-Id: <1385389075-7989-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/25] perf completion: Factor out call to __ltrim_colon_completions
+Date: Mon, 25 Nov 2013 11:17:36 -0300
+Message-Id: <1385389075-7989-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -25,74 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-In most commands -g is used for callchains. Make perf-top follow suit.
-Move group to just --group with no short cut making it similar to
-perf-record.
+In our sole callsite, __ltrim_colon_completions is called after
+__perfcomp, to modify the COMPREPLY set by the invocation.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+This is problematic, because in the zsh equivalent (using compset/
+compadd), we'll have to generate completions in one-shot.
+
+So factor out this entire callsite into a special override'able
+__perfcomp_colon function; we will override it when introducing zsh
+support.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1384487490-6865-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1384704807-15779-4-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-top.txt | 5 ++---
- tools/perf/builtin-top.c              | 4 ++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ tools/perf/bash_completion | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 7de01dd79688..cdd8d4946dba 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -50,7 +50,6 @@ Default is to monitor all CPUS.
- --count-filter=<count>::
- 	Only display functions with more events than this.
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 824312681601..573599b42be2 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -94,6 +94,12 @@ __perfcomp ()
+ 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
+ }
  
---g::
- --group::
-         Put the counters into a counter group.
- 
-@@ -143,12 +142,12 @@ Default is to monitor all CPUS.
- --asm-raw::
- 	Show raw instruction encoding of assembly instructions.
- 
---G::
-+-g::
- 	Enables call-graph (stack chain/backtrace) recording.
- 
- --call-graph::
- 	Setup and enable call-graph (stack chain/backtrace) recording,
--	implies -G.
-+	implies -g.
- 
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 71e6402729a8..531522d3d97b 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1084,7 +1084,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 			    "dump the symbol table used for profiling"),
- 	OPT_INTEGER('f', "count-filter", &top.count_filter,
- 		    "only display functions with more events than this"),
--	OPT_BOOLEAN('g', "group", &opts->group,
-+	OPT_BOOLEAN(0, "group", &opts->group,
- 			    "put the counters into a counter group"),
- 	OPT_BOOLEAN('i', "no-inherit", &opts->no_inherit,
- 		    "child tasks do not inherit counters"),
-@@ -1105,7 +1105,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   " abort, in_tx, transaction"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
--	OPT_CALLBACK_NOOPT('G', NULL, &top.record_opts,
-+	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
- 			   NULL, "enables call-graph recording",
- 			   &callchain_opt),
- 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
++__perfcomp_colon ()
++{
++	__perfcomp "$1" "$2"
++	__ltrim_colon_completions $cur
++}
++
+ __perf_main ()
+ {
+ 	local cmd
+@@ -114,8 +120,7 @@ __perf_main ()
+ 	# List possible events for -e option
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+-		__perfcomp "$evts" "$cur"
+-		__ltrim_colon_completions $cur
++		__perfcomp_colon "$evts" "$cur"
+ 	# List long option names
+ 	elif [[ $cur == --* ]];  then
+ 		subcmd=${words[1]}
 -- 
 1.8.1.4
 
