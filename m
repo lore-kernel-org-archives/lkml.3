@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab3KYOYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:24:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42653 "EHLO
+	id S1757507Ab3KYOYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:24:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42651 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360Ab3KYOSB (ORCPT
+	with ESMTP id S1757438Ab3KYOSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:18:01 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/25] perf completion: Introduce a layer of indirection
-Date: Mon, 25 Nov 2013 11:17:34 -0300
-Message-Id: <1385389075-7989-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/25] perf trace: Remove thread summary coloring
+Date: Mon, 25 Nov 2013 11:17:32 -0300
+Message-Id: <1385389075-7989-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -23,58 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Pekka Enberg <penberg@kernel.org>
 
-Define the variables cur, words, cword, and prev outside the main
-completion function so that we have a chance to override it when we
-introduce zsh support.
+Thread summary line coloring looks ugly.  It doesn't add much value so
+remove coloring completely.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-2-git-send-email-artagnon@gmail.com
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1384447410-1771-1-git-send-email-penberg@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ tools/perf/builtin-trace.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 62e157db2e2b..3efdc84f112c 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -89,15 +89,12 @@ __ltrim_colon_completions()
- 	fi
- }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8be17fc462ba..e9f345e2551a 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2158,7 +2158,6 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 	size_t printed = data->printed;
+ 	struct trace *trace = data->trace;
+ 	struct thread_trace *ttrace = thread->priv;
+-	const char *color;
+ 	double ratio;
  
--type perf &>/dev/null &&
--_perf()
-+__perf_main ()
- {
--	local cur words cword prev cmd
+ 	if (ttrace == NULL)
+@@ -2166,17 +2165,9 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
+ 
+ 	ratio = (double)ttrace->nr_events / trace->nr_events * 100.0;
+ 
+-	color = PERF_COLOR_NORMAL;
+-	if (ratio > 50.0)
+-		color = PERF_COLOR_RED;
+-	else if (ratio > 25.0)
+-		color = PERF_COLOR_GREEN;
+-	else if (ratio > 5.0)
+-		color = PERF_COLOR_YELLOW;
 -
--	COMPREPLY=()
--	_get_comp_words_by_ref -n =: cur words cword prev
-+	local cmd
+-	printed += color_fprintf(fp, color, " %s (%d), ", thread__comm_str(thread), thread->tid);
++	printed += fprintf(fp, " %s (%d), ", thread__comm_str(thread), thread->tid);
+ 	printed += fprintf(fp, "%lu events, ", ttrace->nr_events);
+-	printed += color_fprintf(fp, color, "%.1f%%", ratio);
++	printed += fprintf(fp, "%.1f%%", ratio);
+ 	printed += fprintf(fp, ", %.3f msec\n", ttrace->runtime_ms);
+ 	printed += thread__dump_stats(ttrace, trace, fp);
  
- 	cmd=${words[0]}
-+	COMPREPLY=()
- 
- 	# List perf subcommands or long options
- 	if [ $cword -eq 1 ]; then
-@@ -120,6 +117,14 @@ _perf()
- 		opts=$($cmd $subcmd --list-opts)
- 		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
- 	fi
-+}
-+
-+type perf &>/dev/null &&
-+_perf()
-+{
-+	local cur words cword prev
-+	_get_comp_words_by_ref -n =: cur words cword prev
-+	__perf_main
- } &&
- 
- complete -o bashdefault -o default -o nospace -F _perf perf 2>/dev/null \
 -- 
 1.8.1.4
 
