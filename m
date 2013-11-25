@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3KYPYt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:24:49 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:33127 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755Ab3KYPYr convert rfc822-to-8bit (ORCPT
+	id S1754742Ab3KYP0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:26:12 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:41053 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3KYP0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:24:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131125091651.GA32081@e106331-lin.cambridge.arm.com>
-References: <1385155032-9032-1-git-send-email-robherring2@gmail.com>
-	<A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
-	<528FD003.8090607@gmail.com>
-	<20131125091651.GA32081@e106331-lin.cambridge.arm.com>
-Date: Mon, 25 Nov 2013 09:24:46 -0600
-Message-ID: <CAL_JsqKArowT_DE8-vCJvmOSxjp+X9bngCXXsgjBK7G3wPZ7wA@mail.gmail.com>
-Subject: Re: [PATCH] dt-bindings: add ARMv8 PMU binding
-From: Rob Herring <robherring2@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>, devicetree <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Nov 2013 10:26:08 -0500
+Message-ID: <1385393160.4753.4.camel@phoenix>
+Subject: ARM: nommu: Boot hang after VFS: Mounted root (ext2 filesystem) on
+ device 1:0.
+From: Axel Lin <axel.lin@ingics.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>
+Date: Mon, 25 Nov 2013 23:26:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 3:16 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Fri, Nov 22, 2013 at 09:43:31PM +0000, Rob Herring wrote:
->> On 11/22/2013 03:38 PM, Kumar Gala wrote:
->> >
->> > On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
->> >
->> >> From: Rob Herring <rob.herring@calxeda.com>
->> >>
->> >> Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
->> >>
->> >> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> >> Cc: Will Deacon <will.deacon@arm.com>
->> >> Cc: Pawel Moll <pawel.moll@arm.com>
->> >> Cc: Mark Rutland <mark.rutland@arm.com>
->> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> >> ---
->> >> Documentation/devicetree/bindings/arm/pmu.txt | 1 +
->> >> 1 file changed, 1 insertion(+)
->> >>
->> >> diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
->> >> index 343781b..3e1e498 100644
->> >> --- a/Documentation/devicetree/bindings/arm/pmu.txt
->> >> +++ b/Documentation/devicetree/bindings/arm/pmu.txt
->> >> @@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
->> >> Required properties:
->> >>
->> >> - compatible : should be one of
->> >> +  "arm,armv8-pmuv3”
->> >
->> > what about arm,armv8-pmu-v3?
->>
->> I'm just documenting what is already being used:
->>
->> arch/arm64/boot/dts/foundation-v8.dts:          compatible =
->> "arm,armv8-pmuv3";
->> arch/arm64/boot/dts/rtsm_ve-aemv8a.dts:         compatible =
->> "arm,armv8-pmuv3";
->>
->> Do we want to change those?
->
-> It would probably have been nicer to have the '-' from the start, but
-> adding it now is only going to expand the set of compatible strings for
-> no appreciable benefit.
->
-> I don't see any value in adding a new form of the string, and we can't
-> change the existing one as it's already in use.
+Hi,
+I got hangup at boot after "VFS: Mounted root (ext2 filesystem) on device 1:0.".
+I'm using ext2 initrd as root.
+It seems hangup after mount root, but in the progress of mounting devtmpfs.
 
-Is that an ack then?
+After debug it, I found it hangs at calling page_cache_release.
+Note, I'm testing on an nommu platform (arm7tdmi) using current Linus' tree
+with patches for this SoC.
+
+Breakpoint 3, ext2_inode_by_name (dir=<optimized out>, child=<optimized out>) at fs/ext2/dir.c:452
+452                     ext2_put_page(page);
+(gdb) bt
+#0  ext2_inode_by_name (dir=<optimized out>, child=<optimized out>) at fs/ext2/dir.c:452
+#1  0x000b0218 in ext2_lookup (dir=0x1cbf8e0, dentry=0x161d390, flags=<optimized out>) at fs/ext2/namei.c:66
+#2  0x0006a160 in lookup_real (dir=<optimized out>, dentry=0x161d390, flags=<optimized out>) at fs/namei.c:1317
+#3  0x0006a5fc in __lookup_hash (name=<optimized out>, base=0x161d228, flags=1) at fs/namei.c:1335
+#4  0x0006b828 in lookup_slow (nd=0x1c19e58, path=0x1c19de0) at fs/namei.c:1446
+#5  0x0006c914 in walk_component (follow=1, path=0x1c19dd8, nd=0x1c19e58) at fs/namei.c:1526
+#6  lookup_last (path=0x1c19dd8, nd=0x1c19e58) at fs/namei.c:1904
+#7  path_lookupat (dfd=<optimized out>, name=0x1640010 "dev", flags=<optimized out>, nd=0x1c19e58) at fs/namei.c:1939
+#8  0x0006cf30 in filename_lookup (dfd=-100, name=0x1c19e30, flags=1, nd=0x1c19e58) at fs/namei.c:1981
+#9  0x0006d000 in do_path_lookup (dfd=-100, name=0x1640010 "dev", flags=1, nd=0x1c19e58) at fs/namei.c:1998
+#10 0x0006d218 in kern_path (name=<optimized out>, flags=<optimized out>, path=0x1c19ee0) at fs/namei.c:2027
+#11 0x0007dbd0 in do_mount (dev_name=0x161d380 "devtmpfs", dir_name=0x1640010 "dev", type_page=0x161d340 "devtmpfs", flags=32768,
+    data_page=0x0 <__vectors_start>) at fs/namespace.c:2363
+#12 0x0007e71c in SYSC_mount (data=0x378620 <reset_devices>, flags=32768, type=<optimized out>, dir_name=<optimized out>,
+    dev_name=0x30a0da "devtmpfs") at fs/namespace.c:2608
+#13 SyS_mount (dev_name=<optimized out>, dir_name=<optimized out>, type=<optimized out>, flags=<optimized out>, data=0) at fs/namespace.c:2582
+#14 0x00123444 in devtmpfs_mount (mntdir=<optimized out>) at drivers/base/devtmpfs.c:363
+#15 0x0033a394 in prepare_namespace () at init/do_mounts.c:593
+#16 0x00339cd0 in kernel_init_freeable () at init/main.c:935
+#17 0x0028b7c0 in kernel_init (unused=<optimized out>) at init/main.c:844
+#18 0x00009000 in ret_from_fork () at arch/arm/kernel/entry-common.S:91
+#19 0x00009000 in ret_from_fork () at arch/arm/kernel/entry-common.S:91
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+(gdb) s
+ext2_put_page (page=<optimized out>) at fs/ext2/dir.c:70
+70              page_cache_release(page);
+(gdb) l
+65      }
+66
+67      static inline void ext2_put_page(struct page *page)
+68      {
+69              kunmap(page);
+70              page_cache_release(page);
+71      }
+72
+73      static inline unsigned long dir_pages(struct inode *inode)
+74      {
+(gdb) s
+ext2_inode_by_name (dir=<optimized out>, child=<optimized out>) at fs/ext2/dir.c:451
+451                     res = le32_to_cpu(de->inode);
+(gdb) s
+452                     ext2_put_page(page);
+(gdb) s
+ext2_put_page (page=0xac4e0 <ext2_inode_by_name+12>) at fs/ext2/dir.c:70
+70              page_cache_release(page);
+(gdb) s         <<< HANG UP
+
+I have no idea why it hangs at page_cache_release call.
+I appreciate for comments and advices to debug this.
+
+Thanks,
+Axel
+
