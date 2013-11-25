@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3KYNWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:22:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57148 "EHLO
+	id S1756915Ab3KYNWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:22:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57133 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab3KYNID (ORCPT
+	with ESMTP id S1754325Ab3KYNIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:03 -0500
+	Mon, 25 Nov 2013 08:08:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
+        Jason Luan <jianhai.luan@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 39/78] NFSv4: Fix a use-after-free situation in _nfs4_proc_getlk()
-Date: Mon, 25 Nov 2013 13:06:26 +0000
-Message-Id: <1385384825-21681-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/78] xen-netback: use jiffies_64 value to calculate credit timeout
+Date: Mon, 25 Nov 2013 13:06:22 +0000
+Message-Id: <1385384825-21681-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
+commit 059dfa6a93b779516321e5112db9d7621b1367ba upstream.
 
-In nfs4_proc_getlk(), when some error causes a retry of the call to
-_nfs4_proc_getlk(), we can end up with Oopses of the form
+time_after_eq() only works if the delta is < MAX_ULONG/2.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
- IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
-<snip>
- Call Trace:
-  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
-  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
-  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
-  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
-  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
+For a 32bit Dom0, if netfront sends packets at a very low rate, the time
+between subsequent calls to tx_credit_exceeded() may exceed MAX_ULONG/2
+and the test for timer_after_eq() will be incorrect. Credit will not be
+replenished and the guest may become unable to send packets (e.g., if
+prior to the long gap, all credit was exhausted).
 
-The problem is that we don't clear the request->fl_ops after the first
-try and so when we retry, nfs4_set_lock_state() exits early without
-setting the lock stateid.
-Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
-(locks: make ->lock release private data before returning in GETLK case)
+Use jiffies_64 variant to mitigate this problem for 32bit Dom0.
 
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Jorge Mora <mora@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jason Luan <jianhai.luan@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/xen-netback/common.h    |  1 +
+ drivers/net/xen-netback/interface.c |  3 +--
+ drivers/net/xen-netback/netback.c   | 10 +++++-----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 871d50c..594ec86 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4250,6 +4250,7 @@ static int _nfs4_proc_getlk(struct nfs4_state *state, int cmd, struct file_lock
- 			status = 0;
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 9d7f172..093bf0a 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -88,6 +88,7 @@ struct xenvif {
+ 	unsigned long   credit_usec;
+ 	unsigned long   remaining_credit;
+ 	struct timer_list credit_timeout;
++	u64 credit_window_start;
+ 
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 221f426..cfaaf68 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -273,8 +273,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
+-	/* Initialize 'expires' now: it's used to track the credit window. */
+-	vif->credit_timeout.expires = jiffies;
++	vif->credit_window_start = get_jiffies_64();
+ 
+ 	dev->netdev_ops	= &xenvif_netdev_ops;
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 228607b..3d0f22a 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1364,9 +1364,8 @@ out:
+ 
+ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ {
+-	unsigned long now = jiffies;
+-	unsigned long next_credit =
+-		vif->credit_timeout.expires +
++	u64 now = get_jiffies_64();
++	u64 next_credit = vif->credit_window_start +
+ 		msecs_to_jiffies(vif->credit_usec / 1000);
+ 
+ 	/* Timer could already be pending in rare cases. */
+@@ -1374,8 +1373,8 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ 		return true;
+ 
+ 	/* Passed the point where we can replenish credit? */
+-	if (time_after_eq(now, next_credit)) {
+-		vif->credit_timeout.expires = now;
++	if (time_after_eq64(now, next_credit)) {
++		vif->credit_window_start = now;
+ 		tx_add_credit(vif);
  	}
- 	request->fl_ops->fl_release_private(request);
-+	request->fl_ops = NULL;
- out:
- 	return status;
- }
+ 
+@@ -1387,6 +1386,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ 			tx_credit_callback;
+ 		mod_timer(&vif->credit_timeout,
+ 			  next_credit);
++		vif->credit_window_start = next_credit;
+ 
+ 		return true;
+ 	}
 -- 
 1.8.3.2
 
