@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3KYWTC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 17:19:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46736 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab3KYWTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 17:19:00 -0500
-Date: Mon, 25 Nov 2013 23:18:54 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jerome Blin <jerome.blin@intel.com>
-Subject: Re: [PATCH] HID: i2c-hid: disable interrupt on suspend
-In-Reply-To: <52936FC5.3060905@redhat.com>
-Message-ID: <alpine.LNX.2.00.1311252318350.22082@pobox.suse.cz>
-References: <1384342458-5551-1-git-send-email-mika.westerberg@linux.intel.com> <52936FC5.3060905@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753103Ab3KYWTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 17:19:09 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:43490 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab3KYWTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 17:19:04 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5281E97D.6090806@suse.cz>
+References: <1384177236-8371-1-git-send-email-mmarek@suse.cz> <5281E97D.6090806@suse.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 25 Nov 2013 15:18:42 -0700
+Message-ID: <CAErSpo6sCvDuSA3Bw0LY7D6QYC=xhPP05f966kjDP0mvqu5wEg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: Do not use PCI ID macros in quirk names
+To: Michal Marek <mmarek@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Joe Mario <jmario@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Nov 2013, Benjamin Tissoires wrote:
+On Tue, Nov 12, 2013 at 1:40 AM, Michal Marek <mmarek@suse.cz> wrote:
+> On 11.11.2013 14:40, Michal Marek wrote:
+>> Pasting the verbatim PCI_(VENDOR|DEVICE)_* macros in the __pci_fixup_*
+>> symbol names results in insanely long names such as
+>>
+>> __pci_fixup_resumePCI_VENDOR_ID_SERVERWORKSPCI_DEVICE_ID_SERVERWORKS_HT1000SBquirk_disable_broadcom_boot_interrupt
+>>
+>> When LTO adds its numeric suffix to such symbol, it overflows the
+>> namebuf[KSYM_NAME_LEN] array. Use the line number instead to create
+>
+> "... the namebuf[KSYM_NAME_LEN] array in kernel/kallsyms.c."
 
-> > When an I2C HID device is powered of during system sleep, as a result of
-> > removing its power resources (by the ACPI core) the interrupt line might go
-> > low as well. This results inadvertent interrupt and wakes the system from
-> > sleep immediately.
-> > 
-> > To prevent this we disable the device interrupt in the drivers suspend
-> > method and enable it on resume. The device can still wake the system up if
-> > it is wake capable (this also means that not all of its power will be
-> > removed to keep the interrupt line high).
-> > 
-> > Reported-by: Jerome Blin <jerome.blin@intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> 
-> Jiri, just FYI, I still do not have any final consumer ready i2c-hid
-> hardware. So I can not test/debug anything related to the suspend-resume.
-> 
-> If Mika tested it properly (which I expect), you may consider pulling
-> this one.
+What's LTO?  I guess it's Link Time Optimization?  Is there any
+documentation about how it works or how to use it?
 
-Understood, thanks guys.
-
-Applied now.
-
--- 
-Jiri Kosina
-SUSE Labs
+Bjorn
