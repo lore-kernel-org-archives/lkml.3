@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab3KYNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:07:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56940 "EHLO
+	id S1753954Ab3KYNHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:07:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56979 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3KYNHN (ORCPT
+	with ESMTP id S1753871Ab3KYNHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:13 -0500
+	Mon, 25 Nov 2013 08:07:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 02/78] jfs: fix error path in ialloc
-Date: Mon, 25 Nov 2013 13:05:49 +0000
-Message-Id: <1385384825-21681-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 10/78] wireless: radiotap: fix parsing buffer overrun
+Date: Mon, 25 Nov 2013 13:05:57 +0000
+Message-Id: <1385384825-21681-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 8660998608cfa1077e560034db81885af8e1e885 upstream.
+commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
 
-If insert_inode_locked() fails, we shouldn't be calling
-unlock_new_inode().
+When parsing an invalid radiotap header, the parser can overrun
+the buffer that is passed in because it doesn't correctly check
+ 1) the minimum radiotap header size
+ 2) the space for extended bitmaps
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Tested-by: Michael L. Semon <mlsemon35@gmail.com>
+The first issue doesn't affect any in-kernel user as they all
+check the minimum size before calling the radiotap function.
+The second issue could potentially affect the kernel if an skb
+is passed in that consists only of the radiotap header with a
+lot of extended bitmaps that extend past the SKB. In that case
+a read-only buffer overrun by at most 4 bytes is possible.
+
+Fix this by adding the appropriate checks to the parser.
+
+Reported-by: Evan Huus <eapache@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jfs/jfs_inode.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/wireless/radiotap.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/jfs/jfs_inode.c b/fs/jfs/jfs_inode.c
-index c1a3e60..7f464c5 100644
---- a/fs/jfs/jfs_inode.c
-+++ b/fs/jfs/jfs_inode.c
-@@ -95,7 +95,7 @@ struct inode *ialloc(struct inode *parent, umode_t mode)
+diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
+index c4ad795..617a310 100644
+--- a/net/wireless/radiotap.c
++++ b/net/wireless/radiotap.c
+@@ -95,6 +95,10 @@ int ieee80211_radiotap_iterator_init(
+ 	struct ieee80211_radiotap_header *radiotap_header,
+ 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
+ {
++	/* check the radiotap header can actually be present */
++	if (max_length < sizeof(struct ieee80211_radiotap_header))
++		return -EINVAL;
++
+ 	/* Linux only supports version 0 radiotap format */
+ 	if (radiotap_header->it_version)
+ 		return -EINVAL;
+@@ -129,7 +133,8 @@ int ieee80211_radiotap_iterator_init(
+ 			 */
  
- 	if (insert_inode_locked(inode) < 0) {
- 		rc = -EINVAL;
--		goto fail_unlock;
-+		goto fail_put;
- 	}
- 
- 	inode_init_owner(inode, parent, mode);
-@@ -156,7 +156,6 @@ struct inode *ialloc(struct inode *parent, umode_t mode)
- fail_drop:
- 	dquot_drop(inode);
- 	inode->i_flags |= S_NOQUOTA;
--fail_unlock:
- 	clear_nlink(inode);
- 	unlock_new_inode(inode);
- fail_put:
+ 			if ((unsigned long)iterator->_arg -
+-			    (unsigned long)iterator->_rtheader >
++			    (unsigned long)iterator->_rtheader +
++			    sizeof(uint32_t) >
+ 			    (unsigned long)iterator->_max_length)
+ 				return -EINVAL;
+ 		}
 -- 
 1.8.3.2
 
