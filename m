@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3KYMMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:12:23 -0500
-Received: from relay.parallels.com ([195.214.232.42]:53432 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3KYMHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:07:51 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>, <mhocko@suse.cz>
-CC: <glommer@openvz.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH v11 00/15] kmemcg shrinkers
-Date: Mon, 25 Nov 2013 16:07:33 +0400
-Message-ID: <cover.1385377616.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753854Ab3KYMNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:13:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab3KYMNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 07:13:07 -0500
+Date: Mon, 25 Nov 2013 13:14:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: zhang.yi20@zte.com.cn
+Cc: Tejun Heo <tj@kernel.org>, htejun@gmail.com,
+        lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: =?utf-8?B?562U5aSNOiBSZTogW1BBVENIIDEv?=
+	=?utf-8?Q?1=5D_workqueue?=
+	=?utf-8?Q?=3A?= swap set_cpus_allowed_ptr() and PF_NO_SETAFFINITY
+Message-ID: <20131125121416.GB23829@redhat.com>
+References: <OFC3933D9B.5510E97E-ON48257C23.0007B7CD-48257C23.000A4246@zte.com.cn> <20131114052326.GA29031@mtj.dyndns.org> <20131114114039.GA29277@redhat.com> <20131114115551.GA30824@redhat.com> <20131114115618.GB30824@redhat.com> <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com> <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.24.145]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements targeted shrinking for memcg when kmem limits are
-present. So far, we've been accounting kernel objects but failing allocations
-when short of memory. This is because our only option would be to call the
-global shrinker, depleting objects from all caches and breaking isolation.
+On 11/25, zhang.yi20@zte.com.cn wrote:
+>
+> htejun@gmail.com wrote on 2013/11/23 07:13:43:
+>
+> >
+> > Re: [PATCH 1/1] workqueue: swap set_cpus_allowed_ptr() and PF_NO_SETAFFINITY
+> >
+> > On Thu, Nov 14, 2013 at 6:56 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > > Move the setting of PF_NO_SETAFFINITY up before set_cpus_allowed()
+> > > in create_worker(). Otherwise userland can change ->cpus_allowed
+> > > in between.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> >
+> > Applied to wq/for-3.13-fixes.
+> >
+> > Thanks!
+> >
+> > --
+> > tejun
+>
+> How about the first patch?
 
-The main idea is to associate per-memcg lists with each of the LRUs. The main
-LRU still provides a single entry point and when adding or removing an element
-from the LRU, we use the page information to figure out which memcg it belongs
-to and relay it to the right list.
+Let me quote myself:
 
-The bulk of the code is written by Glauber Costa. The only change I introduced
-myself in this iteration is reworking per-memcg LRU lists. Instead of extending
-the existing list_lru structure, which seems to be neat as is, I introduced a
-new one, memcg_list_lru, which aggregates list_lru objects for each kmem-active
-memcg and keeps them uptodate as memcgs are created/destroyed. I hope this
-simplified call paths and made the code easier to read.
+	Looks like Zhang is right... But I'd suggest to change flush_old_exec()
+	instead (see "current->flags &= ...").
 
-The patchset is based on top of Linux 3.13-rc1.
+Do you agree? If yes, could you make v2? flush_old_exec() already clears
+the unwanted PF_ bits, I do not think we should add another place.
 
-Any comments and proposals are appreciated.
-
-== Known issues ==
-
- * In case kmem limit is less than sum mem limit, reaching memcg kmem limit
-   will result in an attempt to shrink all memcg slabs (see
-   try_to_free_mem_cgroup_kmem()). Although this is better than simply failing
-   allocation as it works now, it is still to be improved.
-
- * Since FS shrinkers can't be executed on __GFP_FS allocations, such
-   allocations will fail if memcg kmem limit is less than sum mem limit and the
-   memcg kmem usage is close to its limit. Glauber proposed to schedule a
-   worker which would shrink kmem in the background on such allocations.
-   However, this approach does not eliminate failures completely, it just makes
-   them rarer. I'm thinking on implementing soft limits for memcg kmem so that
-   striking the soft limit will trigger the reclaimer, but won't fail the
-   allocation. I would appreciate any other proposals on how this can be fixed.
-
- * Only dcache and icache are reclaimed on memcg pressure. Other FS objects are
-   left for global pressure only. However, it should not be a serious problem
-   to make them reclaimable too by passing on memcg to the FS-layer and letting
-   each FS decide if its internal objects are shrinkable on memcg pressure.
-
-== Changes from v10 ==
-
- * Rework per-memcg list_lru infrastructure.
-
-Previous iteration (with full changelog) can be found here:
-
-http://www.spinics.net/lists/linux-fsdevel/msg66632.html
-
-Glauber Costa (12):
-  memcg: make cache index determination more robust
-  memcg: consolidate callers of memcg_cache_id
-  vmscan: also shrink slab in memcg pressure
-  memcg: move initialization to memcg creation
-  memcg: move stop and resume accounting functions
-  memcg: per-memcg kmem shrinking
-  memcg: scan cache objects hierarchically
-  vmscan: take at least one pass with shrinkers
-  memcg: allow kmem limit to be resized down
-  vmpressure: in-kernel notifications
-  memcg: reap dead memcgs upon global memory pressure
-  memcg: flush memcg items upon memcg destruction
-
-Vladimir Davydov (3):
-  memcg,list_lru: add per-memcg LRU list infrastructure
-  memcg,list_lru: add function walking over all lists of a per-memcg
-    LRU
-  super: make icache, dcache shrinkers memcg-aware
-
- fs/dcache.c                |   25 +-
- fs/inode.c                 |   16 +-
- fs/internal.h              |    9 +-
- fs/super.c                 |   45 +--
- include/linux/fs.h         |    4 +-
- include/linux/list_lru.h   |   77 +++++
- include/linux/memcontrol.h |   23 ++
- include/linux/shrinker.h   |    6 +-
- include/linux/swap.h       |    2 +
- include/linux/vmpressure.h |    5 +
- mm/memcontrol.c            |  709 +++++++++++++++++++++++++++++++++++++++-----
- mm/vmpressure.c            |   53 +++-
- mm/vmscan.c                |  178 +++++++++--
- 13 files changed, 1018 insertions(+), 134 deletions(-)
-
--- 
-1.7.10.4
+Oleg.
 
