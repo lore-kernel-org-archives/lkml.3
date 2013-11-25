@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3KYOwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:52:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753665Ab3KYOwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:52:10 -0500
-Date: Mon, 25 Nov 2013 15:51:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 17/22] perf tools: Add build and install plugins targets
-Message-ID: <20131125145144.GG3161@krava.brq.redhat.com>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
- <1385031680-9014-18-git-send-email-jolsa@redhat.com>
- <1385134068.1747.105.camel@leonhard>
+	id S1755527Ab3KYOyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:54:21 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:57511 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab3KYOyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:54:17 -0500
+Message-ID: <52936451.1020406@ti.com>
+Date: Mon, 25 Nov 2013 16:53:05 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385134068.1747.105.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: Re: [PATCH v3 5/6] watchdog: davinci: reuse driver for keystone arch
+References: <1385388498-12448-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1385388498-12448-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 12:27:48AM +0900, Namhyung Kim wrote:
-> 2013-11-21 (목), 12:01 +0100, Jiri Olsa:
-> > Adding 'plugins' target along with the libtraceevent.a,
-> > so plugins are built together with traceevent library.
-> > 
-> > Adding 'install-traceevent-plugins' Makefile install target,
-> > instructing perf to install plugins into:
-> >   $(HOME)/libexec/perf-core/traceevent/plugins
-> >     - if installed localy under $HOME
-> >   $(DESTDIR)/$(prefix)/$(perfexecdir)/traceevent/plugins
-> >     - if installed globally
-> 
-> [SNIP]
-> > --- a/tools/perf/config/Makefile
-> > +++ b/tools/perf/config/Makefile
-> > @@ -578,6 +578,7 @@ else
-> >  lib = lib
-> >  endif
-> >  libdir = $(prefix)/$(lib)
-> > +plugindir=$(perfexecdir)/traceevent/plugins
-> 
-> Hmm.. it puts traceevent plugins under the perf directory.  But I don't
-> think it's a good idea since libtraceevent can be used independently.
-> 
-> What about something like this?
-> 
->   plugindir = $(perfexecdir)/../traceevent/plugins
+On 11/25/2013 04:08 PM, Ivan Khoronzhuk wrote:
+> The keystone arch uses the same IP watchdog, so add "ti,keystone-wdt"
+> compatible and correct identity.
+>
+> The Keystone arch is using clocks in DT and source clock for watchdog
+> has to be specified, so add this to binding.
+>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>   .../devicetree/bindings/watchdog/davinci-wdt.txt   |   12 ++++++++++--
+>   drivers/watchdog/Kconfig                           |    4 ++--
+>   drivers/watchdog/davinci_wdt.c                     |    2 +-
+>   3 files changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+> index e450134..4d89317 100644
+> --- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+> +++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+> @@ -1,11 +1,18 @@
+> -DaVinci Watchdog Timer (WDT) Controller
+> +Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
+>
+>   Required properties:
+> -- compatible : Should be "ti,davinci-wdt"
+> +- compatible : Should be "ti,davinci-wdt" or "ti,keystone-wdt"
+>   - reg : Should contain WDT registers location and length
+>
+>   Optional properties:
+>   - timeout-sec : Contains the watchdog timeout in seconds
+> +- clocks : the clock feeding the watchdog timer.
+> +	   Needed if platform uses clocks.
+> +	   See clock-bindings.txt
+> +
+> +Documentation:
+> +Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
+> +Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+>
+>   Examples:
+>
+> @@ -13,4 +20,5 @@ wdt: wdt@2320000 {
+>   	compatible = "ti,davinci-wdt";
+>   	reg = <0x02320000 0x80>;
+>   	timeout-sec = <30>;
+> +	clocks = <&clkwdtimer0>;
+>   };
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index eb8c89d..01f3f81 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -270,12 +270,12 @@ config IOP_WATCHDOG
+>
+>   config DAVINCI_WATCHDOG
+>   	tristate "DaVinci watchdog"
+> -	depends on ARCH_DAVINCI
+> +	depends on ARCH_DAVINCI || ARCH_KEYSTONE
+>   	select WATCHDOG_CORE
+>   	select WATCHDOG_NOWAYOUT
+>   	help
+>   	  Say Y here if to include support for the watchdog timer
+> -	  in the DaVinci DM644x/DM646x processors.
+> +	  in the DaVinci DM644x/DM646x or Keystone processors.
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called davinci_wdt.
+>
+> diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+> index d342fc2..9128c74 100644
+> --- a/drivers/watchdog/davinci_wdt.c
+> +++ b/drivers/watchdog/davinci_wdt.c
+> @@ -143,7 +143,7 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
+>
+>   static const struct watchdog_info davinci_wdt_info = {
+>   	.options = WDIOF_KEEPALIVEPING,
+> -	.identity = "DaVinci Watchdog",
+> +	.identity = "DaVinci/Keystone Watchdog",
+>   };
+>
+>   static const struct watchdog_ops davinci_wdt_ops = {
+>
 
-this is where trace-cmd stores them:
+Sorry for mess, ignore this patch.
+Now it is in reply to Update Davinci watchdog driver
 
-  $(HOME)/.trace-cmd/plugins
-  $(prefix)/$(libdir)/trace-cmd/plugins
-
-but I guess we want global place to install plugins,
-the traceevent by default uses:
-
-  $(HOME)/.traceevent/plugins
-  $(prefix)/lib/traceevent/plugins
-
-How about that?
-
-thanks,
-jirka
+-- 
+Regards,
+Ivan Khoronzhuk
