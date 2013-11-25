@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3KYXXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:23:36 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:56161 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab3KYXXc (ORCPT
+	id S1753206Ab3KYXXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:23:08 -0500
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:60812 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751809Ab3KYXXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:23:32 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5293DBEF.3010401@roeck-us.net>
-Date: Mon, 25 Nov 2013 15:23:27 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
-CC: Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: s3c2410_wdt: Only register for cpufreq on CPU_FREQ_S3C24XX
-References: <1385420137-32725-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1385420137-32725-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Nov 2013 18:23:02 -0500
+To: mingo@kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, ralf@linux-mips.org,
+        akpm@linux-foundation.org, mpe@ellerman.id.au,
+        felipe.contreras@gmail.com, linux-kernel@vger.kernel.org
+Message-Id: <cover.1385418410.git.jbaron@akamai.com>
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH 0/3 v3] build in panic_timeout value
+Date: Mon, 25 Nov 2013 23:23:00 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 02:55 PM, Doug Anderson wrote:
-> On modern SoCs the watchdog timer is parented on a clock that doesn't
-> change every time we have a cpufreq change.  That means we don't need
-> to constantly adjust the watchdog timer, so avoid registering for and
-> dealing with cpufreq transitions unless we've actually got
-> CPU_FREQ_S3C24XX defined.
->
-> Note that this is more than just an optimization.  The s3c2410
-> watchdog driver actually pats the watchdog on every CPU frequency
-> change.  On modern systems these happen many times per second (even in
-> a system where "nothing" is happening).  That effectively makes any
-> userspace watchdog program useless (the watchdog is constantly patted
-> by the kernel).  If we need CPU_FREQ_S3C24XX defined on a
-> multiplatform kernel we'll need to make sure that kernel supports
-> common clock and change this to user common clock framework.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->   drivers/watchdog/s3c2410_wdt.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-> index 7d8fd04..4980f84 100644
-> --- a/drivers/watchdog/s3c2410_wdt.c
-> +++ b/drivers/watchdog/s3c2410_wdt.c
-> @@ -264,7 +264,7 @@ static irqreturn_t s3c2410wdt_irq(int irqno, void *param)
->   	return IRQ_HANDLED;
->   }
->
-> -#ifdef CONFIG_CPU_FREQ
-> +#ifdef CONFIG_CPU_FREQ_S3C24XX
->
-Where is the CPU_FREQ_S3C24XX configuration option defined ? I don't see it
-in the current upstream kernel, so it appears that this depends on some
-out-of-tree changes.
+Hi,
+
+I've now separated out the arch bits into separate patches. Hopefully, it makes
+review easier. I also didn't address moving the 'panic_timeout' command-line
+parameter up as an 'early_param()'. I think it might make sense to move it up,
+especially for distro kernels, but its not a need here, so I didn't want to just
+shove it in. If needed, I think it can come in separately, as it shoudn't
+affect this series.
 
 Thanks,
-Guenter
+
+-Jason 
+
+
+v3:
+ -separate arch bits
+ -drop mips settings of panic_timeout as per Ralf Baechle
+
+v2:
+ -restrict arch defaults to arch/ code
+ -add set_arch_panic_timeout(), in case .config specifies a non-default timeout
+
+Jason Baron (2):
+  panic: Make panic_timeout configurable
+  powerpc: cleanup panic_timeout
+
+Ralf Baechle (1):
+  mips: remove panic_timeout settings.
+
+ arch/mips/ar7/setup.c                  | 1 -
+ arch/mips/emma/markeins/setup.c        | 3 ---
+ arch/mips/netlogic/xlp/setup.c         | 1 -
+ arch/mips/netlogic/xlr/setup.c         | 1 -
+ arch/mips/sibyte/swarm/setup.c         | 2 --
+ arch/powerpc/Kconfig                   | 4 ++++
+ arch/powerpc/include/asm/setup.h       | 1 +
+ arch/powerpc/kernel/setup_32.c         | 3 ---
+ arch/powerpc/kernel/setup_64.c         | 3 ---
+ arch/powerpc/platforms/pseries/setup.c | 2 +-
+ include/linux/kernel.h                 | 9 +++++++++
+ kernel/panic.c                         | 2 +-
+ lib/Kconfig.debug                      | 9 +++++++++
+ 13 files changed, 25 insertions(+), 16 deletions(-)
+
+-- 
+1.8.2
 
