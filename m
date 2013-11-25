@@ -1,115 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab3KYQiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:38:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44734 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab3KYQiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:38:23 -0500
-Message-ID: <1385397493.2879.557.camel@ul30vt.home>
-Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Cc: Scott Wood <scottwood@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Nov 2013 09:38:13 -0700
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385066603.2879.414.camel@ul30vt.home>
-	 <1385066835.1403.489.camel@snotra.buserror.net>
-	 <1385067648.2879.421.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1757126Ab3KYQim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:38:42 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54599 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab3KYQij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:38:39 -0500
+Message-ID: <52937D0C.1020501@gmail.com>
+Date: Mon, 25 Nov 2013 08:38:36 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@rjwysocki.net
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, ceh@ti.com
+Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
+References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org>
+In-Reply-To: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 05:33 +0000, Bharat Bhushan wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Friday, November 22, 2013 2:31 AM
-> > To: Wood Scott-B07421
-> > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de; Yoder
-> > Stuart-B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
-> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-> > 
-> > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
-> > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
-> > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > > Sent: Thursday, November 21, 2013 12:17 AM
-> > > > > > To: Bhushan Bharat-R65777
-> > > > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood
-> > > > > > Scott-B07421; Yoder Stuart-B08248;
-> > > > > > iommu@lists.linux-foundation.org; linux- pci@vger.kernel.org;
-> > > > > > linuxppc-dev@lists.ozlabs.org; linux- kernel@vger.kernel.org;
-> > > > > > Bhushan Bharat-R65777
-> > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
-> > > > > > IOMMU (PAMU)
-> > > > > >
-> > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each
-> > > > > > vfio user has $COUNT regions at their disposal exclusively)?
-> > > > >
-> > > > > Number of msi-bank count is system wide and not per aperture, But will be
-> > setting windows for banks in the device aperture.
-> > > > > So say if we are direct assigning 2 pci device (both have different iommu
-> > group, so 2 aperture in iommu) to VM.
-> > > > > Now qemu can make only one call to know how many msi-banks are there but
-> > it must set sub-windows for all banks for both pci device in its respective
-> > aperture.
-> > > >
-> > > > I'm still confused.  What I want to make sure of is that the banks
-> > > > are independent per aperture.  For instance, if we have two separate
-> > > > userspace processes operating independently and they both chose to
-> > > > use msi bank zero for their device, that's bank zero within each
-> > > > aperture and doesn't interfere.  Or another way to ask is can a
-> > > > malicious user interfere with other users by using the wrong bank.
-> > > > Thanks,
-> > >
-> > > They can interfere.
-> 
-> Want to be sure of how they can interfere?
+On 11/24/2013 08:23 PM, Viresh Kumar wrote:
+> Sometimes boot loaders set CPU frequency to a value outside of frequency table
+> present with cpufreq core. In such cases CPU might be unstable if it has to run
+> on that frequency for long duration of time and so its better to set it to a
+> frequency which is specified in freq-table. This also makes cpufreq stats
+> inconsistent as cpufreq-stats would fail to register because current frequency
+> of CPU isn't found in freq-table.
+>
 
-What happens if more than one user selects the same MSI bank?
-Minimally, wouldn't that result in the IOMMU blocking transactions from
-the previous user once the new user activates their mapping?
+IMHO this issue should be fixed in the scaling driver for the platform.
 
-> >>  With this hardware, the only way to prevent that
-> > > is to make sure that a bank is not shared by multiple protection contexts.
-> > > For some of our users, though, I believe preventing this is less
-> > > important than the performance benefit.
-> 
-> So should we let this patch series in without protection?
+The scaling driver sets policy->cur and fills in the frequency table and has the
+abilty to adjust the frequency of the CPU.  Letting this leak up into the core
+is wrong IMHO and just widens the window where the CPU will be running at the
+wrong frequency set by the bootloader.
 
-No.
+> Because we don't want this change to effect boot process badly, we go for the
+> next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
+> end up setting freq to lowest of the table as 'cur' is initialized to zero).
+>
+> In case where CPU is already running on one of the frequencies present in
+> freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
+> return early.
+>
+> Reported-by: Carlos Hernandez <ceh@ti.com>
+> Reported-and-tested-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V1->V2
+> - Set to (policy->cur - 1) instead of policy->cur.
+> - return early in case __cpufreq_driver_target() fails.
+>
+>   drivers/cpufreq/cpufreq.c | 32 ++++++++++++++++++++++++++++++++
+>   1 file changed, 32 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..7be996c 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1038,6 +1038,38 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>   		}
+>   	}
+>
+> +	/*
+> +	 * Sometimes boot loaders set CPU frequency to a value outside of
+> +	 * frequency table present with cpufreq core. In such cases CPU might be
+> +	 * unstable if it has to run on that frequency for long duration of time
+> +	 * and so its better to set it to a frequency which is specified in
+> +	 * freq-table. This also makes cpufreq stats inconsistent as
+> +	 * cpufreq-stats would fail to register because current frequency of CPU
+> +	 * isn't found in freq-table.
+> +	 *
+> +	 * Because we don't want this change to effect boot process badly, we go
+> +	 * for the next freq which is >= policy->cur ('cur' must be set by now,
+> +	 * otherwise we will end up setting freq to lowest of the table as 'cur'
+> +	 * is initialized to zero).
+> +	 *
+> +	 * In case where CPU is already running on one of the frequencies
+> +	 * present in freq-table, this would turn into a dummy call as
+> +	 * __cpufreq_driver_target() would return early.
+> +	 *
+> +	 * We are passing target-freq as "policy->cur - 1" otherwise
+> +	 * __cpufreq_driver_target() would simply fail, as policy->cur will be
+> +	 * equal to target-freq.
+> +	 */
 
-> > 
-> > I think we need some sort of ownership model around the msi banks then.
-> > Otherwise there's nothing preventing another userspace from attempting an MSI
-> > based attack on other users, or perhaps even on the host.  VFIO can't allow
-> > that.  Thanks,
-> 
-> We have very few (3 MSI bank on most of chips), so we can not assign
-> one to each userspace. What we can do is host and userspace does not
-> share a MSI bank while userspace will share a MSI bank.
+Shouldn't there be a check to see if the problem exists at all?  Otherwise
+the core is setting a policy for ALL platform even those where the issue does
+not exist.
 
-Then you probably need VFIO to "own" the MSI bank and program devices
-into it rather than exposing the MSI banks to userspace to let them have
-direct access.  Thanks,
-
-Alex
+> +	if (has_target()) {
+> +		ret = __cpufreq_driver_target(policy, policy->cur - 1,
+> +				CPUFREQ_RELATION_L);
+> +		if (ret) {
+> +			pr_err("%s: Unable to set frequency from table: %d\n",
+> +					__func__, ret);
+> +			goto err_out_unregister;
+> +		}
+> +	}
+> +
+>   	/* related cpus should atleast have policy->cpus */
+>   	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+>
+>
 
