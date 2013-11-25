@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3KYQWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:22:37 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40039 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3KYQWg convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 25 Nov 2013 11:22:36 -0500
-Message-Id: <529387570200007800106C9F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 25 Nov 2013 16:22:31 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <akpm@linux-foundation.org>
-Cc: <davem@davemloft.net>, <adobriyan@gmail.com>, <d.hatayama@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] procfs: also fix proc_reg_get_unmapped_area() for !MMU
- case
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756817Ab3KYQYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:24:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55886 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab3KYQYB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:24:01 -0500
+Date: Mon, 25 Nov 2013 17:23:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>, "Norton, Scott J" <scott.norton@hp.com>,
+        tom.vaden@hp.com, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
+In-Reply-To: <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1311251715490.30673@ionos.tec.linutronix.de>
+References: <1385168197-8612-1-git-send-email-davidlohr@hp.com> <1385168197-8612-5-git-send-email-davidlohr@hp.com> <CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com> <1385176773.5402.14.camel@buesod1.americas.hpqcorp.net>
+ <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de> <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fad1a86e ("procfs: call default get_unmapped_area on MMU-present
-architectures"), as its title says, took care of only the MMU case,
-leaving the !MMU side still in the regressed state (returning -EIO in
-all cases where pde->proc_fops->get_unmapped_area is NULL).
+On Sat, 23 Nov 2013, Linus Torvalds wrote:
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: David S. Miller <davem@davemloft.net> 
----
- fs/proc/inode.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+> On Sat, Nov 23, 2013 at 5:16 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> > Now the question is why we queue the waiter _AFTER_ reading the user
+> > space value. The comment in the code is pretty non sensical:
+> >
+> >    * On the other hand, we insert q and release the hash-bucket only
+> >    * after testing *uaddr.  This guarantees that futex_wait() will NOT
+> >    * absorb a wakeup if *uaddr does not match the desired values
+> >    * while the syscall executes.
+> >
+> > There is no reason why we cannot queue _BEFORE_ reading the user space
+> > value. We just have to dequeue in all the error handling cases, but
+> > for the fast path it does not matter at all.
+> >
+> > CPU 0                                   CPU 1
+> >
+> >     val = *futex;
+> >     futex_wait(futex, val);
+> >
+> >     spin_lock(&hb->lock);
+> >
+> >     plist_add(hb, self);
+> >     smp_wmb();
+> >
+> >     uval = *futex;
+> >                                         *futex = newval;
+> >                                         futex_wake();
+> >
+> >                                         smp_rmb();
+> >                                         if (plist_empty(hb))
+> >                                            return;
+> > ...
+> 
+> This would seem to be a nicer approach indeed, without needing the
+> extra atomics.
 
---- 3.13-rc1/fs/proc/inode.c
-+++ 3.13-rc1-proc-get-unmapped-area/fs/proc/inode.c
-@@ -292,16 +292,19 @@ proc_reg_get_unmapped_area(struct file *
- {
- 	struct proc_dir_entry *pde = PDE(file_inode(file));
- 	unsigned long rv = -EIO;
--	unsigned long (*get_area)(struct file *, unsigned long, unsigned long,
--				  unsigned long, unsigned long) = NULL;
-+
- 	if (use_pde(pde)) {
-+		typeof(proc_reg_get_unmapped_area) *get_area
- #ifdef CONFIG_MMU
--		get_area = current->mm->get_unmapped_area;
-+			= pde->proc_fops->get_unmapped_area
-+			  ?: current->mm->get_unmapped_area;
-+#else
-+			= pde->proc_fops->get_unmapped_area;
- #endif
--		if (pde->proc_fops->get_unmapped_area)
--			get_area = pde->proc_fops->get_unmapped_area;
--		if (get_area)
--			rv = get_area(file, orig_addr, len, pgoff, flags);
-+
-+		rv = get_area
-+		     ? get_area(file, orig_addr, len, pgoff, flags)
-+		     : orig_addr;
- 		unuse_pde(pde);
- 	}
- 	return rv;
+I went through the issue with Peter and he noticed, that we need
+smp_mb() in both places. That's what we have right now with the
+spin_lock() and it is required as we need to guarantee that
+
+ The waiter observes the change to the uaddr value after it added
+ itself to the plist
+
+ The waker observes plist not empty if the change to uaddr was made
+ after the waiter checked the value.
 
 
+	write(plist)		|	write(futex_uaddr)
+	mb()			|	mb()
+	read(futex_uaddr)	|	read(plist)
 
+The spin_lock mb() on the waiter side does not help here because it
+happpens before the write(plist) and not after it.
+
+Thanks,
+
+	tglx
