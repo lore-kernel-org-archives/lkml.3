@@ -1,154 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3KYPnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:43:51 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:54753 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab3KYPnt (ORCPT
+	id S1754385Ab3KYPrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:47:21 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:36201 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3KYPrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:43:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-Date: Mon, 25 Nov 2013 09:43:48 -0600
-Message-ID: <CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Rob Herring <robherring2@gmail.com>
-To: Anup Patel <anup@brainfault.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Feng Kan <fkan@apm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kumar, Satendra" <Satendra.Kumar@lsi.com>,
-        Vinayak Kale <vinayak.kale@gmail.com>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Loc Ho <lho@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Nov 2013 10:47:18 -0500
+Message-ID: <1385394419.24518.40.camel@shinybook.infradead.org>
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+From: David Woodhouse <dwmw2@infradead.org>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
+        Hans Zhang <zhanghonghui@innofidei.com>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Nov 2013 15:46:59 +0000
+In-Reply-To: <87fvqkldmh.fsf@dell.be.48ers.dk>
+References: <528EB1E3.7030101@innofidei.com>
+	 <20131122015237.GB3509@localhost> <528EBD0B.5010006@innofidei.com>
+	 <20131122114509.GB2414@localhost> <5292A7E7.5060003@innofidei.com>
+	 <20131125101147.GA2408@localhost>
+	 <CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
+	 <529334D9.2030204@innofidei.com> <20131125115238.GC2408@localhost>
+	 <1385381770.24518.18.camel@shinybook.infradead.org>
+	 <20131125123012.GE2408@localhost> <87fvqkldmh.fsf@dell.be.48ers.dk>
+Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
+	boundary="=-SpWklHdUX8RXUhhs5vJs"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 2:41 AM, Anup Patel <anup@brainfault.org> wrote:
-> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> [dropping <patches@apm.com> from the CC list, as someone seems to have
->>  tripped on the config file, and I'm tired of getting bounces]
->>
->> Feng,
->>
->> On 19/11/13 21:42, Feng Kan wrote:
->>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
->>> X-Gene implementation, the FIQ bypass must be enabled at all time.
->>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
->>
->> How comes? Are only PPIs affected? When you say "some PPIs", can you be
->> more specific?
->>
->>> Signed-off-by: Feng Kan <fkan@apm.com>
->>> ---
->>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
->>>  include/linux/irqchip/arm-gic.h |    4 ++--
->>>  2 files changed, 13 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index d0e9480..aa7342e 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -65,6 +65,7 @@ struct gic_chip_data {
->>>  #endif
->>>       struct irq_domain *domain;
->>>       unsigned int gic_irqs;
->>> +     unsigned int bypass_flag;
->>>  #ifdef CONFIG_GIC_NON_BANKED
->>>       void __iomem *(*get_base)(union gic_base *);
->>>  #endif
->>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>
->>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  void gic_cpu_if_down(void)
->>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->>>
->>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
->>>  }
->>>
->>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
->>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
->>>
->>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>                          void __iomem *dist_base, void __iomem *cpu_base,
->>> -                        u32 percpu_offset, struct device_node *node)
->>> +                        u32 percpu_offset, u32 bypass_val,
->>> +                        struct device_node *node)
->>>  {
->>>       irq_hw_number_t hwirq_base;
->>>       struct gic_chip_data *gic;
->>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>
->>>       set_handle_irq(gic_handle_irq);
->>>
->>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
->>
->> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
->>
->>>       gic_chip.flags |= gic_arch_extn.flags;
->>>       gic_dist_init(gic);
->>>       gic_cpu_init(gic);
->>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>       void __iomem *cpu_base;
->>>       void __iomem *dist_base;
->>>       u32 percpu_offset;
->>> +     u32 bypass_val;
->>>       int irq;
->>>
->>>       if (WARN_ON(!node))
->>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->>>               percpu_offset = 0;
->>>
->>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
->>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
->>> +             bypass_val = 0;
->>
->> [adding Mark on Cc, so he can comment on the DT parts]
->>
->> Where's the DT documentation update? Also, as this is an
->> implementation-specific quirk, you should consider using a separate
->> compatible string and move the handling of this issue into some X-Gene
->> specific code.
->
-> Adding separate compatible string for X-Gene specific GIC will break
-> VGIC code for X-Gene because VGIC code looks for DT node compatible
-> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
-> code for X-Gene.
->
-> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
-> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
-> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
-> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
-> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
-> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
-> PPI28 (Legacy-FIQ).
->
-> We should have more cleaner and optional device tree binding for GIC
-> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
-> and FIQBypDisGrp1 bits for X-Gene.
 
-IIRC, all these bits are secure mode only (or only a subset are
-banked). Whether an SoC supports secure mode or not, the current
-policy for the kernel is to do any secure mode setup in firmware or
-bootloader.
+--=-SpWklHdUX8RXUhhs5vJs
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Rob
+On Mon, 2013-11-25 at 16:12 +0100, Peter Korsgaard wrote:
+> >>>>> "Ezequiel" =3D=3D Ezequiel Garcia <ezequiel.garcia@free-electrons.c=
+om> writes:
+>=20
+> Hi,
+>=20
+>  > Thanks a lot for the insight. After reading this, I'm wondering what's
+>  > preventing us from killing MTD block support altogether. Artem, alread=
+y
+>  > suggested it a while back...
+>=20
+> People using squashfs/cramfs/readonly ext2/.. on a NOR flash?
+
+And people who *still*, after all these years, don't realise that they
+don't actually need it to mount JFFS2. Even as the root file system
+(although they *do* need rootfstype=3Djffs2).
+
+--=20
+dwmw2
+
+
+--=-SpWklHdUX8RXUhhs5vJs
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
+AwIBAgIDBoXOMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTMwNTAyMDYyMDQ2WhcNMTQwNTAzMTIxNDAyWjBdMRkwFwYDVQQNExBNd0k3ODIxNTRpV21lZVkw
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWGuRDHiXVpOgaFkBaz8
+c3jQTfiEw7j0iKZnktCQi0xjY29QJ7GwL+fgQlbofXgYTm8E9fWERvw2tAy2BxHzAPguBzziS7JN
+hsGP9lf3L8hFJBvmdyyyj8b9A6Oi7s3JLtMRWIvyvE+DbuTkP+htuT4+XuTJr8Y5yIqd1WXr2gJk
+ANr77vTyjeNxceevP58Tqr0f+4v5g6+vNARO3bk3SaVQPDUTwGrpoPtLh3d+mQzZ4iiW3MwQS7Wr
+UVT3l2aTVHCpgtAaBs3zHWarvmIqhbWj8zdcnELNzwqTrOjaoWxuWY4k05GGfzmdjOBUiL7FDNvI
+ZwweJEPwJAQI72YhUwIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBSs0hZhUgQwqGVXzLuH6pJH0hMZwTAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
+YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
+cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
+IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
+ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
+MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
+gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
+dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
+Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
+cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACFLDQnyO8+XA/TiTltjJ/ZAvM+qmBEKN43Vd
++Wio2lM/Wq/scJpkupXGHrl9CueobkDxMAogXbMxqLZYO13PvgjMh+PHxDPnQv8EGxOig+k/Hqvc
+qEdTlm9YEHcbXbWS6XB+zRO7VVIpGMYQ1f1qCOcukxmwIm6iMSHXbOr/7paQm4bO0ULptjBotfiO
+Zo6q8No6SroQlOSyc6v8FYSxTNIAXMaM2FYkjqrxgdnJmSIAfr11gROuF69WuOICxP0zTEjJle+7
+aO9lUWNaWMWPMyFSNCxF6kkRuvUCami7vlhLOTRC1kb+OMhx7keN9At3tdTI3rtuFeSB1Pa3VXVs
+0DCCBkIwggUqoAMCAQICAwaFzjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
+ZW50IENBMB4XDTEzMDUwMjA2MjA0NloXDTE0MDUwMzEyMTQwMlowXTEZMBcGA1UEDRMQTXdJNzgy
+MTU0aVdtZWVZMDEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
+ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL1hrkQx
+4l1aToGhZAWs/HN40E34hMO49IimZ5LQkItMY2NvUCexsC/n4EJW6H14GE5vBPX1hEb8NrQMtgcR
+8wD4Lgc84kuyTYbBj/ZX9y/IRSQb5ncsso/G/QOjou7NyS7TEViL8rxPg27k5D/obbk+Pl7kya/G
+OciKndVl69oCZADa++708o3jcXHnrz+fE6q9H/uL+YOvrzQETt25N0mlUDw1E8Bq6aD7S4d3fpkM
+2eIoltzMEEu1q1FU95dmk1RwqYLQGgbN8x1mq75iKoW1o/M3XJxCzc8Kk6zo2qFsblmOJNORhn85
+nYzgVIi+xQzbyGcMHiRD8CQECO9mIVMCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUrNIWYVIEMKhlV8y7
+h+qSR9ITGcEwHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
+dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
+CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
+AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
+aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
+cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
+bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
+MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
+dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAAhSw0J8jvPlwP04k5bYyf2Q
+LzPqpgRCjeN1XfloqNpTP1qv7HCaZLqVxh65fQrnqG5A8TAKIF2zMai2WDtdz74IzIfjx8Qz50L/
+BBsTooPpPx6r3KhHU5ZvWBB3G121kulwfs0Tu1VSKRjGENX9agjnLpMZsCJuojEh12zq/+6WkJuG
+ztFC6bYwaLX4jmaOqvDaOkq6EJTksnOr/BWEsUzSAFzGjNhWJI6q8YHZyZkiAH69dYETrhevVrji
+AsT9M0xIyZXvu2jvZVFjWljFjzMhUjQsRepJEbr1Ampou75YSzk0QtZG/jjIce5HjfQLd7XUyN67
+bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
+hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTMxMTI1MTU0NjU5WjAjBgkqhkiG9w0BCQQxFgQUc6TuJdCyZOB+VnU1h1ksShA/GggwgaUG
+CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
+YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
+SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
+cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
+9w0BAQEFAASCAQCy4CQRpYYcDtG7JwIb/RVgZrKX1vUz6dkUc334Gq7omN9DJa5IOpboWm9wTnfG
+Lc4noOacb76llpK0z1ou1F4ynCOEYKkfLeUCEghfKdWcM6nKF1D0KyM7ro14yyLXdH0gek7Ru28n
+zN1v+oVngRt8Fk7ZLXONVg6re4uOwW/vgBAD49lh1goOEv3bQx5TM6I3Dz/KSy4FSapoFTWWAMxB
+DZ6VwqQ9i/ZNRXtYQPDiYsFD2+hi6NJrTqD1YZygmJ4IhAnFtfzYXG8gym96YKgc5nOG1hUlQHPf
+BKY0ULS0ZahEIod+p1DASncQT3+VXPmakJNBIp6VInUwvrnrpofzAAAAAAAA
+
+
+--=-SpWklHdUX8RXUhhs5vJs--
+
