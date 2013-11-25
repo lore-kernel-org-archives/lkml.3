@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab3KYOSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:18:16 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42683 "EHLO
+	id S932263Ab3KYOSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:18:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42786 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab3KYOSE (ORCPT
+	with ESMTP id S1757989Ab3KYOSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:18:04 -0500
+	Mon, 25 Nov 2013 09:18:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/25] perf completion: Factor out compgen stuff
-Date: Mon, 25 Nov 2013 11:17:35 -0300
-Message-Id: <1385389075-7989-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/25] perf tools: Allow '--inherit' as the negation of '--no-inherit'
+Date: Mon, 25 Nov 2013 11:17:41 -0300
+Message-Id: <1385389075-7989-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -23,65 +30,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-compgen is a bash-builtin; factor out the invocations into a separate
-function to give us a chance to override it with a zsh equivalent in
-future patches.
+Long options can be negated by prefixing them with 'no-'.  However
+options that already start with 'no-', such as '--no-inherit' result in
+ugly double 'no's.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-3-git-send-email-artagnon@gmail.com
+Avoid that by accepting that the removal of 'no-' also negates the long
+option.
+
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1384768557-23331-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/util/parse-options.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 3efdc84f112c..824312681601 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -89,6 +89,11 @@ __ltrim_colon_completions()
- 	fi
- }
- 
-+__perfcomp ()
-+{
-+	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
-+}
-+
- __perf_main ()
- {
- 	local cmd
-@@ -99,23 +104,23 @@ __perf_main ()
- 	# List perf subcommands or long options
- 	if [ $cword -eq 1 ]; then
- 		if [[ $cur == --* ]]; then
--			COMPREPLY=( $( compgen -W '--help --version \
-+			__perfcomp '--help --version \
- 			--exec-path --html-path --paginate --no-pager \
--			--perf-dir --work-tree --debugfs-dir' -- "$cur" ) )
-+			--perf-dir --work-tree --debugfs-dir' -- "$cur"
- 		else
- 			cmds=$($cmd --list-cmds)
--			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+			__perfcomp "$cmds" "$cur"
- 		fi
- 	# List possible events for -e option
- 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
--		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
-+		__perfcomp "$evts" "$cur"
- 		__ltrim_colon_completions $cur
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
- 		subcmd=${words[1]}
- 		opts=$($cmd $subcmd --list-opts)
--		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
-+		__perfcomp "$opts" "$cur"
- 	fi
- }
- 
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index 31f404a032a9..b6b39ff14fbb 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -224,6 +224,24 @@ static int parse_long_opt(struct parse_opt_ctx_t *p, const char *arg,
+ 			return 0;
+ 		}
+ 		if (!rest) {
++			if (!prefixcmp(options->long_name, "no-")) {
++				/*
++				 * The long name itself starts with "no-", so
++				 * accept the option without "no-" so that users
++				 * do not have to enter "no-no-" to get the
++				 * negation.
++				 */
++				rest = skip_prefix(arg, options->long_name + 3);
++				if (rest) {
++					flags |= OPT_UNSET;
++					goto match;
++				}
++				/* Abbreviated case */
++				if (!prefixcmp(options->long_name + 3, arg)) {
++					flags |= OPT_UNSET;
++					goto is_abbreviated;
++				}
++			}
+ 			/* abbreviated? */
+ 			if (!strncmp(options->long_name, arg, arg_end - arg)) {
+ is_abbreviated:
+@@ -259,6 +277,7 @@ is_abbreviated:
+ 			if (!rest)
+ 				continue;
+ 		}
++match:
+ 		if (*rest) {
+ 			if (*rest != '=')
+ 				continue;
 -- 
 1.8.1.4
 
