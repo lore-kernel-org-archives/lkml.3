@@ -1,275 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3KYXue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:50:34 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:4520 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750756Ab3KYXua (ORCPT
+	id S1752770Ab3KYXvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:51:12 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42603 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3KYXvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:50:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsoHAH7hk1J5LHyk/2dsb2JhbABZgwe3aIVOgSUXdIIlAQEEAScTHCMFCwgDDgoJJQ8FJQMhE4d7Bb5cFo4NZAeEMwOUMYNikhODPCiBLA
-Date: Tue, 26 Nov 2013 10:49:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20131125234921.GK8803@dastard>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
+	Mon, 25 Nov 2013 18:51:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <14914400.in2y5Td8qp@vostro.rjw.lan>
+References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
+	<3805095.rqdZNnA0Ng@vostro.rjw.lan>
+	<20131125101154.GS2281@intel.com>
+	<14914400.in2y5Td8qp@vostro.rjw.lan>
+Date: Mon, 25 Nov 2013 15:51:08 -0800
+Message-ID: <CAMHSBOW10+LC9bd5eyKYX+8931Myq4uxvot40Yc_pM6gy4eNGw@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in sysfs_remove_group()
+From: Gwendal Grignou <gwendal@google.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 06:38:28PM -0500, Johannes Weiner wrote:
-> Previously, page cache radix tree nodes were freed after reclaim
-> emptied out their page pointers.  But now reclaim stores shadow
-> entries in their place, which are only reclaimed when the inodes
-> themselves are reclaimed.  This is problematic for bigger files that
-> are still in use after they have a significant amount of their cache
-> reclaimed, without any of those pages actually refaulting.  The shadow
-> entries will just sit there and waste memory.  In the worst case, the
-> shadow entries will accumulate until the machine runs out of memory.
-> 
-> To get this under control, the VM will track radix tree nodes
-> exclusively containing shadow entries on a per-NUMA node list.  A
-> simple shrinker will reclaim these nodes on memory pressure.
-> 
-> A few things need to be stored in the radix tree node to implement the
-> shadow node LRU and allow tree deletions coming from the list:
-> 
-> 1. There is no index available that would describe the reverse path
->    from the node up to the tree root, which is needed to perform a
->    deletion.  To solve this, encode in each node its offset inside the
->    parent.  This can be stored in the unused upper bits of the same
->    member that stores the node's height at no extra space cost.
-> 
-> 2. The number of shadow entries needs to be counted in addition to the
->    regular entries, to quickly detect when the node is ready to go to
->    the shadow node LRU list.  The current entry count is an unsigned
->    int but the maximum number of entries is 64, so a shadow counter
->    can easily be stored in the unused upper bits.
-> 
-> 3. Tree modification needs the lock, which is located in the address
->    space, so store a backpointer to it.  The parent pointer is in a
->    union with the 2-word rcu_head, so the backpointer comes at no
->    extra cost as well.
-> 
-> 4. The node needs to be linked to an LRU list, which requires a list
->    head inside the node.  This does increase the size of the node, but
->    it does not change the number of objects that fit into a slab page.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  fs/super.c                    |   4 +-
->  fs/xfs/xfs_buf.c              |   2 +-
->  fs/xfs/xfs_qm.c               |   2 +-
->  include/linux/list_lru.h      |   2 +-
->  include/linux/radix-tree.h    |  30 +++++++---
->  include/linux/swap.h          |   1 +
->  include/linux/vm_event_item.h |   1 +
->  lib/radix-tree.c              |  36 +++++++-----
->  mm/filemap.c                  |  70 ++++++++++++++++++++----
->  mm/list_lru.c                 |   4 +-
->  mm/truncate.c                 |  19 ++++++-
->  mm/vmstat.c                   |   2 +
->  mm/workingset.c               | 124 ++++++++++++++++++++++++++++++++++++++++++
->  13 files changed, 255 insertions(+), 42 deletions(-)
-> 
-> diff --git a/fs/super.c b/fs/super.c
-> index 0225c20..a958d52 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -196,9 +196,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
->  		INIT_HLIST_BL_HEAD(&s->s_anon);
->  		INIT_LIST_HEAD(&s->s_inodes);
->  
-> -		if (list_lru_init(&s->s_dentry_lru))
-> +		if (list_lru_init(&s->s_dentry_lru, NULL))
->  			goto err_out;
-> -		if (list_lru_init(&s->s_inode_lru))
-> +		if (list_lru_init(&s->s_inode_lru, NULL))
->  			goto err_out_dentry_lru;
+Rafael,
 
-rather than modifying all the callers of list_lru_init(), can you
-add a new function list_lru_init_key() and implement list_lru_init()
-as a wrapper around it?
+As you pointed out, ata_tport_delete() should be after
+scsi_remove_host(), consistent with ata_tport_add() currently before
+ata_scsi_add_host().
+Thanks for fixing it,
 
-[snip radix tree modifications I didn't look at]
+Gwendal.
 
->  static int page_cache_tree_insert(struct address_space *mapping,
->  				  struct page *page, void **shadowp)
->  {
-....
-> +	radix_tree_replace_slot(slot, page);
-> +	if (node) {
-> +		node->count++;
-> +		/* Installed page, can't be shadow-only anymore */
-> +		if (!list_empty(&node->lru))
-> +			list_lru_del(&workingset_shadow_nodes, &node->lru);
-> +	}
-> +	return 0;
-
-Hmmmmm - what's the overhead of direct management of LRU removal
-here? Most list_lru code uses lazy removal (i.e. via the shrinker)
-to avoid having to touch the LRU when adding new references to an
-object.....
-
-> +
-> +/*
-> + * Page cache radix tree nodes containing only shadow entries can grow
-> + * excessively on certain workloads.  That's why they are tracked on
-> + * per-(NUMA)node lists and pushed back by a shrinker, but with a
-> + * slightly higher threshold than regular shrinkers so we don't
-> + * discard the entries too eagerly - after all, during light memory
-> + * pressure is exactly when we need them.
-> + *
-> + * The list_lru lock nests inside the IRQ-safe mapping->tree_lock, so
-> + * we have to disable IRQs for any list_lru operation as well.
-> + */
-> +
-> +struct list_lru workingset_shadow_nodes;
-> +
-> +static unsigned long count_shadow_nodes(struct shrinker *shrinker,
-> +					struct shrink_control *sc)
-> +{
-> +	unsigned long count;
-> +
-> +	local_irq_disable();
-> +	count = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
-> +	local_irq_enable();
-
-The count returned is not perfectly accurate, and the use of it in
-the shrinker will be concurrent with other modifications, so
-disabling IRQs here doesn't add any anything but unnecessary
-overhead.
-
-> +#define NOIRQ_BATCH 32
-> +
-> +static enum lru_status shadow_lru_isolate(struct list_head *item,
-> +					  spinlock_t *lru_lock,
-> +					  void *arg)
-> +{
-> +	struct address_space *mapping;
-> +	struct radix_tree_node *node;
-> +	unsigned long *batch = arg;
-> +	unsigned int i;
-> +
-> +	node = container_of(item, struct radix_tree_node, lru);
-> +	mapping = node->private;
-> +
-> +	/* Don't disable IRQs for too long */
-> +	if (--(*batch) == 0) {
-> +		spin_unlock_irq(lru_lock);
-> +		*batch = NOIRQ_BATCH;
-> +		spin_lock_irq(lru_lock);
-> +		return LRU_RETRY;
-> +	}
-
-Ugh.
-
-> +	/* Coming from the list, inverse the lock order */
-> +	if (!spin_trylock(&mapping->tree_lock))
-> +		return LRU_SKIP;
-
-Why not spin_trylock_irq(&mapping->tree_lock) and get rid of the
-nasty irq batching stuff? The LRU list is internally consistent,
-so I don't see why irqs need to be disabled to walk across the
-objects in the list - we only need that to avoid taking an interrupt
-while holding the mapping->tree_lock() and the interrupt running
-I/O completion which may try to take the mapping->tree_lock....
-
-> +	/*
-> +	 * The nodes should only contain one or more shadow entries,
-> +	 * no pages, so we expect to be able to remove them all and
-> +	 * delete and free the empty node afterwards.
-> +	 */
-> +
-> +	BUG_ON(!node->count);
-> +	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
-> +
-> +	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
-> +		if (node->slots[i]) {
-> +			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
-> +			node->slots[i] = NULL;
-> +			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
-> +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
-> +			BUG_ON(!mapping->nrshadows);
-> +			mapping->nrshadows--;
-> +		}
-> +	}
-> +	list_del_init(&node->lru);
-> +	BUG_ON(node->count);
-> +	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-> +		BUG();
-
-That's a lot of work to be doing under the LRU spinlock and with
-irqs disabled. That's going to cause hold-off issues for other LRU
-operations on the node, and other operations on the CPU....
-
-Given that we should always be removing the item from the head of
-the LRU list (except when we can't get the mapping lock), I'd
-suggest that it would be better to do something like this:
-
-	/*
-	 * Coming from the list, inverse the lock order. Drop the
-	 * list lock, too, so that if a caller is spinning on it we
-	 * don't get stuck here.
-	 */
-	if (!spin_trylock(&mapping->tree_lock)) {
-		spin_unlock(lru_lock);
-		goto out_retry;
-	}
-
-	/*
-	 * The nodes should only contain one or more shadow entries,
-	 * no pages, so we expect to be able to remove them all and
-	 * delete and free the empty node afterwards.
-	 */
-	list_del_init(&node->lru);
-	spin_unlock(lru_lock);
-
-	BUG_ON(!node->count);
-	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
-.....
-	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-		BUG();
-
-	spin_unlock_irq(&mapping->tree_lock);
-	count_vm_event(WORKINGSET_NODES_RECLAIMED);
-
-out_retry:
-	cond_resched();
-	spin_lock(lru_lock);
-	return LRU_RETRY;
-}
-
-So that we don't hold off other LRU operations, we don't hold IRQs
-disabled for too long, and we don't cause too much scheduler latency
-when doing long scans...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+On Mon, Nov 25, 2013 at 2:41 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>
+> On Monday, November 25, 2013 12:11:54 PM Mika Westerberg wrote:
+> > On Sun, Nov 24, 2013 at 02:09:09AM +0100, Rafael J. Wysocki wrote:
+> > > On Sunday, November 24, 2013 12:36:03 AM Rafael J. Wysocki wrote:
+> > > > On Saturday, November 23, 2013 03:07:01 PM Greg Kroah-Hartman wrote:
+> > > > > On Sun, Nov 24, 2013 at 12:12:59AM +0100, Rafael J. Wysocki wrote:
+> > > > > > On Saturday, November 23, 2013 02:53:58 PM Greg Kroah-Hartman wrote:
+> > >
+> > > [...]
+> > >
+> > > > > > >
+> > > > > > > I can revert Mika's patch, as it would be good to catch these kinds of
+> > > > > > > errors.
+> > > > > >
+> > > > > > Then we'll need to untangle the SATA/SCSI mess triggered by Bjorn in
+> > > > > > https://bugzilla.kernel.org/show_bug.cgi?id=65281. ;-)
+> > > > >
+> > > > > I have no objection to fixing that, the scsi sysfs handling is "odd" to
+> > > > > say the least...
+> > > > >
+> > > > > If someone can unwind it, that would be great to see happen...
+> > > >
+> > > > Well, if I'm bored to death during the xmas holidays, I may look into that.
+> > >
+> > > In fact, I'm not exactly sure why ata_port_detach() calls ata_tport_delete()
+> > > before scsi_remove_host()?  Is there any particular reason?  Because that
+> > > doesn't seem to be exactly right ...
+> >
+> > I tried so that I have your 'PCI: Move device_del() from pci_stop_dev() to
+> > pci_destroy_dev()' applied and then I did following change as you
+> > suggested.
+> >
+> > diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> > index 81a94a3919db..07a03f93d640 100644
+> > --- a/drivers/ata/libata-core.c
+> > +++ b/drivers/ata/libata-core.c
+> > @@ -6304,10 +6304,10 @@ static void ata_port_detach(struct ata_port *ap)
+> >               for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
+> >                       ata_tlink_delete(&ap->pmp_link[i]);
+> >       }
+> > -     ata_tport_delete(ap);
+> > -
+> >       /* remove the associated SCSI host */
+> >       scsi_remove_host(ap->scsi_host);
+> > +
+> > +     ata_tport_delete(ap);
+> >  }
+> >
+> >  /**
+> >
+> > After both patches are applied the warnings are gone :) However, looks like
+> > both are needed since if I only apply one or another, I still get warnings.
+>
+> Yes, they are both needed. :-)
+>
+> OK, I'll submit the above upstream if you don't mind.
+>
+> Cheers, R.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
