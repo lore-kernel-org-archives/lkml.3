@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab3KYBsa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 20:48:30 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52934 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab3KYBs2 (ORCPT
+	id S1753105Ab3KYBy4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 20:54:56 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:50180 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab3KYByx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 20:48:28 -0500
-Message-ID: <5292ACE6.2020101@gmail.com>
-Date: Mon, 25 Nov 2013 09:50:30 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: rkuo <rkuo@codeaurora.org>
-CC: linux-hexagon@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: hexagon: kernel: add export symbol function __delay()
-References: <528AD6B3.1060507@gmail.com> <20131125011908.GA18921@codeaurora.org>
-In-Reply-To: <20131125011908.GA18921@codeaurora.org>
-Content-Type: text/plain; charset=GB2312
+	Sun, 24 Nov 2013 20:54:53 -0500
+Message-ID: <1385344485.2241.2.camel@phoenix>
+Subject: [PATCH] clocksource: bcm_kona_timer: Remove unused bcm_timer_ids
+From: Axel Lin <axel.lin@ingics.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Christian Daudt <bcm@fixthebug.org>, bcm-kernel-feedback-list@broadcom.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 25 Nov 2013 09:54:45 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 09:19 AM, rkuo wrote:
-> On Tue, Nov 19, 2013 at 11:10:43AM +0800, Chen Gang wrote:
->> Need add __delay() implementation, or can not pass allmodconfig in
->> next-20131118 tree.
->>
->> The related error:
->>
->>     CC      kernel/locking/spinlock_debug.o
->>   kernel/locking/spinlock_debug.c: In function '__spin_lock_debug':
->>   kernel/locking/spinlock_debug.c:114:3: error: implicit declaration of function '__delay' [-Werror=implicit-function-declaration]
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  arch/hexagon/include/asm/delay.h |    1 +
->>  arch/hexagon/kernel/time.c       |    9 +++++++++
->>  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> Thanks again for all the cleanups.  I've tested this and the rest of your
-> patches on my internal tree and everything checks out.
-> 
+bcm_timer_ids is no longer used after converting to CLOCKSOURCE_OF_DECLARE.
 
-OK, thanks. I will/should continue. :-)
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/clocksource/bcm_kona_timer.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-> Also just to let you know, I'm still waiting to hear back on that compiler
-> bug.
-> 
-
-If necessary/suitable, can let me join to the related communication.
-
-> 
-> 
-> Acked-by: Richard Kuo <rkuo@codeaurora.org>
-> 
-
-Thanks.
+diff --git a/drivers/clocksource/bcm_kona_timer.c b/drivers/clocksource/bcm_kona_timer.c
+index 0d7d8c3..5176e76 100644
+--- a/drivers/clocksource/bcm_kona_timer.c
++++ b/drivers/clocksource/bcm_kona_timer.c
+@@ -98,12 +98,6 @@ kona_timer_get_counter(void *timer_base, uint32_t *msw, uint32_t *lsw)
+ 	return;
+ }
+ 
+-static const struct of_device_id bcm_timer_ids[] __initconst = {
+-	{.compatible = "brcm,kona-timer"},
+-	{.compatible = "bcm,kona-timer"}, /* deprecated name */
+-	{},
+-};
+-
+ static void __init kona_timers_init(struct device_node *node)
+ {
+ 	u32 freq;
 -- 
-Chen Gang
+1.8.1.2
+
+
+
