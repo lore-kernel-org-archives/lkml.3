@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3KYPlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:41:53 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33628 "EHLO comal.ext.ti.com"
+	id S1754862Ab3KYPmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:42:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3KYPlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:41:51 -0500
-Message-ID: <52936F71.8070806@ti.com>
-Date: Mon, 25 Nov 2013 11:40:33 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753335Ab3KYPmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:42:13 -0500
+Message-ID: <52936FC5.3060905@redhat.com>
+Date: Mon, 25 Nov 2013 10:41:57 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1574695.YAEZXuUskK@amdc1227> <528E2B38.5050502@ti.com> <5333248.b0sPp1ZZXY@amdc1227> <528F4F1E.60903@ti.com> <20131125153118.GG32081@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131125153118.GG32081@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="6x9oXx7jk9GCV8H5rRxSTsth7PCkp6NDU"
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jiri Kosina <jkosina@suse.cz>
+CC: Jean Delvare <khali@linux-fr.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jerome Blin <jerome.blin@intel.com>
+Subject: Re: [PATCH] HID: i2c-hid: disable interrupt on suspend
+References: <1384342458-5551-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1384342458-5551-1-git-send-email-mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6x9oXx7jk9GCV8H5rRxSTsth7PCkp6NDU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 13/11/13 06:34, Mika Westerberg wrote:
+> When an I2C HID device is powered of during system sleep, as a result of
+> removing its power resources (by the ACPI core) the interrupt line might go
+> low as well. This results inadvertent interrupt and wakes the system from
+> sleep immediately.
+> 
+> To prevent this we disable the device interrupt in the drivers suspend
+> method and enable it on resume. The device can still wake the system up if
+> it is wake capable (this also means that not all of its power will be
+> removed to keep the interrupt line high).
+> 
+> Reported-by: Jerome Blin <jerome.blin@intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
 
-On 25-11-2013 11:31, Mark Rutland wrote:
-> Any cooling device has a range of cooling states (i.e. different levels=
+Jiri, just FYI, I still do not have any final consumer ready i2c-hid
+hardware. So I can not test/debug anything related to the suspend-resume.
 
-> of heat dissipation). For example a fan's cooling states correspond to
-> the different fan speeds possible. Cooling states are referred to by
-> single unsigned integers, where larger numbers mean greate heat
-> dissipation. The precise set of cooling states associated with a device=
+If Mika tested it properly (which I expect), you may consider pulling
+this one.
 
-> (as referred to be the cooling-min-state and cooling-max-state
-> properties) should be defined in a particular device's binding.
-
-OK. Added this to the binding document.
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---6x9oXx7jk9GCV8H5rRxSTsth7PCkp6NDU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlKTb3EACgkQCXcVR3XQvP37HgEAjrZfxK+sUCNEy0AuW2snm35B
-FKWMpFFWgmf7QmwojokA+gMWMa5ZKnM1Hz4ENxSRyEWrWHTbppY1g/nNBIt0xVio
-=ruHP
------END PGP SIGNATURE-----
-
---6x9oXx7jk9GCV8H5rRxSTsth7PCkp6NDU--
+Cheers,
+Benjamin
