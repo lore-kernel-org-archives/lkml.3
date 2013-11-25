@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab3KYX2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:28:33 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:54189 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab3KYX2a (ORCPT
+	id S1753667Ab3KYX3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:29:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57159 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab3KYX3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:28:30 -0500
+	Mon, 25 Nov 2013 18:29:37 -0500
+Date: Mon, 25 Nov 2013 15:29:36 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>, linux-pci@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, yinghai@kernel.org,
+        Knut_Petersen@t-online.de, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH v3 1/3] msi: free msi_desc entry only after we've
+ released the kobject
+Message-ID: <20131125232936.GA31746@kroah.com>
+References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
+ <1383042632-7102-2-git-send-email-vfalico@redhat.com>
+ <20131125231248.GB4034@google.com>
 MIME-Version: 1.0
-In-Reply-To: <5293DBEF.3010401@roeck-us.net>
-References: <1385420137-32725-1-git-send-email-dianders@chromium.org>
-	<5293DBEF.3010401@roeck-us.net>
-Date: Mon, 25 Nov 2013 15:28:29 -0800
-X-Google-Sender-Auth: tzEoj_Z1zRl3JSM7z9-i0TrXLz4
-Message-ID: <CAD=FV=WijF-ZyST8p13Rog1VGSx+c-2MES+FpxbSGzd16rAZoA@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: s3c2410_wdt: Only register for cpufreq on CPU_FREQ_S3C24XX
-From: Doug Anderson <dianders@chromium.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131125231248.GB4034@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter,
+On Mon, Nov 25, 2013 at 04:12:48PM -0700, Bjorn Helgaas wrote:
+> On Tue, Oct 29, 2013 at 11:30:30AM +0100, Veaceslav Falico wrote:
+> > Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
+> > however kobject_put() doesn't guarantee us that it was the last reference
+> > and that the kobj isn't used currently by someone else, so after we
+> > kfree(entry) with the struct kobject - other users will begin using the
+> > freed memory, instead of the actual kobject.
+> > 
+> > Fix this by using the kobject->release callback, which is called last when
+> > the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
+> > which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
+> > kobj itself after ->release() was called, so we're safe).
+> > 
+> > In case we've failed to create the sysfs directories - just kfree()
+> > it - cause we don't have the kobjects attached.
+> > 
+> > Also, remove the same functionality from populate_msi_sysfs(), cause on
+> > failure we anyway call free_msi_irqs(), which will take care of all the
+> > kobjects properly.
+> > 
+> > And add the forgotten pci_dev_put(pdev) in case of failure to register the
+> > kobject in populate_msi_sysfs().
+> > 
+> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > CC: Neil Horman <nhorman@tuxdriver.com>
+> > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > CC: linux-pci@vger.kernel.org
+> > CC: linux-kernel@vger.kernel.org
+> > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+> 
+> I'm still hoping that Greg (or somebody else; Greg already posted the bulk
+> of the work) will finish up the conversion to attributes, and that Neil
+> will confirm that works with no changes to irqbalance.  So I'm going to
+> drop these patches for now.  Poke me if we need to revive them.
 
-On Mon, Nov 25, 2013 at 3:23 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 11/25/2013 02:55 PM, Doug Anderson wrote:
->>
->> On modern SoCs the watchdog timer is parented on a clock that doesn't
->> change every time we have a cpufreq change.  That means we don't need
->> to constantly adjust the watchdog timer, so avoid registering for and
->> dealing with cpufreq transitions unless we've actually got
->> CPU_FREQ_S3C24XX defined.
->>
->> Note that this is more than just an optimization.  The s3c2410
->> watchdog driver actually pats the watchdog on every CPU frequency
->> change.  On modern systems these happen many times per second (even in
->> a system where "nothing" is happening).  That effectively makes any
->> userspace watchdog program useless (the watchdog is constantly patted
->> by the kernel).  If we need CPU_FREQ_S3C24XX defined on a
->> multiplatform kernel we'll need to make sure that kernel supports
->> common clock and change this to user common clock framework.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>   drivers/watchdog/s3c2410_wdt.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/watchdog/s3c2410_wdt.c
->> b/drivers/watchdog/s3c2410_wdt.c
->> index 7d8fd04..4980f84 100644
->> --- a/drivers/watchdog/s3c2410_wdt.c
->> +++ b/drivers/watchdog/s3c2410_wdt.c
->> @@ -264,7 +264,7 @@ static irqreturn_t s3c2410wdt_irq(int irqno, void
->> *param)
->>         return IRQ_HANDLED;
->>   }
->>
->> -#ifdef CONFIG_CPU_FREQ
->> +#ifdef CONFIG_CPU_FREQ_S3C24XX
->>
-> Where is the CPU_FREQ_S3C24XX configuration option defined ? I don't see it
-> in the current upstream kernel, so it appears that this depends on some
-> out-of-tree changes.
+Ah, sorry about that.  I'll redo my series, dropping the existing format
+and using the attribute-only code.  Give me a day or so, thanks for the
+reminder.
 
-Whoops!  I guess I just trusted another patch and didn't dig.  I was
-basing this on https://patchwork.kernel.org/patch/3023421/
-
-Ah, I see that Tomasz just found the answer.  I'll update my patch.
-
--Doug
+greg k-h
