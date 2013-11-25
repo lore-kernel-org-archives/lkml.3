@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab3KYSz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:55:29 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:34118 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab3KYSz1 (ORCPT
+	id S1757345Ab3KYS4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:56:00 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:65377 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab3KYSz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:55:27 -0500
-Message-ID: <1385405723.15768.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Mon, 25 Nov 2013 13:55:56 -0500
+Message-ID: <52939D3F.3050409@linaro.org>
+Date: Mon, 25 Nov 2013 19:55:59 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, tom.vaden@hp.com,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 25 Nov 2013 10:55:23 -0800
-In-Reply-To: <alpine.DEB.2.02.1311251803040.30673@ionos.tec.linutronix.de>
-References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
-	 <1385168197-8612-5-git-send-email-davidlohr@hp.com>
-	 <CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com>
-	 <1385176773.5402.14.camel@buesod1.americas.hpqcorp.net>
-	 <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>
-	 <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>
-	 <alpine.DEB.2.02.1311251715490.30673@ionos.tec.linutronix.de>
-	 <20131125163627.GC10022@twins.programming.kicks-ass.net>
-	 <alpine.DEB.2.02.1311251803040.30673@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "len.brown@intel.com" <len.brown@intel.com>, l.majewski@samsung.com,
+        Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-pm@vger.kernel.org
+Subject: Re: [RFC][PATCH v5 00/14] sched: packing tasks
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org> <CAHkRjk69GNYtLGBSWCNcsCzkBHywKrD0qQQbNkJRpMbcdsCPyw@mail.gmail.com> <20131111163630.GD26898@twins.programming.kicks-ass.net>
+In-Reply-To: <20131111163630.GD26898@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 18:32 +0100, Thomas Gleixner wrote:
-> On Mon, 25 Nov 2013, Peter Zijlstra wrote:
-> > On Mon, Nov 25, 2013 at 05:23:51PM +0100, Thomas Gleixner wrote:
-> > > On Sat, 23 Nov 2013, Linus Torvalds wrote:
-> > > 
-> > > > On Sat, Nov 23, 2013 at 5:16 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > > >
-> > > > > Now the question is why we queue the waiter _AFTER_ reading the user
-> > > > > space value. The comment in the code is pretty non sensical:
-> > > > >
-> > > > >    * On the other hand, we insert q and release the hash-bucket only
-> > > > >    * after testing *uaddr.  This guarantees that futex_wait() will NOT
-> > > > >    * absorb a wakeup if *uaddr does not match the desired values
-> > > > >    * while the syscall executes.
-> > > > >
-> > > > > There is no reason why we cannot queue _BEFORE_ reading the user space
-> > > > > value. We just have to dequeue in all the error handling cases, but
-> > > > > for the fast path it does not matter at all.
-> > > > >
-> > > > > CPU 0                                   CPU 1
-> > > > >
-> > > > >     val = *futex;
-> > > > >     futex_wait(futex, val);
-> > > > >
-> > > > >     spin_lock(&hb->lock);
-> > > > >
-> > > > >     plist_add(hb, self);
-> > > > >     smp_wmb();
-> > > > >
-> > > > >     uval = *futex;
-> > > > >                                         *futex = newval;
-> > > > >                                         futex_wake();
-> > > > >
-> > > > >                                         smp_rmb();
-> > > > >                                         if (plist_empty(hb))
-> > > > >                                            return;
-> > > > > ...
-> > > > 
-> > > > This would seem to be a nicer approach indeed, without needing the
-> > > > extra atomics.
-> > > 
-> > > I went through the issue with Peter and he noticed, that we need
-> > > smp_mb() in both places. That's what we have right now with the
-> > > spin_lock() and it is required as we need to guarantee that
-> > > 
-> > >  The waiter observes the change to the uaddr value after it added
-> > >  itself to the plist
-> > > 
-> > >  The waker observes plist not empty if the change to uaddr was made
-> > >  after the waiter checked the value.
-> > > 
-> > > 
-> > > 	write(plist)		|	write(futex_uaddr)
-> > > 	mb()			|	mb()
-> > > 	read(futex_uaddr)	|	read(plist)
-> > > 
-> > > The spin_lock mb() on the waiter side does not help here because it
-> > > happpens before the write(plist) and not after it.
-> > 
-> > Ah, note that spin_lock() is only a smp_mb() on x86, in general its an
-> > ACQUIRE barrier which is weaker than a full mb and will not suffice in
-> > this case even it if were in the right place.
-> 
-> So now the question is whether this lockless empty check optimization
-> which seems to be quite nice on x86 for a particular workload will
-> have any negative side effects on other architectures.
-> 
-> If the smp_mb() is heavy weight, then it will hurt massivly in the
-> case where the hash bucket is not empty, because we add the price for
-> the smp_mb() just for no gain.
-> 
-> In that context it would also be helpful to measure the overhead on
-> x86 for the !empty case.
+On 11/11/2013 05:36 PM, Peter Zijlstra wrote:
+> On Mon, Nov 11, 2013 at 11:33:45AM +0000, Catalin Marinas wrote:
+>
+> tl;dr :-) Still trying to wrap my head around how to do that weird
+> topology Vincent raised..
+>
+>> Question for Peter/Ingo: do you want the scheduler to decide on which
+>> C-state a CPU should be in or we still leave this to a cpuidle
+>> layer/driver?
+>
+> I think the can leave most of that in a driver; right along with how to
+> prod the hardware to actually get into that state.
+>
+> I think the most important parts are what is now 'generic' code; stuff
+> that guestimates the idle-time and so forth.
+>
+> I think the scheduler simply wants to say: we expect to go idle for X
+> ns, we want a guaranteed wakeup latency of Y ns -- go do your thing.
 
-Absolutely, I will add these comparisons. If we do notice that we end up
-hurting the !empty case, would the current patch using atomic ops still
-be considered? We have made sure that none of the changes in this set
-affects performance on other workloads/smaller systems.
+Hi Peter,
 
-Thanks,
-Davidlohr
+IIUC, for full integration in the scheduler, we should eradicate the 
+idle task and the related code tied with it, no ?
+
+> I think you also raised the point in that we do want some feedback as to
+> the cost of waking up particular cores to better make decisions on which
+> to wake. That is indeed so.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
