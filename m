@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab3KYORz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:17:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59002 "EHLO
+	id S1757928Ab3KYOSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:18:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58870 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754456Ab3KYNxm (ORCPT
+	by vger.kernel.org with ESMTP id S1754066Ab3KYNxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:42 -0500
+	Mon, 25 Nov 2013 08:53:41 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Bernd Schubert" <bernd.schubert@itwm.fraunhofer.de>,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
+        "Felix Fietkau" <nbd@openwrt.org>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.292682909@decadent.org.uk>
+Message-ID: <lsq.1385387069.158285689@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 22/87] fs: add new FMODE flags: FMODE_32bithash and
- FMODE_64bithash
+Subject: [PATCH 3.2 39/87] mac80211: update sta->last_rx on acked tx frames
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,32 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 6a8a13e03861c0ab83ab07d573ca793cff0e5d00 upstream.
+commit 0c5b93290b2f3c7a376567c03ae8d385b0e99851 upstream.
 
-Those flags are supposed to be set by NFS readdir() to tell ext3/ext4
-to 32bit (NFSv2) or 64bit hash values (offsets) in seekdir().
+When clients are idle for too long, hostapd sends nullfunc frames for
+probing. When those are acked by the client, the idle time needs to be
+updated.
 
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+To make this work (and to avoid unnecessary probing), update sta->last_rx
+whenever an ACK was received for a tx packet. Only do this if the flag
+IEEE80211_HW_REPORTS_TX_ACK_STATUS is set.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/fs.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/status.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -92,6 +92,10 @@ struct inodes_stat_t {
- /* File is opened using open(.., 3, ..) and is writeable only for ioctls
-    (specialy hack for floppy.c) */
- #define FMODE_WRITE_IOCTL	((__force fmode_t)0x100)
-+/* 32bit hashes as llseek() offset (for directories) */
-+#define FMODE_32BITHASH         ((__force fmode_t)0x200)
-+/* 64bit hashes as llseek() offset (for directories) */
-+#define FMODE_64BITHASH         ((__force fmode_t)0x400)
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -181,6 +181,9 @@ static void ieee80211_frame_acked(struct
+ 	struct ieee80211_local *local = sta->local;
+ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
  
- /*
-  * Don't update ctime and mtime.
++	if (local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
++		sta->last_rx = jiffies;
++
+ 	if (ieee80211_is_data_qos(mgmt->frame_control)) {
+ 		struct ieee80211_hdr *hdr = (void *) skb->data;
+ 		u8 *qc = ieee80211_get_qos_ctl(hdr);
 
