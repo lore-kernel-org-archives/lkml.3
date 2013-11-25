@@ -1,142 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3KYNym (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:54:42 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10255 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3KYNyW (ORCPT
+	id S1755248Ab3KYNzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:55:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59116 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754520Ab3KYNyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:54:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 25 Nov 2013 05:48:08 -0800
-Date: Mon, 25 Nov 2013 15:49:37 +0200
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "joro@8bytes.org" <joro@8bytes.org>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv6 05/13] iommu/core: add ops->{bound,unbind}_driver()
-Message-ID: <20131125154937.d6dbe9aedc16aab335d92f99@nvidia.com>
-In-Reply-To: <1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
-References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
-	<1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Mon, 25 Nov 2013 08:54:06 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
+        "Michael Neuling" <mikey@neuling.org>,
+        "Paul McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Victor Kaplansky" <victork@il.ibm.com>,
+        "Ingo Molnar" <mingo@kernel.org>, anton@samba.org,
+        benh@kernel.crashing.org, "Peter Zijlstra" <peterz@infradead.org>,
+        michael@ellerman.id.au, "Frederic Weisbecker" <fweisbec@gmail.com>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.298418300@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 28/87] perf: Fix perf ring buffer memory ordering
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-Do you have some time to review this patch along with the following ones?
+------------------
 
-  [PATCHv6 02/13] iommu/of: introduce a global iommu device list
-  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007050.html
+From: Peter Zijlstra <peterz@infradead.org>
 
-  [PATCHv6 03/13] iommu/of: check if dependee iommu is ready or not
-  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007051.html
+commit bf378d341e4873ed928dc3c636252e6895a21f50 upstream.
 
-With those patches, now I'm trying to populate iommu master devices
-after an IOMMU device is populated. Originally [PATCHv6 02/13] was
-proposed by Thierry. I'm a bit afraid of adding new IOMMU API as
-this, but I think that this new {bound,unbind}_driver() is the right
-timiing that depeding devices are populated instead of add_device()
-since, even after add_device, a device won't be populated. I'm not so
-sure how this affects on the existing IOMMUs.
+The PPC64 people noticed a missing memory barrier and crufty old
+comments in the perf ring buffer code. So update all the comments and
+add the missing barrier.
 
-It would be nice if you give some feedback on this.
+When the architecture implements local_t using atomic_long_t there
+will be double barriers issued; but short of introducing more
+conditional barrier primitives this is the best we can do.
 
-On Thu, 21 Nov 2013 14:40:41 +0100
-Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+Reported-by: Victor Kaplansky <victork@il.ibm.com>
+Tested-by: Victor Kaplansky <victork@il.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: michael@ellerman.id.au
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: anton@samba.org
+Cc: benh@kernel.crashing.org
+Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ include/uapi/linux/perf_event.h | 12 +++++++-----
+ kernel/events/ring_buffer.c     | 31 +++++++++++++++++++++++++++----
+ 2 files changed, 34 insertions(+), 9 deletions(-)
 
-> ops->{bound,unbind}_driver() functions are called at
-> BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
-> 
-> This is necessary to control the device population order. IOMMU master
-> devices depend on an IOMMU device instanciation. IOMMU master devices
-> can be registered to an IOMMU only after it's successfully
-> populated. This IOMMU registration is done via
-> ops->bound_driver(). Currently this population can be deferred if
-> depending IOMMU device hasn't yet been populated in driver core. This
-> cannot be done via ops->add_device() since after add_device() device's
-> population/instanciation can be still deferred via probe().
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
-> v6:
-> New for v6.
-> ---
->  drivers/iommu/iommu.c | 13 +++++++++++--
->  include/linux/iommu.h |  4 ++++
->  2 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index e5555fc..5469d36 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -540,14 +540,23 @@ static int iommu_bus_notifier(struct notifier_block *nb,
->  	 * ADD/DEL call into iommu driver ops if provided, which may
->  	 * result in ADD/DEL notifiers to group->notifier
->  	 */
-> -	if (action == BUS_NOTIFY_ADD_DEVICE) {
-> +	switch (action) {
-> +	case BUS_NOTIFY_ADD_DEVICE:
->  		if (ops->add_device)
->  			return ops->add_device(dev);
-> -	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
-> +	case BUS_NOTIFY_DEL_DEVICE:
->  		if (ops->remove_device && dev->iommu_group) {
->  			ops->remove_device(dev);
->  			return 0;
->  		}
-> +	case BUS_NOTIFY_BOUND_DRIVER:
-> +		if (ops->bound_driver)
-> +			ops->bound_driver(dev);
-> +		break;
-> +	case BUS_NOTIFY_UNBIND_DRIVER:
-> +		if (ops->unbind_driver)
-> +			ops->unbind_driver(dev);
-> +		break;
->  	}
->  
->  	/*
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index a444c79..a0e92be 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -96,6 +96,8 @@ enum iommu_attr {
->   * @domain_has_cap: domain capabilities query
->   * @add_device: add device to iommu grouping
->   * @remove_device: remove device from iommu grouping
-> + * @bound_driver: called at BUS_NOTIFY_BOUND_DRIVER
-> + * @unbind_driver: called at BUS_NOTIFY_UNBIND_DRIVER
->   * @domain_get_attr: Query domain attributes
->   * @domain_set_attr: Change domain attributes
->   * @pgsize_bitmap: bitmap of supported page sizes
-> @@ -114,6 +116,8 @@ struct iommu_ops {
->  			      unsigned long cap);
->  	int (*add_device)(struct device *dev);
->  	void (*remove_device)(struct device *dev);
-> +	int (*bound_driver)(struct device *dev);
-> +	void (*unbind_driver)(struct device *dev);
->  	int (*device_group)(struct device *dev, unsigned int *groupid);
->  	int (*domain_get_attr)(struct iommu_domain *domain,
->  			       enum iommu_attr attr, void *data);
-> -- 
-> 1.8.1.5
-> 
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -300,13 +300,15 @@ struct perf_event_mmap_page {
+ 	/*
+ 	 * Control data for the mmap() data buffer.
+ 	 *
+-	 * User-space reading the @data_head value should issue an rmb(), on
+-	 * SMP capable platforms, after reading this value -- see
+-	 * perf_event_wakeup().
++	 * User-space reading the @data_head value should issue an smp_rmb(),
++	 * after reading this value.
+ 	 *
+ 	 * When the mapping is PROT_WRITE the @data_tail value should be
+-	 * written by userspace to reflect the last read data. In this case
+-	 * the kernel will not over-write unread data.
++	 * written by userspace to reflect the last read data, after issueing
++	 * an smp_mb() to separate the data read from the ->data_tail store.
++	 * In this case the kernel will not over-write unread data.
++	 *
++	 * See perf_output_put_handle() for the data ordering.
+ 	 */
+ 	__u64   data_head;		/* head in the data section */
+ 	__u64	data_tail;		/* user-space written tail */
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -75,10 +75,31 @@ again:
+ 		goto out;
+ 
+ 	/*
+-	 * Publish the known good head. Rely on the full barrier implied
+-	 * by atomic_dec_and_test() order the rb->head read and this
+-	 * write.
++	 * Since the mmap() consumer (userspace) can run on a different CPU:
++	 *
++	 *   kernel				user
++	 *
++	 *   READ ->data_tail			READ ->data_head
++	 *   smp_mb()	(A)			smp_rmb()	(C)
++	 *   WRITE $data			READ $data
++	 *   smp_wmb()	(B)			smp_mb()	(D)
++	 *   STORE ->data_head			WRITE ->data_tail
++	 *
++	 * Where A pairs with D, and B pairs with C.
++	 *
++	 * I don't think A needs to be a full barrier because we won't in fact
++	 * write data until we see the store from userspace. So we simply don't
++	 * issue the data WRITE until we observe it. Be conservative for now.
++	 *
++	 * OTOH, D needs to be a full barrier since it separates the data READ
++	 * from the tail WRITE.
++	 *
++	 * For B a WMB is sufficient since it separates two WRITEs, and for C
++	 * an RMB is sufficient since it separates two READs.
++	 *
++	 * See perf_output_begin().
+ 	 */
++	smp_wmb();
+ 	rb->user_page->data_head = head;
+ 
+ 	/*
+@@ -142,9 +163,11 @@ int perf_output_begin(struct perf_output
+ 		 * Userspace could choose to issue a mb() before updating the
+ 		 * tail pointer. So that all reads will be completed before the
+ 		 * write is issued.
++		 *
++		 * See perf_output_put_handle().
+ 		 */
+ 		tail = ACCESS_ONCE(rb->user_page->data_tail);
+-		smp_rmb();
++		smp_mb();
+ 		offset = head = local_read(&rb->head);
+ 		head += size;
+ 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
+
