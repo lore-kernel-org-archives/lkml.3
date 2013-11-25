@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab3KYOGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58928 "EHLO
+	id S1757295Ab3KYOGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58970 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754252Ab3KYNxr (ORCPT
+	by vger.kernel.org with ESMTP id S1754350Ab3KYNxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:47 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chris Metcalf" <cmetcalf@tilera.com>
+CC: akpm@linux-foundation.org, "Nico Golde" <nico@ngolde.de>,
+        "Fabian Yamaguchi" <fabs@goesec.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.735047398@decadent.org.uk>
+Message-ID: <lsq.1385387069.386370769@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 40/87] tile: use a more conservative __my_cpu_offset
- in CONFIG_PREEMPT
+Subject: [PATCH 3.2 86/87] Staging: bcm: info leak in ioctl
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,69 +33,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
+commit 8d1e72250c847fa96498ec029891de4dc638a5ba upstream.
 
-It turns out the kernel relies on barrier() to force a reload of the
-percpu offset value.  Since we can't easily modify the definition of
-barrier() to include "tp" as an output register, we instead provide a
-definition of __my_cpu_offset as extended assembly that includes a fake
-stack read to hazard against barrier(), forcing gcc to know that it
-must reread "tp" and recompute anything based on "tp" after a barrier.
+The DevInfo.u32Reserved[] array isn't initialized so it leaks kernel
+information to user space.
 
-This fixes observed hangs in the slub allocator when we are looping
-on a percpu cmpxchg_double.
-
-A similar fix for ARMv7 was made in June in change 509eb76ebf97.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/tile/include/asm/percpu.h | 34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+ drivers/staging/bcm/Bcmchar.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/tile/include/asm/percpu.h
-+++ b/arch/tile/include/asm/percpu.h
-@@ -15,9 +15,37 @@
- #ifndef _ASM_TILE_PERCPU_H
- #define _ASM_TILE_PERCPU_H
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -1932,6 +1932,7 @@ cntrlEnd:
  
--register unsigned long __my_cpu_offset __asm__("tp");
--#define __my_cpu_offset __my_cpu_offset
--#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
-+register unsigned long my_cpu_offset_reg asm("tp");
-+
-+#ifdef CONFIG_PREEMPT
-+/*
-+ * For full preemption, we can't just use the register variable
-+ * directly, since we need barrier() to hazard against it, causing the
-+ * compiler to reload anything computed from a previous "tp" value.
-+ * But we also don't want to use volatile asm, since we'd like the
-+ * compiler to be able to cache the value across multiple percpu reads.
-+ * So we use a fake stack read as a hazard against barrier().
-+ * The 'U' constraint is like 'm' but disallows postincrement.
-+ */
-+static inline unsigned long __my_cpu_offset(void)
-+{
-+	unsigned long tp;
-+	register unsigned long *sp asm("sp");
-+	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
-+	return tp;
-+}
-+#define __my_cpu_offset __my_cpu_offset()
-+#else
-+/*
-+ * We don't need to hazard against barrier() since "tp" doesn't ever
-+ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
-+ * changes at function call points, at which we are already re-reading
-+ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
-+ */
-+#define __my_cpu_offset my_cpu_offset_reg
-+#endif
-+
-+#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
  
- #include <asm-generic/percpu.h>
- 
++		memset(&DevInfo, 0, sizeof(DevInfo));
+ 		DevInfo.MaxRDMBufferSize = BUFFER_4K;
+ 		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
+ 		DevInfo.u32RxAlignmentCorrection = 0;
 
