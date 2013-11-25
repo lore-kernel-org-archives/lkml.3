@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3KYXVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:21:18 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35431 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab3KYXVQ (ORCPT
+	id S1753345Ab3KYXXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:23:10 -0500
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:63109 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752133Ab3KYXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:21:16 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] mips: Fix build error seen in some configurations
-Date: Mon, 25 Nov 2013 15:21:00 -0800
-Message-Id: <1385421660-5608-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 25 Nov 2013 18:23:06 -0500
+To: mingo@kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, ralf@linux-mips.org,
+        akpm@linux-foundation.org, mpe@ellerman.id.au,
+        felipe.contreras@gmail.com, linux-kernel@vger.kernel.org
+Message-Id: <1a1674daec27c534df409697025ac568ebcee91e.1385418410.git.jbaron@akamai.com>
+In-Reply-To: <cover.1385418410.git.jbaron@akamai.com>
+References: <cover.1385418410.git.jbaron@akamai.com>
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH 1/3 v3] panic: Make panic_timeout configurable
+Date: Mon, 25 Nov 2013 23:23:04 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following build error is seen if CONFIG_32BIT is undefined,
-CONFIG_64BIT is defined, and CONFIG_MIPS32_O32 is undefined.
+The panic_timeout value can be set via the command line option 'panic=x', or via
+/proc/sys/kernel/panic, however that is not sufficient when the panic occurs
+before we are able to set up these values. Thus, add a CONFIG_PANIC_TIMEOUT
+so that we can set the desired value from the .config.
 
-asm/syscall.h: In function 'mips_get_syscall_arg':
-arch/mips/include/asm/syscall.h:32:16: error: unused variable 'usp' [-Werror=unused-variable]
-cc1: all warnings being treated as errors
+The default panic_timeout value continues to be 0 - wait forever. Also adds
+set_arch_panic_timeout(new_timeout, arch_default_timeout), which is intended
+to be used by arches in arch_setup(). The idea being that the new_timeout
+is only set if the user hasn't changed from the arch_default_timeout.
 
-Fixes: c0ff3c53d4f9 ('MIPS: Enable HAVE_ARCH_TRACEHOOK')
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jason Baron <jbaron@akamai.com>
 ---
- arch/mips/include/asm/syscall.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/kernel.h | 9 +++++++++
+ kernel/panic.c         | 2 +-
+ lib/Kconfig.debug      | 9 +++++++++
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/include/asm/syscall.h b/arch/mips/include/asm/syscall.h
-index 81c8913..33e8dbf 100644
---- a/arch/mips/include/asm/syscall.h
-+++ b/arch/mips/include/asm/syscall.h
-@@ -29,7 +29,7 @@ static inline long syscall_get_nr(struct task_struct *task,
- static inline unsigned long mips_get_syscall_arg(unsigned long *arg,
- 	struct task_struct *task, struct pt_regs *regs, unsigned int n)
- {
--	unsigned long usp = regs->regs[29];
-+	unsigned long usp __maybe_unused = regs->regs[29];
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index d4e98d1..2ac0277 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -393,6 +393,15 @@ extern int panic_on_oops;
+ extern int panic_on_unrecovered_nmi;
+ extern int panic_on_io_nmi;
+ extern int sysctl_panic_on_stackoverflow;
++/*
++ * Only to be used by arch init code. If the user over-wrote the default
++ * CONFIG_PANIC_TIMEOUT, honor it.
++ */
++static inline void set_arch_panic_timeout(int timeout, int arch_default_timeout)
++{
++	if (panic_timeout == arch_default_timeout)
++		panic_timeout = timeout;
++}
+ extern const char *print_tainted(void);
+ enum lockdep_ok {
+ 	LOCKDEP_STILL_OK,
+diff --git a/kernel/panic.c b/kernel/panic.c
+index c00b4ce..6d63003 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -33,7 +33,7 @@ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
  
- 	switch (n) {
- 	case 0: case 1: case 2: case 3:
+-int panic_timeout;
++int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+ 
+ ATOMIC_NOTIFIER_HEAD(panic_notifier_list);
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index db25707..6982094 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -761,6 +761,15 @@ config PANIC_ON_OOPS_VALUE
+ 	default 0 if !PANIC_ON_OOPS
+ 	default 1 if PANIC_ON_OOPS
+ 
++config PANIC_TIMEOUT
++	int "panic timeout"
++	default 0
++	help
++	  Set the timeout value (in seconds) until a reboot occurs when the
++	  the kernel panics. If n = 0, then we wait forever. A timeout
++	  value n > 0 will wait n seconds before rebooting, while a timeout
++	  value n < 0 will reboot immediately.
++
+ config SCHED_DEBUG
+ 	bool "Collect scheduler debugging info"
+ 	depends on DEBUG_KERNEL && PROC_FS
 -- 
-1.7.9.7
+1.8.2
 
