@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab3KYN7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:59:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58912 "EHLO
+	id S1756857Ab3KYN7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:59:16 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58971 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754145Ab3KYNxx (ORCPT
+	by vger.kernel.org with ESMTP id S1754236Ab3KYNxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:53 -0500
+	Mon, 25 Nov 2013 08:53:54 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mugunthan V N" <mugunthanvnm@ti.com>,
-        "Mariusz Ceier" <mceier+kernel@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, Linus@decadent.org.uk,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Nico Golde" <nico@ngolde.de>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.505869978@decadent.org.uk>
+Message-ID: <lsq.1385387069.819812669@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 20/87] davinci_emac.c: Fix IFF_ALLMULTI setup
+Subject: [PATCH 3.2 80/87] Fix a few incorrectly checked [io_]remap_pfn_range()
+ calls
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,43 +33,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mariusz Ceier <mceier+kernel@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
+commit 7314e613d5ff9f0934f7a0f74ed7973b903315d1 upstream.
 
-When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
-emac_dev_mcast_set should only enable RX of multicasts and reset
-MACHASH registers.
+Nico Golde reports a few straggling uses of [io_]remap_pfn_range() that
+really should use the vm_iomap_memory() helper.  This trivially converts
+two of them to the helper, and comments about why the third one really
+needs to continue to use remap_pfn_range(), and adds the missing size
+check.
 
-It does this, but afterwards it either sets up multicast MACs
-filtering or disables RX of multicasts and resets MACHASH registers
-again, rendering IFF_ALLMULTI flag useless.
-
-This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
-disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
-
-Tested with kernel 2.6.37.
-
-Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Nico Golde <nico@ngolde.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org.
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Also remove redundant vm_flags changes, removed separately upstream]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/ti/davinci_emac.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-index fd8115e..10668eb 100644
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -873,8 +873,7 @@ static void emac_dev_mcast_set(struct net_device *ndev)
- 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
- 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
--		}
--		if (!netdev_mc_empty(ndev)) {
-+		} else if (!netdev_mc_empty(ndev)) {
- 			struct netdev_hw_addr *ha;
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -650,16 +650,28 @@ static int uio_mmap_physical(struct vm_a
+ {
+ 	struct uio_device *idev = vma->vm_private_data;
+ 	int mi = uio_find_mem_index(vma);
++	struct uio_mem *mem;
+ 	if (mi < 0)
+ 		return -EINVAL;
++	mem = idev->info->mem + mi;
  
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+-	vma->vm_flags |= VM_IO | VM_RESERVED;
++	if (vma->vm_end - vma->vm_start > mem->size)
++		return -EINVAL;
+ 
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
++	/*
++	 * We cannot use the vm_iomap_memory() helper here,
++	 * because vma->vm_pgoff is the map index we looked
++	 * up above in uio_find_mem_index(), rather than an
++	 * actual page offset into the mmap.
++	 *
++	 * So we just do the physical mmap without a page
++	 * offset.
++	 */
+ 	return remap_pfn_range(vma,
+ 			       vma->vm_start,
+-			       idev->info->mem[mi].addr >> PAGE_SHIFT,
++			       mem->addr >> PAGE_SHIFT,
+ 			       vma->vm_end - vma->vm_start,
+ 			       vma->vm_page_prot);
+ }
+--- a/drivers/video/au1100fb.c
++++ b/drivers/video/au1100fb.c
+@@ -387,39 +387,13 @@ void au1100fb_fb_rotate(struct fb_info *
+ int au1100fb_fb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
+ {
+ 	struct au1100fb_device *fbdev;
+-	unsigned int len;
+-	unsigned long start=0, off;
+ 
+ 	fbdev = to_au1100fb_device(fbi);
+ 
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
+-		return -EINVAL;
+-	}
+-
+-	start = fbdev->fb_phys & PAGE_MASK;
+-	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
+-
+-	off = vma->vm_pgoff << PAGE_SHIFT;
+-
+-	if ((vma->vm_end - vma->vm_start + off) > len) {
+-		return -EINVAL;
+-	}
+-
+-	off += start;
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	pgprot_val(vma->vm_page_prot) |= (6 << 9); //CCA=6
+ 
+-	vma->vm_flags |= VM_IO;
+-
+-	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-				vma->vm_end - vma->vm_start,
+-				vma->vm_page_prot)) {
+-		return -EAGAIN;
+-	}
+-
+-	return 0;
++	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
+ }
+ 
+ static struct fb_ops au1100fb_ops =
+--- a/drivers/video/au1200fb.c
++++ b/drivers/video/au1200fb.c
+@@ -1216,38 +1216,13 @@ static int au1200fb_fb_blank(int blank_m
+  * method mainly to allow the use of the TLB streaming flag (CCA=6)
+  */
+ static int au1200fb_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+-
+ {
+-	unsigned int len;
+-	unsigned long start=0, off;
+ 	struct au1200fb_device *fbdev = info->par;
+ 
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
+-		return -EINVAL;
+-	}
+-
+-	start = fbdev->fb_phys & PAGE_MASK;
+-	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
+-
+-	off = vma->vm_pgoff << PAGE_SHIFT;
+-
+-	if ((vma->vm_end - vma->vm_start + off) > len) {
+-		return -EINVAL;
+-	}
+-
+-	off += start;
+-	vma->vm_pgoff = off >> PAGE_SHIFT;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	pgprot_val(vma->vm_page_prot) |= _CACHE_MASK; /* CCA=7 */
+ 
+-	vma->vm_flags |= VM_IO;
+-
+-	return io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+-				  vma->vm_end - vma->vm_start,
+-				  vma->vm_page_prot);
+-
+-	return 0;
++	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
+ }
+ 
+ static void set_global(u_int cmd, struct au1200_lcd_global_regs_t *pdata)
 
