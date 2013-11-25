@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab3KYE2d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 23:28:33 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:63796 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab3KYE2a (ORCPT
+	id S1753769Ab3KYE3z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 23:29:55 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:55848 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab3KYE3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 23:28:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <2065978.h16hV1Cgky@vostro.rjw.lan>
-References: <cover.1385118255.git.viresh.kumar@linaro.org>
-	<CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com>
-	<528FB2EC.2020202@wwwdotorg.org>
-	<2065978.h16hV1Cgky@vostro.rjw.lan>
-Date: Mon, 25 Nov 2013 09:58:29 +0530
-Message-ID: <CAKohpomEL8aU_ETaHFG_G8mhYMZc6M6x7i4m+McozP=i7Fzz5A@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Kukjin Kim <kgene@kernel.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
-        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 24 Nov 2013 23:29:53 -0500
+From: dt.tangr@gmail.com
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Daniel Tang <dt.tangr@gmail.com>,
+        tglx@linutronix.de
+Subject: [PATCH 1/2] clocksource: zevio-timer: fix incorrect function definition so the correct function pointer is passed to CLOCKSOURCE_OF_DECLARE
+Date: Mon, 25 Nov 2013 15:29:23 +1100
+Message-Id: <1385353764-88784-1-git-send-email-dt.tangr@gmail.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 November 2013 03:02, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Viresh, maybe make it possible for the cpufreq driver to provide suspend/resume
-> callbacks to be executed by cpufreq_suspend() and cpufreq_resume() introduced
-> by [1/2]?  Then Tegra could set the frequencies to what it wants from there
-> before the governors are stopped.
+From: Daniel Tang <dt.tangr@gmail.com>
 
-Giving cpufreq-drivers a chance to do whatever they want looks to be
-correct. So, maybe prepare() or suspend_prepare() for them can be
-implemented.
 
-Though I would still go for a generic function in core, which can be
-just  reused by samsung and tegra to set cores to specific frequencies.
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+---
+ drivers/clocksource/zevio-timer.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/clocksource/zevio-timer.c b/drivers/clocksource/zevio-timer.c
+index ca81809..a1bd107 100644
+--- a/drivers/clocksource/zevio-timer.c
++++ b/drivers/clocksource/zevio-timer.c
+@@ -122,28 +122,27 @@ static irqreturn_t zevio_timer_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+
+-static int __init zevio_timer_add(struct device_node *node)
++static void __init zevio_timer_add(struct device_node *node)
+ {
+ 	struct zevio_timer *timer;
+ 	struct resource res;
+-	int irqnr, ret;
++	int irqnr;
+
+ 	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
+ 	if (!timer)
+-		return -ENOMEM;
++		return;
+
+ 	timer->base = of_iomap(node, 0);
+-	if (!timer->base) {
+-		ret = -EINVAL;
++	if (!timer->base)
+ 		goto error_free;
+-	}
++
+ 	timer->timer1 = timer->base + IO_TIMER1;
+ 	timer->timer2 = timer->base + IO_TIMER2;
+
+ 	timer->clk = of_clk_get(node, 0);
+ 	if (IS_ERR(timer->clk)) {
+-		ret = PTR_ERR(timer->clk);
+-		pr_err("Timer clock not found! (error %d)\n", ret);
++		pr_err("Timer clock not found! (error %d)\n",
++				(int)PTR_ERR(timer->clk));
+ 		goto error_unmap;
+ 	}
+
+@@ -204,12 +203,12 @@ static int __init zevio_timer_add(struct device_node *node)
+
+ 	pr_info("Added %s as clocksource\n", timer->clocksource_name);
+
+-	return 0;
++	return;
+ error_unmap:
+ 	iounmap(timer->base);
+ error_free:
+ 	kfree(timer);
+-	return ret;
++	return;
+ }
+
+ CLOCKSOURCE_OF_DECLARE(zevio_timer, "lsi,zevio-timer", zevio_timer_add);
 --
-viresh
+1.8.1.3
+
