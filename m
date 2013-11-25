@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab3KYNRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:17:54 -0500
-Received: from www17.your-server.de ([213.133.104.17]:48326 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab3KYNRu (ORCPT
+	id S1756791Ab3KYNSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:18:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57204 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab3KYNIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:17:50 -0500
-Date: Mon, 25 Nov 2013 14:17:28 +0100
-Subject: Re: [i915] BUG: Bad page state in process Xorg
-From: thomas@m3y3r.de
-To: daniel@ffwll.ch, robdclark@gmail.com
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Message-Id: <E1Vkw2k-00015V-Ao@www17.your-server.de>
-X-Authenticated-Sender: thomas@m3y3r.de
+	Mon, 25 Nov 2013 08:08:17 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 49/78] libata: Fix display of sata speed
+Date: Mon, 25 Nov 2013 13:06:36 +0000
+Message-Id: <1385384825-21681-50-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAPDI50Z002866
 
-Hi,
+3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
 
-It turns out that this seems to be a bug in udl DRM driver.
+------------------
 
-I bisected the problem to this patch:
+From: Gwendal Grignou <gwendal@google.com>
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/gpu/drm/udl?id=5dc9e1e87229cb786a5bb58ddd0d60fee6eb4641
+commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
 
-With kind regards
-Thomas
+6.0 Gbps link speed was not decoded properly:
+speed was reported at 3.0 Gbps only.
 
-Am 22.11.2013 17:18 schrieb Daniel Vetter <daniel@ffwll.ch>:
->
-> On Fri, Nov 22, 2013 at 4:54 PM, Thomas Meyer <thomas@m3y3r.de> wrote: 
-> >> Am 22.11.2013 um 11:55 schrieb Daniel Vetter <daniel@ffwll.ch>: 
-> >> 
-> >> On Fri, Nov 22, 2013 at 11:36 AM, Dave Airlie <airlied@linux.ie> wrote: 
-> >>>> Hi, 
-> >>> 
-> >>> cc'ing mailing list, 
-> >>> 
-> >>> Daniel any ideas? 
-> >> 
-> >> Nope, not really :( And no ideas how to triage this further - if it 
-> >> takes 9 days to hit it eventually we'll have a real hard time. Or does 
-> >> this happen even after just a short X run? 
-> > 
-> > Seems to happen every time while stopping the x server. Also after a short run time. 
-> > 
-> > The current fedora 3.11 kernel doesn't show this bug. I'm using fedora 19, with a self compiled kernel. 
-> > 
-> > I did turn on config-debug-pagealloc but this didn't show any wrongness. 
->
-> In that case I think the bisect is the fastest way to insight - atm 
-> I'm really at loss what could be wrong here. 
-> -Daniel 
-> -- 
-> Daniel Vetter 
-> Software Engineer, Intel Corporation 
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tested: On a machine where libata reports 6.0 Gbps in
+        /var/log/messages:
+    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+
+    Before:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	3.0 Gbps
+    After:
+    	cat /sys/class/ata_link/link1/sata_spd
+    	6.0 Gbps
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/ata/libata-transport.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+index c341904..9215677 100644
+--- a/drivers/ata/libata-transport.c
++++ b/drivers/ata/libata-transport.c
+@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
+ /*
+  * ATA link attributes
+  */
++static int noop(int x) { return x; }
+ 
+-
+-#define ata_link_show_linkspeed(field)					\
++#define ata_link_show_linkspeed(field, format)			        \
+ static ssize_t								\
+ show_ata_link_##field(struct device *dev,				\
+ 		      struct device_attribute *attr, char *buf)		\
+ {									\
+ 	struct ata_link *link = transport_class_to_link(dev);		\
+ 									\
+-	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
++	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
+ }
+ 
+-#define ata_link_linkspeed_attr(field)					\
+-	ata_link_show_linkspeed(field)					\
++#define ata_link_linkspeed_attr(field, format)				\
++	ata_link_show_linkspeed(field, format)				\
+ static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
+ 
+-ata_link_linkspeed_attr(hw_sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd_limit);
+-ata_link_linkspeed_attr(sata_spd);
++ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd_limit, fls);
++ata_link_linkspeed_attr(sata_spd, noop);
+ 
+ 
+ static DECLARE_TRANSPORT_CLASS(ata_link_class,
+-- 
+1.8.3.2
+
