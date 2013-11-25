@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab3KYJBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:01:34 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:39799 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab3KYIzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:55:45 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com
-Subject: [PATCH 07/24] mn10300/uapi: Use Kbuild logic to provide <asm/types.h>
-Date: Mon, 25 Nov 2013 09:55:17 +0100
-Message-Id: <1385369734-24893-8-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+	id S1754630Ab3KYJBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:01:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753980Ab3KYJBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 04:01:36 -0500
+Message-Id: <20131125090039.026160705@dhcp-16-126.nay.redhat.com>
+User-Agent: quilt/0.60-1
+Date: Mon, 25 Nov 2013 16:56:40 +0800
+From: dyoung@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        matt@console-pimps.org, toshi.kani@hp.com,
+        Dave Young <dyoung@redhat.com>
+Subject: [patch 10/12 v4] efi: only print saved efi runtime maps instead of all memmap ranges.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uapi <asm-generic/types.h> just includes <asm-generic/int-ll64.h>
+Hi,
+References: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
+Content-Disposition: inline; filename=10-print-efi-runtime-memmap.patch
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: linux-am33-list@redhat.com
+For kexec/kdump kernel efi runtime mappings are saved, printing original whole
+memmap ranges does not make sense anymore. So introduce a new function to only
+print runtime maps in case kexec/kdump kernel is used.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- arch/mn10300/include/uapi/asm/Kbuild  |    3 ++-
- arch/mn10300/include/uapi/asm/types.h |   11 -----------
- 2 files changed, 2 insertions(+), 12 deletions(-)
- delete mode 100644 arch/mn10300/include/uapi/asm/types.h
+ arch/x86/platform/efi/efi.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mn10300/include/uapi/asm/Kbuild b/arch/mn10300/include/uapi/asm/Kbuild
-index 040178cdb3eb..bdc329ac60aa 100644
---- a/arch/mn10300/include/uapi/asm/Kbuild
-+++ b/arch/mn10300/include/uapi/asm/Kbuild
-@@ -1,6 +1,8 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
+--- efi.orig/arch/x86/platform/efi/efi.c
++++ efi/arch/x86/platform/efi/efi.c
+@@ -430,6 +430,24 @@ int __init efi_memblock_x86_reserve_rang
+ 	return 0;
+ }
  
-+generic-y += types.h
++/* for kexec kernel runtime maps are passed in setup_data */
++static void __init print_saved_runtime_map(void)
++{
++#ifdef EFI_DEBUG
++	int i;
++	efi_memory_desc_t *md;
 +
- header-y += auxvec.h
- header-y += bitsperlong.h
- header-y += byteorder.h
-@@ -30,5 +32,4 @@ header-y += statfs.h
- header-y += swab.h
- header-y += termbits.h
- header-y += termios.h
--header-y += types.h
- header-y += unistd.h
-diff --git a/arch/mn10300/include/uapi/asm/types.h b/arch/mn10300/include/uapi/asm/types.h
-deleted file mode 100644
-index 8b3f0501b9bc..000000000000
---- a/arch/mn10300/include/uapi/asm/types.h
-+++ /dev/null
-@@ -1,11 +0,0 @@
--/* MN10300 Basic type definitions
-- *
-- * Copyright (C) 2007 Matsushita Electric Industrial Co., Ltd.
-- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or
-- * modify it under the terms of the GNU General Public Licence
-- * as published by the Free Software Foundation; either version
-- * 2 of the Licence, or (at your option) any later version.
-- */
--#include <asm-generic/int-ll64.h>
--- 
-1.7.9.5
++	for (i = 0; i < nr_efi_runtime_map; i++) {
++		md = esdata->map + i;
++		pr_info("mem%02u: type=%u, attr=0x%llx, "
++			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
++			i, md->type, md->attribute, md->phys_addr,
++			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
++			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
++	}
++#endif  /*  EFI_DEBUG  */
++}
++
+ static void __init print_efi_memmap(void)
+ {
+ #ifdef EFI_DEBUG
+@@ -782,7 +800,10 @@ void __init efi_init(void)
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
+ #endif
+-	print_efi_memmap();
++	if (esdata)
++		print_saved_runtime_map();
++	else
++		print_efi_memmap();
+ }
+ 
+ void __init efi_late_init(void)
 
