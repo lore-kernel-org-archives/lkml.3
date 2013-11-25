@@ -1,149 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab3KYXMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:12:55 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:53769 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab3KYXMx (ORCPT
+	id S1751451Ab3KYXQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:16:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50497 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751788Ab3KYXQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:12:53 -0500
-Date: Mon, 25 Nov 2013 16:12:48 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: linux-pci@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, yinghai@kernel.org, Knut_Petersen@t-online.de,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 1/3] msi: free msi_desc entry only after we've
- released the kobject
-Message-ID: <20131125231248.GB4034@google.com>
-References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
- <1383042632-7102-2-git-send-email-vfalico@redhat.com>
+	Mon, 25 Nov 2013 18:16:21 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, swarren@wwwdotorg.org,
+        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        tianyu.lan@intel.com, sebastian.capella@linaro.org,
+        jhbird.choi@samsung.com
+Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
+Date: Tue, 26 Nov 2013 00:29:07 +0100
+Message-ID: <40779593.MBXsTetiKz@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <55cc3fbf9c553d669629e8ba98eef2b0ef33aaad.1385374822.git.viresh.kumar@linaro.org>
+References: <cover.1385374819.git.viresh.kumar@linaro.org> <55cc3fbf9c553d669629e8ba98eef2b0ef33aaad.1385374822.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383042632-7102-2-git-send-email-vfalico@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:30:30AM +0100, Veaceslav Falico wrote:
-> Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
-> however kobject_put() doesn't guarantee us that it was the last reference
-> and that the kobj isn't used currently by someone else, so after we
-> kfree(entry) with the struct kobject - other users will begin using the
-> freed memory, instead of the actual kobject.
+On Monday, November 25, 2013 07:41:41 PM Viresh Kumar wrote:
 > 
-> Fix this by using the kobject->release callback, which is called last when
-> the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
-> which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
-> kobj itself after ->release() was called, so we're safe).
+> This patch adds cpufreq callbacks to dpm_{suspend|resume}() for handling
+> suspend/resume of cpufreq governors. This is required for early suspend and
+> late resume of governors and cpufreq core.
 > 
-> In case we've failed to create the sysfs directories - just kfree()
-> it - cause we don't have the kobjects attached.
+> There are multiple problems that are fixed by this patch:
+> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board 
+>   wasn't working well with suspend/resume as calls for removing non-boot CPUs
+>   was turning out into a call to drivers ->target() which then tries to play
+>   with regulators. But regulators and their I2C bus were already suspended and
+>   this resulted in a failure. Many platforms have such problems, samsung,
+>   tegra, etc.. They solved it with driver specific PM notifiers where they
+>   used to disable their driver's ->target() routine.
 > 
-> Also, remove the same functionality from populate_msi_sysfs(), cause on
-> failure we anyway call free_msi_irqs(), which will take care of all the
-> kobjects properly.
+> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
 > 
-> And add the forgotten pci_dev_put(pdev) in case of failure to register the
-> kobject in populate_msi_sysfs().
+>   tunables configuration for clusters/sockets with non-boot CPUs was getting
+>   lost after suspend/resume, as we were notifying governors with
+>   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+>   deallocating memory for tunables. This is also fixed with this patch as don't
+>   allow any operation on Governors during suspend/resume now.
 > 
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: linux-pci@vger.kernel.org
-> CC: linux-kernel@vger.kernel.org
-> Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-
-I'm still hoping that Greg (or somebody else; Greg already posted the bulk
-of the work) will finish up the conversion to attributes, and that Neil
-will confirm that works with no changes to irqbalance.  So I'm going to
-drop these patches for now.  Poke me if we need to revive them.
-
-Bjorn
-
+> Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
 > ---
->  drivers/pci/msi.c | 31 ++++++++++++-------------------
->  1 file changed, 12 insertions(+), 19 deletions(-)
+> drivers/base/power/main.c |  5 +++++
 > 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index d5f90d6..5d70f49 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
->  				iounmap(entry->mask_base);
->  		}
->  
-> +		list_del(&entry->list);
+>  drivers/cpufreq/cpufreq.c | 50
+>  +++++++++++++++++++++++++++++++++++++++++++++++ include/linux/cpufreq.h  
+>  |  3 +++
+>  3 files changed, 58 insertions(+)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 1b41fca..c9fbb9d 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -29,6 +29,7 @@
+> 
+>  #include <linux/async.h>
+>  #include <linux/suspend.h>
+>  #include <trace/events/power.h>
+> 
+> +#include <linux/cpufreq.h>
+> 
+>  #include <linux/cpuidle.h>
+>  #include <linux/timer.h>
+> 
+> @@ -789,6 +790,8 @@ void dpm_resume(pm_message_t state)
+> 
+>  	mutex_unlock(&dpm_list_mtx);
+>  	async_synchronize_full();
+>  	dpm_show_time(starttime, state, NULL);
+> 
 > +
->  		/*
->  		 * Its possible that we get into this path
->  		 * When populate_msi_sysfs fails, which means the entries
->  		 * were not registered with sysfs.  In that case don't
-> -		 * unregister them.
-> +		 * unregister them, and just free. Otherwise the
-> +		 * kobject->release will take care of freeing the entry via
-> +		 * msi_kobj_release().
->  		 */
->  		if (entry->kobj.parent) {
->  			kobject_del(&entry->kobj);
->  			kobject_put(&entry->kobj);
-> +		} else {
-> +			kfree(entry);
->  		}
-> -
-> -		list_del(&entry->list);
-> -		kfree(entry);
->  	}
->  }
->  
-> @@ -509,6 +512,7 @@ static void msi_kobj_release(struct kobject *kobj)
->  	struct msi_desc *entry = to_msi_desc(kobj);
->  
->  	pci_dev_put(entry->dev);
-> +	kfree(entry);
->  }
->  
->  static struct kobj_type msi_irq_ktype = {
-> @@ -522,7 +526,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->  	struct msi_desc *entry;
->  	struct kobject *kobj;
->  	int ret;
-> -	int count = 0;
->  
->  	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
->  	if (!pdev->msi_kset)
-> @@ -534,23 +537,13 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
->  		pci_dev_get(pdev);
->  		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
->  				     "%u", entry->irq);
-> -		if (ret)
-> -			goto out_unroll;
-> -
-> -		count++;
-> +		if (ret) {
-> +			pci_dev_put(pdev);
-> +			return ret;
-> +		}
->  	}
->  
->  	return 0;
-> -
-> -out_unroll:
-> -	list_for_each_entry(entry, &pdev->msi_list, list) {
-> -		if (!count)
-> -			break;
-> -		kobject_del(&entry->kobj);
-> -		kobject_put(&entry->kobj);
-> -		count--;
-> -	}
-> -	return ret;
+> +	cpufreq_resume();
+> 
 >  }
 >  
 >  /**
-> -- 
-> 1.8.4
 > 
+> @@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+> 
+>  	might_sleep();
+> 
+> +	cpufreq_suspend();
+> +
+> 
+>  	mutex_lock(&dpm_list_mtx);
+>  	pm_transition = state;
+>  	async_error = 0;
+
+Shouldn't it do cpufreq_resume() on errors?
+
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 02d534d..b6c7821 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -26,6 +26,7 @@
+> 
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+>  #include <linux/slab.h>
+> 
+> +#include <linux/suspend.h>
+> 
+>  #include <linux/syscore_ops.h>
+>  #include <linux/tick.h>
+>  #include <trace/events/power.h>
+> 
+> @@ -47,6 +48,9 @@ static LIST_HEAD(cpufreq_policy_list);
+> 
+>  static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+>  #endif
+> 
+> +/* Flag to suspend/resume CPUFreq governors */
+> +static bool cpufreq_suspended;
+> +
+> 
+>  static inline bool has_target(void)
+>  {
+>  
+>  	return cpufreq_driver->target_index || cpufreq_driver->target;
+> 
+> @@ -1462,6 +1466,48 @@ static struct subsys_interface cpufreq_interface = {
+> 
+>  	.remove_dev	= cpufreq_remove_dev,
+>  
+>  };
+> 
+> +/*
+> + * Callbacks for suspending/resuming governors as some platforms can't
+> change + * frequency after this point in suspend cycle. Because some of the
+> devices + * (like: i2c, regulators, etc) they use for changing frequency
+> are suspended + * quickly after this point.
+> + */
+> +void cpufreq_suspend(void)
+> +{
+> +	struct cpufreq_policy *policy;
+> +
+> +	if (!has_target())
+> +		return;
+> +
+> +	pr_debug("%s: Suspending Governors\n", __func__);
+> +
+> +	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+> +			pr_err("%s: Failed to stop governor for policy: %p\n",
+> +					__func__, policy);
+
+This appears to be racy.  Is it really racy, or just seemingly?
+
+> +
+> +	cpufreq_suspended = true;
+> +}
+> +
+> +void cpufreq_resume(void)
+> +{
+> +	struct cpufreq_policy *policy;
+> +
+> +	if (!has_target())
+> +		return;
+> +
+> +	pr_debug("%s: Resuming Governors\n", __func__);
+> +
+> +	cpufreq_suspended = false;
+> +
+> +	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> +		if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
+> +				__cpufreq_governor(policy,
+> +					CPUFREQ_GOV_LIMITS))
+> +			pr_err("%s: Failed to start governor for policy: %p\n",
+> +					__func__, policy);
+> +}
+> +
+> 
+>  /**
+>  
+>   * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
+>   *
+> 
+> @@ -1764,6 +1810,10 @@ static int __cpufreq_governor(struct cpufreq_policy
+> *policy,> 
+>  	struct cpufreq_governor *gov = NULL;
+>  
+>  #endif
+> 
+> +	/* Don't start any governor operations if we are entering suspend */
+> +	if (cpufreq_suspended)
+> +		return 0;
+> +
+> 
+>  	if (policy->governor->max_transition_latency &&
+>  	
+>  	    policy->cpuinfo.transition_latency >
+>  	    policy->governor->max_transition_latency) {
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index dc196bb..6d93f91 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -255,6 +255,9 @@ struct cpufreq_driver {
+> 
+>  int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+>  int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
+> 
+> +void cpufreq_suspend(void);
+> +void cpufreq_resume(void);
+> +
+> 
+>  const char *cpufreq_get_current_driver(void);
+>  
+>  static inline void cpufreq_verify_within_limits(struct cpufreq_policy
+>  *policy,
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
