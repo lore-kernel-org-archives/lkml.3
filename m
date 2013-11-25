@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab3KYPMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:12:13 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:60300 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab3KYPML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:12:11 -0500
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
-        Hans Zhang <zhanghonghui@innofidei.com>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
-References: <528EB1E3.7030101@innofidei.com> <20131122015237.GB3509@localhost>
-	<528EBD0B.5010006@innofidei.com> <20131122114509.GB2414@localhost>
-	<5292A7E7.5060003@innofidei.com> <20131125101147.GA2408@localhost>
-	<CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
-	<529334D9.2030204@innofidei.com> <20131125115238.GC2408@localhost>
-	<1385381770.24518.18.camel@shinybook.infradead.org>
-	<20131125123012.GE2408@localhost>
-Date: Mon, 25 Nov 2013 16:12:06 +0100
-In-Reply-To: <20131125123012.GE2408@localhost> (Ezequiel Garcia's message of
-	"Mon, 25 Nov 2013 09:30:13 -0300")
-Message-ID: <87fvqkldmh.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1754447Ab3KYPNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:13:46 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44198 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753580Ab3KYPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:13:43 -0500
+Date: Mon, 25 Nov 2013 10:13:39 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, azurIt <azurit@pobox.sk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 3.2 73/87] fs: buffer: move allocation failure loop into
+ the allocator
+Message-ID: <20131125151339.GS3556@cmpxchg.org>
+References: <lsq.1385387069.559528559@decadent.org.uk>
+ <lsq.1385387069.232027452@decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <lsq.1385387069.232027452@decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Ezequiel" == Ezequiel Garcia <ezequiel.garcia@free-electrons.com> writes:
+Hi Ben,
 
-Hi,
+On Mon, Nov 25, 2013 at 01:44:29PM +0000, Ben Hutchings wrote:
+> 3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> commit 84235de394d9775bfaa7fa9762a59d91fef0c1fc upstream.
+> 
+> Buffer allocation has a very crude indefinite loop around waking the
+> flusher threads and performing global NOFS direct reclaim because it can
+> not handle allocation failures.
 
- > Thanks a lot for the insight. After reading this, I'm wondering what's
- > preventing us from killing MTD block support altogether. Artem, already
- > suggested it a while back...
-
-People using squashfs/cramfs/readonly ext2/.. on a NOR flash?
-
--- 
-Bye, Peter Korsgaard
+Please don't apply this, it's part of a bigger series and was only
+tagged as a reminder.  I'll send the full series to stable when the
+current cgroup instabilities are ironed out, just to be sure these
+patches are not the problem.
