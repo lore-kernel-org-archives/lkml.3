@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab3KYNSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:18:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57204 "EHLO
+	id S1756778Ab3KYNS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:18:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab3KYNIR (ORCPT
+	with ESMTP id S1754563Ab3KYNIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:08:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>,
+Cc: Rui li <li.rui27@zte.com.cn>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 49/78] libata: Fix display of sata speed
-Date: Mon, 25 Nov 2013 13:06:36 +0000
-Message-Id: <1385384825-21681-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 48/78] =?UTF-8?q?USB=EF=BC=9Aadd=20new=20zte=203g-dongle's?= =?UTF-8?q?=20pid=20to=20option.c?=
+Date: Mon, 25 Nov 2013 13:06:35 +0000
+Message-Id: <1385384825-21681-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Rui li <li.rui27@zte.com.cn>
 
-commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
+commit 0636fc507a976cdc40f21bdbcce6f0b98ff1dfe9 upstream.
 
-6.0 Gbps link speed was not decoded properly:
-speed was reported at 3.0 Gbps only.
-
-Tested: On a machine where libata reports 6.0 Gbps in
-        /var/log/messages:
-    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-
-    Before:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	3.0 Gbps
-    After:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	6.0 Gbps
-
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Rui li <li.rui27@zte.com.cn>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-transport.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
-index c341904..9215677 100644
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
- /*
-  * ATA link attributes
-  */
-+static int noop(int x) { return x; }
- 
--
--#define ata_link_show_linkspeed(field)					\
-+#define ata_link_show_linkspeed(field, format)			        \
- static ssize_t								\
- show_ata_link_##field(struct device *dev,				\
- 		      struct device_attribute *attr, char *buf)		\
- {									\
- 	struct ata_link *link = transport_class_to_link(dev);		\
- 									\
--	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
-+	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
- }
- 
--#define ata_link_linkspeed_attr(field)					\
--	ata_link_show_linkspeed(field)					\
-+#define ata_link_linkspeed_attr(field, format)				\
-+	ata_link_show_linkspeed(field, format)				\
- static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
- 
--ata_link_linkspeed_attr(hw_sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd);
-+ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd, noop);
- 
- 
- static DECLARE_TRANSPORT_CLASS(ata_link_class,
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index c4b313f..dbc6919 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1391,6 +1391,23 @@ static const struct usb_device_id option_ids[] = {
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1545, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1546, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1547, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1565, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1566, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1567, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1589, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1590, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1591, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1592, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1594, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1596, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1598, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1600, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
+ 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
 -- 
 1.8.3.2
 
