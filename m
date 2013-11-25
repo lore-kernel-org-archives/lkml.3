@@ -1,140 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757703Ab3KYTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:53:29 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:32975 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab3KYTxY (ORCPT
+	id S1757712Ab3KYTyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:54:47 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:51228 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab3KYTyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:53:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <52939151.8030908@akamai.com>
-References: <CAJusiZXq0CPHNvNCKCRp=XZ8UO9gFKVsU3cTEON5BCHDxrqFZQ@mail.gmail.com>
-	<52939151.8030908@akamai.com>
-Date: Mon, 25 Nov 2013 11:53:24 -0800
-Message-ID: <CAJusiZWCrDovv_w29LeFA6m61CdWs4Ljxhwf_chNpNVGvmUKLA@mail.gmail.com>
-Subject: Re: disappearing listen()ed SO_REUSEPORT sockets across fork() when
- using epoll
-From: Shawn Landden <shawnlandden@gmail.com>
-To: Jason Baron <jbaron@akamai.com>
-Cc: linux-fsdevel@vger.kernel.org,
+	Mon, 25 Nov 2013 14:54:44 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH 00/16] wl1251 patches from linux-n900 tree
+Date: Mon, 25 Nov 2013 20:54:41 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-wireless Mailing List" <linux-wireless@vger.kernel.org>,
+        netdev@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-Content-Type: multipart/mixed; boundary=047d7bdc131e7f0a7104ec05b73a
+        freemangordon@abv.bg, aaro.koskinen@iki.fi,
+        Pavel Machek <pavel@ucw.cz>, sre@ring0.de, joni.lapilainen@gmail.com
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <CAMP44s1ADLHagfPa8kmx_wSyqvLf7pcN_UuOqoPShYx2HPUQXA@mail.gmail.com>
+In-Reply-To: <CAMP44s1ADLHagfPa8kmx_wSyqvLf7pcN_UuOqoPShYx2HPUQXA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart25202074.IUOrPMC6Og";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311252054.41177@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bdc131e7f0a7104ec05b73a
-Content-Type: text/plain; charset=ISO-8859-1
+--nextPart25202074.IUOrPMC6Og
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 25, 2013 at 10:05 AM, Jason Baron <jbaron@akamai.com> wrote:
-> On 11/22/2013 12:53 PM, Shawn Landden wrote:
->> Hello, when running the attached program on 3.12 child processes
->> are missing a socket fd opened, set with SO_REUSEPORT, listen()ed to,
->> and added to epoll_ctl().
->>
->> This is the output I get when pointing "wget http://localhost:5555/"
->> at the attached program:
->>
->> main PID 31591
->> PID 31634 started
->> PID 31634 accept()ed connection
->> PID 31635 started
->> PID 31636 started
->> PID 31635 accept() failed: Bad file descriptor
->> PID 31636 accept() failed: Bad file descriptor
->> PID 31634 accept()ed connection
->> PID 31634 accept()ed connection
->> PID 31634 accept()ed connection
->> PID 31634 accept()ed connection
->>
->>
->> While I would expect something like:
->>
->> main PID 31591
->> PID 31634 started
->> PID 31634 accept()ed connection
->> PID 31635 started
->> PID 31636 started
->> PID 31635 accept()ed connection
->> PID 31636 accept()ed connection
->>
->> -more new processes, but inversely proportional to number of listening processes
->> -accept() always returns successfully
->>
->>
->
-> The 'close(sockfd);' looks to be racing with the accept() calls. Removing seems
-> to get the result you are looking for.
-Interesting. That works, but it shouldn't. The close() is operating in
-the parent, so it shouldn't affect the child,
-there is a leak here of process separation.
+On Friday 08 November 2013 15:20:07 Felipe Contreras wrote:
+> On Sat, Oct 26, 2013 at 3:33 PM, Pali Roh=C3=A1r <pali.rohar@gmail.com> w=
+rote:
+> > Hello, I'm sending wl1251 patches from linux-n900 tree [1]
+> > for comments. More patches come from David's monitor &
+> > packet injection work. Patches are tested with 3.12 rc5
+> > kernel on Nokia N900.
+> >=20
+> > [1] - https://gitorious.org/linux-n900/linux-n900
+>=20
+> How did you test these patches? I get a panic loop immediately
+> after I bring the interface loop in monitor mode (v3.12).
 
-New version with pid set to volatile, and making sure that we are in the parent.
->
-> Thanks,
->
-> -Jason
->
+Hi!
+
+now I can reproduce this crash with 3.12-rc5 kernel. Problem
+looks like irrelevant to this patch series and is present in 3.12
+kernel. There is possible NULL pointer dereference.
+
+With this patch I'm not able to reproduce this bug:
+
+diff --git a/drivers/net/wireless/ti/wl1251/event.c b/drivers/net/wireless/=
+ti/wl1251/event.c
+index 192cebd..db01053 100644
+=2D-- a/drivers/net/wireless/ti/wl1251/event.c
++++ b/drivers/net/wireless/ti/wl1251/event.c
+@@ -124,7 +124,7 @@ static int wl1251_event_process(struct wl1251 *wl, stru=
+ct event_mailbox *mbox)
+ 			return ret;
+ 	}
+=20
+=2D	if (vector & SYNCHRONIZATION_TIMEOUT_EVENT_ID) {
++	if (wl->vif && vector & SYNCHRONIZATION_TIMEOUT_EVENT_ID) {
+ 		wl1251_debug(DEBUG_EVENT, "SYNCHRONIZATION_TIMEOUT_EVENT");
+=20
+ 		/* indicate to the stack, that beacons have been lost */
 
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
--- 
+--nextPart25202074.IUOrPMC6Og
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
----
-Shawn Landden
-+1 360 389 3001 (SMS preferred)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
---047d7bdc131e7f0a7104ec05b73a
-Content-Type: text/x-csrc; charset=US-ASCII; name="epoll_test.c"
-Content-Disposition: attachment; filename="epoll_test.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hog4tnb10
+iEYEABECAAYFAlKTqwEACgkQi/DJPQPkQ1IYlgCbBXWPEf1rkwMHfL9n2UzzPj0u
+c6MAn3PfzdwsEcI+W7WM+vAoodK+JOgQ
+=LVAq
+-----END PGP SIGNATURE-----
 
-I2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4KI2luY2x1ZGUgPHN5cy9z
-b2NrZXQuaD4KI2luY2x1ZGUgPG5ldGluZXQvaW4uaD4KI2luY2x1ZGUgPHN0ZGxpYi5oPgojaW5j
-bHVkZSA8c3RyaW5nLmg+CiNpbmNsdWRlIDxzeXMvZXBvbGwuaD4KCmludCBtYWluKCBpbnQgYXJn
-YywgY2hhciAqYXJndltdKSB7CiAgICAgICAgaW50IHNvY2tmZCwgZXBvbGxmZCwgYWNjZXB0ZmQs
-IHBvcnRubzsKICAgICAgICBzdHJ1Y3QgZXBvbGxfZXZlbnQgZXZlbnQgPSB7RVBPTExJTiwgTlVM
-TH0sIGdvdGV2ZW50OwogICAgICAgIGNoYXIgYnVmZmVyWzI1Nl07CiAgICAgICAgc3RydWN0IHNv
-Y2thZGRyX2luIHNlcnZfYWRkcjsKICAgICAgICBpbnQgIG47Cgl2b2xhdGlsZSBwaWRfdCBwaWQ7
-CgogICAgICAgIHByaW50ZigibWFpbiBQSUQgJWRcbiIsIGdldHBpZCgpKTsKCiAgICAgICAgbWVt
-c2V0KChjaGFyICopICZzZXJ2X2FkZHIsIDAsIHNpemVvZihzZXJ2X2FkZHIpKTsKICAgICAgICBw
-b3J0bm8gPSA1NTU1OwogICAgICAgIHNlcnZfYWRkci5zaW5fZmFtaWx5ID0gQUZfSU5FVDsKICAg
-ICAgICBzZXJ2X2FkZHIuc2luX2FkZHIuc19hZGRyID0gSU5BRERSX0FOWTsKICAgICAgICBzZXJ2
-X2FkZHIuc2luX3BvcnQgPSBodG9ucyhwb3J0bm8pOwoKICAgICAgICBpZiAoKHNvY2tmZCA9IHNv
-Y2tldChBRl9JTkVULCBTT0NLX1NUUkVBTSwgMCkpIDwgMCkKCQlyZXR1cm4gcHJpbnRmKCJzb2Nr
-ZXQoKSBmYWlsZWQ6ICVtXG4iKTsKCiAgICAgICAgaW50IG9wdHZhbCA9IDE7CiAgICAgICAgaWYg
-KChzZXRzb2Nrb3B0KHNvY2tmZCwgU09MX1NPQ0tFVCwgU09fUkVVU0VQT1JULCAmb3B0dmFsLCBz
-aXplb2Yob3B0dmFsKSkpIDwgMCkKICAgICAgICAgICAgICAgIHJldHVybiBwcmludGYoInNldHNv
-Y2tvcHQoKSBmYWlsZWQ6ICVtIik7CgogICAgICAgIGlmIChiaW5kKHNvY2tmZCwgKHN0cnVjdCBz
-b2NrYWRkciAqKSAmc2Vydl9hZGRyLAogICAgICAgICAgICAgICAgICAgICAgICAgIHNpemVvZihz
-ZXJ2X2FkZHIpKSA8IDApCgkJcmV0dXJuIHByaW50ZigiYmluZCgpIGZhaWxlZDogJW1cbiIpOwoK
-ICAgICAgICBpZiAobGlzdGVuKHNvY2tmZCwgU09NQVhDT05OKSA8IDApCgkJcmV0dXJuIHByaW50
-ZigibGlzdGVuKCkgZmFpbGVkOiAlbVxuIik7CgoJaWYgKChlcG9sbGZkID0gZXBvbGxfY3JlYXRl
-MSgwKSkgPCAwKQoJICAgICAgICByZXR1cm4gcHJpbnRmKCJlcG9sbF9jcmVhdGUxKCkgZmFpbGVk
-OiAlbVxuIik7CgogICAgICAgIGlmIChlcG9sbF9jdGwoZXBvbGxmZCwgIEVQT0xMX0NUTF9BREQs
-IHNvY2tmZCwgJmV2ZW50KSA8IDApCiAgICAgICAgICAgICAgICByZXR1cm4gcHJpbnRmKCJlcG9s
-bF9jdGwoKSBmYWlsZWQ6ICVtXG4iKTsKCiAgICAgICAgd2hpbGUgKDEpIHsKICAgICAgICAgICAg
-ICAgIGlmIChlcG9sbF93YWl0KGVwb2xsZmQsICZnb3RldmVudCwgMSwgLTEpICE9IDEpCiAgICAg
-ICAgICAgICAgICAgICAgICAgIHJldHVybiBwcmludGYoImVwb2xsX3dhaXQoKSBmYWlsZWQ6ICVt
-XG4iKTsKCiAgICAgICAgICAgICAgICBwaWQgPSBmb3JrKCk7CiAgICAgICAgICAgICAgICBpZiAo
-cGlkID09IDApIHsKICAgICAgICAgICAgICAgICAgICAgICAgcHJpbnRmKCJQSUQgJWQgc3RhcnRl
-ZFxuIiwgZ2V0cGlkKCkpOwogICAgICAgICAgICAgICAgICAgICAgICB3aGlsZSgxKSB7CiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgc3RydWN0IHNvY2thZGRyX2luIGNsaV9hZGRyOwog
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNvY2tsZW5fdCBjbGlfc2l6ZSA9IHNpemVv
-ZiBjbGlfYWRkcjsKCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgaWYgKChhY2NlcHRm
-ZCA9IGFjY2VwdChzb2NrZmQsIChzdHJ1Y3Qgc29ja2FkZHIgKikmY2xpX2FkZHIsIAogICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICZjbGlfc2l6
-ZSkpIDwgMCkgewoJICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwcmludGYoIlBJRCAl
-ZCBhY2NlcHQoKSBmYWlsZWQ6ICVtXG4iLCBnZXRwaWQoKSk7CgkgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgIHNsZWVwKDYwKTsKCSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-cmV0dXJuIDE7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfQoKICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICBwcmludGYoIlBJRCAlZCBhY2NlcHQoKWVkIGNvbm5lY3Rpb25c
-biIsIGdldHBpZCgpKTsKCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgaWYgKGNsb3Nl
-KGFjY2VwdGZkKSA8IDApCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBy
-ZXR1cm4gcHJpbnRmKCJjbG9zZSgpIGZhaWxlZDogJW1cbiIpOwogICAgICAgICAgICAgICAgICAg
-ICAgICB9CiAgICAgICAgICAgICAgICB9IGVsc2UgaWYgKHBpZCA+IDApCiAgICAgICAgICAgICAg
-ICAJY2xvc2Uoc29ja2ZkKTsKICAgICAgICB9Cn0K
---047d7bdc131e7f0a7104ec05b73a--
+--nextPart25202074.IUOrPMC6Og--
