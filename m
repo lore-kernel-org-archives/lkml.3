@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab3KYVBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 16:01:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54310 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752784Ab3KYVBF (ORCPT
+	id S1752269Ab3KYVDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 16:03:49 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44510 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab3KYVDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 16:01:05 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Mon, 25 Nov 2013 22:13:51 +0100
-Message-ID: <2997050.eogEtPXZyL@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52938C5F.7000307@gmail.com>
-References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org> <CAKohpok0QJ2xP5uoSaAsX76KwD5yi9Z54pgNyQ7CW3c4Fkbq2A@mail.gmail.com> <52938C5F.7000307@gmail.com>
+	Mon, 25 Nov 2013 16:03:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20131125200552.GA5826@mguzik.redhat.com>
+References: <CAJusiZXq0CPHNvNCKCRp=XZ8UO9gFKVsU3cTEON5BCHDxrqFZQ@mail.gmail.com>
+	<52939151.8030908@akamai.com>
+	<CAJusiZWCrDovv_w29LeFA6m61CdWs4Ljxhwf_chNpNVGvmUKLA@mail.gmail.com>
+	<20131125200552.GA5826@mguzik.redhat.com>
+Date: Mon, 25 Nov 2013 13:03:46 -0800
+Message-ID: <CAJusiZVjiH6P4cLZULrS4KWk8WUQUmG61zrJJNM5L_KzOYKh-Q@mail.gmail.com>
+Subject: Re: disappearing listen()ed SO_REUSEPORT sockets across fork() when
+ using epoll
+From: Shawn Landden <shawnlandden@gmail.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: Jason Baron <jbaron@akamai.com>, linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 25, 2013 09:43:59 AM Dirk Brandewie wrote:
-> On 11/25/2013 09:01 AM, Viresh Kumar wrote:
-> > On 25 November 2013 22:08, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
-> >> IMHO this issue should be fixed in the scaling driver for the platform.
-> >>
-> >> The scaling driver sets policy->cur and fills in the frequency table and has
-> >
-> > Not anymore, policy->cur is set in the core for most of the drivers now.
-> > Drivers just provide ->get() callbacks.
-> >
-> >> the ability to adjust the frequency of the CPU.
-> >
-> > I believe this kind of decisions should stay with the core, drivers should
-> > just provide the backend instead of intelligence..
-> >
-> 
-> 
-> This is a platform specific bug fix AFAICT and belongs in a platform
-> specific piece of code
-> 
-> 
-> >> Letting this leak up into the core
-> >> is wrong IMHO and just widens the window where the CPU will be running at
-> >> the wrong frequency set by the bootloader.
-> >
-> > It doesn't stay there for long enough.. we get to this point in
-> > cpufreq core just
-> > after calling ->init(), and if the CPU is working without issues until
-> > now, it will
-> > stay stable for few more milliseconds.
-> >
-> 
-> And this is where the scaling driver should detect and fix the issue in ->init()
-> on platforms we know about today, What happens if platforms in the future are
-> more sensitive to the issue?
+On Mon, Nov 25, 2013 at 12:05 PM, Mateusz Guzik <mguzik@redhat.com> wrote:
+> On Mon, Nov 25, 2013 at 11:53:24AM -0800, Shawn Landden wrote:
+>> On Mon, Nov 25, 2013 at 10:05 AM, Jason Baron <jbaron@akamai.com> wrote:
+>> > On 11/22/2013 12:53 PM, Shawn Landden wrote:
+>> >> Hello, when running the attached program on 3.12 child processes
+>> >> are missing a socket fd opened, set with SO_REUSEPORT, listen()ed to,
+>> >> and added to epoll_ctl().
+>> >>
+>> >> This is the output I get when pointing "wget http://localhost:5555/"
+>> >> at the attached program:
+>> >>
+>> >> main PID 31591
+>> >> PID 31634 started
+>> >> PID 31634 accept()ed connection
+>> >> PID 31635 started
+>> >> PID 31636 started
+>> >> PID 31635 accept() failed: Bad file descriptor
+>> >> PID 31636 accept() failed: Bad file descriptor
+>> >> PID 31634 accept()ed connection
+>> >> PID 31634 accept()ed connection
+>> >> PID 31634 accept()ed connection
+>> >> PID 31634 accept()ed connection
+>> >>
+>> >>
+>> >> While I would expect something like:
+>> >>
+>> >> main PID 31591
+>> >> PID 31634 started
+>> >> PID 31634 accept()ed connection
+>> >> PID 31635 started
+>> >> PID 31636 started
+>> >> PID 31635 accept()ed connection
+>> >> PID 31636 accept()ed connection
+>> >>
+>> >> -more new processes, but inversely proportional to number of listening processes
+>> >> -accept() always returns successfully
+>> >>
+>> >>
+>> >
+>> > The 'close(sockfd);' looks to be racing with the accept() calls. Removing seems
+>> > to get the result you are looking for.
+>> Interesting. That works, but it shouldn't. The close() is operating in
+>> the parent, so it shouldn't affect the child,
+>> there is a leak here of process separation.
+>>
+>
+> You fork, then close sockfd in the parent. Thus, the very first child
+> can accept connectins just fine.
+>
+> Subsequent forks give you children without sockfd, thus accept fails.
+> The first child continues to work just fine.
+Now I feel like an idiot.
 
-So what should the core do if the driver is careless and lets the bug slip
-through?  Should it blindly trust the driver and let go?
 
-Honestly, I don't think so.
-
-> >> Shouldn't there be a check to see if the problem exists at all?  Otherwise
-> >> the core is setting a policy for ALL platform even those where the issue
-> >> does
-> >> not exist.
-> >
-> > That is taken care of by __cpufreq_driver_target(). It checks if we are
-> > already running at requested frequency or not (after getting the next
-> > higher frequency)... If current freq is present in table,
-> > cpufreq_frequency_table_target() will return current frequency only for
-> > policy->cur -1. And so we will not end up configuring hardware
-> > unnecessarily.
-> >
-> 
-> The core should not be working around bootloader bugs IMHO.  Silently
-> fixing it is evil IMHO at a minimum the core should complain LOUDLY
-> about this happening otherwise the bootloaders will have no incentive to
-> get their act together.
-
-Yes, we can add a WARN_ON() there.  Still, though, the core's responsibility
-is to ensure that (a) either we can continue safely or (b) we can't, in which
-case it should just fail the initialization.  Whether or not it should panic()
-I'm not sure.
-
-Thanks!
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+---
+Shawn Landden
++1 360 389 3001 (SMS preferred)
