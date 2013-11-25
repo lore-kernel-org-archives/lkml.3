@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3KYNUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:20:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57156 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab3KYNIG (ORCPT
+	id S1756835Ab3KYNUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:20:46 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:9401 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab3KYNUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:06 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 40/78] USB: mos7840: fix tiocmget error handling
-Date: Mon, 25 Nov 2013 13:06:27 +0000
-Message-Id: <1385384825-21681-41-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 25 Nov 2013 08:20:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 25 Nov 2013 05:18:19 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] Tegra124 clock fixes
+Date: Mon, 25 Nov 2013 15:20:21 +0200
+Message-ID: <1385385623-8952-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
+A few fixes for Tegra124 clocks. These patches will be squashed into the pull
+request I will send out later today, but I wanted to post them here as well
+so the changes are known.
 
-------------------
+Peter De Schrijver (2):
+  clk: tegra: fix vi clk for Terga124
+  clk: tegra: fix pllcx pdiv for Tegra124
 
-From: Johan Hovold <jhovold@gmail.com>
+ drivers/clk/tegra/clk-id.h           |    1 +
+ drivers/clk/tegra/clk-tegra-periph.c |    8 ++++++++
+ drivers/clk/tegra/clk-tegra124.c     |    5 ++++-
+ 3 files changed, 13 insertions(+), 1 deletions(-)
 
-commit a91ccd26e75235d86248d018fe3779732bcafd8d upstream.
-
-Make sure to return errors from tiocmget rather than rely on
-uninitialised stack data.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/mos7840.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index d9368be..08aad01 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1707,7 +1707,11 @@ static int mos7840_tiocmget(struct tty_struct *tty)
- 		return -ENODEV;
- 
- 	status = mos7840_get_uart_reg(port, MODEM_STATUS_REGISTER, &msr);
-+	if (status != 1)
-+		return -EIO;
- 	status = mos7840_get_uart_reg(port, MODEM_CONTROL_REGISTER, &mcr);
-+	if (status != 1)
-+		return -EIO;
- 	result = ((mcr & MCR_DTR) ? TIOCM_DTR : 0)
- 	    | ((mcr & MCR_RTS) ? TIOCM_RTS : 0)
- 	    | ((mcr & MCR_LOOPBACK) ? TIOCM_LOOP : 0)
 -- 
-1.8.3.2
+1.7.7.rc0.72.g4b5ea.dirty
 
