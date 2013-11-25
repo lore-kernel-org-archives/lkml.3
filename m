@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3KYSFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:05:11 -0500
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:42492 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754364Ab3KYSFH (ORCPT
+	id S1757142Ab3KYSHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:07:47 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:51355 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab3KYSHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:05:07 -0500
-Message-ID: <52939151.8030908@akamai.com>
-Date: Mon, 25 Nov 2013 13:05:05 -0500
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 25 Nov 2013 13:07:46 -0500
+Date: Mon, 25 Nov 2013 10:07:41 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: David Airlie <airlied@linux.ie>
+Cc: lm-sensors@lm-sensors.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drm/radeon/dpm: Convert to use
+ devm_hwmon_register_with_groups
+Message-ID: <20131125180741.GA20159@roeck-us.net>
+References: <1385185921-17220-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: Shawn Landden <shawnlandden@gmail.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tom Herbert <therbert@google.com>
-Subject: Re: disappearing listen()ed SO_REUSEPORT sockets across fork() when
- using epoll
-References: <CAJusiZXq0CPHNvNCKCRp=XZ8UO9gFKVsU3cTEON5BCHDxrqFZQ@mail.gmail.com>
-In-Reply-To: <CAJusiZXq0CPHNvNCKCRp=XZ8UO9gFKVsU3cTEON5BCHDxrqFZQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385185921-17220-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 12:53 PM, Shawn Landden wrote:
-> Hello, when running the attached program on 3.12 child processes
-> are missing a socket fd opened, set with SO_REUSEPORT, listen()ed to,
-> and added to epoll_ctl().
+On Fri, Nov 22, 2013 at 09:52:00PM -0800, Guenter Roeck wrote:
+> Simplify the code and fix race condition seen because
+> attribute files were created after hwmon device registration.
 > 
-> This is the output I get when pointing "wget http://localhost:5555/"
-> at the attached program:
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Compile tested only; unfortunately I don't have the the necessary hardware.
 > 
-> main PID 31591
-> PID 31634 started
-> PID 31634 accept()ed connection
-> PID 31635 started
-> PID 31636 started
-> PID 31635 accept() failed: Bad file descriptor
-> PID 31636 accept() failed: Bad file descriptor
-> PID 31634 accept()ed connection
-> PID 31634 accept()ed connection
-> PID 31634 accept()ed connection
-> PID 31634 accept()ed connection
-> 
-> 
-> While I would expect something like:
-> 
-> main PID 31591
-> PID 31634 started
-> PID 31634 accept()ed connection
-> PID 31635 started
-> PID 31636 started
-> PID 31635 accept()ed connection
-> PID 31636 accept()ed connection
-> 
-> -more new processes, but inversely proportional to number of listening processes
-> -accept() always returns successfully
-> 
-> 
+Update: Tested working on actual hardware.
 
-The 'close(sockfd);' looks to be racing with the accept() calls. Removing seems
-to get the result you are looking for.
-
-Thanks,
-
--Jason
-
+Guenter
