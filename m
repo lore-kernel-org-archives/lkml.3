@@ -1,146 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab3KYJKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:10:47 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30650 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab3KYJKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 04:10:42 -0500
-X-AuditID: cbfee68e-b7f7e6d00000477d-1a-529314106448
-Date: Mon, 25 Nov 2013 09:10:40 +0000 (GMT)
-From: Anurag Aggarwal <a.anurag@samsung.com>
-Subject: Re: Re: [PATCH] ARM: unwinder: Handle Stackoverflow in unwind_exec_insn
-To: Dave Martin <Dave.Martin@arm.com>,
-        Anurag Aggarwal <anurag19aggarwal@gmail.com>
-Cc: Naveen Kumar <naveen.sel@samsung.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Anurag Aggarwal <a.anurag@samsung.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpgs ." <cpgs@samsung.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Reply-to: a.anurag@samsung.com
-MIME-version: 1.0
-X-MTR: 20131125090851983@a.anurag
-Msgkey: 20131125090851983@a.anurag
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131125090851983@a.anurag
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: Y
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <31564068.33481385370637554.JavaMail.weblogic@epv6ml06>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSqCsgMjnIYNIrU4vLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJXxZN0JloIW2YonL5QbGBfIdDFycggJKEv07l3PBmJLCJhInG29
-	zARhi0lcuAcS5wKqWcoo8eHWBriihtMnWCAS8xklnp6/D9bBIqAqsfHfYnYQm01AV2LijSvM
-	ILawQIDE31ntYLaIQKTEv8Z2RpBmZoFuVoktk1awQ5whJ3F33XawIl4BQYmTM5+wQGxTlLgy
-	+xcrRFxJ4uD2f6wQcTmJJVNhTuWVmNH+lAUmPu3rGmYIW1ri/KwNjDDvLP7+GCrOL3Hs9g6g
-	Xg6w3if3g2HG7N78BepJAYmpZw5CtapJ7P34Fcrmk1iz8C0LzJhdp5Yzw/Q2bPwN9goz0MlT
-	uh9C2QYSRxbNYUX3Fq+As8TUCd3MExiVZyFJzULSPgtJO7KaBYwsqxhFUwuSC4qT0ouM9IoT
-	c4tL89L1kvNzNzECE8Ppf8/6djDePGB9iDEZGCcTmaVEk/OBiSWvJN7Q2MzIwtTE1NjI3NKM
-	NGElcd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAKfpmlu1GN2VB/Wye3nNl3qza/
-	RyqL735uWxRc1fjk2pq9avzLkv8oB70OSH9UyX91Mj+7Q4p8ETvDzvveM6erzOVq3uOz55Dm
-	07tG66Zc/VR+Vuu5E/Pt4tfWpcdt3OeckCmOqNmec6rH9kRttoj7GuEVMUJvU93rreb+fvta
-	vuBelM33CyVKLMUZiYZazEXFiQC0bBohIgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2dF0BkclBBmvf6Fpc3jWHzYHR4/Mm
-	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIwn
-	606wFLTIVjx5odzAuECmi5GTQ0hAWaJ373o2EFtCwESi4fQJFghbTOLCPZA4F1DNfEaJp+fv
-	M4EkWARUJTb+W8wOYrMJ6EpMvHGFGcQWFgiQ+DurHcwWEYiU+NfYzgjSzCzQzSqxZdIKdoht
-	chJ3120HK+IVEJQ4OfMJ1DZFiSuzf7FCxJUkDm7/xwoRl5NYMvUyE4TNKzGj/SkLTHza1zXM
-	ELa0xPlZGxhhrl78/TFUnF/i2O0dQL0cYL1P7gfDjNm9+QvUwwISU88chGpVk9j78SuUzSex
-	ZuFbFpgxu04tZ4bpbdj4G+wVZqCTp3Q/hLINJI4smsOK7i1eAWeJqRO6mScwys1CkpqFpH0W
-	knZkNQsYWVYxiqYWJBcUJ6VXGOsVJ+YWl+al6yXn525iBKenZ4t3MP4/b32IUYCDUYmH16Jy
-	UpAQa2JZcWXuIUYJDmYlEd49dUAh3pTEyqrUovz4otKc1OJDjMnAGJzILCWanA9MnXkl8YbG
-	xiZmJqaWJhYGpuakCSuJ88bfSgoSEkhPLEnNTk0tSC2C2cLEwSnVwGjDVa7sOf1HhGT2pM/R
-	qmK164pu/hLj3tq+8G/qE6mt9xS+aAq0/OVzXF0b9eHO2acTP5mG+zoVz4pYs2Tf4R+FvGtD
-	NO/dvX10jsH5Seed/R5++7mQEyi53usL/0trP1G9BdfPP//KYPiy57uIjdCrh1wvU8UTHmdr
-	uoT0BCX/t1PnK3gYrsRSnJFoqMVcVJwIACHAgKyTAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1751753Ab3KYJPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:15:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab3KYJPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 04:15:02 -0500
+Message-Id: <20131125084807.424597852@dhcp-16-126.nay.redhat.com>
+User-Agent: quilt/0.60-1
+Date: Mon, 25 Nov 2013 16:47:03 +0800
+From: dyoung@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        matt@console-pimps.org, toshi.kani@hp.com,
+        Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@suse.de>
+Subject-Prefi: [patch @num@/@total@ v4]
+Subject: efi: cleanup efi_enter_virtual_mode function
+References: <20131125084659.182036023@dhcp-16-126.nay.redhat.com>
+Content-Disposition: inline; filename=04-efi-enter-virtual-mode-cleanup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAP9AuGA001240
 
-Hi Dave,
+Add two small functions:
+efi_merge_regions and efi_map_regions, efi_enter_virtual_mode
+calls them instead of embedding two long for loop.
 
-I think that we don't need to avoid stack overflow completely but we need to avoid data being derefrenced that is not part of stack.
+v1->v2:
+refresh; coding style fixes.
 
-I agree with you that there is no rule in ABI to guarantee that stack overflow will only occur when backtracking last set of register.
+v2->v3:
+Toshi Kani:
+remove unused variable
+Matt: check return value of krealloc.
+v3->v4:
+Boris: Stretch comment to 80 cols
 
->From my understanding of code the only chances of getting a data abort is while executing these four instructions:
-1) 1000iiii iiiiiiii : Pop up to 12 integer registers under masks {r15-r12}, {r11-r4}
-2) 10100nnn : Pop r4-r[4+nnn]
-3) 10101nnn : Pop r4-r[4+nnn], r14
-4) 10110001 0000iiii : Pop integer registers under mask {r3, r2, r1, r0}
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/platform/efi/efi.c |  109 ++++++++++++++++++++++++++------------------
+ 1 file changed, 66 insertions(+), 43 deletions(-)
 
-I think it would be better to execute these instruction in their own seperate functions, which would be called from unwind_exec_insn, and in those function depending on the depth of stack remaining we can decide whether it is possible to execute the instruction or not.
+--- efi.orig/arch/x86/platform/efi/efi.c
++++ efi/arch/x86/platform/efi/efi.c
+@@ -773,44 +773,12 @@ void __init old_map_region(efi_memory_de
+ 		       (unsigned long long)md->phys_addr);
+ }
+ 
+-/*
+- * This function will switch the EFI runtime services to virtual mode.
+- * Essentially, we look through the EFI memmap and map every region that
+- * has the runtime attribute bit set in its memory descriptor into the
+- * ->trampoline_pgd page table using a top-down VA allocation scheme.
+- *
+- * The old method which used to update that memory descriptor with the
+- * virtual address obtained from ioremap() is still supported when the
+- * kernel is booted with efi=old_map on its command line. Same old
+- * method enabled the runtime services to be called without having to
+- * thunk back into physical mode for every invocation.
+- *
+- * The new method does a pagetable switch in a preemption-safe manner
+- * so that we're in a different address space when calling a runtime
+- * function. For function arguments passing we do copy the PGDs of the
+- * kernel page table into ->trampoline_pgd prior to each call.
+- */
+-void __init efi_enter_virtual_mode(void)
++/* Merge contiguous regions of the same type and attribute */
++static void __init efi_merge_regions(void)
+ {
++	void *p;
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+-	void *p, *new_memmap = NULL;
+-	unsigned long size;
+-	efi_status_t status;
+-	u64 end, systab;
+-	int count = 0;
+-
+-	efi.systab = NULL;
+-
+-	/*
+-	 * We don't do virtual mode, since we don't do runtime services, on
+-	 * non-native EFI
+-	 */
+-	if (!efi_is_native()) {
+-		efi_unmap_memmap();
+-		return;
+-	}
+ 
+-	/* Merge contiguous regions of the same type and attribute */
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		u64 prev_size;
+ 		md = p;
+@@ -837,6 +805,18 @@ void __init efi_enter_virtual_mode(void)
+ 		prev_md = md;
+ 
+ 	}
++}
++
++/*
++ * Map efi memory ranges for runtime serivce and update new_memmap with virtual
++ * addresses.
++ */
++static void * __init efi_map_regions(int *count)
++{
++	efi_memory_desc_t *md;
++	void *p, *new_memmap = NULL;
++	unsigned long size;
++	u64 end, systab;
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+@@ -861,14 +841,60 @@ void __init efi_enter_virtual_mode(void)
+ 		}
+ 
+ 		new_memmap = krealloc(new_memmap,
+-				      (count + 1) * memmap.desc_size,
+-				      GFP_KERNEL);
++					(*count + 1) * memmap.desc_size,
++					GFP_KERNEL);
+ 		if (!new_memmap)
+-			goto err_out;
++			goto ret;
+ 
+-		memcpy(new_memmap + (count * memmap.desc_size), md,
++		memcpy(new_memmap + (*count * memmap.desc_size), md,
+ 		       memmap.desc_size);
+-		count++;
++		(*count)++;
++	}
++
++ret:
++	return new_memmap;
++}
++
++/*
++ * This function will switch the EFI runtime services to virtual mode.
++ * Essentially, we look through the EFI memmap and map every region that
++ * has the runtime attribute bit set in its memory descriptor into the
++ * ->trampoline_pgd page table using a top-down VA allocation scheme.
++ *
++ * The old method which used to update that memory descriptor with the
++ * virtual address obtained from ioremap() is still supported when the
++ * kernel is booted with efi=old_map on its command line. Same old
++ * method enabled the runtime services to be called without having to
++ * thunk back into physical mode for every invocation.
++ *
++ * The new method does a pagetable switch in a preemption-safe manner
++ * so that we're in a different address space when calling a runtime
++ * function. For function arguments passing we do copy the PGDs of the
++ * kernel page table into ->trampoline_pgd prior to each call.
++ */
++void __init efi_enter_virtual_mode(void)
++{
++	efi_status_t status;
++	void *new_memmap = NULL;
++	int count = 0;
++
++	efi.systab = NULL;
++
++	/*
++	 * We don't do virtual mode, since we don't do runtime services, on
++	 * non-native EFI
++	 */
++	if (!efi_is_native()) {
++		efi_unmap_memmap();
++		return;
++	}
++
++	efi_merge_regions();
++
++	new_memmap = efi_map_regions(&count);
++	if (!new_memmap) {
++		pr_err("Error reallocating memory, EFI runtime non-functional!\n");
++		return;
+ 	}
+ 
+ 	BUG_ON(!efi.systab);
+@@ -922,9 +948,6 @@ void __init efi_enter_virtual_mode(void)
+ 			 0, NULL);
+ 
+ 	return;
+-
+- err_out:
+-	pr_err("Error reallocating memory, EFI runtime non-functional!\n");
+ }
+ 
+ /*
 
-The above method will add some extra code but will avoid additional checks that are not required every where.
-
-and solve our purpose also as we need to avoid data abort due to stack overflow not stack overflow completely.
-
-Regards
-Anurag Aggarwal
-
-------- Original Message -------
-Sender : Dave Martin<Dave.Martin@arm.com>
-Date : Nov 23, 2013 01:07 (GMT+05:30)
-Title : Re: [PATCH] ARM: unwinder: Handle Stackoverflow in unwind_exec_insn
-
-On Sat, Nov 09, 2013 at 12:28:57PM +0530, Anurag Aggarwal wrote:
-> Thanks for your input Dave,
-> 
-> I think there is another way to avoid the stack overflow and reduce
-> the number of checks also,
-> 
-> Stack overflow will cause a problem only when we are backtracking the
-> last set of registers.
-> i.e when the difference between current SP and top of stack is less
-> than or equal to number of registers
-
-Apologies, it looks like I failed to respond to this earlier...
-
-
-Although that will usually be correct, there is no rule in the ABI to
-guarantee it.
-
-> we can create two unwind_exec_insn, one without checks and one with checks.
-> 
-> then we call the correct function from unwind_frame depending on the
-> difference of SP and top of stack.
-> 
-> This will reduce the amount of checks every time we read a set of
-> registers from stack
-
-That sounds like it might duplicate a lot of code, to optimise based on
-assumptions that may not always be true, for what really should not be a
-hot path in the kernel.
-
-If you can find a tidy way of doing it, it would be certainly worth
-reviewing, but I still think it would be simpler just to do a simple
-bounds check for every word read from the stack -- it should be
-impossible for that to go wrong, even if some of the bounds checks
-are not stictly required.
-
-Cheers
----DaveˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
