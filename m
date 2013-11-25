@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3KYMBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:01:47 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56029 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753344Ab3KYMBm (ORCPT
+	id S1753592Ab3KYMCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:02:11 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63004 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753248Ab3KYMCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:01:42 -0500
-Date: Mon, 25 Nov 2013 12:01:25 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 2/2] rtc: add hym8563 rtc-driver
-Message-ID: <20131125120125.GD32081@e106331-lin.cambridge.arm.com>
-References: <201311222254.07730.heiko@sntech.de>
- <201311222255.48943.heiko@sntech.de>
+	Mon, 25 Nov 2013 07:02:08 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, hg197@gmx.de,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Cpufreq: Change sysfs interface cpuinfo_cur_freq access privilege
+Date: Mon, 25 Nov 2013 13:14:54 +0100
+Message-ID: <1521595.q8BSAikk1K@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52933AB5.9060409@intel.com>
+References: <1385348018-30525-1-git-send-email-tianyu.lan@intel.com> <5074010.ha99UACE9S@vostro.rjw.lan> <52933AB5.9060409@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201311222255.48943.heiko@sntech.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
+On Monday, November 25, 2013 07:55:33 PM Lan Tianyu wrote:
+> On 11/25/2013 07:26 PM, Rafael J. Wysocki wrote:
+> > On Monday, November 25, 2013 01:33:39 PM Lan Tianyu wrote:
+> >> On 2013年11月25日 12:30, Viresh Kumar wrote:
+> >>> On 25 November 2013 08:23, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> >>>> Currently, cpuinfo_cur_freq is only accessible for root user while
+> >>>> other cpufreq sysfs interfaces(E,G scaling_cur_freq) are available
+> >>>> to ordinary user. This seems make no sense. This patch is to change
+> >>>> it.
+> >>>
+> >>> There is nothing wrong with the code and so this is more of a design
+> >>> change..
+> >>>
+> >>> Probably Rafael can help us here as cpufreq_cur_freq will read stuff
+> >>> directly from hardware instead of using cached value in software.
+> >>
+> >> I think so, too. I also tried to checking the reason of the privilege by
+> >> git log but the code was there before linux kernel being migrated to git
+> >> repository.
+> >
+> > And it has always behaved in the same way?  Then I wouldn't change it.
+> >
+> 
+> It has been there since 2.6.12-rc2 or more early. But the 
+> cpuinfo_cur_freq is read-only and seems no harmful.
 
-> +static int hym8563_probe(struct i2c_client *client,
-> +                        const struct i2c_device_id *id)
-> +{
-> +       struct hym8563 *hym8563;
-> +       int ret, gpio_int;
-> +
-> +       hym8563 = devm_kzalloc(&client->dev, sizeof(hym8563), GFP_KERNEL);
-> +       if (!hym8563)
-> +               return -ENOMEM;
-> +
-> +       hym8563->client = client;
-> +       i2c_set_clientdata(client, hym8563);
-> +
-> +       device_set_wakeup_capable(&client->dev, true);
-> +
-> +       gpio_int = of_get_gpio(client->dev.of_node, 0);
-> +       if (!gpio_is_valid(gpio_int)) {
-> +               dev_err(&client->dev, "failed to get interrupt gpio\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = devm_gpio_request_one(&client->dev, gpio_int,
-> +                                     GPIOF_DIR_IN, "hym8563_int");
-> +       if (ret) {
-> +               dev_err(&client->dev, "request of gpio %d failed, %d\n",
-> +                       gpio_int, ret);
-> +               return ret;
-> +       }
+If it reads things directly from hardware, it may not be totally neutral.
 
->From here on the gpio is never used or even stashed away anywhere.
-What's the point in requesting it and then leaking it?
+Thanks!
 
-Thanks,
-Mark.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
