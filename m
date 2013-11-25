@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3KYOqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:46:17 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:35909 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab3KYOqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:46:13 -0500
+	id S1754637Ab3KYOtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:49:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38893 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753847Ab3KYOtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:49:43 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 5/6] watchdog: davinci: reuse driver for keystone arch
+Date: Mon, 25 Nov 2013 16:48:26 +0200
+Message-ID: <1385390906-27247-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <7242109.um7KlGhuI2@amdc1227>
-References: <1384881034-10520-1-git-send-email-t.figa@samsung.com>
-	<528BB789.5020201@wwwdotorg.org>
-	<7242109.um7KlGhuI2@amdc1227>
-Date: Mon, 25 Nov 2013 15:46:12 +0100
-Message-ID: <CACRpkdZHUfZinS20OFm+DkziiACxDOvJNhDMvdw3LdDbau1tCA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow grouping multiple pinmux/pinconf nodes
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 3:00 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> Stephen:
->> Is the lifetime of the string "returned" by
->> of_property_read_string_index() really so short that you must copy the
->> string? I'd be tempted just to store the pointer, although perhaps you
->> need to get() the node so that's safe.
->
-> Right. I have done it the copy-less way in other places, but missed this
-> one. Thanks.
+The keystone arch uses the same IP watchdog, so add "ti,keystone-wdt"
+compatible and correct identity.
 
-So I guess I'm waiting for a new version of this patch, right?
+The Keystone arch is using clocks in DT and source clock for watchdog
+has to be specified, so add this to binding.
 
-Yours,
-Linus Walleij
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+---
+ .../devicetree/bindings/watchdog/davinci-wdt.txt   |   12 ++++++++++--
+ drivers/watchdog/Kconfig                           |    4 ++--
+ drivers/watchdog/davinci_wdt.c                     |    2 +-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+index e450134..4d89317 100644
+--- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
++++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+@@ -1,11 +1,18 @@
+-DaVinci Watchdog Timer (WDT) Controller
++Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
+ 
+ Required properties:
+-- compatible : Should be "ti,davinci-wdt"
++- compatible : Should be "ti,davinci-wdt" or "ti,keystone-wdt"
+ - reg : Should contain WDT registers location and length
+ 
+ Optional properties:
+ - timeout-sec : Contains the watchdog timeout in seconds
++- clocks : the clock feeding the watchdog timer.
++	   Needed if platform uses clocks.
++	   See clock-bindings.txt
++
++Documentation:
++Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
++Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+ 
+ Examples:
+ 
+@@ -13,4 +20,5 @@ wdt: wdt@2320000 {
+ 	compatible = "ti,davinci-wdt";
+ 	reg = <0x02320000 0x80>;
+ 	timeout-sec = <30>;
++	clocks = <&clkwdtimer0>;
+ };
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index eb8c89d..01f3f81 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -270,12 +270,12 @@ config IOP_WATCHDOG
+ 
+ config DAVINCI_WATCHDOG
+ 	tristate "DaVinci watchdog"
+-	depends on ARCH_DAVINCI
++	depends on ARCH_DAVINCI || ARCH_KEYSTONE
+ 	select WATCHDOG_CORE
+ 	select WATCHDOG_NOWAYOUT
+ 	help
+ 	  Say Y here if to include support for the watchdog timer
+-	  in the DaVinci DM644x/DM646x processors.
++	  in the DaVinci DM644x/DM646x or Keystone processors.
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called davinci_wdt.
+ 
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index d342fc2..9128c74 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -143,7 +143,7 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
+ 
+ static const struct watchdog_info davinci_wdt_info = {
+ 	.options = WDIOF_KEEPALIVEPING,
+-	.identity = "DaVinci Watchdog",
++	.identity = "DaVinci/Keystone Watchdog",
+ };
+ 
+ static const struct watchdog_ops davinci_wdt_ops = {
+-- 
+1.7.9.5
+
