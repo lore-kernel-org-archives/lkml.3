@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab3KYN4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:56:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58981 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754387Ab3KYNyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:54:02 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755656Ab3KYN4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:56:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47257 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753820Ab3KYN4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 08:56:17 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <bcousson@baylibre.com>
+CC: <balbi@ti.com>, <nm@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: dts: omap3-beagle: Fix USB host on beagle boards (for 3.13)
+Date: Mon, 25 Nov 2013 15:55:45 +0200
+Message-ID: <1385387745-7162-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, dri-devel@lists.freedesktop.org,
-        "Ville =?UTF-8?Q?Syrj=C3=A4l=C3=A4?=" <ville.syrjala@linux.intel.com>,
-        "Dave Airlie" <airlied@redhat.com>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.39926199@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 74/87] drm: Prevent overwriting from userspace
- underallocating core ioctl structs
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+Beagle (rev. C4) and Beagle-XM (all revs) need VAUX2 1.8V supply
+for the USB PHY.
 
-------------------
+As the generic PHY driver can't handle more than one supply
+at the moment, we configure this supply to be always on.
+This will cause a very small power impact if the USB host subsystem
+is not in use, about 76.86 micro-W + LDO power.
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+Older Beagle boards (prior to C4) don't have VAUX2 connected anywhere,
+so there won't be any functional impact on those boards other than
+some additional LDO power consumption.
 
-commit b062672e305ce071f21eb9e18b102c2a430e0999 upstream.
-
-Apply the protections from
-
-commit 1b2f1489633888d4a06028315dc19d65768a1c05
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Sat Aug 14 20:20:34 2010 +1000
-
-    drm: block userspace under allocating buffer and having drivers overwrite it (v2)
-
-to the core ioctl structs as well, for we found one instance where there
-is a 32-/64-bit size mismatch and were guilty of writing beyond the end
-of the user's buffer.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@redhat.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/gpu/drm/drm_drv.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/omap3-beagle-xm.dts | 8 ++++++++
+ arch/arm/boot/dts/omap3-beagle.dts    | 8 ++++++++
+ 2 files changed, 16 insertions(+)
 
---- a/drivers/gpu/drm/drm_drv.c
-+++ b/drivers/gpu/drm/drm_drv.c
-@@ -408,9 +408,16 @@ long drm_ioctl(struct file *filp,
- 			asize = drv_size;
- 	}
- 	else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
-+		u32 drv_size;
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index 31a632f..b39918e 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -215,3 +215,11 @@
+ &usbhsehci {
+ 	phys = <0 &hsusb2_phy>;
+ };
 +
- 		ioctl = &drm_ioctls[nr];
--		cmd = ioctl->cmd;
++&vaux2 {
++	regulator-name = "usb_1v8";
++	regulator-min-microvolt = <1800000>;
++	regulator-max-microvolt = <1800000>;
++	regulator-always-on;
++};
 +
-+		drv_size = _IOC_SIZE(ioctl->cmd);
- 		usize = asize = _IOC_SIZE(cmd);
-+		if (drv_size > asize)
-+			asize = drv_size;
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index fa532aa..9764556 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -178,3 +178,11 @@
+ 	mode = <3>;
+ 	power = <50>;
+ };
 +
-+		cmd = ioctl->cmd;
- 	} else
- 		goto err_i1;
- 
++&vaux2 {
++	regulator-name = "vdd_ehci";
++	regulator-min-microvolt = <1800000>;
++	regulator-max-microvolt = <1800000>;
++	regulator-always-on;
++};
++
+-- 
+1.8.3.2
 
