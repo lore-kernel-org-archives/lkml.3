@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3KYOLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:11:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59026 "EHLO
+	id S1757501Ab3KYOLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:11:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59006 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754507Ab3KYNxp (ORCPT
+	by vger.kernel.org with ESMTP id S1754366Ab3KYNxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:45 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>
+CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
+        "Chris Murphy" <chris@cmurf.com>,
+        "Henrik Rydberg" <rydberg@euromail.se>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.783497232@decadent.org.uk>
+Message-ID: <lsq.1385387069.598097129@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 50/87] mac80211: correctly close cancelled scans
+Subject: [PATCH 3.2 51/87] hwmon: (applesmc) Always read until end of data
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,86 +32,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
+commit 25f2bd7f5add608c1d1405938f39c96927b275ca upstream.
 
-__ieee80211_scan_completed is called from a worker. This
-means that the following flow is possible.
+The crash reported and investigated in commit 5f4513 turned out to be
+caused by a change to the read interface on newer (2012) SMCs.
 
- * driver calls ieee80211_scan_completed
- * mac80211 cancels the scan (that is already complete)
- * __ieee80211_scan_completed runs
+Tests by Chris show that simply reading the data valid line is enough
+for the problem to go away. Additional tests show that the newer SMCs
+no longer wait for the number of requested bytes, but start sending
+data right away.  Apparently the number of bytes to read is no longer
+specified as before, but instead found out by reading until end of
+data. Failure to read until end of data confuses the state machine,
+which eventually causes the crash.
 
-When scan_work will finally run, it will see that the scan
-hasn't been aborted and might even trigger another scan on
-another band. This leads to a situation where cfg80211's
-scan is not done and no further scan can be issued.
+As a remedy, assuming bit0 is the read valid line, make sure there is
+nothing more to read before leaving the read function.
 
-Fix this by setting a new flag when a HW scan is being
-cancelled so that no other scan will be triggered.
+Tested to resolve the original problem, and runtested on MBA3,1,
+MBP4,1, MBP8,2, MBP10,1, MBP10,2. The patch seems to have no effect on
+machines before 2012.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Tested-by: Chris Murphy <chris@cmurf.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/ieee80211_i.h |  3 +++
- net/mac80211/scan.c        | 19 +++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ drivers/hwmon/applesmc.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -708,6 +708,8 @@ struct tpt_led_trigger {
-  *	that the scan completed.
-  * @SCAN_ABORTED: Set for our scan work function when the driver reported
-  *	a scan complete for an aborted scan.
-+ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
-+ *	cancelled.
-  */
- enum {
- 	SCAN_SW_SCANNING,
-@@ -715,6 +717,7 @@ enum {
- 	SCAN_OFF_CHANNEL,
- 	SCAN_COMPLETED,
- 	SCAN_ABORTED,
-+	SCAN_HW_CANCELLED,
- };
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -212,6 +212,7 @@ static int send_argument(const char *key
  
- /**
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -224,6 +224,9 @@ static bool ieee80211_prep_hw_scan(struc
- 	enum ieee80211_band band;
- 	int i, ielen, n_chans;
+ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ {
++	u8 status, data = 0;
+ 	int i;
  
-+	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
-+		return false;
-+
- 	do {
- 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
- 			return false;
-@@ -815,7 +818,23 @@ void ieee80211_scan_cancel(struct ieee80
- 	if (!local->scan_req)
- 		goto out;
+ 	if (send_command(cmd) || send_argument(key)) {
+@@ -219,6 +220,7 @@ static int read_smc(u8 cmd, const char *
+ 		return -EIO;
+ 	}
  
-+	/*
-+	 * We have a scan running and the driver already reported completion,
-+	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
-+	 * cancelled.
-+	 */
-+	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
-+	    test_bit(SCAN_COMPLETED, &local->scanning)) {
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
-+		goto out;
++	/* This has no effect on newer (2012) SMCs */
+ 	outb(len, APPLESMC_DATA_PORT);
+ 
+ 	for (i = 0; i < len; i++) {
+@@ -229,6 +231,17 @@ static int read_smc(u8 cmd, const char *
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
+ 	}
+ 
++	/* Read the data port until bit0 is cleared */
++	for (i = 0; i < 16; i++) {
++		udelay(APPLESMC_MIN_WAIT);
++		status = inb(APPLESMC_CMD_PORT);
++		if (!(status & 0x01))
++			break;
++		data = inb(APPLESMC_DATA_PORT);
 +	}
++	if (i)
++		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
 +
- 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
-+		/*
-+		 * Make sure that __ieee80211_scan_completed doesn't trigger a
-+		 * scan on another band.
-+		 */
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
- 		if (local->ops->cancel_hw_scan)
- 			drv_cancel_hw_scan(local, local->scan_sdata);
- 		goto out;
+ 	return 0;
+ }
+ 
 
