@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3KYKFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:05:46 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:37797 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3KYKFk convert rfc822-to-8bit (ORCPT
+	id S1752941Ab3KYKDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:03:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46461 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3KYKC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:05:40 -0500
+	Mon, 25 Nov 2013 05:02:56 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <kishon@ti.com>, <gregkh@linuxfoundation.org>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>
+Subject: [PATCH v3 06/10] Documentation: dt bindings: move ..usb/usb-phy.txt to ..phy/ti-phy.txt
+Date: Mon, 25 Nov 2013 15:31:26 +0530
+Message-ID: <1385373690-12170-7-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1385373690-12170-1-git-send-email-kishon@ti.com>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <19201.1385372189@warthog.procyon.org.uk>
-References: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
-	<19201.1385372189@warthog.procyon.org.uk>
-Date: Mon, 25 Nov 2013 11:05:39 +0100
-X-Google-Sender-Auth: JG7ceIidY_E7YXP7OhnicG5yIPY
-Message-ID: <CAMuHMdWNKJP6wA0AGvEN1dEKNw9Vux+5sSv=6An8M-TdBCCGZA@mail.gmail.com>
-Subject: Re: assoc_array.c uninitialized variable (was: Re: [PATCH 02/10] Add
- a generic associative array implementation.)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Since now we have a separate folder for phy, move the PHY dt binding
+documentation of TI to that folder.
 
-On Mon, Nov 25, 2013 at 10:36 AM, David Howells <dhowells@redhat.com> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->
->> > +       int slot, next_slot, free_slot, i, j;
->>
->> lib/assoc_array.c: In function ‘assoc_array_insert_into_terminal_node’:
->> lib/assoc_array.c:502: warning: ‘j’ may be used uninitialized in this function
->
-> What compiler are you using?  Mine doesn't show this.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ .../devicetree/bindings/{usb/usb-phy.txt => phy/ti-phy.txt}    |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+ rename Documentation/devicetree/bindings/{usb/usb-phy.txt => phy/ti-phy.txt} (88%)
 
-Good old 4.2.1. Newer compilers don't give these warnings anymore, presumably
-because there were too many false positives. But from time to time, there's
-a real issue.
+diff --git a/Documentation/devicetree/bindings/usb/usb-phy.txt b/Documentation/devicetree/bindings/phy/ti-phy.txt
+similarity index 88%
+rename from Documentation/devicetree/bindings/usb/usb-phy.txt
+rename to Documentation/devicetree/bindings/phy/ti-phy.txt
+index c0245c8..207e14c 100644
+--- a/Documentation/devicetree/bindings/usb/usb-phy.txt
++++ b/Documentation/devicetree/bindings/phy/ti-phy.txt
+@@ -1,4 +1,4 @@
+-USB PHY
++TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+ 
+ OMAP USB2 PHY
+ 
+@@ -21,10 +21,10 @@ usb2phy@4a0ad080 {
+ 	#phy-cells = <0>;
+ };
+ 
+-OMAP USB3 PHY
++TI PIPE3 PHY
+ 
+ Required properties:
+- - compatible: Should be "ti,omap-usb3"
++ - compatible: Should be "ti,phy-usb3". "ti,omap-usb3" is deprecated.
+  - reg : Address and length of the register set for the device.
+  - reg-names: The names of the register addresses corresponding to the registers
+    filled in "reg".
+@@ -38,7 +38,7 @@ Optional properties:
+ This is usually a subnode of ocp2scp to which it is connected.
+ 
+ usb3phy@4a084400 {
+-	compatible = "ti,omap-usb3";
++	compatible = "ti,phy-usb3";
+ 	reg = <0x4a084400 0x80>,
+ 	      <0x4a084800 0x64>,
+ 	      <0x4a084c00 0x40>;
+-- 
+1.7.10.4
 
-> Technically, the compiler is correct - but we should never see the variable
-> undefined following the found_slot_for_multiple_occupancy unless the tree
-> changes under us. Out of a set of N+1 integers that can only be in the range
-> 0..N-1 there must be at least two the same.
-
-OK.
-
-> I guess I could preclear j to make the warning go away.
-
-Please use a big number instead of zero, so the
-
-        BUG_ON(j >= ASSOC_ARRAY_FAN_OUT + 1);
-
-will catch it later.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
