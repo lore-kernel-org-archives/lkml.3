@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab3KYEEx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 23:04:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59074 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab3KYEEu (ORCPT
+	id S1753526Ab3KYEMz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 23:12:55 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:53305 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab3KYEMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 23:04:50 -0500
-Message-ID: <5292CC5E.3000405@infradead.org>
-Date: Sun, 24 Nov 2013 20:04:46 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 24 Nov 2013 23:12:52 -0500
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org, tomas.winkler@intel.com
-Subject: Re: [PATCH 3/3] [trivial] mei: Fix typo in mei drivers
-References: <1385220974-3469-1-git-send-email-standby24x7@gmail.com> <1385220974-3469-3-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1385220974-3469-3-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <CAArO44vmfkroE9w4KviOhjkPvg9bTX9pAtr3oxYjD9u_wVZXeg@mail.gmail.com>
+References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1385057731-4348-2-git-send-email-prabhakar.csengg@gmail.com> <CAArO44vmfkroE9w4KviOhjkPvg9bTX9pAtr3oxYjD9u_wVZXeg@mail.gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Mon, 25 Nov 2013 09:42:30 +0530
+Message-ID: <CA+V-a8sjmo2K16m9_6Zf1qwcez+qKm-9JW1Cb=Aj4prtXd=-fA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/6] gpio: davinci: use readl/writel instead of __raw_*
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/13 07:36, Masanari Iida wrote:
-> Correct spelling typo in comments within mei.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/misc/mei/amthif.c  |  4 ++--
->  drivers/misc/mei/debugfs.c |  2 +-
->  drivers/misc/mei/hbm.c     | 12 ++++++------
->  drivers/misc/mei/mei_dev.h |  2 +-
->  4 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-> index e3870f2..10b172a 100644
-> --- a/drivers/misc/mei/debugfs.c
-> +++ b/drivers/misc/mei/debugfs.c
-> @@ -43,7 +43,7 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
->  
->  	mutex_lock(&dev->device_lock);
->  
-> -	/*  if the driver is not enabled the list won't b consitent */
-> +	/*  if the driver is not enabled the list won't b consistent */
+Hi Taras,
 
-	                                                be
+On Fri, Nov 22, 2013 at 3:38 PM, Taras Kondratiuk
+<taras.kondratiuk@linaro.org> wrote:
+> On 21 November 2013 20:15, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> This patch replaces the __raw_readl/writel with
+>> readl and writel, Altough the code runs on ARMv5
+>> based SOCs, changing this will help copying the code
+>> for other uses.
+>
+> This replacement has a functional impact: it adds memory barriers.
+> Please note this in the description.
+> Also please add a bit of explanation on why do you need to add barriers.
+>
+Agreed this adds memory barriers, I'll add a note about it.
 
->  	if (dev->dev_state != MEI_DEV_ENABLED)
->  		goto out;
->  
-> diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-> index 9b3a0fb..96fed82 100644
-> --- a/drivers/misc/mei/hbm.c
-> +++ b/drivers/misc/mei/hbm.c
-> @@ -90,7 +90,7 @@ void mei_hbm_cl_hdr(struct mei_cl *cl, u8 hbm_cmd, void *buf, size_t len)
->   * @file: private data of the file object.
->   * @disconn: disconnection request.
->   *
-> - * returns true if addres are same
-> + * returns true if address are same
-
-                      addresses
-
->   */
->  static inline
->  bool mei_hbm_cl_addr_equal(struct mei_cl *cl, void *buf)
-
-
--- 
-~Randy
+Thanks,
+--Prabhakar Lad
