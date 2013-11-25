@@ -1,99 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3KYSw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:52:29 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:49031 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3KYSw1 (ORCPT
+	id S1756865Ab3KYSz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:55:29 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:34118 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab3KYSz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:52:27 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
-Date: Mon, 25 Nov 2013 19:52:22 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201311251510.00987@pali> <20131125151838.GD21526@amd.pavel.ucw.cz>
-In-Reply-To: <20131125151838.GD21526@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1742409.h6PmHPnvMv";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Mon, 25 Nov 2013 13:55:27 -0500
+Message-ID: <1385405723.15768.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, tom.vaden@hp.com,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 25 Nov 2013 10:55:23 -0800
+In-Reply-To: <alpine.DEB.2.02.1311251803040.30673@ionos.tec.linutronix.de>
+References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
+	 <1385168197-8612-5-git-send-email-davidlohr@hp.com>
+	 <CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com>
+	 <1385176773.5402.14.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>
+	 <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>
+	 <alpine.DEB.2.02.1311251715490.30673@ionos.tec.linutronix.de>
+	 <20131125163627.GC10022@twins.programming.kicks-ass.net>
+	 <alpine.DEB.2.02.1311251803040.30673@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311251952.23194@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1742409.h6PmHPnvMv
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-11-25 at 18:32 +0100, Thomas Gleixner wrote:
+> On Mon, 25 Nov 2013, Peter Zijlstra wrote:
+> > On Mon, Nov 25, 2013 at 05:23:51PM +0100, Thomas Gleixner wrote:
+> > > On Sat, 23 Nov 2013, Linus Torvalds wrote:
+> > > 
+> > > > On Sat, Nov 23, 2013 at 5:16 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > > >
+> > > > > Now the question is why we queue the waiter _AFTER_ reading the user
+> > > > > space value. The comment in the code is pretty non sensical:
+> > > > >
+> > > > >    * On the other hand, we insert q and release the hash-bucket only
+> > > > >    * after testing *uaddr.  This guarantees that futex_wait() will NOT
+> > > > >    * absorb a wakeup if *uaddr does not match the desired values
+> > > > >    * while the syscall executes.
+> > > > >
+> > > > > There is no reason why we cannot queue _BEFORE_ reading the user space
+> > > > > value. We just have to dequeue in all the error handling cases, but
+> > > > > for the fast path it does not matter at all.
+> > > > >
+> > > > > CPU 0                                   CPU 1
+> > > > >
+> > > > >     val = *futex;
+> > > > >     futex_wait(futex, val);
+> > > > >
+> > > > >     spin_lock(&hb->lock);
+> > > > >
+> > > > >     plist_add(hb, self);
+> > > > >     smp_wmb();
+> > > > >
+> > > > >     uval = *futex;
+> > > > >                                         *futex = newval;
+> > > > >                                         futex_wake();
+> > > > >
+> > > > >                                         smp_rmb();
+> > > > >                                         if (plist_empty(hb))
+> > > > >                                            return;
+> > > > > ...
+> > > > 
+> > > > This would seem to be a nicer approach indeed, without needing the
+> > > > extra atomics.
+> > > 
+> > > I went through the issue with Peter and he noticed, that we need
+> > > smp_mb() in both places. That's what we have right now with the
+> > > spin_lock() and it is required as we need to guarantee that
+> > > 
+> > >  The waiter observes the change to the uaddr value after it added
+> > >  itself to the plist
+> > > 
+> > >  The waker observes plist not empty if the change to uaddr was made
+> > >  after the waiter checked the value.
+> > > 
+> > > 
+> > > 	write(plist)		|	write(futex_uaddr)
+> > > 	mb()			|	mb()
+> > > 	read(futex_uaddr)	|	read(plist)
+> > > 
+> > > The spin_lock mb() on the waiter side does not help here because it
+> > > happpens before the write(plist) and not after it.
+> > 
+> > Ah, note that spin_lock() is only a smp_mb() on x86, in general its an
+> > ACQUIRE barrier which is weaker than a full mb and will not suffice in
+> > this case even it if were in the right place.
+> 
+> So now the question is whether this lockless empty check optimization
+> which seems to be quite nice on x86 for a particular workload will
+> have any negative side effects on other architectures.
+> 
+> If the smp_mb() is heavy weight, then it will hurt massivly in the
+> case where the hash bucket is not empty, because we add the price for
+> the smp_mb() just for no gain.
+> 
+> In that context it would also be helpful to measure the overhead on
+> x86 for the !empty case.
 
-On Monday 25 November 2013 16:18:39 Pavel Machek wrote:
-> On Mon 2013-11-25 15:10:00, Pali Roh=C3=A1r wrote:
-> > On Monday 25 November 2013 15:01:27 Pavel Machek wrote:
-> > > Where can I get dsme sources?
-> > >=20
-> > > 									Pavel
-> >=20
-> > dsme daemon: https://gitorious.org/community-ssu/dsme
-> > dsme thermal plugin:
-> > https://gitorious.org/rx51-bme-replacement/dsme-thermalobje
-> > ct-surface
-> >=20
-> > dsme thermal plugin is responsible for checking temperature
-> > of battery and send it to dsme damon. dsme daemon itself
-> > checking temperature limits and do something (e.g reboot
-> > device)
->=20
-> Thanks for links!
->=20
-> AFAICT.... dsme daemon does some kind of system management,
-> not directly controlling charging, right? It does monitor
-> system temperature.
->=20
+Absolutely, I will add these comparisons. If we do notice that we end up
+hurting the !empty case, would the current patch using atomic ops still
+be considered? We have made sure that none of the changes in this set
+affects performance on other workloads/smaller systems.
 
-Yes.
+Thanks,
+Davidlohr
 
-> Now.. Imagine phone left in car in charger (on sun). Likely
-> temperature will reach high values, kernel is charging, dsme
-> will reboot the system, but kernel will start charging again,
-> dsme will reboot again, ...
->=20
-> And it is not only high temperatures that are problem for
-> li-ion charging; battery should not be fast charged below 5C
-> and should not be charged below 0C. (Again, both are likely
-> to happen if you leave your phone in car).
->=20
-> AFAICT, we should simply disable charging below 5C or above
-> 45C.
->=20
-> 									Pavel
-
-Similar patch (as this) can be added to check for temperature=20
-from specified power supply driver (in timer reset thread). This=20
-can be easy and will fix this problem.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1742409.h6PmHPnvMv
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKTnGcACgkQi/DJPQPkQ1IXKACfSgKKhTWlMYtzZRHnh33u/Hst
-CNMAniaXzXBwrIa+qQV0ZBRuDVKDHtrq
-=KPEE
------END PGP SIGNATURE-----
-
---nextPart1742409.h6PmHPnvMv--
