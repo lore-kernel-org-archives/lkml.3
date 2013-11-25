@@ -1,201 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3KYFGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 00:06:05 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61196 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab3KYFFg (ORCPT
+	id S1752106Ab3KYFLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 00:11:17 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:55310 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab3KYFLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 00:05:36 -0500
-X-AuditID: 9c93016f-b7b6aae000005fae-9d-5292da9d13c1
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Jens Axboe <axboe@kernel.dk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Bob Liu <bob.liu@oracle.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v8 2/4] zsmalloc: add more comment
-Date: Mon, 25 Nov 2013 14:06:16 +0900
-Message-Id: <1385355978-6386-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385355978-6386-1-git-send-email-minchan@kernel.org>
-References: <1385355978-6386-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 25 Nov 2013 00:11:15 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5292DBF1.7040709@roeck-us.net>
+Date: Sun, 24 Nov 2013 21:11:13 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Tim Kryger <tim.kryger@linaro.org>, Matt Porter <matt.porter@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Compile error in i2c-bcm-kona.c
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nitin Cupta <ngupta@vflare.org>
+Upstream HEAD, arm allmodconfig:
 
-This patch adds lots of comments and it will help others
-to review and enhance.
+drivers/i2c/busses/i2c-bcm-kona.c:894:1: error: '__mod_of_device_table' aliased to undefined symbol 'kona_i2c_of_match'
+make[3]: *** [drivers/i2c/busses/i2c-bcm-kona.o] Error 1
+make[2]: *** [drivers/i2c/busses] Error 2
+make[1]: *** [drivers/i2c] Error 2
+make[1]: *** Waiting for unfinished jobs....
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zsmalloc/zsmalloc-main.c |   66 +++++++++++++++++++++++++-----
- drivers/staging/zsmalloc/zsmalloc.h      |    9 +++-
- 2 files changed, 64 insertions(+), 11 deletions(-)
+Source:
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index f57258fa0c9d..52ebddd7fe8c 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -10,16 +10,14 @@
-  * Released under the terms of GNU General Public License Version 2.0
-  */
- 
--
- /*
-- * This allocator is designed for use with zcache and zram. Thus, the
-- * allocator is supposed to work well under low memory conditions. In
-- * particular, it never attempts higher order page allocation which is
-- * very likely to fail under memory pressure. On the other hand, if we
-- * just use single (0-order) pages, it would suffer from very high
-- * fragmentation -- any object of size PAGE_SIZE/2 or larger would occupy
-- * an entire page. This was one of the major issues with its predecessor
-- * (xvmalloc).
-+ * This allocator is designed for use with zram. Thus, the allocator is
-+ * supposed to work well under low memory conditions. In particular, it
-+ * never attempts higher order page allocation which is very likely to
-+ * fail under memory pressure. On the other hand, if we just use single
-+ * (0-order) pages, it would suffer from very high fragmentation --
-+ * any object of size PAGE_SIZE/2 or larger would occupy an entire page.
-+ * This was one of the major issues with its predecessor (xvmalloc).
-  *
-  * To overcome these issues, zsmalloc allocates a bunch of 0-order pages
-  * and links them together using various 'struct page' fields. These linked
-@@ -27,6 +25,21 @@
-  * page boundaries. The code refers to these linked pages as a single entity
-  * called zspage.
-  *
-+ * For simplicity, zsmalloc can only allocate objects of size up to PAGE_SIZE
-+ * since this satisfies the requirements of all its current users (in the
-+ * worst case, page is incompressible and is thus stored "as-is" i.e. in
-+ * uncompressed form). For allocation requests larger than this size, failure
-+ * is returned (see zs_malloc).
-+ *
-+ * Additionally, zs_malloc() does not return a dereferenceable pointer.
-+ * Instead, it returns an opaque handle (unsigned long) which encodes actual
-+ * location of the allocated object. The reason for this indirection is that
-+ * zsmalloc does not keep zspages permanently mapped since that would cause
-+ * issues on 32-bit systems where the VA region for kernel space mappings
-+ * is very small. So, before using the allocating memory, the object has to
-+ * be mapped using zs_map_object() to get a usable pointer and subsequently
-+ * unmapped using zs_unmap_object().
-+ *
-  * Following is how we use various fields and flags of underlying
-  * struct page(s) to form a zspage.
-  *
-@@ -98,7 +111,7 @@
- 
- /*
-  * Object location (<PFN>, <obj_idx>) is encoded as
-- * as single (void *) handle value.
-+ * as single (unsigned long) handle value.
-  *
-  * Note that object index <obj_idx> is relative to system
-  * page <PFN> it is stored in, so for each sub-page belonging
-@@ -264,6 +277,13 @@ static void set_zspage_mapping(struct page *page, unsigned int class_idx,
- 	page->mapping = (struct address_space *)m;
- }
- 
-+/*
-+ * zsmalloc divides the pool into various size classes where each
-+ * class maintains a list of zspages where each zspage is divided
-+ * into equal sized chunks. Each allocation falls into one of these
-+ * classes depending on its size. This function returns index of the
-+ * size class which has chunk size big enough to hold the give size.
-+ */
- static int get_size_class_index(int size)
- {
- 	int idx = 0;
-@@ -275,6 +295,13 @@ static int get_size_class_index(int size)
- 	return idx;
- }
- 
-+/*
-+ * For each size class, zspages are divided into different groups
-+ * depending on how "full" they are. This was done so that we could
-+ * easily find empty or nearly empty zspages when we try to shrink
-+ * the pool (not yet implemented). This function returns fullness
-+ * status of the given page.
-+ */
- static enum fullness_group get_fullness_group(struct page *page)
- {
- 	int inuse, max_objects;
-@@ -296,6 +323,12 @@ static enum fullness_group get_fullness_group(struct page *page)
- 	return fg;
- }
- 
-+/*
-+ * Each size class maintains various freelists and zspages are assigned
-+ * to one of these freelists based on the number of live objects they
-+ * have. This functions inserts the given zspage into the freelist
-+ * identified by <class, fullness_group>.
-+ */
- static void insert_zspage(struct page *page, struct size_class *class,
- 				enum fullness_group fullness)
- {
-@@ -313,6 +346,10 @@ static void insert_zspage(struct page *page, struct size_class *class,
- 	*head = page;
- }
- 
-+/*
-+ * This function removes the given zspage from the freelist identified
-+ * by <class, fullness_group>.
-+ */
- static void remove_zspage(struct page *page, struct size_class *class,
- 				enum fullness_group fullness)
- {
-@@ -334,6 +371,15 @@ static void remove_zspage(struct page *page, struct size_class *class,
- 	list_del_init(&page->lru);
- }
- 
-+/*
-+ * Each size class maintains zspages in different fullness groups depending
-+ * on the number of live objects they contain. When allocating or freeing
-+ * objects, the fullness status of the page can change, say, from ALMOST_FULL
-+ * to ALMOST_EMPTY when freeing an object. This function checks if such
-+ * a status change has occurred for the given page and accordingly moves the
-+ * page from the freelist of the old fullness group to that of the new
-+ * fullness group.
-+ */
- static enum fullness_group fix_fullness_group(struct zs_pool *pool,
- 						struct page *page)
- {
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index fbe6bec421aa..c2eb174b97ee 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -18,12 +18,19 @@
- /*
-  * zsmalloc mapping modes
-  *
-- * NOTE: These only make a difference when a mapped object spans pages
-+ * NOTE: These only make a difference when a mapped object spans pages.
-+ * They also have no effect when PGTABLE_MAPPING is selected.
-  */
- enum zs_mapmode {
- 	ZS_MM_RW, /* normal read-write mapping */
- 	ZS_MM_RO, /* read-only (no copy-out at unmap time) */
- 	ZS_MM_WO /* write-only (no copy-in at map time) */
-+	/*
-+	 * NOTE: ZS_MM_WO should only be used for initializing new
-+	 * (uninitialized) allocations.  Partial writes to already
-+	 * initialized allocations should use ZS_MM_RW to preserve the
-+	 * existing data.
-+	 */
- };
- 
- struct zs_pool;
--- 
-1.7.9.5
+static const struct of_device_id bcm_kona_i2c_of_match[] = {
+         {.compatible = "brcm,kona-i2c",},
+         {},
+};
+MODULE_DEVICE_TABLE(of, kona_i2c_of_match);
 
+Makes me wonder how this was tested :-(.
+
+Guenter
