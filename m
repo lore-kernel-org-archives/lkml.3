@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3KYLAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:00:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37225 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab3KYLAV (ORCPT
+	id S1752945Ab3KYLA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:00:59 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48490 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab3KYLA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 06:00:21 -0500
-Date: Mon, 25 Nov 2013 12:00:06 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        David Daney <david.daney@cavium.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: Preventing IPI sending races in arch code
-Message-ID: <20131125110006.GU3866@twins.programming.kicks-ass.net>
-References: <52932BE2.5010201@synopsys.com>
+	Mon, 25 Nov 2013 06:00:56 -0500
+Message-ID: <52932DA1.8040204@ti.com>
+Date: Mon, 25 Nov 2013 12:59:45 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52932BE2.5010201@synopsys.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
+        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
+        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>
+Subject: Re: Fwd: [PATCH 7/8] watchdog: davinci: add "clocks" property
+References: <1383680783-12114-8-git-send-email-ivan.khoronzhuk@ti.com> <527A28E8.4010204@ti.com> <201311231857.47104.arnd@arndb.de>
+In-Reply-To: <201311231857.47104.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 04:22:18PM +0530, Vineet Gupta wrote:
-> Hi,
+On 11/23/2013 07:57 PM, Arnd Bergmann wrote:
+> On Wednesday 06 November 2013, ivan.khoronzhuk wrote:
+>> @@ -7,6 +7,10 @@ Required properties:
+>>   
+>>   - reg : Should contain WDT registers location and length
+>>   
+>> +- clocks: phandle reference to the controller clock.
+>> +         Required only for Keystone arch.
+>> +         See clock-bindings.txt
+>> +
+>>   Optional properties:
+>>   
+>>   - timeout-sec:         Contains the watchdog timeout in seconds
 > 
-> I've been looking into cleaning up bitrot in ARC SMP support. Unlike some other
-> arches/platforms, we don't have per-msg-type IRQ, so the actual msg (say cross
-> function call) corresponding to IPI needs to be encoded in a per-cpu word (1 bit
-> per msg type) before kicking the IPI.
+> I think it should really be listed under "Optional properties" and the
+> reference to Keystone removed. Note how the binding would need
+> to change otherwise if another platform started to use the clock, which
+> is a little silly.
 > 
-> The current code (indicative below) is completely bonkers as it calls set_bit w/o
-> any protection whatsoever, clearly racy in case of multiple senders, where
-> receiver could end up NOT seeing one of the writes.
+> 	Arnd
 > 
-> ipi_send_msg(cpu, msg-type)
-> {
->    struct ipi_data *ipi_data = &per_cpu(ipi_data, cpu);
-> 
->    local_irq_save();
->    set_bit(msg-type, &ipi_data->bits)
->    plat_smp_ops.ipi_send(cpumask)
->    local_irq_restore();
-> }
-> 
-> Adding a spinlock here would serialize the sending part, but I still see issue in
-> receiver. Upon receipt of First IPI, the msg holding word will be atomically
-> exchanged with 0, so 2nd IPI will not see any msg in the word. Augmenting with an
-> atomic counter would only help detect the issue - but I don't see how it will help
-> elide the issue.
-> 
-> Does that mean w/o proper hardware assist (i.e. IRQ providing the msg id
-> indication), the race, however small, remains ?
 
-You can use cmpxchg to set the bit, and in case the previous value
-wasn't 0 not send a second IPI.
+Ok, I'll move clocks property under "Optional properties" and describe it
+as following:
+
+Optional properties:
+- timeout-sec : Contains the watchdog timeout in seconds
+- clocks: phandle reference to the controller clock.
+	  Needed if platform uses clocks.
+	  See clock-bindings.txt
+
+FYI:
+The new patch series had been already presented, where the patches
+"watchdog: davinci: add "clocks" property" and
+"watchdog: davinci: reuse driver for keystone arch" were combined.
+http://www.spinics.net/lists/devicetree/msg12542.html
+
+-- 
+Regards,
+Ivan Khoronzhuk
