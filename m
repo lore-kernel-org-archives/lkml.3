@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab3KYO0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:26:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58868 "EHLO
+	id S1758223Ab3KYO0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:26:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58861 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753945Ab3KYNxj (ORCPT
+	by vger.kernel.org with ESMTP id S1753963Ab3KYNxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:39 -0500
+	Mon, 25 Nov 2013 08:53:38 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Seif Mazareeb" <seif@marvell.com>, "Paul Moore" <paul@paul-moore.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.701442343@decadent.org.uk>
+Message-ID: <lsq.1385387069.92152905@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 37/87] random: run random_int_secret_init() run after
- all late_initcalls
+Subject: [PATCH 3.2 19/87] net: fix cipso packet validation when !NETLABEL
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,66 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Seif Mazareeb <seif@marvell.com>
 
-commit 47d06e532e95b71c0db3839ebdef3fe8812fca2c upstream.
+[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
 
-The some platforms (e.g., ARM) initializes their clocks as
-late_initcalls for some unknown reason.  So make sure
-random_int_secret_init() is run after all of the late_initcalls are
-run.
+When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
+forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
+crash in an SMP system, since the CPU executing this function will
+stall /not respond to IPIs.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[bwh: Backported to 3.2: adjust context]
+This problem can be reproduced by running the IP Stack Integrity Checker
+(http://isic.sourceforge.net) using the following command on a Linux machine
+connected to DUT:
+
+"icmpsic -s rand -d <DUT IP address> -r 123456"
+wait (1-2 min)
+
+Signed-off-by: Seif Mazareeb <seif@marvell.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c  | 3 +--
- include/linux/random.h | 1 +
- init/main.c            | 2 ++
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ include/net/cipso_ipv4.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1480,12 +1480,11 @@ ctl_table random_table[] = {
+diff --git a/include/net/cipso_ipv4.h b/include/net/cipso_ipv4.h
+index a7a683e..a8c2ef6 100644
+--- a/include/net/cipso_ipv4.h
++++ b/include/net/cipso_ipv4.h
+@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(const struct sk_buff *skb,
+ 	unsigned char err_offset = 0;
+ 	u8 opt_len = opt[1];
+ 	u8 opt_iter;
++	u8 tag_len;
  
- static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
+ 	if (opt_len < 8) {
+ 		err_offset = 1;
+@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(const struct sk_buff *skb,
+ 	}
  
--static int __init random_int_secret_init(void)
-+int random_int_secret_init(void)
- {
- 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
- 	return 0;
- }
--late_initcall(random_int_secret_init);
+ 	for (opt_iter = 6; opt_iter < opt_len;) {
+-		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
++		tag_len = opt[opt_iter + 1];
++		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
+ 			err_offset = opt_iter + 1;
+ 			goto out;
+ 		}
+-		opt_iter += opt[opt_iter + 1];
++		opt_iter += tag_len;
+ 	}
  
- /*
-  * Get a random word for internal kernel use only. Similar to urandom but
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -58,6 +58,7 @@ extern void add_interrupt_randomness(int
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
-+extern int random_int_secret_init(void);
- 
- #ifndef MODULE
- extern const struct file_operations random_fops, urandom_fops;
---- a/init/main.c
-+++ b/init/main.c
-@@ -68,6 +68,7 @@
- #include <linux/shmem_fs.h>
- #include <linux/slab.h>
- #include <linux/perf_event.h>
-+#include <linux/random.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -732,6 +733,7 @@ static void __init do_basic_setup(void)
- 	do_ctors();
- 	usermodehelper_enable();
- 	do_initcalls();
-+	random_int_secret_init();
- }
- 
- static void __init do_pre_smp_initcalls(void)
+ out:
 
