@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3KYKFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:05:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44193 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab3KYKFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:05:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,766,1378882800"; 
-   d="scan'208";a="414142396"
-Date: Mon, 25 Nov 2013 12:11:54 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH] sysfs: handle duplicate removal attempts in
- sysfs_remove_group()
-Message-ID: <20131125101154.GS2281@intel.com>
-References: <1384866598-19716-1-git-send-email-mika.westerberg@linux.intel.com>
- <20131123230701.GA6183@kroah.com>
- <2196420.QNWb3mfseF@vostro.rjw.lan>
- <3805095.rqdZNnA0Ng@vostro.rjw.lan>
+	id S1753771Ab3KYKFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:05:46 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:37797 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab3KYKFk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:05:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3805095.rqdZNnA0Ng@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <19201.1385372189@warthog.procyon.org.uk>
+References: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
+	<19201.1385372189@warthog.procyon.org.uk>
+Date: Mon, 25 Nov 2013 11:05:39 +0100
+X-Google-Sender-Auth: JG7ceIidY_E7YXP7OhnicG5yIPY
+Message-ID: <CAMuHMdWNKJP6wA0AGvEN1dEKNw9Vux+5sSv=6An8M-TdBCCGZA@mail.gmail.com>
+Subject: Re: assoc_array.c uninitialized variable (was: Re: [PATCH 02/10] Add
+ a generic associative array implementation.)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 02:09:09AM +0100, Rafael J. Wysocki wrote:
-> On Sunday, November 24, 2013 12:36:03 AM Rafael J. Wysocki wrote:
-> > On Saturday, November 23, 2013 03:07:01 PM Greg Kroah-Hartman wrote:
-> > > On Sun, Nov 24, 2013 at 12:12:59AM +0100, Rafael J. Wysocki wrote:
-> > > > On Saturday, November 23, 2013 02:53:58 PM Greg Kroah-Hartman wrote:
-> 
-> [...]
-> 
-> > > > > 
-> > > > > I can revert Mika's patch, as it would be good to catch these kinds of
-> > > > > errors.
-> > > > 
-> > > > Then we'll need to untangle the SATA/SCSI mess triggered by Bjorn in
-> > > > https://bugzilla.kernel.org/show_bug.cgi?id=65281. ;-)
-> > > 
-> > > I have no objection to fixing that, the scsi sysfs handling is "odd" to
-> > > say the least...
-> > > 
-> > > If someone can unwind it, that would be great to see happen...
-> > 
-> > Well, if I'm bored to death during the xmas holidays, I may look into that.
-> 
-> In fact, I'm not exactly sure why ata_port_detach() calls ata_tport_delete()
-> before scsi_remove_host()?  Is there any particular reason?  Because that
-> doesn't seem to be exactly right ...
+Hi David,
 
-I tried so that I have your 'PCI: Move device_del() from pci_stop_dev() to
-pci_destroy_dev()' applied and then I did following change as you
-suggested.
+On Mon, Nov 25, 2013 at 10:36 AM, David Howells <dhowells@redhat.com> wrote:
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>
+>> > +       int slot, next_slot, free_slot, i, j;
+>>
+>> lib/assoc_array.c: In function ‘assoc_array_insert_into_terminal_node’:
+>> lib/assoc_array.c:502: warning: ‘j’ may be used uninitialized in this function
+>
+> What compiler are you using?  Mine doesn't show this.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 81a94a3919db..07a03f93d640 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6304,10 +6304,10 @@ static void ata_port_detach(struct ata_port *ap)
- 		for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
- 			ata_tlink_delete(&ap->pmp_link[i]);
- 	}
--	ata_tport_delete(ap);
--
- 	/* remove the associated SCSI host */
- 	scsi_remove_host(ap->scsi_host);
-+
-+	ata_tport_delete(ap);
- }
- 
- /**
+Good old 4.2.1. Newer compilers don't give these warnings anymore, presumably
+because there were too many false positives. But from time to time, there's
+a real issue.
 
-After both patches are applied the warnings are gone :) However, looks like
-both are needed since if I only apply one or another, I still get warnings.
+> Technically, the compiler is correct - but we should never see the variable
+> undefined following the found_slot_for_multiple_occupancy unless the tree
+> changes under us. Out of a set of N+1 integers that can only be in the range
+> 0..N-1 there must be at least two the same.
+
+OK.
+
+> I guess I could preclear j to make the warning go away.
+
+Please use a big number instead of zero, so the
+
+        BUG_ON(j >= ASSOC_ARRAY_FAN_OUT + 1);
+
+will catch it later.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
