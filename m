@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab3KYOCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:50 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58976 "EHLO
+	id S1755218Ab3KYOCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58961 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754357Ab3KYNxs (ORCPT
+	by vger.kernel.org with ESMTP id S1754238Ab3KYNxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:48 -0500
+	Mon, 25 Nov 2013 08:53:51 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
+CC: akpm@linux-foundation.org,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Fabian Yamaguchi" <fabs@goesec.de>, "Nico Golde" <nico@ngolde.de>
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Richard Henderson" <rth@twiddle.net>,
+        "Ingo Molnar" <mingo@kernel.org>, "Jakub Jelinek" <jakub@redhat.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.589329362@decadent.org.uk>
+Message-ID: <lsq.1385387069.415319245@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 85/87] staging: wlags49_h2: buffer overflow setting
- station name
+Subject: [PATCH 3.2 60/87] compiler/gcc4: Add quirk for 'asm goto'
+ miscompilation bug
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,63 +36,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Ingo Molnar <mingo@kernel.org>
 
-commit b5e2f339865fb443107e5b10603e53bbc92dc054 upstream.
+commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
 
-We need to check the length parameter before doing the memcpy().  I've
-actually changed it to strlcpy() as well so that it's NUL terminated.
+Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
+a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
+constructs, as outlined here:
 
-You need CAP_NET_ADMIN to trigger these so it's not the end of the
-world.
+  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Implement a workaround suggested by Jakub Jelinek.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Suggested-by: Jakub Jelinek <jakub@redhat.com>
+Reviewed-by: Richard Henderson <rth@twiddle.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2:
+ - Drop inapplicable changes
+ - Adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/wlags49_h2/wl_priv.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
---- a/drivers/staging/wlags49_h2/wl_priv.c
-+++ b/drivers/staging/wlags49_h2/wl_priv.c
-@@ -570,6 +570,7 @@ int wvlan_uil_put_info( struct uilreq *u
- 	ltv_t                   *pLtv;
- 	bool_t                  ltvAllocated = FALSE;
- 	ENCSTRCT                sEncryption;
-+	size_t			len;
+--- a/arch/mips/include/asm/jump_label.h
++++ b/arch/mips/include/asm/jump_label.h
+@@ -22,7 +22,7 @@
  
- #ifdef USE_WDS
- 	hcf_16                  hcfPort  = HCF_PORT_0;
-@@ -686,7 +687,8 @@ int wvlan_uil_put_info( struct uilreq *u
- 					break;
- 				case CFG_CNF_OWN_NAME:
- 					memset( lp->StationName, 0, sizeof( lp->StationName ));
--					memcpy( (void *)lp->StationName, (void *)&pLtv->u.u8[2], (size_t)pLtv->u.u16[0]);
-+					len = min_t(size_t, pLtv->u.u16[0], sizeof(lp->StationName));
-+					strlcpy(lp->StationName, &pLtv->u.u8[2], len);
- 					pLtv->u.u16[0] = CNV_INT_TO_LITTLE( pLtv->u.u16[0] );
- 					break;
- 				case CFG_CNF_LOAD_BALANCING:
-@@ -1800,6 +1802,7 @@ int wvlan_set_station_nickname(struct ne
+ static __always_inline bool arch_static_branch(struct jump_label_key *key)
  {
-         struct wl_private *lp = wl_priv(dev);
-         unsigned long flags;
-+	size_t len;
-         int         ret = 0;
- 	/*------------------------------------------------------------------------*/
+-	asm goto("1:\tnop\n\t"
++	asm_volatile_goto("1:\tnop\n\t"
+ 		"nop\n\t"
+ 		".pushsection __jump_table,  \"aw\"\n\t"
+ 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
+--- a/arch/powerpc/include/asm/jump_label.h
++++ b/arch/powerpc/include/asm/jump_label.h
+@@ -19,7 +19,7 @@
  
-@@ -1810,8 +1813,8 @@ int wvlan_set_station_nickname(struct ne
-         wl_lock(lp, &flags);
+ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+ {
+-	asm goto("1:\n\t"
++	asm_volatile_goto("1:\n\t"
+ 		 "nop\n\t"
+ 		 ".pushsection __jump_table,  \"aw\"\n\t"
+ 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
+--- a/arch/s390/include/asm/jump_label.h
++++ b/arch/s390/include/asm/jump_label.h
+@@ -15,7 +15,7 @@
  
-         memset( lp->StationName, 0, sizeof( lp->StationName ));
--
--        memcpy( lp->StationName, extra, wrqu->data.length);
-+	len = min_t(size_t, wrqu->data.length, sizeof(lp->StationName));
-+	strlcpy(lp->StationName, extra, len);
+ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+ {
+-	asm goto("0:	brcl 0,0\n"
++	asm_volatile_goto("0:	brcl 0,0\n"
+ 		".pushsection __jump_table, \"aw\"\n"
+ 		ASM_ALIGN "\n"
+ 		ASM_PTR " 0b, %l[label], %0\n"
+--- a/arch/sparc/include/asm/jump_label.h
++++ b/arch/sparc/include/asm/jump_label.h
+@@ -9,7 +9,7 @@
  
-         /* Commit the adapter parameters */
-         wl_apply( lp );
+ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+ {
+-		asm goto("1:\n\t"
++		asm_volatile_goto("1:\n\t"
+ 			 "nop\n\t"
+ 			 "nop\n\t"
+ 			 ".pushsection __jump_table,  \"aw\"\n\t"
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -334,7 +334,7 @@ extern const char * const x86_power_flag
+ static __always_inline __pure bool __static_cpu_has(u16 bit)
+ {
+ #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
+-		asm goto("1: jmp %l[t_no]\n"
++		asm_volatile_goto("1: jmp %l[t_no]\n"
+ 			 "2:\n"
+ 			 ".section .altinstructions,\"a\"\n"
+ 			 " .long 1b - .\n"
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -13,7 +13,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct jump_label_key *key)
+ {
+-	asm goto("1:"
++	asm_volatile_goto("1:"
+ 		JUMP_LABEL_INITIAL_NOP
+ 		".pushsection __jump_table,  \"aw\" \n\t"
+ 		_ASM_ALIGN "\n\t"
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -29,6 +29,21 @@
+    the kernel context */
+ #define __cold			__attribute__((__cold__))
+ 
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#if GCC_VERSION <= 40801
++# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++#else
++# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
++#endif
+ 
+ #if __GNUC_MINOR__ >= 5
+ /*
 
