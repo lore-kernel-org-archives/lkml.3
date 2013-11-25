@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3KYKD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:03:26 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46475 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083Ab3KYKDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:03:19 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <kishon@ti.com>, <gregkh@linuxfoundation.org>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>
-Subject: [PATCH v3 08/10] usb: phy: omap-usb2: remove *set_suspend* callback from omap-usb2
-Date: Mon, 25 Nov 2013 15:31:28 +0530
-Message-ID: <1385373690-12170-9-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1385373690-12170-1-git-send-email-kishon@ti.com>
-References: <1385373690-12170-1-git-send-email-kishon@ti.com>
+	id S1753472Ab3KYKEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:04:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2328 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab3KYKEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:04:10 -0500
+Date: Mon, 25 Nov 2013 11:03:44 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 04/22] tools lib traceevent: Add jbd2 plugin
+Message-ID: <20131125100344.GD3161@krava.brq.redhat.com>
+References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
+ <1385031680-9014-5-git-send-email-jolsa@redhat.com>
+ <1385130477.1747.33.camel@leonhard>
+ <20131123035221.73f67ab7@gandalf.local.home>
+ <20131125094618.GC3161@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131125094618.GC3161@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that omap-usb2 is adapted to the new generic PHY framework,
-*set_suspend* ops can be removed from omap-usb2 driver.
+On Mon, Nov 25, 2013 at 10:46:18AM +0100, Jiri Olsa wrote:
+> > > Shouldn't it unregister these functions when unloaded?
+> > 
+> > Probably ;-)
+> 
+> will add,
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/phy/phy-omap-usb2.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
+hum... haven't found exported interface to unregister/remove
+for print function, seems like this is getting freed in the
+end at:
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index bfc5c33..9b3e867 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -98,28 +98,6 @@ static int omap_usb_set_peripheral(struct usb_otg *otg,
- 	return 0;
- }
- 
--static int omap_usb2_suspend(struct usb_phy *x, int suspend)
--{
--	struct omap_usb *phy = phy_to_omapusb(x);
--	int ret;
--
--	if (suspend && !phy->is_suspended) {
--		omap_control_usb_phy_power(phy->control_dev, 0);
--		pm_runtime_put_sync(phy->dev);
--		phy->is_suspended = 1;
--	} else if (!suspend && phy->is_suspended) {
--		ret = pm_runtime_get_sync(phy->dev);
--		if (ret < 0) {
--			dev_err(phy->dev, "get_sync failed with err %d\n", ret);
--			return ret;
--		}
--		omap_control_usb_phy_power(phy->control_dev, 1);
--		phy->is_suspended = 0;
--	}
--
--	return 0;
--}
--
- static int omap_usb_power_off(struct phy *x)
- {
- 	struct omap_usb *phy = phy_get_drvdata(x);
-@@ -173,7 +151,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	phy->phy.dev		= phy->dev;
- 	phy->phy.label		= "omap-usb2";
--	phy->phy.set_suspend	= omap_usb2_suspend;
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
- 
-@@ -195,8 +172,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	}
- 
- 	phy->control_dev = &control_pdev->dev;
--
--	phy->is_suspended	= 1;
- 	omap_control_usb_phy_power(phy->control_dev, 0);
- 
- 	otg->set_host		= omap_usb_set_host;
--- 
-1.7.10.4
+  void pevent_free(struct pevent *pevent)
 
+jirka
