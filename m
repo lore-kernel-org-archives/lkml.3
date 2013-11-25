@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3KYISD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 03:18:03 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:57172 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3KYISA convert rfc822-to-8bit (ORCPT
+	id S1752876Ab3KYIUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 03:20:19 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:44377 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab3KYIUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:18:00 -0500
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: Vivek Goyal <vgoyal@redhat.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: "bhe@redhat.com" <bhe@redhat.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "dyoung@redhat.com" <dyoung@redhat.com>,
-        "chaowang@redhat.com" <chaowang@redhat.com>
-Subject: Re: /proc/vmcore mmap() failure issue
-Thread-Topic: /proc/vmcore mmap() failure issue
-Thread-Index: AQHO5toV18hsX/7760SqeZbh92xDy5o1m10w
-Date: Mon, 25 Nov 2013 08:10:10 +0000
-Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971C5AB3@BPXM01GP.gisp.nec.co.jp>
-References: <5284A689.70903@jp.fujitsu.com>
- <20131114151359.GA3913@redhat.com> <5285EC60.1060906@jp.fujitsu.com>
- <20131115142617.GC6637@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp>
- <20131118135511.GA30637@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971C3862@BPXM01GP.gisp.nec.co.jp>
- <20131120145901.GB27924@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971C43E3@BPXM01GP.gisp.nec.co.jp>
- <528DC4F2.5040000@jp.fujitsu.com> <20131121165237.GG16208@redhat.com>
-In-Reply-To: <20131121165237.GG16208@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.21.40.240]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Nov 2013 03:20:16 -0500
+X-AuditID: 9c93017d-b7b24ae000002834-85-5293083e2967
+Date: Mon, 25 Nov 2013 17:21:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/9] lib: radix-tree: radix_tree_delete_item()
+Message-ID: <20131125082102.GB4731@bbox>
+References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
+ <1385336308-27121-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385336308-27121-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/11/22 1:53:14, kexec <kexec-bounces@lists.infradead.org> wrote:
-> On Thu, Nov 21, 2013 at 05:31:46PM +0900, HATAYAMA Daisuke wrote:
+On Sun, Nov 24, 2013 at 06:38:21PM -0500, Johannes Weiner wrote:
+> Provide a function that does not just delete an entry at a given
+> index, but also allows passing in an expected item.  Delete only if
+> that item is still located at the specified index.
 > 
-> [..]
-> > > So I think the patch I sent is enough, the policy will be simpler as
-> > > "Don't use mmap() for buggy kernels".
-> > > 
-> > > [PATCH] Fall back to read() when mmap() fails.
-> > > http://lists.infradead.org/pipermail/kexec/2013-November/010199.html
-> > > 
-> > 
-> > I think logic becomes not so complex. For example, if input vmcore
-> > format is ELF, then:
-> > 
-> > o in update_mmap_range():
-> >   - first calculate a range of the corresponding PT_LOAD entry truncated with
-> >     PAGE_SIZE.
-> >   - Then, truncate range of mmap() by the truncated range of the corresponding
-> >     PT_LOAD entry, i.e., exlucde partial pages from mmap() target range.
-> >   - Then determine offsets of two partial pages; the number of partial pages
-> >     are always at most two. The offsets can easily be calculated from the
-> >     original range of the corresponding PT_LOAD entry
-> > 
-> > o in read_from_vmcore(), if a given offset belongs to either of two partial
-> >   pages, then go to read() path; if not, go to mmap() path.
+> This is handy when lockless tree traversals want to delete entries as
+> well because they don't have to do an second, locked lookup to verify
+> the slot has not changed under them before deleting the entry.
 > 
-> I agree that we should do mmap() on all non-partial pages and do read()
-> on all partial pages. Otherwise we lose the benefit of faster speed of
-> mmap().
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-I agree to avoid this issue by fixing makedumpfile as workaround while to
-fix kernel is so tough and risky. However, it sounds strange to me to fix
-userspace side elaborately for such definite kernel issue whose cause is
-known, so we should fix the kernel itself.
-
-Otherwise, will you continue to add specific fixes into user tools to
-address kernel issues like this case ?
-
-
-Thanks
-Atsushi Kumagai
-
-> Thanks
-> Vivek
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+-- 
+Kind regards,
+Minchan Kim
