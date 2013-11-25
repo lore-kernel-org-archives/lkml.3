@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab3KYNPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:15:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:40161 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab3KYNP2 convert rfc822-to-8bit (ORCPT
+	id S1755443Ab3KYNQC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:16:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57254 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab3KYNIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:15:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,768,1378882800"; 
-   d="scan'208";a="414248814"
-From: "Ma, Xindong" <xindong.ma@intel.com>
-To: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "ccross@google.com" <ccross@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: Add memory barrier when waiting on futex
-Thread-Topic: Add memory barrier when waiting on futex
-Thread-Index: Ac7puzw8dEee+ztFRV6yZ2v5xXHPXw==
-Date: Mon, 25 Nov 2013 13:15:17 +0000
-Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 25 Nov 2013 08:08:52 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Phil Edworthy <phil.edworthy@renesas.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 57/78] ASoC: ak4642: prevent un-necessary changes to SG_SL1
+Date: Mon, 25 Nov 2013 13:06:44 +0000
+Message-Id: <1385384825-21681-58-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We encountered following panic several times:
-[   74.671982] BUG: unable to handle kernel NULL pointer dereference at 00000008
-[   74.672101] IP: [<c129bb27>] wake_futex+0x47/0x80
-[   74.672185] *pdpt = 0000000010108001 *pde = 0000000000000000 
-[   74.672278] Oops: 0002 [#1] PREEMPT SMP 
-[   74.672403] Modules linked in: atomisp_css2400b0_v2 atomisp_css2400_v2 dfrgx bcm_bt_lpm videobuf_vmalloc videobuf_core hdmi_audio tngdisp bcm4335 kct_daemon(O) cfg80211
-[   74.672815] CPU: 0 PID: 1477 Comm: zygote Tainted: G        W  O 3.10.1-259934-g0bfb86e #1
-[   74.672855] Hardware name: Intel Corporation Merrifield/SALT BAY, BIOS 404 2013.10.09:15.29.48
-[   74.672894] task: d4c97220 ti: cfaa8000 task.ti: cfaa8000
-[   74.672933] EIP: 0060:[<c129bb27>] EFLAGS: 00210246 CPU: 0
-[   74.672975] EIP is at wake_futex+0x47/0x80
-[   74.673012] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[   74.673049] ESI: def4de5c EDI: ffffffff EBP: cfaa9eb4 ESP: cfaa9ea0
-[   74.673086]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   74.673123] CR0: 8005003b CR2: 00000008 CR3: 10109000 CR4: 001007f0
-[   74.673160] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[   74.673196] DR6: ffff0ff0 DR7: 00000400
-[   74.673229] Stack:
-[   74.673260]  00000000 00000001 00000000 def4de5c c225eb50 cfaa9ee4 c129bc29 00000000
-[   74.673536]  00000000 7fffffff c225eb30 b4f38000 ec1a4b40 00000f90 7fffffff 00000001
-[   74.673814]  b4f38f90 cfaa9f58 c129da0b ffffffff ffffffff cfaa9f10 c195d835 00000001
-[   74.674092] Call Trace:
-[   74.674144]  [<c129bc29>] futex_wake+0xc9/0x110
-[   74.674195]  [<c129da0b>] do_futex+0xeb/0x950
-[   74.674246]  [<c195d835>] ? sub_preempt_count+0x55/0xe0
-[   74.674293]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
-[   74.674341]  [<c195a31b>] ? _raw_spin_unlock_irqrestore+0x3b/0x70
-[   74.674388]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
-[   74.674436]  [<c1241afc>] ? do_fork+0xec/0x350
-[   74.674484]  [<c129e30b>] SyS_futex+0x9b/0x140
-[   74.674533]  [<c1312298>] ? SyS_mprotect+0x188/0x1e0
-[   74.674582]  [<c195a718>] syscall_call+0x7/0xb
+3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
 
-On smp systems, setting current task to q->task in queue_me() may
-not visible immediately to another cpu, some times this will
-cause panic in wake_futex(). Adding memory barrier to avoid this.
+------------------
 
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+From: Phil Edworthy <phil.edworthy@renesas.com>
+
+commit 7b5bfb82882b9b1c8423ce0ed6852ca3762d967a upstream.
+
+If you record the sound during playback,
+the playback sound becomes silent.
+Modify so that the codec driver does not clear
+SG_SL1::DACL bit which is controlled under widget
+
+Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/futex.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ sound/soc/codecs/ak4642.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 80ba086..792cd41 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1529,6 +1529,7 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
- 	plist_node_init(&q->list, prio);
- 	plist_add(&q->list, &hb->chain);
- 	q->task = current;
-+	smp_mb();
- 	spin_unlock(&hb->lock);
- }
- 
+diff --git a/sound/soc/codecs/ak4642.c b/sound/soc/codecs/ak4642.c
+index b3e24f2..7e4245f 100644
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -262,7 +262,7 @@ static int ak4642_dai_startup(struct snd_pcm_substream *substream,
+ 		 * This operation came from example code of
+ 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
+ 		 */
+-		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
++		snd_soc_update_bits(codec, SG_SL1, PMMP | MGAIN0, PMMP | MGAIN0);
+ 		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
+ 		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMADL, PMADL);
 -- 
-1.7.4.1
-
+1.8.3.2
 
