@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3KYQOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:14:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22182 "EHLO mx1.redhat.com"
+	id S1756779Ab3KYQO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:14:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756505Ab3KYQOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:14:25 -0500
+	id S1754007Ab3KYQOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:14:21 -0500
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 08/11] powerpc: use generic fixmap.h
-Date: Mon, 25 Nov 2013 11:14:02 -0500
-Message-Id: <1385396045-15852-9-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>
+Subject: [PATCH v2 10/11] tile: use generic fixmap.h
+Date: Mon, 25 Nov 2013 11:14:04 -0500
+Message-Id: <1385396045-15852-11-git-send-email-msalter@redhat.com>
 In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,38 +19,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: linuxppc-dev@lists.ozlabs.org
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/powerpc/include/asm/fixmap.h | 44 ++-------------------------------------
- 1 file changed, 2 insertions(+), 42 deletions(-)
+ arch/tile/include/asm/fixmap.h | 33 +--------------------------------
+ 1 file changed, 1 insertion(+), 32 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/fixmap.h b/arch/powerpc/include/asm/fixmap.h
-index 5c2c023..90f604b 100644
---- a/arch/powerpc/include/asm/fixmap.h
-+++ b/arch/powerpc/include/asm/fixmap.h
-@@ -58,52 +58,12 @@ enum fixed_addresses {
- extern void __set_fixmap (enum fixed_addresses idx,
- 					phys_addr_t phys, pgprot_t flags);
- 
--#define set_fixmap(idx, phys) \
--		__set_fixmap(idx, phys, PAGE_KERNEL)
--/*
-- * Some hardware wants to get fixmapped without caching.
-- */
--#define set_fixmap_nocache(idx, phys) \
--		__set_fixmap(idx, phys, PAGE_KERNEL_NCG)
--
--#define clear_fixmap(idx) \
--		__set_fixmap(idx, 0, __pgprot(0))
--
- #define __FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START		(FIXADDR_TOP - __FIXADDR_SIZE)
+diff --git a/arch/tile/include/asm/fixmap.h b/arch/tile/include/asm/fixmap.h
+index c6b9c1b..ffe2637 100644
+--- a/arch/tile/include/asm/fixmap.h
++++ b/arch/tile/include/asm/fixmap.h
+@@ -25,9 +25,6 @@
+ #include <asm/kmap_types.h>
+ #endif
  
 -#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
 -#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
 -
+ /*
+  * Here we define all the compile-time 'special' virtual
+  * addresses. The point is to have a constant address at
+@@ -83,35 +80,7 @@ enum fixed_addresses {
+ #define FIXADDR_START		(FIXADDR_TOP + PAGE_SIZE - __FIXADDR_SIZE)
+ #define FIXADDR_BOOT_START	(FIXADDR_TOP + PAGE_SIZE - __FIXADDR_BOOT_SIZE)
+ 
 -extern void __this_fixmap_does_not_exist(void);
 -
 -/*
@@ -74,10 +63,9 @@ index 5c2c023..90f604b 100644
 -	if (idx >= __end_of_fixed_addresses)
 -		__this_fixmap_does_not_exist();
 -
--        return __fix_to_virt(idx);
+-	return __fix_to_virt(idx);
 -}
-+#define FIXMAP_PAGE_NOCACHE PAGE_KERNEL_NCG
- 
+-
 -static inline unsigned long virt_to_fix(const unsigned long vaddr)
 -{
 -	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
@@ -86,7 +74,7 @@ index 5c2c023..90f604b 100644
 +#include <asm-generic/fixmap.h>
  
  #endif /* !__ASSEMBLY__ */
- #endif
+ 
 -- 
 1.8.3.1
 
