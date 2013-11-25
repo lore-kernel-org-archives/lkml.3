@@ -1,59 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3KYTdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:33:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55916 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab3KYTdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:33:49 -0500
-Date: Mon, 25 Nov 2013 11:33:48 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [RESEND GIT PULL] USB fixes for v3.13-rc2
-Message-ID: <20131125193348.GA25899@kroah.com>
-References: <1385406153-28085-1-git-send-email-balbi@ti.com>
+	id S1756170Ab3KYThX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:37:23 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45544 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753847Ab3KYThU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 14:37:20 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [RESEND GIT PULL v2] USB fixes for v3.13-rc2
+Date: Mon, 25 Nov 2013 13:36:51 -0600
+Message-ID: <1385408211-28472-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.4.GIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385406153-28085-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 01:02:33PM -0600, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> Here's my first set of fixes for this -rc cycle. Please
-> consider merging them on your usb-linus branch.
-> 
-> Let me know if you need any changes to this pull request. I
-> did a test merge of this tag with your usb-linus branch and
-> it merges just fine.
-> 
-> cheers
-> 
-> ps: resending with lkml in Cc, looks like my emails aren't reaching
-> linux-usb@vger.kernel.org and marc.info seems to not be picking up
-> any emails at all from no list.
-> 
-> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
-> 
->   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git master
+Hi Greg,
 
-Really?  I don't think that's what you want me to really pull...
+Here's my first set of fixes for this -rc cycle. Please
+consider merging them on your usb-linus branch.
 
-I now have 2 pull requests from you, which one should I use?
+Let me know if you need any changes to this pull request. I
+did a test merge of this tag with your usb-linus branch and
+it merges just fine.
 
-How about I drop both and have you resend the "real" one?  :)
+cheers
 
-thanks,
+ps: now with proper tag :-) sorry about that
 
-greg k-h
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.13-rc2
+
+for you to fetch changes up to 2cf93bea3d7b2dbf1e0ebfa9d381aad1b637e2aa:
+
+  usb: gadget: f_mass_storage: call try_to_freeze only when its safe (2013-11-25 11:34:09 -0600)
+
+----------------------------------------------------------------
+usb: fixes for v3.13-rc2
+
+First set of fixes for this -rc cycle. A few important
+fixes which should be backported to stable kernels and
+the usual set of sparse warning fixes. There's also a
+regression fix on phy-generic.c which would prevent
+am335x-based platforms from having their PHY drivers
+probed.
+
+Signed-of-by: Felipe Balbi <balbi@ti.com>
+
+----------------------------------------------------------------
+Aaro Koskinen (1):
+      usb: phy-generic: fix nop xceiv probe
+
+Alan Stern (1):
+      usb: dwc3: fix implementation of endpoint wedge
+
+Andrzej Pietrasiewicz (1):
+      usb: gadget: f_mass_storage: fix mass storage dependency
+
+Apelete Seketeli (1):
+      usb: fix musb gadget to enable OTG mode conditionally
+
+Felipe Balbi (4):
+      usb: phy: generic: fix how we find out about our resources
+      usb: gadget: storage: fix sparse warning
+      usb: gadget: ffs: fix sparse warning
+      usb: gadget: tcm_usb_gadget: mark bot_cleanup_old_alt static
+
+Fengguang Wu (1):
+      usb: gadget: zero: module parameters can be static
+
+George Cherian (1):
+      usb: gadget: f_mass_storage: call try_to_freeze only when its safe
+
+Heikki Krogerus (1):
+      usb: phy: generic: fix a compiler warning
+
+Jisheng Zhang (1):
+      usb: phy: phy-mxs-usb: set the correct platform drvdata
+
+Linus Walleij (1):
+      usb: gadget: fix pxa25x compilation problems
+
+Michael Grzeschik (1):
+      usb: gadget: composite: reset delayed_status on reset_config
+
+Michal Nazarewicz (1):
+      usb: phy: remove dead code
+
+Pratyush Anand (1):
+      usb: gadget: mass storage: fix return of delayed status
+
+Robert Baldyga (2):
+      usb: gadget: s3c-hsotg: fix spinlock locking
+      usb: gadget: s3c-hsotg: fix disconnect handling
+
+Sebastian Andrzej Siewior (3):
+      usb: musb: musb_cppi41: factor most of cppi41_dma_callback() into cppi41_trans_done()
+      usb: musb: musb_cppi41: handle pre-mature TX complete interrupt
+      usb: musb: only cancel work if it is initialized
+
+Valentine Barshak (1):
+      usb: phy: phy-rcar-gen2-usb: fix phy initialization
+
+Wei Yongjun (1):
+      usb: phy: phy-generic: fix return value check in usb_nop_xceiv_register()
+
+ drivers/usb/dwc3/ep0.c              |   2 +
+ drivers/usb/dwc3/gadget.c           |   5 +-
+ drivers/usb/gadget/Kconfig          |   1 +
+ drivers/usb/gadget/composite.c      |   1 +
+ drivers/usb/gadget/f_fs.c           |   2 +-
+ drivers/usb/gadget/f_mass_storage.c |  27 +++---
+ drivers/usb/gadget/pxa25x_udc.c     |   1 +
+ drivers/usb/gadget/s3c-hsotg.c      |   7 +-
+ drivers/usb/gadget/storage_common.h |   4 -
+ drivers/usb/gadget/tcm_usb_gadget.c |   2 +-
+ drivers/usb/gadget/zero.c           |   6 +-
+ drivers/usb/musb/musb_core.c        |   9 +-
+ drivers/usb/musb/musb_cppi41.c      | 164 ++++++++++++++++++++++++++++++------
+ drivers/usb/musb/musb_gadget.c      |   4 +
+ drivers/usb/phy/phy-am335x.c        |   5 +-
+ drivers/usb/phy/phy-generic.c       |  68 +++++++--------
+ drivers/usb/phy/phy-generic.h       |   4 +-
+ drivers/usb/phy/phy-mxs-usb.c       |   2 +-
+ drivers/usb/phy/phy-rcar-gen2-usb.c |   4 +-
+ 19 files changed, 221 insertions(+), 97 deletions(-)
