@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab3KYO1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:27:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55408 "EHLO mx2.suse.de"
+	id S1758282Ab3KYO2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:28:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55372 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756882Ab3KYO0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:26:53 -0500
+	id S1754963Ab3KYO0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:26:48 -0500
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org
 Cc: Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 5/5] mm: compaction: reset scanner positions immediately when they meet
-Date: Mon, 25 Nov 2013 15:26:10 +0100
-Message-Id: <1385389570-11393-6-git-send-email-vbabka@suse.cz>
+Subject: [PATCH 1/5] mm: compaction: encapsulate defer reset logic
+Date: Mon, 25 Nov 2013 15:26:06 +0100
+Message-Id: <1385389570-11393-2-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389570-11393-1-git-send-email-vbabka@suse.cz>
 References: <1385389570-11393-1-git-send-email-vbabka@suse.cz>
@@ -20,62 +20,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction used to start its migrate and free page scaners at the zone's lowest
-and highest pfn, respectively. Later, caching was introduced to remember the
-scanners' progress across compaction attempts so that pageblocks are not
-re-scanned uselessly. Additionally, pageblocks where isolation failed are
-marked to be quickly skipped when encountered again in future compactions.
+Currently there are several functions to manipulate the deferred compaction
+state variables. The remaining case where the variables are touched directly
+is when a successful allocation occurs in direct compaction, or is expected
+to be successful in the future by kswapd. Here, the lowest order that is
+expected to fail is updated, and in the case of direct compaction, the deferred
+status is reset completely.
 
-Currently, both the reset of cached pfn's and clearing of the pageblock skip
-information for a zone is done in __reset_isolation_suitable(). This function
-gets called when:
- - compaction is restarting after being deferred
- - compact_blockskip_flush flag is set in compact_finished() when the scanners
-   meet (and not again cleared when direct compaction succeeds in allocation)
-   and kswapd acts upon this flag before going to sleep
-
-This behavior is suboptimal for several reasons:
- - when direct sync compaction is called after async compaction fails (in the
-   allocation slowpath), it will effectively do nothing, unless kswapd
-   happens to process the compact_blockskip_flush flag meanwhile. This is racy
-   and goes against the purpose of sync compaction to more thoroughly retry
-   the compaction of a zone where async compaction has failed.
-   The restart-after-deferring path cannot help here as deferring happens only
-   after the sync compaction fails. It is also done only for the preferred
-   zone, while the compaction might be done for a fallback zone.
- - the mechanism of marking pageblock to be skipped has little value since the
-   cached pfn's are reset only together with the pageblock skip flags. This
-   effectively limits pageblock skip usage to parallel compactions.
-
-This patch changes compact_finished() so that cached pfn's are reset
-immediately when the scanners meet. Clearing pageblock skip flags is unchanged,
-as well as the other situations where cached pfn's are reset. This allows the
-sync-after-async compaction to retry pageblocks not marked as skipped, such as
-blocks !MIGRATE_MOVABLE blocks that async compactions now skips without
-marking them.
+Create a new function compaction_defer_reset() to encapsulate this
+functionality and make it easier to understand the code. No functional change.
 
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Rik van Riel <riel@redhat.com>
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
- mm/compaction.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/compaction.h | 12 ++++++++++++
+ mm/compaction.c            |  9 ++++-----
+ mm/page_alloc.c            |  5 +----
+ 3 files changed, 17 insertions(+), 9 deletions(-)
 
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 091d72e..da39978 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -62,6 +62,18 @@ static inline bool compaction_deferred(struct zone *zone, int order)
+ 	return zone->compact_considered < defer_limit;
+ }
+ 
++/* Update defer tracking counters after successful allocation of given order */
++static inline void compaction_defer_reset(struct zone *zone, int order,
++		bool reset_shift)
++{
++	if (reset_shift) {
++		zone->compact_considered = 0;
++		zone->compact_defer_shift = 0;
++	}
++	if (order >= zone->compact_order_failed)
++		zone->compact_order_failed = order + 1;
++}
++
+ /* Returns true if restarting compaction after many failures */
+ static inline bool compaction_restarting(struct zone *zone, int order)
+ {
 diff --git a/mm/compaction.c b/mm/compaction.c
-index f481193..2c2cc4a 100644
+index 805165b..7c0073e 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -843,6 +843,10 @@ static int compact_finished(struct zone *zone,
+@@ -1116,12 +1116,11 @@ static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+ 			compact_zone(zone, cc);
  
- 	/* Compaction run completes if the migrate and free scanner meet */
- 	if (cc->free_pfn <= cc->migrate_pfn) {
-+		/* Let the next compaction start anew. */
-+		zone->compact_cached_migrate_pfn = zone->zone_start_pfn;
-+	        zone->compact_cached_free_pfn = zone_end_pfn(zone);
-+
- 		/*
- 		 * Mark that the PG_migrate_skip information should be cleared
- 		 * by kswapd when it goes to sleep. kswapd does not set the
+ 		if (cc->order > 0) {
+-			int ok = zone_watermark_ok(zone, cc->order,
+-						low_wmark_pages(zone), 0, 0);
+-			if (ok && cc->order >= zone->compact_order_failed)
+-				zone->compact_order_failed = cc->order + 1;
++			if (zone_watermark_ok(zone, cc->order,
++						low_wmark_pages(zone), 0, 0))
++				compaction_defer_reset(zone, cc->order, false);
+ 			/* Currently async compaction is never deferred. */
+-			else if (!ok && cc->sync)
++			else if (cc->sync)
+ 				defer_compaction(zone, cc->order);
+ 		}
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580a5f0..50c7f67 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2243,10 +2243,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 				preferred_zone, migratetype);
+ 		if (page) {
+ 			preferred_zone->compact_blockskip_flush = false;
+-			preferred_zone->compact_considered = 0;
+-			preferred_zone->compact_defer_shift = 0;
+-			if (order >= preferred_zone->compact_order_failed)
+-				preferred_zone->compact_order_failed = order + 1;
++			compaction_defer_reset(preferred_zone, order, true);
+ 			count_vm_event(COMPACTSUCCESS);
+ 			return page;
+ 		}
 -- 
 1.8.1.4
 
