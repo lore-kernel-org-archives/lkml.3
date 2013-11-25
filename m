@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab3KYNyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:54:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58890 "EHLO
+	id S1754897Ab3KYNyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:54:09 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58847 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754178Ab3KYNxn (ORCPT
+	by vger.kernel.org with ESMTP id S1753681Ab3KYNxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:43 -0500
+	Mon, 25 Nov 2013 08:53:44 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Marcelo Ricardo Leitner" <mleitner@redhat.com>,
+        "Jiri Pirko" <jiri@resnulli.us>,
+        "Debabrata Banerjee" <dbavatar@gmail.com>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.716979797@decadent.org.uk>
+Message-ID: <lsq.1385387069.450756093@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 58/87] random: allow architectures to optionally
- define random_get_entropy()
+Subject: [PATCH 3.2 08/87] ipv6: restrict neighbor entry creation to
+ output flow
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,85 +34,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-commit 61875f30daf60305712e25b209ef41ced2635bad upstream.
+This patch is based on 3.2.y branch, the one used by reporter. Please let me
+know if it should be different. Thanks.
 
-Allow architectures which have a disabled get_cycles() function to
-provide a random_get_entropy() function which provides a fine-grained,
-rapidly changing counter that can be used by the /dev/random driver.
+The patch which introduced the regression was applied on stables:
+3.0.64 3.4.31 3.7.8 3.2.39
 
-For example, an architecture might have a rapidly changing register
-used to control random TLB cache eviction, or DRAM refresh that
-doesn't meet the requirements of get_cycles(), but which is good
-enough for the needs of the random driver.
+The patch which introduced the regression was for stable trees only.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+---8<---
+
+Commit 0d6a77079c475033cb622c07c5a880b392ef664e "ipv6: do not create
+neighbor entries for local delivery" introduced a regression on
+which routes to local delivery would not work anymore. Like this:
+
+    $ ip -6 route add local 2001::/64 dev lo
+    $ ping6 -c1 2001::9
+    PING 2001::9(2001::9) 56 data bytes
+    ping: sendmsg: Invalid argument
+
+As this is a local delivery, that commit would not allow the creation of a
+neighbor entry and thus the packet cannot be sent.
+
+But as TPROXY scenario actually needs to avoid the neighbor entry creation only
+for input flow, this patch now limits previous patch to input flow, keeping
+output as before that patch.
+
+Reported-by: Debabrata Banerjee <dbavatar@gmail.com>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/random.c |  8 ++++----
- include/linux/timex.h | 14 ++++++++++++++
- 2 files changed, 18 insertions(+), 4 deletions(-)
+ net/ipv6/route.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -668,7 +668,7 @@ static void set_timer_rand_state(unsigne
-  */
- void add_device_randomness(const void *buf, unsigned int size)
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 18ea73c..bc9103d 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -791,7 +791,7 @@ static struct rt6_info *rt6_alloc_clone(struct rt6_info *ort,
+ }
+ 
+ static struct rt6_info *ip6_pol_route(struct net *net, struct fib6_table *table, int oif,
+-				      struct flowi6 *fl6, int flags)
++				      struct flowi6 *fl6, int flags, bool input)
  {
--	unsigned long time = get_cycles() ^ jiffies;
-+	unsigned long time = random_get_entropy() ^ jiffies;
+ 	struct fib6_node *fn;
+ 	struct rt6_info *rt, *nrt;
+@@ -799,8 +799,11 @@ static struct rt6_info *ip6_pol_route(struct net *net, struct fib6_table *table,
+ 	int attempts = 3;
+ 	int err;
+ 	int reachable = net->ipv6.devconf_all->forwarding ? 0 : RT6_LOOKUP_F_REACHABLE;
++	int local = RTF_NONEXTHOP;
  
- 	mix_pool_bytes(&input_pool, buf, size, NULL);
- 	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
-@@ -705,7 +705,7 @@ static void add_timer_randomness(struct
- 		goto out;
+ 	strict |= flags & RT6_LOOKUP_F_IFACE;
++	if (input)
++		local |= RTF_LOCAL;
  
- 	sample.jiffies = jiffies;
--	sample.cycles = get_cycles();
-+	sample.cycles = random_get_entropy();
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
+ relookup:
+ 	read_lock_bh(&table->tb6_lock);
+@@ -820,7 +823,7 @@ restart:
+ 	read_unlock_bh(&table->tb6_lock);
  
-@@ -772,7 +772,7 @@ void add_interrupt_randomness(int irq, i
- 	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
- 	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
--	__u32			input[4], cycles = get_cycles();
-+	__u32			input[4], cycles = random_get_entropy();
+ 	if (!dst_get_neighbour_raw(&rt->dst)
+-	    && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
++	    && !(rt->rt6i_flags & local))
+ 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
+ 	else if (!(rt->dst.flags & DST_HOST))
+ 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
+@@ -864,7 +867,7 @@ out2:
+ static struct rt6_info *ip6_pol_route_input(struct net *net, struct fib6_table *table,
+ 					    struct flowi6 *fl6, int flags)
+ {
+-	return ip6_pol_route(net, table, fl6->flowi6_iif, fl6, flags);
++	return ip6_pol_route(net, table, fl6->flowi6_iif, fl6, flags, true);
+ }
  
- 	input[0] = cycles ^ jiffies;
- 	input[1] = irq;
-@@ -1503,7 +1503,7 @@ unsigned int get_random_int(void)
+ void ip6_route_input(struct sk_buff *skb)
+@@ -890,7 +893,7 @@ void ip6_route_input(struct sk_buff *skb)
+ static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
+ 					     struct flowi6 *fl6, int flags)
+ {
+-	return ip6_pol_route(net, table, fl6->flowi6_oif, fl6, flags);
++	return ip6_pol_route(net, table, fl6->flowi6_oif, fl6, flags, false);
+ }
  
- 	hash = get_cpu_var(get_random_int_hash);
- 
--	hash[0] += current->pid + jiffies + get_cycles();
-+	hash[0] += current->pid + jiffies + random_get_entropy();
- 	md5_transform(hash, random_int_secret);
- 	ret = hash[0];
- 	put_cpu_var(get_random_int_hash);
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -173,6 +173,20 @@ struct timex {
- 
- #include <asm/timex.h>
- 
-+#ifndef random_get_entropy
-+/*
-+ * The random_get_entropy() function is used by the /dev/random driver
-+ * in order to extract entropy via the relative unpredictability of
-+ * when an interrupt takes places versus a high speed, fine-grained
-+ * timing source or cycle counter.  Since it will be occurred on every
-+ * single interrupt, it must have a very low cost/overhead.
-+ *
-+ * By default we use get_cycles() for this purpose, but individual
-+ * architectures may override this in their asm/timex.h header file.
-+ */
-+#define random_get_entropy()	get_cycles()
-+#endif
-+
- /*
-  * SHIFT_PLL is used as a dampening factor to define how much we
-  * adjust the frequency correction for a given offset in PLL mode.
+ struct dst_entry * ip6_route_output(struct net *net, const struct sock *sk,
 
