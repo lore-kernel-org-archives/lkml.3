@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3KXXmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 18:42:32 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752957Ab3KXXm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 18:42:28 -0500
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        shawnlandden@gmail.com, linux-crypto@vger.kernel.org,
-        netdev@vger.kernel.org, herbert@gondor.hengli.com.au,
-        Richard Weinberger <richard@nod.at>, Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, <stable@vger.kernel.org>
-Subject: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set MSG_SENDPAGE_NOTLAST
-Date: Mon, 25 Nov 2013 00:42:07 +0100
-Message-Id: <1385336527-27304-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
-References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
+	id S1752358Ab3KYABw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 19:01:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61809 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752092Ab3KYABo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 19:01:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH 2/4] PCI / ACPI: Use acpi_find_child_device() for child devices lookup
+Date: Mon, 25 Nov 2013 01:12:10 +0100
+Message-ID: <1827111.PaqOm34rfO@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2610478.KxPMyuOMok@vostro.rjw.lan>
+References: <2610478.KxPMyuOMok@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST.
-We have to ensure that MSG_MORE is also set if we set MSG_SENDPAGE_NOTLAST.
-Otherwise users that check against MSG_MORE will not see it.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This fixes sendfile() on AF_ALG.
+It is much more efficient to use acpi_find_child_device()
+for child devices lookup in acpi_pci_find_device() and pass
+ACPI_COMPANION(dev->parent) to it directly instead of obtaining
+ACPI_HANDLE() of ACPI_COMPANION(dev->parent) and passing it to
+acpi_find_child() which has to run acpi_bus_get_device() to
+obtain ACPI_COMPANION(dev->parent) from that again.
 
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: <stable@vger.kernel.org> # 3.4.x
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- fs/splice.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/pci-acpi.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/fs/splice.c b/fs/splice.c
-index 3b7ee65..b93f1b8 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -701,7 +701,7 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
- 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+Index: linux-pm/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-acpi.c
++++ linux-pm/drivers/pci/pci-acpi.c
+@@ -309,7 +309,8 @@ void acpi_pci_remove_bus(struct pci_bus
+ static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+ {
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+-	bool is_bridge;
++	struct acpi_device *adev;
++	bool check_children;
+ 	u64 addr;
  
- 	if (sd->len < sd->total_len && pipe->nrbufs > 1)
--		more |= MSG_SENDPAGE_NOTLAST;
-+		more |= MSG_SENDPAGE_NOTLAST | MSG_MORE;
+ 	/*
+@@ -317,14 +318,17 @@ static int acpi_pci_find_device(struct d
+ 	 * is set only after acpi_pci_find_device() has been called for the
+ 	 * given device.
+ 	 */
+-	is_bridge = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
++	check_children = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
+ 			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
+ 	/* Please ref to ACPI spec for the syntax of _ADR */
+ 	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
+-	*handle = acpi_find_child(ACPI_HANDLE(dev->parent), addr, is_bridge);
+-	if (!*handle)
+-		return -ENODEV;
+-	return 0;
++	adev = acpi_find_child_device(ACPI_COMPANION(dev->parent), addr,
++				      check_children);
++	if (adev) {
++		*handle = adev->handle;
++		return 0;
++	}
++	return -ENODEV;
+ }
  
- 	return file->f_op->sendpage(file, buf->page, buf->offset,
- 				    sd->len, &pos, more);
--- 
-1.8.1.4
+ static void pci_acpi_setup(struct device *dev)
 
