@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3KYVXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 16:23:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46011 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab3KYVXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 16:23:38 -0500
-Message-ID: <5293BF8B.20203@zytor.com>
-Date: Mon, 25 Nov 2013 13:22:19 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752787Ab3KYVYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 16:24:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56582 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3KYVYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 16:24:37 -0500
+Date: Mon, 25 Nov 2013 13:24:36 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH staging-next 0/4] fwserial changes for 3.14
+Message-ID: <20131125212436.GA26290@kroah.com>
+References: <1385143571-3571-1-git-send-email-peter@hurleysoftware.com>
+ <20131125204336.GA646@kroah.com>
+ <5293BA67.3010405@hurleysoftware.com>
 MIME-Version: 1.0
-To: dyoung@redhat.com, linux-kernel@vger.kernel.org
-CC: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, matt@console-pimps.org,
-        toshi.kani@hp.com
-Subject: Re: [patch 00/12 v4] kexec kernel efi runtime support v	v4] efi:
- export more efi table variable to sysfs
-References: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
-In-Reply-To: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5293BA67.3010405@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 12:56 AM, dyoung@redhat.com wrote:
+On Mon, Nov 25, 2013 at 04:00:23PM -0500, Peter Hurley wrote:
+> On 11/25/2013 03:43 PM, Greg Kroah-Hartman wrote:
+> >On Fri, Nov 22, 2013 at 01:06:07PM -0500, Peter Hurley wrote:
+> >>**This patchset requires 'Halve tty buffer memory consumption' patchset **
+> >
+> >Requires it to build or just work properly?
+> >
+> >I'm trying to figure out what tree to take this in, (tty-next or
+> >staging-next).
 > 
-> For efi runtime mapping I add a new directory /sys/firmware/efi/
-> runtime-map/ like below
-> [dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
-> /sys/firmware/efi/runtime-map/
-> â”œâ”€â”€ 0
-> â”‚   â”œâ”€â”€ attribute
-> â”‚   â”œâ”€â”€ num_pages
-> â”‚   â”œâ”€â”€ phys_addr
-> â”‚   â”œâ”€â”€ type
-> â”‚   â””â”€â”€ virt_addr
-> â”œâ”€â”€ 1
-> â”‚   â”œâ”€â”€ attribute
-> â”‚   â”œâ”€â”€ num_pages
-> â”‚   â”œâ”€â”€ phys_addr
-> â”‚   â”œâ”€â”€ type
-> â”‚   â””â”€â”€ virt_addr
-> [snip]
->  
+> To build.
+> 
+> The 'Halve tty buffer memory consumption' patchset exports new
+> methods that allow the driver to configure the maximum memory
+> consumption by the tty buffers.
+> 
+> This fwserial patchset uses that new interface to rely on tty
+> buffers to provide adequate rx buffering, rather than add'l rx
+> buffering being done by the driver.
+> 
+> By halving the buffer memory consumption, I don't feel so
+> guilty about doubling the limit :)
 
-These patches came through severely corrupted, the above is typical...
-	
-	-hpa
+Ok, thanks, I'll take it through my tty-next tree then.
 
-
+greg k-h
