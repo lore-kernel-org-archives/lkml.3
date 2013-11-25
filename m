@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3KYNHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:07:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57025 "EHLO
+	id S1757114Ab3KYN0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:26:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57054 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab3KYNHi (ORCPT
+	with ESMTP id S1754008Ab3KYNHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:38 -0500
+	Mon, 25 Nov 2013 08:07:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 19/78] parisc: Do not crash 64bit SMP kernels on machines with >= 4GB RAM
-Date: Mon, 25 Nov 2013 13:06:06 +0000
-Message-Id: <1385384825-21681-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 25/78] ALSA: hda - Add a fixup for ASUS N76VZ
+Date: Mon, 25 Nov 2013 13:06:12 +0000
+Message-Id: <1385384825-21681-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 54e181e073fc1415e41917d725ebdbd7de956455 upstream.
+commit 6fc16e58adf50c0f1e4478538983fb5ff6f453d4 upstream.
 
-Since the beginning of the parisc-linux port, sometimes 64bit SMP kernels were
-not able to bring up other CPUs than the monarch CPU and instead crashed the
-kernel.  The reason was unclear, esp. since it involved various machines (e.g.
-J5600, J6750 and SuperDome). Testing showed, that those crashes didn't happened
-when less than 4GB were installed, or if a 32bit Linux kernel was booted.
+ASUS N76VZ needs the same fixup as N56VZ for supporting the boost
+speaker.
 
-In the end, the fix for those SMP problems is trivial:
-During the early phase of the initialization of the CPUs, including the monarch
-CPU, the PDC_PSW firmware function to enable WIDE (=64bit) mode is called.
-It's documented that this firmware function may clobber various registers, and
-one one of those possibly clobbered registers is %cr30 which holds the task
-thread info pointer.
-
-Now, if %cr30 would always have been clobbered, then this bug would have been
-detected much earlier. But lots of testing finally showed, that - at least for
-%cr30 - on some machines only the upper 32bits of the 64bit register suddenly
-turned zero after the firmware call.
-
-So, after finding the root cause, the explanation for the various crashes
-became clear:
-- On 32bit SMP Linux kernels all upper 32bit were zero, so we didn't faced this
-  problem.
-- Monarch CPUs in 64bit mode always booted sucessfully, because the inital task
-  thread info pointer was below 4GB.
-- Secondary CPUs booted sucessfully on machines with less than 4GB RAM because
-  the upper 32bit were zero anyay.
-- Secondary CPus failed to boot if we had more than 4GB RAM and the task thread
-  info pointer was located above the 4GB boundary.
-
-Finally, the patch to fix this problem is trivial by saving the %cr30 register
-before the firmware call and restoring it afterwards.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=846529
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/kernel/head.S | 4 ++++
- 1 file changed, 4 insertions(+)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/parisc/kernel/head.S b/arch/parisc/kernel/head.S
-index 37aabd7..d2d5825 100644
---- a/arch/parisc/kernel/head.S
-+++ b/arch/parisc/kernel/head.S
-@@ -195,6 +195,8 @@ common_stext:
- 	ldw             MEM_PDC_HI(%r0),%r6
- 	depd            %r6, 31, 32, %r3        /* move to upper word */
- 
-+	mfctl		%cr30,%r6		/* PCX-W2 firmware bug */
-+
- 	ldo             PDC_PSW(%r0),%arg0              /* 21 */
- 	ldo             PDC_PSW_SET_DEFAULTS(%r0),%arg1 /* 2 */
- 	ldo             PDC_PSW_WIDE_BIT(%r0),%arg2     /* 2 */
-@@ -203,6 +205,8 @@ common_stext:
- 	copy            %r0,%arg3
- 
- stext_pdc_ret:
-+	mtctl		%r6,%cr30		/* restore task thread info */
-+
- 	/* restore rfi target address*/
- 	ldd             TI_TASK-THREAD_SZ_ALGN(%sp), %r10
- 	tophys_r1       %r10
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index accddc0..72694bd 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6729,6 +6729,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
++	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
+ 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
+ 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
+ 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
 -- 
 1.8.3.2
 
