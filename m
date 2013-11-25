@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3KYNW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:22:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57143 "EHLO
+	id S1754316Ab3KYNH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:07:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57100 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab3KYNIC (ORCPT
+	with ESMTP id S1754051Ab3KYNHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:02 -0500
+	Mon, 25 Nov 2013 08:07:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 38/78] ALSA: hda - Move one-time init codes from generic_hdmi_init()
-Date: Mon, 25 Nov 2013 13:06:25 +0000
-Message-Id: <1385384825-21681-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 32/78] ALSA: fix oops in snd_pcm_info() caused by ASoC DPCM
+Date: Mon, 25 Nov 2013 13:06:19 +0000
+Message-Id: <1385384825-21681-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -28,91 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 8b8d654b55648561287bd8baca0f75f964a17038 upstream.
+commit a4461f41b94cb52e0141af717dcf4ef6558c8e2e upstream.
 
-The codes to initialize work struct or create a proc interface should
-be called only once and never although it's called many times through
-the init callback.  Move that stuff into patch_generic_hdmi() so that
-it's called only once.
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = d5300000
+[00000008] *pgd=0d265831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] PREEMPT ARM
+CPU: 0 PID: 2295 Comm: vlc Not tainted 3.11.0+ #755
+task: dee74800 ti: e213c000 task.ti: e213c000
+PC is at snd_pcm_info+0xc8/0xd8
+LR is at 0x30232065
+pc : [<c031b52c>]    lr : [<30232065>]    psr: a0070013
+sp : e213dea8  ip : d81cb0d0  fp : c05f7678
+r10: c05f7770  r9 : fffffdfd  r8 : 00000000
+r7 : d8a968a8  r6 : d8a96800  r5 : d8a96200  r4 : d81cb000
+r3 : 00000000  r2 : d81cb000  r1 : 00000001  r0 : d8a96200
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 15300019  DAC: 00000015
+Process vlc (pid: 2295, stack limit = 0xe213c248)
+[<c031b52c>] (snd_pcm_info) from [<c031b570>] (snd_pcm_info_user+0x34/0x9c)
+[<c031b570>] (snd_pcm_info_user) from [<c03164a4>] (snd_pcm_control_ioctl+0x274/0x280)
+[<c03164a4>] (snd_pcm_control_ioctl) from [<c0311458>] (snd_ctl_ioctl+0xc0/0x55c)
+[<c0311458>] (snd_ctl_ioctl) from [<c00eca84>] (do_vfs_ioctl+0x80/0x31c)
+[<c00eca84>] (do_vfs_ioctl) from [<c00ecd5c>] (SyS_ioctl+0x3c/0x60)
+[<c00ecd5c>] (SyS_ioctl) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
+Code: e1a00005 e59530dc e3a01001 e1a02004 (e5933008)
+---[ end trace cb3d9bdb8dfefb3c ]---
 
+This is provoked when the ASoC front end is open along with its backend,
+(which causes the backend to have a runtime assigned to it) and then the
+SNDRV_CTL_IOCTL_PCM_INFO is requested for the (visible) backend device.
+
+Resolve this by ensuring that ASoC internal backend devices are not
+visible to userspace, just as the commentry for snd_pcm_new_internal()
+says it should be.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-
-This is being backported to 3.4 and 3.5 due to prevention of kernel
-panic. The kernel panic was observed by executing
-'cat /proc/asound/card0/codec0' on a particular machine, which was
- - running in battery mode
- - having an external HDMI monitor connected
- - running the fglrx driver.
-
-In short, the one-time init code initializes a delayed_work struct.
-Then, I believe the following happened:
- 1) the delayed_work was activated
- 2) the delayed_work struct was reinitialized by the init code
- 3) when the delayed_work timed out (ready to run the callback function),
-    the kernel panic happened because the delayed_work struct had
-    been corrupted in step 2.
-
-BugLink: https://bugs.launchpad.net/bugs/1212160
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_hdmi.c | 22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ sound/core/pcm.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index c3cd1f8..769ba9b 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1283,23 +1283,34 @@ static int generic_hdmi_build_controls(struct hda_codec *codec)
- 	return 0;
- }
+diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+index e30e1be..6355540 100644
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -49,6 +49,8 @@ static struct snd_pcm *snd_pcm_get(struct snd_card *card, int device)
+ 	struct snd_pcm *pcm;
  
--static int generic_hdmi_init(struct hda_codec *codec)
-+static int generic_hdmi_init_per_pins(struct hda_codec *codec)
- {
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx;
- 
- 	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
- 		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
--		hda_nid_t pin_nid = per_pin->pin_nid;
- 		struct hdmi_eld *eld = &per_pin->sink_eld;
- 
--		hdmi_init_pin(codec, pin_nid);
--		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
--
- 		per_pin->codec = codec;
- 		INIT_DELAYED_WORK(&per_pin->work, hdmi_repoll_eld);
- 		snd_hda_eld_proc_new(codec, eld, pin_idx);
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device == device)
+ 			return pcm;
  	}
-+	return 0;
-+}
-+
-+static int generic_hdmi_init(struct hda_codec *codec)
-+{
-+	struct hdmi_spec *spec = codec->spec;
-+	int pin_idx;
-+
-+	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
-+		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
-+		hda_nid_t pin_nid = per_pin->pin_nid;
-+
-+		hdmi_init_pin(codec, pin_nid);
-+		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
-+	}
- 	snd_hda_jack_report_sync(codec);
- 	return 0;
- }
-@@ -1344,6 +1355,7 @@ static int patch_generic_hdmi(struct hda_codec *codec)
- 		return -EINVAL;
- 	}
- 	codec->patch_ops = generic_hdmi_patch_ops;
-+	generic_hdmi_init_per_pins(codec);
+@@ -60,6 +62,8 @@ static int snd_pcm_next(struct snd_card *card, int device)
+ 	struct snd_pcm *pcm;
  
- 	init_channel_allocations();
- 
+ 	list_for_each_entry(pcm, &snd_pcm_devices, list) {
++		if (pcm->internal)
++			continue;
+ 		if (pcm->card == card && pcm->device > device)
+ 			return pcm->device;
+ 		else if (pcm->card->number > card->number)
 -- 
 1.8.3.2
 
