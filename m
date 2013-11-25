@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab3KYKQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:16:56 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47905 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811Ab3KYKQx (ORCPT
+	id S1752833Ab3KYKRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:17:06 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53781 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751114Ab3KYKRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:16:53 -0500
-Date: Mon, 25 Nov 2013 10:16:48 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: vinod.koul@intel.com, broonie@kernel.org
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        ckeepax@opensource.wolfsonmicro.com
-Subject: [PATCH 1/1] ASoC: soc_compress: Add set_metadata
-Message-ID: <20131125101648.GA1818@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Mon, 25 Nov 2013 05:17:01 -0500
+Message-ID: <1385374617.2354.22.camel@dabdike>
+Subject: Re: [PATCH 0024] asm-generic: Rename int-ll64.h to types.h
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 25 Nov 2013 14:16:57 +0400
+In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-11-25 at 09:55 +0100, Geert Uytterhoeven wrote:
+> This patchset aims to rename <asm-generic/int-ll64.h> to
+> <asm-generic/types.h> in kernelspace, as suggested by Arnd.
+> 
+> While userspace still has both include/uapi/asm-generic/int-l64.h and
+> include/uapi/asm-generic/int-ll64.h (int-l64.h may still be used on legacy
+> 64-bit systems), kernelspace always uses "(unsigned) long long" for 64-bit
+> integer values ("u64" and "s64").  Hence there's no longer a need to
+> distinguish between int-l64 and int-ll64 in kernelspace, and int-ll64.h can
+> just be called types.h
 
-Pass the set_metadata() calls through to the codec driver.
+Is this a good idea?  I thought some versions of gcc used long long for
+128 bit integers, in which case int-ll64.h will give the wrong types for
+u64 and s64.  I think gcc is changing to use the __int128 type, so this
+may be historical, but someone would need to validate that we have no
+architectures with the old long long behaviour.
 
-Signed-off-by: Zhao Weijia <weijia.zhao@capelabs.com>
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
----
- sound/soc/soc-compress.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+James
 
-diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
-index 53c9ecd..186802b 100644
---- a/sound/soc/soc-compress.c
-+++ b/sound/soc/soc-compress.c
-@@ -318,6 +318,21 @@ static int soc_compr_pointer(struct snd_compr_stream *cstream,
- 	mutex_unlock(&rtd->pcm_mutex);
- 	return 0;
- }
-+static int soc_compr_set_metadata(struct snd_compr_stream *cstream,
-+			struct snd_compr_metadata *metadata)
-+{
-+	struct snd_soc_pcm_runtime *rtd = cstream->private_data;
-+	struct snd_soc_platform *platform = rtd->platform;
-+
-+	mutex_lock_nested(&rtd->pcm_mutex, rtd->pcm_subclass);
-+
-+	if (platform->driver->compr_ops && platform->driver->compr_ops->set_metadata)
-+		 platform->driver->compr_ops->set_metadata(cstream, metadata);
-+
-+	mutex_unlock(&rtd->pcm_mutex);
-+	return 0;
-+}
-+
- 
- static int soc_compr_copy(struct snd_compr_stream *cstream,
- 			  char __user *buf, size_t count)
-@@ -372,7 +387,8 @@ static struct snd_compr_ops soc_compr_ops = {
- 	.pointer	= soc_compr_pointer,
- 	.ack		= soc_compr_ack,
- 	.get_caps	= soc_compr_get_caps,
--	.get_codec_caps = soc_compr_get_codec_caps
-+	.get_codec_caps = soc_compr_get_codec_caps,
-+	.set_metadata = soc_compr_set_metadata,
- };
- 
- /* create a new compress */
--- 
-1.7.2.5
 
