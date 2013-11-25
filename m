@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab3KYO3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:29:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58884 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753989Ab3KYNxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:36 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1758449Ab3KYO37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:29:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10246 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754607Ab3KYO3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:29:55 -0500
+Date: Mon, 25 Nov 2013 16:29:28 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi.kivity@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131125142928.GD959@redhat.com>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com>
+ <20131125142351.GA6056@amt.cnet>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Fan Du" <fan.du@windriver.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.690243829@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 35/87] include/linux/fs.h: disable preempt when
- acquire i_size_seqcount write lock
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131125142351.GA6056@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+On Mon, Nov 25, 2013 at 12:23:51PM -0200, Marcelo Tosatti wrote:
+> On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
+> > On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
+> > <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> > >
+> > > On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > 
+> > <snip complicated stuff about parent_pte>
+> > 
+> > I'm not really following, but note that parent_pte predates EPT (and
+> > the use of rcu in kvm), so all the complexity that is the result of
+> > trying to pack as many list entries into a cache line can be dropped.
+> > Most setups now would have exactly one list entry, which is handled
+> > specially antyway.
+> > 
+> > Alternatively, the trick of storing multiple entries in one list entry
+> > can be moved to generic code, it may be useful to others.
+> 
+> Yes, can the lockless list walking code be transformed into generic
+> single-linked list walking? So the correctness can be verified
+> independently, and KVM becomes a simple user of that interface.
+> 
+The code will become simpler but the problem of never ending walk of
+rculist_nulls will remain.
 
-------------------
+> The simpler version is to maintain lockless walk on depth-1 rmap entries
+> (and grab the lock once depth-2 entry is found).
+And release it between each rmap walk or at the very end of write
+protect?
 
-From: Fan Du <fan.du@windriver.com>
-
-commit 74e3d1e17b2e11d175970b85acd44f5927000ba2 upstream.
-
-Two rt tasks bind to one CPU core.
-
-The higher priority rt task A preempts a lower priority rt task B which
-has already taken the write seq lock, and then the higher priority rt
-task A try to acquire read seq lock, it's doomed to lockup.
-
-rt task A with lower priority: call write
-i_size_write                                        rt task B with higher priority: call sync, and preempt task A
-  write_seqcount_begin(&inode->i_size_seqcount);    i_size_read
-  inode->i_size = i_size;                             read_seqcount_begin <-- lockup here...
-
-So disable preempt when acquiring every i_size_seqcount *write* lock will
-cure the problem.
-
-Signed-off-by: Fan Du <fan.du@windriver.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- include/linux/fs.h | 2 ++
- 1 file changed, 2 insertions(+)
-
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -911,9 +911,11 @@ static inline loff_t i_size_read(const s
- static inline void i_size_write(struct inode *inode, loff_t i_size)
- {
- #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
-+	preempt_disable();
- 	write_seqcount_begin(&inode->i_size_seqcount);
- 	inode->i_size = i_size;
- 	write_seqcount_end(&inode->i_size_seqcount);
-+	preempt_enable();
- #elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
- 	preempt_disable();
- 	inode->i_size = i_size;
-
+--
+			Gleb.
