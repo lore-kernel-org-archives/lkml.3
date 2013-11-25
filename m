@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab3KYNHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:07:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57045 "EHLO
+	id S1754405Ab3KYNIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:08:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57094 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab3KYNHn (ORCPT
+	with ESMTP id S1754195Ab3KYNHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:43 -0500
+	Mon, 25 Nov 2013 08:07:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 24/78] ASoC: dapm: Fix source list debugfs outputs
-Date: Mon, 25 Nov 2013 13:06:11 +0000
-Message-Id: <1385384825-21681-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 31/78] Staging: bcm: info leak in ioctl
+Date: Mon, 25 Nov 2013 13:06:18 +0000
+Message-Id: <1385384825-21681-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ff18620c2157671a8ee21ebb8e6a3520ea209b1f upstream.
+commit 8d1e72250c847fa96498ec029891de4dc638a5ba upstream.
 
-... due to a copy & paste error.
+The DevInfo.u32Reserved[] array isn't initialized so it leaks kernel
+information to user space.
 
-Spotted by coverity CID 710923.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/soc-dapm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/bcm/Bcmchar.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index 9ddc1a8..8423a2a 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -1692,7 +1692,7 @@ static ssize_t dapm_widget_power_read_file(struct file *file,
- 				w->active ? "active" : "inactive");
+diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
+index cf30592..c0d612f 100644
+--- a/drivers/staging/bcm/Bcmchar.c
++++ b/drivers/staging/bcm/Bcmchar.c
+@@ -1957,6 +1957,7 @@ cntrlEnd:
  
- 	list_for_each_entry(p, &w->sources, list_sink) {
--		if (p->connected && !p->connected(w, p->sink))
-+		if (p->connected && !p->connected(w, p->source))
- 			continue;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
  
- 		if (p->connect)
++		memset(&DevInfo, 0, sizeof(DevInfo));
+ 		DevInfo.MaxRDMBufferSize = BUFFER_4K;
+ 		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
+ 		DevInfo.u32RxAlignmentCorrection = 0;
 -- 
 1.8.3.2
 
