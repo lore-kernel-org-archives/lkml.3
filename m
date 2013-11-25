@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3KYNVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:21:07 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45963 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab3KYNVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:21:01 -0500
-Message-ID: <52934E7C.9040102@ti.com>
-Date: Mon, 25 Nov 2013 15:19:56 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+	id S1756864Ab3KYNVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:21:36 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1780 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab3KYNUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 08:20:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 25 Nov 2013 05:14:31 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Strashko Grygorii <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v2 0/6] Update Davinci watchdog driver
-References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <52934B6C.4060308@ti.com>
-In-Reply-To: <52934B6C.4060308@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] clk: tegra: fix vi clk for Terga124
+Date: Mon, 25 Nov 2013 15:20:22 +0200
+Message-ID: <1385385623-8952-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1385385623-8952-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1385385623-8952-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 03:06 PM, Sekhar Nori wrote:
-> On Monday 18 November 2013 10:48 PM, Ivan Khoronzhuk wrote:
->> These patches are intended to update Davinci watchdog to use WDT core
->> and reuse driver for keystone arch, because Keystone uses the similar
->> IP like Davinci.
->
-> This series causes a regression on all DaVinci platforms because after
-> the series is applied the watchdog device does not get registered at
-> all. Since you changed the device name please include a patch to fix the
-> platform references too.
->
-> Thanks,
-> Sekhar
->
+The vi clk on Tegra124 has an extra possible parent: pll_c4. Fix the code
+to allow for this.
 
-Ok, I will replace
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-id.h           |    1 +
+ drivers/clk/tegra/clk-tegra-periph.c |    8 ++++++++
+ drivers/clk/tegra/clk-tegra124.c     |    2 +-
+ 3 files changed, 10 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/clk/tegra/clk-id.h b/drivers/clk/tegra/clk-id.h
+index 836b054..c5aba5c 100644
+--- a/drivers/clk/tegra/clk-id.h
++++ b/drivers/clk/tegra/clk-id.h
+@@ -212,6 +212,7 @@ enum clk_id {
+ 	tegra_clk_vfir,
+ 	tegra_clk_vi,
+ 	tegra_clk_vi_8,
++	tegra_clk_vi_9,
+ 	tegra_clk_vic03,
+ 	tegra_clk_vim2_clk,
+ 	tegra_clk_vimclk_sync,
+diff --git a/drivers/clk/tegra/clk-tegra-periph.c b/drivers/clk/tegra/clk-tegra-periph.c
+index 9125d02..fb84f60 100644
+--- a/drivers/clk/tegra/clk-tegra-periph.c
++++ b/drivers/clk/tegra/clk-tegra-periph.c
+@@ -359,6 +359,13 @@ static u32 mux_pllm_pllc_pllp_plla_pllc2_c3_clkm_idx[] = {
+ 	[0] = 0, [1] = 1, [2] = 2, [3] = 3, [4] = 4, [5] = 6,
+ };
+ 
++static const char *mux_pllm_pllc2_c_c3_pllp_plla_pllc4[] = {
++	"pll_m", "pll_c2", "pll_c", "pll_c3", "pll_p", "pll_a_out0", "pll_c4",
++};
++static u32 mux_pllm_pllc2_c_c3_pllp_plla_pllc4_idx[] = {
++	[0] = 0, [1] = 1, [2] = 2, [3] = 3, [4] = 4, [5] = 6, [6] = 7,
++};
++
+ static struct tegra_periph_init_data periph_clks[] = {
+ 	AUDIO("d_audio", CLK_SOURCE_D_AUDIO, 106, TEGRA_PERIPH_ON_APB, tegra_clk_d_audio),
+ 	AUDIO("dam0", CLK_SOURCE_DAM0, 108, TEGRA_PERIPH_ON_APB, tegra_clk_dam0),
+@@ -378,6 +385,7 @@ static struct tegra_periph_init_data periph_clks[] = {
+ 	INT("3d", mux_pllm_pllc_pllp_plla, CLK_SOURCE_3D, 24, 0, tegra_clk_gr3d),
+ 	INT8("vde", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_VDE, 61, 0, tegra_clk_vde_8),
+ 	INT8("vi", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_VI, 20, 0, tegra_clk_vi_8),
++	INT8("vi", mux_pllm_pllc2_c_c3_pllp_plla_pllc4, CLK_SOURCE_VI, 20, 0, tegra_clk_vi_9),
+ 	INT8("epp", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_EPP, 19, 0, tegra_clk_epp_8),
+ 	INT8("msenc", mux_pllm_pllc2_c_c3_pllp_plla, CLK_SOURCE_MSENC, 91, TEGRA_PERIPH_WAR_1005168, tegra_clk_msenc),
+ 	INT8("tsec", mux_pllp_pllc2_c_c3_pllm_clkm, CLK_SOURCE_TSEC, 83, 0, tegra_clk_tsec),
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index 3584138..54af043 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -861,7 +861,7 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
+ 	[tegra_clk_vfir] = { .dt_id = TEGRA124_CLK_VFIR, .present = true },
+ 	[tegra_clk_spdif_in] = { .dt_id = TEGRA124_CLK_SPDIF_IN, .present = true },
+ 	[tegra_clk_spdif_out] = { .dt_id = TEGRA124_CLK_SPDIF_OUT, .present = true },
+-	[tegra_clk_vi] = { .dt_id = TEGRA124_CLK_VI, .present = true },
++	[tegra_clk_vi_9] = { .dt_id = TEGRA124_CLK_VI, .present = true },
+ 	[tegra_clk_vi_sensor] = { .dt_id = TEGRA124_CLK_VI_SENSOR, .present = true },
+ 	[tegra_clk_fuse] = { .dt_id = TEGRA124_CLK_FUSE, .present = true },
+ 	[tegra_clk_fuse_burn] = { .dt_id = TEGRA124_CLK_FUSE_BURN, .present = true },
 -- 
-Regards,
-Ivan Khoronzhuk
+1.7.7.rc0.72.g4b5ea.dirty
+
