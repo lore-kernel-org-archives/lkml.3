@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab3KYOLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:11:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab3KYOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:11:35 -0500
-Date: Mon, 25 Nov 2013 15:12:02 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] uprobes: Allocate ->utask before handler_chain() for
-	tracing handlers
-Message-ID: <20131125141202.GA28937@redhat.com>
-References: <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com> <20131106173754.GA11299@redhat.com> <87a9hgwqal.fsf@sejong.aot.lge.com> <527DA997.4080306@hitachi.com> <20131109152313.GA14630@redhat.com> <87siv2uk1q.fsf@sejong.aot.lge.com> <87siulrmpj.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932117Ab3KYOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:11:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58867 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754142Ab3KYNxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 08:53:45 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <87siulrmpj.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Willem de Bruijn" <willemb@google.com>,
+        "Dmitry Kravkov" <dmitry@broadcom.com>,
+        "Eilon Greenstein" <eilong@broadcom.com>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.213751350@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 13/87] bnx2x: record rx queue for LRO packets
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-On 11/25, Namhyung Kim wrote:
->
-> Hi Oleg,
->
-> On Tue, 12 Nov 2013 17:00:01 +0900, Namhyung Kim wrote:
-> > For @+addr syntax: user-space uses relative symbol address from a loaded
-> >                    base address and kernel calculates the base address
-> >                    using "current->utask->vaddr - tu->offset".
->
-> I tried this approach and realized that current->utask is not set
+------------------
 
-Aaah, I am stipid. Yes, I forgot that it is always NULL until the
-task does xol or prepare_uretprobe() for the 1st time.... And on
-powerpc it can be always NULL because it can likely emulate the
-probed insn.
+From: Eric Dumazet <edumazet@google.com>
 
-> or has
-> an invalid vaddr when handler_chain() is called.
+[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
 
-But this should not matter at all? you should not rely on the value of
-->vaddr, you should use at as uninitialized scratchpad. And in fact we
-were going to add another member into the union which should be used
-instead later (but lets ignore this for now).
+RPS support is kind of broken on bnx2x, because only non LRO packets
+get proper rx queue information. This triggers reorders, as it seems
+bnx2x like to generate a non LRO packet for segment including TCP PUSH
+flag : (this might be pure coincidence, but all the reorders I've
+seen involve segments with a PUSH)
 
-> So I had to apply
-> following patch and it seems to work well for me.  Could you confirm it?
+11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
+11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
 
-I don't think we need this patch, see below.
+We must call skb_record_rx_queue() to properly give to RPS (and more
+generally for TX queue selection on forward path) the receive queue
+information.
 
-> @@ -1744,11 +1744,17 @@ static void handle_swbp(struct pt_regs *regs)
->  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
->  		goto out;
->
-> +	utask = get_utask();
+Similar fix is needed for skb_mark_napi_id(), but will be handled
+in a separate patch to ease stable backports.
 
-Yes, we need this until we find another way to pass the additional info
-to ->fetch() methods. This is a bit unfortunate, may be we fill find a
-better solution later.
-
-But until then we can probably tolerate the hack below, what do you
-think?
-
-Oleg.
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Willem de Bruijn <willemb@google.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Subject: [PATCH] uprobes: Allocate ->utask before handler_chain() for tracing handlers
-
-uprobe_trace_print() and uprobe_perf_print() need to pass the additional
-info to call_fetch() methods, currently there is no simple way to do this.
-
-current->utask looks like a natural place to hold this info, but we need
-to allocate it before handler_chain().
-
-This is a bit unfortunate, perhaps we will find a better solution later,
-but this is simple and should work right now.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index b886a5e..307d87c 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1854,6 +1854,10 @@ static void handle_swbp(struct pt_regs *regs)
- 	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
- 		goto out;
- 
-+	/* Tracing handlers use ->utask to communicate with fetch methods */
-+	if (!get_utask())
-+		goto out;
-+
- 	handler_chain(uprobe, regs);
- 	if (can_skip_sstep(uprobe, regs))
- 		goto out;
--- 
-1.5.5.1
-
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 4c50ac0..bbb6692 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -516,6 +516,7 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
+ 		if (!bnx2x_fill_frag_skb(bp, fp, queue, skb, cqe, cqe_idx)) {
+ 			if (tpa_info->parsing_flags & PARSING_FLAGS_VLAN)
+ 				__vlan_hwaccel_put_tag(skb, tpa_info->vlan_tag);
++			skb_record_rx_queue(skb, fp->index);
+ 			napi_gro_receive(&fp->napi, skb);
+ 		} else {
+ 			DP(NETIF_MSG_RX_STATUS, "Failed to allocate new pages"
 
