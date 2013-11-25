@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3KYM1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:27:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39684 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3KYM1i (ORCPT
+	id S1753578Ab3KYMaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:30:05 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44932 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751128Ab3KYMaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:27:38 -0500
-Date: Mon, 25 Nov 2013 13:27:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        David Daney <david.daney@cavium.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: Preventing IPI sending races in arch code
-Message-ID: <20131125122726.GZ10022@twins.programming.kicks-ass.net>
-References: <52932BE2.5010201@synopsys.com>
- <20131125110006.GU3866@twins.programming.kicks-ass.net>
- <529334CA.1000401@synopsys.com>
+	Mon, 25 Nov 2013 07:30:03 -0500
+Date: Mon, 25 Nov 2013 09:30:13 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Hans Zhang <zhanghonghui@innofidei.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        zhouguangming@innofidei.com
+Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
+Message-ID: <20131125123012.GE2408@localhost>
+References: <528EB1E3.7030101@innofidei.com>
+ <20131122015237.GB3509@localhost>
+ <528EBD0B.5010006@innofidei.com>
+ <20131122114509.GB2414@localhost>
+ <5292A7E7.5060003@innofidei.com>
+ <20131125101147.GA2408@localhost>
+ <CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
+ <529334D9.2030204@innofidei.com>
+ <20131125115238.GC2408@localhost>
+ <1385381770.24518.18.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <529334CA.1000401@synopsys.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385381770.24518.18.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 05:00:18PM +0530, Vineet Gupta wrote:
-> While we are at it, I wanted to confirm another potential race (ARC/blackfin..)
-> The IPI handler clears the interrupt before atomically-read-n-clear the msg word.
+David,
+
+On Mon, Nov 25, 2013 at 12:16:10PM +0000, David Woodhouse wrote:
+> On Mon, 2013-11-25 at 08:52 -0300, Ezequiel Garcia wrote:
+> > 
+> > Your understanding is correct: NAND *must* be erased explictly in
+> > userspace
+> > before writing. However, keep in mind the following additional
+> > constraints:
+> > 
+> > * Writing should be always performed using 'nandwrite',
+> >   not tools such as 'cat' or 'dd'.
+> > 
+> > * An mtdblock shouldn't be used to access directly the NAND from
+> >   userspace. AFAICS, the primarily usage of mtdblock is to be able to
+> >   mount JFFS2.
 > 
-> do_IPI
->    plat_smp_ops.ipi_clear(irq);
->    while ((pending = xchg(&ipi_data->bits, 0) != 0)
->       find_next_bit(....)
->       switch(next-msg)
+> No. You don't need mtdblock to mount JFFS2 at all.
 > 
-> Depending on arch this could lead to an immediate IPI interrupt, and again
-> ipi_data->bits could get out of syn with IPI senders. 
-
-I'm obviously lacking in platform knowledge here, what does that
-ipi_clear() actually do? Tell the platform the interrupt has arrived and
-it can stop asserting the line?
-
-So sure, then someone can again assert the interrupt, but given we just
-established a protocol for raising the thing; namely something like
-this:
-
-void arch_send_ipi(int cpu, int type)
-{
-  u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
-  u32 new, old;
-
-  do {
-  	new = old = *pending_ptr;
-	new |= 1U << type;
-  } while (cmpxchg(pending_ptr, old, new) != old)
-
-  if (!old) /* only raise the actual IPI if we set the first bit */
-  	raise_ipi(cpu);
-}
-
-Who would re-assert it if we have !0 pending?
-
-Also, the above can be thought of as a memory ordering issue:
-
-  STORE pending
-  MB /* implied by cmpxchg */
-  STORE ipi /* raise the actual thing */
-
-In that case the other end must be:
-
-  LOAD ipi
-  MB /* implied by xchg */
-  LOAD pending
-
-Which is what your code seems to do.
-
-> IMO the while loop is
-> completely useless specially if IPIs are not coalesced in h/w. 
-
-Agreed, the while loops seems superfluous.
-
-> And we need to move
-> the xchg ahead of ACK'ing the IPI
+> The mtdblock driver was used in the *very* early days of the MTD system,
+> on NOR flash with a "traditional" file system. Either in read-only mode
+> for something like cramfs, or in a very unsafe writeable mode. We
+> actually put ext2 on it for the Compaq iPaq for a while, before we had
+> JFFS.
 > 
-> do_IPI
->    pending = xchg(&ipi_data->bits, 0);
->    plat_smp_ops.ipi_clear(irq);
->    while (ffs....)
->       switch(next-msg)
->       ...
+> It was used as a shortcut for mounting JFFS2, and still is by a lot of
+> people, but it's certainly not necessary. You can turn off CONFIG_BLOCK
+> entirely and still use JFFS2.
 > 
-> Does that look sane to you.
+> You should consider mtdblock to be the most basic, primitive, "flash
+> translation layer" that can possibly exist. And thus, should basically
+> never use it. I certainly don't approve of trying to extend it.
+> 
 
-This I'm not at all certain of; continuing with the memory order analogy
-this would allow for the case where we see 0 pending, set a bit, try and
-raise the interrupt but then do not because its already assert.
-
-And since you just removed the while() loop, we'll be left with a !0
-pending vector and nobody processing it.
+Thanks a lot for the insight. After reading this, I'm wondering what's
+preventing us from killing MTD block support altogether. Artem, already
+suggested it a while back...
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
