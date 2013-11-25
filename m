@@ -1,115 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3KYJGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:06:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab3KYJB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 04:01:27 -0500
-Message-Id: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
-User-Agent: quilt/0.60-1
-Date: Mon, 25 Nov 2013 16:56:30 +0800
-From: dyoung@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com
-Subject: [patch 00/12 v4] kexec kernel efi runtime support
+	id S1754769Ab3KYJGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:06:44 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:39717 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab3KYIzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 03:55:44 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH 11/24] x86/uapi: Use Kbuild logic to include <asm-generic/types.h>
+Date: Mon, 25 Nov 2013 09:55:21 +0100
+Message-Id: <1385369734-24893-12-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
+References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+---
+ arch/x86/include/uapi/asm/Kbuild  |    3 ++-
+ arch/x86/include/uapi/asm/types.h |    6 ------
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+ delete mode 100644 arch/x86/include/uapi/asm/types.h
 
-Sorry for the spam, the patch subject is not correct in previous
-sending a while ago, send them again..
-
-Here is the V4 for supporting kexec kernel efi runtime.
-Per pervious discussion I pass the 1st kernel efi runtime mapping
-via setup_data to 2nd kernel. Besides of the runtime mapping
-info I also pass the fw_vendor, runtime, config table, smbios
-physical address in setup_data. EFI spec mentioned fw_vendor,
-runtime, config table addresses will be converted to virt address
-after entering virtual mode, but we will use it as physical address
-in efi_init. For smbios EFI spec did not mention about the address
-updating, but during my test on a HP workstation, the bios will
-convert it to Virt addr, thus pass it in setup_data as well.
-
-For fw_vendor, runtime, config table, I export them in /sys/firmware/
-efi/, smbios is already in /sys/firmware/efi/systab.
-
-For efi runtime mapping I add a new directory /sys/firmware/efi/
-runtime-map/ like below
-[dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
-/sys/firmware/efi/runtime-map/
-├── 0
-│   ├── attribute
-│   ├── num_pages
-│   ├── phys_addr
-│   ├── type
-│   └── virt_addr
-├── 1
-│   ├── attribute
-│   ├── num_pages
-│   ├── phys_addr
-│   ├── type
-│   └── virt_addr
-[snip]
+diff --git a/arch/x86/include/uapi/asm/Kbuild b/arch/x86/include/uapi/asm/Kbuild
+index 09409c44f9a5..42951639fc2c 100644
+--- a/arch/x86/include/uapi/asm/Kbuild
++++ b/arch/x86/include/uapi/asm/Kbuild
+@@ -1,6 +1,8 @@
+ # UAPI Header export list
+ include include/uapi/asm-generic/Kbuild.asm
  
-kexec-tools will assemble them as setup_data and pass to 2nd kernel.
-I will send userspace patches as well.
-
-Limitation is I only write support for x86_64, test on below machines:
-Lenovo thinkpad t420
-Dell inspiron 14 - 3421
-HP Z420 workstation
-Qemu + OVMF
-
-Please help to review the patches.
-
-The patches are based on matt's efi master tree
-
-Changes from v1:
-add one flag in xloadflags, so kexec-tools can safely load old kernel
-without efi support.
-coding style fixes
-function name for map phys_addr to fixed virt_addr
-Add ABI documentation for sysfs files
-
-Changes from v2:
-01/09: a new patch to remove unused variables in __map_region function
-       catched by Toshi Kani
-09/09: a new patch to export x86 boot_params to sysfs instead of use
-       debugfs files
-Matt: reuse __map_region instead do same thing in another function.
-      add a wrapper function efi_map_region_fixed [02/09]
-      check return value of krealloc
-      sysfs dir name s/efi-runtime-map/runtime-map [06/09]
-      use desc_size in efi_runtime_map
-      for the xloadflags defination: +&& defined(CONFIG_KEXEC)
-Greg: sysfs : one file one value for fw_vendor, runtime, tables. [05/09]
-      Document them in ABI testing
-HPA:  Document the new xloadflag
-Also there's other function cleanup and improvement for error handling.
-
-Changes from v3:
-Greg: sysfs code move to use __ATTR_RO and attr_group
-Boris: comments and code alignment
-
-Added 3 new patches below
-10-print-efi-runtime-memmap.patch
-  - 10/12: print only runtime ranges in case EFI_DEBUG printing
-11-reserve-setup-data-late.patch
-  - fix a bug of kdump kernel, move function for reserving setup data
-    ranges late after parsing memmap= cmdline params because kdump kernel
-    will pass exact memmap late.
-12-x86-kdebugfs-use-ioremap.patch
-  - fix a bug of x86/kernel/kdebugfs.c, use ioremap instead of __va for
-    low mem because __va does not work for exact memmap=
-
---
-Thanks
-Dave
++generic-y += types.h
++
+ genhdr-y += unistd_32.h
+ genhdr-y += unistd_64.h
+ genhdr-y += unistd_x32.h
+@@ -56,7 +58,6 @@ header-y += svm.h
+ header-y += swab.h
+ header-y += termbits.h
+ header-y += termios.h
+-header-y += types.h
+ header-y += ucontext.h
+ header-y += unistd.h
+ header-y += vm86.h
+diff --git a/arch/x86/include/uapi/asm/types.h b/arch/x86/include/uapi/asm/types.h
+deleted file mode 100644
+index 8e8c23fef08c..000000000000
+--- a/arch/x86/include/uapi/asm/types.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef _ASM_X86_TYPES_H
+-#define _ASM_X86_TYPES_H
+-
+-#include <asm-generic/types.h>
+-
+-#endif /* _ASM_X86_TYPES_H */
+-- 
+1.7.9.5
 
