@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3KYMCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:02:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63004 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753248Ab3KYMCI convert rfc822-to-8bit (ORCPT
+	id S1753706Ab3KYMDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:03:21 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40799 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab3KYMDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:02:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, hg197@gmx.de,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Cpufreq: Change sysfs interface cpuinfo_cur_freq access privilege
-Date: Mon, 25 Nov 2013 13:14:54 +0100
-Message-ID: <1521595.q8BSAikk1K@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <52933AB5.9060409@intel.com>
-References: <1385348018-30525-1-git-send-email-tianyu.lan@intel.com> <5074010.ha99UACE9S@vostro.rjw.lan> <52933AB5.9060409@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Mon, 25 Nov 2013 07:03:18 -0500
+Message-ID: <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [GIT PULL] ima: bug fixes for Linus
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Nov 2013 07:03:13 -0500
+In-Reply-To: <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org>
+References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org>
+	 <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112512-0928-0000-0000-000004011F59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 25, 2013 07:55:33 PM Lan Tianyu wrote:
-> On 11/25/2013 07:26 PM, Rafael J. Wysocki wrote:
-> > On Monday, November 25, 2013 01:33:39 PM Lan Tianyu wrote:
-> >> On 2013年11月25日 12:30, Viresh Kumar wrote:
-> >>> On 25 November 2013 08:23, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> >>>> Currently, cpuinfo_cur_freq is only accessible for root user while
-> >>>> other cpufreq sysfs interfaces(E,G scaling_cur_freq) are available
-> >>>> to ordinary user. This seems make no sense. This patch is to change
-> >>>> it.
-> >>>
-> >>> There is nothing wrong with the code and so this is more of a design
-> >>> change..
-> >>>
-> >>> Probably Rafael can help us here as cpufreq_cur_freq will read stuff
-> >>> directly from hardware instead of using cached value in software.
-> >>
-> >> I think so, too. I also tried to checking the reason of the privilege by
-> >> git log but the code was there before linux kernel being migrated to git
-> >> repository.
-> >
-> > And it has always behaved in the same way?  Then I wouldn't change it.
-> >
+On Mon, 2013-11-25 at 13:14 +1100, James Morris wrote:
+> On Sun, 24 Nov 2013, Mimi Zohar wrote:
 > 
-> It has been there since 2.6.12-rc2 or more early. But the 
-> cpuinfo_cur_freq is read-only and seems no harmful.
+> > On Mon, 2013-11-25 at 09:44 +1100, James Morris wrote:
+> > > On Sun, 24 Nov 2013, Mimi Zohar wrote:
+> > > 
+> > > > Hi James,
+> > > > 
+> > > > Linus has already reverted the trusted keyring support for IMA patches.
+> > > > These patches are re-based on -rc1.
+> > > > 
+> > > > The following changes since commit 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
+> > > > 
+> > > >   Revert "KEYS: verify a certificate is signed by a 'trusted' key" (2013-11-23 16:38:17 -0800)
+> > > > 
+> > > > are available in the git repository at:
+> > > > 
+> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity for-linus
+> > > > 
+> > > > for you to fetch changes up to 3eeb2d63ab623be55bb2ff584e123c0df45691e3:
+> > > > 
+> > > >   ima: make a copy of template_fmt in template_desc_init_fields() (2013-11-24 00:29:23 -0500)
+> > > > 
+> > > 
+> > > I don't understand -- are these all fixes for regressions in the new 
+> > > kernel?
+> > 
+> > Yes, mostly.  There's one code cleanup, that could be deferred and a
+> > documentation update.
+> 
+> Can we leave documentation and code cleanups to the next cycle and only 
+> include essential fixes for regressions at this stage?
 
-If it reads things directly from hardware, it may not be totally neutral.
+Ok, all of the patches are needed and need to be upstreamed.  I assume
+all of the ones that fix backwards compatibility issues would be termed
+"essential fixes for regressions".
 
-Thanks!
+47a20c2 ima: do not include field length in template digest calc for ima templat
+4c8f4bb ima: do not send field length to userspace for digest of ima template
+3eeb2d6 ima: make a copy of template_fmt in template_desc_init_fields()
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Could the remaining patches be marked for -stable?
+
+> Also, please identify which upstream commits specifically are fixed by 
+> each patch.
+
+Ok
+
+thanks,
+
+Mimi
+
