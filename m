@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab3KYOSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:18:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42784 "EHLO
+	id S932243Ab3KYOSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:18:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42788 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756788Ab3KYOSO (ORCPT
+	with ESMTP id S1757993Ab3KYOSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:18:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/25] perf tools: Add option macro OPT_BOOLEAN_SET
-Date: Mon, 25 Nov 2013 11:17:42 -0300
-Message-Id: <1385389075-7989-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 10/25] perf record: Make per-cpu mmaps the default.
+Date: Mon, 25 Nov 2013 11:17:40 -0300
+Message-Id: <1385389075-7989-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -32,74 +31,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-OPT_BOOLEAN_SET records whether a boolean option was set by the user.
+This affects the -p, -t and -u options that previously defaulted to
+per-thread mmaps.
 
-That information can be used to change the default value for the option
-after the options have been parsed.
+Consequently add an option to select per-thread mmaps to support the old
+behaviour.
+
+Note that per-thread can be used with a workload-only (i.e. none of -p,
+-t, -u, -a or -C is selected) to get a per-thread mmap with no
+inheritance.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384768557-23331-4-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/5286271D.3020808@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 2 ++
- tools/perf/util/parse-options.h | 8 ++++++++
- 2 files changed, 10 insertions(+)
+ tools/perf/Documentation/perf-record.txt     | 10 +++++-----
+ tools/perf/builtin-record.c                  |  5 +++--
+ tools/perf/tests/attr/test-record-no-inherit |  2 +-
+ tools/perf/util/evlist.c                     |  6 ++++--
+ tools/perf/util/evsel.c                      |  5 +++--
+ tools/perf/util/target.c                     | 11 ++++++++++-
+ tools/perf/util/target.h                     |  4 +++-
+ 7 files changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index b6b39ff14fbb..d22e3f8017dc 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -78,6 +78,8 @@ static int get_value(struct parse_opt_ctx_t *p,
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 43b42c4f4a91..6ac867e7667f 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -201,11 +201,11 @@ abort events and some memory events in precise mode on modern Intel CPUs.
+ --transaction::
+ Record transaction flags for transaction related events.
  
- 	case OPTION_BOOLEAN:
- 		*(bool *)opt->value = unset ? false : true;
-+		if (opt->set)
-+			*(bool *)opt->set = true;
- 		return 0;
+---force-per-cpu::
+-Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
+--t or -u options) per-thread mmaps are created.  This option overrides that and
+-forces per-cpu mmaps.  A side-effect of that is that inheritance is
+-automatically enabled.  Add the -i option also to disable inheritance.
++--per-thread::
++Use per-thread mmaps.  By default per-cpu mmaps are created.  This option
++overrides that and uses per-thread mmaps.  A side-effect of that is that
++inheritance is automatically disabled.  --per-thread is ignored with a warning
++if combined with -a or -C options.
  
- 	case OPTION_INCR:
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index b0241e28eaf7..cbf0149cf221 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -82,6 +82,9 @@ typedef int parse_opt_cb(const struct option *, const char *arg, int unset);
-  *   OPTION_{BIT,SET_UINT,SET_PTR} store the {mask,integer,pointer} to put in
-  *   the value when met.
-  *   CALLBACKS can use it like they want.
-+ *
-+ * `set`::
-+ *   whether an option was set by the user
-  */
- struct option {
- 	enum parse_opt_type type;
-@@ -94,6 +97,7 @@ struct option {
- 	int flags;
- 	parse_opt_cb *callback;
- 	intptr_t defval;
-+	bool *set;
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 7c8020a32784..f5b18b8fe8c9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -800,6 +800,7 @@ static struct perf_record record = {
+ 		.freq		     = 4000,
+ 		.target		     = {
+ 			.uses_mmap   = true,
++			.default_per_cpu = true,
+ 		},
+ 	},
+ };
+@@ -888,8 +889,8 @@ const struct option record_options[] = {
+ 		    "sample by weight (on special events only)"),
+ 	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
+ 		    "sample transaction flags (special events only)"),
+-	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
+-		    "force the use of per-cpu mmaps"),
++	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
++		    "use per-thread mmaps"),
+ 	OPT_END()
  };
  
- #define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
-@@ -103,6 +107,10 @@ struct option {
- #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
- #define OPT_BIT(s, l, v, h, b)      { .type = OPTION_BIT, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h), .defval = (b) }
- #define OPT_BOOLEAN(s, l, v, h)     { .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), .value = check_vtype(v, bool *), .help = (h) }
-+#define OPT_BOOLEAN_SET(s, l, v, os, h) \
-+	{ .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), \
-+	.value = check_vtype(v, bool *), .help = (h), \
-+	.set = check_vtype(os, bool *)}
- #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
- #define OPT_SET_UINT(s, l, v, h, i)  { .type = OPTION_SET_UINT, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h), .defval = (i) }
- #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
+diff --git a/tools/perf/tests/attr/test-record-no-inherit b/tools/perf/tests/attr/test-record-no-inherit
+index 9079a25cd643..44edcb2edcd5 100644
+--- a/tools/perf/tests/attr/test-record-no-inherit
++++ b/tools/perf/tests/attr/test-record-no-inherit
+@@ -3,5 +3,5 @@ command = record
+ args    = -i kill >/dev/null 2>&1
+ 
+ [event:base-record]
+-sample_type=259
++sample_type=263
+ inherit=0
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index bbc746aa5716..76fa76431329 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -819,8 +819,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (target->force_per_cpu)
+-		evlist->cpus = cpu_map__new(target->cpu_list);
++	if (target->default_per_cpu)
++		evlist->cpus = target->per_thread ?
++					cpu_map__dummy_new() :
++					cpu_map__new(target->cpu_list);
+ 	else if (target__has_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
+ 	else if (!target__has_cpu(target) && !target->uses_mmap)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 46dd4c2a41ce..77e38ffdfb19 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -572,6 +572,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	struct perf_evsel *leader = evsel->leader;
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
++	bool per_cpu = opts->target.default_per_cpu && !opts->target.per_thread;
+ 
+ 	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
+@@ -645,7 +646,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		}
+ 	}
+ 
+-	if (target__has_cpu(&opts->target) || opts->target.force_per_cpu)
++	if (target__has_cpu(&opts->target))
+ 		perf_evsel__set_sample_bit(evsel, CPU);
+ 
+ 	if (opts->period)
+@@ -653,7 +654,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 
+ 	if (!perf_missing_features.sample_id_all &&
+ 	    (opts->sample_time || !opts->no_inherit ||
+-	     target__has_cpu(&opts->target) || opts->target.force_per_cpu))
++	     target__has_cpu(&opts->target) || per_cpu))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+ 
+ 	if (opts->raw_samples) {
+diff --git a/tools/perf/util/target.c b/tools/perf/util/target.c
+index 3c778a07b7cc..e74c5963dc7a 100644
+--- a/tools/perf/util/target.c
++++ b/tools/perf/util/target.c
+@@ -55,6 +55,13 @@ enum target_errno target__validate(struct target *target)
+ 			ret = TARGET_ERRNO__UID_OVERRIDE_SYSTEM;
+ 	}
+ 
++	/* THREAD and SYSTEM/CPU are mutually exclusive */
++	if (target->per_thread && (target->system_wide || target->cpu_list)) {
++		target->per_thread = false;
++		if (ret == TARGET_ERRNO__SUCCESS)
++			ret = TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD;
++	}
++
+ 	return ret;
+ }
+ 
+@@ -100,6 +107,7 @@ static const char *target__error_str[] = {
+ 	"UID switch overriding CPU",
+ 	"PID/TID switch overriding SYSTEM",
+ 	"UID switch overriding SYSTEM",
++	"SYSTEM/CPU switch overriding PER-THREAD",
+ 	"Invalid User: %s",
+ 	"Problems obtaining information for user %s",
+ };
+@@ -131,7 +139,8 @@ int target__strerror(struct target *target, int errnum,
+ 	msg = target__error_str[idx];
+ 
+ 	switch (errnum) {
+-	case TARGET_ERRNO__PID_OVERRIDE_CPU ... TARGET_ERRNO__UID_OVERRIDE_SYSTEM:
++	case TARGET_ERRNO__PID_OVERRIDE_CPU ...
++	     TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD:
+ 		snprintf(buf, buflen, "%s", msg);
+ 		break;
+ 
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index 2d0c50690892..31dd2e9a27d0 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -12,7 +12,8 @@ struct target {
+ 	uid_t	     uid;
+ 	bool	     system_wide;
+ 	bool	     uses_mmap;
+-	bool	     force_per_cpu;
++	bool	     default_per_cpu;
++	bool	     per_thread;
+ };
+ 
+ enum target_errno {
+@@ -33,6 +34,7 @@ enum target_errno {
+ 	TARGET_ERRNO__UID_OVERRIDE_CPU,
+ 	TARGET_ERRNO__PID_OVERRIDE_SYSTEM,
+ 	TARGET_ERRNO__UID_OVERRIDE_SYSTEM,
++	TARGET_ERRNO__SYSTEM_OVERRIDE_THREAD,
+ 
+ 	/* for target__parse_uid() */
+ 	TARGET_ERRNO__INVALID_UID,
 -- 
 1.8.1.4
 
