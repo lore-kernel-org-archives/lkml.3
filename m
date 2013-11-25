@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab3KYOCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58961 "EHLO
+	id S1755437Ab3KYOEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:04:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58999 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754238Ab3KYNxv (ORCPT
+	by vger.kernel.org with ESMTP id S1754348Ab3KYNxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:51 -0500
+	Mon, 25 Nov 2013 08:53:48 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,16 +14,15 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Richard Henderson" <rth@twiddle.net>,
-        "Ingo Molnar" <mingo@kernel.org>, "Jakub Jelinek" <jakub@redhat.com>
+        "Bernd Schubert" <bernd.schubert@itwm.fraunhofer.de>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "Jonathan Nieder" <jrnieder@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.415319245@decadent.org.uk>
+Message-ID: <lsq.1385387069.867812735@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 60/87] compiler/gcc4: Add quirk for 'asm goto'
- miscompilation bug
+Subject: [PATCH 3.2 25/87] nfsd: vfs_llseek() with 32 or 64 bit offsets
+ (hashes)
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,119 +35,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
+commit 06effdbb49af5f6c7d20affaec74603914acc768 upstream.
 
-Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
-a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
-constructs, as outlined here:
+Use 32-bit or 64-bit llseek() hashes for directory offsets depending on
+the NFS version. NFSv2 gets 32-bit hashes only.
 
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+NOTE: This patch got rather complex as Christoph asked to set the
+filp->f_mode flag in the open call or immediatly after dentry_open()
+in nfsd_open() to avoid races.
+Personally I still do not see a reason for that and in my opinion
+FMODE_32BITHASH/FMODE_64BITHASH flags could be set nfsd_readdir(), as it
+follows directly after nfsd_open() without a chance of races.
 
-Implement a workaround suggested by Jakub Jelinek.
-
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Suggested-by: Jakub Jelinek <jakub@redhat.com>
-Reviewed-by: Richard Henderson <rth@twiddle.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2:
- - Drop inapplicable changes
- - Adjust context]
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Acked-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/mips/include/asm/jump_label.h
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -22,7 +22,7 @@
+ fs/nfsd/vfs.c |   15 +++++++++++++--
+ fs/nfsd/vfs.h |    2 ++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -786,9 +786,15 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	if (IS_ERR(*filp)) {
+ 		host_err = PTR_ERR(*filp);
+ 		*filp = NULL;
+-	} else
++	} else {
+ 		host_err = ima_file_check(*filp, may_flags);
  
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
--	asm goto("1:\tnop\n\t"
-+	asm_volatile_goto("1:\tnop\n\t"
- 		"nop\n\t"
- 		".pushsection __jump_table,  \"aw\"\n\t"
- 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
---- a/arch/powerpc/include/asm/jump_label.h
-+++ b/arch/powerpc/include/asm/jump_label.h
-@@ -19,7 +19,7 @@
++		if (may_flags & NFSD_MAY_64BIT_COOKIE)
++			(*filp)->f_mode |= FMODE_64BITHASH;
++		else
++			(*filp)->f_mode |= FMODE_32BITHASH;
++	}
++
+ out_nfserr:
+ 	err = nfserrno(host_err);
+ out:
+@@ -2018,8 +2024,13 @@ nfsd_readdir(struct svc_rqst *rqstp, str
+ 	__be32		err;
+ 	struct file	*file;
+ 	loff_t		offset = *offsetp;
++	int             may_flags = NFSD_MAY_READ;
++
++	/* NFSv2 only supports 32 bit cookies */
++	if (rqstp->rq_vers > 2)
++		may_flags |= NFSD_MAY_64BIT_COOKIE;
  
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_volatile_goto("1:\n\t"
- 		 "nop\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
---- a/arch/s390/include/asm/jump_label.h
-+++ b/arch/s390/include/asm/jump_label.h
-@@ -15,7 +15,7 @@
+-	err = nfsd_open(rqstp, fhp, S_IFDIR, NFSD_MAY_READ, &file);
++	err = nfsd_open(rqstp, fhp, S_IFDIR, may_flags, &file);
+ 	if (err)
+ 		goto out;
  
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
--	asm goto("0:	brcl 0,0\n"
-+	asm_volatile_goto("0:	brcl 0,0\n"
- 		".pushsection __jump_table, \"aw\"\n"
- 		ASM_ALIGN "\n"
- 		ASM_PTR " 0b, %l[label], %0\n"
---- a/arch/sparc/include/asm/jump_label.h
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -9,7 +9,7 @@
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -27,6 +27,8 @@
+ #define NFSD_MAY_BYPASS_GSS		0x400
+ #define NFSD_MAY_READ_IF_EXEC		0x800
  
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
--		asm goto("1:\n\t"
-+		asm_volatile_goto("1:\n\t"
- 			 "nop\n\t"
- 			 "nop\n\t"
- 			 ".pushsection __jump_table,  \"aw\"\n\t"
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -334,7 +334,7 @@ extern const char * const x86_power_flag
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
- #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
--		asm goto("1: jmp %l[t_no]\n"
-+		asm_volatile_goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -13,7 +13,7 @@
++#define NFSD_MAY_64BIT_COOKIE		0x1000 /* 64 bit readdir cookies for >= NFSv3 */
++
+ #define NFSD_MAY_CREATE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE)
+ #define NFSD_MAY_REMOVE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE|NFSD_MAY_TRUNC)
  
- static __always_inline bool arch_static_branch(struct jump_label_key *key)
- {
--	asm goto("1:"
-+	asm_volatile_goto("1:"
- 		JUMP_LABEL_INITIAL_NOP
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -29,6 +29,21 @@
-    the kernel context */
- #define __cold			__attribute__((__cold__))
- 
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-+ * Fixed in GCC 4.8.2 and later versions.
-+ *
-+ * (asm goto is automatically volatile - the naming reflects this.)
-+ */
-+#if GCC_VERSION <= 40801
-+# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-+#else
-+# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
-+#endif
- 
- #if __GNUC_MINOR__ >= 5
- /*
 
