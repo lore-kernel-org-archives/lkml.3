@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab3KYDZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 22:25:16 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:30143 "EHLO
+	id S1753522Ab3KYD1b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 22:27:31 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:30452 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab3KYDZN (ORCPT
+	with ESMTP id S1753301Ab3KYD1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 22:25:13 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-9e-5292c318fbb1
+	Sun, 24 Nov 2013 22:27:30 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-26-5292c3a1017d
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] rtc: ds1305: remove unnecessary spi_set_drvdata()
-Date: Mon, 25 Nov 2013 12:25:11 +0900
-Message-id: <002501cee98d$f30c6760$d9253620$%han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "=?iso-8859-1?Q?'Uwe_Kleine-K=F6nig'?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        "'Marc Reilly'" <marc@cpdesign.com.au>
+Subject: [PATCH] mfd: mc13xxx: remove unnecessary spi_set_drvdata()
+Date: Mon, 25 Nov 2013 12:27:29 +0900
+Message-id: <002601cee98e$44f75210$cee5f630$%han@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=iso-8859-1
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7pjfLqgY9wk70cRx2PTgAYmzUG/w==
+Thread-index: Ac7pjkTa060eOFAWTu+craBbmDLVng==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zI12Jw5OCDO7sEbRYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoErY8tkuYK/LBXn9/axNzC2snQxcnJICJhIXH+7ihHCFpO4cG89WxcjF4eQwDJGictn
-	dzLBFJ350MYEkZjOKHF03kdWCOcXkLOkDaydTUBN4suXw+xdjBwcIgL6Em0tGiA1zAK9jBJn
-	enezg9QICzhJ9D6aCGazCKhK/H9yEWwDr4CtxNwF11ggbEGJH5PvgdnMAloS63ceZ4Kw5SU2
-	r3nLDDJfQkBd4tFfXZCwiICexNOV/6DKRST2vXjHCLJXQuAQu8Tnb/PZIHYJSHybfIgFoldW
-	YtMBZojHJCUOrrjBMoFRbBaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLUK07MLS7NS9dL
-	zs/dxAiJvN4djLcPWB9iTAZaP5FZSjQ5Hxi5eSXxhsZmRhamJqbGRuaWZqQJK4nzJj1MChIS
-	SE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAyLBb5VvTJLUGU6HDm3Q6F281Phd7NEYxzb104lPr
-	pzoZD761srg1XqiQXO1X84Hj34NLchdn7brx6ubfSJ20f3fUXC86NE78bNwTJV5juUw8edNt
-	EW1utxUFNdpRwSYW/z8wNer7GzabOnI5VCqt2aByJq+xg8WTIW35K523xy4trv5zJs1EiaU4
-	I9FQi7moOBEAAUD5h9ICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQV2Jw5OCDC6d5rVYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPLZLmCvywV5/f2sTcwtrJ0MXJySAiYSJz5
-	0MYEYYtJXLi3nq2LkYtDSGA6o8TReR9ZIZxfQM6SNkaQKjYBNYkvXw6zdzFycIgI6Eu0tWiA
-	1DAL9DJKnOndzQ5SIyzgJNH7aCKYzSKgKvH/yUWwDbwCthJzF1xjgbAFJX5MvgdmMwtoSazf
-	eZwJwpaX2LzmLTPIfAkBdYlHf3VBwiICehJPV/6DKheR2PfiHeMERoFZSCbNQjJpFpJJs5C0
-	LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHNfPpHYwrmywOMQowMGoxMNrUTkpSIg1
-	say4MvcQowQHs5II7546oBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJLiSbnA1NOXkm8obGJmZGl
-	kZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwWt61tVvVsCVdQEhVxk3yR6Wy
-	vAT/+4NG3isZYwtqTlt0zOl+6PKj3fjIEcaF3RtUdnsVuIV7Syh0rE63sN2YY5wgbrmh71R3
-	4ape3tJZL9eliDwKshUp3X9wkjErn9nCebzuqe0PLwXenpTlaCMox9TsVvXClH/ujXULhR/y
-	lYeJ2FWYxSuxFGckGmoxFxUnAgCOxxkMLwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zI92FhycFGWz/LmlxeeElVov7X48y
+	WlzeNYfN4uLcDSwWp7tZLW5PnMzowObxb9cpNo871/awecw7GejR/9fAo2/LKkaPz5vkAtii
+	uGxSUnMyy1KL9O0SuDIuPXzCVHCZteJRx3yWBsbTLF2MHBwSAiYStyeLdDFyApliEhfurWfr
+	YuTiEBJYxihxffd7FoiEiUTvnIPMEInpjBJ/Ty9hgXB+MUpM/LCCEaSKTUBN4suXw+wgtgiQ
+	fXPPLCaQImaBB4wSDztOsoEkhAWcJX4f/coKYrMIqErsencFrJlXwFbi38d2NghbUOLH5Htg
+	q5kFdCR6v39jhrDlJTavecsMcba6xKO/uhC79CQmbzjGBlEiIrHvxTtGkL0SAufYJRac2McI
+	sUtA4tvkQ1Avy0psOsAM8ZmkxMEVN1gmMIrNQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelF
+	RnrFibnFpXnpesn5uZsYIZHYt4Px5gHrQ4zJQOsnMkuJJucDIzmvJN7Q2MzIwtTE1NjI3NKM
+	NGElcd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDO4Kjit9v/8NytfZ3Wva2fDDUb
+	NW63mSjpZPHnTsuqzbiv3qbutpxbeXu92Kes3UXKYYtrv+3h1Pr9m+PkdR++mjeGByqDP0h8
+	ra2Xc+Lc76RW7///+73jnqfX54UF8d0yXLc+eVnT3MbuD4lus5/cWjT7R4Xso0VNrvGfujbd
+	eF+gXKn1T0OJpTgj0VCLuag4EQCxi+4R2gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jQd2FhycFGbRNFLO4vPASq8X9r0cZ
+	LS7vmsNmcXHuBhaL092sFrcnTmZ0YPP4t+sUm8eda3vYPOadDPTo/2vg0bdlFaPH501yAWxR
+	DYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBHKCmU
+	JeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzLj18wlRwmbXiUcd8lgbG0yxd
+	jJwcEgImEr1zDjJD2GISF+6tZ+ti5OIQEpjOKPH39BIWCOcXo8TEDysYQarYBNQkvnw5zA5i
+	iwDZN/fMYgIpYhZ4wCjxsOMkG0hCWMBZ4vfRr6wgNouAqsSud1fAmnkFbCX+fWxng7AFJX5M
+	vgd2BrOAjkTv92/MELa8xOY1b4FsDqCT1CUe/dWF2KUnMXnDMTaIEhGJfS/eMU5gFJiFZNIs
+	JJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBkf5MagfjygaLQ4wCHIxK
+	PLwWlZOChFgTy4orcw8xSnAwK4nw7qkDCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MAnl
+	lcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOj3LkNnmpd/5y3
+	qLS+9Px5hzd/z8HXu6w+VyZpOp516wt7k9mdfXaKeTSThJJel4zd7cW1xdw5Ss/8w5Y/lazQ
+	qQ2uie74mfX1pIzLVYY139U9Ai/3ey7iUu/T4d+14f7+ncuvOBTnGk49o84Q37xYnNn02Kld
+	tuV/WtksJRYGRsp/33TwrYASS3FGoqEWc1FxIgDAcqUEOAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,20 +62,20 @@ device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ds1305.c |    1 -
+ drivers/mfd/mc13xxx-spi.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-ds1305.c b/drivers/rtc/rtc-ds1305.c
-index 80f3237..2dd586a 100644
---- a/drivers/rtc/rtc-ds1305.c
-+++ b/drivers/rtc/rtc-ds1305.c
-@@ -787,7 +787,6 @@ static int ds1305_remove(struct spi_device *spi)
- 		cancel_work_sync(&ds1305->work);
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+index 5f14ef6..cbcc86d 100644
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -149,7 +149,6 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 		ret = PTR_ERR(mc13xxx->regmap);
+ 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
+ 				ret);
+-		spi_set_drvdata(spi, NULL);
+ 		return ret;
  	}
- 
--	spi_set_drvdata(spi, NULL);
- 	return 0;
- }
  
 -- 
 1.7.10.4
