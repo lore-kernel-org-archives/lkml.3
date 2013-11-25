@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab3KYNyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:54:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59013 "EHLO
+	id S1754940Ab3KYNyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:54:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58951 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754385Ab3KYNxo (ORCPT
+	by vger.kernel.org with ESMTP id S1754274Ab3KYNxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:44 -0500
+	Mon, 25 Nov 2013 08:53:43 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "azurIt" <azurit@pobox.sk>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Michal Hocko" <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Francois Romieu" <romieu@fr.zoreil.com>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "David Woodhouse" <David.Woodhouse@intel.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.232027452@decadent.org.uk>
+Message-ID: <lsq.1385387069.867476767@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 73/87] fs: buffer: move allocation failure loop into
- the allocator
+Subject: [PATCH 3.2 32/87] 8139cp: re-enable interrupts after tx timeout
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,73 +33,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit 84235de394d9775bfaa7fa9762a59d91fef0c1fc upstream.
+commit 01ffc0a7f1c1801a2354719dedbc32aff45b987d upstream.
 
-Buffer allocation has a very crude indefinite loop around waking the
-flusher threads and performing global NOFS direct reclaim because it can
-not handle allocation failures.
+Recovery doesn't work too well if we leave interrupts disabled...
 
-The most immediate problem with this is that the allocation may fail due
-to a memory cgroup limit, where flushers + direct reclaim might not make
-any progress towards resolving the situation at all.  Because unlike the
-global case, a memory cgroup may not have any cache at all, only
-anonymous pages but no swap.  This situation will lead to a reclaim
-livelock with insane IO from waking the flushers and thrashing unrelated
-filesystem cache in a tight loop.
-
-Use __GFP_NOFAIL allocations for buffers for now.  This makes sure that
-any looping happens in the page allocator, which knows how to
-orchestrate kswapd, direct reclaim, and the flushers sensibly.  It also
-allows memory cgroups to detect allocations that can't handle failure
-and will allow them to ultimately bypass the limit if reclaim can not
-make progress.
-
-Reported-by: azurIt <azurit@pobox.sk>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/buffer.c     | 14 ++++++++++++--
- mm/memcontrol.c |  2 ++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/8139cp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1007,9 +1007,19 @@ grow_dev_page(struct block_device *bdev,
- 	struct buffer_head *bh;
- 	sector_t end_block;
- 	int ret = 0;		/* Will call free_more_memory() */
-+	gfp_t gfp_mask;
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -1234,6 +1234,7 @@ static void cp_tx_timeout(struct net_dev
+ 	cp_clean_rings(cp);
+ 	rc = cp_init_rings(cp);
+ 	cp_start_hw(cp);
++	cp_enable_irq(cp);
  
--	page = find_or_create_page(inode->i_mapping, index,
--		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
-+	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-+	gfp_mask |= __GFP_MOVABLE;
-+	/*
-+	 * XXX: __getblk_slow() can not really deal with failure and
-+	 * will endlessly loop on improvised global reclaim.  Prefer
-+	 * looping in the allocator rather than here, at least that
-+	 * code knows what it's doing.
-+	 */
-+	gfp_mask |= __GFP_NOFAIL;
-+
-+	page = find_or_create_page(inode->i_mapping, index, gfp_mask);
- 	if (!page)
- 		return ret;
+ 	netif_wake_queue(dev);
  
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2406,6 +2406,8 @@ done:
- 	return 0;
- nomem:
- 	*ptr = NULL;
-+	if (gfp_mask & __GFP_NOFAIL)
-+		return 0;
- 	return -ENOMEM;
- bypass:
- 	*ptr = NULL;
 
