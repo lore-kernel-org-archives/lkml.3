@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3KYRxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 12:53:34 -0500
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:51316 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753997Ab3KYRxd (ORCPT
+	id S1757084Ab3KYSAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:00:38 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:39319 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729Ab3KYSAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 12:53:33 -0500
+	Mon, 25 Nov 2013 13:00:36 -0500
+Date: Mon, 25 Nov 2013 12:00:30 -0600
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
+Message-ID: <20131125180030.GA23396@cerebellum.variantweb.net>
+References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
+ <20131122172916.GB6477@cerebellum.variantweb.net>
 MIME-Version: 1.0
-In-Reply-To: <529316D3.8030301@arm.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-	<529316D3.8030301@arm.com>
-Date: Mon, 25 Nov 2013 09:53:32 -0800
-Message-ID: <CAL85gmCf9EW_fq=oYwL1Zz7CrqK5gD-47PxFA7dCPze1_G0fCQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Feng Kan <fkan@apm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Anup Patel <anup@brainfault.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Vinayak Kale <vinayak.kale@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "Kumar, Satendra" <Satendra.Kumar@lsi.com>, Loc Ho <lho@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131122172916.GB6477@cerebellum.variantweb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
->> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
->> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
->
-> Amazing. Someone managed to push the weird-o-meter one level higher.
-> Were you *that* short on PPIs that you had to use these two?
+On Fri, Nov 22, 2013 at 11:29:16AM -0600, Seth Jennings wrote:
+> On Wed, Nov 20, 2013 at 02:49:33PM -0500, Dan Streetman wrote:
+> > Currently, zswap is writeback cache; stored pages are not sent
+> > to swap disk, and when zswap wants to evict old pages it must
+> > first write them back to swap cache/disk manually.  This avoids
+> > swap out disk I/O up front, but only moves that disk I/O to
+> > the writeback case (for pages that are evicted), and adds the
+> > overhead of having to uncompress the evicted pages, and adds the
+> > need for an additional free page (to store the uncompressed page)
+> > at a time of likely high memory pressure.  Additionally, being
+> > writeback adds complexity to zswap by having to perform the
+> > writeback on page eviction.
+> > 
+> > This changes zswap to writethrough cache by enabling
+> > frontswap_writethrough() before registering, so that any
+> > successful page store will also be written to swap disk.  All the
+> > writeback code is removed since it is no longer needed, and the
+> > only operation during a page eviction is now to remove the entry
+> > from the tree and free it.
+> 
+> I like it.  It gets rid of a lot of nasty writeback code in zswap.
+> 
+> I'll have to test before I ack, hopefully by the end of the day.
+> 
+> Yes, this will increase writes to the swap device over the delayed
+> writeback approach.  I think it is a good thing though.  I think it
+> makes the difference between zswap and zram, both in operation and in
+> application, more apparent. Zram is the better choice for embedded where
+> write wear is a concern, and zswap being better if you need more
+> flexibility to dynamically manage the compressed pool.
 
-We don't support bypass enable at all, nothing to do with the PPI. It must be
-set to bypass disable always for us. Those two are the unfortunate victims.
+One thing I realized while doing my testing was that making zswap
+writethrough also impacts synchronous reclaim.  Zswap, as it is now,
+makes the swapcache page clean during swap_writepage() which allows
+shrink_page_list() to immediately reclaim it.  Making zswap writethrough
+eliminates this advantage and swapcache pages must be scanned again
+before they can be reclaimed, as is the case with normal swapping.
 
->
->> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
->> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
->> PPI28 (Legacy-FIQ).
->>
->> We should have more cleaner and optional device tree binding for GIC
->> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits for X-Gene.
->
-> Well, here's an alternative approach for you. As you said, this is in no
-> way X-Gene specific, so maybe we should address it directly in the GIC
-> code. Just hook something in the irq_mask/irq_unmask methods, so we can
-> detect the use of these two PPIs, and toggle the bypass flags
-> accordingly bits accordingly.
+Just something I am thinking about.
 
-Yes, I hope Catalin could comment on this one. I don't think he would like this
-as well since it is our platform specific.
-
->
->         M.
-> --
-> Jazz is not dead. It just smells funny...
->
+Seth
