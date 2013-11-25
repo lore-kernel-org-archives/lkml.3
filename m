@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab3KYJTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:19:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28883 "EHLO mx1.redhat.com"
+	id S1752118Ab3KYJV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:21:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56609 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab3KYJT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 04:19:29 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH net] macvtap: fix tx_dropped counting error
-Date: Mon, 25 Nov 2013 17:19:04 +0800
-Message-Id: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
+	id S1750834Ab3KYJVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 04:21:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,766,1378882800"; 
+   d="scan'208";a="439167456"
+Date: Mon, 25 Nov 2013 11:28:02 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpiolib: add missing declarations
+Message-ID: <20131125092802.GQ2281@intel.com>
+References: <1385186069-28986-1-git-send-email-acourbot@nvidia.com>
+ <20131125085831.GO2281@intel.com>
+ <CAAVeFu+wFAqroiyzwRQLkRAmhVQV-efOYA51DTHUwMMA1nTYxA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAVeFu+wFAqroiyzwRQLkRAmhVQV-efOYA51DTHUwMMA1nTYxA@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 8ffab51b3dfc54876f145f15b351c41f3f703195
-(macvlan: lockless tx path), tx stat counter were converted to percpu stat
-structure. So we need use to this also for tx_dropped in macvtap. Otherwise, the
-management won't notice the dropping packet in macvtap tx path.
+On Mon, Nov 25, 2013 at 06:07:10PM +0900, Alexandre Courbot wrote:
+> On Mon, Nov 25, 2013 at 5:58 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Sat, Nov 23, 2013 at 02:54:29PM +0900, Alexandre Courbot wrote:
+> >> Add missing declarations and include files to avoid warnings during
+> >> compilation of include/gpio/driver.h.
+> >
+> > It would be good to have those warnings included in the changelog as well.
+> 
+> As in, copy-pasting the compiler's output? Isn't the change explicit enough?
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/macvtap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index dc76670..0605da8 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -744,7 +744,7 @@ err:
- 	rcu_read_lock();
- 	vlan = rcu_dereference(q->vlan);
- 	if (vlan)
--		vlan->dev->stats.tx_dropped++;
-+		this_cpu_inc(vlan->pcpu_stats->tx_dropped);
- 	rcu_read_unlock();
- 
- 	return err;
--- 
-1.8.3.2
-
+If you just do 'git log' you can't see the change itself and that's where
+the changelog should help. If I see some warnings when I build the kernel,
+the first thing I usually do is to check 'git log' against linux-next and
+see if someone has already fixed that warning (grepping the warning message
+from changelog).
