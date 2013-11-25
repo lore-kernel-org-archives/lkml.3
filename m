@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab3KYNN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:13:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57318 "EHLO
+	id S1756624Ab3KYNNY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:13:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57326 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3KYNJH (ORCPT
+	with ESMTP id S1754889Ab3KYNJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:09:07 -0500
+	Mon, 25 Nov 2013 08:09:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 68/78] devpts: plug the memory leak in kill_sb
-Date: Mon, 25 Nov 2013 13:06:55 +0000
-Message-Id: <1385384825-21681-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 70/78] tracing: Fix potential out-of-bounds in trace_get_user()
+Date: Mon, 25 Nov 2013 13:06:57 +0000
+Message-Id: <1385384825-21681-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -30,40 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
+commit 057db8488b53d5e4faa0cedb2f39d4ae75dfbdbb upstream.
 
-When devpts is unmounted, there may be a no-longer-used IDR tree hanging
-off the superblock we are about to kill.  This needs to be cleaned up
-before destroying the SB.
+Andrey reported the following report:
 
-The leak is usually not a big deal because unmounting devpts is typically
-done when shutting down the whole machine.  However, shutting down an LXC
-container instead of a physical machine exposes the problem (the garbage
-is detectable with kmemleak).
+ERROR: AddressSanitizer: heap-buffer-overflow on address ffff8800359c99f3
+ffff8800359c99f3 is located 0 bytes to the right of 243-byte region [ffff8800359c9900, ffff8800359c99f3)
+Accessed by thread T13003:
+  #0 ffffffff810dd2da (asan_report_error+0x32a/0x440)
+  #1 ffffffff810dc6b0 (asan_check_region+0x30/0x40)
+  #2 ffffffff810dd4d3 (__tsan_write1+0x13/0x20)
+  #3 ffffffff811cd19e (ftrace_regex_release+0x1be/0x260)
+  #4 ffffffff812a1065 (__fput+0x155/0x360)
+  #5 ffffffff812a12de (____fput+0x1e/0x30)
+  #6 ffffffff8111708d (task_work_run+0x10d/0x140)
+  #7 ffffffff810ea043 (do_exit+0x433/0x11f0)
+  #8 ffffffff810eaee4 (do_group_exit+0x84/0x130)
+  #9 ffffffff810eafb1 (SyS_exit_group+0x21/0x30)
+  #10 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
 
-Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Allocated by thread T5167:
+  #0 ffffffff810dc778 (asan_slab_alloc+0x48/0xc0)
+  #1 ffffffff8128337c (__kmalloc+0xbc/0x500)
+  #2 ffffffff811d9d54 (trace_parser_get_init+0x34/0x90)
+  #3 ffffffff811cd7b3 (ftrace_regex_open+0x83/0x2e0)
+  #4 ffffffff811cda7d (ftrace_filter_open+0x2d/0x40)
+  #5 ffffffff8129b4ff (do_dentry_open+0x32f/0x430)
+  #6 ffffffff8129b668 (finish_open+0x68/0xa0)
+  #7 ffffffff812b66ac (do_last+0xb8c/0x1710)
+  #8 ffffffff812b7350 (path_openat+0x120/0xb50)
+  #9 ffffffff812b8884 (do_filp_open+0x54/0xb0)
+  #10 ffffffff8129d36c (do_sys_open+0x1ac/0x2c0)
+  #11 ffffffff8129d4b7 (SyS_open+0x37/0x50)
+  #12 ffffffff81928782 (system_call_fastpath+0x16/0x1b)
+
+Shadow bytes around the buggy address:
+  ffff8800359c9700: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  ffff8800359c9780: fd fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa
+  ffff8800359c9800: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9880: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>ffff8800359c9980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00[03]fb
+  ffff8800359c9a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  ffff8800359c9b00: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  ffff8800359c9b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  ffff8800359c9c00: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap redzone:          fa
+  Heap kmalloc redzone:  fb
+  Freed heap region:     fd
+  Shadow gap:            fe
+
+The out-of-bounds access happens on 'parser->buffer[parser->idx] = 0;'
+
+Although the crash happened in ftrace_regex_open() the real bug
+occurred in trace_get_user() where there's an incrementation to
+parser->idx without a check against the size. The way it is triggered
+is if userspace sends in 128 characters (EVENT_BUF_SIZE + 1), the loop
+that reads the last character stores it and then breaks out because
+there is no more characters. Then the last character is read to determine
+what to do next, and the index is incremented without checking size.
+
+Then the caller of trace_get_user() usually nulls out the last character
+with a zero, but since the index is equal to the size, it writes a nul
+character after the allocated space, which can corrupt memory.
+
+Luckily, only root user has write access to this file.
+
+Link: http://lkml.kernel.org/r/20131009222323.04fd1a0d@gandalf.local.home
+
+Reported-by: Andrey Konovalov <andreyknvl@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/devpts/inode.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/trace/trace.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 979c1e3..1ed9d5e 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -483,6 +483,7 @@ static void devpts_kill_sb(struct super_block *sb)
- {
- 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 09739c6..d570df8 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -578,9 +578,12 @@ int trace_get_user(struct trace_parser *parser, const char __user *ubuf,
+ 	if (isspace(ch)) {
+ 		parser->buffer[parser->idx] = 0;
+ 		parser->cont = false;
+-	} else {
++	} else if (parser->idx < parser->size - 1) {
+ 		parser->cont = true;
+ 		parser->buffer[parser->idx++] = ch;
++	} else {
++		ret = -EINVAL;
++		goto out;
+ 	}
  
-+	ida_destroy(&fsi->allocated_ptys);
- 	kfree(fsi);
- 	kill_litter_super(sb);
- }
+ 	*ppos += read;
 -- 
 1.8.3.2
 
