@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab3KYOb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:31:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46121 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787Ab3KYObs (ORCPT
+	id S932226Ab3KYOc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:32:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58834 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751976Ab3KYNxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:31:48 -0500
-Date: Mon, 25 Nov 2013 06:32:31 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: "Ma, Xindong" <xindong.ma@intel.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "ccross@google.com" <ccross@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: Re: Add memory barrier when waiting on futex
-Message-ID: <20131125143231.GB4003@kroah.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 25 Nov 2013 08:53:31 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Yuchung Cheng" <ycheng@google.com>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Neal Cardwell" <ncardwell@google.com>,
+        "Ilpo =?UTF-8?Q?J=C3=A4rvinen?=" <ilpo.jarvinen@helsinki.fi>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.126819999@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 02/87] tcp: do not forget FIN in tcp_shifted_skb()
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 01:15:17PM +0000, Ma, Xindong wrote:
-> We encountered following panic several times:
-> [   74.671982] BUG: unable to handle kernel NULL pointer dereference at 00000008
-> [   74.672101] IP: [<c129bb27>] wake_futex+0x47/0x80
-> [   74.672185] *pdpt = 0000000010108001 *pde = 0000000000000000 
-> [   74.672278] Oops: 0002 [#1] PREEMPT SMP 
-> [   74.672403] Modules linked in: atomisp_css2400b0_v2 atomisp_css2400_v2 dfrgx bcm_bt_lpm videobuf_vmalloc videobuf_core hdmi_audio tngdisp bcm4335 kct_daemon(O) cfg80211
-> [   74.672815] CPU: 0 PID: 1477 Comm: zygote Tainted: G        W  O 3.10.1-259934-g0bfb86e #1
-> [   74.672855] Hardware name: Intel Corporation Merrifield/SALT BAY, BIOS 404 2013.10.09:15.29.48
-> [   74.672894] task: d4c97220 ti: cfaa8000 task.ti: cfaa8000
-> [   74.672933] EIP: 0060:[<c129bb27>] EFLAGS: 00210246 CPU: 0
-> [   74.672975] EIP is at wake_futex+0x47/0x80
-> [   74.673012] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
-> [   74.673049] ESI: def4de5c EDI: ffffffff EBP: cfaa9eb4 ESP: cfaa9ea0
-> [   74.673086]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [   74.673123] CR0: 8005003b CR2: 00000008 CR3: 10109000 CR4: 001007f0
-> [   74.673160] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> [   74.673196] DR6: ffff0ff0 DR7: 00000400
-> [   74.673229] Stack:
-> [   74.673260]  00000000 00000001 00000000 def4de5c c225eb50 cfaa9ee4 c129bc29 00000000
-> [   74.673536]  00000000 7fffffff c225eb30 b4f38000 ec1a4b40 00000f90 7fffffff 00000001
-> [   74.673814]  b4f38f90 cfaa9f58 c129da0b ffffffff ffffffff cfaa9f10 c195d835 00000001
-> [   74.674092] Call Trace:
-> [   74.674144]  [<c129bc29>] futex_wake+0xc9/0x110
-> [   74.674195]  [<c129da0b>] do_futex+0xeb/0x950
-> [   74.674246]  [<c195d835>] ? sub_preempt_count+0x55/0xe0
-> [   74.674293]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
-> [   74.674341]  [<c195a31b>] ? _raw_spin_unlock_irqrestore+0x3b/0x70
-> [   74.674388]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
-> [   74.674436]  [<c1241afc>] ? do_fork+0xec/0x350
-> [   74.674484]  [<c129e30b>] SyS_futex+0x9b/0x140
-> [   74.674533]  [<c1312298>] ? SyS_mprotect+0x188/0x1e0
-> [   74.674582]  [<c195a718>] syscall_call+0x7/0xb
-> 
-> On smp systems, setting current task to q->task in queue_me() may
-> not visible immediately to another cpu, some times this will
-> cause panic in wake_futex(). Adding memory barrier to avoid this.
-> 
-> Signed-off-by: Leon Ma <xindong.ma@intel.com>
-> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> ---
->  kernel/futex.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-<formletter>
+------------------
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+From: Eric Dumazet <edumazet@google.com>
 
-</formletter>
+[ Upstream commit 5e8a402f831dbe7ee831340a91439e46f0d38acd ]
+
+Yuchung found following problem :
+
+ There are bugs in the SACK processing code, merging part in
+ tcp_shift_skb_data(), that incorrectly resets or ignores the sacked
+ skbs FIN flag. When a receiver first SACK the FIN sequence, and later
+ throw away ofo queue (e.g., sack-reneging), the sender will stop
+ retransmitting the FIN flag, and hangs forever.
+
+Following packetdrill test can be used to reproduce the bug.
+
+$ cat sack-merge-bug.pkt
+`sysctl -q net.ipv4.tcp_fack=0`
+
+// Establish a connection and send 10 MSS.
+0.000 socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
++.000 setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++.000 bind(3, ..., ...) = 0
++.000 listen(3, 1) = 0
+
++.050 < S 0:0(0) win 32792 <mss 1000,sackOK,nop,nop,nop,wscale 7>
++.000 > S. 0:0(0) ack 1 <mss 1460,nop,nop,sackOK,nop,wscale 6>
++.001 < . 1:1(0) ack 1 win 1024
++.000 accept(3, ..., ...) = 4
+
++.100 write(4, ..., 12000) = 12000
++.000 shutdown(4, SHUT_WR) = 0
++.000 > . 1:10001(10000) ack 1
++.050 < . 1:1(0) ack 2001 win 257
++.000 > FP. 10001:12001(2000) ack 1
++.050 < . 1:1(0) ack 2001 win 257 <sack 10001:11001,nop,nop>
++.050 < . 1:1(0) ack 2001 win 257 <sack 10001:12002,nop,nop>
+// SACK reneg
++.050 < . 1:1(0) ack 12001 win 257
++0 %{ print "unacked: ",tcpi_unacked }%
++5 %{ print "" }%
+
+First, a typo inverted left/right of one OR operation, then
+code forgot to advance end_seq if the merged skb carried FIN.
+
+Bug was added in 2.6.29 by commit 832d11c5cd076ab
+("tcp: Try to restore large SKBs while SACK processing")
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/ipv4/tcp_input.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 872b41d..c1ed01e 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1469,7 +1469,10 @@ static int tcp_shifted_skb(struct sock *sk, struct sk_buff *skb,
+ 		tp->lost_cnt_hint -= tcp_skb_pcount(prev);
+ 	}
+ 
+-	TCP_SKB_CB(skb)->tcp_flags |= TCP_SKB_CB(prev)->tcp_flags;
++	TCP_SKB_CB(prev)->tcp_flags |= TCP_SKB_CB(skb)->tcp_flags;
++	if (TCP_SKB_CB(skb)->tcp_flags & TCPHDR_FIN)
++		TCP_SKB_CB(prev)->end_seq++;
++
+ 	if (skb == tcp_highest_sack(sk))
+ 		tcp_advance_highest_sack(sk, skb);
+ 
+
