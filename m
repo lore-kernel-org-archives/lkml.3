@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab3KYPAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:00:09 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65359 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab3KYPAD (ORCPT
+	id S1754094Ab3KYPCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:02:17 -0500
+Received: from atl4mhob01.myregisteredsite.com ([209.17.115.39]:58943 "EHLO
+	atl4mhob01.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507Ab3KYPCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:00:03 -0500
-Date: Mon, 25 Nov 2013 15:59:58 +0100
-From: Julian Andres Klode <jak@jak-linux.org>
-To: Julian Andres Klode <jak@jak-linux.org>
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "open list:THINKPAD ACPI EXT..." 
-	<ibm-acpi-devel@lists.sourceforge.net>,
-        "open list:THINKPAD ACPI EXT..." 
-	<platform-driver-x86@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] thinkpad_acpi: Add support for controlling charge
- thresholds
-Message-ID: <20131125145958.GA13564@jak-x230>
-Mail-Followup-To: Julian Andres Klode <jak@jak-linux.org>,
-	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-	Matthew Garrett <matthew.garrett@nebula.com>,
-	"open list:THINKPAD ACPI EXT..." <ibm-acpi-devel@lists.sourceforge.net>,
-	"open list:THINKPAD ACPI EXT..." <platform-driver-x86@vger.kernel.org>,
-	open list <linux-kernel@vger.kernel.org>
-References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Nov 2013 10:02:13 -0500
+X-Greylist: delayed 4639 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 10:02:13 EST
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+Date: Mon, 25 Nov 2013 16:02:04 +0100
+Message-Id: <1385391724-6532-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 11, 2013 at 02:56:29PM +0100, Julian Andres Klode wrote:
-> This patch series adds support for specifying charging thresholds,
-> forcing a battery to discharge, and inhibiting charging, on ThinkPad
-> Laptops using Sandy Bridge or newer processors.
-> 
-> The first two patches should be stable now, the third one does not work on
-> my test system (but I'd appreciate if anyone with something other than an
-> X230 tests it). 
-> 
-> The inhibit charging part is a bit unprecise, and I can obviously not test
-> that -1 really means permanently, but I assume it does. I don't know whether
-> this one should be merged.
-> 
-> Changes since the RFC PATCH:
->   - Define batteries more dynamically instead of statically using large
->     macros. Added support for up to 3 batteries, unsupported ones will not
->     be exported.
->   - Added 3 more new patches with more features
-> 
-> Julian Andres Klode (4):
->   thinkpad_acpi: Add support for controlling charge thresholds
->   thinkpad_acpi: battery: Add force_discharge attribute
->   thinkpad_acpi: battery: Add force_discharge_ac_break attribute
->   thinkpad_acpi: battery: Add inhibit_charge_minutes attribute
-> 
->  Documentation/laptops/thinkpad-acpi.txt |  37 ++++
->  drivers/platform/x86/thinkpad_acpi.c    | 300 ++++++++++++++++++++++++++++++++
->  2 files changed, 337 insertions(+)
-> 
+Leaving the mux enabled causes needless I2C traffic on the downstream
+bus. De-selecting after every request causes excess I2C traffic and
+switching.
 
-I'd really like to get some comments on this series (especially by Henrique
-and Matthew, they're responsible); so I know what I have to fix and whether
-I should drop some of the later patches, and if the patch series has any
-chance of being accepted...
+This patch implements a hybrid solution: After 200ms of inactivity,
+the mux is disabled.
 
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+ drivers/i2c/muxes/i2c-mux-pca954x.c |   45 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
+index a531d80..1241c97 100644
+--- a/drivers/i2c/muxes/i2c-mux-pca954x.c
++++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
+@@ -41,6 +41,7 @@
+ #include <linux/device.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
++#include <linux/workqueue.h>
+ 
+ #include <linux/i2c/pca954x.h>
+ 
+@@ -60,7 +61,8 @@ enum pca_type {
+ struct pca954x {
+ 	enum pca_type type;
+ 	struct i2c_adapter *virt_adaps[PCA954X_MAX_NCHANS];
+-
++	struct i2c_client *client;
++	struct delayed_work deselect_work;
+ 	u8 last_chan;		/* last register value */
+ };
+ 
+@@ -168,11 +170,43 @@ static int pca954x_select_chan(struct i2c_adapter *adap,
+ 	return ret;
+ }
+ 
+-static int pca954x_deselect_mux(struct i2c_adapter *adap,
++static void pca954x_deselect_work(struct work_struct *work)
++{
++	struct pca954x *data = container_of(
++				work, struct pca954x, deselect_work.work);
++	/* Use the adapter lock as a mutex because any method that changes
++	 * the mux state will also hold this mutex. If the bus is in use,
++	 * the lock will assure that at least that transaction will
++	 * complete. */
++	i2c_lock_adapter(data->client->adapter);
++	if (data->last_chan != 0) {
++		int res;
++		/* Disable mux */
++		dev_dbg(&client->dev, "deselecting mux\n");
++		data->last_chan = 0;
++		res = pca954x_reg_write(data->client->adapter,
++				data->client, data->last_chan);
++		if (res < 0)
++			dev_err(&client->dev,
++				"%s: pca954x_reg_write failed: %d\n",
++				__func__, res);
++	}
++	i2c_unlock_adapter(data->client->adapter);
++}
++
++static int pca954x_deselect_mux_delayed(struct i2c_adapter *adap,
+ 				void *client, u32 chan)
+ {
+ 	struct pca954x *data = i2c_get_clientdata(client);
++	/* Setup timer to disable at a later interval */
++	schedule_delayed_work(&data->deselect_work, msecs_to_jiffies(200));
++	return 0;
++}
+ 
++static int pca954x_deselect_mux_immediate(struct i2c_adapter *adap,
++				void *client, u32 chan)
++{
++	struct pca954x *data = i2c_get_clientdata(client);
+ 	/* Deselect active channel */
+ 	data->last_chan = 0;
+ 	return pca954x_reg_write(adap, client, data->last_chan);
+@@ -212,6 +246,8 @@ static int pca954x_probe(struct i2c_client *client,
+ 
+ 	data->type = id->driver_data;
+ 	data->last_chan = 0;		   /* force the first selection */
++	data->client = client;
++	INIT_DELAYED_WORK(&data->deselect_work, pca954x_deselect_work);
+ 
+ 	/* Now create an adapter for each channel */
+ 	for (num = 0; num < chips[data->type].nchans; num++) {
+@@ -231,7 +267,8 @@ static int pca954x_probe(struct i2c_client *client,
+ 			i2c_add_mux_adapter(adap, &client->dev, client,
+ 				force, num, class, pca954x_select_chan,
+ 				(pdata && pdata->modes[num].deselect_on_exit)
+-					? pca954x_deselect_mux : NULL);
++					? pca954x_deselect_mux_immediate
++					: pca954x_deselect_mux_delayed);
+ 
+ 		if (data->virt_adaps[num] == NULL) {
+ 			ret = -ENODEV;
+@@ -264,6 +301,8 @@ static int pca954x_remove(struct i2c_client *client)
+ 	const struct chip_desc *chip = &chips[data->type];
+ 	int i;
+ 
++	cancel_delayed_work_sync(&data->deselect_work);
++
+ 	for (i = 0; i < chip->nchans; ++i)
+ 		if (data->virt_adaps[i]) {
+ 			i2c_del_mux_adapter(data->virt_adaps[i]);
 -- 
-Julian Andres Klode  - Debian Developer, Ubuntu Member
+1.7.9.5
 
-See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
-
-Please do not top-post if possible.
