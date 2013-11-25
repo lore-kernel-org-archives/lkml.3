@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab3KYNXe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:23:34 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60061 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab3KYNXb (ORCPT
+	id S1754260Ab3KYNH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:07:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57035 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab3KYNHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:23:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <E1Vkw2k-00015V-Ao@www17.your-server.de>
-References: <E1Vkw2k-00015V-Ao@www17.your-server.de>
-Date: Mon, 25 Nov 2013 08:23:31 -0500
-Message-ID: <CAF6AEGsdK4MUm9G8ruX84V5omhej+in7vP5E8skMAoTjRgh7nw@mail.gmail.com>
-Subject: Re: [i915] BUG: Bad page state in process Xorg
-From: Rob Clark <robdclark@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Nov 2013 08:07:43 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/78] target/pscsi: fix return value check
+Date: Mon, 25 Nov 2013 13:06:05 +0000
+Message-Id: <1385384825-21681-19-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-oh, hmm.. are you importing buffers from i915?  It looks like this part:
+3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
 
-- if (obj->base.import_attach) {
-- drm_free_large(obj->pages);
-- obj->pages = NULL;
-- return;
-- }
+------------------
 
-should not have been removed from udl_gem_put_pages()..
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-BR,
--R
+commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
 
-On Mon, Nov 25, 2013 at 8:17 AM,  <thomas@m3y3r.de> wrote:
-> Hi,
->
-> It turns out that this seems to be a bug in udl DRM driver.
->
-> I bisected the problem to this patch:
->
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/gpu/drm/udl?id=5dc9e1e87229cb786a5bb58ddd0d60fee6eb4641
->
-> With kind regards
-> Thomas
->
-> Am 22.11.2013 17:18 schrieb Daniel Vetter <daniel@ffwll.ch>:
->>
->> On Fri, Nov 22, 2013 at 4:54 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
->> >> Am 22.11.2013 um 11:55 schrieb Daniel Vetter <daniel@ffwll.ch>:
->> >>
->> >> On Fri, Nov 22, 2013 at 11:36 AM, Dave Airlie <airlied@linux.ie> wrote:
->> >>>> Hi,
->> >>>
->> >>> cc'ing mailing list,
->> >>>
->> >>> Daniel any ideas?
->> >>
->> >> Nope, not really :( And no ideas how to triage this further - if it
->> >> takes 9 days to hit it eventually we'll have a real hard time. Or does
->> >> this happen even after just a short X run?
->> >
->> > Seems to happen every time while stopping the x server. Also after a short run time.
->> >
->> > The current fedora 3.11 kernel doesn't show this bug. I'm using fedora 19, with a self compiled kernel.
->> >
->> > I did turn on config-debug-pagealloc but this didn't show any wrongness.
->>
->> In that case I think the bisect is the fastest way to insight - atm
->> I'm really at loss what could be wrong here.
->> -Daniel
->> --
->> Daniel Vetter
->> Software Engineer, Intel Corporation
->> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+In case of error, the function scsi_host_lookup() returns NULL
+pointer not ERR_PTR(). The IS_ERR() test in the return value check
+should be replaced with NULL test.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.5:
+  - adjusted context
+  - use ERR_PTR macro in pscsi_create_virtdevice(), as function returns
+    a pointer ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/target/target_core_pscsi.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
+index 1835d84..6a04f2a 100644
+--- a/drivers/target/target_core_pscsi.c
++++ b/drivers/target/target_core_pscsi.c
+@@ -128,10 +128,10 @@ static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
+ 	 * pSCSI Host ID and enable for phba mode
+ 	 */
+ 	sh = scsi_host_lookup(phv->phv_host_id);
+-	if (IS_ERR(sh)) {
++	if (!sh) {
+ 		pr_err("pSCSI: Unable to locate SCSI Host for"
+ 			" phv_host_id: %d\n", phv->phv_host_id);
+-		return PTR_ERR(sh);
++		return -EINVAL;
+ 	}
+ 
+ 	phv->phv_lld_host = sh;
+@@ -562,10 +562,10 @@ static struct se_device *pscsi_create_virtdevice(
+ 			sh = phv->phv_lld_host;
+ 		} else {
+ 			sh = scsi_host_lookup(pdv->pdv_host_id);
+-			if (IS_ERR(sh)) {
++			if (!sh) {
+ 				pr_err("pSCSI: Unable to locate"
+ 					" pdv_host_id: %d\n", pdv->pdv_host_id);
+-				return ERR_CAST(sh);
++				return ERR_PTR(-EINVAL);
+ 			}
+ 		}
+ 	} else {
+-- 
+1.8.3.2
+
