@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3KYHlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 02:41:50 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:61555 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3KYHlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 02:41:47 -0500
-Message-ID: <5292FF5D.1050304@gmail.com>
-Date: Mon, 25 Nov 2013 08:42:21 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752836Ab3KYHmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 02:42:23 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751766Ab3KYHmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 02:42:21 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, shawnlandden@gmail.com,
+        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
+        herbert@gondor.hengli.com.au, Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Subject: Re: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set MSG_SENDPAGE_NOTLAST
+Date: Mon, 25 Nov 2013 08:42:16 +0100
+Message-ID: <47783210.a9ocpbYofP@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com> <1385336527-27304-1-git-send-email-richard@nod.at> <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <alpine.DEB.2.02.1311222322480.30673@ionos.tec.linutronix.de> <5291C948.1080305@gmail.com> <4523614.I5MBhorHFt@vostro.rjw.lan>
-In-Reply-To: <4523614.I5MBhorHFt@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2013 10:06 PM, Rafael J. Wysocki wrote:
-> On Sunday, November 24, 2013 10:39:20 AM Francis Moreau wrote:
->> Hello Thomas
->>
->> On 11/22/2013 11:27 PM, Thomas Gleixner wrote:
->>> On Fri, 22 Nov 2013, Rafael J. Wysocki wrote:
->>>> On Friday, November 22, 2013 10:36:23 PM Francis Moreau wrote:
->>>>> Ok, I've finally managed to find out the bad commit:
->>>>> ad07277e82dedabacc52c82746633680a3187d25: ACPI / PM: Hold acpi_scan_lock
->>>>> over system PM transitions
->>>>>
->>>>> I verified that the parent commit doesn't have the problem.
->>>>
->>>> Interesting.
->>>>
->>>>> Rafael, you're the man now ;)
->>>>
->>>> I kind of don't see how that commit may result in behavior that you
->>>> described earlier in the thread.
->>>>
->>>> You get a memory corruption that seems to have started to happen because
->>>> we're holding an additional lock over suspend resume now.  Something's fishy
->>>> on that machine and we need to figure out what it is.
->>>
->>> The hickup happens in the timer softirq.
->>>
->>> @Francis: Did you try to enable DEBUG_OBJECTS.*. If not please give it
->>> 	  a try.
->>
->> This looks like it was a good idea.
->>
->> The kernel now outputs the following traces after resuming.
->>
->> [   26.973928] WARNING: CPU: 0 PID: 4 at lib/debugobjects.c:260
->> debug_print_object+0x83/0xa0()
->> [   26.973932] ODEBUG: free active (active state 0) object type:
->> timer_list hint: delayed_work_timer_fn+0x0/0x20
->> [   26.973972] Modules linked in: x86_pkg_temp_thermal intel_powerclamp
->> rtsx_pci_ms coretemp memstick kvm_intel i2c_i801 iTCO_wdt
->> iTCO_vendor_support i915 i2c_algo_bit intel_agp intel_gtt drm_kms_helper
->> r8169 drm kvm mii agpgart i2c_core lpc_ich ac shpchp crc32c_intel
->> battery thermal wmi evdev mei_me video mei button mperf processor
->> serio_raw microcode ext4 crc16 mbcache jbd2 sr_mod cdrom sd_mod
->> usb_storage rtsx_pci_sdmmc mmc_core ahci libahci libata ehci_pci
->> ehci_hcd xhci_hcd scsi_mod rtsx_pci usbcore usb_common
->> [   26.974013] CPU: 0 PID: 4 Comm: kworker/0:0 Not tainted
->> 3.11.0-rc2-ARCH #64
->> [   26.974014] Hardware name: CLEVO CO.                        W55xEU
->>                        /W55xEU                          , BIOS 4.6.5
->> 03/05/2013
->> [   26.974019] Workqueue: kacpi_hotplug hotplug_event_work
->> [   26.974020]  0000000000000009 ffff880407d0da18 ffffffff81459fe9
->> ffff880407d0da60
->> [   26.974023]  ffff880407d0da50 ffffffff8104dc7d ffff880407fad488
->> ffffffff81836fc0
->> [   26.974025]  ffffffff81701358 ffffffff81afef70 0000000000000003
->> ffff880407d0dab0
->> [   26.974027] Call Trace:
->> [   26.974031]  [<ffffffff81459fe9>] dump_stack+0x54/0x8d
->> [   26.974043]  [<ffffffff8104dc7d>] warn_slowpath_common+0x7d/0xa0
->> [   26.974044]  [<ffffffff8104dcec>] warn_slowpath_fmt+0x4c/0x50
->> [   26.974047]  [<ffffffff81261433>] debug_print_object+0x83/0xa0
->> [   26.974050]  [<ffffffff8106b820>] ? queue_work_on+0x50/0x50
->> [   26.974053]  [<ffffffff81261c2b>] __debug_check_no_obj_freed+0x1fb/0x240
->> [   26.974059]  [<ffffffffa008e959>] ? rtsx_pci_remove+0x119/0x1d0
->> [rtsx_pci]
+Am Sonntag, 24. November 2013, 17:25:06 schrieb Eric Dumazet:
+> On Mon, 2013-11-25 at 00:42 +0100, Richard Weinberger wrote:
+> > Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+> > added an internal flag MSG_SENDPAGE_NOTLAST.
+> > We have to ensure that MSG_MORE is also set if we set
+> > MSG_SENDPAGE_NOTLAST.
+> > Otherwise users that check against MSG_MORE will not see it.
+> > 
+> > This fixes sendfile() on AF_ALG.
+> > 
+> > Cc: Tom Herbert <therbert@google.com>
+> > Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Cc: <stable@vger.kernel.org> # 3.4.x
+> > Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+> > Signed-off-by: Richard Weinberger <richard@nod.at>
+> > ---
+> > 
+> >  fs/splice.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/splice.c b/fs/splice.c
+> > index 3b7ee65..b93f1b8 100644
+> > --- a/fs/splice.c
+> > +++ b/fs/splice.c
+> > @@ -701,7 +701,7 @@ static int pipe_to_sendpage(struct pipe_inode_info
+> > *pipe,> 
+> >  	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+> >  	
+> >  	if (sd->len < sd->total_len && pipe->nrbufs > 1)
+> > 
+> > -		more |= MSG_SENDPAGE_NOTLAST;
+> > +		more |= MSG_SENDPAGE_NOTLAST | MSG_MORE;
+> > 
+> >  	return file->f_op->sendpage(file, buf->page, buf->offset,
+> >  	
+> >  				    sd->len, &pos, more);
 > 
-> So a device driven by rtsx_pcr.c is removed after resume.  Without the commit
-> you've bisected it is removed as well, but that happens during resume, so
-> rtsx_pci_resume() is likely not called in that case.
+> I do not think this patch is right. It looks like a revert of a useful
+> patch for TCP zero copy. Given the time it took to discover this
+> regression, I bet tcp zero copy has more users than AF_ALG, by 5 or 6
+> order of magnitude ;)
 
-I'm not sure to understand your point.
+Yeah, but AF_ALG broke. That's why I did the patch.
 
+> Here we want to make the difference between the two flags, not merge
+> them.
 > 
-> I bet that there's a bug either in rtsx_pci_remove() or in rtsx_pci_resume().
-> The latter definitely should check if the device is actually still present
-> before scheduling the delayed work, but then the Boris' patch should take care
-> of that anyway.
+> If AF_ALG do not care of the difference, try instead :
 > 
+> diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+> index ef5356cd280a..850246206b12 100644
+> --- a/crypto/algif_hash.c
+> +++ b/crypto/algif_hash.c
+> @@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct
+> page *page, struct hash_ctx *ctx = ask->private;
+>  	int err;
+> 
+> +	if (flags & MSG_SENDPAGE_NOTLAST)
+> +		flags |= MSG_MORE;
+> +
 
-With Boris' patch applied, I still have the problem.
+In the commit message of your patch you wrote "For all sendpage() providers, 
+its a transparent change.". Why does AF_ALG need special handling?
+If users have to care about MSG_SENDPAGE_NOTLAST it is no longer really an 
+internal flag.
 
-Thanks.
-
+Thanks,
+//richard
