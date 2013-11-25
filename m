@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3KYNJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:09:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57365 "EHLO
+	id S1755070Ab3KYNJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:09:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57338 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab3KYNJU (ORCPT
+	with ESMTP id S1754766Ab3KYNJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:09:20 -0500
+	Mon, 25 Nov 2013 08:09:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ryan Mallon <rmallon@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Joe Perches <joe@perches.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 65/78] vsprintf: check real user/group id for %pK
-Date: Mon, 25 Nov 2013 13:06:52 +0000
-Message-Id: <1385384825-21681-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 72/78] ARM: 7670/1: fix the memset fix
+Date: Mon, 25 Nov 2013 13:06:59 +0000
+Message-Id: <1385384825-21681-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,146 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryan Mallon <rmallon@gmail.com>
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-commit 312b4e226951f707e120b95b118cbc14f3d162b2 upstream.
+commit 418df63adac56841ef6b0f1fcf435bc64d4ed177 upstream.
 
-Some setuid binaries will allow reading of files which have read
-permission by the real user id.  This is problematic with files which
-use %pK because the file access permission is checked at open() time,
-but the kptr_restrict setting is checked at read() time.  If a setuid
-binary opens a %pK file as an unprivileged user, and then elevates
-permissions before reading the file, then kernel pointer values may be
-leaked.
+Commit 455bd4c430b0 ("ARM: 7668/1: fix memset-related crashes caused by
+recent GCC (4.7.2) optimizations") attempted to fix a compliance issue
+with the memset return value.  However the memset itself became broken
+by that patch for misaligned pointers.
 
-This happens for example with the setuid pppd application on Ubuntu 12.04:
+This fixes the above by branching over the entry code from the
+misaligned fixup code to avoid reloading the original pointer.
 
-  $ head -1 /proc/kallsyms
-  00000000 T startup_32
+Also, because the function entry alignment is wrong in the Thumb mode
+compilation, that fixup code is moved to the end.
 
-  $ pppd file /proc/kallsyms
-  pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+While at it, the entry instructions are slightly reworked to help dual
+issue pipelines.
 
-This will only leak the pointer value from the first line, but other
-setuid binaries may leak more information.
-
-Fix this by adding a check that in addition to the current process having
-CAP_SYSLOG, that effective user and group ids are equal to the real ids.
-If a setuid binary reads the contents of a file which uses %pK then the
-pointer values will be printed as NULL if the real user is unprivileged.
-
-Update the sysctl documentation to reflect the changes, and also correct
-the documentation to state the kptr_restrict=0 is the default.
-
-This is a only temporary solution to the issue.  The correct solution is
-to do the permission check at open() time on files, and to replace %pK
-with a function which checks the open() time permission.  %pK uses in
-printk should be removed since no sane permission check can be done, and
-instead protected by using dmesg_restrict.
-
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Joe Perches <joe@perches.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Tested-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Eric Bénard <eric@eukrea.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/sysctl/kernel.txt | 25 ++++++++++++++++++-------
- lib/vsprintf.c                  | 33 ++++++++++++++++++++++++++++++---
- 2 files changed, 48 insertions(+), 10 deletions(-)
+ arch/arm/lib/memset.S | 33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 6d78841..99d8ab9 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -284,13 +284,24 @@ Default value is "/sbin/hotplug".
- kptr_restrict:
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index d912e73..94b0650 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -14,31 +14,15 @@
  
- This toggle indicates whether restrictions are placed on
--exposing kernel addresses via /proc and other interfaces.  When
--kptr_restrict is set to (0), there are no restrictions.  When
--kptr_restrict is set to (1), the default, kernel pointers
--printed using the %pK format specifier will be replaced with 0's
--unless the user has CAP_SYSLOG.  When kptr_restrict is set to
--(2), kernel pointers printed using %pK will be replaced with 0's
--regardless of privileges.
-+exposing kernel addresses via /proc and other interfaces.
-+
-+When kptr_restrict is set to (0), the default, there are no restrictions.
-+
-+When kptr_restrict is set to (1), kernel pointers printed using the %pK
-+format specifier will be replaced with 0's unless the user has CAP_SYSLOG
-+and effective user and group ids are equal to the real ids. This is
-+because %pK checks are done at read() time rather than open() time, so
-+if permissions are elevated between the open() and the read() (e.g via
-+a setuid binary) then %pK will not leak kernel pointers to unprivileged
-+users. Note, this is a temporary solution only. The correct long-term
-+solution is to do the permission checks at open() time. Consider removing
-+world read permissions from files that use %pK, and using dmesg_restrict
-+to protect against uses of %pK in dmesg(8) if leaking kernel pointer
-+values to unprivileged users is a concern.
-+
-+When kptr_restrict is set to (2), kernel pointers printed using
-+%pK will be replaced with 0's regardless of privileges.
+ 	.text
+ 	.align	5
+-	.word	0
+-
+-1:	subs	r2, r2, #4		@ 1 do we have enough
+-	blt	5f			@ 1 bytes to align with?
+-	cmp	r3, #2			@ 1
+-	strltb	r1, [ip], #1		@ 1
+-	strleb	r1, [ip], #1		@ 1
+-	strb	r1, [ip], #1		@ 1
+-	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
+-/*
+- * The pointer is now aligned and the length is adjusted.  Try doing the
+- * memset again.
+- */
  
- ==============================================================
- 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 598a73e..b82f4ba 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -25,6 +25,7 @@
- #include <linux/kallsyms.h>
- #include <linux/uaccess.h>
- #include <linux/ioport.h>
-+#include <linux/cred.h>
- #include <net/addrconf.h>
- 
- #include <asm/page.h>		/* for PAGE_SIZE */
-@@ -1036,11 +1037,37 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 				spec.field_width = default_width;
- 			return string(buf, end, "pK-error", spec);
- 		}
--		if (!((kptr_restrict == 0) ||
--		      (kptr_restrict == 1 &&
--		       has_capability_noaudit(current, CAP_SYSLOG))))
+ ENTRY(memset)
+-/*
+- * Preserve the contents of r0 for the return value.
+- */
+-	mov	ip, r0
+-	ands	r3, ip, #3		@ 1 unaligned?
+-	bne	1b			@ 1
++	ands	r3, r0, #3		@ 1 unaligned?
++	mov	ip, r0			@ preserve r0 as return value
++	bne	6f			@ 1
+ /*
+  * we know that the pointer in ip is aligned to a word boundary.
+  */
+-	orr	r1, r1, r1, lsl #8
++1:	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+ 	mov	r3, r1
+ 	cmp	r2, #16
+@@ -127,4 +111,13 @@ ENTRY(memset)
+ 	tst	r2, #1
+ 	strneb	r1, [ip], #1
+ 	mov	pc, lr
 +
-+		switch (kptr_restrict) {
-+		case 0:
-+			/* Always print %pK values */
-+			break;
-+		case 1: {
-+			/*
-+			 * Only print the real pointer value if the current
-+			 * process has CAP_SYSLOG and is running with the
-+			 * same credentials it started with. This is because
-+			 * access to files is checked at open() time, but %pK
-+			 * checks permission at read() time. We don't want to
-+			 * leak pointer values if a binary opens a file using
-+			 * %pK and then elevates privileges before reading it.
-+			 */
-+			const struct cred *cred = current_cred();
-+
-+			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
-+			    !uid_eq(cred->euid, cred->uid) ||
-+			    !gid_eq(cred->egid, cred->gid))
-+				ptr = NULL;
-+			break;
-+		}
-+		case 2:
-+		default:
-+			/* Always print 0's for %pK */
- 			ptr = NULL;
-+			break;
-+		}
- 		break;
-+
- 	case 'N':
- 		switch (fmt[1]) {
- 		case 'F':
++6:	subs	r2, r2, #4		@ 1 do we have enough
++	blt	5b			@ 1 bytes to align with?
++	cmp	r3, #2			@ 1
++	strltb	r1, [ip], #1		@ 1
++	strleb	r1, [ip], #1		@ 1
++	strb	r1, [ip], #1		@ 1
++	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
++	b	1b
+ ENDPROC(memset)
 -- 
 1.8.3.2
 
