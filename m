@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3KYQOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:14:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3KYQOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:14:16 -0500
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, linux-hexagon@vger.kernel.org
-Subject: [PATCH v2 04/11] hexagon: use generic fixmap.h
-Date: Mon, 25 Nov 2013 11:13:58 -0500
-Message-Id: <1385396045-15852-5-git-send-email-msalter@redhat.com>
-In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
-References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
+	id S1755771Ab3KYQWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:22:37 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:40039 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3KYQWg convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 25 Nov 2013 11:22:36 -0500
+Message-Id: <529387570200007800106C9F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 25 Nov 2013 16:22:31 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <akpm@linux-foundation.org>
+Cc: <davem@davemloft.net>, <adobriyan@gmail.com>, <d.hatayama@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] procfs: also fix proc_reg_get_unmapped_area() for !MMU
+ case
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
-CC: linux-hexagon@vger.kernel.org
----
- arch/hexagon/include/asm/fixmap.h | 40 +--------------------------------------
- 1 file changed, 1 insertion(+), 39 deletions(-)
+Commit fad1a86e ("procfs: call default get_unmapped_area on MMU-present
+architectures"), as its title says, took care of only the MMU case,
+leaving the !MMU side still in the regressed state (returning -EIO in
+all cases where pde->proc_fops->get_unmapped_area is NULL).
 
-diff --git a/arch/hexagon/include/asm/fixmap.h b/arch/hexagon/include/asm/fixmap.h
-index b75b6bf..1387f84 100644
---- a/arch/hexagon/include/asm/fixmap.h
-+++ b/arch/hexagon/include/asm/fixmap.h
-@@ -26,45 +26,7 @@
-  */
- #include <asm/mem-layout.h>
- 
--/*
-- * Full fixmap support involves set_fixmap() functions, but
-- * these may not be needed if all we're after is an area for
-- * highmem kernel mappings.
-- */
--#define	__fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
--#define	__virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
--
--extern void __this_fixmap_does_not_exist(void);
--
--/**
-- * fix_to_virt -- "index to address" translation.
-- *
-- * If anyone tries to use the idx directly without translation,
-- * we catch the bug with a NULL-deference kernel oops. Illegal
-- * ranges of incoming indices are caught too.
-- */
--static inline unsigned long fix_to_virt(const unsigned int idx)
--{
--	/*
--	 * This branch gets completely eliminated after inlining,
--	 * except when someone tries to use fixaddr indices in an
--	 * illegal way. (such as mixing up address types or using
--	 * out-of-range indices).
--	 *
--	 * If it doesn't get removed, the linker will complain
--	 * loudly with a reasonably clear error message..
--	 */
--	if (idx >= __end_of_fixed_addresses)
--		__this_fixmap_does_not_exist();
--
--	return __fix_to_virt(idx);
--}
--
--static inline unsigned long virt_to_fix(const unsigned long vaddr)
--{
--	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
--	return __virt_to_fix(vaddr);
--}
-+#include <asm-generic/fixmap.h>
- 
- #define kmap_get_fixmap_pte(vaddr) \
- 	pte_offset_kernel(pmd_offset(pud_offset(pgd_offset_k(vaddr), \
--- 
-1.8.3.1
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: David S. Miller <davem@davemloft.net> 
+---
+ fs/proc/inode.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+--- 3.13-rc1/fs/proc/inode.c
++++ 3.13-rc1-proc-get-unmapped-area/fs/proc/inode.c
+@@ -292,16 +292,19 @@ proc_reg_get_unmapped_area(struct file *
+ {
+ 	struct proc_dir_entry *pde = PDE(file_inode(file));
+ 	unsigned long rv = -EIO;
+-	unsigned long (*get_area)(struct file *, unsigned long, unsigned long,
+-				  unsigned long, unsigned long) = NULL;
++
+ 	if (use_pde(pde)) {
++		typeof(proc_reg_get_unmapped_area) *get_area
+ #ifdef CONFIG_MMU
+-		get_area = current->mm->get_unmapped_area;
++			= pde->proc_fops->get_unmapped_area
++			  ?: current->mm->get_unmapped_area;
++#else
++			= pde->proc_fops->get_unmapped_area;
+ #endif
+-		if (pde->proc_fops->get_unmapped_area)
+-			get_area = pde->proc_fops->get_unmapped_area;
+-		if (get_area)
+-			rv = get_area(file, orig_addr, len, pgoff, flags);
++
++		rv = get_area
++		     ? get_area(file, orig_addr, len, pgoff, flags)
++		     : orig_addr;
+ 		unuse_pde(pde);
+ 	}
+ 	return rv;
+
+
 
