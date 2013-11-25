@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab3KYOMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:12:09 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:34951 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319Ab3KYOMB (ORCPT
+	id S1757596Ab3KYOMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:12:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47218 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3KYOML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:12:01 -0500
+	Mon, 25 Nov 2013 09:12:11 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -16,17 +16,21 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
         tianyu.lan@intel.com, sebastian.capella@linaro.org,
         jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 0/6] cpufreq: suspend early/resume late
-Date: Mon, 25 Nov 2013 19:41:40 +0530
-Message-Id: <cover.1385374819.git.viresh.kumar@linaro.org>
+Subject: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
+Date: Mon, 25 Nov 2013 19:41:41 +0530
+Message-Id: <55cc3fbf9c553d669629e8ba98eef2b0ef33aaad.1385374822.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1385374819.git.viresh.kumar@linaro.org>
+References: <cover.1385374819.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1385374819.git.viresh.kumar@linaro.org>
+References: <cover.1385374819.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds cpufreq callbacks to dpm_{suspend|resume}() for handling
-suspend/resume of cpufreq governors and core. This is required for early suspend
-and late resume of governors and cpufreq core.
+This patch adds cpufreq callbacks to dpm_{suspend|resume}() for handling
+suspend/resume of cpufreq governors. This is required for early suspend and late
+resume of governors and cpufreq core.
 
 There are multiple problems that are fixed by this patch:
 - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
@@ -35,9 +39,7 @@ There are multiple problems that are fixed by this patch:
   with regulators. But regulators and their I2C bus were already suspended and
   this resulted in a failure. Many platforms have such problems, samsung, tegra,
   etc.. They solved it with driver specific PM notifiers where they used to
-  disable their driver's ->target() routine. Most of these are updated in this
-  patchset to use new infrastructure.
-
+  disable their driver's ->target() routine.
 - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
   tunables configuration for clusters/sockets with non-boot CPUs was getting
   lost after suspend/resume, as we were notifying governors with
@@ -45,31 +47,142 @@ There are multiple problems that are fixed by this patch:
   deallocating memory for tunables. This is also fixed with this patch as don't
   allow any operation on Governors during suspend/resume now.
 
+Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+Reported-by: Nishanth Menon <nm@ti.com>
+Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/base/power/main.c |  5 +++++
+ drivers/cpufreq/cpufreq.c | 50 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  3 +++
+ 3 files changed, 58 insertions(+)
 
-So to solve these issues we introduce early suspend and late resume callbacks
-which would remove need of cpufreq drivers to implement PM notifiers to disable
-transition after suspend and before resume.
-
-@Nishanth: Can you please test V2 as well and confirm that suspend_noirq()
-doesn't work for you. I am sure it will not, but would be better if you confirm
-that.
-
-Viresh Kumar (6):
-  cpufreq: suspend governors on system suspend/hibernate
-  cpufreq: call driver's suspend/resume for each policy
-  cpufreq: Implement cpufreq_generic_suspend()
-  cpufreq: exynos: Use cpufreq_generic_suspend()
-  cpufreq: s5pv210: Use cpufreq_generic_suspend()
-  cpufreq: Tegra: Use cpufreq_generic_suspend()
-
- drivers/base/power/main.c         |   5 ++
- drivers/cpufreq/cpufreq.c         | 133 +++++++++++++++++++++-----------------
- drivers/cpufreq/exynos-cpufreq.c  |  97 ++-------------------------
- drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
- drivers/cpufreq/tegra-cpufreq.c   |  54 ++--------------
- include/linux/cpufreq.h           |   6 ++
- 6 files changed, 99 insertions(+), 245 deletions(-)
-
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 1b41fca..c9fbb9d 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -29,6 +29,7 @@
+ #include <linux/async.h>
+ #include <linux/suspend.h>
+ #include <trace/events/power.h>
++#include <linux/cpufreq.h>
+ #include <linux/cpuidle.h>
+ #include <linux/timer.h>
+ 
+@@ -789,6 +790,8 @@ void dpm_resume(pm_message_t state)
+ 	mutex_unlock(&dpm_list_mtx);
+ 	async_synchronize_full();
+ 	dpm_show_time(starttime, state, NULL);
++
++	cpufreq_resume();
+ }
+ 
+ /**
+@@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+ 
+ 	might_sleep();
+ 
++	cpufreq_suspend();
++
+ 	mutex_lock(&dpm_list_mtx);
+ 	pm_transition = state;
+ 	async_error = 0;
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..b6c7821 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -26,6 +26,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/tick.h>
+ #include <trace/events/power.h>
+@@ -47,6 +48,9 @@ static LIST_HEAD(cpufreq_policy_list);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ 
++/* Flag to suspend/resume CPUFreq governors */
++static bool cpufreq_suspended;
++
+ static inline bool has_target(void)
+ {
+ 	return cpufreq_driver->target_index || cpufreq_driver->target;
+@@ -1462,6 +1466,48 @@ static struct subsys_interface cpufreq_interface = {
+ 	.remove_dev	= cpufreq_remove_dev,
+ };
+ 
++/*
++ * Callbacks for suspending/resuming governors as some platforms can't change
++ * frequency after this point in suspend cycle. Because some of the devices
++ * (like: i2c, regulators, etc) they use for changing frequency are suspended
++ * quickly after this point.
++ */
++void cpufreq_suspend(void)
++{
++	struct cpufreq_policy *policy;
++
++	if (!has_target())
++		return;
++
++	pr_debug("%s: Suspending Governors\n", __func__);
++
++	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
++		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
++			pr_err("%s: Failed to stop governor for policy: %p\n",
++					__func__, policy);
++
++	cpufreq_suspended = true;
++}
++
++void cpufreq_resume(void)
++{
++	struct cpufreq_policy *policy;
++
++	if (!has_target())
++		return;
++
++	pr_debug("%s: Resuming Governors\n", __func__);
++
++	cpufreq_suspended = false;
++
++	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
++		if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
++				__cpufreq_governor(policy,
++					CPUFREQ_GOV_LIMITS))
++			pr_err("%s: Failed to start governor for policy: %p\n",
++					__func__, policy);
++}
++
+ /**
+  * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
+  *
+@@ -1764,6 +1810,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	struct cpufreq_governor *gov = NULL;
+ #endif
+ 
++	/* Don't start any governor operations if we are entering suspend */
++	if (cpufreq_suspended)
++		return 0;
++
+ 	if (policy->governor->max_transition_latency &&
+ 	    policy->cpuinfo.transition_latency >
+ 	    policy->governor->max_transition_latency) {
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index dc196bb..6d93f91 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -255,6 +255,9 @@ struct cpufreq_driver {
+ int cpufreq_register_driver(struct cpufreq_driver *driver_data);
+ int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
+ 
++void cpufreq_suspend(void);
++void cpufreq_resume(void);
++
+ const char *cpufreq_get_current_driver(void);
+ 
+ static inline void cpufreq_verify_within_limits(struct cpufreq_policy *policy,
 -- 
 1.7.12.rc2.18.g61b472e
 
