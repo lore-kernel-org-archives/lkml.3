@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab3KYOKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:10:12 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:55392 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab3KYOKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:10:04 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
-Date: Mon, 25 Nov 2013 15:10:00 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com> <201311242041.47075@pali> <20131125140127.GA24125@amd.pavel.ucw.cz>
-In-Reply-To: <20131125140127.GA24125@amd.pavel.ucw.cz>
+	id S1756924Ab3KYOJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:09:54 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37005 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754447Ab3KYOF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:05:56 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 0/6] Update Davinci watchdog driver
+Date: Mon, 25 Nov 2013 16:04:39 +0200
+Message-ID: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3057625.DtvM65lKLt";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311251510.00987@pali>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3057625.DtvM65lKLt
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+These patches are intended to update Davinci watchdog to use WDT core
+and reuse driver for keystone arch, because Keystone uses the similar
+IP like Davinci.
 
-On Monday 25 November 2013 15:01:27 Pavel Machek wrote:
-> Where can I get dsme sources?
-> 									Pavel
+See Documentation:
+Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
+Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
 
-dsme daemon: https://gitorious.org/community-ssu/dsme
-dsme thermal plugin: https://gitorious.org/rx51-bme-replacement/dsme-therma=
-lobject-surface
+Also:
+ - improved to support GET_TIMELEFT option.
+ - added "clocks" and "timeout-sec" properties to DT.
 
-dsme thermal plugin is responsible for checking temperature of=20
-battery and send it to dsme damon. dsme daemon itself checking=20
-temperature limits and do something (e.g reboot device)
+Based on
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+keystone/master
 
-in dsme thermal plugin git history you can find both old version=20
-(which asking temperature from proprietary nokia bme daemon) and=20
-new version which reading temperature from power supply kernel=20
-modules.
+v2..v3:
+- watchdog: davinci: change driver to use WDT core
+	removed "ti,keystone-wdt" compatible from driver
+	renamed wdt device names for mach-davinci from
+		"watchdog" to "davinci-wdt"
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+- watchdog: davinci: reuse driver for keystone arch
+	moved "clocks" property under "Optional properties"
+	improved decsription of "clocks" property
 
---nextPart3057625.DtvM65lKLt
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+- arm: dts: keystone: add watchdog entry
+	replaced "ti,keystone-wdt" compatible on
+		 "ti,keystone-wdt","ti,davinci-wdt"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Ivan Khoronzhuk (6):
+  watchdog: davinci: change driver to use WDT core
+  watchdog: davinci: use davinci_wdt_device structure to hold device
+    data
+  watchdog: davinci: add GET_TIMELEFT option support
+  watchdog: davinci: add "timeout-sec" property
+  watchdog: davinci: reuse driver for keystone arch
+  arm: dts: keystone: add watchdog entry
 
-iEYEABECAAYFAlKTWjgACgkQi/DJPQPkQ1LeIACglshbvwK9NC81ueJGSPn5ysm4
-AgcAnAjmCa9lwMQXgOt9qzPsfU+v1OFU
-=o1Y+
------END PGP SIGNATURE-----
+ .../devicetree/bindings/watchdog/davinci-wdt.txt   |   16 +-
+ arch/arm/boot/dts/keystone.dtsi                    |    6 +
+ arch/arm/mach-davinci/da8xx-dt.c                   |    2 +-
+ arch/arm/mach-davinci/devices-da8xx.c              |    4 +-
+ arch/arm/mach-davinci/devices.c                    |    2 +-
+ drivers/watchdog/Kconfig                           |    6 +-
+ drivers/watchdog/davinci_wdt.c                     |  225 +++++++++-----------
+ 7 files changed, 126 insertions(+), 135 deletions(-)
 
---nextPart3057625.DtvM65lKLt--
+-- 
+1.7.9.5
+
