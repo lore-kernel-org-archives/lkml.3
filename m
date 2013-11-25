@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3KYEMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 23:12:55 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:53305 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab3KYEMw (ORCPT
+	id S1753481Ab3KYEYI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 23:24:08 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:54957 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab3KYEYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 23:12:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAArO44vmfkroE9w4KviOhjkPvg9bTX9pAtr3oxYjD9u_wVZXeg@mail.gmail.com>
-References: <1385057731-4348-1-git-send-email-prabhakar.csengg@gmail.com>
- <1385057731-4348-2-git-send-email-prabhakar.csengg@gmail.com> <CAArO44vmfkroE9w4KviOhjkPvg9bTX9pAtr3oxYjD9u_wVZXeg@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 25 Nov 2013 09:42:30 +0530
-Message-ID: <CA+V-a8sjmo2K16m9_6Zf1qwcez+qKm-9JW1Cb=Aj4prtXd=-fA@mail.gmail.com>
-Subject: Re: [PATCH v6 1/6] gpio: davinci: use readl/writel instead of __raw_*
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 24 Nov 2013 23:24:06 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, ceh@ti.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
+Date: Mon, 25 Nov 2013 09:53:59 +0530
+Message-Id: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Taras,
+Sometimes boot loaders set CPU frequency to a value outside of frequency table
+present with cpufreq core. In such cases CPU might be unstable if it has to run
+on that frequency for long duration of time and so its better to set it to a
+frequency which is specified in freq-table. This also makes cpufreq stats
+inconsistent as cpufreq-stats would fail to register because current frequency
+of CPU isn't found in freq-table.
 
-On Fri, Nov 22, 2013 at 3:38 PM, Taras Kondratiuk
-<taras.kondratiuk@linaro.org> wrote:
-> On 21 November 2013 20:15, Prabhakar Lad <prabhakar.csengg@gmail.com> wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> This patch replaces the __raw_readl/writel with
->> readl and writel, Altough the code runs on ARMv5
->> based SOCs, changing this will help copying the code
->> for other uses.
->
-> This replacement has a functional impact: it adds memory barriers.
-> Please note this in the description.
-> Also please add a bit of explanation on why do you need to add barriers.
->
-Agreed this adds memory barriers, I'll add a note about it.
+Because we don't want this change to effect boot process badly, we go for the
+next freq which is >= policy->cur ('cur' must be set by now, otherwise we will
+end up setting freq to lowest of the table as 'cur' is initialized to zero).
 
-Thanks,
---Prabhakar Lad
+In case where CPU is already running on one of the frequencies present in
+freq-table, this would turn into a dummy call as __cpufreq_driver_target() would
+return early.
+
+Reported-by: Carlos Hernandez <ceh@ti.com>
+Reported-and-tested-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V1->V2
+- Set to (policy->cur - 1) instead of policy->cur.
+- return early in case __cpufreq_driver_target() fails.
+
+ drivers/cpufreq/cpufreq.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..7be996c 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1038,6 +1038,38 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		}
+ 	}
+ 
++	/*
++	 * Sometimes boot loaders set CPU frequency to a value outside of
++	 * frequency table present with cpufreq core. In such cases CPU might be
++	 * unstable if it has to run on that frequency for long duration of time
++	 * and so its better to set it to a frequency which is specified in
++	 * freq-table. This also makes cpufreq stats inconsistent as
++	 * cpufreq-stats would fail to register because current frequency of CPU
++	 * isn't found in freq-table.
++	 *
++	 * Because we don't want this change to effect boot process badly, we go
++	 * for the next freq which is >= policy->cur ('cur' must be set by now,
++	 * otherwise we will end up setting freq to lowest of the table as 'cur'
++	 * is initialized to zero).
++	 *
++	 * In case where CPU is already running on one of the frequencies
++	 * present in freq-table, this would turn into a dummy call as
++	 * __cpufreq_driver_target() would return early.
++	 *
++	 * We are passing target-freq as "policy->cur - 1" otherwise
++	 * __cpufreq_driver_target() would simply fail, as policy->cur will be
++	 * equal to target-freq.
++	 */
++	if (has_target()) {
++		ret = __cpufreq_driver_target(policy, policy->cur - 1,
++				CPUFREQ_RELATION_L);
++		if (ret) {
++			pr_err("%s: Unable to set frequency from table: %d\n",
++					__func__, ret);
++			goto err_out_unregister;
++		}
++	}
++
+ 	/* related cpus should atleast have policy->cpus */
+ 	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
+ 
+-- 
+1.7.12.rc2.18.g61b472e
+
