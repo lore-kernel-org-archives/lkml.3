@@ -1,60 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab3KYNyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:54:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58951 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754274Ab3KYNxn (ORCPT
+	id S1755153Ab3KYNym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:54:42 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10255 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab3KYNyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:43 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Nov 2013 08:54:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 25 Nov 2013 05:48:08 -0800
+Date: Mon, 25 Nov 2013 15:49:37 +0200
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "joro@8bytes.org" <joro@8bytes.org>
+CC: Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv6 05/13] iommu/core: add ops->{bound,unbind}_driver()
+Message-ID: <20131125154937.d6dbe9aedc16aab335d92f99@nvidia.com>
+In-Reply-To: <1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
+References: <1385041249-7705-1-git-send-email-hdoyu@nvidia.com>
+	<1385041249-7705-6-git-send-email-hdoyu@nvidia.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Francois Romieu" <romieu@fr.zoreil.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "David Woodhouse" <David.Woodhouse@intel.com>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.867476767@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 32/87] 8139cp: re-enable interrupts after tx timeout
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+Hi Joerg,
 
-------------------
+Do you have some time to review this patch along with the following ones?
 
-From: David Woodhouse <dwmw2@infradead.org>
+  [PATCHv6 02/13] iommu/of: introduce a global iommu device list
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007050.html
 
-commit 01ffc0a7f1c1801a2354719dedbc32aff45b987d upstream.
+  [PATCHv6 03/13] iommu/of: check if dependee iommu is ready or not
+  http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007051.html
 
-Recovery doesn't work too well if we leave interrupts disabled...
+With those patches, now I'm trying to populate iommu master devices
+after an IOMMU device is populated. Originally [PATCHv6 02/13] was
+proposed by Thierry. I'm a bit afraid of adding new IOMMU API as
+this, but I think that this new {bound,unbind}_driver() is the right
+timiing that depeding devices are populated instead of add_device()
+since, even after add_device, a device won't be populated. I'm not so
+sure how this affects on the existing IOMMUs.
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/ethernet/realtek/8139cp.c | 1 +
- 1 file changed, 1 insertion(+)
+It would be nice if you give some feedback on this.
 
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -1234,6 +1234,7 @@ static void cp_tx_timeout(struct net_dev
- 	cp_clean_rings(cp);
- 	rc = cp_init_rings(cp);
- 	cp_start_hw(cp);
-+	cp_enable_irq(cp);
- 
- 	netif_wake_queue(dev);
- 
+On Thu, 21 Nov 2013 14:40:41 +0100
+Hiroshi Doyu <hdoyu@nvidia.com> wrote:
 
+> ops->{bound,unbind}_driver() functions are called at
+> BUS_NOTIFY_{BOUND,UNBIND}_DRIVER respectively.
+> 
+> This is necessary to control the device population order. IOMMU master
+> devices depend on an IOMMU device instanciation. IOMMU master devices
+> can be registered to an IOMMU only after it's successfully
+> populated. This IOMMU registration is done via
+> ops->bound_driver(). Currently this population can be deferred if
+> depending IOMMU device hasn't yet been populated in driver core. This
+> cannot be done via ops->add_device() since after add_device() device's
+> population/instanciation can be still deferred via probe().
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+> v6:
+> New for v6.
+> ---
+>  drivers/iommu/iommu.c | 13 +++++++++++--
+>  include/linux/iommu.h |  4 ++++
+>  2 files changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index e5555fc..5469d36 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -540,14 +540,23 @@ static int iommu_bus_notifier(struct notifier_block *nb,
+>  	 * ADD/DEL call into iommu driver ops if provided, which may
+>  	 * result in ADD/DEL notifiers to group->notifier
+>  	 */
+> -	if (action == BUS_NOTIFY_ADD_DEVICE) {
+> +	switch (action) {
+> +	case BUS_NOTIFY_ADD_DEVICE:
+>  		if (ops->add_device)
+>  			return ops->add_device(dev);
+> -	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
+> +	case BUS_NOTIFY_DEL_DEVICE:
+>  		if (ops->remove_device && dev->iommu_group) {
+>  			ops->remove_device(dev);
+>  			return 0;
+>  		}
+> +	case BUS_NOTIFY_BOUND_DRIVER:
+> +		if (ops->bound_driver)
+> +			ops->bound_driver(dev);
+> +		break;
+> +	case BUS_NOTIFY_UNBIND_DRIVER:
+> +		if (ops->unbind_driver)
+> +			ops->unbind_driver(dev);
+> +		break;
+>  	}
+>  
+>  	/*
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index a444c79..a0e92be 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -96,6 +96,8 @@ enum iommu_attr {
+>   * @domain_has_cap: domain capabilities query
+>   * @add_device: add device to iommu grouping
+>   * @remove_device: remove device from iommu grouping
+> + * @bound_driver: called at BUS_NOTIFY_BOUND_DRIVER
+> + * @unbind_driver: called at BUS_NOTIFY_UNBIND_DRIVER
+>   * @domain_get_attr: Query domain attributes
+>   * @domain_set_attr: Change domain attributes
+>   * @pgsize_bitmap: bitmap of supported page sizes
+> @@ -114,6 +116,8 @@ struct iommu_ops {
+>  			      unsigned long cap);
+>  	int (*add_device)(struct device *dev);
+>  	void (*remove_device)(struct device *dev);
+> +	int (*bound_driver)(struct device *dev);
+> +	void (*unbind_driver)(struct device *dev);
+>  	int (*device_group)(struct device *dev, unsigned int *groupid);
+>  	int (*domain_get_attr)(struct iommu_domain *domain,
+>  			       enum iommu_attr attr, void *data);
+> -- 
+> 1.8.1.5
+> 
