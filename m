@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3KYCvs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 21:51:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7630 "EHLO mga01.intel.com"
+	id S1753393Ab3KYDFM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 22:05:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:17662 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753221Ab3KYCvq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 21:51:46 -0500
+	id S1753236Ab3KYDFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Nov 2013 22:05:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,765,1378882800"; 
-   d="scan'208";a="438995224"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-Thread-Topic: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-Thread-Index: AQHO1dXjUZkF5USl+0y2+Rv7udewtZoOKeaAgAAIPACAAAO7gIABXvmggCPCBoCAAfJ7cA==
-Date: Mon, 25 Nov 2013 02:51:36 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880248D127@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1383181113.git.lv.zheng@intel.com>
- <2226874.g7cLvQ5SiE@vostro.rjw.lan> <20131031120850.GA17048@kroah.com>
- <18963273.JtsE7nd0JW@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
- <20131124032153.GA25485@kroah.com>
-In-Reply-To: <20131124032153.GA25485@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="433054497"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org, hg197@gmx.de
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Cpufreq: Change sysfs interface cpuinfo_cur_freq access privilege
+Date: Mon, 25 Nov 2013 10:53:38 +0800
+Message-Id: <1385348018-30525-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Sunday, November 24, 2013 11:22 AM
-> 
-> On Fri, Nov 01, 2013 at 02:58:16AM +0000, Zheng, Lv wrote:
-> > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > > Sent: Thursday, October 31, 2013 8:22 PM
-> > >
-> > > On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
-> > > > On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
-> > > > > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
-> > > > > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
-> > > > > > issues found in recent platforms.  These fixes make Linux AML interpreter
-> > > > > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
-> > > > > > be based on such improvements, thus they are good materials for stable.
-> > > > > >
-> > > > > > This patch set can be safely applied to linux-3.8:
-> > > > > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
-> > > > > >
-> > > > > > The patch set has passed build/boot tests on the following machines:
-> > > > > >   Dell Inspiron Mini 1010 (i386)
-> > > > > >   HP Compaq 8200 Elite SFF PC (x86-64)
-> > > > > >
-> > > > > > Bob Moore (4):
-> > > > > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
-> > > > > >     possible.
-> > > > > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
-> > > > > >     BufferField refs.
-> > > > > >   ACPICA: Return error if DerefOf resolves to a null package element.
-> > > > > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
-> > > > > >     field.
-> > > > >
-> > > > > Hi Greg,
-> > > > >
-> > > > > Please take patches [1-4/4] for stable.
-> > > >
-> > > > "Which" stable tree?
-> > > >
-> > > > I don't do 3.8, it's long been end-of-life, although one company is
-> > > > trying to keep it alive, but that's not me.
-> > > >
-> > > > I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
-> > > > one(s) should these be applied to?
-> > >
-> > > 3.10.x and 3.11.x then.
-> > >
-> > > Lv, do the original mainline commits apply to these kernels?
-> > >
-> > > Rafael
-> >
-> > Hi, Rafael and Greg
-> >
-> > I checked the back port dependencies since v3.8:
-> > 1. [PATCH 1] belongs to v3.9.
-> > 2. [PATCH 4] includes an empty line belonging to a coding style fix affecting this series (between [PATCH 3] and [PATCH 4]).
-> > Thus,
-> > 1. For v3.10:
-> >     [PATCH 1]: It's already in the repo, so please drop it.
-> >     [PATCH 2-4]: They can be used directly as 3.10.x stable materials.
-> > 2. For v3.11:
-> >     [PATCH 1]: It's already in the repo, so please drop it.
-> >     [PATCH 2-3]: They can be used directly as 3.11.x stable materials.
-> >     [PATCH 4]: The original commit from Linus' tree should be used instead.
-> >
-> >  I checked the commit log since v3.4.
-> >  There is no functional change done to the AML executer between v3.4 and v3.8.
-> >  The problem is there is a coding style fix affecting this series (between v3.4 and [PATCH 1]).
-> >  I generated the following diff block before applying [PATCH 1], and obtained a successful build/boot to a v3.4 kernel with these
-> patches applied.
-> > Thus,
-> > 1. For v3.4:
-> >     [PATCH 1]: You can merge this diff block to [PATCH 1] or simply modify the [PATCH 1] by manually adding this white space.
-> >     [PATCH 2-4]: They can be used directly as 3.4.x stable materials.
-> 
-> Ok, I think I have this all properly queued up for 3.4, 3.10, and
-> 3.11-stable trees, can you please check and verify I didn't mess
-> anything up?
+Currently, cpuinfo_cur_freq is only accessible for root user while
+other cpufreq sysfs interfaces(E,G scaling_cur_freq) are available
+to ordinary user. This seems make no sense. This patch is to change
+it.
 
-I pulled and checked, they are all correct.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/cpufreq/cpufreq.c | 2 +-
+ include/linux/cpufreq.h   | 4 ----
+ 2 files changed, 1 insertion(+), 5 deletions(-)
 
-Thanks and best regards
--Lv
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 02d534d..1926465 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -605,7 +605,7 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
+ 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
+ }
+ 
+-cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
++cpufreq_freq_attr_ro(cpuinfo_cur_freq);
+ cpufreq_freq_attr_ro(cpuinfo_min_freq);
+ cpufreq_freq_attr_ro(cpuinfo_max_freq);
+ cpufreq_freq_attr_ro(cpuinfo_transition_latency);
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5bd6ab9..b4bb677 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -166,10 +166,6 @@ struct freq_attr {
+ static struct freq_attr _name =			\
+ __ATTR(_name, 0444, show_##_name, NULL)
+ 
+-#define cpufreq_freq_attr_ro_perm(_name, _perm)	\
+-static struct freq_attr _name =			\
+-__ATTR(_name, _perm, show_##_name, NULL)
+-
+ #define cpufreq_freq_attr_rw(_name)		\
+ static struct freq_attr _name =			\
+ __ATTR(_name, 0644, show_##_name, store_##_name)
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
-> 
-> thanks,
-> 
-> greg k-h
