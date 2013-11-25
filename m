@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab3KYL36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:29:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38282 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3KYL35 (ORCPT
+	id S1753086Ab3KYLan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:30:43 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:35831 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3KYLal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 06:29:57 -0500
-Date: Mon, 25 Nov 2013 12:29:49 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
-        avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131125112949.GJ3694@twins.programming.kicks-ass.net>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131122191429.GA13308@amt.cnet>
- <20131125093157.GU10022@twins.programming.kicks-ass.net>
- <52932D8C.2080308@linux.vnet.ibm.com>
- <20131125110500.GV3866@twins.programming.kicks-ass.net>
+	Mon, 25 Nov 2013 06:30:41 -0500
+Message-ID: <529334CA.1000401@synopsys.com>
+Date: Mon, 25 Nov 2013 17:00:18 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131125110500.GV3866@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Gilad Ben-Yossef" <gilad@benyossef.com>,
+        Noam Camus <noamc@ezchip.com>, David Daney <david.daney@cavium.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "thomas Gleixner" <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Richard Kuo" <rkuo@codeaurora.org>
+Subject: Re: Preventing IPI sending races in arch code
+References: <52932BE2.5010201@synopsys.com> <20131125110006.GU3866@twins.programming.kicks-ass.net>
+In-Reply-To: <20131125110006.GU3866@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 12:05:00PM +0100, Peter Zijlstra wrote:
-> On Mon, Nov 25, 2013 at 06:59:24PM +0800, Xiao Guangrong wrote:
-> > I guess Marcelo was talking about rculist_nulls.h
-> > (Documentation/RCU/rculist_nulls.txt).
+On 11/25/2013 04:30 PM, Peter Zijlstra wrote:
+> On Mon, Nov 25, 2013 at 04:22:18PM +0530, Vineet Gupta wrote:
+>> Hi,
+>>
+>> I've been looking into cleaning up bitrot in ARC SMP support. Unlike some other
+>> arches/platforms, we don't have per-msg-type IRQ, so the actual msg (say cross
+>> function call) corresponding to IPI needs to be encoded in a per-cpu word (1 bit
+>> per msg type) before kicking the IPI.
+>>
+>> The current code (indicative below) is completely bonkers as it calls set_bit w/o
+>> any protection whatsoever, clearly racy in case of multiple senders, where
+>> receiver could end up NOT seeing one of the writes.
+>>
+>> ipi_send_msg(cpu, msg-type)
+>> {
+>>    struct ipi_data *ipi_data = &per_cpu(ipi_data, cpu);
+>>
+>>    local_irq_save();
+>>    set_bit(msg-type, &ipi_data->bits)
+>>    plat_smp_ops.ipi_send(cpumask)
+>>    local_irq_restore();
+>> }
+>>
+>> Adding a spinlock here would serialize the sending part, but I still see issue in
+>> receiver. Upon receipt of First IPI, the msg holding word will be atomically
+>> exchanged with 0, so 2nd IPI will not see any msg in the word. Augmenting with an
+>> atomic counter would only help detect the issue - but I don't see how it will help
+>> elide the issue.
+>>
+>> Does that mean w/o proper hardware assist (i.e. IRQ providing the msg id
+>> indication), the race, however small, remains ?
 > 
-> Oh, let me have a look, I don't think I've really looked at that yet.
+> You can use cmpxchg to set the bit, and in case the previous value
+> wasn't 0 not send a second IPI.
+> 
 
-Egads, that's far too clever ;-)
+Thx Peter, that'll do it.
 
-Yes, if that's what Marcello was referencing to he's right, it doesn't
-have a proper termination condition in the face of unlimited
-modification.
+While we are at it, I wanted to confirm another potential race (ARC/blackfin..)
+The IPI handler clears the interrupt before atomically-read-n-clear the msg word.
 
-And it can indeed use SLAB_DESTROY_BY_RCU as you alluded to -- although
-the documentation is a tad scarce explaining why this is so.
+do_IPI
+   plat_smp_ops.ipi_clear(irq);
+   while ((pending = xchg(&ipi_data->bits, 0) != 0)
+      find_next_bit(....)
+      switch(next-msg)
+
+Depending on arch this could lead to an immediate IPI interrupt, and again
+ipi_data->bits could get out of syn with IPI senders. IMO the while loop is
+completely useless specially if IPIs are not coalesced in h/w. And we need to move
+the xchg ahead of ACK'ing the IPI
+
+do_IPI
+   pending = xchg(&ipi_data->bits, 0);
+   plat_smp_ops.ipi_clear(irq);
+   while (ffs....)
+      switch(next-msg)
+      ...
+
+Does that look sane to you.
+
+Thx,
+-Vineet
