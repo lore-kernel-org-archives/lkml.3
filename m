@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab3KYN44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:56:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58827 "EHLO
+	id S1756526Ab3KYN5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:57:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59010 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273Ab3KYNyB (ORCPT
+	by vger.kernel.org with ESMTP id S1753993Ab3KYNyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:54:01 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org
+CC: akpm@linux-foundation.org, "Fan Yong" <yong.fan@whamcloud.com>,
+        "Andreas Dilger" <adilger@whamcloud.com>,
+        "Jonathan Nieder" <jrnieder@gmail.com>,
+        "Bernd Schubert" <bernd.schubert@itwm.fraunhofer.de>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.559528559@decadent.org.uk>
+Message-ID: <lsq.1385387069.618642845@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 00/87] 3.2.53-rc1 review
+Subject: [PATCH 3.2 23/87] ext4: return 32/64-bit dir name hash according
+ to usage type
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -25,419 +31,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.53 release.
-There are 87 patches in this series, which will be posted as responses
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Nov 27 13:44:29 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-A combined patch relative to 3.2.52 will be posted as an additional
-response to this.  A shortlog and diffstat can be found below.
+From: Fan Yong <yong.fan@whamcloud.com>
 
-Ben.
+commit d1f5273e9adb40724a85272f248f210dc4ce919a upstream.
 
--------------
+Traditionally ext2/3/4 has returned a 32-bit hash value from llseek()
+to appease NFSv2, which can only handle a 32-bit cookie for seekdir()
+and telldir().  However, this causes problems if there are 32-bit hash
+collisions, since the NFSv2 server can get stuck resending the same
+entries from the directory repeatedly.
 
-Alex Deucher (1):
-      drm/radeon/atom: workaround vbios bug in transmitter table on rs780
-         [c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680]
+Allow ext4 to return a full 64-bit hash (both major and minor) for
+telldir to decrease the chance of hash collisions.  This still needs
+integration on the NFS side.
 
-Baruch Siach (1):
-      xtensa: don't use alternate signal stack on threads
-         [cba9a90053e3b7973eff4f1946f33032e98eeed5]
+Patch-updated-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+(blame me if something is not correct)
 
-Bernd Schubert (3):
-      fs: add new FMODE flags: FMODE_32bithash and FMODE_64bithash
-         [6a8a13e03861c0ab83ab07d573ca793cff0e5d00]
-      nfsd: rename 'int access' to 'int may_flags' in nfsd_open()
-         [999448a8c0202d8c41711c92385323520644527b]
-      nfsd: vfs_llseek() with 32 or 64 bit offsets (hashes)
-         [06effdbb49af5f6c7d20affaec74603914acc768]
+Signed-off-by: Fan Yong <yong.fan@whamcloud.com>
+Signed-off-by: Andreas Dilger <adilger@whamcloud.com>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/ext4/dir.c  |  214 ++++++++++++++++++++++++++++++++++++++++++++------------
+ fs/ext4/ext4.h |    6 +-
+ fs/ext4/hash.c |    4 +-
+ 3 files changed, 176 insertions(+), 48 deletions(-)
 
-Chris Metcalf (1):
-      tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-         [f862eefec0b68e099a9fa58d3761ffb10bad97e1]
-
-Chris Wilson (2):
-      drm: Pad drm_mode_get_connector to 64-bit boundary
-         [bc5bd37ce48c66e9192ad2e7231e9678880f6f8e]
-      drm: Prevent overwriting from userspace underallocating core ioctl structs
-         [b062672e305ce071f21eb9e18b102c2a430e0999]
-
-Dan Carpenter (5):
-      Staging: bcm: info leak in ioctl
-         [8d1e72250c847fa96498ec029891de4dc638a5ba]
-      aacraid: missing capable() check in compat ioctl
-         [f856567b930dfcdbc3323261bf77240ccdde01f5]
-      net: heap overflow in __audit_sockaddr()
-         [1661bf364ae9c506bc8795fef70d1532931be1e8]
-      staging: wlags49_h2: buffer overflow setting station name
-         [b5e2f339865fb443107e5b10603e53bbc92dc054]
-      uml: check length in exitcode_proc_write()
-         [201f99f170df14ba52ea4c52847779042b7a623b]
-
-Daniel Borkmann (1):
-      net: unix: inherit SOCK_PASS{CRED, SEC} flags from  socket to fix race
-         [90c6bd34f884cd9cee21f1d152baf6c18bcac949]
-
-Daniel Mack (1):
-      ALSA: snd-usb-usx2y: remove bogus frame checks
-         [a9d14bc0b188a822e42787d01e56c06fe9750162]
-
-Daniel Santos (1):
-      compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
-         [3f3f8d2f48acfd8ed3b8e6b7377935da57b27b16]
-
-Dave Jones (1):
-      ext4: fix memory leak in xattr
-         [6e4ea8e33b2057b85d75175dd89b93f5e26de3bc]
-
-Dave Kleikamp (1):
-      jfs: fix error path in ialloc
-         [8660998608cfa1077e560034db81885af8e1e885]
-
-David Woodhouse (1):
-      8139cp: re-enable interrupts after tx timeout
-         [01ffc0a7f1c1801a2354719dedbc32aff45b987d]
-
-Emmanuel Grumbach (2):
-      iwlwifi: pcie: add SKUs for 6000, 6005 and 6235 series
-         [08a5dd3842f2ac61c6d69661d2d96022df8ae359]
-      mac80211: correctly close cancelled scans
-         [a754055a1296fcbe6f32de3a5eaca6efb2fd1865]
-
-Enrico Mioso (1):
-      usb: serial: option: blacklist Olivetti Olicard200
-         [fd8573f5828873343903215f203f14dc82de397c]
-
-Eric Dumazet (5):
-      bnx2x: record rx queue for LRO packets
-         [60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d]
-      l2tp: must disable bh before calling l2tp_xmit_skb()
-         [455cc32bf128e114455d11ad919321ab89a2c312]
-      net: do not call sock_put() on TIMEWAIT sockets
-         [80ad1d61e72d626e30ebe8529a0455e660ca4693]
-      tcp: do not forget FIN in tcp_shifted_skb()
-         [5e8a402f831dbe7ee831340a91439e46f0d38acd]
-      tcp: must unclone packets before mangling them
-         [c52e2421f7368fd36cbe330d2cf41b10452e39a9]
-
-Eric Sandeen (1):
-      ext3: return 32/64-bit dir name hash according to usage type
-         [d7dab39b6e16d5eea78ed3c705d2a2d0772b4f06]
-
-Fan Du (2):
-      include/linux/fs.h: disable preempt when acquire i_size_seqcount write lock
-         [74e3d1e17b2e11d175970b85acd44f5927000ba2]
-      sctp: Use software crc32 checksum when xfrm transform  will happen.
-         [27127a82561a2a3ed955ce207048e1b066a80a2a]
-
-Fan Yong (1):
-      ext4: return 32/64-bit dir name hash according to usage type
-         [d1f5273e9adb40724a85272f248f210dc4ce919a]
-
-Fangxiaozhi (1):
-      USB: support new huawei devices in option.c
-         [d544db293a44a2a3b09feab7dbd59668b692de71]
-
-Felix Fietkau (2):
-      mac80211: drop spoofed packets in ad-hoc mode
-         [6329b8d917adc077caa60c2447385554130853a3]
-      mac80211: update sta->last_rx on acked tx frames
-         [0c5b93290b2f3c7a376567c03ae8d385b0e99851]
-
-Geyslan G. Bem (1):
-      ecryptfs: Fix memory leakage in keystore.c
-         [3edc8376c06133e3386265a824869cad03a4efd4]
-
-Greg Kroah-Hartman (1):
-      USB: serial: option: add support for Inovia SEW858 device
-         [f4c19b8e165cff1a6607c21f8809441d61cab7ec]
-
-Gwendal Grignou (1):
-      libata: make ata_eh_qc_retry() bump scmd->allowed on bogus failures
-         [f13e220161e738c2710b9904dcb3cf8bb0bcce61]
-
-Hannes Frederic Sowa (1):
-      inet: fix possible memory corruption with UDP_CORK and UFO
-         [e93b7d748be887cd7639b113ba7d7ef792a7efb9,
-          c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b]
-
-Helge Deller (2):
-      parisc: Do not crash 64bit SMP kernels on machines with >= 4GB RAM
-         [54e181e073fc1415e41917d725ebdbd7de956455]
-      parisc: fix interruption handler to respect pagefault_disable()
-         [59b33f148cc08fb33cbe823fca1e34f7f023765e]
-
-Henrik Rydberg (1):
-      hwmon: (applesmc) Always read until end of data
-         [25f2bd7f5add608c1d1405938f39c96927b275ca]
-
-Ingo Molnar (1):
-      compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
-         [3f0116c3238a96bc18ad4b4acefe4e7be32fa861]
-
-Jiri Benc (1):
-      ipv4: fix ineffective source address selection
-         [0a7e22609067ff524fc7bbd45c6951dd08561667]
-
-Johannes Berg (1):
-      wireless: radiotap: fix parsing buffer overrun
-         [f5563318ff1bde15b10e736e97ffce13be08bc1a]
-
-Johannes Weiner (1):
-      fs: buffer: move allocation failure loop into the allocator
-         [84235de394d9775bfaa7fa9762a59d91fef0c1fc]
-
-Linus Torvalds (2):
-      Fix a few incorrectly checked [io_]remap_pfn_range() calls
-         [7314e613d5ff9f0934f7a0f74ed7973b903315d1]
-      vfs: allow O_PATH file descriptors for fstatfs()
-         [9d05746e7b16d8565dddbe3200faa1e669d23bbf]
-
-Marc Kleine-Budde (2):
-      can: dev: fix nlmsg size calculation in can_get_size()
-         [fe119a05f8ca481623a8d02efcc984332e612528]
-      net: vlan: fix nlmsg size calculation in  vlan_get_size()
-         [c33a39c575068c2ea9bffb22fd6de2df19c74b89]
-
-Marcelo Ricardo Leitner (1):
-      ipv6: restrict neighbor entry creation to output flow
-         [not upstream; fixes regression in stable branches only]
-
-Mariusz Ceier (1):
-      davinci_emac.c: Fix IFF_ALLMULTI setup
-         [d69e0f7ea95fef8059251325a79c004bac01f018]
-
-Mark Cave-Ayland (1):
-      rtlwifi: rtl8192cu: Fix error in pointer arithmetic
-         [9473ca6e920a3b9ca902753ce52833657f9221cc]
-
-Markus Trippelsdorf (1):
-      perf tools: Fix getrusage() related build failure on glibc trunk
-         [7b78f13603c6fcb64e020a0bbe31a651ea2b657b]
-
-Mathias Krause (2):
-      connector: use nlmsg_len() to check message length
-         [162b2bedc084d2d908a04c93383ba02348b648b0]
-      proc connector: fix info leaks
-         [e727ca82e0e9616ab4844301e6bae60ca7327682]
-
-Mikulas Patocka (1):
-      dm snapshot: fix data corruption
-         [e9c6a182649f4259db704ae15a91ac820e63b0ca]
-
-Ming Lei (1):
-      lib/scatterlist.c: don't flush_kernel_dcache_page on slab page
-         [3d77b50c5874b7e923be946ba793644f82336b75]
-
-Nikhil P Rao (1):
-      PCI: fix truncation of resource size to 32 bits
-         [d6776e6d5c2f8db0252f447b09736075e1bbe387]
-
-Oliver Neukum (3):
-      USB: quirks.c: add one device that cannot deal with suspension
-         [4294bca7b423d1a5aa24307e3d112a04075e3763]
-      USB: quirks: add touchscreen that is dazzeled by remote wakeup
-         [614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350]
-      xhci: quirk for extra long delay for S4
-         [455f58925247e8a1a1941e159f3636ad6ee4c90b]
-
-Patrick McHardy (1):
-      netfilter: nf_ct_sip: don't drop packets with offsets pointing outside the packet
-         [3a7b21eaf4fb3c971bdb47a98f570550ddfe4471]
-
-Paul Mackerras (1):
-      KVM: PPC: Book3S HV: Fix typo in saving DSCR
-         [cfc860253abd73e1681696c08ea268d33285a2c4]
-
-Peter Zijlstra (1):
-      perf: Fix perf ring buffer memory ordering
-         [bf378d341e4873ed928dc3c636252e6895a21f50]
-
-Salva Peiró (2):
-      farsync: fix info leak in ioctl
-         [96b340406724d87e4621284ebac5e059d67b2194]
-      wanxl: fix info leak in ioctl
-         [2b13d06c9584b4eb773f1e80bbaedab9a1c344e1]
-
-Sarah Sharp (1):
-      xhci: Don't enable/disable RWE on bus suspend/resume.
-         [f217c980ca980e3a645b7485ea5eae9a747f4945]
-
-Seif Mazareeb (1):
-      net: fix cipso packet validation when !NETLABEL
-         [f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b]
-
-Sergey Senozhatsky (1):
-      zram: allow request end to coincide with disksize
-         [75c7caf5a052ffd8db3312fa7864ee2d142890c4]
-
-Shuduo Sang (1):
-      iwlwifi: add new pci id for 6x35 series
-         [20ecf9fd3bebc4147e2996c08a75d6f0229b90df]
-
-Steven Rostedt (1):
-      tracing: Fix potential out-of-bounds in trace_get_user()
-         [057db8488b53d5e4faa0cedb2f39d4ae75dfbdbb]
-
-Takashi Iwai (5):
-      ALSA: hda - Add a fixup for ASUS N76VZ
-         [6fc16e58adf50c0f1e4478538983fb5ff6f453d4]
-      ALSA: hda - Add fixup for ASUS N56VZ
-         [c6cc3d58b4042f5cadae653ff8d3df26af1a0169]
-      ASoC: dapm: Fix source list debugfs outputs
-         [ff18620c2157671a8ee21ebb8e6a3520ea209b1f]
-      ASoC: wm_hubs: Add missing break in hp_supply_event()
-         [268ff14525edba31da29a12a9dd693cdd6a7872e]
-      xhci: Fix spurious wakeups after S5 on Haswell
-         [638298dc66ea36623dbc2757a24fc2c4ab41b016]
-
-Theodore Ts'o (2):
-      random: allow architectures to optionally define random_get_entropy()
-         [61875f30daf60305712e25b209ef41ced2635bad]
-      random: run random_int_secret_init() run after all late_initcalls
-         [47d06e532e95b71c0db3839ebdef3fe8812fca2c]
-
-Vlad Yasevich (2):
-      net: dst: provide accessor function to dst->xfrm
-         [e87b3998d795123b4139bc3f25490dd236f68212]
-      sctp: Perform software checksum if packet has to be  fragmented.
-         [d2dbbba77e95dff4b4f901fee236fef6d9552072]
-
-Wei Liu (1):
-      xen-netback: use jiffies_64 value to calculate credit  timeout
-         [059dfa6a93b779516321e5112db9d7621b1367ba]
-
-Wei Yongjun (1):
-      target/pscsi: fix return value check
-         [58932e96e438cd78f75e765d7b87ef39d3533d15]
-
-Wey-Yi Guy (4):
-      iwlwifi: one more sku added to 6x35 series
-         [259653d86b80ed01c70d47b7307140ae0ba19420]
-      iwlwifi: remove un-supported SKUs
-         [b6cb406a023184733bffc7762a75a2e204fff6b9]
-      iwlwifi: two more SKUs for 6x05 series
-         [75a56eccb01fcc3c1ae8000130f3c9b3c8ec68d9]
-      iwlwifi: update pci subsystem id
-         [378911233f424d7a1bf4a579587ae71c7d887166]
-
-Wojciech Kapuscinski (1):
-      drm/radeon: fix hw contexts for SUMO2 asics
-         [50b8f5aec04ebec7dbdf2adb17220b9148c99e63]
-
- Makefile                                        |   4 +-
- arch/mips/include/asm/jump_label.h              |   2 +-
- arch/parisc/kernel/head.S                       |   4 +
- arch/parisc/kernel/traps.c                      |   6 +-
- arch/powerpc/include/asm/jump_label.h           |   2 +-
- arch/powerpc/kvm/book3s_hv_rmhandlers.S         |   2 +-
- arch/s390/include/asm/jump_label.h              |   2 +-
- arch/sparc/include/asm/jump_label.h             |   2 +-
- arch/tile/include/asm/percpu.h                  |  34 +++-
- arch/um/kernel/exitcode.c                       |   4 +-
- arch/x86/include/asm/cpufeature.h               |   2 +-
- arch/x86/include/asm/jump_label.h               |   2 +-
- arch/xtensa/kernel/signal.c                     |   2 +-
- drivers/ata/libata-eh.c                         |   6 +-
- drivers/char/random.c                           |  11 +-
- drivers/connector/cn_proc.c                     |  16 ++
- drivers/connector/connector.c                   |   7 +-
- drivers/gpu/drm/drm_drv.c                       |   9 +-
- drivers/gpu/drm/radeon/atombios_encoders.c      |   2 +-
- drivers/gpu/drm/radeon/evergreen.c              |   2 +-
- drivers/hwmon/applesmc.c                        |  13 ++
- drivers/md/dm-snap-persistent.c                 |  18 +-
- drivers/net/can/dev.c                           |  10 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   1 +
- drivers/net/ethernet/realtek/8139cp.c           |   1 +
- drivers/net/ethernet/ti/davinci_emac.c          |   3 +-
- drivers/net/wan/farsync.c                       |   1 +
- drivers/net/wan/wanxl.c                         |   1 +
- drivers/net/wireless/iwlwifi/iwl-2000.c         |  20 ---
- drivers/net/wireless/iwlwifi/iwl-6000.c         |  23 ++-
- drivers/net/wireless/iwlwifi/iwl-cfg.h          |   9 +-
- drivers/net/wireless/iwlwifi/iwl-pci.c          |  34 ++--
- drivers/net/wireless/rtlwifi/rtl8192cu/trx.c    |   3 +-
- drivers/net/xen-netback/common.h                |   1 +
- drivers/net/xen-netback/interface.c             |   3 +-
- drivers/net/xen-netback/netback.c               |  10 +-
- drivers/pci/setup-res.c                         |   3 +-
- drivers/scsi/aacraid/linit.c                    |   2 +
- drivers/staging/bcm/Bcmchar.c                   |   1 +
- drivers/staging/wlags49_h2/wl_priv.c            |   9 +-
- drivers/staging/zram/zram_drv.c                 |   2 +-
- drivers/target/target_core_pscsi.c              |   8 +-
- drivers/uio/uio.c                               |  16 +-
- drivers/usb/core/quirks.c                       |   6 +
- drivers/usb/host/xhci-hub.c                     |  28 ---
- drivers/usb/host/xhci-pci.c                     |  25 +++
- drivers/usb/host/xhci.c                         |  14 +-
- drivers/usb/host/xhci.h                         |   2 +
- drivers/usb/serial/option.c                     | 225 +++++++++++++++++++++++-
- drivers/video/au1100fb.c                        |  28 +--
- drivers/video/au1200fb.c                        |  27 +--
- fs/buffer.c                                     |  14 +-
- fs/ecryptfs/keystore.c                          |   3 +-
- fs/ext3/dir.c                                   | 167 +++++++++++++-----
- fs/ext3/hash.c                                  |   4 +-
- fs/ext4/dir.c                                   | 214 +++++++++++++++++-----
- fs/ext4/ext4.h                                  |   6 +-
- fs/ext4/hash.c                                  |   4 +-
- fs/ext4/xattr.c                                 |   2 +
- fs/jfs/jfs_inode.c                              |   3 +-
- fs/nfsd/vfs.c                                   |  33 ++--
- fs/nfsd/vfs.h                                   |   2 +
- fs/statfs.c                                     |   2 +-
- include/drm/drm_mode.h                          |   2 +
- include/linux/compiler-gcc.h                    |   3 +
- include/linux/compiler-gcc4.h                   |  15 ++
- include/linux/ext3_fs.h                         |   6 +-
- include/linux/fs.h                              |   6 +
- include/linux/perf_event.h                      |  12 +-
- include/linux/random.h                          |   1 +
- include/linux/skbuff.h                          |  15 ++
- include/linux/timex.h                           |  14 ++
- include/net/cipso_ipv4.h                        |   6 +-
- include/net/dst.h                               |  12 ++
- init/main.c                                     |   2 +
- kernel/events/ring_buffer.c                     |  31 +++-
- kernel/trace/trace.c                            |   5 +-
- lib/scatterlist.c                               |   3 +-
- mm/memcontrol.c                                 |   2 +
- net/8021q/vlan_netlink.c                        |   2 +-
- net/compat.c                                    |   2 +
- net/ipv4/inet_hashtables.c                      |   2 +-
- net/ipv4/ip_output.c                            |   2 +-
- net/ipv4/route.c                                |   2 +-
- net/ipv4/tcp_input.c                            |   5 +-
- net/ipv4/tcp_output.c                           |   9 +-
- net/ipv6/inet6_hashtables.c                     |   2 +-
- net/ipv6/ip6_output.c                           |   2 +-
- net/ipv6/route.c                                |  11 +-
- net/l2tp/l2tp_ppp.c                             |   4 +
- net/mac80211/ieee80211_i.h                      |   3 +
- net/mac80211/rx.c                               |   3 +
- net/mac80211/scan.c                             |  19 ++
- net/mac80211/status.c                           |   3 +
- net/netfilter/nf_conntrack_sip.c                |   2 +-
- net/sctp/output.c                               |   3 +-
- net/socket.c                                    |  24 ++-
- net/unix/af_unix.c                              |  10 ++
- net/wireless/radiotap.c                         |   7 +-
- sound/pci/hda/patch_realtek.c                   |   2 +
- sound/soc/codecs/wm_hubs.c                      |   1 +
- sound/soc/soc-dapm.c                            |   2 +-
- sound/usb/usx2y/usbusx2yaudio.c                 |  22 +--
- sound/usb/usx2y/usx2yhwdeppcm.c                 |   7 +-
- tools/perf/builtin-sched.c                      |   1 +
- 105 files changed, 1037 insertions(+), 372 deletions(-)
-
--- 
-Ben Hutchings
-Usenet is essentially a HUGE group of people passing notes in class.
-                      - Rachel Kadel, `A Quick Guide to Newsgroup Etiquette'
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -32,24 +32,8 @@ static unsigned char ext4_filetype_table
+ 	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
+ };
+ 
+-static int ext4_readdir(struct file *, void *, filldir_t);
+ static int ext4_dx_readdir(struct file *filp,
+ 			   void *dirent, filldir_t filldir);
+-static int ext4_release_dir(struct inode *inode,
+-				struct file *filp);
+-
+-const struct file_operations ext4_dir_operations = {
+-	.llseek		= ext4_llseek,
+-	.read		= generic_read_dir,
+-	.readdir	= ext4_readdir,		/* we take BKL. needed?*/
+-	.unlocked_ioctl = ext4_ioctl,
+-#ifdef CONFIG_COMPAT
+-	.compat_ioctl	= ext4_compat_ioctl,
+-#endif
+-	.fsync		= ext4_sync_file,
+-	.release	= ext4_release_dir,
+-};
+-
+ 
+ static unsigned char get_dtype(struct super_block *sb, int filetype)
+ {
+@@ -60,6 +44,26 @@ static unsigned char get_dtype(struct su
+ 	return (ext4_filetype_table[filetype]);
+ }
+ 
++/**
++ * Check if the given dir-inode refers to an htree-indexed directory
++ * (or a directory which chould potentially get coverted to use htree
++ * indexing).
++ *
++ * Return 1 if it is a dx dir, 0 if not
++ */
++static int is_dx_dir(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++
++	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
++		     EXT4_FEATURE_COMPAT_DIR_INDEX) &&
++	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
++	     ((inode->i_size >> sb->s_blocksize_bits) == 1)))
++		return 1;
++
++	return 0;
++}
++
+ /*
+  * Return 0 if the directory entry is OK, and 1 if there is a problem
+  *
+@@ -115,18 +119,13 @@ static int ext4_readdir(struct file *fil
+ 	unsigned int offset;
+ 	int i, stored;
+ 	struct ext4_dir_entry_2 *de;
+-	struct super_block *sb;
+ 	int err;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
+ 	int ret = 0;
+ 	int dir_has_error = 0;
+ 
+-	sb = inode->i_sb;
+-
+-	if (EXT4_HAS_COMPAT_FEATURE(inode->i_sb,
+-				    EXT4_FEATURE_COMPAT_DIR_INDEX) &&
+-	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
+-	     ((inode->i_size >> sb->s_blocksize_bits) == 1))) {
++	if (is_dx_dir(inode)) {
+ 		err = ext4_dx_readdir(filp, dirent, filldir);
+ 		if (err != ERR_BAD_DX_DIR) {
+ 			ret = err;
+@@ -254,22 +253,134 @@ out:
+ 	return ret;
+ }
+ 
++static inline int is_32bit_api(void)
++{
++#ifdef CONFIG_COMPAT
++	return is_compat_task();
++#else
++	return (BITS_PER_LONG == 32);
++#endif
++}
++
+ /*
+  * These functions convert from the major/minor hash to an f_pos
+- * value.
++ * value for dx directories
+  *
+- * Currently we only use major hash numer.  This is unfortunate, but
+- * on 32-bit machines, the same VFS interface is used for lseek and
+- * llseek, so if we use the 64 bit offset, then the 32-bit versions of
+- * lseek/telldir/seekdir will blow out spectacularly, and from within
+- * the ext2 low-level routine, we don't know if we're being called by
+- * a 64-bit version of the system call or the 32-bit version of the
+- * system call.  Worse yet, NFSv2 only allows for a 32-bit readdir
+- * cookie.  Sigh.
++ * Upper layer (for example NFS) should specify FMODE_32BITHASH or
++ * FMODE_64BITHASH explicitly. On the other hand, we allow ext4 to be mounted
++ * directly on both 32-bit and 64-bit nodes, under such case, neither
++ * FMODE_32BITHASH nor FMODE_64BITHASH is specified.
+  */
+-#define hash2pos(major, minor)	(major >> 1)
+-#define pos2maj_hash(pos)	((pos << 1) & 0xffffffff)
+-#define pos2min_hash(pos)	(0)
++static inline loff_t hash2pos(struct file *filp, __u32 major, __u32 minor)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return major >> 1;
++	else
++		return ((__u64)(major >> 1) << 32) | (__u64)minor;
++}
++
++static inline __u32 pos2maj_hash(struct file *filp, loff_t pos)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return (pos << 1) & 0xffffffff;
++	else
++		return ((pos >> 32) << 1) & 0xffffffff;
++}
++
++static inline __u32 pos2min_hash(struct file *filp, loff_t pos)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return 0;
++	else
++		return pos & 0xffffffff;
++}
++
++/*
++ * Return 32- or 64-bit end-of-file for dx directories
++ */
++static inline loff_t ext4_get_htree_eof(struct file *filp)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return EXT4_HTREE_EOF_32BIT;
++	else
++		return EXT4_HTREE_EOF_64BIT;
++}
++
++
++/*
++ * ext4_dir_llseek() based on generic_file_llseek() to handle both
++ * non-htree and htree directories, where the "offset" is in terms
++ * of the filename hash value instead of the byte offset.
++ *
++ * NOTE: offsets obtained *before* ext4_set_inode_flag(dir, EXT4_INODE_INDEX)
++ *       will be invalid once the directory was converted into a dx directory
++ */
++loff_t ext4_dir_llseek(struct file *file, loff_t offset, int origin)
++{
++	struct inode *inode = file->f_mapping->host;
++	loff_t ret = -EINVAL;
++	int dx_dir = is_dx_dir(inode);
++
++	mutex_lock(&inode->i_mutex);
++
++	/* NOTE: relative offsets with dx directories might not work
++	 *       as expected, as it is difficult to figure out the
++	 *       correct offset between dx hashes */
++
++	switch (origin) {
++	case SEEK_END:
++		if (unlikely(offset > 0))
++			goto out_err; /* not supported for directories */
++
++		/* so only negative offsets are left, does that have a
++		 * meaning for directories at all? */
++		if (dx_dir)
++			offset += ext4_get_htree_eof(file);
++		else
++			offset += inode->i_size;
++		break;
++	case SEEK_CUR:
++		/*
++		 * Here we special-case the lseek(fd, 0, SEEK_CUR)
++		 * position-querying operation.  Avoid rewriting the "same"
++		 * f_pos value back to the file because a concurrent read(),
++		 * write() or lseek() might have altered it
++		 */
++		if (offset == 0) {
++			offset = file->f_pos;
++			goto out_ok;
++		}
++
++		offset += file->f_pos;
++		break;
++	}
++
++	if (unlikely(offset < 0))
++		goto out_err;
++
++	if (!dx_dir) {
++		if (offset > inode->i_sb->s_maxbytes)
++			goto out_err;
++	} else if (offset > ext4_get_htree_eof(file))
++		goto out_err;
++
++	/* Special lock needed here? */
++	if (offset != file->f_pos) {
++		file->f_pos = offset;
++		file->f_version = 0;
++	}
++
++out_ok:
++	ret = offset;
++out_err:
++	mutex_unlock(&inode->i_mutex);
++
++	return ret;
++}
+ 
+ /*
+  * This structure holds the nodes of the red-black tree used to store
+@@ -330,15 +441,16 @@ static void free_rb_tree_fname(struct rb
+ }
+ 
+ 
+-static struct dir_private_info *ext4_htree_create_dir_info(loff_t pos)
++static struct dir_private_info *ext4_htree_create_dir_info(struct file *filp,
++							   loff_t pos)
+ {
+ 	struct dir_private_info *p;
+ 
+ 	p = kzalloc(sizeof(struct dir_private_info), GFP_KERNEL);
+ 	if (!p)
+ 		return NULL;
+-	p->curr_hash = pos2maj_hash(pos);
+-	p->curr_minor_hash = pos2min_hash(pos);
++	p->curr_hash = pos2maj_hash(filp, pos);
++	p->curr_minor_hash = pos2min_hash(filp, pos);
+ 	return p;
+ }
+ 
+@@ -429,7 +541,7 @@ static int call_filldir(struct file *fil
+ 		       "null fname?!?\n");
+ 		return 0;
+ 	}
+-	curr_pos = hash2pos(fname->hash, fname->minor_hash);
++	curr_pos = hash2pos(filp, fname->hash, fname->minor_hash);
+ 	while (fname) {
+ 		error = filldir(dirent, fname->name,
+ 				fname->name_len, curr_pos,
+@@ -454,13 +566,13 @@ static int ext4_dx_readdir(struct file *
+ 	int	ret;
+ 
+ 	if (!info) {
+-		info = ext4_htree_create_dir_info(filp->f_pos);
++		info = ext4_htree_create_dir_info(filp, filp->f_pos);
+ 		if (!info)
+ 			return -ENOMEM;
+ 		filp->private_data = info;
+ 	}
+ 
+-	if (filp->f_pos == EXT4_HTREE_EOF)
++	if (filp->f_pos == ext4_get_htree_eof(filp))
+ 		return 0;	/* EOF */
+ 
+ 	/* Some one has messed with f_pos; reset the world */
+@@ -468,8 +580,8 @@ static int ext4_dx_readdir(struct file *
+ 		free_rb_tree_fname(&info->root);
+ 		info->curr_node = NULL;
+ 		info->extra_fname = NULL;
+-		info->curr_hash = pos2maj_hash(filp->f_pos);
+-		info->curr_minor_hash = pos2min_hash(filp->f_pos);
++		info->curr_hash = pos2maj_hash(filp, filp->f_pos);
++		info->curr_minor_hash = pos2min_hash(filp, filp->f_pos);
+ 	}
+ 
+ 	/*
+@@ -501,7 +613,7 @@ static int ext4_dx_readdir(struct file *
+ 			if (ret < 0)
+ 				return ret;
+ 			if (ret == 0) {
+-				filp->f_pos = EXT4_HTREE_EOF;
++				filp->f_pos = ext4_get_htree_eof(filp);
+ 				break;
+ 			}
+ 			info->curr_node = rb_first(&info->root);
+@@ -521,7 +633,7 @@ static int ext4_dx_readdir(struct file *
+ 			info->curr_minor_hash = fname->minor_hash;
+ 		} else {
+ 			if (info->next_hash == ~0) {
+-				filp->f_pos = EXT4_HTREE_EOF;
++				filp->f_pos = ext4_get_htree_eof(filp);
+ 				break;
+ 			}
+ 			info->curr_hash = info->next_hash;
+@@ -540,3 +652,15 @@ static int ext4_release_dir(struct inode
+ 
+ 	return 0;
+ }
++
++const struct file_operations ext4_dir_operations = {
++	.llseek		= ext4_dir_llseek,
++	.read		= generic_read_dir,
++	.readdir	= ext4_readdir,
++	.unlocked_ioctl = ext4_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= ext4_compat_ioctl,
++#endif
++	.fsync		= ext4_sync_file,
++	.release	= ext4_release_dir,
++};
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1597,7 +1597,11 @@ struct dx_hash_info
+ 	u32		*seed;
+ };
+ 
+-#define EXT4_HTREE_EOF	0x7fffffff
++
++/* 32 and 64 bit signed EOF for dx directories */
++#define EXT4_HTREE_EOF_32BIT   ((1UL  << (32 - 1)) - 1)
++#define EXT4_HTREE_EOF_64BIT   ((1ULL << (64 - 1)) - 1)
++
+ 
+ /*
+  * Control parameters used by ext4_htree_next_block
+--- a/fs/ext4/hash.c
++++ b/fs/ext4/hash.c
+@@ -200,8 +200,8 @@ int ext4fs_dirhash(const char *name, int
+ 		return -1;
+ 	}
+ 	hash = hash & ~1;
+-	if (hash == (EXT4_HTREE_EOF << 1))
+-		hash = (EXT4_HTREE_EOF-1) << 1;
++	if (hash == (EXT4_HTREE_EOF_32BIT << 1))
++		hash = (EXT4_HTREE_EOF_32BIT - 1) << 1;
+ 	hinfo->hash = hash;
+ 	hinfo->minor_hash = minor_hash;
+ 	return 0;
 
