@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab3KYOCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58968 "EHLO
+	id S1757011Ab3KYOCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:42 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58911 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754020Ab3KYNxu (ORCPT
+	by vger.kernel.org with ESMTP id S1754072Ab3KYNxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:50 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "=?UTF-8?Q?J=C3=BCri=20?=Aedla" <juri.aedla@gmail.com>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Gwendal Grignou" <gwendal@google.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.295382642@decadent.org.uk>
+Message-ID: <lsq.1385387069.85238954@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 04/87] net: heap overflow in __audit_sockaddr()
+Subject: [PATCH 3.2 48/87] libata: make ata_eh_qc_retry() bump
+ scmd->allowed on bogus failures
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,89 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Gwendal Grignou <gwendal@google.com>
 
-[ Upstream commit 1661bf364ae9c506bc8795fef70d1532931be1e8 ]
+commit f13e220161e738c2710b9904dcb3cf8bb0bcce61 upstream.
 
-We need to cap ->msg_namelen or it leads to a buffer overflow when we
-to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
-exploit this bug.
+libata EH decrements scmd->retries when the command failed for reasons
+unrelated to the command itself so that, for example, commands aborted
+due to suspend / resume cycle don't get penalized; however,
+decrementing scmd->retries isn't enough for ATA passthrough commands.
 
-The call tree is:
-___sys_recvmsg()
-  move_addr_to_user()
-    audit_sockaddr()
-      __audit_sockaddr()
+Without this fix, ATA passthrough commands are not resend to the
+drive, and no error is signalled to the caller because:
 
-Reported-by: Jüri Aedla <juri.aedla@gmail.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+- allowed retry count is 1
+- ata_eh_qc_complete fill the sense data, so result is valid
+- sense data is filled with untouched ATA registers.
+
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/compat.c |  2 ++
- net/socket.c | 24 ++++++++++++++++++++----
- 2 files changed, 22 insertions(+), 4 deletions(-)
+ drivers/ata/libata-eh.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/compat.c b/net/compat.c
-index 8c979cc..3139ef2 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -71,6 +71,8 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
- 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
- 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
- 		return -EFAULT;
-+	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
-+		return -EINVAL;
- 	kmsg->msg_name = compat_ptr(tmp1);
- 	kmsg->msg_iov = compat_ptr(tmp2);
- 	kmsg->msg_control = compat_ptr(tmp3);
-diff --git a/net/socket.c b/net/socket.c
-index cf546a3..bf7adaa 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1876,6 +1876,16 @@ struct used_address {
- 	unsigned int name_len;
- };
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1286,14 +1286,14 @@ void ata_eh_qc_complete(struct ata_queue
+  *	should be retried.  To be used from EH.
+  *
+  *	SCSI midlayer limits the number of retries to scmd->allowed.
+- *	scmd->retries is decremented for commands which get retried
++ *	scmd->allowed is incremented for commands which get retried
+  *	due to unrelated failures (qc->err_mask is zero).
+  */
+ void ata_eh_qc_retry(struct ata_queued_cmd *qc)
+ {
+ 	struct scsi_cmnd *scmd = qc->scsicmd;
+-	if (!qc->err_mask && scmd->retries)
+-		scmd->retries--;
++	if (!qc->err_mask)
++		scmd->allowed++;
+ 	__ata_eh_qc_complete(qc);
+ }
  
-+static int copy_msghdr_from_user(struct msghdr *kmsg,
-+				 struct msghdr __user *umsg)
-+{
-+	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
-+		return -EFAULT;
-+	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
-+		return -EINVAL;
-+	return 0;
-+}
-+
- static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
- 			  struct msghdr *msg_sys, unsigned flags,
- 			  struct used_address *used_address)
-@@ -1894,8 +1904,11 @@ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
- 	if (MSG_CMSG_COMPAT & flags) {
- 		if (get_compat_msghdr(msg_sys, msg_compat))
- 			return -EFAULT;
--	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
--		return -EFAULT;
-+	} else {
-+		err = copy_msghdr_from_user(msg_sys, msg);
-+		if (err)
-+			return err;
-+	}
- 
- 	/* do not move before msg_sys is valid */
- 	err = -EMSGSIZE;
-@@ -2110,8 +2123,11 @@ static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
- 	if (MSG_CMSG_COMPAT & flags) {
- 		if (get_compat_msghdr(msg_sys, msg_compat))
- 			return -EFAULT;
--	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
--		return -EFAULT;
-+	} else {
-+		err = copy_msghdr_from_user(msg_sys, msg);
-+		if (err)
-+			return err;
-+	}
- 
- 	err = -EMSGSIZE;
- 	if (msg_sys->msg_iovlen > UIO_MAXIOV)
 
