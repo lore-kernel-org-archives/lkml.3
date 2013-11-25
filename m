@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab3KYSOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:14:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48810 "EHLO mx1.redhat.com"
+	id S1757246Ab3KYSO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:14:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab3KYSOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753758Ab3KYSOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 13:14:18 -0500
-Date: Mon, 25 Nov 2013 16:12:54 -0200
+Date: Mon, 25 Nov 2013 16:06:56 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Avi Kivity <avi.kivity@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
         Eric Dumazet <dada1@cosmosbay.com>,
         Peter Zijlstra <peterz@infradead.org>
 Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131125181254.GB21858@amt.cnet>
+Message-ID: <20131125180656.GA21858@amt.cnet>
 References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
  <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
  <20131122191429.GA13308@amt.cnet>
  <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <5292EE2F.5090305@linux.vnet.ibm.com>
+ <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com>
+ <20131125142351.GA6056@amt.cnet>
+ <20131125142928.GD959@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5292EE2F.5090305@linux.vnet.ibm.com>
+In-Reply-To: <20131125142928.GD959@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
-> >> Also, there is no guarantee of termination (as long as sptes are
-> >> deleted with the correct timing). BTW, can't see any guarantee of
-> >> termination for rculist nulls either (a writer can race with a lockless
-> >> reader indefinately, restarting the lockless walk every time).
+GOn Mon, Nov 25, 2013 at 04:29:28PM +0200, Gleb Natapov wrote:
+> On Mon, Nov 25, 2013 at 12:23:51PM -0200, Marcelo Tosatti wrote:
+> > On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
+> > > On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
+> > > <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> > > >
+> > > > On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > > 
+> > > <snip complicated stuff about parent_pte>
+> > > 
+> > > I'm not really following, but note that parent_pte predates EPT (and
+> > > the use of rcu in kvm), so all the complexity that is the result of
+> > > trying to pack as many list entries into a cache line can be dropped.
+> > > Most setups now would have exactly one list entry, which is handled
+> > > specially antyway.
+> > > 
+> > > Alternatively, the trick of storing multiple entries in one list entry
+> > > can be moved to generic code, it may be useful to others.
 > > 
-> > Hmm, that can be avoided by checking dirty-bitmap before rewalk,
-> > that means, if the dirty-bitmap has been set during lockless write-protection,
-> > it�s unnecessary to write-protect its sptes. Your idea?
-> This idea is based on the fact that the number of rmap is limited by
-> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
-> we can break the rewalk at once, in the case of deleting, we can only
-> rewalk RMAP_RECYCLE_THRESHOLD times.
+> > Yes, can the lockless list walking code be transformed into generic
+> > single-linked list walking? So the correctness can be verified
+> > independently, and KVM becomes a simple user of that interface.
+> > 
+> The code will become simpler but the problem of never ending walk of
+> rculist_nulls will remain.
 
-Please explain in more detail.
+Yes. Hopefully it can be fixed in some way.
+
+> > The simpler version is to maintain lockless walk on depth-1 rmap entries
+> > (and grab the lock once depth-2 entry is found).
+> And release it between each rmap walk or at the very end of write
+> protect?
+
+Or keep it locked until 10 consecutive sptes with depth 1 are found.
 
