@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3KYIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 03:52:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6944 "EHLO mx1.redhat.com"
+	id S1754028Ab3KYIw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 03:52:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22300 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab3KYIss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:48:48 -0500
-Message-Id: <20131125084806.265794765@dhcp-16-126.nay.redhat.com>
-User-Agent: quilt/0.60-1
-Date: Mon, 25 Nov 2013 16:47:01 +0800
-From: dyoung@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com,
-        Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@suse.de>
-Subject-Prefi: [patch @num@/@total@ v4]
-Subject: efi: add a wrapper function efi_map_region_fixed
-References: <20131125084659.182036023@dhcp-16-126.nay.redhat.com>
-Content-Disposition: inline; filename=02-efi-map-fixed-addr.patch
+	id S1753989Ab3KYIwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 03:52:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,766,1378882800"; 
+   d="scan'208";a="439148381"
+Date: Mon, 25 Nov 2013 10:58:31 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpiolib: add missing declarations
+Message-ID: <20131125085831.GO2281@intel.com>
+References: <1385186069-28986-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385186069-28986-1-git-send-email-acourbot@nvidia.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kexec kernel will use saved runtime virtual mapping, so add a
-new function efi_map_region_fixed for directly mapping a md
-to md->virt.
+On Sat, Nov 23, 2013 at 02:54:29PM +0900, Alexandre Courbot wrote:
+> Add missing declarations and include files to avoid warnings during
+> compilation of include/gpio/driver.h.
 
-The md is passed in from 1st kernel, the virtual addr is
-saved in md->virt_addr.
+It would be good to have those warnings included in the changelog as well.
 
-Matt: coding style
-      reuse __map_region
-Boris: Strenthen comment lines to 80 cols.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/efi.h     |    1 +
- arch/x86/platform/efi/efi_32.c |    2 ++
- arch/x86/platform/efi/efi_64.c |   10 ++++++++++
- 3 files changed, 13 insertions(+)
-
---- efi.orig/arch/x86/include/asm/efi.h
-+++ efi/arch/x86/include/asm/efi.h
-@@ -128,6 +128,7 @@ extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
- extern void __init efi_map_region(efi_memory_desc_t *md);
-+extern void __init efi_map_region_fixed(efi_memory_desc_t *md);
- extern void efi_sync_low_kernel_mappings(void);
- extern void efi_setup_page_tables(void);
- extern void __init old_map_region(efi_memory_desc_t *md);
---- efi.orig/arch/x86/platform/efi/efi_64.c
-+++ efi/arch/x86/platform/efi/efi_64.c
-@@ -199,6 +199,16 @@ void __init efi_map_region(efi_memory_de
- 	md->virt_addr = efi_va;
- }
- 
-+/*
-+ * kexec kernel will use efi_map_region_fixed to map efi runtime memory ranges.
-+ * md->virt_addr is the original virtual address which had been mapped in kexec
-+ * 1st kernel.
-+ */
-+void __init efi_map_region_fixed(efi_memory_desc_t *md)
-+{
-+	__map_region(md, md->virt_addr);
-+}
-+
- void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
- 				 u32 type, u64 attribute)
- {
---- efi.orig/arch/x86/platform/efi/efi_32.c
-+++ efi/arch/x86/platform/efi/efi_32.c
-@@ -47,6 +47,8 @@ void __init efi_map_region(efi_memory_de
- 	old_map_region(md);
- }
- 
-+void __init efi_map_region_fixed(efi_memory_desc_t *md) {}
-+
- void efi_call_phys_prelog(void)
- {
- 	struct desc_ptr gdt_descr;
-
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
