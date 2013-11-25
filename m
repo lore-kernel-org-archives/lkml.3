@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab3KYN2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:28:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56975 "EHLO
+	id S1757212Ab3KYN3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:29:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56971 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab3KYNHV (ORCPT
+	with ESMTP id S1753755Ab3KYNHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:21 -0500
+	Mon, 25 Nov 2013 08:07:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 08/78] mac80211: correctly close cancelled scans
-Date: Mon, 25 Nov 2013 13:05:55 +0000
-Message-Id: <1385384825-21681-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 07/78] libata: make ata_eh_qc_retry() bump scmd->allowed on bogus failures
+Date: Mon, 25 Nov 2013 13:05:54 +0000
+Message-Id: <1385384825-21681-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -28,92 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Gwendal Grignou <gwendal@google.com>
 
-commit a754055a1296fcbe6f32de3a5eaca6efb2fd1865 upstream.
+commit f13e220161e738c2710b9904dcb3cf8bb0bcce61 upstream.
 
-__ieee80211_scan_completed is called from a worker. This
-means that the following flow is possible.
+libata EH decrements scmd->retries when the command failed for reasons
+unrelated to the command itself so that, for example, commands aborted
+due to suspend / resume cycle don't get penalized; however,
+decrementing scmd->retries isn't enough for ATA passthrough commands.
 
- * driver calls ieee80211_scan_completed
- * mac80211 cancels the scan (that is already complete)
- * __ieee80211_scan_completed runs
+Without this fix, ATA passthrough commands are not resend to the
+drive, and no error is signalled to the caller because:
 
-When scan_work will finally run, it will see that the scan
-hasn't been aborted and might even trigger another scan on
-another band. This leads to a situation where cfg80211's
-scan is not done and no further scan can be issued.
+- allowed retry count is 1
+- ata_eh_qc_complete fill the sense data, so result is valid
+- sense data is filled with untouched ATA registers.
 
-Fix this by setting a new flag when a HW scan is being
-cancelled so that no other scan will be triggered.
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Gwendal Grignou <gwendal@google.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/ieee80211_i.h |  3 +++
- net/mac80211/scan.c        | 19 +++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ drivers/ata/libata-eh.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 38ba70e..73d195e 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -808,6 +808,8 @@ struct tpt_led_trigger {
-  *	that the scan completed.
-  * @SCAN_ABORTED: Set for our scan work function when the driver reported
-  *	a scan complete for an aborted scan.
-+ * @SCAN_HW_CANCELLED: Set for our scan work function when the scan is being
-+ *	cancelled.
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 85fe5bc..1e2a1dd 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1287,14 +1287,14 @@ void ata_eh_qc_complete(struct ata_queued_cmd *qc)
+  *	should be retried.  To be used from EH.
+  *
+  *	SCSI midlayer limits the number of retries to scmd->allowed.
+- *	scmd->retries is decremented for commands which get retried
++ *	scmd->allowed is incremented for commands which get retried
+  *	due to unrelated failures (qc->err_mask is zero).
   */
- enum {
- 	SCAN_SW_SCANNING,
-@@ -815,6 +817,7 @@ enum {
- 	SCAN_ONCHANNEL_SCANNING,
- 	SCAN_COMPLETED,
- 	SCAN_ABORTED,
-+	SCAN_HW_CANCELLED,
- };
+ void ata_eh_qc_retry(struct ata_queued_cmd *qc)
+ {
+ 	struct scsi_cmnd *scmd = qc->scsicmd;
+-	if (!qc->err_mask && scmd->retries)
+-		scmd->retries--;
++	if (!qc->err_mask)
++		scmd->allowed++;
+ 	__ata_eh_qc_complete(qc);
+ }
  
- /**
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index b73ce0a..27b796f 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -233,6 +233,9 @@ static bool ieee80211_prep_hw_scan(struct ieee80211_local *local)
- 	enum ieee80211_band band;
- 	int i, ielen, n_chans;
- 
-+	if (test_bit(SCAN_HW_CANCELLED, &local->scanning))
-+		return false;
-+
- 	do {
- 		if (local->hw_scan_band == IEEE80211_NUM_BANDS)
- 			return false;
-@@ -888,7 +891,23 @@ void ieee80211_scan_cancel(struct ieee80211_local *local)
- 	if (!local->scan_req)
- 		goto out;
- 
-+	/*
-+	 * We have a scan running and the driver already reported completion,
-+	 * but the worker hasn't run yet or is stuck on the mutex - mark it as
-+	 * cancelled.
-+	 */
-+	if (test_bit(SCAN_HW_SCANNING, &local->scanning) &&
-+	    test_bit(SCAN_COMPLETED, &local->scanning)) {
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
-+		goto out;
-+	}
-+
- 	if (test_bit(SCAN_HW_SCANNING, &local->scanning)) {
-+		/*
-+		 * Make sure that __ieee80211_scan_completed doesn't trigger a
-+		 * scan on another band.
-+		 */
-+		set_bit(SCAN_HW_CANCELLED, &local->scanning);
- 		if (local->ops->cancel_hw_scan)
- 			drv_cancel_hw_scan(local, local->scan_sdata);
- 		goto out;
 -- 
 1.8.3.2
 
