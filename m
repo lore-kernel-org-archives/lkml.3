@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab3KYOLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:11:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59006 "EHLO
+	id S1757090Ab3KYOLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:11:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58920 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754366Ab3KYNxp (ORCPT
+	by vger.kernel.org with ESMTP id S1754101Ab3KYNxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:45 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Chris Murphy" <chris@cmurf.com>,
-        "Henrik Rydberg" <rydberg@euromail.se>
+CC: akpm@linux-foundation.org, "Ian Campbell" <ian.campbell@citrix.com>,
+        "Jason Luan" <jianhai.luan@oracle.com>,
+        "Wei Liu" <wei.liu2@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "David Vrabel" <david.vrabel@citrix.com>,
+        "Jan Beulich" <jbeulich@suse.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.598097129@decadent.org.uk>
+Message-ID: <lsq.1385387069.129534761@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 51/87] hwmon: (applesmc) Always read until end of data
+Subject: [PATCH 3.2 29/87] xen-netback: use jiffies_64 value to calculate
+ credit  timeout
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,71 +36,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit 25f2bd7f5add608c1d1405938f39c96927b275ca upstream.
+[ Upstream commit 059dfa6a93b779516321e5112db9d7621b1367ba ]
 
-The crash reported and investigated in commit 5f4513 turned out to be
-caused by a change to the read interface on newer (2012) SMCs.
+time_after_eq() only works if the delta is < MAX_ULONG/2.
 
-Tests by Chris show that simply reading the data valid line is enough
-for the problem to go away. Additional tests show that the newer SMCs
-no longer wait for the number of requested bytes, but start sending
-data right away.  Apparently the number of bytes to read is no longer
-specified as before, but instead found out by reading until end of
-data. Failure to read until end of data confuses the state machine,
-which eventually causes the crash.
+For a 32bit Dom0, if netfront sends packets at a very low rate, the time
+between subsequent calls to tx_credit_exceeded() may exceed MAX_ULONG/2
+and the test for timer_after_eq() will be incorrect. Credit will not be
+replenished and the guest may become unable to send packets (e.g., if
+prior to the long gap, all credit was exhausted).
 
-As a remedy, assuming bit0 is the read valid line, make sure there is
-nothing more to read before leaving the read function.
+Use jiffies_64 variant to mitigate this problem for 32bit Dom0.
 
-Tested to resolve the original problem, and runtested on MBA3,1,
-MBP4,1, MBP8,2, MBP10,1, MBP10,2. The patch seems to have no effect on
-machines before 2012.
-
-Tested-by: Chris Murphy <chris@cmurf.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-[bwh: Backported to 3.2: adjust context]
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jason Luan <jianhai.luan@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/applesmc.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/net/xen-netback/common.h    |  1 +
+ drivers/net/xen-netback/interface.c |  3 +--
+ drivers/net/xen-netback/netback.c   | 10 +++++-----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -212,6 +212,7 @@ static int send_argument(const char *key
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 9d7f172..093bf0a 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -88,6 +88,7 @@ struct xenvif {
+ 	unsigned long   credit_usec;
+ 	unsigned long   remaining_credit;
+ 	struct timer_list credit_timeout;
++	u64 credit_window_start;
  
- static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 	/* Statistics */
+ 	unsigned long rx_gso_checksum_fixup;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 8eaf0e2..2cb9c92 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -272,8 +272,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
+-	/* Initialize 'expires' now: it's used to track the credit window. */
+-	vif->credit_timeout.expires = jiffies;
++	vif->credit_window_start = get_jiffies_64();
+ 
+ 	dev->netdev_ops	= &xenvif_netdev_ops;
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index fd2b92d..9a4626c 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1365,9 +1365,8 @@ out:
+ 
+ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
  {
-+	u8 status, data = 0;
- 	int i;
+-	unsigned long now = jiffies;
+-	unsigned long next_credit =
+-		vif->credit_timeout.expires +
++	u64 now = get_jiffies_64();
++	u64 next_credit = vif->credit_window_start +
+ 		msecs_to_jiffies(vif->credit_usec / 1000);
  
- 	if (send_command(cmd) || send_argument(key)) {
-@@ -219,6 +220,7 @@ static int read_smc(u8 cmd, const char *
- 		return -EIO;
+ 	/* Timer could already be pending in rare cases. */
+@@ -1375,8 +1374,8 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ 		return true;
+ 
+ 	/* Passed the point where we can replenish credit? */
+-	if (time_after_eq(now, next_credit)) {
+-		vif->credit_timeout.expires = now;
++	if (time_after_eq64(now, next_credit)) {
++		vif->credit_window_start = now;
+ 		tx_add_credit(vif);
  	}
  
-+	/* This has no effect on newer (2012) SMCs */
- 	outb(len, APPLESMC_DATA_PORT);
+@@ -1388,6 +1387,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+ 			tx_credit_callback;
+ 		mod_timer(&vif->credit_timeout,
+ 			  next_credit);
++		vif->credit_window_start = next_credit;
  
- 	for (i = 0; i < len; i++) {
-@@ -229,6 +231,17 @@ static int read_smc(u8 cmd, const char *
- 		buffer[i] = inb(APPLESMC_DATA_PORT);
+ 		return true;
  	}
- 
-+	/* Read the data port until bit0 is cleared */
-+	for (i = 0; i < 16; i++) {
-+		udelay(APPLESMC_MIN_WAIT);
-+		status = inb(APPLESMC_CMD_PORT);
-+		if (!(status & 0x01))
-+			break;
-+		data = inb(APPLESMC_DATA_PORT);
-+	}
-+	if (i)
-+		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
-+
- 	return 0;
- }
- 
 
