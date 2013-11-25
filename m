@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab3KYOVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:21:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42761 "EHLO
+	id S1758110Ab3KYOVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:21:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42758 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757965Ab3KYOSJ (ORCPT
+	with ESMTP id S1757372Ab3KYOSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:18:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/25] perf timechart: Add option to limit number of tasks
-Date: Mon, 25 Nov 2013 11:17:45 -0300
-Message-Id: <1385389075-7989-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/25] perf script: Move evname print code to process_event()
+Date: Mon, 25 Nov 2013 11:17:39 -0300
+Message-Id: <1385389075-7989-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -27,68 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Add -n option to specify min. number of tasks to print.
+The print_sample_start() will be reused by other printing routine for
+internal events like COMM, FORK and EXIT from next patch.  And because
+they're not tied to a specific event, move the evname print code to its
+caller.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383323151-19810-3-git-send-email-stfomichev@yandex-team.ru
+Link: http://lkml.kernel.org/r/1384752894-10974-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-timechart.txt | 4 ++++
- tools/perf/builtin-timechart.c              | 5 ++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ tools/perf/builtin-script.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 3ff8bd4f0b4d..4373144a43b4 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -54,6 +54,10 @@ $ perf timechart
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index baf17989a216..b392770766dd 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -288,7 +288,6 @@ static void print_sample_start(struct perf_sample *sample,
+ 			       struct perf_evsel *evsel)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	const char *evname = NULL;
+ 	unsigned long secs;
+ 	unsigned long usecs;
+ 	unsigned long long nsecs;
+@@ -323,11 +322,6 @@ static void print_sample_start(struct perf_sample *sample,
+ 		usecs = nsecs / NSECS_PER_USEC;
+ 		printf("%5lu.%06lu: ", secs, usecs);
+ 	}
+-
+-	if (PRINT_FIELD(EVNAME)) {
+-		evname = perf_evsel__name(evsel);
+-		printf("%s: ", evname ? evname : "[unknown]");
+-	}
+ }
  
-   Written 10.2 seconds of trace to output.svg.
+ static bool is_bts_event(struct perf_event_attr *attr)
+@@ -434,6 +428,11 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
  
-+-n::
-+--proc-num::
-+        Print task info for at least given number of tasks.
+ 	print_sample_start(sample, thread, evsel);
+ 
++	if (PRINT_FIELD(EVNAME)) {
++		const char *evname = perf_evsel__name(evsel);
++		printf("%s: ", evname ? evname : "[unknown]");
++	}
 +
- SEE ALSO
- --------
- linkperf:perf-record[1]
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index bb21e57ff9bb..c352be418f98 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -41,6 +41,7 @@
- #define SUPPORT_OLD_POWER_EVENTS 1
- #define PWR_EVENT_EXIT -1
- 
-+static int proc_num = 15;
- 
- static unsigned int	numcpus;
- static u64		min_freq;	/* Lowest CPU frequency seen */
-@@ -955,7 +956,7 @@ static void write_svg_file(const char *filename)
- 	do {
- 		count = determine_display_tasks(thresh);
- 		thresh /= 10;
--	} while (!process_filter && thresh && count < 15);
-+	} while (!process_filter && thresh && count < proc_num);
- 
- 	open_svg(filename, numcpus, count, first_time, last_time);
- 
-@@ -1102,6 +1103,8 @@ int cmd_timechart(int argc, const char **argv,
- 		       parse_process),
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
-+	OPT_INTEGER('n', "proc-num", &proc_num,
-+		    "min. number of tasks to print"),
- 	OPT_END()
- 	};
- 	const char * const timechart_usage[] = {
+ 	if (is_bts_event(attr)) {
+ 		print_sample_bts(event, sample, evsel, machine, thread);
+ 		return;
 -- 
 1.8.1.4
 
