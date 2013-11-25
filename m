@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3KYCJA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 21:09:00 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:20821
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752965Ab3KYCI5 (ORCPT
+	id S1753410Ab3KYCJe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 21:09:34 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:56813 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab3KYCJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 21:08:57 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI1432I14ffIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 25 Nov 2013 10:11:03 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <b42378@freescale.com>
-CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <s.hauer@pengutronix.de>, <timur@tabi.org>, <broonie@kernel.org>,
-        <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <pawel.moll@arm.com>,
-        <linux-doc@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <dmaengine@vger.kernel.org>, <ijc+devicetree@hellion.org.uk>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 0/4] Add dual-fifo mode support of i.MX ssi
-Message-ID: <20131125021101.GA11613@S2101-09.ap.freescale.net>
-References: <cover.1384352281.git.b42378@freescale.com>
- <20131122163132.GB17344@MrMyself>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131122163132.GB17344@MrMyself>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Sun, 24 Nov 2013 21:09:30 -0500
+From: Shawn Landden <shawn@churchofgit.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
+        Shawn Landden <shawn@churchofgit.com>
+Subject: [PATCH] update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Sun, 24 Nov 2013 18:08:59 -0800
+Message-Id: <1385345339-2184-1-git-send-email-shawn@churchofgit.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 23, 2013 at 12:31:32AM +0800, Nicolin Chen wrote:
-> Hi all,
-> 
->    I'm sorry to push this. But this series has been an orphan for a while.
->    Could any one please receive and foster it?
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
-Vinod,
+algif_hash and algif_skcipher used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
 
-I expect you will pick up the series.  But otherwise, I can apply it via
-IMX tree with your ACKs on the first two patches.
+This fixes sendfile() on AF_ALG.
 
-Shawn
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: <stable@vger.kernel.org> # 3.4.x + 3.2.x
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+---
+ crypto/algif_hash.c     | 3 +++
+ crypto/algif_skcipher.c | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index ef5356c..8502462 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+ 	struct hash_ctx *ctx = ask->private;
+ 	int err;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 6a6dfc0..a19c027 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
+ 	struct skcipher_sg_list *sgl;
+ 	int err = -EINVAL;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+-- 
+1.8.4.4
 
