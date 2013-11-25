@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3KYNWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:22:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57133 "EHLO
+	id S1756899Ab3KYNW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:22:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57143 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab3KYNIB (ORCPT
+	with ESMTP id S1754350Ab3KYNIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:01 -0500
+	Mon, 25 Nov 2013 08:08:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
-        Jason Luan <jianhai.luan@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 35/78] xen-netback: use jiffies_64 value to calculate credit timeout
-Date: Mon, 25 Nov 2013 13:06:22 +0000
-Message-Id: <1385384825-21681-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 38/78] ALSA: hda - Move one-time init codes from generic_hdmi_init()
+Date: Mon, 25 Nov 2013 13:06:25 +0000
+Message-Id: <1385384825-21681-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -29,94 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 059dfa6a93b779516321e5112db9d7621b1367ba upstream.
+commit 8b8d654b55648561287bd8baca0f75f964a17038 upstream.
 
-time_after_eq() only works if the delta is < MAX_ULONG/2.
+The codes to initialize work struct or create a proc interface should
+be called only once and never although it's called many times through
+the init callback.  Move that stuff into patch_generic_hdmi() so that
+it's called only once.
 
-For a 32bit Dom0, if netfront sends packets at a very low rate, the time
-between subsequent calls to tx_credit_exceeded() may exceed MAX_ULONG/2
-and the test for timer_after_eq() will be incorrect. Credit will not be
-replenished and the guest may become unable to send packets (e.g., if
-prior to the long gap, all credit was exhausted).
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-Use jiffies_64 variant to mitigate this problem for 32bit Dom0.
+This is being backported to 3.4 and 3.5 due to prevention of kernel
+panic. The kernel panic was observed by executing
+'cat /proc/asound/card0/codec0' on a particular machine, which was
+ - running in battery mode
+ - having an external HDMI monitor connected
+ - running the fglrx driver.
 
-Suggested-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jason Luan <jianhai.luan@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In short, the one-time init code initializes a delayed_work struct.
+Then, I believe the following happened:
+ 1) the delayed_work was activated
+ 2) the delayed_work struct was reinitialized by the init code
+ 3) when the delayed_work timed out (ready to run the callback function),
+    the kernel panic happened because the delayed_work struct had
+    been corrupted in step 2.
+
+BugLink: https://bugs.launchpad.net/bugs/1212160
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/xen-netback/common.h    |  1 +
- drivers/net/xen-netback/interface.c |  3 +--
- drivers/net/xen-netback/netback.c   | 10 +++++-----
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_hdmi.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 9d7f172..093bf0a 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -88,6 +88,7 @@ struct xenvif {
- 	unsigned long   credit_usec;
- 	unsigned long   remaining_credit;
- 	struct timer_list credit_timeout;
-+	u64 credit_window_start;
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index c3cd1f8..769ba9b 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1283,23 +1283,34 @@ static int generic_hdmi_build_controls(struct hda_codec *codec)
+ 	return 0;
+ }
  
- 	/* Statistics */
- 	unsigned long rx_gso_checksum_fixup;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 221f426..cfaaf68 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -273,8 +273,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 	vif->credit_bytes = vif->remaining_credit = ~0UL;
- 	vif->credit_usec  = 0UL;
- 	init_timer(&vif->credit_timeout);
--	/* Initialize 'expires' now: it's used to track the credit window. */
--	vif->credit_timeout.expires = jiffies;
-+	vif->credit_window_start = get_jiffies_64();
- 
- 	dev->netdev_ops	= &xenvif_netdev_ops;
- 	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 228607b..3d0f22a 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1364,9 +1364,8 @@ out:
- 
- static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+-static int generic_hdmi_init(struct hda_codec *codec)
++static int generic_hdmi_init_per_pins(struct hda_codec *codec)
  {
--	unsigned long now = jiffies;
--	unsigned long next_credit =
--		vif->credit_timeout.expires +
-+	u64 now = get_jiffies_64();
-+	u64 next_credit = vif->credit_window_start +
- 		msecs_to_jiffies(vif->credit_usec / 1000);
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx;
  
- 	/* Timer could already be pending in rare cases. */
-@@ -1374,8 +1373,8 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
- 		return true;
+ 	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
+ 		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
+-		hda_nid_t pin_nid = per_pin->pin_nid;
+ 		struct hdmi_eld *eld = &per_pin->sink_eld;
  
- 	/* Passed the point where we can replenish credit? */
--	if (time_after_eq(now, next_credit)) {
--		vif->credit_timeout.expires = now;
-+	if (time_after_eq64(now, next_credit)) {
-+		vif->credit_window_start = now;
- 		tx_add_credit(vif);
+-		hdmi_init_pin(codec, pin_nid);
+-		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
+-
+ 		per_pin->codec = codec;
+ 		INIT_DELAYED_WORK(&per_pin->work, hdmi_repoll_eld);
+ 		snd_hda_eld_proc_new(codec, eld, pin_idx);
  	}
- 
-@@ -1387,6 +1386,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
- 			tx_credit_callback;
- 		mod_timer(&vif->credit_timeout,
- 			  next_credit);
-+		vif->credit_window_start = next_credit;
- 
- 		return true;
++	return 0;
++}
++
++static int generic_hdmi_init(struct hda_codec *codec)
++{
++	struct hdmi_spec *spec = codec->spec;
++	int pin_idx;
++
++	for (pin_idx = 0; pin_idx < spec->num_pins; pin_idx++) {
++		struct hdmi_spec_per_pin *per_pin = &spec->pins[pin_idx];
++		hda_nid_t pin_nid = per_pin->pin_nid;
++
++		hdmi_init_pin(codec, pin_nid);
++		snd_hda_jack_detect_enable(codec, pin_nid, pin_nid);
++	}
+ 	snd_hda_jack_report_sync(codec);
+ 	return 0;
+ }
+@@ -1344,6 +1355,7 @@ static int patch_generic_hdmi(struct hda_codec *codec)
+ 		return -EINVAL;
  	}
+ 	codec->patch_ops = generic_hdmi_patch_ops;
++	generic_hdmi_init_per_pins(codec);
+ 
+ 	init_channel_allocations();
+ 
 -- 
 1.8.3.2
 
