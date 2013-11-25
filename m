@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab3KYOGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58932 "EHLO
+	id S1757343Ab3KYOGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59037 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754212Ab3KYNxr (ORCPT
+	by vger.kernel.org with ESMTP id S1754619Ab3KYNxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:47 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,22 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oliver Neukum" <oneukum@suse.de>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
+        "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
+        "Jens Axboe" <axboe@kernel.dk>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Simon Baatz" <gmbnomis@gmail.com>,
+        "Ming Lei" <ming.lei@canonical.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Aaro Koskinen" <aaro.koskinen@iki.fi>,
+        "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Tejun Heo" <tj@kernel.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.301958433@decadent.org.uk>
+Message-ID: <lsq.1385387069.245392394@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 54/87] xhci: quirk for extra long delay for S4
+Subject: [PATCH 3.2 87/87] lib/scatterlist.c: don't flush_kernel_dcache_page
+ on slab page
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,79 +41,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 455f58925247e8a1a1941e159f3636ad6ee4c90b upstream.
+commit 3d77b50c5874b7e923be946ba793644f82336b75 upstream.
 
-It has been reported that this chipset really cannot
-sleep without this extraordinary delay.
+Commit b1adaf65ba03 ("[SCSI] block: add sg buffer copy helper
+functions") introduces two sg buffer copy helpers, and calls
+flush_kernel_dcache_page() on pages in SG list after these pages are
+written to.
 
-This patch should be backported, in order to ensure this host functions
-under stable kernels.  The last quirk for Fresco Logic hosts (commit
-bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 "xhci: Extend Fresco Logic MSI
-quirk.") was backported to stable kernels as old as 2.6.36.
+Unfortunately, the commit may introduce a potential bug:
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use xhci_dbg() instead of xhci_dbg_trace()]
+ - Before sending some SCSI commands, kmalloc() buffer may be passed to
+   block layper, so flush_kernel_dcache_page() can see a slab page
+   finally
+
+ - According to cachetlb.txt, flush_kernel_dcache_page() is only called
+   on "a user page", which surely can't be a slab page.
+
+ - ARCH's implementation of flush_kernel_dcache_page() may use page
+   mapping information to do optimization so page_mapping() will see the
+   slab page, then VM_BUG_ON() is triggered.
+
+Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
+and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
+before calling flush_kernel_dcache_page().
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Tested-by: Simon Baatz <gmbnomis@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-pci.c | 8 ++++++++
- drivers/usb/host/xhci.c     | 7 ++++++-
- drivers/usb/host/xhci.h     | 1 +
- 3 files changed, 15 insertions(+), 1 deletion(-)
+ lib/scatterlist.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -67,6 +67,14 @@ static void xhci_pci_quirks(struct devic
- 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
- 					" endpoint cmd after reset endpoint\n");
- 		}
-+		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
-+				pdev->revision == 0x4) {
-+			xhci->quirks |= XHCI_SLOW_SUSPEND;
-+			xhci_dbg(xhci,
-+				"QUIRK: Fresco Logic xHC revision %u"
-+				"must be suspended extra slowly",
-+				pdev->revision);
-+		}
- 		/* Fresco Logic confirms: all revisions of this chip do not
- 		 * support MSI, even though some of them claim to in their PCI
- 		 * capabilities.
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -869,6 +869,7 @@ static void xhci_clear_command_ring(stru
- int xhci_suspend(struct xhci_hcd *xhci)
- {
- 	int			rc = 0;
-+	unsigned int		delay = XHCI_MAX_HALT_USEC;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	u32			command;
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -419,7 +419,8 @@ void sg_miter_stop(struct sg_mapping_ite
+ 	if (miter->addr) {
+ 		miter->__offset += miter->consumed;
  
-@@ -887,8 +888,12 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command = xhci_readl(xhci, &xhci->op_regs->command);
- 	command &= ~CMD_RUN;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
-+
-+	/* Some chips from Fresco Logic need an extraordinary delay */
-+	delay *= (xhci->quirks & XHCI_SLOW_SUSPEND) ? 10 : 1;
-+
- 	if (handshake(xhci, &xhci->op_regs->status,
--		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
-+		      STS_HALT, STS_HALT, delay)) {
- 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1493,6 +1493,7 @@ struct xhci_hcd {
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
- #define XHCI_AVOID_BEI		(1 << 15)
-+#define XHCI_SLOW_SUSPEND	(1 << 17)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+-		if (miter->__flags & SG_MITER_TO_SG)
++		if ((miter->__flags & SG_MITER_TO_SG) &&
++		    !PageSlab(miter->page))
+ 			flush_kernel_dcache_page(miter->page);
+ 
+ 		if (miter->__flags & SG_MITER_ATOMIC) {
 
