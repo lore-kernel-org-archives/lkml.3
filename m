@@ -1,193 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3KYLGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:06:08 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:51693 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab3KYLGB (ORCPT
+	id S1753109Ab3KYLGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:06:05 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:8715 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3KYLGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 06:06:01 -0500
-MIME-Version: 1.0
-X-Originating-IP: [182.73.239.130]
-In-Reply-To: <529316D3.8030301@arm.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-	<529316D3.8030301@arm.com>
-Date: Mon, 25 Nov 2013 16:35:58 +0530
-Message-ID: <CAAhSdy3ga1WEVdvhDNyMyKBMoV5x0RWB2WUikhfV1KNTmAPuPA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Anup Patel <anup@brainfault.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Feng Kan <fkan@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Vinayak Kale <vinayak.kale@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Kumar Sankaran <ksankaran@apm.com>, Loc Ho <lho@apm.com>,
-        patches@apm.com
-Content-Type: text/plain; charset=ISO-8859-1
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f126d00000418c-74-52932f17ac40
+Content-transfer-encoding: 8BIT
+Message-id: <1385377506.26319.159.camel@kjgkr>
+Subject: Re: [f2fs-dev][PATCH V2 3/6] f2fs: Add a new function:
+ f2fs_reserve_block()
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Huajun Li <huajun.li.lee@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Huajun Li <huajun.li@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Weihong Xu <weihong.xu@intel.com>
+Date: Mon, 25 Nov 2013 20:05:06 +0900
+In-reply-to: <1384096401-25169-4-git-send-email-huajun.li.lee@gmail.com>
+References: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
+ <1384096401-25169-4-git-send-email-huajun.li.lee@gmail.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zQ11x/clBBideKFi8PKRpceZZB6PF
+	li0xFl/777BZXFrkbrFn70kWi8u75rBZbDr5i9WBw2PnrLvsHov3vGTymHcy0GP3gs9MHn1b
+	VjF6fN4kF8AWxWWTkpqTWZZapG+XwJVxfsZU5oIWzYrH9w6yNzC2KXQxcnJICJhIzPjdwAhh
+	i0lcuLeerYuRi0NIYBmjxKuFK1lhis6++8kEkZjOKLHwZis7SIJXQFDix+R7LF2MHBzMAvIS
+	Ry5lg4SZBdQlJs1bxAxR/4pRYtOTy0wQ9XoST2acZgGxhQXCJBYt6WUD6WUT0JbYvN8AJCwk
+	oCjxdv9dsL0iQHNev5jLCjKHWeAWo8TD1iNgu1gEVCX2vdMCqeEU8JB4s/A/C8SuVkaJy/tX
+	g93GLyAqcXjhdmaIB5Qkdrd3soMUSQj8ZZdY1niGDSTBIiAg8W3yIbChEgKyEpsOQNVLShxc
+	cYNlAqPELCRvzkJ4cxaSNxcwMq9iFE0tSC4oTkovMtErTswtLs1L10vOz93ECInYCTsY7x2w
+	PsSYDLRxIrOUaHI+MOLzSuINjc2MLExNTI2NzC3NSBNWEudVe5QUJCSQnliSmp2aWpBaFF9U
+	mpNafIiRiYNTqoEx6KfxFc+OX+sbWrYE1YffLPrcNim9We53UYZS9tua0Bipf48SdrsyvL5x
+	MrjDwOGe1fZT/ZPWqlqKGB70Oqj17/bL3K+7BT9MCC5y2VhbN1lw/sHvUon1VgFxstd0TZb+
+	vfhK8fNT9+en2Ca9udaR/Lhvx+MQllvibWIvr96qT7M6W3lS0vKkEktxRqKhFnNRcSIARMKF
+	Ne4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jQV1x/clBBo+uSVu8PKRpceZZB6PF
+	li0xFl/777BZXFrkbrFn70kWi8u75rBZbDr5i9WBw2PnrLvsHov3vGTymHcy0GP3gs9MHn1b
+	VjF6fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQN0jZJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/yMqcwFLZoV
+	j+8dZG9gbFPoYuTkkBAwkTj77icThC0mceHeerYuRi4OIYHpjBILb7aygyR4BQQlfky+x9LF
+	yMHBLCAvceRSNkiYWUBdYtK8RcwQ9a8YJTY9ucwEUa8n8WTGaRYQW1ggTGLRkl42kF42AW2J
+	zfsNQMJCAooSb/ffZQWxRYDmvH4xlxVkDrPALUaJh61HwHaxCKhK7HunBVLDKeAh8WbhfxaI
+	Xa2MEpf3rwa7jV9AVOLwwu3MEA8oSexu72SfwCg0C8nZsxDOnoXk7AWMzKsYRVMLkguKk9Jz
+	jfSKE3OLS/PS9ZLzczcxgtPBM+kdjKsaLA4xCnAwKvHwTqyeFCTEmlhWXJl7iFGCg1lJhDdf
+	ZXKQEG9KYmVValF+fFFpTmrxIcZkoMMnMkuJJucDU1VeSbyhsYmZkaWRmYWRibk5acJK4rwH
+	W60DhQTSE0tSs1NTC1KLYLYwcXBKNTCav/qwyS4h91fKstWWR39d5vbbeDPIKOmR/+fwve/W
+	X7m6K/POq/SUpJ2XDWvm7LE5MyVUWGrRwaY/nRxyaYcdd065mhPF69rDnHPhpL7eO0nzHu7n
+	SY+Cuc7VnXKUyZlerrS52lXh7vcprB4L1Z7sl4tc5nVzDmdAyBvbI58PGYdGyp+6qtKkxFKc
+	kWioxVxUnAgAlRyx5UsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding correct "Kumar Sankaran" to CC. My mistake.)
-(Adding back patches@apm.com. It is fixed now).
+Hi Huajun,
 
-On Mon, Nov 25, 2013 at 2:52 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> On 23/11/13 08:41, Anup Patel wrote:
->> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>> [dropping <patches@apm.com> from the CC list, as someone seems to have
->>>  tripped on the config file, and I'm tired of getting bounces]
->>>
->>> Feng,
->>>
->>> On 19/11/13 21:42, Feng Kan wrote:
->>>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
->>>> X-Gene implementation, the FIQ bypass must be enabled at all time.
->>>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
->>>
->>> How comes? Are only PPIs affected? When you say "some PPIs", can you be
->>> more specific?
->>>
->>>> Signed-off-by: Feng Kan <fkan@apm.com>
->>>> ---
->>>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
->>>>  include/linux/irqchip/arm-gic.h |    4 ++--
->>>>  2 files changed, 13 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>> index d0e9480..aa7342e 100644
->>>> --- a/drivers/irqchip/irq-gic.c
->>>> +++ b/drivers/irqchip/irq-gic.c
->>>> @@ -65,6 +65,7 @@ struct gic_chip_data {
->>>>  #endif
->>>>       struct irq_domain *domain;
->>>>       unsigned int gic_irqs;
->>>> +     unsigned int bypass_flag;
->>>>  #ifdef CONFIG_GIC_NON_BANKED
->>>>       void __iomem *(*get_base)(union gic_base *);
->>>>  #endif
->>>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>>
->>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->>>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
->>>>  }
->>>>
->>>>  void gic_cpu_if_down(void)
->>>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->>>>
->>>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->>>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->>>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
->>>>  }
->>>>
->>>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
->>>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
->>>>
->>>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>>                          void __iomem *dist_base, void __iomem *cpu_base,
->>>> -                        u32 percpu_offset, struct device_node *node)
->>>> +                        u32 percpu_offset, u32 bypass_val,
->>>> +                        struct device_node *node)
->>>>  {
->>>>       irq_hw_number_t hwirq_base;
->>>>       struct gic_chip_data *gic;
->>>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>>
->>>>       set_handle_irq(gic_handle_irq);
->>>>
->>>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
->>>
->>> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
->>>
->>>>       gic_chip.flags |= gic_arch_extn.flags;
->>>>       gic_dist_init(gic);
->>>>       gic_cpu_init(gic);
->>>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>>       void __iomem *cpu_base;
->>>>       void __iomem *dist_base;
->>>>       u32 percpu_offset;
->>>> +     u32 bypass_val;
->>>>       int irq;
->>>>
->>>>       if (WARN_ON(!node))
->>>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->>>>               percpu_offset = 0;
->>>>
->>>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
->>>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
->>>> +             bypass_val = 0;
->>>
->>> [adding Mark on Cc, so he can comment on the DT parts]
->>>
->>> Where's the DT documentation update? Also, as this is an
->>> implementation-specific quirk, you should consider using a separate
->>> compatible string and move the handling of this issue into some X-Gene
->>> specific code.
->>
->> Adding separate compatible string for X-Gene specific GIC will break
->> VGIC code for X-Gene because VGIC code looks for DT node compatible
->> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
->> code for X-Gene.
->
-> I'm sure you could manage adding another compat string to the vgic code...
->
->> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
->> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
->> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
->
-> Amazing. Someone managed to push the weird-o-meter one level higher.
-> Were you *that* short on PPIs that you had to use these two?
->
->> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
->> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
->> PPI28 (Legacy-FIQ).
->>
->> We should have more cleaner and optional device tree binding for GIC
->> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits for X-Gene.
->
-> Well, here's an alternative approach for you. As you said, this is in no
-> way X-Gene specific, so maybe we should address it directly in the GIC
-> code. Just hook something in the irq_mask/irq_unmask methods, so we can
-> detect the use of these two PPIs, and toggle the bypass flags
-> accordingly bits accordingly.
+I think this clean-up is not related to inline_data series, so I merged
+this patch earlier.
 
-Actually, this might not be a general solution because IRQBypDisGrp0,
-FIQBypDisGrp0, IRQBypDisGrp1 and FIQBypDisGrp1 bits are not present
-in all GIC versions.
+Thanks,
 
-For GICv1 (like you mentioned already), all these bits are reserved.
+2013-11-10 (일), 23:13 +0800, Huajun Li:
+> From: Huajun Li <huajun.li@intel.com>
+> 
+> Add the function f2fs_reserve_block() to easily reserve new blocks, and
+> use it to clean up more codes.
+> 
+> Signed-off-by: Huajun Li <huajun.li@intel.com>
+> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+> Signed-off-by: Weihong Xu <weihong.xu@intel.com>
+> ---
+>  fs/f2fs/data.c |   50 +++++++++++++++++++++++---------------------------
+>  fs/f2fs/f2fs.h |    1 +
+>  fs/f2fs/file.c |   38 ++++++--------------------------------
+>  3 files changed, 30 insertions(+), 59 deletions(-)
+> 
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index aa3438c..92d0724 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -64,6 +64,22 @@ int reserve_new_block(struct dnode_of_data *dn)
+>  	return 0;
+>  }
+>  
+> +int f2fs_reserve_block(struct dnode_of_data *dn, pgoff_t index)
+> +{
+> +	bool need_put = dn->inode_page ? false : true;
+> +	int err;
+> +
+> +	err = get_dnode_of_data(dn, index, ALLOC_NODE);
+> +	if (err)
+> +		return err;
+> +	if (dn->data_blkaddr == NULL_ADDR)
+> +		err = reserve_new_block(dn);
+> +
+> +	if (need_put)
+> +		f2fs_put_dnode(dn);
+> +	return err;
+> +}
+> +
+>  static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+>  					struct buffer_head *bh_result)
+>  {
+> @@ -300,19 +316,10 @@ struct page *get_new_data_page(struct inode *inode,
+>  	int err;
+>  
+>  	set_new_dnode(&dn, inode, npage, npage, 0);
+> -	err = get_dnode_of_data(&dn, index, ALLOC_NODE);
+> +	err = f2fs_reserve_block(&dn, index);
+>  	if (err)
+>  		return ERR_PTR(err);
+>  
+> -	if (dn.data_blkaddr == NULL_ADDR) {
+> -		if (reserve_new_block(&dn)) {
+> -			if (!npage)
+> -				f2fs_put_dnode(&dn);
+> -			return ERR_PTR(-ENOSPC);
+> -		}
+> -	}
+> -	if (!npage)
+> -		f2fs_put_dnode(&dn);
+>  repeat:
+>  	page = grab_cache_page(mapping, index);
+>  	if (!page)
+> @@ -644,21 +651,15 @@ repeat:
+>  	*pagep = page;
+>  
+>  	f2fs_lock_op(sbi);
+> -
+>  	set_new_dnode(&dn, inode, NULL, NULL, 0);
+> -	err = get_dnode_of_data(&dn, index, ALLOC_NODE);
+> -	if (err)
+> -		goto err;
+> -
+> -	if (dn.data_blkaddr == NULL_ADDR)
+> -		err = reserve_new_block(&dn);
+> -
+> -	f2fs_put_dnode(&dn);
+> -	if (err)
+> -		goto err;
+> -
+> +	err = f2fs_reserve_block(&dn, index);
+>  	f2fs_unlock_op(sbi);
+>  
+> +	if (err) {
+> +		f2fs_put_page(page, 1);
+> +		return err;
+> +	}
+> +
+>  	if ((len == PAGE_CACHE_SIZE) || PageUptodate(page))
+>  		return 0;
+>  
+> @@ -691,11 +692,6 @@ out:
+>  	SetPageUptodate(page);
+>  	clear_cold_data(page);
+>  	return 0;
+> -
+> -err:
+> -	f2fs_unlock_op(sbi);
+> -	f2fs_put_page(page, 1);
+> -	return err;
+>  }
+>  
+>  static int f2fs_write_end(struct file *file,
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index cd7d2f9..de84f52 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1119,6 +1119,7 @@ void destroy_checkpoint_caches(void);
+>   * data.c
+>   */
+>  int reserve_new_block(struct dnode_of_data *);
+> +int f2fs_reserve_block(struct dnode_of_data *, pgoff_t);
+>  void update_extent_cache(block_t, struct dnode_of_data *);
+>  struct page *find_data_page(struct inode *, pgoff_t, bool);
+>  struct page *get_lock_data_page(struct inode *, pgoff_t);
+> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> index 7d714f4..1cd8e44 100644
+> --- a/fs/f2fs/file.c
+> +++ b/fs/f2fs/file.c
+> @@ -33,7 +33,6 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
+>  	struct page *page = vmf->page;
+>  	struct inode *inode = file_inode(vma->vm_file);
+>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> -	block_t old_blk_addr;
+>  	struct dnode_of_data dn;
+>  	int err;
+>  
+> @@ -44,24 +43,10 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
+>  	/* block allocation */
+>  	f2fs_lock_op(sbi);
+>  	set_new_dnode(&dn, inode, NULL, NULL, 0);
+> -	err = get_dnode_of_data(&dn, page->index, ALLOC_NODE);
+> -	if (err) {
+> -		f2fs_unlock_op(sbi);
+> -		goto out;
+> -	}
+> -
+> -	old_blk_addr = dn.data_blkaddr;
+> -
+> -	if (old_blk_addr == NULL_ADDR) {
+> -		err = reserve_new_block(&dn);
+> -		if (err) {
+> -			f2fs_put_dnode(&dn);
+> -			f2fs_unlock_op(sbi);
+> -			goto out;
+> -		}
+> -	}
+> -	f2fs_put_dnode(&dn);
+> +	err = f2fs_reserve_block(&dn, page->index);
+>  	f2fs_unlock_op(sbi);
+> +	if (err)
+> +		goto out;
+>  
+>  	file_update_time(vma->vm_file);
+>  	lock_page(page);
+> @@ -532,22 +517,11 @@ static int expand_inode_data(struct inode *inode, loff_t offset,
+>  
+>  		f2fs_lock_op(sbi);
+>  		set_new_dnode(&dn, inode, NULL, NULL, 0);
+> -		ret = get_dnode_of_data(&dn, index, ALLOC_NODE);
+> -		if (ret) {
+> -			f2fs_unlock_op(sbi);
+> +		ret = f2fs_reserve_block(&dn, index);
+> +		f2fs_unlock_op(sbi);
+> +		if (ret)
+>  			break;
+> -		}
+>  
+> -		if (dn.data_blkaddr == NULL_ADDR) {
+> -			ret = reserve_new_block(&dn);
+> -			if (ret) {
+> -				f2fs_put_dnode(&dn);
+> -				f2fs_unlock_op(sbi);
+> -				break;
+> -			}
+> -		}
+> -		f2fs_put_dnode(&dn);
+> -		f2fs_unlock_op(sbi);
+>  
+>  		if (pg_start == pg_end)
+>  			new_size = offset + len;
 
-For GICv2 without security extensions, the bits IRQBypDisGrp0 and
-FIQBypDisGrp0 are reserved.
+-- 
+Jaegeuk Kim
+Samsung
 
-For GICv2 with security extensions, all bits are available.
-
-As you can see setting these bits may require more info about the
-type of GIC.
-
-I was thinking about having four optional boolean DT flags namely:
-irq-byp-disable-group0, fiq-byp-disable-group0, irq-byp-disable-group1,
-and fiq-byp-disable-group1. This way people can set all (or subset) of
-these bits based on GIC type. What do you think about this approach?
-
->
->         M.
-> --
-> Jazz is not dead. It just smells funny...
->
-
---
-Anup
