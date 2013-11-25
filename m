@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab3KYNUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:20:54 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:9409 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab3KYNUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:20:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 25 Nov 2013 05:14:35 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] clk: tegra: fix pllcx pdiv for Tegra124
-Date: Mon, 25 Nov 2013 15:20:23 +0200
-Message-ID: <1385385623-8952-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1385385623-8952-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1385385623-8952-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1756860Ab3KYNVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:21:07 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45963 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754195Ab3KYNVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 08:21:01 -0500
+Message-ID: <52934E7C.9040102@ti.com>
+Date: Mon, 25 Nov 2013 15:19:56 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Strashko Grygorii <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2 0/6] Update Davinci watchdog driver
+References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <52934B6C.4060308@ti.com>
+In-Reply-To: <52934B6C.4060308@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The post divider field for pllcx on Tegra124 has some more allowed values than
-the one on Tegra114. Fix the code to reflect this.
+On 11/25/2013 03:06 PM, Sekhar Nori wrote:
+> On Monday 18 November 2013 10:48 PM, Ivan Khoronzhuk wrote:
+>> These patches are intended to update Davinci watchdog to use WDT core
+>> and reuse driver for keystone arch, because Keystone uses the similar
+>> IP like Davinci.
+>
+> This series causes a regression on all DaVinci platforms because after
+> the series is applied the watchdog device does not get registered at
+> all. Since you changed the device name please include a patch to fix the
+> platform references too.
+>
+> Thanks,
+> Sekhar
+>
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-tegra124.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Ok, I will replace
 
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index 54af043..863c38b 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -263,8 +263,11 @@ static struct div_nmp pllcx_nmp = {
- static struct pdiv_map pllc_p[] = {
- 	{ .pdiv = 1, .hw_val = 0 },
- 	{ .pdiv = 2, .hw_val = 1 },
-+	{ .pdiv = 3, .hw_val = 2 },
- 	{ .pdiv = 4, .hw_val = 3 },
-+	{ .pdiv = 6, .hw_val = 4 },
- 	{ .pdiv = 8, .hw_val = 5 },
-+	{ .pdiv = 12, .hw_val = 6 },
- 	{ .pdiv = 16, .hw_val = 7 },
- 	{ .pdiv = 0, .hw_val = 0 },
- };
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+Regards,
+Ivan Khoronzhuk
