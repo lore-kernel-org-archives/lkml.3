@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3KYXX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:23:56 -0500
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:60855 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753194Ab3KYXXI (ORCPT
+	id S1753090Ab3KYX0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:26:48 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:51046 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab3KYX0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:23:08 -0500
-To: mingo@kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org, ralf@linux-mips.org,
-        akpm@linux-foundation.org, mpe@ellerman.id.au,
-        felipe.contreras@gmail.com, skuribay@pobox.com,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Message-Id: <d19dc75fca343ec5d9ada75a1400f57330021976.1385418410.git.jbaron@akamai.com>
-In-Reply-To: <cover.1385418410.git.jbaron@akamai.com>
-References: <cover.1385418410.git.jbaron@akamai.com>
-From: Jason Baron <jbaron@akamai.com>
-Subject: [PATCH 2/3 v3] mips: remove panic_timeout settings
-Date: Mon, 25 Nov 2013 23:23:07 +0000 (GMT)
+	Mon, 25 Nov 2013 18:26:45 -0500
+X-AuditID: cbfee68d-b7f1a6d0000055a7-44-5293dcb31230
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Olof Johansson'" <olof@lixom.net>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Marc Zyngier'" <marc.zyngier@arm.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1382533861-12688-1-git-send-email-dianders@chromium.org>
+ <CAD=FV=VHLHL-VxUr_G7CoBQ5UY8t1jbdTCwcGz9BYrR5C3cpAQ@mail.gmail.com>
+ <CAOesGMhfioBLMgmFi7EHrkVys_96KKzBcLp0C8sdLaRs5FMJBw@mail.gmail.com>
+In-reply-to: <CAOesGMhfioBLMgmFi7EHrkVys_96KKzBcLp0C8sdLaRs5FMJBw@mail.gmail.com>
+Subject: RE: [PATCH] ARM: dts: Add max77686 RTC interrupt to cros5250-common
+Date: Tue, 26 Nov 2013 08:26:43 +0900
+Message-id: <1ad301ceea35$cd1eb0f0$675c12d0$@org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7qNF0DufjGWbhjTGCV90sTUHrotQAAVcTQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zI93NdyYHGRxYp2NxdtlBNotNj6+x
+	WlzeNYfN4vZlXou/d/6xWZy6/pnNYsqiw6wW62e8ZnHg8Fgzbw2jR0tzD5vH7IaLLB6bl9R7
+	XDnRxOrRt2UVo8fnTXIB7FFcNimpOZllqUX6dglcGRM+r2EqmMJesb77KUsD4zHWLkZODgkB
+	E4nnq9qhbDGJC/fWs3UxcnEICSxjlPje183UxcgBVtSzwgkiPp1RYtPB21BFfxklZkzpYQcp
+	YhNQlmhs0gcZJCygJbFwSxMLiC0i4CexoXMDmM0s8JpRoq1fFKL3MqPEuQULmUASnALBEsv7
+	J7FDNPtIbJ9xF8xmEVCVmPrqGZjNK2Ao8fPkSjYIW1Dix+R7UEO1JNbvPM4EYctLbF7zlhni
+	aHWJR391IW4wkpj4YzYrRImIxL4X7xhBbpAQaOWQuNNwhhVil4DEt8mHWCB6ZSU2HWCGBIqk
+	xMEVN1gmMErOQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYIfHe
+	u4Px9gHrQ4zJQOsnMkuJJucD00VeSbyhsZmRhamJqbGRuaUZacJK4rxJD5OChATSE0tSs1NT
+	C1KL4otKc1KLDzEycXBKNTBOi/ObuVv8cY9IyOcrP3Ojw93vmbtMDLrGyKguey1EPzzaWOEC
+	R/5hcZ+9/J39i841Gk9VX/00dO27RobYzFPXb9h5psXaxaobXOw31b8290XjX56g6nyLCZGR
+	DX9SFS716prEX5cWkHL59WTy98NMfA+sDspeK/x54MLWGP5rJ7bnVqVeVVFiKc5INNRiLipO
+	BADyPUoiDQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOKsWRmVeSWpSXmKPExsVy+t9jQd3NdyYHGcx9rm5xdtlBNotNj6+x
+	WlzeNYfN4vZlXou/d/6xWZy6/pnNYsqiw6wW62e8ZnHg8Fgzbw2jR0tzD5vH7IaLLB6bl9R7
+	XDnRxOrRt2UVo8fnTXIB7FENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5
+	ibmptkouPgG6bpk5QEcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDMm
+	fF7DVDCFvWJ991OWBsZjrF2MHBwSAiYSPSucuhg5gUwxiQv31rN1MXJxCAlMZ5TYdPA2lPOX
+	UWLGlB52kAY2AWWJxiZ9kAZhAS2JhVuaWEBsEQE/iQ2dG8BsZoHXjBJt/aIQvZcZJc4tWMgE
+	kuAUCJZY3j+JHaLZR2L7jLtgNouAqsTUV8/AbF4BQ4mfJ1eyQdiCEj8m34MaqiWxfudxJghb
+	XmLzmrfMEA+oSzz6qwtxg5HExB+zWSFKRCT2vXjHOIFReBaSSbOQTJqFZNIsJC0LGFlWMYqm
+	FiQXFCel5xrpFSfmFpfmpesl5+duYgQnk2fSOxhXNVgcYhTgYFTi4ZXonBwkxJpYVlyZe4hR
+	goNZSYS3dxJQiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OBiS6vJN7Q2MTMyNLIzMLIxNyc
+	NGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhjnxszQVJpq7Rgxa064bbvX/LOJQtm/9ScG
+	zzm4x0dXN0vc/zhv56Lg7YpH4p4s2Ztd0BF1Knefv+5r28bQ+zHrTm8rU5ip/O8L76IjKhfv
+	THgUvYTnrVggt+XKk5a2/9fXW5YKdzTyyvDJxV3k6hLTTeLY4vcp0vCG5ISoNZ3Jhw3u2ChO
+	0lBiKc5INNRiLipOBABUTbsVagMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ralf Baechle <ralf@linux-mips.org>
+Olof Johansson wrote:
+> 
+> On Mon, Nov 25, 2013 at 3:11 PM, Doug Anderson <dianders@chromium.org>
+> wrote:
+> > Olof or Kukjin,
+> >
+> > On Wed, Oct 23, 2013 at 6:11 AM, Doug Anderson <dianders@chromium.org>
+> wrote:
+> >> Without the interrupt you'll get problems if you enable
+> >> CONFIG_RTC_DRV_MAX77686.  Setup the interrupt properly in the device
+> >> tree.
+> >>
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> ---
+> >>  arch/arm/boot/dts/cros5250-common.dtsi | 12 ++++++++++++
+> >>  1 file changed, 12 insertions(+)
+> >
+> > Would one of you be interested in applying this to your tree, with
+> > Marc's "Tested-by"?  I know there are lots more things to fixup in the
+> > dts, but this is one that I know works.  ;)
+> 
+> Yes, I'll apply this to fixes for 3.13, and mark it for stable 3.12 at
+> least.
+> 
+Olof, thanks.
 
-Now that we have a CONFIG_PANIC_TIMEOUT=x setting, remove the mips settings. The
-default is 0, which means don't reboot on panic.
+Please add my ack on this if you want.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Acked-by: Shinya Kuribayashi <skuribay@pobox.com>
-Signed-off-by: Jason Baron <jbaron@akamai.com>
----
- arch/mips/ar7/setup.c           | 1 -
- arch/mips/emma/markeins/setup.c | 3 ---
- arch/mips/netlogic/xlp/setup.c  | 1 -
- arch/mips/netlogic/xlr/setup.c  | 1 -
- arch/mips/sibyte/swarm/setup.c  | 2 --
- 5 files changed, 8 deletions(-)
-
-diff --git a/arch/mips/ar7/setup.c b/arch/mips/ar7/setup.c
-index 9a357ff..820b7a3 100644
---- a/arch/mips/ar7/setup.c
-+++ b/arch/mips/ar7/setup.c
-@@ -92,7 +92,6 @@ void __init plat_mem_setup(void)
- 	_machine_restart = ar7_machine_restart;
- 	_machine_halt = ar7_machine_halt;
- 	pm_power_off = ar7_machine_power_off;
--	panic_timeout = 3;
- 
- 	io_base = (unsigned long)ioremap(AR7_REGS_BASE, 0x10000);
- 	if (!io_base)
-diff --git a/arch/mips/emma/markeins/setup.c b/arch/mips/emma/markeins/setup.c
-index d710058..9100122 100644
---- a/arch/mips/emma/markeins/setup.c
-+++ b/arch/mips/emma/markeins/setup.c
-@@ -111,9 +111,6 @@ void __init plat_mem_setup(void)
- 	iomem_resource.start = EMMA2RH_IO_BASE;
- 	iomem_resource.end = EMMA2RH_ROM_BASE - 1;
- 
--	/* Reboot on panic */
--	panic_timeout = 180;
--
- 	markeins_sio_setup();
- }
- 
-diff --git a/arch/mips/netlogic/xlp/setup.c b/arch/mips/netlogic/xlp/setup.c
-index 6d981bb..54e75c7 100644
---- a/arch/mips/netlogic/xlp/setup.c
-+++ b/arch/mips/netlogic/xlp/setup.c
-@@ -92,7 +92,6 @@ static void __init xlp_init_mem_from_bars(void)
- 
- void __init plat_mem_setup(void)
- {
--	panic_timeout	= 5;
- 	_machine_restart = (void (*)(char *))nlm_linux_exit;
- 	_machine_halt	= nlm_linux_exit;
- 	pm_power_off	= nlm_linux_exit;
-diff --git a/arch/mips/netlogic/xlr/setup.c b/arch/mips/netlogic/xlr/setup.c
-index 214d123..921be5f 100644
---- a/arch/mips/netlogic/xlr/setup.c
-+++ b/arch/mips/netlogic/xlr/setup.c
-@@ -92,7 +92,6 @@ static void nlm_linux_exit(void)
- 
- void __init plat_mem_setup(void)
- {
--	panic_timeout	= 5;
- 	_machine_restart = (void (*)(char *))nlm_linux_exit;
- 	_machine_halt	= nlm_linux_exit;
- 	pm_power_off	= nlm_linux_exit;
-diff --git a/arch/mips/sibyte/swarm/setup.c b/arch/mips/sibyte/swarm/setup.c
-index 41707a2..3462c83 100644
---- a/arch/mips/sibyte/swarm/setup.c
-+++ b/arch/mips/sibyte/swarm/setup.c
-@@ -134,8 +134,6 @@ void __init plat_mem_setup(void)
- #error invalid SiByte board configuration
- #endif
- 
--	panic_timeout = 5;  /* For debug.  */
--
- 	board_be_handler = swarm_be_handler;
- 
- 	if (xicor_probe())
--- 
-1.8.2
+- Kukjin
 
