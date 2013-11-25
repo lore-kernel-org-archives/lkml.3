@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab3KYNvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:51:19 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40257 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3KYNvQ (ORCPT
+	id S1754195Ab3KYNxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:53:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58843 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753509Ab3KYNxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:51:16 -0500
-Message-ID: <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [GIT PULL] ima: bug fixes for Linus
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Nov 2013 08:51:10 -0500
-In-Reply-To: <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org>
-	 <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org>
-	 <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com>
+	Mon, 25 Nov 2013 08:53:30 -0500
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112513-0928-0000-0000-00000401D864
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <edumazet@google.com>, "Jiri Benc" <jbenc@redhat.com>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.63519382@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 06/87] ipv4: fix ineffective source address selection
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-These are the "essential fixes for regressions".
+------------------
 
-The following changes since commit 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
+From: Jiri Benc <jbenc@redhat.com>
 
-  Revert "KEYS: verify a certificate is signed by a 'trusted' key" (2013-11-23 16:38:17 -0800)
+[ Upstream commit 0a7e22609067ff524fc7bbd45c6951dd08561667 ]
 
-are available in the git repository at:
+When sending out multicast messages, the source address in inet->mc_addr is
+ignored and rewritten by an autoselected one. This is caused by a typo in
+commit 813b3b5db831 ("ipv4: Use caller's on-stack flowi as-is in output
+route lookups").
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity for-linus
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/ipv4/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-for you to fetch changes up to 72ca1bd303a5126d0ce377cff699282b6b38bd86:
-
-  ima: make a copy of template_fmt in template_desc_init_fields() (2013-11-25 07:32:46 -0500)
-
-thanks,
-
-Mimi
-
-----------------------------------------------------------------
-Roberto Sassu (3):
-      ima: do not include field length in template digest calc for ima template
-      ima: do not send field length to userspace for digest of ima template
-      ima: make a copy of template_fmt in template_desc_init_fields()
-
- security/integrity/ima/ima.h              |  6 ++++--
- security/integrity/ima/ima_api.c          |  1 +
- security/integrity/ima/ima_crypto.c       | 17 ++++++++++++-----
- security/integrity/ima/ima_fs.c           | 14 +++++++++++---
- security/integrity/ima/ima_template.c     | 10 ++++++++--
- security/integrity/ima/ima_template_lib.c |  6 +++++-
- 6 files changed, 41 insertions(+), 13 deletions(-)
-
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 94cdbc5..12742b8 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2726,7 +2726,7 @@ static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
+ 							      RT_SCOPE_LINK);
+ 			goto make_route;
+ 		}
+-		if (fl4->saddr) {
++		if (!fl4->saddr) {
+ 			if (ipv4_is_multicast(fl4->daddr))
+ 				fl4->saddr = inet_select_addr(dev_out, 0,
+ 							      fl4->flowi4_scope);
 
