@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab3KYIu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 03:50:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6343 "EHLO mx1.redhat.com"
+	id S1753914Ab3KYIua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 03:50:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab3KYIuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:50:24 -0500
-Message-Id: <20131125084809.658310459@dhcp-16-126.nay.redhat.com>
+	id S1752900Ab3KYIuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 03:50:22 -0500
+Message-Id: <20131125084808.001612497@dhcp-16-126.nay.redhat.com>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Nov 2013 16:47:07 +0800
+Date: Mon, 25 Nov 2013 16:47:04 +0800
 From: dyoung@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -18,71 +18,154 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         matt@console-pimps.org, toshi.kani@hp.com,
         Dave Young <dyoung@redhat.com>
 Subject-Prefi: [patch @num@/@total@ v4]
-Subject: x86: add xloadflags bit for efi runtime support on kexec
+Subject: efi: export more efi table variable to sysfs
 References: <20131125084659.182036023@dhcp-16-126.nay.redhat.com>
-Content-Disposition: inline; filename=08-add-xloadflags-for-kexec-efi-runtime-feature.patch
+Content-Disposition: inline; filename=05-export-more-efi-sysfs-vars.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Old kexec-tools can not load new kernel. The reason is previously kexec-tools
-do not fill efi_info in x86 setup header thus efi init fail and switch
-to noefi boot. In new kexec-tools it will by default fill efi_info and
-pass other efi required infomation to 2nd kernel so kexec kernel efi
-initialization will success finally.
+Export fw_vendor, runtime and config tables physical
+addresses to /sys/firmware/efi/systab becaue kexec
+kernel will need them.
 
-To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
-will check the flag and switch to old logic.
+>From EFI spec these 3 variables will be updated to
+virtual address after entering virtual mode. But
+kernel startup code will need the physical address.
 
 changelog:
-Matt: +&& defined(CONFIG_KEXEC)
-HPA: document the flag.
+Greg: add standalone sysfs files instead of add lines to systab
+Document them as testing ABI
+Greg: use group attrs and is_visible
+Boris: align comments lines
 
 Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- Documentation/x86/boot.txt            |    3 +++
- arch/x86/boot/header.S                |    9 ++++++++-
- arch/x86/include/uapi/asm/bootparam.h |    1 +
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-firmware-efi |   26 +++++++++++++++
+ arch/x86/platform/efi/efi.c                  |    4 ++
+ drivers/firmware/efi/efi.c                   |   44 +++++++++++++++++++++++++++
+ include/linux/efi.h                          |    3 +
+ 4 files changed, 77 insertions(+)
 
---- efi.orig/arch/x86/boot/header.S
-+++ efi/arch/x86/boot/header.S
-@@ -391,7 +391,14 @@ xloadflags:
- #else
- # define XLF23 0
- #endif
--			.word XLF0 | XLF1 | XLF23
+--- efi.orig/drivers/firmware/efi/efi.c
++++ efi/drivers/firmware/efi/efi.c
+@@ -32,6 +32,9 @@ struct efi __read_mostly efi = {
+ 	.hcdp       = EFI_INVALID_TABLE_ADDR,
+ 	.uga        = EFI_INVALID_TABLE_ADDR,
+ 	.uv_systab  = EFI_INVALID_TABLE_ADDR,
++	.fw_vendor  = EFI_INVALID_TABLE_ADDR,
++	.runtime    = EFI_INVALID_TABLE_ADDR,
++	.config_table  = EFI_INVALID_TABLE_ADDR,
+ };
+ EXPORT_SYMBOL(efi);
+ 
+@@ -71,13 +74,54 @@ static ssize_t systab_show(struct kobjec
+ static struct kobj_attribute efi_attr_systab =
+ 			__ATTR(systab, 0400, systab_show, NULL);
+ 
++static ssize_t fw_vendor_show(struct kobject *kobj,
++				struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%lx\n", efi.fw_vendor);
++}
 +
-+#if defined(CONFIG_X86_64) && defined(CONFIG_EFI) && defined(CONFIG_KEXEC)
-+# define XLF4 XLF_EFI_KEXEC
-+#else
-+# define XLF4 0
-+#endif
++static ssize_t runtime_show(struct kobject *kobj,
++				struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%lx\n", efi.runtime);
++}
 +
-+			.word XLF0 | XLF1 | XLF23 | XLF4
- 
- cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
-                                                 #added with boot protocol
---- efi.orig/arch/x86/include/uapi/asm/bootparam.h
-+++ efi/arch/x86/include/uapi/asm/bootparam.h
-@@ -24,6 +24,7 @@
- #define XLF_CAN_BE_LOADED_ABOVE_4G	(1<<1)
- #define XLF_EFI_HANDOVER_32		(1<<2)
- #define XLF_EFI_HANDOVER_64		(1<<3)
-+#define XLF_EFI_KEXEC			(1<<4)
- 
- #ifndef __ASSEMBLY__
- 
---- efi.orig/Documentation/x86/boot.txt
-+++ efi/Documentation/x86/boot.txt
-@@ -608,6 +608,9 @@ Protocol:       2.12+
- 	- If 1, the kernel supports the 64-bit EFI handoff entry point
-           given at handover_offset + 0x200.
- 
-+  Bit 4 (read): XLF_EFI_KEXEC
-+	- If 1, the kernel supports kexec EFI boot with EFI runtime support.
++static ssize_t config_table_show(struct kobject *kobj,
++				struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%lx\n", efi.config_table);
++}
 +
- Field name:	cmdline_size
- Type:		read
- Offset/size:	0x238/4
++static struct kobj_attribute efi_attr_fw_vendor = __ATTR_RO(fw_vendor);
++static struct kobj_attribute efi_attr_runtime = __ATTR_RO(runtime);
++static struct kobj_attribute efi_attr_config_table = __ATTR_RO(config_table);
++
+ static struct attribute *efi_subsys_attrs[] = {
+ 	&efi_attr_systab.attr,
++	&efi_attr_fw_vendor.attr,
++	&efi_attr_runtime.attr,
++	&efi_attr_config_table.attr,
+ 	NULL,	/* maybe more in the future? */
+ };
+ 
++static umode_t efi_attr_is_visible(struct kobject *kobj,
++					struct attribute *attr, int n)
++{
++	umode_t mode = attr->mode;
++
++	if (attr == &efi_attr_fw_vendor.attr)
++		return (efi.fw_vendor == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
++	else if (attr == &efi_attr_runtime.attr)
++		return (efi.runtime == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
++	else if (attr == &efi_attr_config_table.attr)
++		return (efi.config_table == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
++
++	return mode;
++}
++
+ static struct attribute_group efi_subsys_attr_group = {
+ 	.attrs = efi_subsys_attrs,
++	.is_visible = efi_attr_is_visible,
+ };
+ 
+ static struct efivars generic_efivars;
+--- efi.orig/include/linux/efi.h
++++ efi/include/linux/efi.h
+@@ -556,6 +556,9 @@ extern struct efi {
+ 	unsigned long hcdp;		/* HCDP table */
+ 	unsigned long uga;		/* UGA table */
+ 	unsigned long uv_systab;	/* UV system table */
++	unsigned long fw_vendor;	/* fw_vendor */
++	unsigned long runtime;		/* runtime table */
++	unsigned long config_table;	/* config tables */
+ 	efi_get_time_t *get_time;
+ 	efi_set_time_t *set_time;
+ 	efi_get_wakeup_time_t *get_wakeup_time;
+--- efi.orig/arch/x86/platform/efi/efi.c
++++ efi/arch/x86/platform/efi/efi.c
+@@ -653,6 +653,10 @@ void __init efi_init(void)
+ 
+ 	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
+ 
++	efi.config_table = (unsigned long)efi.systab->tables;
++	efi.fw_vendor	 = (unsigned long)efi.systab->fw_vendor;
++	efi.runtime	 = (unsigned long)efi.systab->runtime;
++
+ 	/*
+ 	 * Show what we know for posterity
+ 	 */
+--- /dev/null
++++ efi/Documentation/ABI/testing/sysfs-firmware-efi
+@@ -0,0 +1,26 @@
++What:		/sys/firmware/efi/fw_vendor
++Date:		Nov 2013
++Contact:	Dave Young <dyoung@redhat.org>
++Description:
++		Shows the physical address of firmware vendor in the EFI
++		system table.
++Users:
++		Kexec Mailing List <kexec@lists.infradead.org>
++
++What:		/sys/firmware/efi/runtime
++Date:		Nov 2013
++Contact:	Dave Young <dyoung@redhat.org>
++Description:
++		Shows the physical address of runtime service table in the
++		EFI system table.
++Users:
++		Kexec Mailing List <kexec@lists.infradead.org>
++
++What:		/sys/firmware/efi/config_table
++Date:		Nov 2013
++Contact:	Dave Young <dyoung@redhat.org>
++Description:
++		Shows the physical address of config table in the EFI
++		system table.
++Users:
++		Kexec Mailing List <kexec@lists.infradead.org>
 
