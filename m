@@ -1,193 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3KYP25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:28:57 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:41489 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3KYP1c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:27:32 -0500
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, f.fainelli@gmail.com,
-        bhutchings@solarflare.com, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v2 3/6] net: MOXA ART: add ethtool support
-Date: Mon, 25 Nov 2013 16:27:05 +0100
-Message-Id: <1385393228-22416-3-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1385393228-22416-1-git-send-email-jonas.jensen@gmail.com>
-References: <1385393228-22416-1-git-send-email-jonas.jensen@gmail.com>
+	id S1756798Ab3KYPbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:31:17 -0500
+Received: from tundra.namei.org ([65.99.196.166]:47182 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab3KYPbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:31:11 -0500
+Date: Tue, 26 Nov 2013 02:40:49 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ima: bug fixes for Linus
+In-Reply-To: <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com>
+Message-ID: <alpine.LRH.2.02.1311260235020.9714@tundra.namei.org>
+References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com>  <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com>  <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org>  <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com> 
+ <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org>  <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com> <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add and assign ethtool_ops callback functions.
+On Mon, 25 Nov 2013, Mimi Zohar wrote:
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+> Hi James,
+> 
+> These are the "essential fixes for regressions".
+> 
+> The following changes since commit 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
+> 
+>   Revert "KEYS: verify a certificate is signed by a 'trusted' key" (2013-11-23 16:38:17 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity for-linus
+> 
+> for you to fetch changes up to 72ca1bd303a5126d0ce377cff699282b6b38bd86:
+> 
+>   ima: make a copy of template_fmt in template_desc_init_fields() (2013-11-25 07:32:46 -0500)
+> 
+> thanks,
+> 
+> Mimi
+> 
+> ----------------------------------------------------------------
+> Roberto Sassu (3):
 
-Notes:
-    Thanks for reviewing!
-    
-    Changes since v1:
-    
-    1. declare MOXART_NUM_STATS with ARRAY_SIZE macro
-    2. don't initialise info->n_stats in moxart_get_drvinfo()
-    3. remove "if (!priv->phy_dev) return -ENODEV;"
-       moxart_get_settings(), moxart_set_settings(), moxart_nway_reset()
-    
-    Applies to next-20131125
+>       ima: make a copy of template_fmt in template_desc_init_fields()
 
- drivers/net/ethernet/moxa/moxart_ether.c | 121 +++++++++++++++++++++++++++++++
- 1 file changed, 121 insertions(+)
 
-diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
-index 1b87034..cd46a23 100644
---- a/drivers/net/ethernet/moxa/moxart_ether.c
-+++ b/drivers/net/ethernet/moxa/moxart_ether.c
-@@ -32,6 +32,10 @@
- 
- #include "moxart_ether.h"
- 
-+#define DRV_NAME		"moxart-ethernet"
-+#define DRV_VERSION		"0.2"
-+#define MOXART_NUM_STATS	ARRAY_SIZE(ethtool_stats_keys)
-+
- static inline void moxart_emac_write(struct net_device *ndev,
- 				     unsigned int reg, unsigned long value)
- {
-@@ -64,6 +68,122 @@ static int moxart_set_mac_address(struct net_device *ndev, void *addr)
- 	return 0;
- }
- 
-+static struct {
-+	const char str[ETH_GSTRING_LEN];
-+} ethtool_stats_keys[] = {
-+	{ "tx_ok_mcol_2to15" },
-+	{ "tx_ok_1col" },
-+	{ "rx_frame_pause" },
-+	{ "frame_align_err" },
-+	{ "err_col_late_16" },
-+	{ "err_col_16" },
-+	{ "rx_runt" },
-+	{ "late_col" },
-+	{ "crc_err" },
-+	{ "rx_ftl" },
-+	{ "rx_fifo_full" },
-+	{ "rx_col" },
-+	{ "rx_bcast" },
-+	{ "rx_mcast" },
-+	{ "rx_ok" },
-+	{ "tx_ok" },
-+};
-+
-+static void moxart_get_drvinfo(struct net_device *ndev,
-+			       struct ethtool_drvinfo *info)
-+{
-+	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
-+	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-+	strlcpy(info->bus_info, dev_name(&ndev->dev), sizeof(info->bus_info));
-+}
-+
-+static int moxart_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-+{
-+	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-+
-+	return phy_ethtool_gset(priv->phy_dev, cmd);
-+}
-+
-+static int moxart_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-+{
-+	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-+
-+	return phy_ethtool_sset(priv->phy_dev, cmd);
-+}
-+
-+static int moxart_nway_reset(struct net_device *ndev)
-+{
-+	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-+
-+	return genphy_restart_aneg(priv->phy_dev);
-+}
-+
-+static void moxart_get_ethtool_stats(struct net_device *ndev,
-+				     struct ethtool_stats *estats,
-+				     u64 *tmp_stats)
-+{
-+	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-+	u32 s;
-+	int i = 0;
-+
-+	s = readl(priv->base + REG_TX_COL_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	s = readl(priv->base + REG_RPF_AEP_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	s = readl(priv->base + REG_XM_PG_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	s = readl(priv->base + REG_RUNT_TLC_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	s = readl(priv->base + REG_CRC_FTL_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	s = readl(priv->base + REG_RLC_RCC_COUNTER);
-+	tmp_stats[i++] = s & 0xffff0000;
-+	tmp_stats[i++] = s & 0x0000ffff;
-+	tmp_stats[i++] = readl(priv->base + REG_BROC_COUNTER);
-+	tmp_stats[i++] = readl(priv->base + REG_MULCA_COUNTER);
-+	tmp_stats[i++] = readl(priv->base + REG_XP_COUNTER);
-+	tmp_stats[i++] = readl(priv->base + REG_RP_COUNTER);
-+}
-+
-+static int moxart_get_sset_count(struct net_device *netdev,
-+					int string_set)
-+{
-+	switch (string_set) {
-+	case ETH_SS_STATS:
-+		return MOXART_NUM_STATS;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static void moxart_get_strings(struct net_device *dev, u32 stringset, u8 *data)
-+{
-+	switch (stringset) {
-+	case ETH_SS_STATS:
-+		memcpy(data, &ethtool_stats_keys, sizeof(ethtool_stats_keys));
-+		break;
-+	default:
-+		WARN_ON(1);
-+		break;
-+	}
-+}
-+
-+static const struct ethtool_ops moxart_ethtool_ops = {
-+	.set_settings		= moxart_set_settings,
-+	.get_settings		= moxart_get_settings,
-+	.get_drvinfo		= moxart_get_drvinfo,
-+	.nway_reset		= moxart_nway_reset,
-+	.get_link		= ethtool_op_get_link,
-+	.get_ethtool_stats	= moxart_get_ethtool_stats,
-+	.get_sset_count		= moxart_get_sset_count,
-+	.get_strings		= moxart_get_strings,
-+};
-+
- static int moxart_do_ioctl(struct net_device *ndev, struct ifreq *ir, int cmd)
- {
- 	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-@@ -606,6 +726,7 @@ static int moxart_mac_probe(struct platform_device *pdev)
- 	ndev->irq = irq;
- 
- 	SET_NETDEV_DEV(ndev, &pdev->dev);
-+	SET_ETHTOOL_OPS(ndev, &moxart_ethtool_ops);
- 
- 	ret = register_netdev(ndev);
- 	if (ret) {
+> template_desc_init_fields(char *template_fmt,
+
+That should probably be const char.
+
+Also, the call to kstrdup() results in a memory leak.
+
+
+
+
+
 -- 
-1.8.2.1
-
+James Morris
+<jmorris@namei.org>
