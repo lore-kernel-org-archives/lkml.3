@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab3KYN64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:58:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59019 "EHLO
+	id S1755412Ab3KYOCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58996 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754440Ab3KYNx6 (ORCPT
+	by vger.kernel.org with ESMTP id S1754343Ab3KYNxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:58 -0500
+	Mon, 25 Nov 2013 08:53:50 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>,
+        "wojciech kapuscinski" <wojtask9@wp.pl>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.958344770@decadent.org.uk>
+Message-ID: <lsq.1385387069.623703599@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 64/87] vfs: allow O_PATH file descriptors for fstatfs()
+Subject: [PATCH 3.2 52/87] drm/radeon: fix hw contexts for SUMO2 asics
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: wojciech kapuscinski <wojtask9@wp.pl>
 
-commit 9d05746e7b16d8565dddbe3200faa1e669d23bbf upstream.
+commit 50b8f5aec04ebec7dbdf2adb17220b9148c99e63 upstream.
 
-Olga reported that file descriptors opened with O_PATH do not work with
-fstatfs(), found during further development of ksh93's thread support.
+They have 4 rather than 8.
 
-There is no reason to not allow O_PATH file descriptors here (fstatfs is
-very much a path operation), so use "fdget_raw()".  See commit
-55815f70147d ("vfs: make O_PATH file descriptors usable for 'fstat()'")
-for a very similar issue reported for fstat() by the same team.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=63599
 
-Reported-and-tested-by: ольга крыжановская <olga.kryzhanovska@gmail.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: use fget_raw() not fdget_raw()]
+Signed-off-by: wojciech kapuscinski <wojtask9@wp.pl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/statfs.c | 2 +-
+ drivers/gpu/drm/radeon/evergreen.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/statfs.c
-+++ b/fs/statfs.c
-@@ -86,7 +86,7 @@ int user_statfs(const char __user *pathn
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1797,7 +1797,7 @@ static void evergreen_gpu_init(struct ra
+ 		rdev->config.evergreen.sx_max_export_size = 256;
+ 		rdev->config.evergreen.sx_max_export_pos_size = 64;
+ 		rdev->config.evergreen.sx_max_export_smx_size = 192;
+-		rdev->config.evergreen.max_hw_contexts = 8;
++		rdev->config.evergreen.max_hw_contexts = 4;
+ 		rdev->config.evergreen.sq_num_cf_insts = 2;
  
- int fd_statfs(int fd, struct kstatfs *st)
- {
--	struct file *file = fget(fd);
-+	struct file *file = fget_raw(fd);
- 	int error = -EBADF;
- 	if (file) {
- 		error = vfs_statfs(&file->f_path, st);
+ 		rdev->config.evergreen.sc_prim_fifo_size = 0x40;
 
