@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3KYOC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58936 "EHLO
+	id S1756977Ab3KYOCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58968 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754210Ab3KYNxu (ORCPT
+	by vger.kernel.org with ESMTP id S1754020Ab3KYNxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:50 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "=?UTF-8?Q?J=C3=BCri=20?=Aedla" <juri.aedla@gmail.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.939439002@decadent.org.uk>
+Message-ID: <lsq.1385387069.295382642@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 53/87] xhci: Don't enable/disable RWE on bus
- suspend/resume.
+Subject: [PATCH 3.2 04/87] net: heap overflow in __audit_sockaddr()
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,81 +32,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f217c980ca980e3a645b7485ea5eae9a747f4945 upstream.
+[ Upstream commit 1661bf364ae9c506bc8795fef70d1532931be1e8 ]
 
-The RWE bit of the USB 2.0 PORTPMSC register is supposed to enable
-remote wakeup for devices in the lower power link state L1.  It has
-nothing to do with the device suspend remote wakeup from L2.  The RWE
-bit is designed to be set once (when USB 2.0 LPM is enabled for the
-port) and cleared only when USB 2.0 LPM is disabled for the port.
+We need to cap ->msg_namelen or it leads to a buffer overflow when we
+to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
+exploit this bug.
 
-The xHCI bus suspend method was setting the RWE bit erroneously, and the
-bus resume method was clearing it.  The xHCI 1.0 specification with
-errata up to Aug 12, 2012 says in section 4.23.5.1.1.1 "Hardware
-Controlled LPM":
+The call tree is:
+___sys_recvmsg()
+  move_addr_to_user()
+    audit_sockaddr()
+      __audit_sockaddr()
 
-"While Hardware USB2 LPM is enabled, software shall not modify the
-HIRDBESL or RWE fields of the USB2 PORTPMSC register..."
-
-If we have previously enabled USB 2.0 LPM for a device, that means when
-the USB 2.0 bus is resumed, we violate the xHCI specification by
-clearing RWE.  It also means that after a bus resume, the host would
-think remote wakeup is disabled from L1 for ports with USB 2.0 Link PM
-enabled, which is not what we want.
-
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set
-USB2 hardware LPM".  That was the first kernel that supported USB 2.0
-Link PM.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[bwh: Backported to 3.2: deleted code was cosmetically different]
+Reported-by: Jüri Aedla <juri.aedla@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -1007,20 +1007,6 @@ int xhci_bus_suspend(struct usb_hcd *hcd
- 		t1 = xhci_port_state_to_neutral(t1);
- 		if (t1 != t2)
- 			xhci_writel(xhci, t2, port_array[port_index]);
--
--		if (hcd->speed != HCD_USB3) {
--			/* enable remote wake up for USB 2.0 */
--			__le32 __iomem *addr;
--			u32 tmp;
--
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
--			tmp = xhci_readl(xhci, addr);
--			tmp |= PORT_RWE;
--			xhci_writel(xhci, tmp, addr);
--		}
- 	}
- 	hcd->state = HC_STATE_SUSPENDED;
- 	bus_state->next_statechange = jiffies + msecs_to_jiffies(10);
-@@ -1099,20 +1085,6 @@ int xhci_bus_resume(struct usb_hcd *hcd)
- 				xhci_ring_device(xhci, slot_id);
- 		} else
- 			xhci_writel(xhci, temp, port_array[port_index]);
--
--		if (hcd->speed != HCD_USB3) {
--			/* disable remote wake up for USB 2.0 */
--			__le32 __iomem *addr;
--			u32 tmp;
--
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
--			tmp = xhci_readl(xhci, addr);
--			tmp &= ~PORT_RWE;
--			xhci_writel(xhci, tmp, addr);
--		}
- 	}
+ net/compat.c |  2 ++
+ net/socket.c | 24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/net/compat.c b/net/compat.c
+index 8c979cc..3139ef2 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -71,6 +71,8 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index cf546a3..bf7adaa 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1876,6 +1876,16 @@ struct used_address {
+ 	unsigned int name_len;
+ };
  
- 	(void) xhci_readl(xhci, &xhci->op_regs->command);
++static int copy_msghdr_from_user(struct msghdr *kmsg,
++				 struct msghdr __user *umsg)
++{
++	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
++		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
++	return 0;
++}
++
+ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 			  struct msghdr *msg_sys, unsigned flags,
+ 			  struct used_address *used_address)
+@@ -1894,8 +1904,11 @@ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	/* do not move before msg_sys is valid */
+ 	err = -EMSGSIZE;
+@@ -2110,8 +2123,11 @@ static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	err = -EMSGSIZE;
+ 	if (msg_sys->msg_iovlen > UIO_MAXIOV)
 
