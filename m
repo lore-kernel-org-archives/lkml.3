@@ -1,81 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab3KYGhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 01:37:53 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:62362 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab3KYGhu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 01:37:50 -0500
+	id S1751907Ab3KYGsF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 01:48:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab3KYGsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 01:48:00 -0500
+Date: Mon, 25 Nov 2013 12:17:38 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: linux-kernel@vger.kernel.org
+cc: Hristo Venev <hristo@venev.name>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] Drop INITRAMFS_COMPRESSION_GZIP option
+Message-ID: <alpine.LFD.2.10.1311251208170.14939@wniryva.cad.erqung.pbz>
 MIME-Version: 1.0
-In-Reply-To: <526444E5.5000405@samsung.com>
-References: <1379937815-21746-1-git-send-email-chander.kashyap@linaro.org>
-	<02c701ceba75$f95b1900$ec114b00$@org>
-	<1949846.N3fAUHQ1Nx@flatron>
-	<526444E5.5000405@samsung.com>
-Date: Mon, 25 Nov 2013 12:07:49 +0530
-Message-ID: <CANuQgHFSNMV=RF8SHdZf3=gyNoXJWXEcevQ=DAOqUuZXSeugrQ@mail.gmail.com>
-Subject: Re: [PATCH v2] irqchip: exynos-combiner: remove hard-coded irq_base value
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="0-442623294-1385362072=:14939"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kikjin,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On 21 October 2013 02:32, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> On 10/18/13 02:53, Tomasz Figa wrote:
->>
->> Hi Kukjin,
->>
->> On Thursday 26 of September 2013 14:05:09 Kukjin Kim wrote:
->>>
->>> Chander Kashyap wrote:
->>>>
->>>> Replace irq_domain_add_simple with "irq_domain_add_linear" in order to
->>>> use linear irq domain, and to remove hardcoded irq_base_value.
->>>>
->>>> Signed-off-by: Chander Kashyap<chander.kashyap@linaro.org>
->>>> ---
->>>>
->>>> Changes since v1:
->>>>         - Replaced irq_domain_add_simple with irq_domain_add_linear,
->>>>
->>>>           as suggested by Tomasz
->>>>
->>>>   drivers/irqchip/exynos-combiner.c |   15 +++------------
->>>>   1 file changed, 3 insertions(+), 12 deletions(-)
->>
->> [snip]
->>>
->>>
->>> Looks nice to me, applied with Tomasz's review.
->>
->>
->> I don't see this patch in your tree. Did you apply it in the end?
->>
-> Thanks for your gentle reminder.
+--0-442623294-1385362072=:14939
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 
-I still can not see these patches in yours branches ?
+    Hello Andrew, all
 
->
-> Applied.
-> - Kukjin
+Please see attached herein a patch to replace INITRAMFS_COMPRESSION_GZIP 
+option with a new CONFIG_RD_GZIP=y, for INITRAMFS_COMPRESSION_GZIP is not set. 
+Patch also removes the choice text for INITRAMFS_* options from usr/Kconfig.
 
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+--0-442623294-1385362072=:14939
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Drop-INITRAMFS_COMPRESSION_GZIP-option.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LFD.2.10.1311251217380.14939@wniryva.cad.erqung.pbz>
+Content-Description: 
+Content-Disposition: attachment; filename=0001-Drop-INITRAMFS_COMPRESSION_GZIP-option.patch
 
+RnJvbSBlNWFiNjAwMjYwM2E5MDFkNDBjN2Y4NGI0ZDZkMjQwYmYwZTkxYWNh
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogSHJpc3RvIFZlbmV2
+IDxocmlzdG9AdmVuZXYubmFtZT4NCkRhdGU6IE1vbiwgMjUgTm92IDIwMTMg
+MTE6NTQ6MjkgKzA1MzANClN1YmplY3Q6IFtQQVRDSCAxLzFdIERyb3AgSU5J
+VFJBTUZTX0NPTVBSRVNTSU9OX0daSVAgb3B0aW9uDQoNClJlcGxhY2VkIElO
+SVRSQU1GU19DT01QUkVTU0lPTl9HWklQPXkgb3B0aW9uIGluIHRoZSBtaXBz
+JyAmDQpwb3dlcnBjJ3MgZGVmY29uZmlnIGZpbGUgd2l0aCB0aGUgQ09ORklH
+X1JEX0daSVA9eSwgZm9yDQpJTklUUkFNRlNfQ09NUFJFU1NJT05fR1pJUCBp
+cyBub3Qgc2V0LiBBbHNvIHJlbW92ZWQgdGhlDQpjb3JyZXNwb25kaW5nIEtj
+b25maWcgY2hvaWNlIHRleHQgZm9yIGFsbCBJTklUUkFNRlNfQ09NUFJFU1NJ
+T05fKg0Kb3B0aW9ucy4NCg0KU2lnbmVkLW9mZi1ieTogUCBKIFAgPHByYXNh
+ZEByZWRoYXQuY29tPg0KDQpkaWZmIC0tZ2l0IGEvYXJjaC9taXBzL2NvbmZp
+Z3MvbmxtX3hscl9kZWZjb25maWcgYi9hcmNoL21pcHMvY29uZmlncy9ubG1f
+eGxyX2RlZmNvbmZpZw0KaW5kZXggNDRiNDczNC4uMTczODhkMCAxMDA2NDQN
+Ci0tLSBhL2FyY2gvbWlwcy9jb25maWdzL25sbV94bHJfZGVmY29uZmlnDQor
+KysgYi9hcmNoL21pcHMvY29uZmlncy9ubG1feGxyX2RlZmNvbmZpZw0KQEAg
+LTI1LDcgKzI1LDcgQEAgQ09ORklHX0JMS19ERVZfSU5JVFJEPXkNCiBDT05G
+SUdfSU5JVFJBTUZTX1NPVVJDRT0iIg0KIENPTkZJR19SRF9CWklQMj15DQog
+Q09ORklHX1JEX0xaTUE9eQ0KLUNPTkZJR19JTklUUkFNRlNfQ09NUFJFU1NJ
+T05fR1pJUD15DQorQ09ORklHX1JEX0daSVA9eQ0KIENPTkZJR19FWFBFUlQ9
+eQ0KIENPTkZJR19LQUxMU1lNU19BTEw9eQ0KICMgQ09ORklHX0VMRl9DT1JF
+IGlzIG5vdCBzZXQNCmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMvY29uZmln
+cy9jaHJvbWFfZGVmY29uZmlnIGIvYXJjaC9wb3dlcnBjL2NvbmZpZ3MvY2hy
+b21hX2RlZmNvbmZpZw0KaW5kZXggNGYzNWZjNC4uNGQwOWE1NiAxMDA2NDQN
+Ci0tLSBhL2FyY2gvcG93ZXJwYy9jb25maWdzL2Nocm9tYV9kZWZjb25maWcN
+CisrKyBiL2FyY2gvcG93ZXJwYy9jb25maWdzL2Nocm9tYV9kZWZjb25maWcN
+CkBAIC0yOSw3ICsyOSw3IEBAIENPTkZJR19CTEtfREVWX0lOSVRSRD15DQog
+Q09ORklHX0lOSVRSQU1GU19TT1VSQ0U9IiINCiBDT05GSUdfUkRfQlpJUDI9
+eQ0KIENPTkZJR19SRF9MWk1BPXkNCi1DT05GSUdfSU5JVFJBTUZTX0NPTVBS
+RVNTSU9OX0daSVA9eQ0KK0NPTkZJR19SRF9HWklQPXkNCiBDT05GSUdfS0FM
+TFNZTVNfQUxMPXkNCiBDT05GSUdfRU1CRURERUQ9eQ0KIENPTkZJR19QRVJG
+X0VWRU5UUz15DQpkaWZmIC0tZ2l0IGEvdXNyL0tjb25maWcgYi91c3IvS2Nv
+bmZpZw0KaW5kZXggNjQyZjUwMy4uMmQ0Yzc3ZSAxMDA2NDQNCi0tLSBhL3Vz
+ci9LY29uZmlnDQorKysgYi91c3IvS2NvbmZpZw0KQEAgLTk4LDgwICs5OCwz
+IEBAIGNvbmZpZyBSRF9MWjQNCiAJaGVscA0KIAkgIFN1cHBvcnQgbG9hZGlu
+ZyBvZiBhIExaNCBlbmNvZGVkIGluaXRpYWwgcmFtZGlzayBvciBjcGlvIGJ1
+ZmZlcg0KIAkgIElmIHVuc3VyZSwgc2F5IE4uDQotDQotY2hvaWNlDQotCXBy
+b21wdCAiQnVpbHQtaW4gaW5pdHJhbWZzIGNvbXByZXNzaW9uIG1vZGUiIGlm
+IElOSVRSQU1GU19TT1VSQ0UhPSIiDQotCWhlbHANCi0JICBUaGlzIG9wdGlv
+biBkZWNpZGVzIGJ5IHdoaWNoIGFsZ29yaXRobSB0aGUgYnVpbHRpbiBpbml0
+cmFtZnMNCi0JICB3aWxsIGJlIGNvbXByZXNzZWQuICBTZXZlcmFsIGNvbXBy
+ZXNzaW9uIGFsZ29yaXRobXMgYXJlDQotCSAgYXZhaWxhYmxlLCB3aGljaCBk
+aWZmZXIgaW4gZWZmaWNpZW5jeSwgY29tcHJlc3Npb24gYW5kDQotCSAgZGVj
+b21wcmVzc2lvbiBzcGVlZC4gIENvbXByZXNzaW9uIHNwZWVkIGlzIG9ubHkg
+cmVsZXZhbnQNCi0JICB3aGVuIGJ1aWxkaW5nIGEga2VybmVsLiAgRGVjb21w
+cmVzc2lvbiBzcGVlZCBpcyByZWxldmFudCBhdA0KLQkgIGVhY2ggYm9vdC4N
+Ci0NCi0JICBJZiB5b3UgaGF2ZSBhbnkgcHJvYmxlbXMgd2l0aCBiemlwMiBv
+ciBMWk1BIGNvbXByZXNzZWQNCi0JICBpbml0cmFtZnMsIG1haWwgbWUgKEFs
+YWluIEtuYWZmKSA8YWxhaW5Aa25hZmYubHU+Lg0KLQ0KLQkgIEhpZ2ggY29t
+cHJlc3Npb24gb3B0aW9ucyBhcmUgbW9zdGx5IHVzZWZ1bCBmb3IgdXNlcnMg
+d2hvIGFyZQ0KLQkgIGxvdyBvbiBSQU0sIHNpbmNlIGl0IHJlZHVjZXMgdGhl
+IG1lbW9yeSBjb25zdW1wdGlvbiBkdXJpbmcNCi0JICBib290Lg0KLQ0KLQkg
+IElmIGluIGRvdWJ0LCBzZWxlY3QgJ2d6aXAnDQotDQotY29uZmlnIElOSVRS
+QU1GU19DT01QUkVTU0lPTl9OT05FDQotCWJvb2wgIk5vbmUiDQotCWhlbHAN
+Ci0JICBEbyBub3QgY29tcHJlc3MgdGhlIGJ1aWx0LWluIGluaXRyYW1mcyBh
+dCBhbGwuIFRoaXMgbWF5DQotCSAgc291bmQgd2FzdGVmdWwgaW4gc3BhY2Us
+IGJ1dCwgeW91IHNob3VsZCBiZSBhd2FyZSB0aGF0IHRoZQ0KLQkgIGJ1aWx0
+LWluIGluaXRyYW1mcyB3aWxsIGJlIGNvbXByZXNzZWQgYXQgYSBsYXRlciBz
+dGFnZQ0KLQkgIGFueXdheXMgYWxvbmcgd2l0aCB0aGUgcmVzdCBvZiB0aGUg
+a2VybmVsLCBvbiB0aG9zZQ0KLQkgIGFyY2hpdGVjdHVyZXMgdGhhdCBzdXBw
+b3J0IHRoaXMuDQotCSAgSG93ZXZlciwgbm90IGNvbXByZXNzaW5nIHRoZSBp
+bml0cmFtZnMgbWF5IGxlYWQgdG8gc2xpZ2h0bHkNCi0JICBoaWdoZXIgbWVt
+b3J5IGNvbnN1bXB0aW9uIGR1cmluZyBhIHNob3J0IHRpbWUgYXQgYm9vdCwg
+d2hpbGUNCi0JICBib3RoIHRoZSBjcGlvIGltYWdlIGFuZCB0aGUgdW5wYWNr
+ZWQgZmlsZXN5c3RlbSBpbWFnZSB3aWxsDQotCSAgYmUgcHJlc2VudCBpbiBt
+ZW1vcnkgc2ltdWx0YW5lb3VzbHkNCi0NCi1jb25maWcgSU5JVFJBTUZTX0NP
+TVBSRVNTSU9OX0daSVANCi0JYm9vbCAiR3ppcCINCi0JZGVwZW5kcyBvbiBS
+RF9HWklQDQotCWhlbHANCi0JICBUaGUgb2xkIGFuZCB0cmllZCBnemlwIGNv
+bXByZXNzaW9uLiBJdCBwcm92aWRlcyBhIGdvb2QgYmFsYW5jZQ0KLQkgIGJl
+dHdlZW4gY29tcHJlc3Npb24gcmF0aW8gYW5kIGRlY29tcHJlc3Npb24gc3Bl
+ZWQuDQotDQotY29uZmlnIElOSVRSQU1GU19DT01QUkVTU0lPTl9CWklQMg0K
+LQlib29sICJCemlwMiINCi0JZGVwZW5kcyBvbiBSRF9CWklQMg0KLQloZWxw
+DQotCSAgSXRzIGNvbXByZXNzaW9uIHJhdGlvIGFuZCBzcGVlZCBpcyBpbnRl
+cm1lZGlhdGUuDQotCSAgRGVjb21wcmVzc2lvbiBzcGVlZCBpcyBzbG93ZXN0
+IGFtb25nIHRoZSBjaG9pY2VzLiAgVGhlIGluaXRyYW1mcw0KLQkgIHNpemUg
+aXMgYWJvdXQgMTAlIHNtYWxsZXIgd2l0aCBiemlwMiwgaW4gY29tcGFyaXNv
+biB0byBnemlwLg0KLQkgIEJ6aXAyIHVzZXMgYSBsYXJnZSBhbW91bnQgb2Yg
+bWVtb3J5LiBGb3IgbW9kZXJuIGtlcm5lbHMgeW91DQotCSAgd2lsbCBuZWVk
+IGF0IGxlYXN0IDhNQiBSQU0gb3IgbW9yZSBmb3IgYm9vdGluZy4NCi0NCi1j
+b25maWcgSU5JVFJBTUZTX0NPTVBSRVNTSU9OX0xaTUENCi0JYm9vbCAiTFpN
+QSINCi0JZGVwZW5kcyBvbiBSRF9MWk1BDQotCWhlbHANCi0JICBUaGlzIGFs
+Z29yaXRobSdzIGNvbXByZXNzaW9uIHJhdGlvIGlzIGJlc3QuDQotCSAgRGVj
+b21wcmVzc2lvbiBzcGVlZCBpcyBiZXR3ZWVuIHRoZSBvdGhlciBjaG9pY2Vz
+Lg0KLQkgIENvbXByZXNzaW9uIGlzIHNsb3dlc3QuIFRoZSBpbml0cmFtZnMg
+c2l6ZSBpcyBhYm91dCAzMyUNCi0JICBzbWFsbGVyIHdpdGggTFpNQSBpbiBj
+b21wYXJpc29uIHRvIGd6aXAuDQotDQotY29uZmlnIElOSVRSQU1GU19DT01Q
+UkVTU0lPTl9YWg0KLQlib29sICJYWiINCi0JZGVwZW5kcyBvbiBSRF9YWg0K
+LQloZWxwDQotCSAgWFogdXNlcyB0aGUgTFpNQTIgYWxnb3JpdGhtLiBUaGUg
+aW5pdHJhbWZzIHNpemUgaXMgYWJvdXQgMzAlDQotCSAgc21hbGxlciB3aXRo
+IFhaIGluIGNvbXBhcmlzb24gdG8gZ3ppcC4gRGVjb21wcmVzc2lvbiBzcGVl
+ZA0KLQkgIGlzIGJldHRlciB0aGFuIHRoYXQgb2YgYnppcDIgYnV0IHdvcnNl
+IHRoYW4gZ3ppcCBhbmQgTFpPLg0KLQkgIENvbXByZXNzaW9uIGlzIHNsb3cu
+DQotDQotY29uZmlnIElOSVRSQU1GU19DT01QUkVTU0lPTl9MWk8NCi0JYm9v
+bCAiTFpPIg0KLQlkZXBlbmRzIG9uIFJEX0xaTw0KLQloZWxwDQotCSAgSXRz
+IGNvbXByZXNzaW9uIHJhdGlvIGlzIHRoZSBwb29yZXN0IGFtb25nIHRoZSBj
+aG9pY2VzLiBUaGUga2VybmVsDQotCSAgc2l6ZSBpcyBhYm91dCAxMCUgYmln
+Z2VyIHRoYW4gZ3ppcDsgaG93ZXZlciBpdHMgc3BlZWQNCi0JICAoYm90aCBj
+b21wcmVzc2lvbiBhbmQgZGVjb21wcmVzc2lvbikgaXMgdGhlIGZhc3Rlc3Qu
+DQotDQotZW5kY2hvaWNlDQotLSANCjEuOC4zLjENCg0K
 
--- 
-with warm regards,
-Chander Kashyap
+--0-442623294-1385362072=:14939--
