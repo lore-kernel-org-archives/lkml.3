@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3KYNI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:08:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57270 "EHLO
+	id S1754923Ab3KYNJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:09:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57284 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766Ab3KYNI4 (ORCPT
+	with ESMTP id S1754766Ab3KYNJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:56 -0500
+	Mon, 25 Nov 2013 08:09:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 61/78] ALSA: hda - Add support for CX20952
-Date: Mon, 25 Nov 2013 13:06:48 +0000
-Message-Id: <1385384825-21681-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 63/78] cris: media platform drivers: fix build
+Date: Mon, 25 Nov 2013 13:06:50 +0000
+Message-Id: <1385384825-21681-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
+commit 72a0c5571351f5184195754d23db3e14495b2080 upstream.
 
-It's a superset of the existing CX2075x codecs, so we can reuse the
-existing parser code.
+On cris arch, the functions below aren't defined:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_read':
+
+  drivers/media/platform/sh_veu.c:228:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_write':
+
+  drivers/media/platform/sh_veu.c:234:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_setup':
+  drivers/media/platform/soc_camera/rcar_vin.c:284:3: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_request_capture_stop':
+  drivers/media/platform/soc_camera/rcar_vin.c:353:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+
+Yet, they're available, as CONFIG_GENERIC_IOMAP is defined.  What happens
+is that asm/io.h was not including asm-generic/iomap.h.
+
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_conexant.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/cris/include/asm/io.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 5fb90c6..5a48081 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4594,6 +4594,8 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
- 	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15115, .name = "CX20757",
- 	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f151d7, .name = "CX20952",
-+	  .patch = patch_conexant_auto },
- 	{} /* terminator */
- };
+diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
+index ac12ae2..db9a16c 100644
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -3,6 +3,7 @@
  
-@@ -4620,6 +4622,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111");
- MODULE_ALIAS("snd-hda-codec-id:14f15113");
- MODULE_ALIAS("snd-hda-codec-id:14f15114");
- MODULE_ALIAS("snd-hda-codec-id:14f15115");
-+MODULE_ALIAS("snd-hda-codec-id:14f151d7");
+ #include <asm/page.h>   /* for __va, __pa */
+ #include <arch/io.h>
++#include <asm-generic/iomap.h>
+ #include <linux/kernel.h>
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Conexant HD-audio codec");
+ struct cris_io_operations
 -- 
 1.8.3.2
 
