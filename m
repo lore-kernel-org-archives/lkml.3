@@ -1,210 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3KYPge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:36:34 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:34660 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab3KYPgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:36:31 -0500
-Message-ID: <1385393786.1586.29.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH v2 3/6] net: MOXA ART: add ethtool support
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <f.fainelli@gmail.com>
-Date: Mon, 25 Nov 2013 15:36:26 +0000
-In-Reply-To: <1385393228-22416-3-git-send-email-jonas.jensen@gmail.com>
-References: <1385393228-22416-1-git-send-email-jonas.jensen@gmail.com>
-	 <1385393228-22416-3-git-send-email-jonas.jensen@gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1755453Ab3KYPgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:36:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619Ab3KYPgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:36:52 -0500
+Date: Mon, 25 Nov 2013 10:36:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, mjg59@srcf.ucam.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        greg@kroah.com, hpa@zytor.com
+Subject: Re: [PATCH 0/6] kexec: A new system call to allow in kernel loading
+Message-ID: <20131125153620.GA23094@redhat.com>
+References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
+ <8761rl73s7.fsf@xmission.com>
+ <20131122015518.GA31921@redhat.com>
+ <87txf4y304.fsf@xmission.com>
+ <20131125110428.4bae2fe7@holzheu>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20318.005
-X-TM-AS-Result: No--9.785100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131125110428.4bae2fe7@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 16:27 +0100, Jonas Jensen wrote:
-> Add and assign ethtool_ops callback functions.
+On Mon, Nov 25, 2013 at 11:04:28AM +0100, Michael Holzheu wrote:
+> On Fri, 22 Nov 2013 05:34:03 -0800
+> ebiederm@xmission.com (Eric W. Biederman) wrote:
 > 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-
-Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
-
-> ---
+> > Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> Notes:
->     Thanks for reviewing!
->     
->     Changes since v1:
->     
->     1. declare MOXART_NUM_STATS with ARRAY_SIZE macro
->     2. don't initialise info->n_stats in moxart_get_drvinfo()
->     3. remove "if (!priv->phy_dev) return -ENODEV;"
->        moxart_get_settings(), moxart_set_settings(), moxart_nway_reset()
->     
->     Applies to next-20131125
+> > >> There is also a huge missing piece of this in that your purgatory is not
+> > >> checking a hash of the loaded image before jumping too it.  Without that
+> > >> this is a huge regression at least for the kexec on panic case.  We
+> > >> absolutely need to check that the kernel sitting around in memory has
+> > >> not been corrupted before we let it run very far.
+> > >
+> > > Agreed. This should not be hard. It is just a matter of calcualting
+> > > digest of segments. I will store it in kimge and verify digest again
+> > > before passing control to control page. Will fix it in next version.
+> > 
+> > Nak.  The verification needs to happen in purgatory. 
+> > 
+> > The verification needs to happen in code whose runtime environment is
+> > does not depend on random parts of the kernel.  Anything else is a
+> > regression in maintainability and reliability.
 > 
->  drivers/net/ethernet/moxa/moxart_ether.c | 121 +++++++++++++++++++++++++++++++
->  1 file changed, 121 insertions(+)
+> Hello Vivek,
 > 
-> diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
-> index 1b87034..cd46a23 100644
-> --- a/drivers/net/ethernet/moxa/moxart_ether.c
-> +++ b/drivers/net/ethernet/moxa/moxart_ether.c
-> @@ -32,6 +32,10 @@
->  
->  #include "moxart_ether.h"
->  
-> +#define DRV_NAME		"moxart-ethernet"
-> +#define DRV_VERSION		"0.2"
-> +#define MOXART_NUM_STATS	ARRAY_SIZE(ethtool_stats_keys)
-> +
->  static inline void moxart_emac_write(struct net_device *ndev,
->  				     unsigned int reg, unsigned long value)
->  {
-> @@ -64,6 +68,122 @@ static int moxart_set_mac_address(struct net_device *ndev, void *addr)
->  	return 0;
->  }
->  
-> +static struct {
-> +	const char str[ETH_GSTRING_LEN];
-> +} ethtool_stats_keys[] = {
-> +	{ "tx_ok_mcol_2to15" },
-> +	{ "tx_ok_1col" },
-> +	{ "rx_frame_pause" },
-> +	{ "frame_align_err" },
-> +	{ "err_col_late_16" },
-> +	{ "err_col_16" },
-> +	{ "rx_runt" },
-> +	{ "late_col" },
-> +	{ "crc_err" },
-> +	{ "rx_ftl" },
-> +	{ "rx_fifo_full" },
-> +	{ "rx_col" },
-> +	{ "rx_bcast" },
-> +	{ "rx_mcast" },
-> +	{ "rx_ok" },
-> +	{ "tx_ok" },
-> +};
-> +
-> +static void moxart_get_drvinfo(struct net_device *ndev,
-> +			       struct ethtool_drvinfo *info)
-> +{
-> +	strlcpy(info->driver, DRV_NAME, sizeof(info->driver));
-> +	strlcpy(info->version, DRV_VERSION, sizeof(info->version));
-> +	strlcpy(info->bus_info, dev_name(&ndev->dev), sizeof(info->bus_info));
-> +}
-> +
-> +static int moxart_get_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +	return phy_ethtool_gset(priv->phy_dev, cmd);
-> +}
-> +
-> +static int moxart_set_settings(struct net_device *ndev, struct ethtool_cmd *cmd)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +	return phy_ethtool_sset(priv->phy_dev, cmd);
-> +}
-> +
-> +static int moxart_nway_reset(struct net_device *ndev)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +	return genphy_restart_aneg(priv->phy_dev);
-> +}
-> +
-> +static void moxart_get_ethtool_stats(struct net_device *ndev,
-> +				     struct ethtool_stats *estats,
-> +				     u64 *tmp_stats)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +	u32 s;
-> +	int i = 0;
-> +
-> +	s = readl(priv->base + REG_TX_COL_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	s = readl(priv->base + REG_RPF_AEP_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	s = readl(priv->base + REG_XM_PG_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	s = readl(priv->base + REG_RUNT_TLC_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	s = readl(priv->base + REG_CRC_FTL_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	s = readl(priv->base + REG_RLC_RCC_COUNTER);
-> +	tmp_stats[i++] = s & 0xffff0000;
-> +	tmp_stats[i++] = s & 0x0000ffff;
-> +	tmp_stats[i++] = readl(priv->base + REG_BROC_COUNTER);
-> +	tmp_stats[i++] = readl(priv->base + REG_MULCA_COUNTER);
-> +	tmp_stats[i++] = readl(priv->base + REG_XP_COUNTER);
-> +	tmp_stats[i++] = readl(priv->base + REG_RP_COUNTER);
-> +}
-> +
-> +static int moxart_get_sset_count(struct net_device *netdev,
-> +					int string_set)
-> +{
-> +	switch (string_set) {
-> +	case ETH_SS_STATS:
-> +		return MOXART_NUM_STATS;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static void moxart_get_strings(struct net_device *dev, u32 stringset, u8 *data)
-> +{
-> +	switch (stringset) {
-> +	case ETH_SS_STATS:
-> +		memcpy(data, &ethtool_stats_keys, sizeof(ethtool_stats_keys));
-> +		break;
-> +	default:
-> +		WARN_ON(1);
-> +		break;
-> +	}
-> +}
-> +
-> +static const struct ethtool_ops moxart_ethtool_ops = {
-> +	.set_settings		= moxart_set_settings,
-> +	.get_settings		= moxart_get_settings,
-> +	.get_drvinfo		= moxart_get_drvinfo,
-> +	.nway_reset		= moxart_nway_reset,
-> +	.get_link		= ethtool_op_get_link,
-> +	.get_ethtool_stats	= moxart_get_ethtool_stats,
-> +	.get_sset_count		= moxart_get_sset_count,
-> +	.get_strings		= moxart_get_strings,
-> +};
-> +
->  static int moxart_do_ioctl(struct net_device *ndev, struct ifreq *ir, int cmd)
->  {
->  	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> @@ -606,6 +726,7 @@ static int moxart_mac_probe(struct platform_device *pdev)
->  	ndev->irq = irq;
->  
->  	SET_NETDEV_DEV(ndev, &pdev->dev);
-> +	SET_ETHTOOL_OPS(ndev, &moxart_ethtool_ops);
->  
->  	ret = register_netdev(ndev);
->  	if (ret) {
+> Just to be sure that you have not forgotten the following s390 detail:
+> 
+> On s390 we first call purgatory with parameter "0" for doing the
+> checksum test. If this fails, we can have as backup solution our
+> traditional stand-alone dump. In case tha checksum test was ok,
+> we call purgatory a second time with parameter "1" which then
+> starts kdump.
+> 
+> Could you please ensure that this mechanism also works after
+> your rework.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Hi Michael,
 
+All that logic in in arch dependent portion of s390? If yes, I am not
+touching any arch dependent part of s390 yet and only doing implementation
+of x86.
+
+Generic changes should be usable by s390 and you should be able to do
+same thing there. Though we are still detating whether segment checksum
+verification logic should be part of purgatory or core kernel.
+
+Thanks
+Vivek
