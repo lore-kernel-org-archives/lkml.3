@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab3KYOEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:04:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58875 "EHLO
+	id S1757168Ab3KYOEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:04:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58954 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754193Ab3KYNxs (ORCPT
+	by vger.kernel.org with ESMTP id S1754307Ab3KYNxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:48 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org, "David Miller" <davem@davemloft.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Jiri Pirko" <jiri@resnulli.us>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.582406333@decadent.org.uk>
+Message-ID: <lsq.1385387069.946830937@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 46/87] iwlwifi: pcie: add SKUs for 6000, 6005 and 6235
- series
+Subject: [PATCH 3.2 31/87] inet: fix possible memory corruption with
+ UDP_CORK and UFO
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,95 +35,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 08a5dd3842f2ac61c6d69661d2d96022df8ae359 upstream.
+[ This is a simplified -stable version of a set of upstream commits. ]
 
-Add some new PCI IDs to the table for 6000, 6005 and 6235 series.
+This is a replacement patch only for stable which does fix the problems
+handled by the following two commits in -net:
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2:
- - Adjust filenames
- - Drop const from struct iwl_cfg]
+"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
+"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
+
+Three frames are written on a corked udp socket for which the output
+netdevice has UFO enabled.  If the first and third frame are smaller than
+the mtu and the second one is bigger, we enqueue the second frame with
+skb_append_datato_frags without initializing the gso fields. This leads
+to the third frame appended regulary and thus constructing an invalid skb.
+
+This fixes the problem by always using skb_append_datato_frags as soon
+as the first frag got enqueued to the skb without marking the packet
+as SKB_GSO_UDP.
+
+The problem with only two frames for ipv6 was fixed by "ipv6: udp
+packets following an UFO enqueued packet need also be handled by UFO"
+(2811ebac2521ceac84f2bdae402455baa6a7fb47).
+
+Cc: Jiri Pirko <jiri@resnulli.us>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-6000.c   |  6 ++++++
- drivers/net/wireless/iwlwifi/iwl-config.h |  1 +
- drivers/net/wireless/iwlwifi/pcie/drv.c   | 10 ++++++++++
- 3 files changed, 17 insertions(+)
+ include/linux/skbuff.h | 5 +++++
+ net/ipv4/ip_output.c   | 2 +-
+ net/ipv6/ip6_output.c  | 2 +-
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -480,6 +480,12 @@ struct iwl_cfg iwl6035_2agn_cfg = {
- 	.ht_params = &iwl6000_ht_params,
- };
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1167,6 +1167,11 @@ static inline int skb_pagelen(const stru
+ 	return len + skb_headlen(skb);
+ }
  
-+struct iwl_cfg iwl6035_2agn_sff_cfg = {
-+	.name = "Intel(R) Centrino(R) Ultimate-N 6235 AGN",
-+	IWL_DEVICE_6035,
-+	.ht_params = &iwl6000_ht_params,
-+};
++static inline bool skb_has_frags(const struct sk_buff *skb)
++{
++	return skb_shinfo(skb)->nr_frags;
++}
 +
- struct iwl_cfg iwl1030_bgn_cfg = {
- 	.name = "Intel(R) Centrino(R) Wireless-N 1030 BGN",
- 	IWL_DEVICE_6030,
---- a/drivers/net/wireless/iwlwifi/iwl-cfg.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-cfg.h
-@@ -106,6 +106,7 @@ extern struct iwl_cfg iwl2000_2bgn_cfg;
- extern struct iwl_cfg iwl2000_2bgn_d_cfg;
- extern struct iwl_cfg iwl2030_2bgn_cfg;
- extern struct iwl_cfg iwl6035_2agn_cfg;
-+extern struct iwl_cfg iwl6035_2agn_sff_cfg;
- extern struct iwl_cfg iwl105_bgn_cfg;
- extern struct iwl_cfg iwl105_bgn_d_cfg;
- extern struct iwl_cfg iwl135_bgn_cfg;
---- a/drivers/net/wireless/iwlwifi/iwl-pci.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-pci.c
-@@ -236,13 +236,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ /**
+  * __skb_fill_page_desc - initialise a paged fragment in an skb
+  * @skb: buffer containing fragment to be initialised
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -833,7 +833,7 @@ static int __ip_append_data(struct sock
+ 		csummode = CHECKSUM_PARTIAL;
  
- /* 6x00 Series */
- 	{IWL_PCI_DEVICE(0x422B, 0x1101, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1108, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422B, 0x1121, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x422B, 0x1128, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1301, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1306, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1307, iwl6000i_2bg_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1321, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x422C, 0x1326, iwl6000i_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x4238, 0x1111, iwl6000_3agn_cfg)},
-+	{IWL_PCI_DEVICE(0x4238, 0x1118, iwl6000_3agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1311, iwl6000i_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x4239, 0x1316, iwl6000i_2abg_cfg)},
- 
-@@ -250,12 +253,16 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x0082, 0x1301, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1306, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1307, iwl6005_2bg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1308, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1321, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1326, iwl6005_2abg_cfg)},
-+	{IWL_PCI_DEVICE(0x0082, 0x1328, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1311, iwl6005_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0x1318, iwl6005_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0x1316, iwl6005_2abg_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0xC020, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0085, 0xC220, iwl6005_2agn_sff_cfg)},
-+	{IWL_PCI_DEVICE(0x0085, 0xC228, iwl6005_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x4820, iwl6005_2agn_d_cfg)},
- 	{IWL_PCI_DEVICE(0x0082, 0x1304, iwl6005_2agn_mow1_cfg)},/* low 5GHz active */
- 	{IWL_PCI_DEVICE(0x0082, 0x1305, iwl6005_2agn_mow2_cfg)},/* high 5GHz active */
-@@ -337,8 +344,11 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 
- /* 6x35 Series */
- 	{IWL_PCI_DEVICE(0x088E, 0x4060, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x406A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088F, 0x4260, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088F, 0x426A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4460, iwl6035_2agn_cfg)},
-+	{IWL_PCI_DEVICE(0x088E, 0x446A, iwl6035_2agn_sff_cfg)},
- 	{IWL_PCI_DEVICE(0x088E, 0x4860, iwl6035_2agn_cfg)},
- 	{IWL_PCI_DEVICE(0x088F, 0x5260, iwl6035_2agn_cfg)},
- 
+ 	cork->length += length;
+-	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
++	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
+ 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1342,7 +1342,7 @@ int ip6_append_data(struct sock *sk, int
+ 	skb = skb_peek_tail(&sk->sk_write_queue);
+ 	cork->length += length;
+ 	if (((length > mtu) ||
+-	     (skb && skb_is_gso(skb))) &&
++	     (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO)) {
+ 		err = ip6_ufo_append_data(sk, getfrag, from, length,
 
