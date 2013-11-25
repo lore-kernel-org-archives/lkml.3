@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3KYNOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:14:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57308 "EHLO
+	id S1755177Ab3KYNOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:14:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57299 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850Ab3KYNJF (ORCPT
+	with ESMTP id S1754840Ab3KYNJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:09:05 -0500
+	Mon, 25 Nov 2013 08:09:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
+Cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 67/78] backlight: atmel-pwm-bl: fix gpio polarity in remove
-Date: Mon, 25 Nov 2013 13:06:54 +0000
-Message-Id: <1385384825-21681-68-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 64/78] mm: ensure get_unmapped_area() returns higher address than mmap_min_addr
+Date: Mon, 25 Nov 2013 13:06:51 +0000
+Message-Id: <1385384825-21681-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -29,37 +30,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-commit ad5066d4c2b1d696749f8d7816357c23b648c4d3 upstream.
+commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
 
-Make sure to honour gpio polarity also at remove so that the backlight is
-actually disabled on boards with active-low enable pin.
+This patch fixes the problem that get_unmapped_area() can return illegal
+address and result in failing mmap(2) etc.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+In case that the address higher than PAGE_SIZE is set to
+/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+returned by get_unmapped_area(), even if you do not pass any virtual
+address hint (i.e.  the second argument).
+
+This is because the current get_unmapped_area() code does not take into
+account mmap_min_addr.
+
+This leads to two actual problems as follows:
+
+1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+   although any illegal parameter is not passed.
+
+2. The bottom-up search path after the top-down search might not work in
+   arch_get_unmapped_area_topdown().
+
+Note: The first and third chunk of my patch, which changes "len" check,
+are for more precise check using mmap_min_addr, and not for solving the
+above problem.
+
+[How to reproduce]
+
+	--- test.c -------------------------------------------------
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/errno.h>
+
+	int main(int argc, char *argv[])
+	{
+		void *ret = NULL, *last_map;
+		size_t pagesize = sysconf(_SC_PAGESIZE);
+
+		do {
+			last_map = ret;
+			ret = mmap(0, pagesize, PROT_NONE,
+				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	//		printf("ret=%p\n", ret);
+		} while (ret != MAP_FAILED);
+
+		if (errno != ENOMEM) {
+			printf("ERR: unexpected errno: %d (last map=%p)\n",
+			errno, last_map);
+		}
+
+		return 0;
+	}
+	---------------------------------------------------------------
+
+	$ gcc -m32 -o test test.c
+	$ sudo sysctl -w vm.mmap_min_addr=65536
+	vm.mmap_min_addr = 65536
+	$ ./test  (run as non-priviledge user)
+	ERR: unexpected errno: 1 (last map=0x10000)
+
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+[ luis: backported to 3.5:
+  - dropped changes to struct vm_unmapped_area_info in
+  arch_get_unmapped_area_topdown() as this structure does not exist in 3.5
+  kernel ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/mmap.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 4d2bbd8..dab3a0c 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -211,7 +211,8 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 7e24763..758ff55 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1443,7 +1443,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	struct vm_area_struct *vma;
+ 	unsigned long start_addr;
  
- 	if (pwmbl->gpio_on != -1) {
--		gpio_set_value(pwmbl->gpio_on, 0);
-+		gpio_set_value(pwmbl->gpio_on,
-+					0 ^ pwmbl->pdata->on_active_low);
- 		gpio_free(pwmbl->gpio_on);
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
+ 
+ 	if (flags & MAP_FIXED)
+@@ -1452,7 +1452,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 		    (!vma || addr + len <= vma->vm_start))
+ 			return addr;
  	}
- 	pwm_channel_disable(&pwmbl->pwmc);
+@@ -1517,7 +1517,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	unsigned long addr = addr0, start_addr;
+ 
+ 	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
+ 
+ 	if (flags & MAP_FIXED)
+@@ -1527,7 +1527,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 				(!vma || addr + len <= vma->vm_start))
+ 			return addr;
+ 	}
 -- 
 1.8.3.2
 
