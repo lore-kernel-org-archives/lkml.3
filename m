@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab3KYNIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:08:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57192 "EHLO
+	id S1754671Ab3KYNIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:08:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab3KYNIP (ORCPT
+	with ESMTP id S1754526Ab3KYNIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:15 -0500
+	Mon, 25 Nov 2013 08:08:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Markus Pargmann <mpa@pengutronix.de>, Tony Lindgren <tony@atomide.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 47/78] ARM: OMAP2+: irq, AM33XX add missing register check
-Date: Mon, 25 Nov 2013 13:06:34 +0000
-Message-Id: <1385384825-21681-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 45/78] rt2800usb: slow down TX status polling
+Date: Mon, 25 Nov 2013 13:06:32 +0000
+Message-Id: <1385384825-21681-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 0bebda684857f76548ea48c8886785198701d8d3 upstream.
+commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
 
-am33xx has a INTC_PENDING_IRQ3 register that is not checked for pending
-interrupts. This patch adds AM33XX to the ifdef of SOCs that have to
-check this register.
+Polling TX statuses too frequently has two negative effects. First is
+randomly peek CPU usage, causing overall system functioning delays.
+Second bad effect is that device is not able to fill TX statuses in
+H/W register on some workloads and we get lot of timeouts like below:
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
+
+This not only cause flood of messages in dmesg, but also bad throughput,
+since rate scaling algorithm can not work optimally.
+
+In the future, we should probably make polling interval be adjusted
+automatically, but for now just increase values, this make mentioned
+problems gone.
+
+Resolve:
+https://bugzilla.kernel.org/show_bug.cgi?id=62781
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/irq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index 6038a8c..4137499 100644
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -232,7 +232,7 @@ static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs
- 			goto out;
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index fe42f76..c30797e 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -143,6 +143,8 @@ static bool rt2800usb_txstatus_timeout(struct rt2x00_dev *rt2x00dev)
+ 	return false;
+ }
  
- 		irqnr = readl_relaxed(base_addr + 0xd8);
--#ifdef CONFIG_SOC_TI81XX
-+#if IS_ENABLED(CONFIG_SOC_TI81XX) || IS_ENABLED(CONFIG_SOC_AM33XX)
- 		if (irqnr)
- 			goto out;
- 		irqnr = readl_relaxed(base_addr + 0xf8);
++#define TXSTATUS_READ_INTERVAL 1000000
++
+ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 						 int urb_status, u32 tx_status)
+ {
+@@ -170,8 +172,9 @@ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
+ 
+ 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
+-		/* Read register after 250 us */
+-		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
++		/* Read register after 1 ms */
++		hrtimer_start(&rt2x00dev->txstatus_timer,
++			      ktime_set(0, TXSTATUS_READ_INTERVAL),
+ 			      HRTIMER_MODE_REL);
+ 		return false;
+ 	}
+@@ -196,8 +199,9 @@ static void rt2800usb_async_read_tx_status(struct rt2x00_dev *rt2x00dev)
+ 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
+ 		return;
+ 
+-	/* Read TX_STA_FIFO register after 500 us */
+-	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
++	/* Read TX_STA_FIFO register after 2 ms */
++	hrtimer_start(&rt2x00dev->txstatus_timer,
++		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
+ 		      HRTIMER_MODE_REL);
+ }
+ 
 -- 
 1.8.3.2
 
