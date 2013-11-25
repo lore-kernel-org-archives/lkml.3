@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab3KYBeL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 20:34:11 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:62125 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab3KYBeI convert rfc822-to-8bit (ORCPT
+	id S1752821Ab3KYBkL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 20:40:11 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63958 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3KYBkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 20:34:08 -0500
-X-AuditID: cbfee61b-b7f076d0000004f6-db-5292a90a395b
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
-References: <000301cee71f$b0e54160$12afc420$@samsung.com>
- <1385267160.26319.98.camel@kjgkr>
-In-reply-to: <1385267160.26319.98.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by
- merging for mount performance
-Date: Mon, 25 Nov 2013 09:33:12 +0800
-Message-id: <000e01cee97e$6b83e480$428bad80$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQK5ip1hYVBPavTw3v39qs6NCq5t6wI37MMMmE4nD6A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAV2ulZOCDD7O4Le4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujO/LV7MU
-	LBOueN3SxNzAOJe/i5GTQ0LARGLb3B/sELaYxIV769m6GLk4hAQWMUr83nucHcL5wSjR/Qck
-	w8nBJqAisbzjPxOILSIgLTHr0zwWkCJmgdmMEj1fnjGCJIQEYiWmbpsFNpZTQE/i+J6fzCC2
-	sEC+xNQdN8DiLAKqElPOTgGzeQUsJV7++gZlC0r8mHwPaCgH0FB1iSlTckHCzALaEk/eXWCF
-	uFRBYsfZ14wQN1hJ7Lm5mR2iRlxi45FbLBMYhWYhmTQLYdIsJJNmIelYwMiyilE0tSC5oDgp
-	PddIrzgxt7g0L10vOT93EyM4Bp5J72Bc1WBxiFGAg1GJh3di9aQgIdbEsuLK3EOMEhzMSiK8
-	e+qAQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhiTd0gH
-	nT91k3enkPyFlRImvDv3mRudNt2t05L26gFXafmdlxWvN/gdOTblVOiLHb9PNXT3bhf0MXR5
-	ZNFekMwovnzO0Q+vJeoX2DWrGDrMeOp5Uf11UP97oTD5aYc+7NTxaBJ9ru7vsWn/7IRVwlqz
-	P4Sy9vYo/WF4teHR4ddVkau4xSaEbX2rxFKckWioxVxUnAgAea/8rX0CAAA=
+	Sun, 24 Nov 2013 20:40:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
+	<1385336527-27304-1-git-send-email-richard@nod.at>
+	<1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Sun, 24 Nov 2013 17:40:06 -0800
+Message-ID: <CAJusiZWh-4iofNA91im4cFC4OnkJYSoS7_vT60WAarb1kK-ASg@mail.gmail.com>
+Subject: Re: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set MSG_SENDPAGE_NOTLAST
+From: Shawn Landden <shawnlandden@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Nov 24, 2013 at 5:25 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Mon, 2013-11-25 at 00:42 +0100, Richard Weinberger wrote:
+>> Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+>> added an internal flag MSG_SENDPAGE_NOTLAST.
+>> We have to ensure that MSG_MORE is also set if we set MSG_SENDPAGE_NOTLAST.
+>> Otherwise users that check against MSG_MORE will not see it.
+>>
+>> This fixes sendfile() on AF_ALG.
+>>
+>> Cc: Tom Herbert <therbert@google.com>
+>> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Cc: <stable@vger.kernel.org> # 3.4.x
+>> Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  fs/splice.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/fs/splice.c b/fs/splice.c
+>> index 3b7ee65..b93f1b8 100644
+>> --- a/fs/splice.c
+>> +++ b/fs/splice.c
+>> @@ -701,7 +701,7 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
+>>       more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+>>
+>>       if (sd->len < sd->total_len && pipe->nrbufs > 1)
+>> -             more |= MSG_SENDPAGE_NOTLAST;
+>> +             more |= MSG_SENDPAGE_NOTLAST | MSG_MORE;
+>>
+>>       return file->f_op->sendpage(file, buf->page, buf->offset,
+>>                                   sd->len, &pos, more);
+>
+> I do not think this patch is right. It looks like a revert of a useful
+> patch for TCP zero copy. Given the time it took to discover this
+> regression, I bet tcp zero copy has more users than AF_ALG, by 5 or 6
+> order of magnitude ;)
+>
+> Here we want to make the difference between the two flags, not merge
+> them.
+>
+> If AF_ALG do not care of the difference, try instead :
+>
+> diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+> index ef5356cd280a..850246206b12 100644
+> --- a/crypto/algif_hash.c
+> +++ b/crypto/algif_hash.c
+> @@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
+>         struct hash_ctx *ctx = ask->private;
+>         int err;
+>
+> +       if (flags & MSG_SENDPAGE_NOTLAST)
+> +               flags |= MSG_MORE;
+> +
+>         lock_sock(sk);
+>         sg_init_table(ctx->sgl.sg, 1);
+>         sg_set_page(ctx->sgl.sg, page, size, offset);
+>
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Sunday, November 24, 2013 12:26 PM
-> To: Chao Yu
-> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
-> Subject: Re: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
-> 
-> Hi,
-> 
-> 2013-11-22 (금), 09:09 +0800, Chao Yu:
-> > Previously we read sit entries page one by one, this method lost the chance
-> > of reading contiguous page together. So we read pages as contiguous as
-> > possible for better mount performance.
-> >
-> > change log:
-> >  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng
-> >    suggested.
-> >  o add mark_page_accessed() before release page to delay VM reclaiming.
-> >  o remove '*order' for simplification of function as Jaegeuk Kim suggested.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/segment.c |  103 +++++++++++++++++++++++++++++++++++++++--------------
-> >  fs/f2fs/segment.h |    2 ++
-> >  2 files changed, 78 insertions(+), 27 deletions(-)
-> >
-> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> > index 8149eba..998e7d3 100644
-> > --- a/fs/f2fs/segment.c
-> > +++ b/fs/f2fs/segment.c
-> > @@ -14,6 +14,7 @@
-> >  #include <linux/blkdev.h>
-> >  #include <linux/prefetch.h>
-> >  #include <linux/vmalloc.h>
-> > +#include <linux/swap.h>
-> >
-> >  #include "f2fs.h"
-> >  #include "segment.h"
-> > @@ -1488,41 +1489,89 @@ static int build_curseg(struct f2fs_sb_info *sbi)
-> >  	return restore_curseg_summaries(sbi);
-> >  }
-> >
-> > +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start, int nrpages)
-> > +{
-> > +	struct address_space *mapping = sbi->meta_inode->i_mapping;
-> > +	struct page *page;
-> > +	block_t blk_addr, prev_blk_addr = 0;
-> > +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
-> > +	int blkno = start;
-> > +
-> > +	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
-> > +
-> > +		blk_addr = current_sit_addr(sbi, start * SIT_ENTRY_PER_BLOCK);
-> 
-> Should be:
-> 	blk_addr = current_sit_addr(sbi, blkno * SIT_ENTRY_PER_BLOCK);
-> 	                                -------
-> I'll fix this and merge the patch though.
-> Thanks,
+>From my testing this works.
 
-Oh, It's my mistake, sorry for that.
-Thanks for your review! :)
+-- 
 
-> 
-> --
-> Jaegeuk Kim
-> Samsung
-
+---
+Shawn Landden
++1 360 389 3001 (SMS preferred)
