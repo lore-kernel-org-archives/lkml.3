@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab3KYKnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:43:05 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41432 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab3KYKnD (ORCPT
+	id S1752636Ab3KYKq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:46:59 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:27645 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab3KYKq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:43:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1385374617.2354.22.camel@dabdike>
-References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-	<1385374617.2354.22.camel@dabdike>
-Date: Mon, 25 Nov 2013 11:43:01 +0100
-X-Google-Sender-Auth: 9gY6gywclV4KXsP8f8wenofxUYo
-Message-ID: <CAMuHMdXoy5DaKqGWrZxeof2UuoZK01=oxmQmy8kEvNS8CJLaTg@mail.gmail.com>
-Subject: Re: [PATCH 0024] asm-generic: Rename int-ll64.h to types.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Nov 2013 05:46:56 -0500
+X-AuditID: cbfec7f4-b7fea6d0000026ac-c2-52932a9dc666
+Message-id: <52932A9D.3050305@samsung.com>
+Date: Mon, 25 Nov 2013 11:46:53 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] CMA: Fix the phys_addr_t print types
+References: <1385264221-29952-1-git-send-email-santosh.shilimkar@ti.com>
+ <20131124034426.GB3873@kroah.com> <52917661.6050005@ti.com>
+ <20131124041056.GA7415@kroah.com> <52918071.10408@ti.com>
+In-reply-to: <52918071.10408@ti.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xq7pztSYHGTSfU7JoXryezWLT42us
+	Fpd3zWGzeN23htmBxWP/3DXsHpuX1Hscv7GdyePzJrkAligum5TUnMyy1CJ9uwSujIlX/Que
+	8FV82/qKvYHxMXcXIyeHhICJxNbPU5ghbDGJC/fWs3UxcnEICSxllOhaOJMJJCEk8IlRYsFU
+	MRCbV0BL4kjjR3YQm0VAVeJA/2Qwm03AUKLrbRdQMweHqECoxPc7IRDlghI/Jt9jAbFFBJIl
+	Vp1uAxvJLOAmcXv9PLC9wgKWEvtfL2aGWHWIUaLlWBqIzSmgIrHjxQeoejOJRy3rmCFseYnN
+	a94yT2AUmIVkxSwkZbOQlC1gZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERK2X3YwLj5m
+	dYhRgINRiYfXonJSkBBrYllxZS7QMRzMSiK8+SqTg4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
+	BhbtrNS8qnGv+PsXdfWS9w9UZiYc6zK3eRVg0NHbk8q462Nuwh7VDJa5+59H63sddNaT37h/
+	6tWXIUsag+5EC+878KJbci+78F7e/8afnPefe8NRKnjC8/Df1q123pOEXnVN37CAl+VJYO5L
+	vUWcCvfmHU+amzdtHeNBm7Rz6XJ/9gtbqG4vU2Ipzkg01GIuKk4EAPnKXOs5AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 11:16 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Mon, 2013-11-25 at 09:55 +0100, Geert Uytterhoeven wrote:
->> This patchset aims to rename <asm-generic/int-ll64.h> to
->> <asm-generic/types.h> in kernelspace, as suggested by Arnd.
->>
->> While userspace still has both include/uapi/asm-generic/int-l64.h and
->> include/uapi/asm-generic/int-ll64.h (int-l64.h may still be used on legacy
->> 64-bit systems), kernelspace always uses "(unsigned) long long" for 64-bit
->> integer values ("u64" and "s64").  Hence there's no longer a need to
->> distinguish between int-l64 and int-ll64 in kernelspace, and int-ll64.h can
->> just be called types.h
+Hi,
+
+On 2013-11-24 05:28, Santosh Shilimkar wrote:
+> On Saturday 23 November 2013 11:10 PM, Greg Kroah-Hartman wrote:
+> > On Sat, Nov 23, 2013 at 10:45:37PM -0500, Santosh Shilimkar wrote:
+> >> On Saturday 23 November 2013 10:44 PM, Greg Kroah-Hartman wrote:
+> >>> On Sat, Nov 23, 2013 at 10:37:01PM -0500, Santosh Shilimkar wrote:
+> >>>> @@ -250,8 +249,8 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+> >>>>  	*res_cma = cma;
+> >>>>  	cma_area_count++;
+> >>>>
+> >>>> -	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+> >>>> -		(unsigned long)base);
+> >>>> +	pr_info("CMA: reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
+> >>>> +		&base);
+> >>>
+> >>> Why is this pr_info() at all?  That's just noise, please move it to
+> >>> pr_debug().
+> >>>
+> >> Marek can comment better but I think its useful print to know CMA
+> >> reserved memory size.
+> >
+> > Useful to who?
+> >
+> Useful to anyone wants to know the CMA usage on a platform.
+> CMA size is configurable and platforms tend to use different sizes
+> based on needs. The info don't appear in /proc/meminfo, so probably
+> dmsg grep is easy enough to know how much CMA memory being used on
+> a platform. That was my point.
 >
-> Is this a good idea?  I thought some versions of gcc used long long for
-> 128 bit integers, in which case int-ll64.h will give the wrong types for
-> u64 and s64.  I think gcc is changing to use the __int128 type, so this
-> may be historical, but someone would need to validate that we have no
-> architectures with the old long long behaviour.
+> I don't have strong argument here against not making it pr_debug
+> but was waiting for Marek's opinion on it.
 
-I'm sorry, "(unsigned) long long" is always 64 bit in kernelspace.
+If possible I would like to keep pr_info. It already helped me a lot
+while analyzing someone's logs to find why memory allocation failed.
+A simple search for "CMA" messages enabled me to quickly check if CMA
+has been enabled and configured properly or not. It also gives a curious
+user some information about the memory configuration (especially if he
+don't need CMA, he will investigate why kernel has reserved so much
+memory).
 
-<asm-generic/int-l64.h> is included in uapi files only, and all of these
-inclusions are protected by #ifndef __KERNEL__:
+Best regards
+-- 
+Marek Szyprowski
+Samsung R&D Institute Poland
 
-$ git grep -C 2 "include.*int-l64.h" -- "*.h"
-arch/alpha/include/uapi/asm/types.h-
-arch/alpha/include/uapi/asm/types.h-#ifndef __KERNEL__
-arch/alpha/include/uapi/asm/types.h:#include <asm-generic/int-l64.h>
-arch/alpha/include/uapi/asm/types.h-#endif
-arch/alpha/include/uapi/asm/types.h-
---
-arch/ia64/include/uapi/asm/types.h-
-arch/ia64/include/uapi/asm/types.h-#ifndef __KERNEL__
-arch/ia64/include/uapi/asm/types.h:#include <asm-generic/int-l64.h>
-arch/ia64/include/uapi/asm/types.h-#endif
-arch/ia64/include/uapi/asm/types.h-
---
-arch/mips/include/uapi/asm/types.h-#ifndef __KERNEL__
-arch/mips/include/uapi/asm/types.h-# if _MIPS_SZLONG == 64
-arch/mips/include/uapi/asm/types.h:#  include <asm-generic/int-l64.h>
-arch/mips/include/uapi/asm/types.h-# else
-arch/mips/include/uapi/asm/types.h-#  include <asm-generic/int-ll64.h>
---
-arch/powerpc/include/uapi/asm/types.h- */
-arch/powerpc/include/uapi/asm/types.h-#if
-!defined(__SANE_USERSPACE_TYPES__) && defined(__powerpc64__) &&
-!defined(__KERNEL__)
-arch/powerpc/include/uapi/asm/types.h:# include <asm-generic/int-l64.h>
-arch/powerpc/include/uapi/asm/types.h-#else
-arch/powerpc/include/uapi/asm/types.h-# include <asm-generic/int-ll64.h>
---
-include/asm-generic/int-l64.h-#define _ASM_GENERIC_INT_L64_H
-include/asm-generic/int-l64.h-
-include/asm-generic/int-l64.h:#include <uapi/asm-generic/int-l64.h>
-include/asm-generic/int-l64.h-
-include/asm-generic/int-l64.h-
-$
-
-(non-UAPI include/asm-generic/int-l64.h is unused, its removal is pending).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
