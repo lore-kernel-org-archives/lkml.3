@@ -1,192 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab3KYONy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:13:54 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44815 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757551Ab3KYOMS (ORCPT
+	id S932236Ab3KYOOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:14:21 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3707 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117Ab3KYOOR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:12:18 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nm@ti.com, swarren@wwwdotorg.org,
-        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        tianyu.lan@intel.com, sebastian.capella@linaro.org,
-        jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 2/6] cpufreq: call driver's suspend/resume for each policy
-Date: Mon, 25 Nov 2013 19:41:42 +0530
-Message-Id: <dfa8759e3fdf07a4d5474acd754704bef1d86174.1385374822.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1385374819.git.viresh.kumar@linaro.org>
-References: <cover.1385374819.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1385374819.git.viresh.kumar@linaro.org>
-References: <cover.1385374819.git.viresh.kumar@linaro.org>
+	Mon, 25 Nov 2013 09:14:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 25 Nov 2013 06:08:03 -0800
+Message-ID: <52935AB6.2000302@nvidia.com>
+Date: Mon, 25 Nov 2013 19:42:06 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: IRQF_RESUME_EARLY and errors in dpm_suspend_noirq
+References: <201311201020.08158.heiko@sntech.de>  <528C86C2.1070206@nvidia.com> <1385374413.11161.28.camel@kazak.uk.xensource.com>
+In-Reply-To: <1385374413.11161.28.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlier cpufreq suspend/resume callbacks into drivers were getting called only
-for the boot CPU, as by the time callbacks were called non-boot CPUs were
-already removed. Because we might still need driver specific actions on
-suspend/resume, its better to use earlier infrastructure from the early
-suspend/late resume calls.
+On Monday 25 November 2013 03:43 PM, Ian Campbell wrote:
+> On Wed, 2013-11-20 at 15:24 +0530, Laxman Dewangan wrote:
+>> On Wednesday 20 November 2013 02:50 PM, Heiko Stübner wrote:
+>>> Hi,
+>>>
+>>> Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such IRQs
+>>> earlier) split the suspend/resume of the irqs into two parts.
+>>>
+>>> The early-irqs get resumed during syscore_resume, while the rest get
+>>> resumed by the regular resume_device_irqs.
+>>>
+>>> I may be blind, but where get the early-irqs resumed in the error
+>>> path of dpm_suspend_noirq?
+>>>
+>>> When a suspend_noirq callback returns an error, dpm_resume_noirq gets called,
+>>> which only calls resume_device_irqs while the suspend_device_irqs call in
+>>> dpm_suspend_noirq suspends all irqs. So it does not seem that the early-irqs
+>>> get resumed at all in this case.
+>>>
+>> I also faced same issue in our suspend failure path and posted fix
+>> sometime ago as
+>> https://lkml.org/lkml/2013/8/13/373
+>>
+>> It is still under review.
+> IME zero comments since August is not "under review", it is "has slipped
+> through the cracks" ;-)
+>
+> I would suggest you resend it.
+>
 
-In effect, we call suspend/resume for each policy. The resume part also takes
-care of synchronising frequency for boot CPU, which might turn out be different
-than what cpufreq core believes.
+Thanks all of you for review/ack/validating it.
+I resend it today. Hope at this time it will be on tree.
 
-Hence, the earlier syscore infrastructure is getting removed now.
+Howevere, I have not added stable on cc.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 98 +++++++++--------------------------------------
- 1 file changed, 18 insertions(+), 80 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index b6c7821..026efe4a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -27,7 +27,6 @@
- #include <linux/mutex.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
--#include <linux/syscore_ops.h>
- #include <linux/tick.h>
- #include <trace/events/power.h>
- 
-@@ -1481,10 +1480,15 @@ void cpufreq_suspend(void)
- 
- 	pr_debug("%s: Suspending Governors\n", __func__);
- 
--	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
-+	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
- 		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
- 			pr_err("%s: Failed to stop governor for policy: %p\n",
- 					__func__, policy);
-+		else if (cpufreq_driver->suspend &&
-+				cpufreq_driver->suspend(policy))
-+			pr_err("%s: Failed to suspend driver: %p\n", __func__,
-+					policy);
-+	}
- 
- 	cpufreq_suspended = true;
- }
-@@ -1500,92 +1504,27 @@ void cpufreq_resume(void)
- 
- 	cpufreq_suspended = false;
- 
--	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
-+	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
- 		if (__cpufreq_governor(policy, CPUFREQ_GOV_START) ||
- 				__cpufreq_governor(policy,
- 					CPUFREQ_GOV_LIMITS))
- 			pr_err("%s: Failed to start governor for policy: %p\n",
- 					__func__, policy);
--}
--
--/**
-- * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
-- *
-- * This function is only executed for the boot processor.  The other CPUs
-- * have been put offline by means of CPU hotplug.
-- */
--static int cpufreq_bp_suspend(void)
--{
--	int ret = 0;
--
--	int cpu = smp_processor_id();
--	struct cpufreq_policy *policy;
--
--	pr_debug("suspending cpu %u\n", cpu);
--
--	/* If there's no policy for the boot CPU, we have nothing to do. */
--	policy = cpufreq_cpu_get(cpu);
--	if (!policy)
--		return 0;
--
--	if (cpufreq_driver->suspend) {
--		ret = cpufreq_driver->suspend(policy);
--		if (ret)
--			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
--					"step on CPU %u\n", policy->cpu);
--	}
--
--	cpufreq_cpu_put(policy);
--	return ret;
--}
--
--/**
-- * cpufreq_bp_resume - Restore proper frequency handling of the boot CPU.
-- *
-- *	1.) resume CPUfreq hardware support (cpufreq_driver->resume())
-- *	2.) schedule call cpufreq_update_policy() ASAP as interrupts are
-- *	    restored. It will verify that the current freq is in sync with
-- *	    what we believe it to be. This is a bit later than when it
-- *	    should be, but nonethteless it's better than calling
-- *	    cpufreq_driver->get() here which might re-enable interrupts...
-- *
-- * This function is only executed for the boot CPU.  The other CPUs have not
-- * been turned on yet.
-- */
--static void cpufreq_bp_resume(void)
--{
--	int ret = 0;
-+		else if (cpufreq_driver->resume &&
-+				cpufreq_driver->resume(policy))
-+			pr_err("%s: Failed to resume driver: %p\n", __func__,
-+					policy);
- 
--	int cpu = smp_processor_id();
--	struct cpufreq_policy *policy;
--
--	pr_debug("resuming cpu %u\n", cpu);
--
--	/* If there's no policy for the boot CPU, we have nothing to do. */
--	policy = cpufreq_cpu_get(cpu);
--	if (!policy)
--		return;
--
--	if (cpufreq_driver->resume) {
--		ret = cpufreq_driver->resume(policy);
--		if (ret) {
--			printk(KERN_ERR "cpufreq: resume failed in ->resume "
--					"step on CPU %u\n", policy->cpu);
--			goto fail;
--		}
-+		/*
-+		 * schedule call cpufreq_update_policy() for boot CPU, i.e. last
-+		 * policy in list. It will verify that the current freq is in
-+		 * sync with what we believe it to be.
-+		 */
-+		if (list_is_last(&policy->policy_list, &cpufreq_policy_list))
-+			schedule_work(&policy->update);
- 	}
--
--	schedule_work(&policy->update);
--
--fail:
--	cpufreq_cpu_put(policy);
- }
- 
--static struct syscore_ops cpufreq_syscore_ops = {
--	.suspend	= cpufreq_bp_suspend,
--	.resume		= cpufreq_bp_resume,
--};
--
- /**
-  *	cpufreq_get_current_driver - return current driver's name
-  *
-@@ -2271,7 +2210,6 @@ static int __init cpufreq_core_init(void)
- 
- 	cpufreq_global_kobject = kobject_create();
- 	BUG_ON(!cpufreq_global_kobject);
--	register_syscore_ops(&cpufreq_syscore_ops);
- 
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
 
