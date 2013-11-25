@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab3KYN7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:59:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58893 "EHLO
+	id S1756912Ab3KYN7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:59:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59000 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754510Ab3KYNxw (ORCPT
+	by vger.kernel.org with ESMTP id S1754448Ab3KYNxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:52 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oliver Neukum" <oneukum@suse.de>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org,
+        "Bernd Schubert" <bernd.schubert@itwm.fraunhofer.de>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "Jonathan Nieder" <jrnieder@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.528298463@decadent.org.uk>
+Message-ID: <lsq.1385387069.718473425@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 55/87] xhci: Fix spurious wakeups after S5 on Haswell
+Subject: [PATCH 3.2 24/87] nfsd: rename 'int access' to 'int may_flags' in
+ nfsd_open()
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,114 +35,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 upstream.
+commit 999448a8c0202d8c41711c92385323520644527b upstream.
 
-Haswell LynxPoint and LynxPoint-LP with the recent Intel BIOS show
-mysterious wakeups after shutdown occasionally.  After discussing with
-BIOS engineers, they explained that the new BIOS expects that the
-wakeup sources are cleared and set to D3 for all wakeup devices when
-the system is going to sleep or power off, but the current xhci driver
-doesn't do this properly (partly intentionally).
+Just rename this variable, as the next patch will add a flag and
+'access' as variable name would not be correct any more.
 
-This patch introduces a new quirk, XHCI_SPURIOUS_WAKEUP, for
-fixing the spurious wakeups at S5 by calling xhci_reset() in the xhci
-shutdown ops as done in xhci_stop(), and setting the device to PCI D3
-at shutdown and remove ops.
-
-The PCI D3 call is based on the initial fix patch by Oliver Neukum.
-
-[Note: Sarah changed the quirk name from XHCI_HSW_SPURIOUS_WAKEUP to
-XHCI_SPURIOUS_WAKEUP, since none of the other quirks have system names
-in them.  Sarah also fixed a collision with a quirk submitted around the
-same time, by changing the xhci->quirks bit from 17 to 18.]
-
-This patch should be backported to kernels as old as 3.0, that
-contain the commit 1c12443ab8eba71a658fae4572147e56d1f84f66 "xhci: Add
-Lynx Point to list of Intel switchable hosts."
-
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Acked-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-pci.c | 17 +++++++++++++++++
- drivers/usb/host/xhci.c     |  7 +++++++
- drivers/usb/host/xhci.h     |  1 +
- 3 files changed, 25 insertions(+)
+ fs/nfsd/vfs.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -34,6 +34,9 @@
- #define PCI_VENDOR_ID_ETRON		0x1b6f
- #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -726,12 +726,13 @@ static int nfsd_open_break_lease(struct
  
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x8c31
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI	0x9c31
+ /*
+  * Open an existing file or directory.
+- * The access argument indicates the type of open (read/write/lock)
++ * The may_flags argument indicates the type of open (read/write/lock)
++ * and additional flags.
+  * N.B. After this call fhp needs an fh_put
+  */
+ __be32
+ nfsd_open(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+-			int access, struct file **filp)
++			int may_flags, struct file **filp)
+ {
+ 	struct dentry	*dentry;
+ 	struct inode	*inode;
+@@ -746,7 +747,7 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	 * and (hopefully) checked permission - so allow OWNER_OVERRIDE
+ 	 * in case a chmod has now revoked permission.
+ 	 */
+-	err = fh_verify(rqstp, fhp, type, access | NFSD_MAY_OWNER_OVERRIDE);
++	err = fh_verify(rqstp, fhp, type, may_flags | NFSD_MAY_OWNER_OVERRIDE);
+ 	if (err)
+ 		goto out;
+ 
+@@ -757,7 +758,7 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	 * or any access when mandatory locking enabled
+ 	 */
+ 	err = nfserr_perm;
+-	if (IS_APPEND(inode) && (access & NFSD_MAY_WRITE))
++	if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE))
+ 		goto out;
+ 	/*
+ 	 * We must ignore files (but only files) which might have mandatory
+@@ -770,12 +771,12 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 	if (!inode->i_fop)
+ 		goto out;
+ 
+-	host_err = nfsd_open_break_lease(inode, access);
++	host_err = nfsd_open_break_lease(inode, may_flags);
+ 	if (host_err) /* NOMEM or WOULDBLOCK */
+ 		goto out_nfserr;
+ 
+-	if (access & NFSD_MAY_WRITE) {
+-		if (access & NFSD_MAY_READ)
++	if (may_flags & NFSD_MAY_WRITE) {
++		if (may_flags & NFSD_MAY_READ)
+ 			flags = O_RDWR|O_LARGEFILE;
+ 		else
+ 			flags = O_WRONLY|O_LARGEFILE;
+@@ -786,7 +787,8 @@ nfsd_open(struct svc_rqst *rqstp, struct
+ 		host_err = PTR_ERR(*filp);
+ 		*filp = NULL;
+ 	} else
+-		host_err = ima_file_check(*filp, access);
++		host_err = ima_file_check(*filp, may_flags);
 +
- static const char hcd_name[] = "xhci_hcd";
- 
- /* called after powerup, by probe or system-pm "wakeup" */
-@@ -111,6 +114,15 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
-+	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
-+		/* Workaround for occasional spurious wakeups from S5 (or
-+		 * any other sleep) on Haswell machines with LPT and LPT-LP
-+		 * with the new Intel BIOS
-+		 */
-+		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
-@@ -210,6 +222,11 @@ static void xhci_pci_remove(struct pci_d
- 		usb_put_hcd(xhci->shared_hcd);
- 	}
- 	usb_hcd_pci_remove(dev);
-+
-+	/* Workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		pci_set_power_state(dev, PCI_D3hot);
-+
- 	kfree(xhci);
- }
- 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -763,12 +763,19 @@ void xhci_shutdown(struct usb_hcd *hcd)
- 
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
-+	/* Workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		xhci_reset(xhci);
- 	spin_unlock_irq(&xhci->lock);
- 
- 	xhci_cleanup_msix(xhci);
- 
- 	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
- 		    xhci_readl(xhci, &xhci->op_regs->status));
-+
-+	/* Yet another workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		pci_set_power_state(to_pci_dev(hcd->self.controller), PCI_D3hot);
- }
- 
- #ifdef CONFIG_PM
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1494,6 +1494,7 @@ struct xhci_hcd {
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
- #define XHCI_AVOID_BEI		(1 << 15)
- #define XHCI_SLOW_SUSPEND	(1 << 17)
-+#define XHCI_SPURIOUS_WAKEUP	(1 << 18)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ out_nfserr:
+ 	err = nfserrno(host_err);
+ out:
 
