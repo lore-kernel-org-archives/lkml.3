@@ -1,156 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab3KYSmq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:42:46 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64589 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754707Ab3KYSmp (ORCPT
+	id S1757415Ab3KYSpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:45:09 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:34988 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754522Ab3KYSpH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:42:45 -0500
-Date: Mon, 25 Nov 2013 18:41:59 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Vinayak Kale <vkale@apm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
-Subject: Re: [PATCH V5 2/2] arm64: perf: add support for percpu pmu interrupt
-Message-ID: <20131125184159.GE28201@mudshark.cambridge.arm.com>
-References: <1385372753-7396-1-git-send-email-vkale@apm.com>
- <1385372753-7396-3-git-send-email-vkale@apm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385372753-7396-3-git-send-email-vkale@apm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Nov 2013 13:45:07 -0500
+Date: Mon, 25 Nov 2013 19:47:04 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH RESEND v2] clk: probe defer when clock not yet ready
+Message-ID: <20131125194704.5a5922b7@armhf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 09:45:53AM +0000, Vinayak Kale wrote:
-> Add support for irq registration when pmu interrupt is percpu.
-> 
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Signed-off-by: Tuan Phan <tphan@apm.com>
-> ---
->  arch/arm64/kernel/perf_event.c |  108 ++++++++++++++++++++++++++++++----------
->  1 file changed, 81 insertions(+), 27 deletions(-)
-> 
-> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
-> index cea1594..a2efab3 100644
-> --- a/arch/arm64/kernel/perf_event.c
-> +++ b/arch/arm64/kernel/perf_event.c
-> @@ -22,6 +22,7 @@
->  
->  #include <linux/bitmap.h>
->  #include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  #include <linux/kernel.h>
->  #include <linux/export.h>
->  #include <linux/perf_event.h>
-> @@ -363,22 +364,55 @@ validate_group(struct perf_event *event)
->  }
->  
->  static void
-> +armpmu_disable_percpu_irq(void *data)
-> +{
-> +	struct arm_pmu *armpmu = data;
-> +	struct platform_device *pmu_device = armpmu->plat_device;
-> +	int irq = platform_get_irq(pmu_device, 0);
-> +
-> +	cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
-> +	disable_percpu_irq(irq);
-> +}
-> +
-> +static void
->  armpmu_release_hardware(struct arm_pmu *armpmu)
->  {
->  	int i, irq, irqs;
->  	struct platform_device *pmu_device = armpmu->plat_device;
->  
->  	irqs = min(pmu_device->num_resources, num_possible_cpus());
-> +	if (irqs < 1)
+At probe time, a clock device may not be ready when some other device
+wants to use it. 
 
-Can you just make irqs unsigned, then do if (!irqs) instead?
+This patch lets the functions clk_get/devm_clk_get return a probe defer
+when the clock is defined in the DT but not yet available.
 
-> +		return;
->  
-> -	for (i = 0; i < irqs; ++i) {
-> -		if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-> -			continue;
-> -		irq = platform_get_irq(pmu_device, i);
-> -		if (irq >= 0)
-> -			free_irq(irq, armpmu);
-> +	irq = platform_get_irq(pmu_device, 0);
-> +	if (irq <= 0)
-> +		return;
-> +
-> +	if (irq_is_percpu(irq)) {
-> +		on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
-> +		free_percpu_irq(irq, &cpu_hw_events);
-> +	} else {
-> +		for (i = 0; i < irqs; ++i) {
-> +			if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
-> +				continue;
-> +			irq = platform_get_irq(pmu_device, i);
-> +			if (irq > 0)
-> +				free_irq(irq, armpmu);
-> +		}
->  	}
->  }
->  
-> +static void
-> +armpmu_enable_percpu_irq(void *data)
-> +{
-> +	struct arm_pmu *armpmu = data;
-> +	struct platform_device *pmu_device = armpmu->plat_device;
-> +	int irq = platform_get_irq(pmu_device, 0);
-> +
-> +	enable_percpu_irq(irq, 0);
+It also fixes an erroneous call to clk_get_sys() when __clk_get() fails.
 
-IRQ_TYPE_NONE?
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+resend v2: remove ASoc from subject (thank you, Mark)
+resend: - patch subject change from
+   [PATCH v3 1/2] ASoC: kirkwood: clk: probe defer when clock not yet ready
+	- base kernel 3.13.0-rc1
+v2: fix __clk_get() failure (from Russell King)
+---
+ drivers/clk/clk.c    | 2 +-
+ drivers/clk/clkdev.c | 7 ++++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-> +	cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
-> +}
-> +
->  static int
->  armpmu_reserve_hardware(struct arm_pmu *armpmu)
->  {
-> @@ -396,34 +430,54 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
->  		return -ENODEV;
->  	}
->  
-> -	for (i = 0; i < irqs; ++i) {
-> -		err = 0;
-> -		irq = platform_get_irq(pmu_device, i);
-> -		if (irq < 0)
-> -			continue;
-> +	irq = platform_get_irq(pmu_device, 0);
-> +	if (irq <= 0) {
-> +		pr_err("failed to get valid irq for PMU device\n");
-> +		return -ENODEV;
-> +	}
->  
-> -		/*
-> -		 * If we have a single PMU interrupt that we can't shift,
-> -		 * assume that we're running on a uniprocessor machine and
-> -		 * continue. Otherwise, continue without this interrupt.
-> -		 */
-> -		if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
-> -			pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
-> -				    irq, i);
-> -			continue;
-> -		}
-> +	if (irq_is_percpu(irq)) {
-> +		err = request_percpu_irq(irq, armpmu->handle_irq,
-> +				"arm-pmu", &cpu_hw_events);
-
-This is a bit of a kludge passing in the cpu_hw_events as the per-cpu token,
-but I guess that will do for now. There is potential for something like a
-master-aware L2 PMU which uses PPIs and expects to pass something different
-back to the IRQ handler.
-
-Will
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 2cf2ea6..41361c6 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2187,7 +2187,7 @@ EXPORT_SYMBOL_GPL(of_clk_del_provider);
+ struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
+ {
+ 	struct of_clk_provider *provider;
+-	struct clk *clk = ERR_PTR(-ENOENT);
++	struct clk *clk = ERR_PTR(-EPROBE_DEFER);
+ 
+ 	/* Check if we have such a provider in our array */
+ 	mutex_lock(&of_clk_lock);
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index 442a313..1f402b9 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -157,7 +157,12 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+ 
+ 	if (dev) {
+ 		clk = of_clk_get_by_name(dev->of_node, con_id);
+-		if (!IS_ERR(clk) && __clk_get(clk))
++		if (!IS_ERR(clk)) {
++			if (!__clk_get(clk))
++				clk = ERR_PTR(-ENOENT);
++			return clk;
++		}
++		if (PTR_ERR(clk) == -EPROBE_DEFER)
+ 			return clk;
+ 	}
+ 
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
