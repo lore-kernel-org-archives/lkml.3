@@ -1,166 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab3KYQAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:00:41 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:42723 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab3KYQAk (ORCPT
+	id S1756718Ab3KYQCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:02:04 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61467 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752093Ab3KYQCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:00:40 -0500
-MIME-Version: 1.0
-X-Originating-IP: [1.38.28.197]
-In-Reply-To: <CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
-References: <1384897358-22940-1-git-send-email-fkan@apm.com>
-	<528C95D2.5090200@arm.com>
-	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
-	<CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
-Date: Mon, 25 Nov 2013 21:30:39 +0530
-Message-ID: <CAAhSdy2d8p_3RsB1vGF2xdovOkwu1=rHHLRLcdOrduC3aj6NYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
-From: Anup Patel <anup@brainfault.org>
+	Mon, 25 Nov 2013 11:02:01 -0500
+Date: Mon, 25 Nov 2013 16:01:53 +0000
+From: Mark Rutland <mark.rutland@arm.com>
 To: Rob Herring <robherring2@gmail.com>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Feng Kan <fkan@apm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
+Cc: Kumar Gala <galak@codeaurora.org>, devicetree <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vinayak Kale <vinayak.kale@gmail.com>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Loc Ho <lho@apm.com>, Kumar Sankaran <ksankaran@apm.com>,
-        patches@apm.com
-Content-Type: text/plain; charset=ISO-8859-1
+        Will Deacon <Will.Deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH] dt-bindings: add ARMv8 PMU binding
+Message-ID: <20131125160153.GI32081@e106331-lin.cambridge.arm.com>
+References: <1385155032-9032-1-git-send-email-robherring2@gmail.com>
+ <A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
+ <528FD003.8090607@gmail.com>
+ <20131125091651.GA32081@e106331-lin.cambridge.arm.com>
+ <CAL_JsqKArowT_DE8-vCJvmOSxjp+X9bngCXXsgjBK7G3wPZ7wA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL_JsqKArowT_DE8-vCJvmOSxjp+X9bngCXXsgjBK7G3wPZ7wA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 9:13 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Sat, Nov 23, 2013 at 2:41 AM, Anup Patel <anup@brainfault.org> wrote:
->> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>> [dropping <patches@apm.com> from the CC list, as someone seems to have
->>>  tripped on the config file, and I'm tired of getting bounces]
->>>
->>> Feng,
->>>
->>> On 19/11/13 21:42, Feng Kan wrote:
->>>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
->>>> X-Gene implementation, the FIQ bypass must be enabled at all time.
->>>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
->>>
->>> How comes? Are only PPIs affected? When you say "some PPIs", can you be
->>> more specific?
->>>
->>>> Signed-off-by: Feng Kan <fkan@apm.com>
->>>> ---
->>>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
->>>>  include/linux/irqchip/arm-gic.h |    4 ++--
->>>>  2 files changed, 13 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>> index d0e9480..aa7342e 100644
->>>> --- a/drivers/irqchip/irq-gic.c
->>>> +++ b/drivers/irqchip/irq-gic.c
->>>> @@ -65,6 +65,7 @@ struct gic_chip_data {
->>>>  #endif
->>>>       struct irq_domain *domain;
->>>>       unsigned int gic_irqs;
->>>> +     unsigned int bypass_flag;
->>>>  #ifdef CONFIG_GIC_NON_BANKED
->>>>       void __iomem *(*get_base)(union gic_base *);
->>>>  #endif
->>>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>>
->>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->>>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
->>>>  }
->>>>
->>>>  void gic_cpu_if_down(void)
->>>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->>>>
->>>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
->>>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
->>>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
->>>>  }
->>>>
->>>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
->>>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
->>>>
->>>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>>                          void __iomem *dist_base, void __iomem *cpu_base,
->>>> -                        u32 percpu_offset, struct device_node *node)
->>>> +                        u32 percpu_offset, u32 bypass_val,
->>>> +                        struct device_node *node)
->>>>  {
->>>>       irq_hw_number_t hwirq_base;
->>>>       struct gic_chip_data *gic;
->>>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->>>>
->>>>       set_handle_irq(gic_handle_irq);
->>>>
->>>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
->>>
->>> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
->>>
->>>>       gic_chip.flags |= gic_arch_extn.flags;
->>>>       gic_dist_init(gic);
->>>>       gic_cpu_init(gic);
->>>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>>       void __iomem *cpu_base;
->>>>       void __iomem *dist_base;
->>>>       u32 percpu_offset;
->>>> +     u32 bypass_val;
->>>>       int irq;
->>>>
->>>>       if (WARN_ON(!node))
->>>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
->>>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
->>>>               percpu_offset = 0;
->>>>
->>>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
->>>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
->>>> +             bypass_val = 0;
->>>
->>> [adding Mark on Cc, so he can comment on the DT parts]
->>>
->>> Where's the DT documentation update? Also, as this is an
->>> implementation-specific quirk, you should consider using a separate
->>> compatible string and move the handling of this issue into some X-Gene
->>> specific code.
->>
->> Adding separate compatible string for X-Gene specific GIC will break
->> VGIC code for X-Gene because VGIC code looks for DT node compatible
->> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
->> code for X-Gene.
->>
->> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
->> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
->> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
->> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
->> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
->> PPI28 (Legacy-FIQ).
->>
->> We should have more cleaner and optional device tree binding for GIC
->> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
->> and FIQBypDisGrp1 bits for X-Gene.
->
-> IIRC, all these bits are secure mode only (or only a subset are
-> banked). Whether an SoC supports secure mode or not, the current
-> policy for the kernel is to do any secure mode setup in firmware or
-> bootloader.
+On Mon, Nov 25, 2013 at 03:24:46PM +0000, Rob Herring wrote:
+> On Mon, Nov 25, 2013 at 3:16 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > On Fri, Nov 22, 2013 at 09:43:31PM +0000, Rob Herring wrote:
+> >> On 11/22/2013 03:38 PM, Kumar Gala wrote:
+> >> >
+> >> > On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
+> >> >
+> >> >> From: Rob Herring <rob.herring@calxeda.com>
+> >> >>
+> >> >> Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
+> >> >>
+> >> >> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> >> >> Cc: Will Deacon <will.deacon@arm.com>
+> >> >> Cc: Pawel Moll <pawel.moll@arm.com>
+> >> >> Cc: Mark Rutland <mark.rutland@arm.com>
+> >> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> >> >> ---
+> >> >> Documentation/devicetree/bindings/arm/pmu.txt | 1 +
+> >> >> 1 file changed, 1 insertion(+)
+> >> >>
+> >> >> diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
+> >> >> index 343781b..3e1e498 100644
+> >> >> --- a/Documentation/devicetree/bindings/arm/pmu.txt
+> >> >> +++ b/Documentation/devicetree/bindings/arm/pmu.txt
+> >> >> @@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
+> >> >> Required properties:
+> >> >>
+> >> >> - compatible : should be one of
+> >> >> +  "arm,armv8-pmuv3”
+> >> >
+> >> > what about arm,armv8-pmu-v3?
+> >>
+> >> I'm just documenting what is already being used:
+> >>
+> >> arch/arm64/boot/dts/foundation-v8.dts:          compatible =
+> >> "arm,armv8-pmuv3";
+> >> arch/arm64/boot/dts/rtsm_ve-aemv8a.dts:         compatible =
+> >> "arm,armv8-pmuv3";
+> >>
+> >> Do we want to change those?
+> >
+> > It would probably have been nicer to have the '-' from the start, but
+> > adding it now is only going to expand the set of compatible strings for
+> > no appreciable benefit.
+> >
+> > I don't see any value in adding a new form of the string, and we can't
+> > change the existing one as it's already in use.
+> 
+> Is that an ack then?
+> 
 
-Group0 are secure interrupts and Group1 are non-secure interrupts.
+Sure:
 
-Does this mean we should only touch IRQBypDisGrp1 and FIQBypDisGrp1
-bits from kernel ??
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 
->
-> Rob
-
---
-Anup
+Mark.
