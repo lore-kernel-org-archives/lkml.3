@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3KYKD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:03:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46474 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3KYKDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:03:18 -0500
+	id S1753443Ab3KYKDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:03:37 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48383 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab3KYKDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:03:33 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -18,9 +17,9 @@ CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <kishon@ti.com>, <gregkh@linuxfoundation.org>,
         <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
         <galak@codeaurora.org>
-Subject: [PATCH v3 09/10] phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
-Date: Mon, 25 Nov 2013 15:31:29 +0530
-Message-ID: <1385373690-12170-10-git-send-email-kishon@ti.com>
+Subject: [PATCH v3 10/10] arm/dts: added dt properties to adapt to the new phy framwork
+Date: Mon, 25 Nov 2013 15:31:30 +0530
+Message-ID: <1385373690-12170-11-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1385373690-12170-1-git-send-email-kishon@ti.com>
 References: <1385373690-12170-1-git-send-email-kishon@ti.com>
@@ -30,51 +29,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
-Also removed the unused members of struct omap_usb (after phy-omap-pipe3
-started using it's own header file)
+Added device tree bindings for dwc3, usb2 and usb3 PHYs. The documentation
+of these can be found at Documentation/devicetree/bindings/phy/phy-bindings.txt
+and Documentation/devicetree/bindings/phy/ti-phy.txt.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-omap-usb2.c           |    2 +-
- include/linux/{usb => phy}/omap_usb.h |    3 ---
- 2 files changed, 1 insertion(+), 4 deletions(-)
- rename include/linux/{usb => phy}/omap_usb.h (95%)
+ arch/arm/boot/dts/omap5.dtsi |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 9b3e867..d738dc3 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -21,7 +21,7 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/io.h>
--#include <linux/usb/omap_usb.h>
-+#include <linux/phy/omap_usb.h>
- #include <linux/usb/phy_companion.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-diff --git a/include/linux/usb/omap_usb.h b/include/linux/phy/omap_usb.h
-similarity index 95%
-rename from include/linux/usb/omap_usb.h
-rename to include/linux/phy/omap_usb.h
-index 6ae2936..19d343c3 100644
---- a/include/linux/usb/omap_usb.h
-+++ b/include/linux/phy/omap_usb.h
-@@ -33,13 +33,10 @@ struct usb_dpll_params {
- struct omap_usb {
- 	struct usb_phy		phy;
- 	struct phy_companion	*comparator;
--	void __iomem		*pll_ctrl_base;
- 	struct device		*dev;
- 	struct device		*control_dev;
- 	struct clk		*wkupclk;
--	struct clk		*sys_clk;
- 	struct clk		*optclk;
--	u8			is_suspended:1;
- };
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 29a6354..c135677 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -678,6 +678,8 @@
+ 				reg = <0x4a030000 0x10000>;
+ 				interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH>;
+ 				usb-phy = <&usb2_phy>, <&usb3_phy>;
++				phys = <&usb2_phy>, <&usb3_phy>;
++				phy-names = "usb2-phy", "usb3-phy";
+ 				dr_mode = "peripheral";
+ 				tx-fifo-resize;
+ 			};
+@@ -694,6 +696,7 @@
+ 				compatible = "ti,omap-usb2";
+ 				reg = <0x4a084000 0x7c>;
+ 				ctrl-module = <&omap_control_usb2phy>;
++				#phy-cells = <0>;
+ 			};
  
- #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
+ 			usb3_phy: usb3phy@4a084400 {
+@@ -703,6 +706,7 @@
+ 				      <0x4a084c00 0x40>;
+ 				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+ 				ctrl-module = <&omap_control_usb3phy>;
++				#phy-cells = <0>;
+ 			};
+ 		};
+ 
 -- 
 1.7.10.4
 
