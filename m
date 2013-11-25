@@ -1,411 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab3KYUCN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 15:02:13 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46585 "EHLO comal.ext.ti.com"
+	id S1756939Ab3KYUEL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 15:04:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21842 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755189Ab3KYUCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 15:02:09 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <nsekhar@ti.com>
-CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH] ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
-Date: Mon, 25 Nov 2013 22:00:54 +0200
-Message-ID: <1385409654-19006-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <5291CB01.1010506@ti.com>
-References: <5291CB01.1010506@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753984Ab3KYUEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 15:04:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,769,1378882800"; 
+   d="scan'208";a="441580418"
+Message-ID: <1385409830.12342.41.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
+From: Darren Hart <dvhart@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, jeffm@suse.com,
+        "Norton, Scott J" <scott.norton@hp.com>, tom.vaden@hp.com,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 25 Nov 2013 12:03:50 -0800
+In-Reply-To: <alpine.DEB.2.02.1311251938570.30673@ionos.tec.linutronix.de>
+References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>
+	  <1385168197-8612-5-git-send-email-davidlohr@hp.com>
+	  <CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com>
+	 <1385176773.5402.14.camel@buesod1.americas.hpqcorp.net>
+	 <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>
+	 <alpine.DEB.2.02.1311251938570.30673@ionos.tec.linutronix.de>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem that the set timings code contains the call of Davinci
-platform function davinci_aemif_setup_timing() which is not
-accessible if kernel is built for another platform like Keystone.
+On Mon, 2013-11-25 at 20:47 +0100, Thomas Gleixner wrote:
+> On Sat, 23 Nov 2013, Thomas Gleixner wrote:
+> > On Fri, 22 Nov 2013, Davidlohr Bueso wrote:
+> > So with the atomic ops you are changing that to:
+> > 
+> > CPU 0                                 CPU 1
+> > 
+> >     val = *futex;
+> >     futex_wait(futex, val);
+> > 
+> >     spin_lock(&hb->lock);
+> > 
+> >     atomic_inc(&hb->waiters);
+> >     uval = *futex;
+> >                                       *futex = newval;
+> > 
+> >     if (uval != val) {                        futex_wake();
+> >        spin_unlock(&hb->lock);                if (!atomic_read(&hb->waiters))
+> >        return;                                   return;
+> >     }
+> >                                       spin_lock((&hb->lock);  
+> >     plist_add(hb, self);
+> >     spin_unlock(&hb->lock);
+> >     schedule();                               wakeup_waiters(hb);
+> >     ...
+> > 
+> > which restores the ordering guarantee, which the hash bucket lock
+> > provided so far.
+> 
+> Actually that's not true by design, it just happens to work.
+> 
+> atomic_inc() on x86 is a "lock incl".
+> 
+>  The LOCK prefix just guarantees that the cache line which is affected
+>  by the INCL is locked. And it guarantees that locked operations
+>  serialize all outstanding load and store operations.
+> 
+>  But Documentation/atomic_ops.txt says about atomic_inc():
+> 
+>  "One very important aspect of these two routines is that they DO NOT
+>   require any explicit memory barriers.  They need only perform the
+>   atomic_t counter update in an SMP safe manner."
+> 
+>  So while this has a barrier on x86, it's not guaranteed.
 
-The Keysone platform is going to use TI AEMIF driver.
-If TI AEMIF is used we don't need to set timings and bus width.
-It is done by AEMIF driver.
 
-To get rid of davinci-nand driver dependency on aemif platform code
-we moved aemif code to davinci platform.
+But it is guaranteed to be "in an SMP safe manner"... which I guess just
+means that two writes will not intermix bytes, but no guarantee that the
+value will be visible to other CPUs unless some kind of barrier is
+explicitly imposed.
 
-The platform AEMIF code (aemif.c) has to be removed once Davinci
-will be converted to DT and use ti-aemif.c driver.
+Correct?
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- arch/arm/mach-davinci/aemif.c                   |   73 ++++++++++++++++++++++-
- arch/arm/mach-davinci/board-da830-evm.c         |    3 +
- arch/arm/mach-davinci/board-da850-evm.c         |    3 +
- arch/arm/mach-davinci/board-dm355-evm.c         |    5 ++
- arch/arm/mach-davinci/board-dm355-leopard.c     |    5 ++
- arch/arm/mach-davinci/board-dm365-evm.c         |    4 ++
- arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
- arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
- arch/arm/mach-davinci/board-mityomapl138.c      |    3 +
- arch/arm/mach-davinci/board-neuros-osd2.c       |    9 ++-
- arch/arm/mach-davinci/devices-tnetv107x.c       |    3 +
- drivers/mtd/nand/davinci_nand.c                 |   23 -------
- include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
- 13 files changed, 116 insertions(+), 28 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
-index f091a90..51b14c6 100644
---- a/arch/arm/mach-davinci/aemif.c
-+++ b/arch/arm/mach-davinci/aemif.c
-@@ -16,6 +16,7 @@
- #include <linux/time.h>
- 
- #include <linux/platform_data/mtd-davinci-aemif.h>
-+#include <linux/platform_data/mtd-davinci.h>
- 
- /* Timing value configuration */
- 
-@@ -43,6 +44,17 @@
- 				WSTROBE(WSTROBE_MAX) | \
- 				WSETUP(WSETUP_MAX))
- 
-+static inline unsigned int davinci_aemif_readl(void __iomem *base, int offset)
-+{
-+	return readl_relaxed(base + offset);
-+}
-+
-+static inline void davinci_aemif_writel(void __iomem *base,
-+					int offset, unsigned long value)
-+{
-+	writel_relaxed(value, base + offset);
-+}
-+
- /*
-  * aemif_calc_rate - calculate timing data.
-  * @wanted: The cycle time needed in nanoseconds.
-@@ -86,7 +98,7 @@ static int aemif_calc_rate(int wanted, unsigned long clk, int max)
-  *
-  * Returns 0 on success, else negative errno.
-  */
--int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
-+static int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 					void __iomem *base, unsigned cs)
- {
- 	unsigned set, val;
-@@ -130,4 +142,61 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 
- 	return 0;
- }
--EXPORT_SYMBOL(davinci_aemif_setup_timing);
-+
-+/**
-+ * davinci_aemif_setup - setup AEMIF interface by davinci_nand_pdata
-+ * @pdev - link to platform device to setup settings for
-+ *
-+ * This function does not use any locking while programming the AEMIF
-+ * because it is expected that there is only one user of a given
-+ * chip-select.
-+ *
-+ * Returns 0 on success, else negative errno.
-+ */
-+int davinci_aemif_setup(struct platform_device *pdev)
-+{
-+	struct davinci_nand_pdata *pdata = dev_get_platdata(&pdev->dev);
-+	uint32_t val;
-+	struct resource	*res;
-+	void __iomem *base;
-+	int ret = 0;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res) {
-+		dev_err(&pdev->dev, "cannot get IORESOURCE_MEM\n");
-+		return -ENOMEM;
-+	}
-+
-+	base = ioremap(res->start, resource_size(res));
-+	if (!base) {
-+		dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res);
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	/*
-+	 * Setup Async configuration register in case we did not boot
-+	 * from NAND and so bootloader did not bother to set it up.
-+	 */
-+	val = davinci_aemif_readl(base, A1CR_OFFSET + pdev->id * 4);
-+	/*
-+	 * Extended Wait is not valid and Select Strobe mode is not
-+	 * used
-+	 */
-+	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
-+	if (pdata->options & NAND_BUSWIDTH_16)
-+		val |= 0x1;
-+
-+	davinci_aemif_writel(base, A1CR_OFFSET + pdev->id * 4, val);
-+
-+	if (pdata->timing)
-+		ret = davinci_aemif_setup_timing(pdata->timing, base, pdev->id);
-+
-+	if (ret < 0)
-+		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
-+
-+err:
-+	iounmap(base);
-+	return ret;
-+}
-+EXPORT_SYMBOL(davinci_aemif_setup);
-diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
-index d1f45af..5623131 100644
---- a/arch/arm/mach-davinci/board-da830-evm.c
-+++ b/arch/arm/mach-davinci/board-da830-evm.c
-@@ -419,6 +419,9 @@ static inline void da830_evm_init_nand(int mux_mode)
- 	if (ret)
- 		pr_warning("da830_evm_init: NAND device not registered.\n");
- 
-+	if (davinci_aemif_setup(&da830_evm_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	gpio_direction_output(mux_mode, 1);
- }
- #else
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index e0af0ec..234c5bb 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -358,6 +358,9 @@ static inline void da850_evm_setup_nor_nand(void)
- 
- 		platform_add_devices(da850_evm_devices,
- 					ARRAY_SIZE(da850_evm_devices));
-+
-+		if (davinci_aemif_setup(&da850_evm_nandflash_device))
-+			pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- 	}
- }
- 
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index ecdc7d4..f35095f 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -27,6 +27,7 @@
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -395,6 +396,10 @@ static __init void dm355_evm_init(void)
- 
- 	platform_add_devices(davinci_evm_devices,
- 			     ARRAY_SIZE(davinci_evm_devices));
-+
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	evm_init_i2c();
- 	davinci_serial_init(dm355_serial_device);
- 
-diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
-index 43bacbf..7f45c5a 100644
---- a/arch/arm/mach-davinci/board-dm355-leopard.c
-+++ b/arch/arm/mach-davinci/board-dm355-leopard.c
-@@ -23,6 +23,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -253,6 +254,10 @@ static __init void dm355_leopard_init(void)
- 
- 	platform_add_devices(davinci_leopard_devices,
- 			     ARRAY_SIZE(davinci_leopard_devices));
-+
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	leopard_init_i2c();
- 	davinci_serial_init(dm355_serial_device);
- 
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index e08a868..88c01c3 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -39,6 +39,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <media/ths7303.h>
- #include <media/tvp514x.h>
-@@ -665,6 +666,9 @@ fail:
- 
- 		platform_add_devices(dm365_evm_nand_devices,
- 				ARRAY_SIZE(dm365_evm_nand_devices));
-+
-+		if (davinci_aemif_setup(&davinci_nand_device))
-+			pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- 	} else {
- 		/* no OneNAND support yet */
- 	}
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index 987605b7..5602957 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -778,6 +778,11 @@ static __init void davinci_evm_init(void)
- 		/* only one device will be jumpered and detected */
- 		if (HAS_NAND) {
- 			platform_device_register(&davinci_evm_nandflash_device);
-+
-+			if (davinci_aemif_setup(&davinci_evm_nandflash_device))
-+				pr_warn("%s: Cannot configure AEMIF.\n",
-+					__func__);
-+
- 			evm_leds[7].default_trigger = "nand-disk";
- 			if (HAS_NOR)
- 				pr_warning("WARNING: both NAND and NOR flash "
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 13d0801..ae129bc 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -805,6 +805,9 @@ static __init void evm_init(void)
- 
- 	platform_device_register(&davinci_nand_device);
- 
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	dm646x_init_edma(dm646x_edma_rsv);
- 
- 	if (HAS_ATA)
-diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
-index 7aa105b..98a66ff 100644
---- a/arch/arm/mach-davinci/board-mityomapl138.c
-+++ b/arch/arm/mach-davinci/board-mityomapl138.c
-@@ -432,6 +432,9 @@ static void __init mityomapl138_setup_nand(void)
- {
- 	platform_add_devices(mityomapl138_devices,
- 				 ARRAY_SIZE(mityomapl138_devices));
-+
-+	if (davinci_aemif_setup(&mityomapl138_nandflash_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- }
- 
- static const short mityomap_mii_pins[] = {
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index bb680af..a7d6668 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -31,6 +31,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -192,9 +193,15 @@ static __init void davinci_ntosd2_init(void)
- 		davinci_cfg_reg(DM644X_ATAEN_DISABLE);
- 
- 		/* only one device will be jumpered and detected */
--		if (HAS_NAND)
-+		if (HAS_NAND) {
- 			platform_device_register(
- 					&davinci_ntosd2_nandflash_device);
-+
-+			if (davinci_aemif_setup(
-+				&davinci_ntosd2_nandflash_device))
-+				pr_warn("%s: Cannot configure AEMIF.\n",
-+					__func__);
-+		}
- 	}
- 
- 	platform_add_devices(davinci_ntosd2_devices,
-diff --git a/arch/arm/mach-davinci/devices-tnetv107x.c b/arch/arm/mach-davinci/devices-tnetv107x.c
-index 01d8686..de4862e 100644
---- a/arch/arm/mach-davinci/devices-tnetv107x.c
-+++ b/arch/arm/mach-davinci/devices-tnetv107x.c
-@@ -324,6 +324,9 @@ static int __init nand_init(int chipsel, struct davinci_nand_pdata *data)
- 		return ret;
- 	}
- 
-+	if (davinci_aemif_setup(pdev))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	return platform_device_register(pdev);
- }
- 
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index b77a01e..6cc506c 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -734,28 +734,6 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 		goto err_clk_enable;
- 	}
- 
--	/*
--	 * Setup Async configuration register in case we did not boot from
--	 * NAND and so bootloader did not bother to set it up.
--	 */
--	val = davinci_nand_readl(info, A1CR_OFFSET + info->core_chipsel * 4);
--
--	/* Extended Wait is not valid and Select Strobe mode is not used */
--	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
--	if (info->chip.options & NAND_BUSWIDTH_16)
--		val |= 0x1;
--
--	davinci_nand_writel(info, A1CR_OFFSET + info->core_chipsel * 4, val);
--
--	ret = 0;
--	if (info->timing)
--		ret = davinci_aemif_setup_timing(info->timing, info->base,
--							info->core_chipsel);
--	if (ret < 0) {
--		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
--		goto err_timing;
--	}
--
- 	spin_lock_irq(&davinci_nand_lock);
- 
- 	/* put CSxNAND into NAND mode */
-@@ -844,7 +822,6 @@ syndrome_done:
- 	return 0;
- 
- err_scan:
--err_timing:
- 	clk_disable_unprepare(info->clk);
- 
- err_clk_enable:
-diff --git a/include/linux/platform_data/mtd-davinci-aemif.h b/include/linux/platform_data/mtd-davinci-aemif.h
-index 05b2934..97948ac 100644
---- a/include/linux/platform_data/mtd-davinci-aemif.h
-+++ b/include/linux/platform_data/mtd-davinci-aemif.h
-@@ -10,6 +10,8 @@
- #ifndef _MACH_DAVINCI_AEMIF_H
- #define _MACH_DAVINCI_AEMIF_H
- 
-+#include <linux/platform_device.h>
-+
- #define NRCSR_OFFSET		0x00
- #define AWCCR_OFFSET		0x04
- #define A1CR_OFFSET		0x10
-@@ -31,6 +33,5 @@ struct davinci_aemif_timing {
- 	u8	ta;
- };
- 
--int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
--					void __iomem *base, unsigned cs);
-+int davinci_aemif_setup(struct platform_device *pdev);
- #endif
+> atomic_read() is a simple read.
+> 
+>  This does not guarantee anything. And if you read
+>  Documentation/atomic_ops.txt it's well documented:
+> 
+>  "*** WARNING: atomic_read() and atomic_set() DO NOT IMPLY BARRIERS! ***"
+> 
+> 
+> So now your code melts down to:
+> 
+>  write(hb->waiters)    |    write(uaddr)
+>  mb                    |    read(hb->waiters)
+>  read(uaddr)
+> 
+> I fear you simply managed to make the window small enough that your
+> testing was not longer able expose it.
+
+Does seem to be the case.
+
 -- 
-1.7.9.5
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
 
