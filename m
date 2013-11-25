@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab3KYOGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:47 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55364 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308Ab3KYOGJ (ORCPT
+	id S1757429Ab3KYOGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58907 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754421Ab3KYNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:06:09 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v3 3/6] watchdog: davinci: add GET_TIMELEFT option support
-Date: Mon, 25 Nov 2013 16:04:42 +0200
-Message-ID: <1385388285-10553-4-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+	Mon, 25 Nov 2013 08:53:46 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.525860579@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 81/87] ALSA: hda - Add a fixup for ASUS N76VZ
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the davinci watchdog can be read while counting,
-so we can add ability to report the remaining time before
-the system will reboot.
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+------------------
+
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 6fc16e58adf50c0f1e4478538983fb5ff6f453d4 upstream.
+
+ASUS N76VZ needs the same fixup as N56VZ for supporting the boost
+speaker.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=846529
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/watchdog/davinci_wdt.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 4c3f417..d342fc2 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -116,6 +116,31 @@ static int davinci_wdt_ping(struct watchdog_device *wdd)
- 	return 0;
- }
- 
-+static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
-+{
-+	u64 timer_counter;
-+	unsigned long freq;
-+	u32 val;
-+	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
-+
-+	/* if timeout has occured then return 0 */
-+	val = ioread32(davinci_wdt->base + WDTCR);
-+	if (val & WDFLAG)
-+		return 0;
-+
-+	freq = clk_get_rate(davinci_wdt->clk);
-+
-+	if (!freq)
-+		return 0;
-+
-+	timer_counter = ioread32(davinci_wdt->base + TIM12);
-+	timer_counter |= ((u64)ioread32(davinci_wdt->base + TIM34) << 32);
-+
-+	do_div(timer_counter, freq);
-+
-+	return wdd->timeout - timer_counter;
-+}
-+
- static const struct watchdog_info davinci_wdt_info = {
- 	.options = WDIOF_KEEPALIVEPING,
- 	.identity = "DaVinci Watchdog",
-@@ -126,6 +151,7 @@ static const struct watchdog_ops davinci_wdt_ops = {
- 	.start		= davinci_wdt_start,
- 	.stop		= davinci_wdt_ping,
- 	.ping		= davinci_wdt_ping,
-+	.get_timeleft	= davinci_wdt_get_timeleft,
- };
- 
- static int davinci_wdt_probe(struct platform_device *pdev)
--- 
-1.7.9.5
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5799,6 +5799,7 @@ static const struct snd_pci_quirk alc662
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
++	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
+ 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
+ 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
+ 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
 
