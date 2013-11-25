@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3KYKNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:13:14 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:41904 "EHLO mail.mev.co.uk"
+	id S1753391Ab3KYKNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:13:38 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:39266 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab3KYKNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:13:12 -0500
-Message-ID: <529322B2.4090702@mev.co.uk>
-Date: Mon, 25 Nov 2013 10:13:06 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751209Ab3KYKNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:13:36 -0500
+X-IronPort-AV: E=Sophos;i="4.93,766,1378857600"; 
+   d="scan'208";a="77773268"
+Message-ID: <1385374413.11161.28.camel@kazak.uk.xensource.com>
+Subject: Re: IRQF_RESUME_EARLY and errors in dpm_suspend_noirq
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Date: Mon, 25 Nov 2013 10:13:33 +0000
+In-Reply-To: <528C86C2.1070206@nvidia.com>
+References: <201311201020.08158.heiko@sntech.de>
+	 <528C86C2.1070206@nvidia.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Conrad Gomes <conrad.s.j.gomes@gmail.com>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "joe@perches.com" <joe@perches.com>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 0/7] Staging: comedi: fix coding style issues in unioxx5.c
-References: <1385063878-10267-1-git-send-email-conrad.s.j.gomes@gmail.com>
-In-Reply-To: <1385063878-10267-1-git-send-email-conrad.s.j.gomes@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-11-21 19:57, Conrad Gomes wrote:
-> This series contains various fixes to coding style issues in unioxx5.c
-> found by checkpatch.pl and due to the usage of pr_err instead of the
-> preferred dev_err type functions for device drivers.
->
-> Conrad Gomes (7):
->    Staging: comedi: fix line over 80 character warning in unioxx5.c
->    Staging: comedi: fix line over 80 character warning in unioxx5.c
->    Staging: comedi: change printk to dev_err/dev_dbg in unioxx5.c
->    Staging: comedi: change pr_err to dev_err in __unioxx5_analog_read
->    Staging: comedi: change pr_err to dev_err in __unioxx5_digital_write
->    Staging: comedi: change pr_err to dev_err in __unioxx5_analog_write
->    Staging: comedi: remove MACRO pr_fmt in unioxx5.c
->
->   drivers/staging/comedi/drivers/unioxx5.c |   50 ++++++++++++++++++------------
->   1 file changed, 31 insertions(+), 19 deletions(-)
+On Wed, 2013-11-20 at 15:24 +0530, Laxman Dewangan wrote:
+> On Wednesday 20 November 2013 02:50 PM, Heiko Stübner wrote:
+> > Hi,
+> >
+> > Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such IRQs
+> > earlier) split the suspend/resume of the irqs into two parts.
+> >
+> > The early-irqs get resumed during syscore_resume, while the rest get
+> > resumed by the regular resume_device_irqs.
+> >
+> > I may be blind, but where get the early-irqs resumed in the error
+> > path of dpm_suspend_noirq?
+> >
+> > When a suspend_noirq callback returns an error, dpm_resume_noirq gets called,
+> > which only calls resume_device_irqs while the suspend_device_irqs call in
+> > dpm_suspend_noirq suspends all irqs. So it does not seem that the early-irqs
+> > get resumed at all in this case.
+> >
+> I also faced same issue in our suspend failure path and posted fix 
+> sometime ago as
+> https://lkml.org/lkml/2013/8/13/373
+> 
+> It is still under review.
 
-Looks okay!
+IME zero comments since August is not "under review", it is "has slipped
+through the cracks" ;-)
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+I would suggest you resend it.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Ian.
+
