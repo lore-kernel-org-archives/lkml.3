@@ -1,110 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab3KYJG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:06:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29039 "EHLO mx1.redhat.com"
+	id S1754747Ab3KYJGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:06:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57473 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab3KYJB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753360Ab3KYJB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 04:01:27 -0500
-Message-Id: <20131125090040.188406259@dhcp-16-126.nay.redhat.com>
+Message-Id: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
 User-Agent: quilt/0.60-1
-Date: Mon, 25 Nov 2013 16:56:42 +0800
+Date: Mon, 25 Nov 2013 16:56:30 +0800
 From: dyoung@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         hpa@zytor.com, James.Bottomley@HansenPartnership.com,
         vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com,
-        Dave Young <dyoung@redhat.com>
-Subject: [patch 12/12 v4] x86: do not use __va for getting setup_data virt addr
+        matt@console-pimps.org, toshi.kani@hp.com
+Subject: [patch 00/12 v4] kexec kernel efi runtime support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
-References: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
-Content-Disposition: inline; filename=12-x86-kdebugfs-use-ioremap.patch
 
-__va does not work in case memmap=exactmap, so let's always use ioremap_cache.
+Sorry for the spam, the patch subject is not correct in previous
+sending a while ago, send them again..
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/kernel/kdebugfs.c |   35 +++++++++++------------------------
- 1 file changed, 11 insertions(+), 24 deletions(-)
+Here is the V4 for supporting kexec kernel efi runtime.
+Per pervious discussion I pass the 1st kernel efi runtime mapping
+via setup_data to 2nd kernel. Besides of the runtime mapping
+info I also pass the fw_vendor, runtime, config table, smbios
+physical address in setup_data. EFI spec mentioned fw_vendor,
+runtime, config table addresses will be converted to virt address
+after entering virtual mode, but we will use it as physical address
+in efi_init. For smbios EFI spec did not mention about the address
+updating, but during my test on a HP workstation, the bios will
+convert it to Virt addr, thus pass it in setup_data as well.
 
---- efi.orig/arch/x86/kernel/kdebugfs.c
-+++ efi/arch/x86/kernel/kdebugfs.c
-@@ -33,7 +33,6 @@ static ssize_t setup_data_read(struct fi
- 	struct setup_data_node *node = file->private_data;
- 	unsigned long remain;
- 	loff_t pos = *ppos;
--	struct page *pg;
- 	void *p;
- 	u64 pa;
+For fw_vendor, runtime, config table, I export them in /sys/firmware/
+efi/, smbios is already in /sys/firmware/efi/systab.
+
+For efi runtime mapping I add a new directory /sys/firmware/efi/
+runtime-map/ like below
+[dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
+/sys/firmware/efi/runtime-map/
+├── 0
+│   ├── attribute
+│   ├── num_pages
+│   ├── phys_addr
+│   ├── type
+│   └── virt_addr
+├── 1
+│   ├── attribute
+│   ├── num_pages
+│   ├── phys_addr
+│   ├── type
+│   └── virt_addr
+[snip]
  
-@@ -47,18 +46,12 @@ static ssize_t setup_data_read(struct fi
- 		count = node->len - pos;
- 
- 	pa = node->paddr + sizeof(struct setup_data) + pos;
--	pg = pfn_to_page((pa + count - 1) >> PAGE_SHIFT);
--	if (PageHighMem(pg)) {
--		p = ioremap_cache(pa, count);
--		if (!p)
--			return -ENXIO;
--	} else
--		p = __va(pa);
-+	p = ioremap_cache(pa, count);
-+	if (!p)
-+		return -ENXIO;
- 
- 	remain = copy_to_user(user_buf, p, count);
--
--	if (PageHighMem(pg))
--		iounmap(p);
-+	iounmap(p);
- 
- 	if (remain)
- 		return -EFAULT;
-@@ -109,7 +102,6 @@ static int __init create_setup_data_node
- 	struct setup_data *data;
- 	int error;
- 	struct dentry *d;
--	struct page *pg;
- 	u64 pa_data;
- 	int no = 0;
- 
-@@ -126,16 +118,12 @@ static int __init create_setup_data_node
- 			goto err_dir;
- 		}
- 
--		pg = pfn_to_page((pa_data+sizeof(*data)-1) >> PAGE_SHIFT);
--		if (PageHighMem(pg)) {
--			data = ioremap_cache(pa_data, sizeof(*data));
--			if (!data) {
--				kfree(node);
--				error = -ENXIO;
--				goto err_dir;
--			}
--		} else
--			data = __va(pa_data);
-+		data = ioremap_cache(pa_data, sizeof(*data));
-+		if (!data) {
-+			kfree(node);
-+			error = -ENXIO;
-+			goto err_dir;
-+		}
- 
- 		node->paddr = pa_data;
- 		node->type = data->type;
-@@ -143,8 +131,7 @@ static int __init create_setup_data_node
- 		error = create_setup_data_node(d, no, node);
- 		pa_data = data->next;
- 
--		if (PageHighMem(pg))
--			iounmap(data);
-+		iounmap(data);
- 		if (error)
- 			goto err_dir;
- 		no++;
+kexec-tools will assemble them as setup_data and pass to 2nd kernel.
+I will send userspace patches as well.
+
+Limitation is I only write support for x86_64, test on below machines:
+Lenovo thinkpad t420
+Dell inspiron 14 - 3421
+HP Z420 workstation
+Qemu + OVMF
+
+Please help to review the patches.
+
+The patches are based on matt's efi master tree
+
+Changes from v1:
+add one flag in xloadflags, so kexec-tools can safely load old kernel
+without efi support.
+coding style fixes
+function name for map phys_addr to fixed virt_addr
+Add ABI documentation for sysfs files
+
+Changes from v2:
+01/09: a new patch to remove unused variables in __map_region function
+       catched by Toshi Kani
+09/09: a new patch to export x86 boot_params to sysfs instead of use
+       debugfs files
+Matt: reuse __map_region instead do same thing in another function.
+      add a wrapper function efi_map_region_fixed [02/09]
+      check return value of krealloc
+      sysfs dir name s/efi-runtime-map/runtime-map [06/09]
+      use desc_size in efi_runtime_map
+      for the xloadflags defination: +&& defined(CONFIG_KEXEC)
+Greg: sysfs : one file one value for fw_vendor, runtime, tables. [05/09]
+      Document them in ABI testing
+HPA:  Document the new xloadflag
+Also there's other function cleanup and improvement for error handling.
+
+Changes from v3:
+Greg: sysfs code move to use __ATTR_RO and attr_group
+Boris: comments and code alignment
+
+Added 3 new patches below
+10-print-efi-runtime-memmap.patch
+  - 10/12: print only runtime ranges in case EFI_DEBUG printing
+11-reserve-setup-data-late.patch
+  - fix a bug of kdump kernel, move function for reserving setup data
+    ranges late after parsing memmap= cmdline params because kdump kernel
+    will pass exact memmap late.
+12-x86-kdebugfs-use-ioremap.patch
+  - fix a bug of x86/kernel/kdebugfs.c, use ioremap instead of __va for
+    low mem because __va does not work for exact memmap=
+
+--
+Thanks
+Dave
 
