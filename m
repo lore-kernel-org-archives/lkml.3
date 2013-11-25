@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab3KYOGF (ORCPT <rfc822;w@1wt.eu>);
+	id S1756608Ab3KYOIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:08:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37022 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757294Ab3KYOGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:06:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58970 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754350Ab3KYNxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:47 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 4/6] watchdog: davinci: add "timeout-sec" property
+Date: Mon, 25 Nov 2013 16:04:43 +0200
+Message-ID: <1385388285-10553-5-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nico Golde" <nico@ngolde.de>,
-        "Fabian Yamaguchi" <fabs@goesec.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.386370769@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 86/87] Staging: bcm: info leak in ioctl
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+Since Davinci WDT has been switched to use WDT core, it became able
+to support timeout-sec property, so add it to it's binding description.
 
-------------------
-
-From: Dan Carpenter <dan.carpenter@oracle.com>
-
-commit 8d1e72250c847fa96498ec029891de4dc638a5ba upstream.
-
-The DevInfo.u32Reserved[] array isn't initialized so it leaks kernel
-information to user space.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/staging/bcm/Bcmchar.c | 1 +
- 1 file changed, 1 insertion(+)
+ .../devicetree/bindings/watchdog/davinci-wdt.txt   |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1932,6 +1932,7 @@ cntrlEnd:
+diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+index 75558cc..e450134 100644
+--- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
++++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
+@@ -4,9 +4,13 @@ Required properties:
+ - compatible : Should be "ti,davinci-wdt"
+ - reg : Should contain WDT registers location and length
  
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, OSAL_DBG, DBG_LVL_ALL, "Called IOCTL_BCM_GET_DEVICE_DRIVER_INFO\n");
++Optional properties:
++- timeout-sec : Contains the watchdog timeout in seconds
++
+ Examples:
  
-+		memset(&DevInfo, 0, sizeof(DevInfo));
- 		DevInfo.MaxRDMBufferSize = BUFFER_4K;
- 		DevInfo.u32DSDStartOffset = EEPROM_CALPARAM_START;
- 		DevInfo.u32RxAlignmentCorrection = 0;
+ wdt: wdt@2320000 {
+ 	compatible = "ti,davinci-wdt";
+ 	reg = <0x02320000 0x80>;
++	timeout-sec = <30>;
+ };
+-- 
+1.7.9.5
 
