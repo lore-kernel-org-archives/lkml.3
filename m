@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3KYQIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:08:10 -0500
-Received: from mail.yonan.net ([54.244.116.145]:49823 "EHLO mail.yonan.net"
+	id S1755871Ab3KYQOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:14:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6256 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3KYQIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:08:07 -0500
-X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 11:08:07 EST
-Message-ID: <529373C7.10201@openvpn.net>
-Date: Mon, 25 Nov 2013 08:59:03 -0700
-From: James Yonan <james@openvpn.net>
-Organization: OpenVPN Technologies, Inc.
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Cesar Eduardo Barros <cesarb@cesarb.eti.br>, linux-crypto@vger.kernel.org
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Florian Weimer <fw@deneb.enyo.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: more robust crypto_memneq
-References: <1385327535-27991-1-git-send-email-cesarb@cesarb.eti.br>
-In-Reply-To: <1385327535-27991-1-git-send-email-cesarb@cesarb.eti.br>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754182Ab3KYQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:14:17 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salter <msalter@redhat.com>, linux-metag@vger.kernel.org
+Subject: [PATCH v2 05/11] metag: use generic fixmap.h
+Date: Mon, 25 Nov 2013 11:13:59 -0500
+Message-Id: <1385396045-15852-6-git-send-email-msalter@redhat.com>
+In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
+References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/11/2013 14:12, Cesar Eduardo Barros wrote:
-> Disabling compiler optimizations can be fragile, since a new
-> optimization could be added to -O0 or -Os that breaks the assumptions
-> the code is making.
->
-> Instead of disabling compiler optimizations, use a dummy inline assembly
-> (based on RELOC_HIDE) to block the problematic kinds of optimization,
-> while still allowing other optimizations to be applied to the code.
->
-> The dummy inline assembly is added after every OR, and has the
-> accumulator variable as its input and output. The compiler is forced to
-> assume that the dummy inline assembly could both depend on the
-> accumulator variable and change the accumulator variable, so it is
-> forced to compute the value correctly before the inline assembly, and
-> cannot assume anything about its value after the inline assembly.
->
-> This change should be enough to make crypto_memneq work correctly (with
-> data-independent timing) even if it is inlined at its call sites. That
-> can be done later in a followup patch.
->
-> Compile-tested on x86_64.
->
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: James Hogan <james.hogan@imgtec.com>
+CC: linux-metag@vger.kernel.org
+---
+ arch/metag/include/asm/fixmap.h | 32 +-------------------------------
+ 1 file changed, 1 insertion(+), 31 deletions(-)
 
-This approach using __asm__ ("" : "=r" (var) : "0" (var)) to try to 
-prevent compiler optimizations of var is interesting.
+diff --git a/arch/metag/include/asm/fixmap.h b/arch/metag/include/asm/fixmap.h
+index 3331275..af621b0 100644
+--- a/arch/metag/include/asm/fixmap.h
++++ b/arch/metag/include/asm/fixmap.h
+@@ -51,37 +51,7 @@ enum fixed_addresses {
+ #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
+ #define FIXADDR_START	((FIXADDR_TOP - FIXADDR_SIZE) & PMD_MASK)
+ 
+-#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
+-#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
+-
+-extern void __this_fixmap_does_not_exist(void);
+-/*
+- * 'index to address' translation. If anyone tries to use the idx
+- * directly without tranlation, we catch the bug with a NULL-deference
+- * kernel oops. Illegal ranges of incoming indices are caught too.
+- */
+-static inline unsigned long fix_to_virt(const unsigned int idx)
+-{
+-	/*
+-	 * this branch gets completely eliminated after inlining,
+-	 * except when someone tries to use fixaddr indices in an
+-	 * illegal way. (such as mixing up address types or using
+-	 * out-of-range indices).
+-	 *
+-	 * If it doesn't get removed, the linker will complain
+-	 * loudly with a reasonably clear error message..
+-	 */
+-	if (idx >= __end_of_fixed_addresses)
+-		__this_fixmap_does_not_exist();
+-
+-	return __fix_to_virt(idx);
+-}
+-
+-static inline unsigned long virt_to_fix(const unsigned long vaddr)
+-{
+-	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
+-	return __virt_to_fix(vaddr);
+-}
++#include <asm-generic/fixmap.h>
+ 
+ #define kmap_get_fixmap_pte(vaddr) \
+ 	pte_offset_kernel( \
+-- 
+1.8.3.1
 
-I like the fact that it's finer-grained than -Os and doesn't preclude 
-inlining.
-
-One concern would be that __asm__ could be optimized out unless 
-__volatile__ is present.
-
-James
