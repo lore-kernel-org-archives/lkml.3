@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab3KYScv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:32:51 -0500
-Received: from smtp-out.abv.bg ([194.153.145.99]:59220 "EHLO smtp-out.abv.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757318Ab3KYScs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:32:48 -0500
-DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
-	b=Z9WNiYvWjFFOukWAoi9h0C1kvBEjU4RNfCv1eXZCsOf6tokBJqd0yidsta7OR8rwB
-	j4VLPDyQUuyqsJyznLC0WtdK54LsbIQYHU5+RgrP+fWFoCaQq6z/25UTslK2a05uQym
-	QF162U4br5sWJCv3dzKeTuyybTzaNUk7kIwXGHA=
-Date: Mon, 25 Nov 2013 20:32:46 +0200 (EET)
-From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-To: Sebastian Reichel <sre@ring0.de>
-Cc: pavel@ucw.cz, pali.rohar@gmail.com, anton@enomsg.org, dwmw2@infradead.org,
-        tony@atomide.com, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, aaro.koskinen@iki.fi
-Message-ID: <1434978251.31721.1385404366021.JavaMail.apache@mail83.abv.bg>
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for automode
+	id S1757400Ab3KYSe3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:34:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:43966 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756993Ab3KYSe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 13:34:27 -0500
+Message-ID: <5293980A.4030804@windriver.com>
+Date: Mon, 25 Nov 2013 13:33:46 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-Mailer: AbvMail 1.0
-X-Originating-IP: 46.249.74.23
+To: Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] rtmutex: take the waiter lock with irqs off
+References: <1383798668.5441.25.camel@marge.simpson.net> <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de> <20131107125923.GB24644@localhost.localdomain> <alpine.DEB.2.02.1311071402380.23353@ionos.tec.linutronix.de> <1384243595.15180.63.camel@marge.simpson.net> <alpine.DEB.2.02.1311121024590.30673@ionos.tec.linutronix.de> <20131115163008.GB12164@linutronix.de> <20131115201436.GC12164@linutronix.de> <20131118141021.GA10022@twins.programming.kicks-ass.net> <20131122135931.GA8698@linutronix.de> <20131122160841.GS3866@twins.programming.kicks-ass.net>
+In-Reply-To: <20131122160841.GS3866@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  >-------- Оригинално писмо --------
- >От:  Sebastian Reichel 
- >Относно: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
- >До: Ивайло Димитров 
- >Изпратено на: Понеделник, 2013, Ноември 25 19:14:21 EET
- >
- >
- >On Mon, Nov 25, 2013 at 07:01:54PM +0200, Ивайло Димитров wrote:
- >>> Now.. Imagine phone left in car in charger (on sun). Likely
- >>> temperature will reach high values, kernel is charging, dsme will
- >>> reboot the system, but kernel will start charging again, dsme will
- >>> reboot again, ...
- >>>
- >>> And it is not only high temperatures that are problem for li-ion
- >>> charging; battery should not be fast charged below 5C and should not
- >>> be charged below 0C. (Again, both are likely to happen if you leave
- >>> your phone in car).
- >>>
- >>> AFAICT, we should simply disable charging below 5C or above 45C.
- >> 
- >> AFAIK dsme will not restart it, but power it off, so the above
- >> scenario won't happen.
- >
- >Just assume what happens, when dsme does not start (e.g. system boot
- >hangs).
- >
- >If everything is controlled from userspace, charger would not start
- >(-> safe!). If everything is controlled by the kernel, temperature
- >safety checks are taken (-> safe!). But in the currently proposed
- >variant: No safety checks.
- >
- >-- Sebastian
- >
- >
+On 13-11-22 11:08 AM, Peter Zijlstra wrote:
+> On Fri, Nov 22, 2013 at 02:59:31PM +0100, Sebastian Andrzej Siewior wrote:
+>> +extern void __lockfunc rt_spin_try_unlock(spinlock_t *lock);
+> 
+> I know what you mean, but.. try_unlock() just sounds wrong, how can we
+> attempt but fail to unlock a lock we hold ;-)
 
-Hmm, you have a point here :)
+rt-v3.10-devel$git grep -l tryunlock
+tasklet-rt-prevent-tasklets-from-going-into-infinite-spin-in-rt.patch
+rt-v3.10-devel$
 
-So, AIUI there are 2 options:
+> 
+> 
+> /me crawls back under his rock ;-)
 
-1. charger driver polls the battery driver every n (60?) seconds.
-2. battery driver sends PSY_EVENT_PROP_CHANGED on every degree up or
-down
- 
-In both cases if the temperature is outside of the safe margins, the
-charging should be stopped.
-
-2 seems more generic to me, but as rx51-battery is missing the
-functionality to send events on temperature change, I guess 1 will
-be easier to implement.
-
-And I think there should be some method (sysfs entry?, /dev/bqxxx
-opened?) to tell the charger driver to stop polling the battery 
-driver once (and if) the userspace has started to take care of the 
-battery temperature - makes no sense to duplicate the checks IMO.
-
+Can you take tasklets with you?   ;-)
