@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3KYTw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:52:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57046 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab3KYTw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:52:28 -0500
-Date: Mon, 25 Nov 2013 20:52:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mike Galbraith <efault@gmx.de>, Jeff Mahoney <jeffm@suse.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, tom.vaden@hp.com,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>, Jason Low <jason.low2@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/5] futex: Avoid taking hb lock if nothing to wakeup
-In-Reply-To: <1385405723.15768.3.camel@buesod1.americas.hpqcorp.net>
-Message-ID: <alpine.DEB.2.02.1311252049580.30673@ionos.tec.linutronix.de>
-References: <1385168197-8612-1-git-send-email-davidlohr@hp.com>  <1385168197-8612-5-git-send-email-davidlohr@hp.com>  <CA+55aFz9o2K-CEp+ECEaTgmP2fU=Eh7_o58VGmM1sOhKhu_n=w@mail.gmail.com>  <1385176773.5402.14.camel@buesod1.americas.hpqcorp.net> 
- <alpine.DEB.2.02.1311231206380.30673@ionos.tec.linutronix.de>  <CA+55aFwzRqPHKp67EhJ9hsX4v5=p3uQxvnaVZko2ZXDf6CQAPQ@mail.gmail.com>  <alpine.DEB.2.02.1311251715490.30673@ionos.tec.linutronix.de>  <20131125163627.GC10022@twins.programming.kicks-ass.net> 
- <alpine.DEB.2.02.1311251803040.30673@ionos.tec.linutronix.de> <1385405723.15768.3.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1757544Ab3KYTxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:53:07 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55151 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756758Ab3KYTxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 14:53:04 -0500
+Message-ID: <1385409103.9218.15.camel@pasglop>
+Subject: Re: Preventing IPI sending races in arch code
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        David Daney <david.daney@cavium.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
+Date: Tue, 26 Nov 2013 06:51:43 +1100
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
+References: <52932BE2.5010201@synopsys.com>
+	 <20131125110006.GU3866@twins.programming.kicks-ass.net>
+	 <529334CA.1000401@synopsys.com>
+	 <20131125122726.GZ10022@twins.programming.kicks-ass.net>
+	 <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Nov 2013, Davidlohr Bueso wrote:
-> On Mon, 2013-11-25 at 18:32 +0100, Thomas Gleixner wrote:
-> > If the smp_mb() is heavy weight, then it will hurt massivly in the
-> > case where the hash bucket is not empty, because we add the price for
-> > the smp_mb() just for no gain.
-> > 
-> > In that context it would also be helpful to measure the overhead on
-> > x86 for the !empty case.
+On Mon, 2013-11-25 at 13:35 +0000, Vineet Gupta wrote:
+
+> Before reading ur email I was coding something like below:
 > 
-> Absolutely, I will add these comparisons. If we do notice that we end up
-> hurting the !empty case, would the current patch using atomic ops still
-> be considered? We have made sure that none of the changes in this set
-> affects performance on other workloads/smaller systems.
+> void arch_send_ipi(int cpu, int type)
+> {
+>   u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
+> 
+>   while (cmpxchg(pending_ptr, 0, 1 << type) != 0)
+> 	cpu_relax();
+> 
+>   raise_ipi(cpu);
+> }
 
-Please read my last reply to the atomic ops approach.
+So you would have blocked the sender while there was already
+a pending IPI on the target ? Why ?
 
-Aside of that we need numbers for a significant range of !x86.
+The optimization proposed by Peter is actually the only interesting
+change here, without it the existing set_bit was perfectly fine.
+Remember that set_bit is atomic.
 
-Thanks,
+Ben.
 
-	tglx
+> But obviously your version is nicer due to optimization, unless I'm over-analyzing it.
+> 
+> 
+> > Also, the above can be thought of as a memory ordering issue:
+> >
+> >   STORE pending
+> >   MB /* implied by cmpxchg */
+> >   STORE ipi /* raise the actual thing */
+> >
+> > In that case the other end must be:
+> >
+> >   LOAD ipi
+> >   MB /* implied by xchg */
+> >   LOAD pending
+> >
+> > Which is what your code seems to do.
+> 
+> ...
+> 
+> >
+> >> IMO the while loop is
+> >> completely useless specially if IPIs are not coalesced in h/w. 
+> > Agreed, the while loops seems superfluous.
+> 
+> Not with your version of sender, since we need it as described above.
+> 
+> >> And we need to move
+> >> the xchg ahead of ACK'ing the IPI
+> >>
+> >> do_IPI
+> >>    pending = xchg(&ipi_data->bits, 0);
+> >>    plat_smp_ops.ipi_clear(irq);
+> >>    while (ffs....)
+> >>       switch(next-msg)
+> >>       ...
+> >>
+> >> Does that look sane to you.
+> > This I'm not at all certain of; continuing with the memory order analogy
+> > this would allow for the case where we see 0 pending, set a bit, try and
+> > raise the interrupt but then do not because its already assert.
+> >
+> > And since you just removed the while() loop, we'll be left with a !0
+> > pending vector and nobody processing it.
+> 
+> Right we need it with ur version of sender. Bit don't with my simplistic one.
+> 
+> -Vineet
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
