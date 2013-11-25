@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3KYJgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:36:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20330 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822Ab3KYJgh convert rfc822-to-8bit (ORCPT
+	id S1752112Ab3KYJgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:36:51 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46121 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3KYJgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 04:36:37 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
-References: <CAMuHMdUiK4CHXESCEYvGJfE1ROGa=MC_c=qAQgKVS7GmkBXz=Q@mail.gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org,
-        "open list\:NFS\, SUNRPC\, AND..." <linux-nfs@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: assoc_array.c uninitialized variable (was: Re: [PATCH 02/10] Add a generic associative array implementation.)
+	Mon, 25 Nov 2013 04:36:46 -0500
+Date: Mon, 25 Nov 2013 09:36:39 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Uwe =?iso-8859-1?Q?Kleine-K=F6nig'?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        "'Marc Reilly'" <marc@cpdesign.com.au>
+Subject: Re: [PATCH] mfd: mc13xxx: remove unnecessary spi_set_drvdata()
+Message-ID: <20131125093639.GC17722@lee--X1>
+References: <002601cee98e$44f75210$cee5f630$%han@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 25 Nov 2013 09:36:29 +0000
-Message-ID: <19201.1385372189@warthog.procyon.org.uk>
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <002601cee98e$44f75210$cee5f630$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Mon, 25 Nov 2013, Jingoo Han wrote:
 
-> > +       int slot, next_slot, free_slot, i, j;
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure. Thus, it is not needed to manually clear the
+> device driver data to NULL.
 > 
-> lib/assoc_array.c: In function ‘assoc_array_insert_into_terminal_node’:
-> lib/assoc_array.c:502: warning: ‘j’ may be used uninitialized in this function
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/mfd/mc13xxx-spi.c |    1 -
+>  1 file changed, 1 deletion(-)
 
-What compiler are you using?  Mine doesn't show this.
+Applied, thanks.
 
-Technically, the compiler is correct - but we should never see the variable
-undefined following the found_slot_for_multiple_occupancy unless the tree
-changes under us. Out of a set of N+1 integers that can only be in the range
-0..N-1 there must be at least two the same.
-
-I guess I could preclear j to make the warning go away.
-
-David
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
