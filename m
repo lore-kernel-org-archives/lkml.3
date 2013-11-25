@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab3KYLqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:46:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5234 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822Ab3KYLqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 06:46:52 -0500
-Date: Mon, 25 Nov 2013 13:50:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH net] macvtap: fix tx_dropped counting error
-Message-ID: <20131125115005.GA32173@redhat.com>
-References: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
+	id S1753208Ab3KYLvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:51:17 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55835 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751128Ab3KYLvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 06:51:15 -0500
+Date: Mon, 25 Nov 2013 11:50:52 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 1/2] dt-bindings: add hym8563 binding
+Message-ID: <20131125115052.GC32081@e106331-lin.cambridge.arm.com>
+References: <201311222254.07730.heiko@sntech.de>
+ <201311222255.03642.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201311222255.03642.heiko@sntech.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 05:19:04PM +0800, Jason Wang wrote:
-> After commit 8ffab51b3dfc54876f145f15b351c41f3f703195
-> (macvlan: lockless tx path), tx stat counter were converted to percpu stat
-> structure. So we need use to this also for tx_dropped in macvtap. Otherwise, the
-> management won't notice the dropping packet in macvtap tx path.
+On Fri, Nov 22, 2013 at 09:55:03PM +0000, Heiko Stübner wrote:
+> Add binding documentation for the hym8563 rtc chip.
 > 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Vlad Yasevich <vyasevic@redhat.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 > ---
->  drivers/net/macvtap.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  .../devicetree/bindings/rtc/haoyu,hym8563.txt      |   29 ++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index dc76670..0605da8 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -744,7 +744,7 @@ err:
->  	rcu_read_lock();
->  	vlan = rcu_dereference(q->vlan);
->  	if (vlan)
-> -		vlan->dev->stats.tx_dropped++;
-> +		this_cpu_inc(vlan->pcpu_stats->tx_dropped);
->  	rcu_read_unlock();
->  
->  	return err;
-> -- 
-> 1.8.3.2
+> diff --git a/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+> new file mode 100644
+> index 0000000..2743416
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/rtc/haoyu,hym8563.txt
+> @@ -0,0 +1,29 @@
+> +Haoyu Microelectronics HYM8563 Real Time Clock
+> +
+> +The HYM8563 provides basic rtc and alarm functionality
+> +as well as a clock output of up to 32kHz.
+> +
+> +Required properties:
+> +- compatible: should be: "haoyu,hym8563"
+
+The "haoyu" vendor prefix will need to be documented (I couldn't spot it
+in mainline's vendor-refixes.txt).
+
+> +- reg: i2c address
+> +- gpios: interrupt gpio
+
+What's this used for exactly?
+
+Thanks,
+Mark.
