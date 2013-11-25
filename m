@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab3KYOBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:01:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52797 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180Ab3KYOB2 (ORCPT
+	id S1756766Ab3KYN67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:58:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58962 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754207Ab3KYNx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:01:28 -0500
-Date: Mon, 25 Nov 2013 15:01:27 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, freemangordon@abv.bg, aaro.koskinen@iki.fi
-Subject: Re: [PATCH v2 2/3] bq2415x_charger: Use power_supply notifier for
- automode
-Message-ID: <20131125140127.GA24125@amd.pavel.ucw.cz>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
- <201311242001.16299@pali>
- <20131124192608.GA11338@earth.universe>
- <201311242041.47075@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Mon, 25 Nov 2013 08:53:57 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311242041.47075@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Helge Deller" <deller@gmx.de>,
+        "John David Anglin" <dave.anglin@bell.net>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.304391692@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 78/87] parisc: Do not crash 64bit SMP kernels on
+ machines with >= 4GB RAM
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-On Sun 2013-11-24 20:41:46, Pali Rohár wrote:
-> On Sunday 24 November 2013 20:26:09 Sebastian Reichel wrote:
-> > On Sun, Nov 24, 2013 at 08:01:16PM +0100, Pali Rohár wrote:
-> > > Currently on Maemo 5 this is handled in userspace (with open
-> > > source dsme daemon).
-> > 
-> > I assume it currently also takes care of the bq2415x watchdog?
-> > That means if the daemon dies charging will stop, because the
-> > watchdog does no longer trigger.
-> > 
-> > When your patch is applied you have introduced a safety issue.
-> > When the daemon dies charging will continue and temperature is
-> > no longer checked.
-> > 
-> > -- Sebastian
-> 
-> No dsme checking battery temperature and does not handle bq24510 
-> timer (previously this was in closed bme daemon which 
-> functionality is now in kernel drivers). But dsme daemon also 
-> kicking tlw4030 watchdog, so when daemon dies after 30s tlw4030 
-> reboot device.
-> 
-> But right you can implement correctly this in userspace (e.g. 
-> when daemon not running/crashed, you can restart daemon or reboot 
-> system or disable charing, whatever...) and you do not need to 
-> have it in kernel...
+------------------
 
-Charging handling really should be in kernel.
+From: Helge Deller <deller@gmx.de>
 
-1st) you want charging to work with init=/bin/bash, and you want it
-with regular (not n900-specific) debian/arm.
+commit 54e181e073fc1415e41917d725ebdbd7de956455 upstream.
 
-2st) normally hardware, firmware or kernel does the charging. (PCs,
-Sharp Zaurus). Yes, it pulls us farther away from Maemo...
+Since the beginning of the parisc-linux port, sometimes 64bit SMP kernels were
+not able to bring up other CPUs than the monarch CPU and instead crashed the
+kernel.  The reason was unclear, esp. since it involved various machines (e.g.
+J5600, J6750 and SuperDome). Testing showed, that those crashes didn't happened
+when less than 4GB were installed, or if a 32bit Linux kernel was booted.
 
-Where can I get dsme sources?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+In the end, the fix for those SMP problems is trivial:
+During the early phase of the initialization of the CPUs, including the monarch
+CPU, the PDC_PSW firmware function to enable WIDE (=64bit) mode is called.
+It's documented that this firmware function may clobber various registers, and
+one one of those possibly clobbered registers is %cr30 which holds the task
+thread info pointer.
+
+Now, if %cr30 would always have been clobbered, then this bug would have been
+detected much earlier. But lots of testing finally showed, that - at least for
+%cr30 - on some machines only the upper 32bits of the 64bit register suddenly
+turned zero after the firmware call.
+
+So, after finding the root cause, the explanation for the various crashes
+became clear:
+- On 32bit SMP Linux kernels all upper 32bit were zero, so we didn't faced this
+  problem.
+- Monarch CPUs in 64bit mode always booted sucessfully, because the inital task
+  thread info pointer was below 4GB.
+- Secondary CPUs booted sucessfully on machines with less than 4GB RAM because
+  the upper 32bit were zero anyay.
+- Secondary CPus failed to boot if we had more than 4GB RAM and the task thread
+  info pointer was located above the 4GB boundary.
+
+Finally, the patch to fix this problem is trivial by saving the %cr30 register
+before the firmware call and restoring it afterwards.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/parisc/kernel/head.S | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/arch/parisc/kernel/head.S
++++ b/arch/parisc/kernel/head.S
+@@ -195,6 +195,8 @@ common_stext:
+ 	ldw             MEM_PDC_HI(%r0),%r6
+ 	depd            %r6, 31, 32, %r3        /* move to upper word */
+ 
++	mfctl		%cr30,%r6		/* PCX-W2 firmware bug */
++
+ 	ldo             PDC_PSW(%r0),%arg0              /* 21 */
+ 	ldo             PDC_PSW_SET_DEFAULTS(%r0),%arg1 /* 2 */
+ 	ldo             PDC_PSW_WIDE_BIT(%r0),%arg2     /* 2 */
+@@ -203,6 +205,8 @@ common_stext:
+ 	copy            %r0,%arg3
+ 
+ stext_pdc_ret:
++	mtctl		%r6,%cr30		/* restore task thread info */
++
+ 	/* restore rfi target address*/
+ 	ldd             TI_TASK-THREAD_SZ_ALGN(%sp), %r10
+ 	tophys_r1       %r10
+
