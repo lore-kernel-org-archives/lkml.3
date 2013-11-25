@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab3KYIVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 03:21:09 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49191 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab3KYIVH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 03:21:07 -0500
-X-AuditID: 9c930197-b7caaae000001cef-aa-529308701268
-Date: Mon, 25 Nov 2013 17:21:52 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+	id S1752849Ab3KYIgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 03:36:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48103 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596Ab3KYIgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 03:36:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,766,1378882800"; 
+   d="scan'208";a="441053224"
+Date: Mon, 25 Nov 2013 10:35:59 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-gpio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/9] mm: shmem: save one radix tree lookup when
- truncating swapped pages
-Message-ID: <20131125082152.GC4731@bbox>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-4-git-send-email-hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 3/7] net: rfkill: gpio: remove gpio conversion support
+Message-ID: <20131125083559.GA21001@xps8300>
+References: <1385122474-14926-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1385122474-14926-4-git-send-email-mika.westerberg@linux.intel.com>
+ <528FA520.7080501@wwwdotorg.org>
+ <20131122205640.GA21895@xps8300>
+ <528FC60A.80308@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385336308-27121-4-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <528FC60A.80308@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 06:38:22PM -0500, Johannes Weiner wrote:
-> Page cache radix tree slots are usually stabilized by the page lock,
-> but shmem's swap cookies have no such thing.  Because the overall
-> truncation loop is lockless, the swap entry is currently confirmed by
-> a tree lookup and then deleted by another tree lookup under the same
-> tree lock region.
+On Fri, Nov 22, 2013 at 02:00:58PM -0700, Stephen Warren wrote:
+> On 11/22/2013 01:56 PM, Heikki Krogerus wrote:
+> > I have prepared a separate patch where I remove those and some other
+> > unused fields from the pdata structure (attachment). Would it be OK to
+> > add that to this patch set? Or should this patch simply be updated?
 > 
-> Use radix_tree_delete_item() instead, which does the verification and
-> deletion with only one lookup.  This also allows removing the
-> delete-only special case from shmem_radix_tree_replace().
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+> I would suggest killing off the two GPIO fields in this patch, since
+> it's logically part of this change. I think the balance of the patch is
+> unrelated to gpiod conversion, so should probably be sent separately,
+> although watch out for dependencies.
 
-Nice cleanup!
+Yes, we'll do it like that.
+
+Thanks,
 
 -- 
-Kind regards,
-Minchan Kim
+heikki
