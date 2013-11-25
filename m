@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab3KYOkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:40:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43302 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab3KYOkE (ORCPT
+	id S1754773Ab3KYOmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:42:07 -0500
+Received: from [75.180.132.120] ([75.180.132.120]:59023 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753580Ab3KYOmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:40:04 -0500
-Date: Mon, 25 Nov 2013 15:39:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Ma, Xindong" <xindong.ma@intel.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "ccross@google.com" <ccross@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: Re: Add memory barrier when waiting on futex
-Message-ID: <20131125143952.GB10022@twins.programming.kicks-ass.net>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+	Mon, 25 Nov 2013 09:42:05 -0500
+X-Authority-Analysis: v=2.0 cv=D/fF24tj c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=h_Sp9wbh10QA:10 a=XOqoAEvXSlQA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=D5qtvDnK8uIA:10 a=QfKxxUxMAAAA:8 a=BFNvvrzxAAAA:8 a=tEEe--TXAAAA:8 a=zUP7qFYnCKjoH41hl6cA:9 a=wPNLvfGTeEIA:10 a=rYro3aODAi4A:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.78.168.186
+Message-ID: <52936145.8050807@ubuntu.com>
+Date: Mon, 25 Nov 2013 09:40:05 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Depreciated and scheduled for removal
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 01:15:17PM +0000, Ma, Xindong wrote:
-> We encountered following panic several times:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> [   74.671982] BUG: unable to handle kernel NULL pointer dereference at 00000008
-> [   74.672101] IP: [<c129bb27>] wake_futex+0x47/0x80
+I swear there was a text file that listed features that were
+depreciated and scheduled for removal, but now I can not find it.  Did
+it get removed, or am I just daft?
 
-> [   74.674144]  [<c129bc29>] futex_wake+0xc9/0x110
-> [   74.674195]  [<c129da0b>] do_futex+0xeb/0x950
-> [   74.674484]  [<c129e30b>] SyS_futex+0x9b/0x140
-> [   74.674582]  [<c195a718>] syscall_call+0x7/0xb
-> 
-> On smp systems, setting current task to q->task in queue_me() may
-> not visible immediately to another cpu, some times this will
-> cause panic in wake_futex(). Adding memory barrier to avoid this.
-> 
-> Signed-off-by: Leon Ma <xindong.ma@intel.com>
-> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-> ---
->  kernel/futex.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 80ba086..792cd41 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -1529,6 +1529,7 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
->  	plist_node_init(&q->list, prio);
->  	plist_add(&q->list, &hb->chain);
->  	q->task = current;
-> +	smp_mb();
->  	spin_unlock(&hb->lock);
->  }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-This is wrong, because an uncommented barrier is wrong per definition.
-
-This is further wrong because wake_futex() is always called with
-hb->lock held, and since queue_me also has hb->lock held, this is in
-fact guaranteed.
-
-This is even more wrong for adding stable.
+iQEcBAEBAgAGBQJSk2FFAAoJEJrBOlT6nu75KHEH/j/OSxbYRBa79pPlX7ocvL1v
+m1flj2zBt8HDd9iba0xzwFPwTcEWk9R08E5OcirpfGMWTbJDHvhV017prNr8vcVG
+Dqg8ffDiqf8VKgzG1t2IGjnVvZk1BQ6i07lbFeyTDFEpvbucHZ7cFzT+0aUF/ZBi
+x2Y8mIftoCrOdafEXIyj9TaibtTt7RQ8d0iD/42M91nJVfc5m3tLt21wk1GRp6/2
+XNQXXo1MXpXf2JmtVcyCHlUGFVkS3bDNJrKfsenMmQZo5jb+HfxvPKoFPhMIFpTj
+RJvurkNXqQLfp8A18OvUugGoa4V0GYgitm9n1kW7lqA4PLtslymm+b2tGYtWZ8o=
+=H9KL
+-----END PGP SIGNATURE-----
