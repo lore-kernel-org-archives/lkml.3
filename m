@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab3KYCjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 21:39:11 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:43422 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3KYCjI (ORCPT
+	id S1753342Ab3KYCvs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 21:51:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7630 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753221Ab3KYCvq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 21:39:08 -0500
-Message-ID: <5292B8D1.5050407@gmail.com>
-Date: Mon, 25 Nov 2013 10:41:21 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 24 Nov 2013 21:51:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,765,1378882800"; 
+   d="scan'208";a="438995224"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
+ linux-3.8.
+Thread-Topic: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
+ linux-3.8.
+Thread-Index: AQHO1dXjUZkF5USl+0y2+Rv7udewtZoOKeaAgAAIPACAAAO7gIABXvmggCPCBoCAAfJ7cA==
+Date: Mon, 25 Nov 2013 02:51:36 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880248D127@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1383181113.git.lv.zheng@intel.com>
+ <2226874.g7cLvQ5SiE@vostro.rjw.lan> <20131031120850.GA17048@kroah.com>
+ <18963273.JtsE7nd0JW@vostro.rjw.lan>
+ <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
+ <20131124032153.GA25485@kroah.com>
+In-Reply-To: <20131124032153.GA25485@kroah.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: rkuo <rkuo@codeaurora.org>
-CC: linux-hexagon@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] arch: hexagon: include: asm: use 'affinity' instead of
- 'locdis' for __vmintop_affinity() in "hexagon_vm.h"
-References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com>
-In-Reply-To: <5292B8A0.7020409@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All __vmintop_*() use  __vmintop(*, ...), so __vmintop_affinity() need
-use __vmintop(vm_affinity, ...).
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Sunday, November 24, 2013 11:22 AM
+> 
+> On Fri, Nov 01, 2013 at 02:58:16AM +0000, Zheng, Lv wrote:
+> > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > > Sent: Thursday, October 31, 2013 8:22 PM
+> > >
+> > > On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
+> > > > On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
+> > > > > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
+> > > > > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
+> > > > > > issues found in recent platforms.  These fixes make Linux AML interpreter
+> > > > > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
+> > > > > > be based on such improvements, thus they are good materials for stable.
+> > > > > >
+> > > > > > This patch set can be safely applied to linux-3.8:
+> > > > > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
+> > > > > >
+> > > > > > The patch set has passed build/boot tests on the following machines:
+> > > > > >   Dell Inspiron Mini 1010 (i386)
+> > > > > >   HP Compaq 8200 Elite SFF PC (x86-64)
+> > > > > >
+> > > > > > Bob Moore (4):
+> > > > > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
+> > > > > >     possible.
+> > > > > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
+> > > > > >     BufferField refs.
+> > > > > >   ACPICA: Return error if DerefOf resolves to a null package element.
+> > > > > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
+> > > > > >     field.
+> > > > >
+> > > > > Hi Greg,
+> > > > >
+> > > > > Please take patches [1-4/4] for stable.
+> > > >
+> > > > "Which" stable tree?
+> > > >
+> > > > I don't do 3.8, it's long been end-of-life, although one company is
+> > > > trying to keep it alive, but that's not me.
+> > > >
+> > > > I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
+> > > > one(s) should these be applied to?
+> > >
+> > > 3.10.x and 3.11.x then.
+> > >
+> > > Lv, do the original mainline commits apply to these kernels?
+> > >
+> > > Rafael
+> >
+> > Hi, Rafael and Greg
+> >
+> > I checked the back port dependencies since v3.8:
+> > 1. [PATCH 1] belongs to v3.9.
+> > 2. [PATCH 4] includes an empty line belonging to a coding style fix affecting this series (between [PATCH 3] and [PATCH 4]).
+> > Thus,
+> > 1. For v3.10:
+> >     [PATCH 1]: It's already in the repo, so please drop it.
+> >     [PATCH 2-4]: They can be used directly as 3.10.x stable materials.
+> > 2. For v3.11:
+> >     [PATCH 1]: It's already in the repo, so please drop it.
+> >     [PATCH 2-3]: They can be used directly as 3.11.x stable materials.
+> >     [PATCH 4]: The original commit from Linus' tree should be used instead.
+> >
+> >  I checked the commit log since v3.4.
+> >  There is no functional change done to the AML executer between v3.4 and v3.8.
+> >  The problem is there is a coding style fix affecting this series (between v3.4 and [PATCH 1]).
+> >  I generated the following diff block before applying [PATCH 1], and obtained a successful build/boot to a v3.4 kernel with these
+> patches applied.
+> > Thus,
+> > 1. For v3.4:
+> >     [PATCH 1]: You can merge this diff block to [PATCH 1] or simply modify the [PATCH 1] by manually adding this white space.
+> >     [PATCH 2-4]: They can be used directly as 3.4.x stable materials.
+> 
+> Ok, I think I have this all properly queued up for 3.4, 3.10, and
+> 3.11-stable trees, can you please check and verify I didn't mess
+> anything up?
 
+I pulled and checked, they are all correct.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/hexagon/include/asm/hexagon_vm.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks and best regards
+-Lv
 
-diff --git a/arch/hexagon/include/asm/hexagon_vm.h b/arch/hexagon/include/asm/hexagon_vm.h
-index e1e0470..3ea99c1 100644
---- a/arch/hexagon/include/asm/hexagon_vm.h
-+++ b/arch/hexagon/include/asm/hexagon_vm.h
-@@ -161,7 +161,7 @@ static inline long __vmintop_locdis(long i)
- 
- static inline long __vmintop_affinity(long i, long cpu)
- {
--	return __vmintop(locdis, i, cpu, 0, 0);
-+	return __vmintop(vm_affinity, i, cpu, 0, 0);
- }
- 
- static inline long __vmintop_get(void)
--- 
-1.7.7.6
+> 
+> thanks,
+> 
+> greg k-h
