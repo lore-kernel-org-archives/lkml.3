@@ -1,256 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab3KYTcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:32:13 -0500
-Received: from alt-proxy22.mail.unifiedlayer.com ([67.20.81.214]:41077 "HELO
-	alt-proxy22.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754034Ab3KYTcJ (ORCPT
+	id S1757287Ab3KYTdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:33:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55916 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3KYTdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:32:09 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 14:32:09 EST
-Message-ID: <1385407528.29756.41.camel@Wailaba2>
-Subject: [PATCH] Avoid process cputimer state oscillation
-From: Olivier Langlois <olivier@trillion01.com>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        kosaki.motohiro@gmail.com
-Date: Mon, 25 Nov 2013 14:25:28 -0500
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.179.63.169 authed with olivier@trillion01.com}
+	Mon, 25 Nov 2013 14:33:49 -0500
+Date: Mon, 25 Nov 2013 11:33:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [RESEND GIT PULL] USB fixes for v3.13-rc2
+Message-ID: <20131125193348.GA25899@kroah.com>
+References: <1385406153-28085-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385406153-28085-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 25, 2013 at 01:02:33PM -0600, Felipe Balbi wrote:
+> Hi Greg,
+> 
+> Here's my first set of fixes for this -rc cycle. Please
+> consider merging them on your usb-linus branch.
+> 
+> Let me know if you need any changes to this pull request. I
+> did a test merge of this tag with your usb-linus branch and
+> it merges just fine.
+> 
+> cheers
+> 
+> ps: resending with lkml in Cc, looks like my emails aren't reaching
+> linux-usb@vger.kernel.org and marc.info seems to not be picking up
+> any emails at all from no list.
+> 
+> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+> 
+>   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git master
 
-When a periodic process timer is fired, a signal is generated.
-Rearming the timer, if necessary, will be performed in a second step
-when the signal will be delivered.
+Really?  I don't think that's what you want me to really pull...
 
-Hence, checking the list of process timers list to decide to stop to cpu
-timer right after generating the signal is premature and is leading the
-cputimer to oscillate between the on/off states when a single process timer
-is present.
+I now have 2 pull requests from you, which one should I use?
 
-The following posix-cpu-timers module intrumentation
+How about I drop both and have you resend the "real" one?  :)
 
-In void thread_group_cputimer(struct task_s
-		raw_spin_lock_irqsave(&cputimer->lock, flags);
- 		cputimer->running = 1;
- 		update_gt_cputime(&cputimer->cputime, &sum);
-+		printk(KERN_DEBUG "cputimer started\n");
- 	} else
- 		raw_spin_lock_irqsave(&cputimer->lock, flags);
- 	*times = cputimer->cputime;
-and in static void stop_process_timers(struct s
+thanks,
 
- 	raw_spin_lock_irqsave(&cputimer->lock, flags);
- 	cputimer->running = 0;
-+	printk(KERN_DEBUG "cputimer stopped\n");
- 	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
- }
-
-with the small program:
-
-\#include <signal.h>
-\#include <time.h>
-\#include <stddef.h>
-\#include <stdio.h>
-\#include <string.h>
-\#include <fcntl.h>
-\#include <unistd.h>
-
-static void chew_cpu()
-{
-	static volatile char buf[4096];
-	for (size_t i = 0; i < 100; ++i)
-		for (size_t j = 0; j < sizeof buf; ++j)
-			buf[j] = 0xaa;
-	int nullfd = open("/dev/null", O_WRONLY);
-	for (size_t i = 0; i < 100; ++ i)
-		for (size_t j = 0; j < sizeof buf; ++j)
-			buf[j] = 0xbb;
-	write(nullfd, (char*)buf, sizeof buf);
-	close(nullfd);
-}
-
-timer_t t;
-volatile int sig_cnt;
-
-static void
-sig_handler (int sig, siginfo_t *info, void *ctx)
-{
-	if (sig_cnt >= 5) {
-		struct itimerspec it = {};
-		timer_settime(t, 0, &it, NULL);
-	}
-	++sig_cnt;
-}
-
-int main( int argc, char *argv[] )
-{
-	clockid_t my_process_clock;
-	int e;
-
-	struct sigaction sa = { .sa_sigaction = sig_handler,
-				.sa_flags = SA_SIGINFO };
-	sigemptyset(&sa.sa_mask);
-	sigaction(SIGRTMIN, &sa, NULL);
-
-	struct sigevent ev;
-	memset( &ev, 0, sizeof (ev));
-	ev.sigev_notify = SIGEV_SIGNAL;
-	ev.sigev_signo  = SIGRTMIN;
-	ev.sigev_value.sival_ptr = &ev;
-
-	e = clock_getcpuclockid( 0, &my_process_clock);
-	if (e) {
-		printf("clock_getcpuclockid: (%d) %s\n", e, strerror(e));
-		return 1;
-	}
-	if (timer_create(my_process_clock, &ev, &t) != 0) {
-		printf("timer_create: %m\n");
-		return 1;
-	}
-
-	struct itimerspec it;
-	it.it_value.tv_sec    = 0;
-	it.it_value.tv_nsec   = 100000;
-	it.it_interval.tv_sec = 0;
-	it.it_interval.tv_nsec = 100000;
-
-	timer_settime(t,0,&it,NULL);
-
-	while (sig_cnt < 5)
-		chew_cpu();
-
-	// process timer should stop
-	struct timespec req = { .tv_sec = 0, .tv_nsec = 400000 };
-	nanosleep(&req,NULL);
-
-	// restart timer.
-	sig_cnt = 0;
-        timer_settime(t,0,&it,NULL);
-	while (sig_cnt < 5)
-		chew_cpu();
-
-	timer_delete(t);
-
-	return 0;
-}
-
-demonstrate the issue. Here are the results before and after applying the patch:
-
-Before:
-
-[  181.904571] cputimer started
-[  181.905013] cputimer stopped
-[  181.905027] cputimer started
-[  181.906009] cputimer stopped
-[  181.906016] cputimer started
-[  181.907008] cputimer stopped
-[  181.907014] cputimer started
-[  181.908008] cputimer stopped
-[  181.908013] cputimer started
-[  181.909008] cputimer stopped
-[  181.909020] cputimer started
-[  181.910007] cputimer stopped
-[  181.910050] cputimer started
-[  181.911011] cputimer stopped
-[  181.913619] cputimer started
-[  181.914007] cputimer stopped
-[  181.914015] cputimer started
-[  181.915006] cputimer stopped
-[  181.915011] cputimer started
-[  181.916006] cputimer stopped
-[  181.916010] cputimer started
-[  181.917008] cputimer stopped
-[  181.917058] cputimer started
-[  181.918009] cputimer stopped
-[  181.918029] cputimer started
-[  181.919006] cputimer stopped
-[  181.919010] cputimer started
-[  181.920006] cputimer stopped
-
-After:
-
-[  859.722119] cputimer started
-[  859.730004] cputimer stopped
-[  859.731354] cputimer started
-[  859.739004] cputimer stopped
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
----
- kernel/posix-cpu-timers.c | 34 +++++++++++++++-------------------
- 1 file changed, 15 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index c7f31aa..972f5cb 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1049,8 +1049,6 @@ static void check_process_timers(struct task_struct *tsk,
- 	sig->cputime_expires.prof_exp = expires_to_cputime(prof_expires);
- 	sig->cputime_expires.virt_exp = expires_to_cputime(virt_expires);
- 	sig->cputime_expires.sched_exp = sched_expires;
--	if (task_cputime_zero(&sig->cputime_expires))
--		stop_process_timers(sig);
- }
- 
- /*
-@@ -1158,34 +1156,32 @@ static inline int task_cputime_expired(const struct task_cputime *sample,
-  */
- static inline int fastpath_timer_check(struct task_struct *tsk)
- {
--	struct signal_struct *sig;
--	cputime_t utime, stime;
-+	struct signal_struct *sig = tsk->signal;
- 
--	task_cputime(tsk, &utime, &stime);
-+	if (sig->cputimer.running) {
-+		if (likely(!task_cputime_zero(&sig->cputime_expires))) {
-+			struct task_cputime group_sample;
-+
-+			raw_spin_lock(&sig->cputimer.lock);
-+			group_sample = sig->cputimer.cputime;
-+			raw_spin_unlock(&sig->cputimer.lock);
-+
-+			if (task_cputime_expired(&group_sample, &sig->cputime_expires))
-+				return 1;
-+		} else
-+			stop_process_timers(sig);
-+	}
- 
- 	if (!task_cputime_zero(&tsk->cputime_expires)) {
- 		struct task_cputime task_sample = {
--			.utime = utime,
--			.stime = stime,
- 			.sum_exec_runtime = tsk->se.sum_exec_runtime
- 		};
-+		task_cputime(tsk, &task_sample.utime, &task_sample.stime);
- 
- 		if (task_cputime_expired(&task_sample, &tsk->cputime_expires))
- 			return 1;
- 	}
- 
--	sig = tsk->signal;
--	if (sig->cputimer.running) {
--		struct task_cputime group_sample;
--
--		raw_spin_lock(&sig->cputimer.lock);
--		group_sample = sig->cputimer.cputime;
--		raw_spin_unlock(&sig->cputimer.lock);
--
--		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
--			return 1;
--	}
--
- 	return 0;
- }
- 
--- 
-1.8.4.2
-
-
+greg k-h
