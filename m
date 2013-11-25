@@ -1,183 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab3KYMH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:07:26 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38394 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab3KYMHZ (ORCPT
+	id S1753856Ab3KYMHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:07:37 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50894 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab3KYMHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:07:25 -0500
+	Mon, 25 Nov 2013 07:07:33 -0500
+Message-ID: <52933D46.6090901@ti.com>
+Date: Mon, 25 Nov 2013 14:06:30 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <1385034003-32160-1-git-send-email-ard.biesheuvel@linaro.org>
-References: <1385034003-32160-1-git-send-email-ard.biesheuvel@linaro.org>
-Date: Mon, 25 Nov 2013 13:07:23 +0100
-Message-ID: <CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com>
-Subject: Re: [PATCH] firmware/dmi_scan: generalize for use by other archs
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: "x86@kernel.org" <x86@kernel.org>, linux-ia64@vger.kernel.org,
-        "mingo@redhat.com" <mingo@redhat.com>, tony.luck@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, Al Stone <al.stone@linaro.org>,
-        Yi Li <yi.li@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Strashko Grygorii <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 1/6] watchdog: davinci: change driver to use WDT core
+References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <1384795139-19466-2-git-send-email-ivan.khoronzhuk@ti.com> <52933AE4.3070608@ti.com>
+In-Reply-To: <52933AE4.3070608@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On 11/25/2013 01:56 PM, Sekhar Nori wrote:
+> On Monday 18 November 2013 10:48 PM, Ivan Khoronzhuk wrote:
+>> @@ -211,29 +129,34 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+>>
+>>   	clk_prepare_enable(wdt_clk);
+>>
+>> -	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+>> -		heartbeat = DEFAULT_HEARTBEAT;
+>> +	wdd			= &wdt_wdd;
+>> +	wdd->info		= &davinci_wdt_info;
+>> +	wdd->ops		= &davinci_wdt_ops;
+>> +	wdd->min_timeout 	= 1;
+>> +	wdd->max_timeout 	= MAX_HEARTBEAT;
+>
+> Some checkpatch warnings. Please fix.
+>
+> WARNING: please, no space before tabs
+> #273: FILE: drivers/watchdog/davinci_wdt.c:135:
+> +^Iwdd->min_timeout ^I= 1;$
+>
+> WARNING: please, no space before tabs
+> #274: FILE: drivers/watchdog/davinci_wdt.c:136:
+> +^Iwdd->max_timeout ^I= MAX_HEARTBEAT;$
+>
+> total: 0 errors, 2 warnings, 0 checks, 249 lines checked
+>
+> Thanks,
+> sekhar
+>
 
-Resending this patch to a slightly wider audience.
+Thanks, I will
 
-The point of this patch is reworking the dmi_scan code slightly so it
-can be reused on ARM and arm64.
-There are no functional changes for x86 or IA-64, just one open
-question, i.e., whether the non-EFI fallback probe should be performed
-on IA-64 in the first place.
-
-If I could get acks for this patch please (if there are no
-objections), I will propose it to be merged through the ARM and/or
-arm64 trees as part of the complete series to enable SMBIOS.
-
+-- 
 Regards,
-Ard.
-
-
-On 21 November 2013 12:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> This patch makes a couple of changes to the SMBIOS/DMI scanning
-> code so it can be used on other archs (such as ARM and arm64):
-> (a) wrap the calls to ioremap()/iounmap(), this allows the use of a
->     flavor of ioremap() more suitable for random unaligned access;
-> (b) allow the non-EFI fallback probe into hardcoded physical address
->     0xF0000 to be disabled.
->
-> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> ---
->
-> @Tony: does the fallback probe make any sense at all on IA-64? It was enabled
-> before, so I added the #define for IA-64 as well, but perhaps we could remove it
-> altogether?
->
->  arch/ia64/include/asm/dmi.h | 10 +++++++---
->  arch/x86/include/asm/dmi.h  |  8 ++++++--
->  drivers/firmware/dmi_scan.c | 20 +++++++++++---------
->  3 files changed, 24 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/ia64/include/asm/dmi.h b/arch/ia64/include/asm/dmi.h
-> index 185d3d1..61e3b56 100644
-> --- a/arch/ia64/include/asm/dmi.h
-> +++ b/arch/ia64/include/asm/dmi.h
-> @@ -5,8 +5,12 @@
->  #include <asm/io.h>
->
->  /* Use normal IO mappings for DMI */
-> -#define dmi_ioremap ioremap
-> -#define dmi_iounmap(x,l) iounmap(x)
-> -#define dmi_alloc(l) kzalloc(l, GFP_ATOMIC)
-> +#define dmi_early_remap                ioremap
-> +#define dmi_early_unmap(x,l)   iounmap(x)
-> +#define dmi_remap              ioremap
-> +#define dmi_unmap              iounmap
-> +#define dmi_alloc(l)           kzalloc(l, GFP_ATOMIC)
-> +
-> +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
->
->  #endif
-> diff --git a/arch/x86/include/asm/dmi.h b/arch/x86/include/asm/dmi.h
-> index fd8f9e2..bb2b572 100644
-> --- a/arch/x86/include/asm/dmi.h
-> +++ b/arch/x86/include/asm/dmi.h
-> @@ -13,7 +13,11 @@ static __always_inline __init void *dmi_alloc(unsigned len)
->  }
->
->  /* Use early IO mappings for DMI because it's initialized early */
-> -#define dmi_ioremap early_ioremap
-> -#define dmi_iounmap early_iounmap
-> +#define dmi_early_remap                early_ioremap
-> +#define dmi_early_unmap                early_iounmap
-> +#define dmi_remap              ioremap
-> +#define dmi_unmap              iounmap
-> +
-> +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
->
->  #endif /* _ASM_X86_DMI_H */
-> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> index fa0affb..2c7c793 100644
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -108,7 +108,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
->  {
->         u8 *buf;
->
-> -       buf = dmi_ioremap(dmi_base, dmi_len);
-> +       buf = dmi_early_remap(dmi_base, dmi_len);
->         if (buf == NULL)
->                 return -1;
->
-> @@ -116,7 +116,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
->
->         add_device_randomness(buf, dmi_len);
->
-> -       dmi_iounmap(buf, dmi_len);
-> +       dmi_early_unmap(buf, dmi_len);
->         return 0;
->  }
->
-> @@ -483,18 +483,19 @@ void __init dmi_scan_machine(void)
->                  * needed during early boot.  This also means we can
->                  * iounmap the space when we're done with it.
->                  */
-> -               p = dmi_ioremap(efi.smbios, 32);
-> +               p = dmi_early_remap(efi.smbios, 32);
->                 if (p == NULL)
->                         goto error;
->                 memcpy_fromio(buf, p, 32);
-> -               dmi_iounmap(p, 32);
-> +               dmi_early_unmap(p, 32);
->
->                 if (!dmi_present(buf)) {
->                         dmi_available = 1;
->                         goto out;
->                 }
->         } else {
-> -               p = dmi_ioremap(0xF0000, 0x10000);
-> +#ifdef DMI_SCAN_MACHINE_NON_EFI_FALLBACK
-> +               p = dmi_early_remap(0xF0000, 0x10000);
->                 if (p == NULL)
->                         goto error;
->
-> @@ -510,12 +511,13 @@ void __init dmi_scan_machine(void)
->                         memcpy_fromio(buf + 16, q, 16);
->                         if (!dmi_present(buf)) {
->                                 dmi_available = 1;
-> -                               dmi_iounmap(p, 0x10000);
-> +                               dmi_early_unmap(p, 0x10000);
->                                 goto out;
->                         }
->                         memcpy(buf, buf + 16, 16);
->                 }
-> -               dmi_iounmap(p, 0x10000);
-> +               dmi_early_unmap(p, 0x10000);
-> +#endif
->         }
->   error:
->         pr_info("DMI not present or invalid.\n");
-> @@ -787,13 +789,13 @@ int dmi_walk(void (*decode)(const struct dmi_header *, void *),
->         if (!dmi_available)
->                 return -1;
->
-> -       buf = ioremap(dmi_base, dmi_len);
-> +       buf = dmi_remap(dmi_base, dmi_len);
->         if (buf == NULL)
->                 return -1;
->
->         dmi_table(buf, dmi_len, dmi_num, decode, private_data);
->
-> -       iounmap(buf);
-> +       dmi_unmap(buf);
->         return 0;
->  }
->  EXPORT_SYMBOL_GPL(dmi_walk);
-> --
-> 1.8.3.2
->
+Ivan Khoronzhuk
