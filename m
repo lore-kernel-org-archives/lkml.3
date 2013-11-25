@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab3KYLOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:14:03 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63319 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751365Ab3KYLN7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 06:13:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, hg197@gmx.de,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Cpufreq: Change sysfs interface cpuinfo_cur_freq access privilege
-Date: Mon, 25 Nov 2013 12:26:46 +0100
-Message-ID: <5074010.ha99UACE9S@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5292E133.1040800@intel.com>
-References: <1385348018-30525-1-git-send-email-tianyu.lan@intel.com> <CAKohponvz8CjDpMbx=BXpBv5q8d4x94No90sJWjVsTRS_Uj1jw@mail.gmail.com> <5292E133.1040800@intel.com>
+	id S1753398Ab3KYLP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:15:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33728 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab3KYLP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 06:15:57 -0500
+Date: Mon, 25 Nov 2013 12:15:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [patch 01/12 v4] efi: remove unused variables in __map_region
+Message-ID: <20131125111553.GE6782@pd.tnic>
+References: <20131125090034.143510822@dhcp-16-126.nay.redhat.com>
+ <20131125091957.GA3921@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131125091957.GA3921@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 25, 2013 01:33:39 PM Lan Tianyu wrote:
-> On 2013年11月25日 12:30, Viresh Kumar wrote:
-> > On 25 November 2013 08:23, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> >> Currently, cpuinfo_cur_freq is only accessible for root user while
-> >> other cpufreq sysfs interfaces(E,G scaling_cur_freq) are available
-> >> to ordinary user. This seems make no sense. This patch is to change
-> >> it.
-> > 
-> > There is nothing wrong with the code and so this is more of a design
-> > change..
-> > 
-> > Probably Rafael can help us here as cpufreq_cur_freq will read stuff
-> > directly from hardware instead of using cached value in software.
-> 
-> I think so, too. I also tried to checking the reason of the privilege by
-> git log but the code was there before linux kernel being migrated to git
-> repository.
+On Mon, Nov 25, 2013 at 05:19:57PM +0800, Dave Young wrote:
+> Sigh, looks like I should move to git-send-email for less error prone.
 
-And it has always behaved in the same way?  Then I wouldn't change it.
-
-Thanks!
+You won't regret it :-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
