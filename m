@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab3KYOXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:23:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42745 "EHLO
+	id S1758161Ab3KYOXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:23:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42663 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3KYOSH (ORCPT
+	with ESMTP id S1757931Ab3KYOSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:18:07 -0500
+	Mon, 25 Nov 2013 09:18:03 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/25] perf thread: Move comm_list check into function
-Date: Mon, 25 Nov 2013 11:17:53 -0300
-Message-Id: <1385389075-7989-24-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/25] perf top: Make -g refer to callchains
+Date: Mon, 25 Nov 2013 11:17:33 -0300
+Message-Id: <1385389075-7989-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -29,62 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
+In most commands -g is used for callchains. Make perf-top follow suit.
+Move group to just --group with no short cut making it similar to
+perf-record.
+
 Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384806771-2945-5-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1384487490-6865-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c  |  3 +--
- tools/perf/util/thread.h | 12 ++++++++++++
- 2 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 5 ++---
+ tools/perf/builtin-top.c              | 4 ++--
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index bb788c109fe6..c77814bf01e1 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -732,8 +732,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (thread == NULL)
- 		return -1;
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 7de01dd79688..cdd8d4946dba 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -50,7 +50,6 @@ Default is to monitor all CPUS.
+ --count-filter=<count>::
+ 	Only display functions with more events than this.
  
--	if (symbol_conf.comm_list &&
--	    !strlist__has_entry(symbol_conf.comm_list, thread__comm_str(thread)))
-+	if (thread__is_filtered(thread))
- 		goto out_filtered;
+--g::
+ --group::
+         Put the counters into a counter group.
  
- 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 897c1b2a750a..5b856bf942e1 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -6,6 +6,7 @@
- #include <unistd.h>
- #include <sys/types.h>
- #include "symbol.h"
-+#include <strlist.h>
+@@ -143,12 +142,12 @@ Default is to monitor all CPUS.
+ --asm-raw::
+ 	Show raw instruction encoding of assembly instructions.
  
- struct thread {
- 	union {
-@@ -66,4 +67,15 @@ static inline void thread__set_priv(struct thread *thread, void *p)
- {
- 	thread->priv = p;
- }
-+
-+static inline bool thread__is_filtered(struct thread *thread)
-+{
-+	if (symbol_conf.comm_list &&
-+	    !strlist__has_entry(symbol_conf.comm_list, thread__comm_str(thread))) {
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
- #endif	/* __PERF_THREAD_H */
+--G::
++-g::
+ 	Enables call-graph (stack chain/backtrace) recording.
+ 
+ --call-graph::
+ 	Setup and enable call-graph (stack chain/backtrace) recording,
+-	implies -G.
++	implies -g.
+ 
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 71e6402729a8..531522d3d97b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1084,7 +1084,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			    "dump the symbol table used for profiling"),
+ 	OPT_INTEGER('f', "count-filter", &top.count_filter,
+ 		    "only display functions with more events than this"),
+-	OPT_BOOLEAN('g', "group", &opts->group,
++	OPT_BOOLEAN(0, "group", &opts->group,
+ 			    "put the counters into a counter group"),
+ 	OPT_BOOLEAN('i', "no-inherit", &opts->no_inherit,
+ 		    "child tasks do not inherit counters"),
+@@ -1105,7 +1105,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   " abort, in_tx, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+-	OPT_CALLBACK_NOOPT('G', NULL, &top.record_opts,
++	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+ 			   NULL, "enables call-graph recording",
+ 			   &callchain_opt),
+ 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
 -- 
 1.8.1.4
 
