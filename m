@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab3KYSpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:45:09 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:34988 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab3KYSpH convert rfc822-to-8bit (ORCPT
+	id S1757318Ab3KYSry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:47:54 -0500
+Received: from fm1nodo5.polito.it ([130.192.180.13]:51180 "EHLO
+	fm1nodo5.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab3KYSrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:45:07 -0500
-Date: Mon, 25 Nov 2013 19:47:04 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH RESEND v2] clk: probe defer when clock not yet ready
-Message-ID: <20131125194704.5a5922b7@armhf>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Nov 2013 13:47:52 -0500
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <52939AEE.5070809@polito.it>
+Date: Mon, 25 Nov 2013 19:46:06 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ima: bug fixes for Linus
+References: <1385145621.9559.5.camel@dhcp-9-2-203-236.watson.ibm.com>  <1385306510.5186.7.camel@dhcp-9-2-203-236.watson.ibm.com>  <alpine.LRH.2.02.1311250943500.2259@tundra.namei.org>  <1385338461.5402.3.camel@dhcp-9-2-203-236.watson.ibm.com>  <alpine.LRH.2.02.1311251313290.2899@tundra.namei.org>  <1385380993.2398.25.camel@dhcp-9-2-203-236.watson.ibm.com> <1385387470.2488.2.camel@dhcp-9-2-203-236.watson.ibm.com> <alpine.LRH.2.02.1311260235020.9714@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1311260235020.9714@tundra.namei.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At probe time, a clock device may not be ready when some other device
-wants to use it. 
+On 11/25/2013 04:40 PM, James Morris wrote:
+> On Mon, 25 Nov 2013, Mimi Zohar wrote:
+>
+>> Hi James,
+>>
+>> These are the "essential fixes for regressions".
+>>
+>> The following changes since commit 4c1cc40a2d49500d84038ff751bc6cd183e729b5:
+>>
+>>    Revert "KEYS: verify a certificate is signed by a 'trusted' key" (2013-11-23 16:38:17 -0800)
+>>
+>> are available in the git repository at:
+>>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity for-linus
+>>
+>> for you to fetch changes up to 72ca1bd303a5126d0ce377cff699282b6b38bd86:
+>>
+>>    ima: make a copy of template_fmt in template_desc_init_fields() (2013-11-25 07:32:46 -0500)
+>>
+>> thanks,
+>>
+>> Mimi
+>>
+>> ----------------------------------------------------------------
+>> Roberto Sassu (3):
+>
+>>        ima: make a copy of template_fmt in template_desc_init_fields()
+>
+>
+>> template_desc_init_fields(char *template_fmt,
+>
+> That should probably be const char.
+>
+> Also, the call to kstrdup() results in a memory leak.
+>
 
-This patch lets the functions clk_get/devm_clk_get return a probe defer
-when the clock is defined in the DT but not yet available.
+Hi James
 
-It also fixes an erroneous call to clk_get_sys() when __clk_get() fails.
+thanks for the comments. I'm implementing them and I will post
+a new version of the patch 'ima: make a copy of template_fmt in
+template_desc_init_fields()' shortly.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
-resend v2: remove ASoc from subject (thank you, Mark)
-resend: - patch subject change from
-   [PATCH v3 1/2] ASoC: kirkwood: clk: probe defer when clock not yet ready
-	- base kernel 3.13.0-rc1
-v2: fix __clk_get() failure (from Russell King)
----
- drivers/clk/clk.c    | 2 +-
- drivers/clk/clkdev.c | 7 ++++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+Roberto Sassu
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 2cf2ea6..41361c6 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2187,7 +2187,7 @@ EXPORT_SYMBOL_GPL(of_clk_del_provider);
- struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
- {
- 	struct of_clk_provider *provider;
--	struct clk *clk = ERR_PTR(-ENOENT);
-+	struct clk *clk = ERR_PTR(-EPROBE_DEFER);
- 
- 	/* Check if we have such a provider in our array */
- 	mutex_lock(&of_clk_lock);
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 442a313..1f402b9 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -157,7 +157,12 @@ struct clk *clk_get(struct device *dev, const char *con_id)
- 
- 	if (dev) {
- 		clk = of_clk_get_by_name(dev->of_node, con_id);
--		if (!IS_ERR(clk) && __clk_get(clk))
-+		if (!IS_ERR(clk)) {
-+			if (!__clk_get(clk))
-+				clk = ERR_PTR(-ENOENT);
-+			return clk;
-+		}
-+		if (PTR_ERR(clk) == -EPROBE_DEFER)
- 			return clk;
- 	}
- 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+
+>
+>
+>
+>
+
