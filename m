@@ -1,154 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3KYKeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:34:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42962 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab3KYKeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:34:04 -0500
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH v4 8/8] x86: enable/disable ftrace graph call using new int3-based framework
-Date: Mon, 25 Nov 2013 11:30:43 +0100
-Message-Id: <1385375443-22160-9-git-send-email-pmladek@suse.cz>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1385375443-22160-1-git-send-email-pmladek@suse.cz>
-References: <1385375443-22160-1-git-send-email-pmladek@suse.cz>
+	id S1753553Ab3KYKep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:34:45 -0500
+Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:42933 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752483Ab3KYKen (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:34:43 -0500
+X-Greylist: delayed 5399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 05:34:43 EST
+Message-ID: <52930D07.2060805@eukrea.com>
+Date: Mon, 25 Nov 2013 09:40:39 +0100
+From: Denis Carikli <denis@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+CC: Bill Pemberton <wfp5p@virginia.edu>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: tsc2007 - convert to use devres-managed resources
+References: <20131121051438.GA6180@core.coreip.homeip.net>
+In-Reply-To: <20131121051438.GA6180@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 939000524253306267
+X-Ovh-Remote: 88.170.243.169 (pac33-3-88-170-243-169.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more change related to replacing the existing Int3-based framework with
-the new generic function introduced by the commit fd4363fff3d9
-(x86: Introduce int3 (breakpoint)-based instruction patching)
+On 11/21/2013 06:14 AM, Dmitry Torokhov wrote:
+> This simplifies error handling path and allows us get rid of
+> tsc2007_remove().
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-ftrace_enable_ftrace_graph_caller and ftrace_disable_ftrace_graph_caller
-modified the jump target directly without using the int3 guard. It worked
-because writing the address was an atomic operation.
+I tested on top of the "tsc2007 misc fixes" and the "tsc2007 - remove 
+unused poll_delay from platform data" patches.
 
-We do not really need to use the safe ftrace_modify_code here but it helps
-to remove another arch-specific code. The result is more consistent
-and better readable code which is might be worth the change.
+Tested-by: Denis Carikli <denis@eukrea.com>
 
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
----
- arch/x86/kernel/ftrace.c | 63 +++++++++++-------------------------------------
- 1 file changed, 14 insertions(+), 49 deletions(-)
-
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 92fe8cac0802..20d20289f402 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -47,7 +47,7 @@ int ftrace_arch_code_modify_post_process(void)
- union ftrace_code_union {
- 	char code[MCOUNT_INSN_SIZE];
- 	struct {
--		char e8;
-+		char inst;
- 		int offset;
- 	} __attribute__((packed));
- };
-@@ -88,7 +88,7 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- {
- 	static union ftrace_code_union calc;
- 
--	calc.e8		= 0xe8;
-+	calc.inst	= 0xe8;
- 	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
- 	/*
-@@ -98,27 +98,11 @@ static unsigned char *ftrace_call_replace(unsigned long ip, unsigned long addr)
- 	return calc.code;
- }
- 
--static inline int
--within(unsigned long addr, unsigned long start, unsigned long end)
-+static void ftrace_jump_replace(union ftrace_code_union *calc,
-+				unsigned long ip, unsigned long addr)
- {
--	return addr >= start && addr < end;
--}
--
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
--{
--	/*
--	 * On x86_64, kernel text mappings are mapped read-only with
--	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
--	 * of the kernel text mapping to modify the kernel text.
--	 *
--	 * For 32bit kernels, these mappings are same and we can use
--	 * kernel identity mapping to modify code.
--	 */
--	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
--		ip = (unsigned long)__va(__pa_symbol(ip));
--
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	calc->inst	= 0xe9;
-+	calc->offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- }
- 
- static const unsigned char *ftrace_nop_replace(void)
-@@ -369,45 +353,26 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
--{
--	unsigned char code[MCOUNT_INSN_SIZE];
--
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
--
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
--
--	*(int *)(&code[1]) = new_offset;
--
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
--
--	return 0;
--}
--
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_stub));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_graph_caller));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
-+	union ftrace_code_union old, new;
- 
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
-+	ftrace_jump_replace(&old, ip, (unsigned long)(&ftrace_graph_caller));
-+	ftrace_jump_replace(&new, ip, (unsigned long)(&ftrace_stub));
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_modify_code(ip, old.code, new.code);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
--- 
-1.8.4
+Denis.
 
