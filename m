@@ -1,161 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab3KYTbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:31:46 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57616 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab3KYTbn (ORCPT
+	id S1757196Ab3KYTcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:32:13 -0500
+Received: from alt-proxy22.mail.unifiedlayer.com ([67.20.81.214]:41077 "HELO
+	alt-proxy22.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754034Ab3KYTcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:31:43 -0500
-Date: Mon, 25 Nov 2013 16:31:37 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 2/3] perf record: Use perf_data_file__write for output
- file
-Message-ID: <20131125193137.GB27323@ghostprotocols.net>
-References: <1385130268-10664-1-git-send-email-jolsa@redhat.com>
- <1385130268-10664-3-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385130268-10664-3-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Nov 2013 14:32:09 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Nov 2013 14:32:09 EST
+Message-ID: <1385407528.29756.41.camel@Wailaba2>
+Subject: [PATCH] Avoid process cputimer state oscillation
+From: Olivier Langlois <olivier@trillion01.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        kosaki.motohiro@gmail.com
+Date: Mon, 25 Nov 2013 14:25:28 -0500
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.179.63.169 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Nov 22, 2013 at 03:24:27PM +0100, Jiri Olsa escreveu:
-> Changing the file output code to use the newly
-> added perf_data_file__write interface.
 
-So I like renaming write_output() to perf_record__write(), but then
-you're lumping together this change and the other, which is to make
-write_output, now renamed to perf_record__write() to use perf_data_file.
+When a periodic process timer is fired, a signal is generated.
+Rearming the timer, if necessary, will be performed in a second step
+when the signal will be delivered.
 
-Can you please split it like that?
+Hence, checking the list of process timers list to decide to stop to cpu
+timer right after generating the signal is premature and is leading the
+cputimer to oscillate between the on/off states when a single process timer
+is present.
 
-- Arnaldo
+The following posix-cpu-timers module intrumentation
+
+In void thread_group_cputimer(struct task_s
+		raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 		cputimer->running = 1;
+ 		update_gt_cputime(&cputimer->cputime, &sum);
++		printk(KERN_DEBUG "cputimer started\n");
+ 	} else
+ 		raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 	*times = cputimer->cputime;
+and in static void stop_process_timers(struct s
+
+ 	raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 	cputimer->running = 0;
++	printk(KERN_DEBUG "cputimer stopped\n");
+ 	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
+
+with the small program:
+
+\#include <signal.h>
+\#include <time.h>
+\#include <stddef.h>
+\#include <stdio.h>
+\#include <string.h>
+\#include <fcntl.h>
+\#include <unistd.h>
+
+static void chew_cpu()
+{
+	static volatile char buf[4096];
+	for (size_t i = 0; i < 100; ++i)
+		for (size_t j = 0; j < sizeof buf; ++j)
+			buf[j] = 0xaa;
+	int nullfd = open("/dev/null", O_WRONLY);
+	for (size_t i = 0; i < 100; ++ i)
+		for (size_t j = 0; j < sizeof buf; ++j)
+			buf[j] = 0xbb;
+	write(nullfd, (char*)buf, sizeof buf);
+	close(nullfd);
+}
+
+timer_t t;
+volatile int sig_cnt;
+
+static void
+sig_handler (int sig, siginfo_t *info, void *ctx)
+{
+	if (sig_cnt >= 5) {
+		struct itimerspec it = {};
+		timer_settime(t, 0, &it, NULL);
+	}
+	++sig_cnt;
+}
+
+int main( int argc, char *argv[] )
+{
+	clockid_t my_process_clock;
+	int e;
+
+	struct sigaction sa = { .sa_sigaction = sig_handler,
+				.sa_flags = SA_SIGINFO };
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGRTMIN, &sa, NULL);
+
+	struct sigevent ev;
+	memset( &ev, 0, sizeof (ev));
+	ev.sigev_notify = SIGEV_SIGNAL;
+	ev.sigev_signo  = SIGRTMIN;
+	ev.sigev_value.sival_ptr = &ev;
+
+	e = clock_getcpuclockid( 0, &my_process_clock);
+	if (e) {
+		printf("clock_getcpuclockid: (%d) %s\n", e, strerror(e));
+		return 1;
+	}
+	if (timer_create(my_process_clock, &ev, &t) != 0) {
+		printf("timer_create: %m\n");
+		return 1;
+	}
+
+	struct itimerspec it;
+	it.it_value.tv_sec    = 0;
+	it.it_value.tv_nsec   = 100000;
+	it.it_interval.tv_sec = 0;
+	it.it_interval.tv_nsec = 100000;
+
+	timer_settime(t,0,&it,NULL);
+
+	while (sig_cnt < 5)
+		chew_cpu();
+
+	// process timer should stop
+	struct timespec req = { .tv_sec = 0, .tv_nsec = 400000 };
+	nanosleep(&req,NULL);
+
+	// restart timer.
+	sig_cnt = 0;
+        timer_settime(t,0,&it,NULL);
+	while (sig_cnt < 5)
+		chew_cpu();
+
+	timer_delete(t);
+
+	return 0;
+}
+
+demonstrate the issue. Here are the results before and after applying the patch:
+
+Before:
+
+[  181.904571] cputimer started
+[  181.905013] cputimer stopped
+[  181.905027] cputimer started
+[  181.906009] cputimer stopped
+[  181.906016] cputimer started
+[  181.907008] cputimer stopped
+[  181.907014] cputimer started
+[  181.908008] cputimer stopped
+[  181.908013] cputimer started
+[  181.909008] cputimer stopped
+[  181.909020] cputimer started
+[  181.910007] cputimer stopped
+[  181.910050] cputimer started
+[  181.911011] cputimer stopped
+[  181.913619] cputimer started
+[  181.914007] cputimer stopped
+[  181.914015] cputimer started
+[  181.915006] cputimer stopped
+[  181.915011] cputimer started
+[  181.916006] cputimer stopped
+[  181.916010] cputimer started
+[  181.917008] cputimer stopped
+[  181.917058] cputimer started
+[  181.918009] cputimer stopped
+[  181.918029] cputimer started
+[  181.919006] cputimer stopped
+[  181.919010] cputimer started
+[  181.920006] cputimer stopped
+
+After:
+
+[  859.722119] cputimer started
+[  859.730004] cputimer stopped
+[  859.731354] cputimer started
+[  859.739004] cputimer stopped
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+---
+ kernel/posix-cpu-timers.c | 34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index c7f31aa..972f5cb 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1049,8 +1049,6 @@ static void check_process_timers(struct task_struct *tsk,
+ 	sig->cputime_expires.prof_exp = expires_to_cputime(prof_expires);
+ 	sig->cputime_expires.virt_exp = expires_to_cputime(virt_expires);
+ 	sig->cputime_expires.sched_exp = sched_expires;
+-	if (task_cputime_zero(&sig->cputime_expires))
+-		stop_process_timers(sig);
+ }
  
-> No functional change intended.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/builtin-record.c | 42 +++++++++++++-----------------------------
->  1 file changed, 13 insertions(+), 29 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 65615a8..bc3c7be 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -76,42 +76,27 @@ struct perf_record {
->  	long			samples;
->  };
->  
-> -static int do_write_output(struct perf_record *rec, void *buf, size_t size)
-> +static ssize_t perf_record__write(struct perf_record *rec,
-> +				  void *buf, size_t size)
->  {
-> -	struct perf_data_file *file = &rec->file;
-> -
-> -	while (size) {
-> -		ssize_t ret = write(file->fd, buf, size);
-> -
-> -		if (ret < 0) {
-> -			pr_err("failed to write perf data, error: %m\n");
-> -			return -1;
-> -		}
-> -
-> -		size -= ret;
-> -		buf += ret;
-> +	struct perf_session *session = rec->session;
-> +	ssize_t ret;
->  
-> -		rec->bytes_written += ret;
-> -	}
-> +	ret = perf_data_file__write(session->file, buf, size);
-> +	if (ret < 0)
-> +		return -1;
->  
-> +	rec->bytes_written += ret;
->  	return 0;
->  }
->  
-> -static int write_output(struct perf_record *rec, void *buf, size_t size)
-> -{
-> -	return do_write_output(rec, buf, size);
-> -}
-> -
->  static int process_synthesized_event(struct perf_tool *tool,
->  				     union perf_event *event,
->  				     struct perf_sample *sample __maybe_unused,
->  				     struct machine *machine __maybe_unused)
->  {
->  	struct perf_record *rec = container_of(tool, struct perf_record, tool);
-> -	if (write_output(rec, event, event->header.size) < 0)
-> -		return -1;
-> -
-> -	return 0;
-> +	return perf_record__write(rec, event, event->header.size);
->  }
->  
->  static int perf_record__mmap_read(struct perf_record *rec,
-> @@ -136,7 +121,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
->  		size = md->mask + 1 - (old & md->mask);
->  		old += size;
->  
-> -		if (write_output(rec, buf, size) < 0) {
-> +		if (perf_record__write(rec, buf, size) < 0) {
->  			rc = -1;
->  			goto out;
->  		}
-> @@ -146,7 +131,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
->  	size = head - old;
->  	old += size;
->  
-> -	if (write_output(rec, buf, size) < 0) {
-> +	if (perf_record__write(rec, buf, size) < 0) {
->  		rc = -1;
->  		goto out;
->  	}
-> @@ -322,8 +307,7 @@ static struct perf_event_header finished_round_event = {
->  
->  static int perf_record__mmap_read_all(struct perf_record *rec)
->  {
-> -	int i;
-> -	int rc = 0;
-> +	int i, rc = 0;
->  
->  	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
->  		if (rec->evlist->mmap[i].base) {
-> @@ -335,7 +319,7 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
->  	}
->  
->  	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
-> -		rc = write_output(rec, &finished_round_event,
-> +		rc = perf_record__write(rec, &finished_round_event,
->  				  sizeof(finished_round_event));
->  
->  out:
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ /*
+@@ -1158,34 +1156,32 @@ static inline int task_cputime_expired(const struct task_cputime *sample,
+  */
+ static inline int fastpath_timer_check(struct task_struct *tsk)
+ {
+-	struct signal_struct *sig;
+-	cputime_t utime, stime;
++	struct signal_struct *sig = tsk->signal;
+ 
+-	task_cputime(tsk, &utime, &stime);
++	if (sig->cputimer.running) {
++		if (likely(!task_cputime_zero(&sig->cputime_expires))) {
++			struct task_cputime group_sample;
++
++			raw_spin_lock(&sig->cputimer.lock);
++			group_sample = sig->cputimer.cputime;
++			raw_spin_unlock(&sig->cputimer.lock);
++
++			if (task_cputime_expired(&group_sample, &sig->cputime_expires))
++				return 1;
++		} else
++			stop_process_timers(sig);
++	}
+ 
+ 	if (!task_cputime_zero(&tsk->cputime_expires)) {
+ 		struct task_cputime task_sample = {
+-			.utime = utime,
+-			.stime = stime,
+ 			.sum_exec_runtime = tsk->se.sum_exec_runtime
+ 		};
++		task_cputime(tsk, &task_sample.utime, &task_sample.stime);
+ 
+ 		if (task_cputime_expired(&task_sample, &tsk->cputime_expires))
+ 			return 1;
+ 	}
+ 
+-	sig = tsk->signal;
+-	if (sig->cputimer.running) {
+-		struct task_cputime group_sample;
+-
+-		raw_spin_lock(&sig->cputimer.lock);
+-		group_sample = sig->cputimer.cputime;
+-		raw_spin_unlock(&sig->cputimer.lock);
+-
+-		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
+-			return 1;
+-	}
+-
+ 	return 0;
+ }
+ 
+-- 
+1.8.4.2
+
+
