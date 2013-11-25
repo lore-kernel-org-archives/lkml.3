@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab3KYTjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 14:39:00 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:34512 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab3KYTi6 (ORCPT
+	id S1757389Ab3KYTjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 14:39:35 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17616 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756255Ab3KYTjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 14:38:58 -0500
-Message-ID: <5293A74F.9000808@linaro.org>
-Date: Mon, 25 Nov 2013 11:38:55 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Amit Pundir <amit.pundir@linaro.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH v3] epoll: drop EPOLLWAKEUP if PM_SLEEP is disabled
-References: <1384500391-20513-1-git-send-email-amit.pundir@linaro.org> <2338693.sZIlYGM98f@vostro.rjw.lan> <5286A1A4.2020905@linaro.org> <3183942.lOJ03BL8GG@vostro.rjw.lan>
-In-Reply-To: <3183942.lOJ03BL8GG@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Nov 2013 14:39:32 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18+twjvEE9c39ONMM8fCeTU8Nsfmjy7sRM=
+From: Jason Cooper <jason@lakedaemon.net>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
+Date: Mon, 25 Nov 2013 19:39:25 +0000
+Message-Id: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2013 03:53 PM, Rafael J. Wysocki wrote:
->
-> OK, I'll pick this up over the weekend if Al doesn't do that first.
+The following commit:
 
-Just wanted to follow up on this, since I couldn't find this in your git
-tree or Al's yet.  Forgive me if I missed it, I just wanted to make sure
-it didn't get lost in the shuffle.
+  54f8d501e842 dmaengine: remove DMA unmap from drivers
 
-thanks
--john
+removed the last caller to mv_desc_get_dest_addr(), creating the
+warning:
+
+  drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
+  but not used [-Wunused-function]
+
+Remove it.
+
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+---
+ drivers/dma/mv_xor.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index 7807f0ef4e20..23bcc9158cbc 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -54,12 +54,6 @@ static void mv_desc_init(struct mv_xor_desc_slot *desc, unsigned long flags)
+ 	hw_desc->desc_command = (1 << 31);
+ }
+ 
+-static u32 mv_desc_get_dest_addr(struct mv_xor_desc_slot *desc)
+-{
+-	struct mv_xor_desc *hw_desc = desc->hw_desc;
+-	return hw_desc->phy_dest_addr;
+-}
+-
+ static void mv_desc_set_byte_count(struct mv_xor_desc_slot *desc,
+ 				   u32 byte_count)
+ {
+-- 
+1.8.4.4
 
