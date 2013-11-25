@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757201Ab3KYN17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:27:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56994 "EHLO
+	id S1757184Ab3KYN16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:27:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab3KYNH2 (ORCPT
+	with ESMTP id S1753909Ab3KYNH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:28 -0500
+	Mon, 25 Nov 2013 08:07:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 11/78] drm/vmwgfx: Don't kill clients on VT switch
-Date: Mon, 25 Nov 2013 13:05:58 +0000
-Message-Id: <1385384825-21681-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 13/78] drm: Prevent overwriting from userspace underallocating core ioctl structs
+Date: Mon, 25 Nov 2013 13:06:00 +0000
+Message-Id: <1385384825-21681-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,67 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit c4249855ac5b2a383704d31e040d3831d6a25c6f upstream.
+commit b062672e305ce071f21eb9e18b102c2a430e0999 upstream.
 
-DRI clients that tried to grab the TTM lock when the master (X server) was
-switched away during a VT switch were sent the SIGTERM signal by the
-kernel. Fix this so that they are only sent that signal when the master has
-exited.
+Apply the protections from
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+commit 1b2f1489633888d4a06028315dc19d65768a1c05
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Sat Aug 14 20:20:34 2010 +1000
+
+    drm: block userspace under allocating buffer and having drivers overwrite it (v2)
+
+to the core ioctl structs as well, for we found one instance where there
+is a 32-/64-bit size mismatch and were guilty of writing beyond the end
+of the user's buffer.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@redhat.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Cc: dri-devel@lists.freedesktop.org
 Signed-off-by: Dave Airlie <airlied@redhat.com>
-[ luis: backported to 3.5:
-  - adjusted context
-  - vmw_execbuf_release_pinned_bo() takes 3 parameters ]
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/drm_drv.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-index db50604..40cefd4 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -748,9 +748,17 @@ static void vmw_postclose(struct drm_device *dev,
- 	struct vmw_fpriv *vmw_fp;
- 
- 	vmw_fp = vmw_fpriv(file_priv);
--	ttm_object_file_release(&vmw_fp->tfile);
--	if (vmw_fp->locked_master)
-+
-+	if (vmw_fp->locked_master) {
-+		struct vmw_master *vmaster =
-+			vmw_master(vmw_fp->locked_master);
-+
-+		ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
-+		ttm_vt_unlock(&vmaster->lock);
- 		drm_master_put(&vmw_fp->locked_master);
-+	}
-+
-+	ttm_object_file_release(&vmw_fp->tfile);
- 	kfree(vmw_fp);
- }
- 
-@@ -953,14 +961,13 @@ static void vmw_master_drop(struct drm_device *dev,
- 
- 	vmw_fp->locked_master = drm_master_get(file_priv->master);
- 	ret = ttm_vt_lock(&vmaster->lock, false, vmw_fp->tfile);
--	vmw_execbuf_release_pinned_bo(dev_priv, false, 0);
--
- 	if (unlikely((ret != 0))) {
- 		DRM_ERROR("Unable to lock TTM at VT switch.\n");
- 		drm_master_put(&vmw_fp->locked_master);
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 8a9d079..df54da9 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -422,9 +422,16 @@ long drm_ioctl(struct file *filp,
+ 			asize = drv_size;
  	}
+ 	else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
++		u32 drv_size;
++
+ 		ioctl = &drm_ioctls[nr];
+-		cmd = ioctl->cmd;
++
++		drv_size = _IOC_SIZE(ioctl->cmd);
+ 		usize = asize = _IOC_SIZE(cmd);
++		if (drv_size > asize)
++			asize = drv_size;
++
++		cmd = ioctl->cmd;
+ 	} else
+ 		goto err_i1;
  
--	ttm_lock_set_kill(&vmaster->lock, true, SIGTERM);
-+	ttm_lock_set_kill(&vmaster->lock, false, SIGTERM);
-+	vmw_execbuf_release_pinned_bo(dev_priv, false, 0);
- 
- 	if (!dev_priv->enable_fb) {
- 		ret = ttm_bo_evict_mm(&dev_priv->bdev, TTM_PL_VRAM);
 -- 
 1.8.3.2
 
