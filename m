@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab3KYOVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:21:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42755 "EHLO
+	id S1757961Ab3KYOSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:18:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42727 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757962Ab3KYOSJ (ORCPT
+	with ESMTP id S1754251Ab3KYOSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:18:09 -0500
+	Mon, 25 Nov 2013 09:18:06 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/25] perf timechart: Add support for -P and -T in timechart recording
-Date: Mon, 25 Nov 2013 11:17:49 -0300
-Message-Id: <1385389075-7989-20-git-send-email-acme@infradead.org>
+Subject: [PATCH 25/25] perf script: Print callchains and symbols if they exist
+Date: Mon, 25 Nov 2013 11:17:55 -0300
+Message-Id: <1385389075-7989-26-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -27,222 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+From: David Ahern <dsahern@gmail.com>
 
-If we don't want either power or task events we may use -T or -P with
-the `perf timechart record` command to filter out events while recording
-to keep perf.data small.
+The intent of perf-script is to dump the events and information in the
+file. H/W, S/W and raw events all dump callchains if they are present;
+might as well make that the default for tracepoints too.
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru
+v2: Only add options for sym, dso and ip if callchains are present
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/1384920457-5986-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-timechart.txt |  16 +++--
- tools/perf/builtin-timechart.c              | 101 +++++++++++++++++++++-------
- 2 files changed, 87 insertions(+), 30 deletions(-)
+ tools/perf/builtin-script.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index d8441894d9ec..8359cfadf0ac 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -8,8 +8,7 @@ perf-timechart - Tool to visualize total system behavior during a workload
- SYNOPSIS
- --------
- [verse]
--'perf timechart' record <command>
--'perf timechart' [<options>]
-+'perf timechart' [<timechart options>] {record} [<record options>]
- 
- DESCRIPTION
- -----------
-@@ -21,8 +20,8 @@ There are two variants of perf timechart:
-   'perf timechart' to turn a trace into a Scalable Vector Graphics file,
-   that can be viewed with popular SVG viewers such as 'Inkscape'.
- 
--OPTIONS
---------
-+TIMECHART OPTIONS
-+-----------------
- -o::
- --output=::
-         Select the output file (default: output.svg)
-@@ -61,6 +60,15 @@ $ perf timechart
- --proc-num::
-         Print task info for at least given number of tasks.
- 
-+RECORD OPTIONS
-+--------------
-+-P::
-+--power-only::
-+        Record only power-related events
-+-T::
-+--tasks-only::
-+        Record only tasks-related events
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 6a848b8c4c16..1c60ed3f5b97 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1040,50 +1040,81 @@ out_delete:
- 
- static int __cmd_record(int argc, const char **argv)
- {
--#ifdef SUPPORT_OLD_POWER_EVENTS
--	const char * const record_old_args[] = {
-+	unsigned int rec_argc, i, j;
-+	const char **rec_argv;
-+	const char **p;
-+	unsigned int record_elems;
-+
-+	const char * const common_args[] = {
- 		"record", "-a", "-R", "-c", "1",
-+	};
-+	unsigned int common_args_nr = ARRAY_SIZE(common_args);
-+
-+	const char * const power_args[] = {
-+		"-e", "power:cpu_frequency",
-+		"-e", "power:cpu_idle",
-+	};
-+	unsigned int power_args_nr = ARRAY_SIZE(power_args);
-+
-+	const char * const old_power_args[] = {
-+#ifdef SUPPORT_OLD_POWER_EVENTS
- 		"-e", "power:power_start",
- 		"-e", "power:power_end",
- 		"-e", "power:power_frequency",
--		"-e", "sched:sched_wakeup",
--		"-e", "sched:sched_switch",
--	};
- #endif
--	const char * const record_new_args[] = {
--		"record", "-a", "-R", "-c", "1",
--		"-e", "power:cpu_frequency",
--		"-e", "power:cpu_idle",
-+	};
-+	unsigned int old_power_args_nr = ARRAY_SIZE(old_power_args);
-+
-+	const char * const tasks_args[] = {
- 		"-e", "sched:sched_wakeup",
- 		"-e", "sched:sched_switch",
- 	};
--	unsigned int rec_argc, i, j;
--	const char **rec_argv;
--	const char * const *record_args = record_new_args;
--	unsigned int record_elems = ARRAY_SIZE(record_new_args);
-+	unsigned int tasks_args_nr = ARRAY_SIZE(tasks_args);
- 
- #ifdef SUPPORT_OLD_POWER_EVENTS
- 	if (!is_valid_tracepoint("power:cpu_idle") &&
- 	    is_valid_tracepoint("power:power_start")) {
- 		use_old_power_events = 1;
--		record_args = record_old_args;
--		record_elems = ARRAY_SIZE(record_old_args);
-+		power_args_nr = 0;
-+	} else {
-+		old_power_args_nr = 0;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index b392770766dd..9f3ba4404a14 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -280,6 +280,30 @@ static int perf_session__check_output_opt(struct perf_session *session)
+ 		set_print_ip_opts(&evsel->attr);
  	}
- #endif
  
--	rec_argc = record_elems + argc - 1;
-+	if (power_only)
-+		tasks_args_nr = 0;
++	/*
++	 * set default for tracepoints to print symbols only
++	 * if callchains are present
++	 */
++	if (symbol_conf.use_callchain &&
++	    !output[PERF_TYPE_TRACEPOINT].user_set) {
++		struct perf_event_attr *attr;
 +
-+	if (tasks_only) {
-+		power_args_nr = 0;
-+		old_power_args_nr = 0;
++		j = PERF_TYPE_TRACEPOINT;
++		evsel = perf_session__find_first_evtype(session, j);
++		if (evsel == NULL)
++			goto out;
++
++		attr = &evsel->attr;
++
++		if (attr->sample_type & PERF_SAMPLE_CALLCHAIN) {
++			output[j].fields |= PERF_OUTPUT_IP;
++			output[j].fields |= PERF_OUTPUT_SYM;
++			output[j].fields |= PERF_OUTPUT_DSO;
++			set_print_ip_opts(attr);
++		}
 +	}
 +
-+	record_elems = common_args_nr + tasks_args_nr +
-+		power_args_nr + old_power_args_nr;
-+
-+	rec_argc = record_elems + argc;
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
- 	if (rec_argv == NULL)
- 		return -ENOMEM;
- 
--	for (i = 0; i < record_elems; i++)
--		rec_argv[i] = strdup(record_args[i]);
-+	p = rec_argv;
-+	for (i = 0; i < common_args_nr; i++)
-+		*p++ = strdup(common_args[i]);
-+
-+	for (i = 0; i < tasks_args_nr; i++)
-+		*p++ = strdup(tasks_args[i]);
-+
-+	for (i = 0; i < power_args_nr; i++)
-+		*p++ = strdup(power_args[i]);
- 
--	for (j = 1; j < (unsigned int)argc; j++, i++)
--		rec_argv[i] = argv[j];
-+	for (i = 0; i < old_power_args_nr; i++)
-+		*p++ = strdup(old_power_args[i]);
- 
--	return cmd_record(i, rec_argv, NULL);
-+	for (j = 1; j < (unsigned int)argc; j++)
-+		*p++ = argv[j];
-+
-+	return cmd_record(rec_argc, rec_argv, NULL);
++out:
+ 	return 0;
  }
- 
- static int
-@@ -1099,7 +1130,7 @@ int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
- 	const char *output_name = "output.svg";
--	const struct option options[] = {
-+	const struct option timechart_options[] = {
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
- 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-@@ -1120,7 +1151,17 @@ int cmd_timechart(int argc, const char **argv,
- 		NULL
- 	};
- 
--	argc = parse_options(argc, argv, options, timechart_usage,
-+	const struct option record_options[] = {
-+	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
-+	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
-+		    "output processes data only"),
-+	OPT_END()
-+	};
-+	const char * const record_usage[] = {
-+		"perf timechart record [<options>]",
-+		NULL
-+	};
-+	argc = parse_options(argc, argv, timechart_options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 
- 	if (power_only && tasks_only) {
-@@ -1130,10 +1171,18 @@ int cmd_timechart(int argc, const char **argv,
- 
- 	symbol__init();
- 
--	if (argc && !strncmp(argv[0], "rec", 3))
-+	if (argc && !strncmp(argv[0], "rec", 3)) {
-+		argc = parse_options(argc, argv, record_options, record_usage,
-+				     PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+		if (power_only && tasks_only) {
-+			pr_err("-P and -T options cannot be used at the same time.\n");
-+			return -1;
-+		}
-+
- 		return __cmd_record(argc, argv);
--	else if (argc)
--		usage_with_options(timechart_usage, options);
-+	} else if (argc)
-+		usage_with_options(timechart_usage, timechart_options);
- 
- 	setup_pager();
  
 -- 
 1.8.1.4
