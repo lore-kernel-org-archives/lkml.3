@@ -1,157 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3KYBdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 20:33:18 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55070 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3KYBdP (ORCPT
+	id S1753054Ab3KYBeL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 20:34:11 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:62125 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab3KYBeI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 20:33:15 -0500
-Message-ID: <5292A9BC.50402@windriver.com>
-Date: Mon, 25 Nov 2013 09:37:00 +0800
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.82
-MIME-Version: 1.0
-To: Vlad Yasevich <vyasevich@gmail.com>
-CC: <nhorman@tuxdriver.com>, <davem@davemloft.net>,
-        <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sctp: Restore 'resent' bit to avoid retransmitted chunks
- for RTT measurements
-References: <1385109031-4246-1-git-send-email-xufeng.zhang@windriver.com> <528F67A1.60306@gmail.com>
-In-Reply-To: <528F67A1.60306@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Nov 2013 20:34:08 -0500
+X-AuditID: cbfee61b-b7f076d0000004f6-db-5292a90a395b
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>
+References: <000301cee71f$b0e54160$12afc420$@samsung.com>
+ <1385267160.26319.98.camel@kjgkr>
+In-reply-to: <1385267160.26319.98.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by
+ merging for mount performance
+Date: Mon, 25 Nov 2013 09:33:12 +0800
+Message-id: <000e01cee97e$6b83e480$428bad80$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQK5ip1hYVBPavTw3v39qs6NCq5t6wI37MMMmE4nD6A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAV2ulZOCDD7O4Le4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujO/LV7MU
+	LBOueN3SxNzAOJe/i5GTQ0LARGLb3B/sELaYxIV769m6GLk4hAQWMUr83nucHcL5wSjR/Qck
+	w8nBJqAisbzjPxOILSIgLTHr0zwWkCJmgdmMEj1fnjGCJIQEYiWmbpsFNpZTQE/i+J6fzCC2
+	sEC+xNQdN8DiLAKqElPOTgGzeQUsJV7++gZlC0r8mHwPaCgH0FB1iSlTckHCzALaEk/eXWCF
+	uFRBYsfZ14wQN1hJ7Lm5mR2iRlxi45FbLBMYhWYhmTQLYdIsJJNmIelYwMiyilE0tSC5oDgp
+	PddIrzgxt7g0L10vOT93EyM4Bp5J72Bc1WBxiFGAg1GJh3di9aQgIdbEsuLK3EOMEhzMSiK8
+	e+qAQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZODilGhiTd0gH
+	nT91k3enkPyFlRImvDv3mRudNt2t05L26gFXafmdlxWvN/gdOTblVOiLHb9PNXT3bhf0MXR5
+	ZNFekMwovnzO0Q+vJeoX2DWrGDrMeOp5Uf11UP97oTD5aYc+7NTxaBJ9ru7vsWn/7IRVwlqz
+	P4Sy9vYo/WF4teHR4ddVkau4xSaEbX2rxFKckWioxVxUnAgAea/8rX0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 10:18 PM, Vlad Yasevich wrote:
-> On 11/22/2013 03:30 AM, Xufeng Zhang wrote:
->    
->> From: Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->>
->> Currently retransmitted DATA chunks could also be used for
->> RTT measurements since there are no flag to identify whether
->> the transmitted DATA chunk is a new one or a retransmitted one.
->> This problem is introduced by commit ae19c5486 ("sctp: remove
->> 'resent' bit from the chunk") which inappropriately removed the
->> 'resent' bit completely, instead of doing this, we should set
->> the resent bit only for the retransmitted DATA chunks.
->>
->> Signed-off-by: Xufeng Zhang<xufeng.zhang@windriver.com>
->> ---
->>   include/net/sctp/structs.h |    1 +
->>   net/sctp/output.c          |   23 +++++++++++++----------
->>   net/sctp/outqueue.c        |    3 +++
->>   net/sctp/sm_make_chunk.c   |    1 +
->>   4 files changed, 18 insertions(+), 10 deletions(-)
->>
->> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
->> index 2174d8d..ea0ca5f 100644
->> --- a/include/net/sctp/structs.h
->> +++ b/include/net/sctp/structs.h
->> @@ -629,6 +629,7 @@ struct sctp_chunk {
->>   #define SCTP_NEED_FRTX 0x1
->>   #define SCTP_DONT_FRTX 0x2
->>   	__u16	rtt_in_progress:1,	/* This chunk used for RTT calc? */
->> +		resent:1,		/* Has this chunk ever been resent. */
->>   		has_tsn:1,		/* Does this chunk have a TSN yet? */
->>   		has_ssn:1,		/* Does this chunk have a SSN yet? */
->>   		singleton:1,		/* Only chunk in the packet? */
->> diff --git a/net/sctp/output.c b/net/sctp/output.c
->> index e650978..32c214d 100644
->> --- a/net/sctp/output.c
->> +++ b/net/sctp/output.c
->> @@ -467,17 +467,20 @@ int sctp_packet_transmit(struct sctp_packet *packet)
->>   	list_for_each_entry_safe(chunk, tmp,&packet->chunk_list, list) {
->>   		list_del_init(&chunk->list);
->>   		if (sctp_chunk_is_data(chunk)) {
->> -			/* 6.3.1 C4) When data is in flight and when allowed
->> -			 * by rule C5, a new RTT measurement MUST be made each
->> -			 * round trip.  Furthermore, new RTT measurements
->> -			 * SHOULD be made no more than once per round-trip
->> -			 * for a given destination transport address.
->> -			 */
->> -
->> -			if (!tp->rto_pending) {
->> -				chunk->rtt_in_progress = 1;
->> -				tp->rto_pending = 1;
->> +			if (!chunk->resent) {
->> +				/* 6.3.1 C4) When data is in flight and when allowed
->> +				 * by rule C5, a new RTT measurement MUST be made each
->> +				 * round trip.  Furthermore, new RTT measurements
->> +				 * SHOULD be made no more than once per round-trip
->> +				 * for a given destination transport address.
->> +				 */
->> +
->> +				if (!tp->rto_pending) {
->>      
-> Could be combined as
->      if (!chunk->resent&&  !tp->rto_pending) {
->    
+Hi,
 
-Got it!
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Sunday, November 24, 2013 12:26 PM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 谭姝
+> Subject: Re: [f2fs-dev] [PATCH V3 2/2] f2fs: read contiguous sit entry pages by merging for mount performance
+> 
+> Hi,
+> 
+> 2013-11-22 (금), 09:09 +0800, Chao Yu:
+> > Previously we read sit entries page one by one, this method lost the chance
+> > of reading contiguous page together. So we read pages as contiguous as
+> > possible for better mount performance.
+> >
+> > change log:
+> >  o merge judgements/use 'Continue' or 'Break' instead of 'Goto' as Gu Zheng
+> >    suggested.
+> >  o add mark_page_accessed() before release page to delay VM reclaiming.
+> >  o remove '*order' for simplification of function as Jaegeuk Kim suggested.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/segment.c |  103 +++++++++++++++++++++++++++++++++++++++--------------
+> >  fs/f2fs/segment.h |    2 ++
+> >  2 files changed, 78 insertions(+), 27 deletions(-)
+> >
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> > index 8149eba..998e7d3 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -14,6 +14,7 @@
+> >  #include <linux/blkdev.h>
+> >  #include <linux/prefetch.h>
+> >  #include <linux/vmalloc.h>
+> > +#include <linux/swap.h>
+> >
+> >  #include "f2fs.h"
+> >  #include "segment.h"
+> > @@ -1488,41 +1489,89 @@ static int build_curseg(struct f2fs_sb_info *sbi)
+> >  	return restore_curseg_summaries(sbi);
+> >  }
+> >
+> > +static int ra_sit_pages(struct f2fs_sb_info *sbi, int start, int nrpages)
+> > +{
+> > +	struct address_space *mapping = sbi->meta_inode->i_mapping;
+> > +	struct page *page;
+> > +	block_t blk_addr, prev_blk_addr = 0;
+> > +	int sit_blk_cnt = SIT_BLK_CNT(sbi);
+> > +	int blkno = start;
+> > +
+> > +	for (; blkno < start + nrpages && blkno < sit_blk_cnt; blkno++) {
+> > +
+> > +		blk_addr = current_sit_addr(sbi, start * SIT_ENTRY_PER_BLOCK);
+> 
+> Should be:
+> 	blk_addr = current_sit_addr(sbi, blkno * SIT_ENTRY_PER_BLOCK);
+> 	                                -------
+> I'll fix this and merge the patch though.
+> Thanks,
 
->    
->> +					chunk->rtt_in_progress = 1;
->> +					tp->rto_pending = 1;
->> +				}
->>   			}
->> +
->>   			has_data = 1;
->>   		}
->>
->> diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
->> index 94df758..70f4f56 100644
->> --- a/net/sctp/outqueue.c
->> +++ b/net/sctp/outqueue.c
->> @@ -446,6 +446,8 @@ void sctp_retransmit_mark(struct sctp_outq *q,
->>   				transport->rto_pending = 0;
->>   			}
->>
->> +			chunk->resent = 1;
->> +
->>   			/* Move the chunk to the retransmit queue. The chunks
->>   			 * on the retransmit queue are always kept in order.
->>   			 */
->> @@ -1375,6 +1377,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
->>   				 * instance).
->>   				 */
->>   				if (!tchunk->tsn_gap_acked&&
->> +				    !tchunk->resent&&
->>   				tchunk->rtt_in_progress) {
->>   					tchunk->rtt_in_progress = 0;
->>   					rtt = jiffies - tchunk->sent_at;
->> diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
->> index fe69032..8fe89f8 100644
->> --- a/net/sctp/sm_make_chunk.c
->> +++ b/net/sctp/sm_make_chunk.c
->> @@ -1321,6 +1321,7 @@ struct sctp_chunk *sctp_chunkify(struct sk_buff *skb,
->>   	INIT_LIST_HEAD(&retval->list);
->>   	retval->skb		= skb;
->>   	retval->asoc		= (struct sctp_association *)asoc;
->> +	retval->resent          = 0;
->>      
-> Not needed due to zeroed out malloc.
->    
+Oh, It's my mistake, sorry for that.
+Thanks for your review! :)
 
-Thank you!
-Will send V2 later.
-
-
-
-Thanks,
-Xufeng
-
-> -vlad
->
->    
->>   	retval->singleton	= 1;
->>
->>   	retval->fast_retransmit = SCTP_CAN_FRTX;
->>
->>      
->
->    
+> 
+> --
+> Jaegeuk Kim
+> Samsung
 
