@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab3KYGhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 01:37:05 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48589 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3KYGg6 (ORCPT
+	id S1752205Ab3KYGhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 01:37:53 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:62362 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab3KYGhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 01:36:58 -0500
-From: Shawn Landden <shawn@churchofgit.com>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
-        Shawn Landden <shawn@churchofgit.com>
-Subject: [PATCH] update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
-Date: Sun, 24 Nov 2013 22:36:28 -0800
-Message-Id: <1385361388-2175-1-git-send-email-shawn@churchofgit.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <20131125042633.GA4156@order.stressinduktion.org>
-References: <20131125042633.GA4156@order.stressinduktion.org>
+	Mon, 25 Nov 2013 01:37:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <526444E5.5000405@samsung.com>
+References: <1379937815-21746-1-git-send-email-chander.kashyap@linaro.org>
+	<02c701ceba75$f95b1900$ec114b00$@org>
+	<1949846.N3fAUHQ1Nx@flatron>
+	<526444E5.5000405@samsung.com>
+Date: Mon, 25 Nov 2013 12:07:49 +0530
+Message-ID: <CANuQgHFSNMV=RF8SHdZf3=gyNoXJWXEcevQ=DAOqUuZXSeugrQ@mail.gmail.com>
+Subject: Re: [PATCH v2] irqchip: exynos-combiner: remove hard-coded irq_base value
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene@kernel.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-MSG_MORE.
+Hi Kikjin,
 
-algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
-and need to see the new flag as identical to MSG_MORE.
+On 21 October 2013 02:32, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> On 10/18/13 02:53, Tomasz Figa wrote:
+>>
+>> Hi Kukjin,
+>>
+>> On Thursday 26 of September 2013 14:05:09 Kukjin Kim wrote:
+>>>
+>>> Chander Kashyap wrote:
+>>>>
+>>>> Replace irq_domain_add_simple with "irq_domain_add_linear" in order to
+>>>> use linear irq domain, and to remove hardcoded irq_base_value.
+>>>>
+>>>> Signed-off-by: Chander Kashyap<chander.kashyap@linaro.org>
+>>>> ---
+>>>>
+>>>> Changes since v1:
+>>>>         - Replaced irq_domain_add_simple with irq_domain_add_linear,
+>>>>
+>>>>           as suggested by Tomasz
+>>>>
+>>>>   drivers/irqchip/exynos-combiner.c |   15 +++------------
+>>>>   1 file changed, 3 insertions(+), 12 deletions(-)
+>>
+>> [snip]
+>>>
+>>>
+>>> Looks nice to me, applied with Tomasz's review.
+>>
+>>
+>> I don't see this patch in your tree. Did you apply it in the end?
+>>
+> Thanks for your gentle reminder.
 
-This fixes sendfile() on AF_ALG.
+I still can not see these patches in yours branches ?
 
-v3: also fix udp
+>
+> Applied.
+> - Kukjin
 
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: <stable@vger.kernel.org> # 3.4.x + 3.2.x
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Original-patch: Richard Weinberger <richard@nod.at>
-Signed-off-by: Shawn Landden <shawn@churchofgit.com>
----
- crypto/algif_hash.c     | 3 +++
- crypto/algif_skcipher.c | 3 +++
- net/ipv4/udp.c          | 3 +++
- 3 files changed, 9 insertions(+)
 
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index ef5356c..8502462 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- 	struct hash_ctx *ctx = ask->private;
- 	int err;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index 6a6dfc0..a19c027 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
- 	struct skcipher_sg_list *sgl;
- 	int err = -EINVAL;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 5944d7d..8bd04df 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1098,6 +1098,9 @@ int udp_sendpage(struct sock *sk, struct page *page, int offset,
- 	struct udp_sock *up = udp_sk(sk);
- 	int ret;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
- 
+
 -- 
-1.8.4.4
-
+with warm regards,
+Chander Kashyap
