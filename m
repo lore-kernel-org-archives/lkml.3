@@ -1,174 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3KYPrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:47:21 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:36201 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab3KYPrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:47:18 -0500
-Message-ID: <1385394419.24518.40.camel@shinybook.infradead.org>
-Subject: Re: [PATCH] Make the mtdblock read/write skip the bad nand sector
-From: David Woodhouse <dwmw2@infradead.org>
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Richard Genoud <richard.genoud@gmail.com>, zhouguangming@innofidei.com,
-        Hans Zhang <zhanghonghui@innofidei.com>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
+	id S1754821Ab3KYPs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:48:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34017 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754067Ab3KYPs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:48:26 -0500
+Message-ID: <52937105.6040505@ti.com>
+Date: Mon, 25 Nov 2013 11:47:17 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "wni@nvidia.com" <wni@nvidia.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Nov 2013 15:46:59 +0000
-In-Reply-To: <87fvqkldmh.fsf@dell.be.48ers.dk>
-References: <528EB1E3.7030101@innofidei.com>
-	 <20131122015237.GB3509@localhost> <528EBD0B.5010006@innofidei.com>
-	 <20131122114509.GB2414@localhost> <5292A7E7.5060003@innofidei.com>
-	 <20131125101147.GA2408@localhost>
-	 <CACQ1gAi26WeiopptcZmBp6h0a5TacLo5mvVCOm6-H_1HtnwvXg@mail.gmail.com>
-	 <529334D9.2030204@innofidei.com> <20131125115238.GC2408@localhost>
-	 <1385381770.24518.18.camel@shinybook.infradead.org>
-	 <20131125123012.GE2408@localhost> <87fvqkldmh.fsf@dell.be.48ers.dk>
-Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
-	boundary="=-SpWklHdUX8RXUhhs5vJs"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com> <1384285582-16933-3-git-send-email-eduardo.valentin@ti.com> <20131125153721.GH32081@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131125153721.GH32081@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="Ju1ovUSkQSU9eUGcmI17HankcJHhb8UrX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-SpWklHdUX8RXUhhs5vJs
-Content-Type: text/plain; charset="UTF-8"
+--Ju1ovUSkQSU9eUGcmI17HankcJHhb8UrX
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2013-11-25 at 16:12 +0100, Peter Korsgaard wrote:
-> >>>>> "Ezequiel" =3D=3D Ezequiel Garcia <ezequiel.garcia@free-electrons.c=
-om> writes:
->=20
-> Hi,
->=20
->  > Thanks a lot for the insight. After reading this, I'm wondering what's
->  > preventing us from killing MTD block support altogether. Artem, alread=
-y
->  > suggested it a while back...
->=20
-> People using squashfs/cramfs/readonly ext2/.. on a NOR flash?
+On 25-11-2013 11:37, Mark Rutland wrote:
+> On Tue, Nov 12, 2013 at 07:46:04PM +0000, Eduardo Valentin wrote:
+>> This patch introduces a device tree bindings for
+>> describing the hardware thermal behavior and limits.
+>> Also a parser to read and interpret the data and feed
+>> it in the thermal framework is presented.
+>>
+>> This patch introduces a thermal data parser for device
+>> tree. The parsed data is used to build thermal zones
+>> and thermal binding parameters. The output data
+>> can then be used to deploy thermal policies.
+>>
+>> This patch adds also documentation regarding this
+>> API and how to define tree nodes to use
+>> this infrastructure.
+>>
+>> Note that, in order to be able to have control
+>> on the sensor registration on the DT thermal zone,
+>> it was required to allow changing the thermal zone
+>> .get_temp callback. For this reason, this patch
+>> also removes the 'const' modifier from the .ops
+>> field of thermal zone devices.
+>>
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Cc: linux-pm@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> ---
+>>
+>> Hello all,
+>>
+>> Very minor changes from v8 to v9.
+>>
+>> Changelog:
+>>
+>> - Rephrase a couple of sentences in the binding document
+>> - Fixed a couple of property types in the binding document
+>> - Removed the constant macro definitions for trip type. This
+>> change also affected the bindings posted on patches 09/14/15.
+>>
+>>  .../devicetree/bindings/thermal/thermal.txt        | 586 ++++++++++++=
+++
+>>  drivers/thermal/Kconfig                            |  13 +
+>>  drivers/thermal/Makefile                           |   1 +
+>>  drivers/thermal/of-thermal.c                       | 849 ++++++++++++=
++++++++++
+>>  drivers/thermal/thermal_core.c                     |   9 +-
+>>  drivers/thermal/thermal_core.h                     |   9 +
+>>  include/dt-bindings/thermal/thermal.h              |  17 +
+>>  include/linux/thermal.h                            |  28 +-
+>>  8 files changed, 1509 insertions(+), 3 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/thermal/thermal.=
+txt
+>>  create mode 100644 drivers/thermal/of-thermal.c
+>>  create mode 100644 include/dt-bindings/thermal/thermal.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/D=
+ocumentation/devicetree/bindings/thermal/thermal.txt
+>> new file mode 100644
+>> index 0000000..59f5bd2
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>> @@ -0,0 +1,586 @@
+>> +* Thermal Framework Device Tree descriptor
+>> +
+>> +This file describes a generic binding to provide a way of
+>> +defining hardware thermal structure using device tree.
+>> +A thermal structure includes thermal zones and their components,
+>> +such as trip points, polling intervals, sensors and cooling devices
+>> +binding descriptors.
+>> +
+>> +The target of device tree thermal descriptors is to describe only
+>> +the hardware thermal aspects. The thermal device tree bindings are
+>> +not about how the system must control or which algorithm or policy
+>> +must be taken in place.
+>> +
+>> +There are five types of nodes involved to describe thermal bindings:
+>> +- thermal sensors: devices which may be used to take temperature
+>> +  measurements.
+>> +- cooling devices: devices which may be used to dissipate heat.
+>> +- trip points: describe key temperatures at which cooling is recommen=
+ded. The
+>> +  set of points should be chosen based on hardware limits.
+>> +- cooling maps: used to describe links between trip points and coolin=
+g devices;
+>> +- thermal zones: used to describe thermal data within the hardware;
+>> +
+>> +The following is a description of each of these node types.
+>> +
+>> +* Thermal sensor devices
+>> +
+>> +Thermal sensor devices are nodes providing temperature sensing capabi=
+lities on
+>> +thermal zones. Typical devices are I2C ADC converters and bandgaps. T=
+hese are
+>> +nodes providing temperature data to thermal zones. Thermal sensor dev=
+ices may
+>> +control one or more internal sensors.
+>> +
+>> +Required property:
+>> +- #thermal-sensor-cells: Used to provide sensor device specific infor=
+mation
+>> +  Type: unsigned        while referring to it. Typically 0 on thermal=
+ sensor
+>> +  Size: one cell        nodes with only one sensor, and at least 1 on=
+ nodes
+>> +                        with several internal sensors, in order
+>> +                        to identify uniquely the sensor instances wit=
+hin
+>> +                        the IC. See thermal zone binding for more det=
+ails
+>> +                        on how consumers refer to sensor devices.
+>> +
+>> +* Cooling device nodes
+>> +
+>> +Cooling devices are nodes providing control on power dissipation. The=
+re
+>> +are essentially two ways to provide control on power dissipation. Fir=
+st
+>> +is by means of regulating device performance, which is known as passi=
+ve
+>> +cooling. A typical passive cooling is a CPU that has dynamic voltage =
+and
+>> +frequency scaling (DVFS), and uses lower frequencies as cooling state=
+s.
+>> +Second is by means of activating devices in order to remove
+>> +the dissipated heat, which is known as active cooling, e.g. regulatin=
+g
+>> +fan speeds. In both cases, cooling devices shall have a way to determ=
+ine
+>> +the state of cooling in which the device is.
+>> +
+>> +Required properties:
+>> +- cooling-min-state:   An integer indicating the smallest
+>> +  Type: unsigned       cooling state accepted. Typically 0.
+>> +  Size: one cell
+>> +
+>> +- cooling-max-state:   An integer indicating the largest
+>> +  Type: unsigned       cooling state accepted.
+>> +  Size: one cell
+>> +
+>> +- #cooling-cells:      Used to provide cooling device specific inform=
+ation
+>> +  Type: unsigned       while referring to it. Must be at least 2, in =
+order
+>> +  Size: one cell       to specify minimum and maximum cooling state u=
+sed
+>> +                       in the reference. The first cell is the minimu=
+m
+>> +                       cooling state requested and the second cell is=
 
-And people who *still*, after all these years, don't realise that they
-don't actually need it to mount JFFS2. Even as the root file system
-(although they *do* need rootfstype=3Djffs2).
+>> +                       the maximum cooling state requested in the ref=
+erence.
+>> +                       See Cooling device maps section below for more=
+ details
+>> +                       on how consumers refer to cooling devices.
+>=20
+> This is the point I'm still most concerned with, as it provides a
+> definite meaning to an otherwise abstract property. However, if you
+> believe this is sane and unlikely to be problematic, then I am happy to=
+
+> leave the decision to you.
+>=20
+>> +
+>> +* Trip points
+>> +
+>> +The trip node is a node to describe a point in the temperature domain=
+
+>> +in which the system takes an action. This node describes just the poi=
+nt,
+>> +not the action.
+>> +
+>> +Required properties:
+>> +- temperature:         An integer indicating the trip temperature lev=
+el,
+>> +  Type: signed         in millicelsius.
+>> +  Size: one cell
+>> +
+>> +- hysteresis:          A low hysteresis value on temperature property=
+ (above).
+>> +  Type: unsigned       This is a relative value, in millicelsius.
+>> +  Size: one cell
+>> +
+>> +- type:                        a string containing the trip type. Sup=
+ported values are:
+>=20
+> Get rid of the "Supported", that's a Linux detail.
+>=20
+> s/Supported/expected/ ?
+
+OK.
+
+>=20
+> Given the discussion has otherwise boiled down to bits that I think can=
+
+> change later, I'm happy to give my ack:
+>=20
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>=20
+
+Thanks for your valuable contributions to this work. For sure it would
+not be at the state it is without your punctual and objective review.
+
+> I'll leave it to the others to fight against this if they still have
+> concerns.
+>=20
+> Thanks,
+> Mark.
+>=20
+>=20
+
 
 --=20
-dwmw2
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
 
 
---=-SpWklHdUX8RXUhhs5vJs
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+--Ju1ovUSkQSU9eUGcmI17HankcJHhb8UrX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
-AwIBAgIDBoXOMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTMwNTAyMDYyMDQ2WhcNMTQwNTAzMTIxNDAyWjBdMRkwFwYDVQQNExBNd0k3ODIxNTRpV21lZVkw
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWGuRDHiXVpOgaFkBaz8
-c3jQTfiEw7j0iKZnktCQi0xjY29QJ7GwL+fgQlbofXgYTm8E9fWERvw2tAy2BxHzAPguBzziS7JN
-hsGP9lf3L8hFJBvmdyyyj8b9A6Oi7s3JLtMRWIvyvE+DbuTkP+htuT4+XuTJr8Y5yIqd1WXr2gJk
-ANr77vTyjeNxceevP58Tqr0f+4v5g6+vNARO3bk3SaVQPDUTwGrpoPtLh3d+mQzZ4iiW3MwQS7Wr
-UVT3l2aTVHCpgtAaBs3zHWarvmIqhbWj8zdcnELNzwqTrOjaoWxuWY4k05GGfzmdjOBUiL7FDNvI
-ZwweJEPwJAQI72YhUwIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBSs0hZhUgQwqGVXzLuH6pJH0hMZwTAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
-YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
-cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
-IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
-ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
-MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
-gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
-dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
-Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
-cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACFLDQnyO8+XA/TiTltjJ/ZAvM+qmBEKN43Vd
-+Wio2lM/Wq/scJpkupXGHrl9CueobkDxMAogXbMxqLZYO13PvgjMh+PHxDPnQv8EGxOig+k/Hqvc
-qEdTlm9YEHcbXbWS6XB+zRO7VVIpGMYQ1f1qCOcukxmwIm6iMSHXbOr/7paQm4bO0ULptjBotfiO
-Zo6q8No6SroQlOSyc6v8FYSxTNIAXMaM2FYkjqrxgdnJmSIAfr11gROuF69WuOICxP0zTEjJle+7
-aO9lUWNaWMWPMyFSNCxF6kkRuvUCami7vlhLOTRC1kb+OMhx7keN9At3tdTI3rtuFeSB1Pa3VXVs
-0DCCBkIwggUqoAMCAQICAwaFzjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
-BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
-ZW50IENBMB4XDTEzMDUwMjA2MjA0NloXDTE0MDUwMzEyMTQwMlowXTEZMBcGA1UEDRMQTXdJNzgy
-MTU0aVdtZWVZMDEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
-ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL1hrkQx
-4l1aToGhZAWs/HN40E34hMO49IimZ5LQkItMY2NvUCexsC/n4EJW6H14GE5vBPX1hEb8NrQMtgcR
-8wD4Lgc84kuyTYbBj/ZX9y/IRSQb5ncsso/G/QOjou7NyS7TEViL8rxPg27k5D/obbk+Pl7kya/G
-OciKndVl69oCZADa++708o3jcXHnrz+fE6q9H/uL+YOvrzQETt25N0mlUDw1E8Bq6aD7S4d3fpkM
-2eIoltzMEEu1q1FU95dmk1RwqYLQGgbN8x1mq75iKoW1o/M3XJxCzc8Kk6zo2qFsblmOJNORhn85
-nYzgVIi+xQzbyGcMHiRD8CQECO9mIVMCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUrNIWYVIEMKhlV8y7
-h+qSR9ITGcEwHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
-dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
-CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
-AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
-aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
-cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
-aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
-bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
-MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
-dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
-cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAAhSw0J8jvPlwP04k5bYyf2Q
-LzPqpgRCjeN1XfloqNpTP1qv7HCaZLqVxh65fQrnqG5A8TAKIF2zMai2WDtdz74IzIfjx8Qz50L/
-BBsTooPpPx6r3KhHU5ZvWBB3G121kulwfs0Tu1VSKRjGENX9agjnLpMZsCJuojEh12zq/+6WkJuG
-ztFC6bYwaLX4jmaOqvDaOkq6EJTksnOr/BWEsUzSAFzGjNhWJI6q8YHZyZkiAH69dYETrhevVrji
-AsT9M0xIyZXvu2jvZVFjWljFjzMhUjQsRepJEbr1Ampou75YSzk0QtZG/jjIce5HjfQLd7XUyN67
-bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
-BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
-hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTMxMTI1MTU0NjU5WjAjBgkqhkiG9w0BCQQxFgQUc6TuJdCyZOB+VnU1h1ksShA/GggwgaUG
-CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
-KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
-YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
-SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
-cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
-9w0BAQEFAASCAQCy4CQRpYYcDtG7JwIb/RVgZrKX1vUz6dkUc334Gq7omN9DJa5IOpboWm9wTnfG
-Lc4noOacb76llpK0z1ou1F4ynCOEYKkfLeUCEghfKdWcM6nKF1D0KyM7ro14yyLXdH0gek7Ru28n
-zN1v+oVngRt8Fk7ZLXONVg6re4uOwW/vgBAD49lh1goOEv3bQx5TM6I3Dz/KSy4FSapoFTWWAMxB
-DZ6VwqQ9i/ZNRXtYQPDiYsFD2+hi6NJrTqD1YZygmJ4IhAnFtfzYXG8gym96YKgc5nOG1hUlQHPf
-BKY0ULS0ZahEIod+p1DASncQT3+VXPmakJNBIp6VInUwvrnrpofzAAAAAAAA
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
+iF4EAREIAAYFAlKTcQUACgkQCXcVR3XQvP3JcAD9G7l/FSYGUb8tAza2iug4I0LM
+CLsSoYa23nCjvtgMYGMA/2KmrwGNXT4g5be9vY6tMGKvQIvcSfnOKv5sHhT0eE/N
+=EnMx
+-----END PGP SIGNATURE-----
 
---=-SpWklHdUX8RXUhhs5vJs--
-
+--Ju1ovUSkQSU9eUGcmI17HankcJHhb8UrX--
