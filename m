@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3KYNJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:09:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57371 "EHLO
+	id S1755256Ab3KYNJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:09:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57365 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab3KYNJc (ORCPT
+	with ESMTP id S1755026Ab3KYNJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:09:32 -0500
+	Mon, 25 Nov 2013 08:09:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>,
+Cc: Ryan Mallon <rmallon@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Joe Perches <joe@perches.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 77/78] Fix a few incorrectly checked [io_]remap_pfn_range() calls
-Date: Mon, 25 Nov 2013 13:07:04 +0000
-Message-Id: <1385384825-21681-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 65/78] vsprintf: check real user/group id for %pK
+Date: Mon, 25 Nov 2013 13:06:52 +0000
+Message-Id: <1385384825-21681-66-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -28,152 +32,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Ryan Mallon <rmallon@gmail.com>
 
-commit 7314e613d5ff9f0934f7a0f74ed7973b903315d1 upstream.
+commit 312b4e226951f707e120b95b118cbc14f3d162b2 upstream.
 
-Nico Golde reports a few straggling uses of [io_]remap_pfn_range() that
-really should use the vm_iomap_memory() helper.  This trivially converts
-two of them to the helper, and comments about why the third one really
-needs to continue to use remap_pfn_range(), and adds the missing size
-check.
+Some setuid binaries will allow reading of files which have read
+permission by the real user id.  This is problematic with files which
+use %pK because the file access permission is checked at open() time,
+but the kptr_restrict setting is checked at read() time.  If a setuid
+binary opens a %pK file as an unprivileged user, and then elevates
+permissions before reading the file, then kernel pointer values may be
+leaked.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org.
-[lizf: backported to 3.4:
- - adjust context
- - no uio_physical_vm_ops]
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+This happens for example with the setuid pppd application on Ubuntu 12.04:
+
+  $ head -1 /proc/kallsyms
+  00000000 T startup_32
+
+  $ pppd file /proc/kallsyms
+  pppd: In file /proc/kallsyms: unrecognized option 'c1000000'
+
+This will only leak the pointer value from the first line, but other
+setuid binaries may leak more information.
+
+Fix this by adding a check that in addition to the current process having
+CAP_SYSLOG, that effective user and group ids are equal to the real ids.
+If a setuid binary reads the contents of a file which uses %pK then the
+pointer values will be printed as NULL if the real user is unprivileged.
+
+Update the sysctl documentation to reflect the changes, and also correct
+the documentation to state the kptr_restrict=0 is the default.
+
+This is a only temporary solution to the issue.  The correct solution is
+to do the permission check at open() time on files, and to replace %pK
+with a function which checks the open() time permission.  %pK uses in
+printk should be removed since no sane permission check can be done, and
+instead protected by using dmesg_restrict.
+
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/uio/uio.c        | 16 +++++++++++++++-
- drivers/video/au1100fb.c | 26 +-------------------------
- drivers/video/au1200fb.c | 23 +----------------------
- 3 files changed, 17 insertions(+), 48 deletions(-)
+ Documentation/sysctl/kernel.txt | 25 ++++++++++++++++++-------
+ lib/vsprintf.c                  | 33 ++++++++++++++++++++++++++++++---
+ 2 files changed, 48 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index a783d53..7150752 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -650,16 +650,30 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
- {
- 	struct uio_device *idev = vma->vm_private_data;
- 	int mi = uio_find_mem_index(vma);
-+	struct uio_mem *mem;
- 	if (mi < 0)
- 		return -EINVAL;
-+	mem = idev->info->mem + mi;
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 6d78841..99d8ab9 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -284,13 +284,24 @@ Default value is "/sbin/hotplug".
+ kptr_restrict:
+ 
+ This toggle indicates whether restrictions are placed on
+-exposing kernel addresses via /proc and other interfaces.  When
+-kptr_restrict is set to (0), there are no restrictions.  When
+-kptr_restrict is set to (1), the default, kernel pointers
+-printed using the %pK format specifier will be replaced with 0's
+-unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+-(2), kernel pointers printed using %pK will be replaced with 0's
+-regardless of privileges.
++exposing kernel addresses via /proc and other interfaces.
 +
-+	if (vma->vm_end - vma->vm_start > mem->size)
-+		return -EINVAL;
++When kptr_restrict is set to (0), the default, there are no restrictions.
++
++When kptr_restrict is set to (1), kernel pointers printed using the %pK
++format specifier will be replaced with 0's unless the user has CAP_SYSLOG
++and effective user and group ids are equal to the real ids. This is
++because %pK checks are done at read() time rather than open() time, so
++if permissions are elevated between the open() and the read() (e.g via
++a setuid binary) then %pK will not leak kernel pointers to unprivileged
++users. Note, this is a temporary solution only. The correct long-term
++solution is to do the permission checks at open() time. Consider removing
++world read permissions from files that use %pK, and using dmesg_restrict
++to protect against uses of %pK in dmesg(8) if leaking kernel pointer
++values to unprivileged users is a concern.
++
++When kptr_restrict is set to (2), kernel pointers printed using
++%pK will be replaced with 0's regardless of privileges.
  
- 	vma->vm_flags |= VM_IO | VM_RESERVED;
+ ==============================================================
  
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 598a73e..b82f4ba 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -25,6 +25,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
++#include <linux/cred.h>
+ #include <net/addrconf.h>
  
-+	/*
-+	 * We cannot use the vm_iomap_memory() helper here,
-+	 * because vma->vm_pgoff is the map index we looked
-+	 * up above in uio_find_mem_index(), rather than an
-+	 * actual page offset into the mmap.
-+	 *
-+	 * So we just do the physical mmap without a page
-+	 * offset.
-+	 */
- 	return remap_pfn_range(vma,
- 			       vma->vm_start,
--			       idev->info->mem[mi].addr >> PAGE_SHIFT,
-+			       mem->addr >> PAGE_SHIFT,
- 			       vma->vm_end - vma->vm_start,
- 			       vma->vm_page_prot);
- }
-diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
-index fe3b6ec..2169bc0 100644
---- a/drivers/video/au1100fb.c
-+++ b/drivers/video/au1100fb.c
-@@ -375,39 +375,15 @@ void au1100fb_fb_rotate(struct fb_info *fbi, int angle)
- int au1100fb_fb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
- {
- 	struct au1100fb_device *fbdev;
--	unsigned int len;
--	unsigned long start=0, off;
- 
- 	fbdev = to_au1100fb_device(fbi);
- 
--	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
--		return -EINVAL;
--	}
--
--	start = fbdev->fb_phys & PAGE_MASK;
--	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
--
--	off = vma->vm_pgoff << PAGE_SHIFT;
--
--	if ((vma->vm_end - vma->vm_start + off) > len) {
--		return -EINVAL;
--	}
--
--	off += start;
--	vma->vm_pgoff = off >> PAGE_SHIFT;
--
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 	pgprot_val(vma->vm_page_prot) |= (6 << 9); //CCA=6
- 
- 	vma->vm_flags |= VM_IO;
- 
--	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
--				vma->vm_end - vma->vm_start,
--				vma->vm_page_prot)) {
--		return -EAGAIN;
--	}
--
--	return 0;
-+	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
- }
- 
- static struct fb_ops au1100fb_ops =
-diff --git a/drivers/video/au1200fb.c b/drivers/video/au1200fb.c
-index 7ca79f0..117be3d 100644
---- a/drivers/video/au1200fb.c
-+++ b/drivers/video/au1200fb.c
-@@ -1233,36 +1233,15 @@ static int au1200fb_fb_blank(int blank_mode, struct fb_info *fbi)
-  * method mainly to allow the use of the TLB streaming flag (CCA=6)
-  */
- static int au1200fb_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
--
- {
--	unsigned int len;
--	unsigned long start=0, off;
- 	struct au1200fb_device *fbdev = info->par;
- 
--	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) {
--		return -EINVAL;
--	}
--
--	start = fbdev->fb_phys & PAGE_MASK;
--	len = PAGE_ALIGN((start & ~PAGE_MASK) + fbdev->fb_len);
--
--	off = vma->vm_pgoff << PAGE_SHIFT;
--
--	if ((vma->vm_end - vma->vm_start + off) > len) {
--		return -EINVAL;
--	}
--
--	off += start;
--	vma->vm_pgoff = off >> PAGE_SHIFT;
--
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 	pgprot_val(vma->vm_page_prot) |= _CACHE_MASK; /* CCA=7 */
- 
- 	vma->vm_flags |= VM_IO;
- 
--	return io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
--				  vma->vm_end - vma->vm_start,
--				  vma->vm_page_prot);
-+	return vm_iomap_memory(vma, fbdev->fb_phys, fbdev->fb_len);
- 
- 	return 0;
- }
+ #include <asm/page.h>		/* for PAGE_SIZE */
+@@ -1036,11 +1037,37 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 				spec.field_width = default_width;
+ 			return string(buf, end, "pK-error", spec);
+ 		}
+-		if (!((kptr_restrict == 0) ||
+-		      (kptr_restrict == 1 &&
+-		       has_capability_noaudit(current, CAP_SYSLOG))))
++
++		switch (kptr_restrict) {
++		case 0:
++			/* Always print %pK values */
++			break;
++		case 1: {
++			/*
++			 * Only print the real pointer value if the current
++			 * process has CAP_SYSLOG and is running with the
++			 * same credentials it started with. This is because
++			 * access to files is checked at open() time, but %pK
++			 * checks permission at read() time. We don't want to
++			 * leak pointer values if a binary opens a file using
++			 * %pK and then elevates privileges before reading it.
++			 */
++			const struct cred *cred = current_cred();
++
++			if (!has_capability_noaudit(current, CAP_SYSLOG) ||
++			    !uid_eq(cred->euid, cred->uid) ||
++			    !gid_eq(cred->egid, cred->gid))
++				ptr = NULL;
++			break;
++		}
++		case 2:
++		default:
++			/* Always print 0's for %pK */
+ 			ptr = NULL;
++			break;
++		}
+ 		break;
++
+ 	case 'N':
+ 		switch (fmt[1]) {
+ 		case 'F':
 -- 
 1.8.3.2
 
