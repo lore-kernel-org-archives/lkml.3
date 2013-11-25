@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab3KYKRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:17:06 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53781 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751114Ab3KYKRB (ORCPT
+	id S1753032Ab3KYKSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:18:14 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:41382 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3KYKSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:17:01 -0500
-Message-ID: <1385374617.2354.22.camel@dabdike>
-Subject: Re: [PATCH 0024] asm-generic: Rename int-ll64.h to types.h
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 25 Nov 2013 14:16:57 +0400
-In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Nov 2013 05:18:12 -0500
+Date: Mon, 25 Nov 2013 11:18:07 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Johannes =?iso-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
+Message-ID: <20131125101807.GA13385@gmail.com>
+References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>
+ <528ACB6A.1040809@zytor.com>
+ <20131119072241.GB32478@gmail.com>
+ <20131119103408.GA3640@pd.tnic>
+ <1384883323.17783.35.camel@joe-AO722>
+ <20131119182306.GD3515@pd.tnic>
+ <528BACCB.1090604@zytor.com>
+ <1384885733.17783.37.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1384885733.17783.37.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 09:55 +0100, Geert Uytterhoeven wrote:
-> This patchset aims to rename <asm-generic/int-ll64.h> to
-> <asm-generic/types.h> in kernelspace, as suggested by Arnd.
+
+* Joe Perches <joe@perches.com> wrote:
+
+> On Tue, 2013-11-19 at 10:24 -0800, H. Peter Anvin wrote:
+>
+> > I'll take a proper cleanup,
+> > but just whitespace... just pointless churn.
 > 
-> While userspace still has both include/uapi/asm-generic/int-l64.h and
-> include/uapi/asm-generic/int-ll64.h (int-l64.h may still be used on legacy
-> 64-bit systems), kernelspace always uses "(unsigned) long long" for 64-bit
-> integer values ("u64" and "s64").  Hence there's no longer a need to
-> distinguish between int-l64 and int-ll64 in kernelspace, and int-ll64.h can
-> just be called types.h
+> What in your view would be "a proper cleanup" for a20.c?
 
-Is this a good idea?  I thought some versions of gcc used long long for
-128 bit integers, in which case int-ll64.h will give the wrong types for
-u64 and s64.  I think gcc is changing to use the __int128 type, so this
-may be historical, but someone would need to validate that we have no
-architectures with the old long long behaviour.
+If a newbie does a meaningful, complete, well done cleanup patch then 
+congratulations and any such help is welcome.
 
-James
+If you as a more experienced kernel developer do a cleanup as part of 
+some real work then sure, all such cleanups are welcome and they are a 
+natural part of development work.
 
+So a standalone cleanup patch to a20.c from _you_ would probably not 
+qualify, almost by definition: your first patch was applied 7 years 
+ago, you are by far not a newbie anymore, yet you seem to be mostly 
+stuck on the 'cleanups and trivialities' level! Sheesh!
 
+My message to the buerocrat Joe Perches is: please leave trivial and 
+printk patches to newbies, you need to raise to the next level of 
+kernel development already.
+
+FYI, Linux is a meritocracy, not a bureaucracy: creating self-serving 
+churn and attention-seeking but unimportant patches is not the way to 
+gain kernel development credibility long term, and eventually people 
+start protecting against your increasing abuse of the development 
+process. IMHO.
+
+Thanks,
+
+	Ingo
