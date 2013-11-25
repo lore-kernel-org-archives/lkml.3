@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3KYMmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:42:55 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44713 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682Ab3KYMmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:42:50 -0500
-Message-ID: <52934589.3000502@ti.com>
-Date: Mon, 25 Nov 2013 14:41:45 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
+	id S1753919Ab3KYMn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:43:28 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19782 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab3KYMn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 07:43:26 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 25 Nov 2013 04:41:04 -0800
+Date: Mon, 25 Nov 2013 14:42:40 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "wim@iguana.be" <wim@iguana.be>, "nsekhar@ti.com" <nsekhar@ti.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: Fwd: [PATCH 7/8] watchdog: davinci: add "clocks" property
-References: <1383680783-12114-8-git-send-email-ivan.khoronzhuk@ti.com> <527A28E8.4010204@ti.com> <201311231857.47104.arnd@arndb.de> <52932DA1.8040204@ti.com> <20131125121529.GE32081@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131125121529.GE32081@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+Message-ID: <20131125124240.GG26617@tbergstrom-lnx.Nvidia.com>
+References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
+ <20131122134035.GD26617@tbergstrom-lnx.Nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131122134035.GD26617@tbergstrom-lnx.Nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 02:15 PM, Mark Rutland wrote:
-> On Mon, Nov 25, 2013 at 10:59:45AM +0000, ivan.khoronzhuk wrote:
->> On 11/23/2013 07:57 PM, Arnd Bergmann wrote:
->>> On Wednesday 06 November 2013, ivan.khoronzhuk wrote:
->>>> @@ -7,6 +7,10 @@ Required properties:
->>>>
->>>>    - reg : Should contain WDT registers location and length
->>>>
->>>> +- clocks: phandle reference to the controller clock.
->>>> +         Required only for Keystone arch.
->>>> +         See clock-bindings.txt
->>>> +
->>>>    Optional properties:
->>>>
->>>>    - timeout-sec:         Contains the watchdog timeout in seconds
->>>
->>> I think it should really be listed under "Optional properties" and the
->>> reference to Keystone removed. Note how the binding would need
->>> to change otherwise if another platform started to use the clock, which
->>> is a little silly.
->>>
->>> 	Arnd
->>>
->>
->> Ok, I'll move clocks property under "Optional properties" and describe it
->> as following:
->>
->> Optional properties:
->> - timeout-sec : Contains the watchdog timeout in seconds
->> - clocks: phandle reference to the controller clock.
->> 	  Needed if platform uses clocks.
->> 	  See clock-bindings.txt
->
-> Nit: clocks aren't just phandles, they have a clock-specifier too (which
-> might be 0 cells).
->
-> Otherwise this looks fine to me.
->
-> Mark.
->
+On Fri, Nov 22, 2013 at 02:40:35PM +0100, Peter De Schrijver wrote:
+> On Wed, Oct 30, 2013 at 01:41:29AM +0100, Peter De Schrijver wrote:
+> > Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+> > Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
+> > 
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> 
+> I will squash this into the next tegra-clk-next as the previous pull request
+> has never made it.
+> 
 
-... I will replace it to:
-Optional properties:
-- timeout-sec : Contains the watchdog timeout in seconds
-- clocks: the clock feeding the watchdog timer.
-	  Needed if platform uses clocks.
-	  See clock-bindings.txt
+Looking again at this, I think the Tegra114 and generic PLL part of the patch
+better stays as a separate patch. The Tegra124 bit will be squashed into the
+Tegra124 support patch.
 
-Is it OK?
+Cheers,
 
--- 
-Regards,
-Ivan Khoronzhuk
+Peter.
