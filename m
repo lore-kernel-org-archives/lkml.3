@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab3KYO6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:58:00 -0500
-Received: from sauhun.de ([89.238.76.85]:45642 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab3KYO56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:57:58 -0500
-Date: Mon, 25 Nov 2013 15:57:54 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
-Message-ID: <20131125145754.GE2705@katana>
-References: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
+	id S1755190Ab3KYPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 10:00:09 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65359 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3KYPAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 10:00:03 -0500
+Date: Mon, 25 Nov 2013 15:59:58 +0100
+From: Julian Andres Klode <jak@jak-linux.org>
+To: Julian Andres Klode <jak@jak-linux.org>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "open list:THINKPAD ACPI EXT..." 
+	<ibm-acpi-devel@lists.sourceforge.net>,
+        "open list:THINKPAD ACPI EXT..." 
+	<platform-driver-x86@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] thinkpad_acpi: Add support for controlling charge
+ thresholds
+Message-ID: <20131125145958.GA13564@jak-x230>
+Mail-Followup-To: Julian Andres Klode <jak@jak-linux.org>,
+	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"open list:THINKPAD ACPI EXT..." <ibm-acpi-devel@lists.sourceforge.net>,
+	"open list:THINKPAD ACPI EXT..." <platform-driver-x86@vger.kernel.org>,
+	open list <linux-kernel@vger.kernel.org>
+References: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1384178195-12218-1-git-send-email-jak@jak-linux.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 11, 2013 at 02:56:29PM +0100, Julian Andres Klode wrote:
+> This patch series adds support for specifying charging thresholds,
+> forcing a battery to discharge, and inhibiting charging, on ThinkPad
+> Laptops using Sandy Bridge or newer processors.
+> 
+> The first two patches should be stable now, the third one does not work on
+> my test system (but I'd appreciate if anyone with something other than an
+> X230 tests it). 
+> 
+> The inhibit charging part is a bit unprecise, and I can obviously not test
+> that -1 really means permanently, but I assume it does. I don't know whether
+> this one should be merged.
+> 
+> Changes since the RFC PATCH:
+>   - Define batteries more dynamically instead of statically using large
+>     macros. Added support for up to 3 batteries, unsupported ones will not
+>     be exported.
+>   - Added 3 more new patches with more features
+> 
+> Julian Andres Klode (4):
+>   thinkpad_acpi: Add support for controlling charge thresholds
+>   thinkpad_acpi: battery: Add force_discharge attribute
+>   thinkpad_acpi: battery: Add force_discharge_ac_break attribute
+>   thinkpad_acpi: battery: Add inhibit_charge_minutes attribute
+> 
+>  Documentation/laptops/thinkpad-acpi.txt |  37 ++++
+>  drivers/platform/x86/thinkpad_acpi.c    | 300 ++++++++++++++++++++++++++++++++
+>  2 files changed, 337 insertions(+)
+> 
 
---hwvH6HDNit2nSK4j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'd really like to get some comments on this series (especially by Henrique
+and Matthew, they're responsible); so I know what I have to fix and whether
+I should drop some of the later patches, and if the patch series has any
+chance of being accepted...
 
-On Mon, Nov 25, 2013 at 02:43:57PM +0100, Mike Looijmans wrote:
+-- 
+Julian Andres Klode  - Debian Developer, Ubuntu Member
 
-> Leaving the mux enabled causes needless I2C traffic on the downstream
-> bus.
+See http://wiki.debian.org/JulianAndresKlode and http://jak-linux.org/.
 
-This is a bus. Why is this bad?
-
-
---hwvH6HDNit2nSK4j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSk2VyAAoJEBQN5MwUoCm2LQwQAJKIvASVHra4H7MV+lP5nD3q
-pOuj14j64nDFyYVT2LLgfuJP7KHk2rMYu+yyAOlr0b42W/faRJ8BHSx9j7G/w/lc
-W2yPt1/olJvS0StBRJ5U7370zBPvWTjJmjwHLCFB8G+wkDAbsliJ8ttvBHERJs/D
-NVZ8vKsdyWa3IZivf5O8yPtM3p/vwjjDoLL0QdoqQfL/3CZgcMU12kS4i5HoHB0h
-31jBu0Xf6rqSqIC9JHsXMU7sMAP2B9n/g1M1ypw0bFyBiun2fdDa0/lmPrTIodHr
-Em0fbkRpuWsFa5aUviH6yNTmzffaP+vxkue1nPvqVR0fcX+Kf2+m4nTzeu418kzL
-OCsAIHDYmnTvSajLE/yoEEIbEUfDMcPUquwfG62foMOkVRC/k2QYo0zZZPhl2b0H
-C2Tz0+906muFu/JjUq4FJhmKUT67nAeCVD4Rm8Zzuesdw5N10m0M8Mgy0RFDLWVl
-Ef5sal/PcNLc6Uf30nlhX1A9JMap7aVux0a7yMupIisSPBTlaZYRoQhX8V5BODq+
-3RlaaywwYultzXM6R9rmV/Drkdqx/BUmKxKQ8SYE0+2IOhYa6pdBSILr8IuJ5zwh
-2M8x6hTqlbKLnxP7lFPHIVNLEco0/aaZX9LPyun90dIvV5k/2ddu9lih5DRJV0dq
-d6KJUYKCtqGi90uURgDa
-=Tapa
------END PGP SIGNATURE-----
-
---hwvH6HDNit2nSK4j--
+Please do not top-post if possible.
