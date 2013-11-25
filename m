@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3KYLld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 06:41:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35313 "EHLO mga11.intel.com"
+	id S1752921Ab3KYLqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 06:46:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5234 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab3KYLlb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 06:41:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,767,1378882800"; 
-   d="scan'208";a="439249640"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Masanari Iida <standby24x7@gmail.com>,
-        "trivial@kernel.org" <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] [trivial] mei: Fix typo in mei drivers
-Thread-Topic: [PATCH 3/3] [trivial] mei: Fix typo in mei drivers
-Thread-Index: AQHO6ZN636mzF6MUPEu4Yr6ZKAkn4Jo10ohg
-Date: Mon, 25 Nov 2013 11:40:18 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF1C7E6@HASMSX106.ger.corp.intel.com>
-References: <1385220974-3469-1-git-send-email-standby24x7@gmail.com>
- <1385220974-3469-3-git-send-email-standby24x7@gmail.com>
- <5292CC5E.3000405@infradead.org>
-In-Reply-To: <5292CC5E.3000405@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750822Ab3KYLqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 06:46:52 -0500
+Date: Mon, 25 Nov 2013 13:50:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH net] macvtap: fix tx_dropped counting error
+Message-ID: <20131125115005.GA32173@redhat.com>
+References: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
+On Mon, Nov 25, 2013 at 05:19:04PM +0800, Jason Wang wrote:
+> After commit 8ffab51b3dfc54876f145f15b351c41f3f703195
+> (macvlan: lockless tx path), tx stat counter were converted to percpu stat
+> structure. So we need use to this also for tx_dropped in macvtap. Otherwise, the
+> management won't notice the dropping packet in macvtap tx path.
 > 
-> >  drivers/misc/mei/amthif.c  |  4 ++--
-> >  drivers/misc/mei/debugfs.c |  2 +-
-> >  drivers/misc/mei/hbm.c     | 12 ++++++------
-> >  drivers/misc/mei/mei_dev.h |  2 +-
-> >  4 files changed, 10 insertions(+), 10 deletions(-)
-> >
-> > diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-> > index e3870f2..10b172a 100644
-> > --- a/drivers/misc/mei/debugfs.c
-> > +++ b/drivers/misc/mei/debugfs.c
-> > @@ -43,7 +43,7 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char
-> __user *ubuf,
-> >
-> >  	mutex_lock(&dev->device_lock);
-> >
-> > -	/*  if the driver is not enabled the list won't b consitent */
-> > +	/*  if the driver is not enabled the list won't b consistent */
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Vlad Yasevich <vyasevic@redhat.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
+> ---
+>  drivers/net/macvtap.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> 	                                                be
-
-
-Actually, this I already  have fixed in my queue. 
-Will post shortly 
-
-Thanks
-Tomas
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index dc76670..0605da8 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -744,7 +744,7 @@ err:
+>  	rcu_read_lock();
+>  	vlan = rcu_dereference(q->vlan);
+>  	if (vlan)
+> -		vlan->dev->stats.tx_dropped++;
+> +		this_cpu_inc(vlan->pcpu_stats->tx_dropped);
+>  	rcu_read_unlock();
+>  
+>  	return err;
+> -- 
+> 1.8.3.2
