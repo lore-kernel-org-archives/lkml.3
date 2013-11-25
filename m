@@ -1,59 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3KYP6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 10:58:43 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34594 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab3KYP6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 10:58:40 -0500
-Message-ID: <5293736A.2060108@ti.com>
-Date: Mon, 25 Nov 2013 17:57:30 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756707Ab3KYQAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:00:41 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:42723 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab3KYQAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:00:40 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        <grygorii.strashko@ti.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH 1/3] mtd: nand: davinci: reuse driver for Keystone arch
-References: <1384964699-15134-1-git-send-email-ivan.khoronzhuk@ti.com> <1384964699-15134-2-git-send-email-ivan.khoronzhuk@ti.com> <201311231915.29643.arnd@arndb.de>
-In-Reply-To: <201311231915.29643.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+X-Originating-IP: [1.38.28.197]
+In-Reply-To: <CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
+References: <1384897358-22940-1-git-send-email-fkan@apm.com>
+	<528C95D2.5090200@arm.com>
+	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
+	<CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
+Date: Mon, 25 Nov 2013 21:30:39 +0530
+Message-ID: <CAAhSdy2d8p_3RsB1vGF2xdovOkwu1=rHHLRLcdOrduC3aj6NYQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
+From: Anup Patel <anup@brainfault.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Feng Kan <fkan@apm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinayak Kale <vinayak.kale@gmail.com>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Loc Ho <lho@apm.com>, Kumar Sankaran <ksankaran@apm.com>,
+        patches@apm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2013 08:15 PM, Arnd Bergmann wrote:
-> On Wednesday 20 November 2013, Ivan Khoronzhuk wrote:
->> --- a/drivers/mtd/nand/davinci_nand.c
->> +++ b/drivers/mtd/nand/davinci_nand.c
->> @@ -523,6 +523,7 @@ static struct nand_ecclayout hwecc4_2048 __initconst = {
->>   #if defined(CONFIG_OF)
->>   static const struct of_device_id davinci_nand_of_match[] = {
->>          {.compatible = "ti,davinci-nand", },
->> +       {.compatible = "ti,keystone-nand", },
->>          {},
->>   };
->>   MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
+On Mon, Nov 25, 2013 at 9:13 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Sat, Nov 23, 2013 at 2:41 AM, Anup Patel <anup@brainfault.org> wrote:
+>> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>> [dropping <patches@apm.com> from the CC list, as someone seems to have
+>>>  tripped on the config file, and I'm tired of getting bounces]
+>>>
+>>> Feng,
+>>>
+>>> On 19/11/13 21:42, Feng Kan wrote:
+>>>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
+>>>> X-Gene implementation, the FIQ bypass must be enabled at all time.
+>>>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
+>>>
+>>> How comes? Are only PPIs affected? When you say "some PPIs", can you be
+>>> more specific?
+>>>
+>>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>>> ---
+>>>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
+>>>>  include/linux/irqchip/arm-gic.h |    4 ++--
+>>>>  2 files changed, 13 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>>> index d0e9480..aa7342e 100644
+>>>> --- a/drivers/irqchip/irq-gic.c
+>>>> +++ b/drivers/irqchip/irq-gic.c
+>>>> @@ -65,6 +65,7 @@ struct gic_chip_data {
+>>>>  #endif
+>>>>       struct irq_domain *domain;
+>>>>       unsigned int gic_irqs;
+>>>> +     unsigned int bypass_flag;
+>>>>  #ifdef CONFIG_GIC_NON_BANKED
+>>>>       void __iomem *(*get_base)(union gic_base *);
+>>>>  #endif
+>>>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>>
+>>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
+>>>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
+>>>>  }
+>>>>
+>>>>  void gic_cpu_if_down(void)
+>>>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>>>>
+>>>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+>>>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+>>>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
+>>>>  }
+>>>>
+>>>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
+>>>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
+>>>>
+>>>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>                          void __iomem *dist_base, void __iomem *cpu_base,
+>>>> -                        u32 percpu_offset, struct device_node *node)
+>>>> +                        u32 percpu_offset, u32 bypass_val,
+>>>> +                        struct device_node *node)
+>>>>  {
+>>>>       irq_hw_number_t hwirq_base;
+>>>>       struct gic_chip_data *gic;
+>>>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>
+>>>>       set_handle_irq(gic_handle_irq);
+>>>>
+>>>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
+>>>
+>>> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
+>>>
+>>>>       gic_chip.flags |= gic_arch_extn.flags;
+>>>>       gic_dist_init(gic);
+>>>>       gic_cpu_init(gic);
+>>>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>       void __iomem *cpu_base;
+>>>>       void __iomem *dist_base;
+>>>>       u32 percpu_offset;
+>>>> +     u32 bypass_val;
+>>>>       int irq;
+>>>>
+>>>>       if (WARN_ON(!node))
+>>>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+>>>>               percpu_offset = 0;
+>>>>
+>>>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
+>>>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
+>>>> +             bypass_val = 0;
+>>>
+>>> [adding Mark on Cc, so he can comment on the DT parts]
+>>>
+>>> Where's the DT documentation update? Also, as this is an
+>>> implementation-specific quirk, you should consider using a separate
+>>> compatible string and move the handling of this issue into some X-Gene
+>>> specific code.
+>>
+>> Adding separate compatible string for X-Gene specific GIC will break
+>> VGIC code for X-Gene because VGIC code looks for DT node compatible
+>> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
+>> code for X-Gene.
+>>
+>> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
+>> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
+>> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
+>> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
+>> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
+>> PPI28 (Legacy-FIQ).
+>>
+>> We should have more cleaner and optional device tree binding for GIC
+>> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>> and FIQBypDisGrp1 bits for X-Gene.
 >
-> Same comment as for the watchdog driver: when the devices are actually compatible,
-> the driver does not need to know the new string, the preferred method is to
-> set both strings from the .dts file.
->
-> 	Arnd
->
+> IIRC, all these bits are secure mode only (or only a subset are
+> banked). Whether an SoC supports secure mode or not, the current
+> policy for the kernel is to do any secure mode setup in firmware or
+> bootloader.
 
-Thanks. I'll correct it.
+Group0 are secure interrupts and Group1 are non-secure interrupts.
 
--- 
-Regards,
-Ivan Khoronzhuk
+Does this mean we should only touch IRQBypDisGrp1 and FIQBypDisGrp1
+bits from kernel ??
+
+>
+> Rob
+
+--
+Anup
