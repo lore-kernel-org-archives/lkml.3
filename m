@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3KYXlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:41:06 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46430 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab3KYXlD (ORCPT
+	id S1753527Ab3KYXls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:41:48 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:51705 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab3KYXlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:41:03 -0500
-Date: Tue, 26 Nov 2013 10:40:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        matthew.garrett@nebula.com
-Subject: Re: Request to add chromeos platform tree to -next
-Message-Id: <20131126104055.1b682623f32543d5027ecaff@canb.auug.org.au>
-In-Reply-To: <20131125194116.GA22485@quad.lixom.net>
-References: <20131125194116.GA22485@quad.lixom.net>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Nov_2013_10_40_55_+1100_h6tB05xROksXPu7t"
+	Mon, 25 Nov 2013 18:41:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1384841915-8264-1-git-send-email-ch.naveen@samsung.com>
+References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
+	<1384841915-8264-1-git-send-email-ch.naveen@samsung.com>
+Date: Mon, 25 Nov 2013 15:41:43 -0800
+X-Google-Sender-Auth: Gc0ePVQ7rXW99iPKoWRNTicJwPY
+Message-ID: <CAD=FV=Wu13jiFggjp9FZrnB0ejODR7ix_jSby+waZwpcACLwXA@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c: s3c2410: dont need CPU_FREQ transitions for
+ exynos series
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "broonie@kernel.org" <broonie@kernel.org>, "cpgs ." <cpgs@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Nov_2013_10_40_55_+1100_h6tB05xROksXPu7t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Naveen,
 
-Hi Olof,
-
-On Mon, 25 Nov 2013 11:41:16 -0800 Olof Johansson <olof@lixom.net> wrote:
+On Mon, Nov 18, 2013 at 10:18 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
+> on a fixed 66 MHz peripheral clock, and therefore is completely
+> independent of the cpu frequency.
+> Thus, registering for a CPU freq notifier is very wasteful.
 >
-> I'm starting a git repo for the chromeos platform glue (x86 and ARM down
-> the road, so far just x86 contents). Can you please add to linux-next?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/olof/chrome-platform.git
->=20
-> Branch is for-next.
+> This patch modifes the code such that, i2c bus registers to
+> cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
+>
+> This change should save a bunch of cpufreq transitions calls
+> which does not apply to exynos SoCs.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes since v2:
+> None, Rebased on for-next of linux-i2c git repo.
+>
+> Changes since v1:
+> Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
+> As commented by Tomasz
+>
+>  drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Added from today with just you as the contact.
+Can you please spin this with comments from
+<https://patchwork.kernel.org/patch/3235091/>?  Thanks!
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__26_Nov_2013_10_40_55_+1100_h6tB05xROksXPu7t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSk+ALAAoJEMDTa8Ir7ZwVzFMP/Rd/d3LaEgcRE/zQeEej0HZz
-FNDBlXBvxpWyQNrofKkSxvK800J97INvNW5c75OX4dem5elp7U2ZpR5cl3CiB3jl
-azXihiw7VBcwnl4CIwc2gpM4IuRUcNIhNDB/IKMdmcyYrGOayESCmhy9h5Sre4Ux
-qJ53+n3TDu936WZtYdrL347CQlyi2Ic1icwM4yJ2sMUB+fZPo0pm9occR3HLEIPy
-wmy5lLoI+KpztNxU4n2+X28Syq6RBfwEcxh9FE0LeKEicBarybxfA2n0I3e+ixUo
-h4DiWPpCOjMbDKlzmc6OeONWpSdc49WKCmXhwkGhhT/xZH5IUahuf4JVfwHUGz7U
-BRPezCCQGiN/M5NhWko9Epkro6eaafWoIeC5BtAj2IWb0wv2/o+G2yXwN6JTxHDA
-sxi3tSrRMbDthvP7a0DAEEc+aeYhAuTkub/pV2bqXg6ObyDEPbbXKQjPm3uiCBPC
-EUdL2st1JIWKSOVBGaLjgREaean8XLujcviWslneYQHa8XiBr6iQPB7wdyXp3Ypy
-AtHgQxeiq5XbQ63TDQBeOO1tYMbP6NZj39Q8WiM+2CVAaYQUoHC04XjBfWmjInUp
-5lhJdqMrOvDrGEOzd5qsKSopDpfJbSiUje8AZ0fvnDuDG9hbydZokTDE86dlJ+aL
-bqZOgpUDZRmVZptLVRSZ
-=2qFR
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Nov_2013_10_40_55_+1100_h6tB05xROksXPu7t--
+-Doug
