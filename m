@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab3KYNPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:15:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57266 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3KYNIz (ORCPT
+	id S1756679Ab3KYNPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:15:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40161 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366Ab3KYNP2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:55 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 59/78] powerpc/powernv: Add PE to its own PELTV
-Date: Mon, 25 Nov 2013 13:06:46 +0000
-Message-Id: <1385384825-21681-60-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 25 Nov 2013 08:15:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,768,1378882800"; 
+   d="scan'208";a="414248814"
+From: "Ma, Xindong" <xindong.ma@intel.com>
+To: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "ccross@google.com" <ccross@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Subject: Add memory barrier when waiting on futex
+Thread-Topic: Add memory barrier when waiting on futex
+Thread-Index: Ac7puzw8dEee+ztFRV6yZ2v5xXHPXw==
+Date: Mon, 25 Nov 2013 13:15:17 +0000
+Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
+We encountered following panic several times:
+[   74.671982] BUG: unable to handle kernel NULL pointer dereference at 00000008
+[   74.672101] IP: [<c129bb27>] wake_futex+0x47/0x80
+[   74.672185] *pdpt = 0000000010108001 *pde = 0000000000000000 
+[   74.672278] Oops: 0002 [#1] PREEMPT SMP 
+[   74.672403] Modules linked in: atomisp_css2400b0_v2 atomisp_css2400_v2 dfrgx bcm_bt_lpm videobuf_vmalloc videobuf_core hdmi_audio tngdisp bcm4335 kct_daemon(O) cfg80211
+[   74.672815] CPU: 0 PID: 1477 Comm: zygote Tainted: G        W  O 3.10.1-259934-g0bfb86e #1
+[   74.672855] Hardware name: Intel Corporation Merrifield/SALT BAY, BIOS 404 2013.10.09:15.29.48
+[   74.672894] task: d4c97220 ti: cfaa8000 task.ti: cfaa8000
+[   74.672933] EIP: 0060:[<c129bb27>] EFLAGS: 00210246 CPU: 0
+[   74.672975] EIP is at wake_futex+0x47/0x80
+[   74.673012] EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[   74.673049] ESI: def4de5c EDI: ffffffff EBP: cfaa9eb4 ESP: cfaa9ea0
+[   74.673086]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[   74.673123] CR0: 8005003b CR2: 00000008 CR3: 10109000 CR4: 001007f0
+[   74.673160] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   74.673196] DR6: ffff0ff0 DR7: 00000400
+[   74.673229] Stack:
+[   74.673260]  00000000 00000001 00000000 def4de5c c225eb50 cfaa9ee4 c129bc29 00000000
+[   74.673536]  00000000 7fffffff c225eb30 b4f38000 ec1a4b40 00000f90 7fffffff 00000001
+[   74.673814]  b4f38f90 cfaa9f58 c129da0b ffffffff ffffffff cfaa9f10 c195d835 00000001
+[   74.674092] Call Trace:
+[   74.674144]  [<c129bc29>] futex_wake+0xc9/0x110
+[   74.674195]  [<c129da0b>] do_futex+0xeb/0x950
+[   74.674246]  [<c195d835>] ? sub_preempt_count+0x55/0xe0
+[   74.674293]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
+[   74.674341]  [<c195a31b>] ? _raw_spin_unlock_irqrestore+0x3b/0x70
+[   74.674388]  [<c1275aee>] ? wake_up_new_task+0xee/0x190
+[   74.674436]  [<c1241afc>] ? do_fork+0xec/0x350
+[   74.674484]  [<c129e30b>] SyS_futex+0x9b/0x140
+[   74.674533]  [<c1312298>] ? SyS_mprotect+0x188/0x1e0
+[   74.674582]  [<c195a718>] syscall_call+0x7/0xb
 
-------------------
+On smp systems, setting current task to q->task in queue_me() may
+not visible immediately to another cpu, some times this will
+cause panic in wake_futex(). Adding memory barrier to avoid this.
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
-
-commit 631ad691b5818291d89af9be607d2fe40be0886e upstream.
-
-We need add PE to its own PELTV. Otherwise, the errors originated
-from the PE might contribute to other PEs. In the result, we can't
-clear up the error successfully even we're checking and clearing
-errors during access to PCI config space.
-
-Reported-by: kalshett@in.ibm.com
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ kernel/futex.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index fbdd74d..5da8e8d 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -613,13 +613,23 @@ static int __devinit pnv_ioda_configure_pe(struct pnv_phb *phb,
- 		rid_end = pe->rid + 1;
- 	}
- 
--	/* Associate PE in PELT */
-+	/*
-+	 * Associate PE in PELT. We need add the PE into the
-+	 * corresponding PELT-V as well. Otherwise, the error
-+	 * originated from the PE might contribute to other
-+	 * PEs.
-+	 */
- 	rc = opal_pci_set_pe(phb->opal_id, pe->pe_number, pe->rid,
- 			     bcomp, dcomp, fcomp, OPAL_MAP_PE);
- 	if (rc) {
- 		pe_err(pe, "OPAL error %ld trying to setup PELT table\n", rc);
- 		return -ENXIO;
- 	}
-+
-+	rc = opal_pci_set_peltv(phb->opal_id, pe->pe_number,
-+				pe->pe_number, OPAL_ADD_PE_TO_DOMAIN);
-+	if (rc)
-+		pe_warn(pe, "OPAL error %d adding self to PELTV\n", rc);
- 	opal_pci_eeh_freeze_clear(phb->opal_id, pe->pe_number,
- 				  OPAL_EEH_ACTION_CLEAR_FREEZE_ALL);
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 80ba086..792cd41 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1529,6 +1529,7 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
+ 	plist_node_init(&q->list, prio);
+ 	plist_add(&q->list, &hb->chain);
+ 	q->task = current;
++	smp_mb();
+ 	spin_unlock(&hb->lock);
+ }
  
 -- 
-1.8.3.2
+1.7.4.1
+
 
