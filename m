@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab3KYOEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:04:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58954 "EHLO
+	id S1757130Ab3KYOEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:04:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59029 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754307Ab3KYNxs (ORCPT
+	by vger.kernel.org with ESMTP id S1754674Ab3KYNxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:48 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Miller" <davem@davemloft.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Jiri Pirko" <jiri@resnulli.us>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Mathias Krause" <minipli@googlemail.com>, stable@vger.kernel.org
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.946830937@decadent.org.uk>
+Message-ID: <lsq.1385387069.880218928@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 31/87] inet: fix possible memory corruption with
- UDP_CORK and UFO
+Subject: [PATCH 3.2 12/87] connector: use nlmsg_len() to check message length
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,76 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ This is a simplified -stable version of a set of upstream commits. ]
+[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
 
-This is a replacement patch only for stable which does fix the problems
-handled by the following two commits in -net:
+The current code tests the length of the whole netlink message to be
+at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
+the length of the netlink message header. Use nlmsg_len() instead to
+fix this "off-by-NLMSG_HDRLEN" size check.
 
-"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
-"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
-
-Three frames are written on a corked udp socket for which the output
-netdevice has UFO enabled.  If the first and third frame are smaller than
-the mtu and the second one is bigger, we enqueue the second frame with
-skb_append_datato_frags without initializing the gso fields. This leads
-to the third frame appended regulary and thus constructing an invalid skb.
-
-This fixes the problem by always using skb_append_datato_frags as soon
-as the first frag got enqueued to the skb without marking the packet
-as SKB_GSO_UDP.
-
-The problem with only two frames for ipv6 was fixed by "ipv6: udp
-packets following an UFO enqueued packet need also be handled by UFO"
-(2811ebac2521ceac84f2bdae402455baa6a7fb47).
-
-Cc: Jiri Pirko <jiri@resnulli.us>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org  # v2.6.14+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/skbuff.h | 5 +++++
- net/ipv4/ip_output.c   | 2 +-
- net/ipv6/ip6_output.c  | 2 +-
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/connector/connector.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1167,6 +1167,11 @@ static inline int skb_pagelen(const stru
- 	return len + skb_headlen(skb);
- }
+diff --git a/drivers/connector/connector.c b/drivers/connector/connector.c
+index dde6a0f..ea6efe8 100644
+--- a/drivers/connector/connector.c
++++ b/drivers/connector/connector.c
+@@ -157,17 +157,18 @@ static int cn_call_callback(struct sk_buff *skb)
+ static void cn_rx_skb(struct sk_buff *__skb)
+ {
+ 	struct nlmsghdr *nlh;
+-	int err;
+ 	struct sk_buff *skb;
++	int len, err;
  
-+static inline bool skb_has_frags(const struct sk_buff *skb)
-+{
-+	return skb_shinfo(skb)->nr_frags;
-+}
-+
- /**
-  * __skb_fill_page_desc - initialise a paged fragment in an skb
-  * @skb: buffer containing fragment to be initialised
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -833,7 +833,7 @@ static int __ip_append_data(struct sock
- 		csummode = CHECKSUM_PARTIAL;
+ 	skb = skb_get(__skb);
  
- 	cork->length += length;
--	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
-+	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
- 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1342,7 +1342,7 @@ int ip6_append_data(struct sock *sk, int
- 	skb = skb_peek_tail(&sk->sk_write_queue);
- 	cork->length += length;
- 	if (((length > mtu) ||
--	     (skb && skb_is_gso(skb))) &&
-+	     (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO)) {
- 		err = ip6_ufo_append_data(sk, getfrag, from, length,
+ 	if (skb->len >= NLMSG_SPACE(0)) {
+ 		nlh = nlmsg_hdr(skb);
++		len = nlmsg_len(nlh);
+ 
+-		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
++		if (len < (int)sizeof(struct cn_msg) ||
+ 		    skb->len < nlh->nlmsg_len ||
+-		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
++		    len > CONNECTOR_MAX_MSG_SIZE) {
+ 			kfree_skb(skb);
+ 			return;
+ 		}
 
