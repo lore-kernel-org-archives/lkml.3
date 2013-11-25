@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab3KYNMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:12:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57339 "EHLO
+	id S1756493Ab3KYNMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:12:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57344 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930Ab3KYNJM (ORCPT
+	with ESMTP id S1754940Ab3KYNJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:09:12 -0500
+	Mon, 25 Nov 2013 08:09:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ivan Djelic <ivan.djelic@parrot.com>, Dirk Behme <dirk.behme@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
+Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 71/78] ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
-Date: Mon, 25 Nov 2013 13:06:58 +0000
-Message-Id: <1385384825-21681-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 73/78] usb: fix cleanup after failure in hub_configure()
+Date: Mon, 25 Nov 2013 13:07:00 +0000
+Message-Id: <1385384825-21681-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,258 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Djelic <ivan.djelic@parrot.com>
+From: Krzysztof Mazur <krzysiek@podlesie.net>
 
-commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5 upstream.
+commit d0308d4b6b02597f39fc31a9bddf7bb3faad5622 upstream.
 
-Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
-assumptions about the implementation of memset and similar functions.
-The current ARM optimized memset code does not return the value of
-its first argument, as is usually expected from standard implementations.
+If the hub_configure() fails after setting the hdev->maxchild
+the hub->ports might be NULL or point to uninitialized kzallocated
+memory causing NULL pointer dereference in hub_quiesce() during cleanup.
 
-For instance in the following function:
+Now after such error the hdev->maxchild is set to 0 to avoid cleanup
+of uninitialized ports.
 
-void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
-{
-	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
-	waiter->magic = waiter;
-	INIT_LIST_HEAD(&waiter->list);
-}
-
-compiled as:
-
-800554d0 <debug_mutex_lock_common>:
-800554d0:       e92d4008        push    {r3, lr}
-800554d4:       e1a00001        mov     r0, r1
-800554d8:       e3a02010        mov     r2, #16 ; 0x10
-800554dc:       e3a01011        mov     r1, #17 ; 0x11
-800554e0:       eb04426e        bl      80165ea0 <memset>
-800554e4:       e1a03000        mov     r3, r0
-800554e8:       e583000c        str     r0, [r3, #12]
-800554ec:       e5830000        str     r0, [r3]
-800554f0:       e5830004        str     r0, [r3, #4]
-800554f4:       e8bd8008        pop     {r3, pc}
-
-GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
-register/memory corruptions.
-
-This patch fixes the return value of the assembly version of memset.
-It adds a 'mov' instruction and merges an additional load+store into
-existing load/store instructions.
-For ease of review, here is a breakdown of the patch into 4 simple steps:
-
-Step 1
-======
-Perform the following substitutions:
-ip -> r8, then
-r0 -> ip,
-and insert 'mov ip, r0' as the first statement of the function.
-At this point, we have a memset() implementation returning the proper result,
-but corrupting r8 on some paths (the ones that were using ip).
-
-Step 2
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
-
-save r8:
--       str     lr, [sp, #-4]!
-+       stmfd   sp!, {r8, lr}
-
-and restore r8 on both exit paths:
--       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
-+       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
-(...)
-        tst     r2, #16
-        stmneia ip!, {r1, r3, r8, lr}
--       ldr     lr, [sp], #4
-+       ldmfd   sp!, {r8, lr}
-
-Step 3
-======
-Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
-
-save r8:
--       stmfd   sp!, {r4-r7, lr}
-+       stmfd   sp!, {r4-r8, lr}
-
-and restore r8 on both exit paths:
-        bgt     3b
--       ldmeqfd sp!, {r4-r7, pc}
-+       ldmeqfd sp!, {r4-r8, pc}
-(...)
-        tst     r2, #16
-        stmneia ip!, {r4-r7}
--       ldmfd   sp!, {r4-r7, lr}
-+       ldmfd   sp!, {r4-r8, lr}
-
-Step 4
-======
-Rewrite register list "r4-r7, r8" as "r4-r8".
-
-Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Eric Bénard <eric@eukrea.com>
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
- 1 file changed, 44 insertions(+), 41 deletions(-)
+ drivers/usb/core/hub.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
-index 650d592..d912e73 100644
---- a/arch/arm/lib/memset.S
-+++ b/arch/arm/lib/memset.S
-@@ -19,9 +19,9 @@
- 1:	subs	r2, r2, #4		@ 1 do we have enough
- 	blt	5f			@ 1 bytes to align with?
- 	cmp	r3, #2			@ 1
--	strltb	r1, [r0], #1		@ 1
--	strleb	r1, [r0], #1		@ 1
--	strb	r1, [r0], #1		@ 1
-+	strltb	r1, [ip], #1		@ 1
-+	strleb	r1, [ip], #1		@ 1
-+	strb	r1, [ip], #1		@ 1
- 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
- /*
-  * The pointer is now aligned and the length is adjusted.  Try doing the
-@@ -29,10 +29,14 @@
-  */
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index b5503b0..b79aa83 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1562,6 +1562,7 @@ static int hub_configure(struct usb_hub *hub,
+ 	return 0;
  
- ENTRY(memset)
--	ands	r3, r0, #3		@ 1 unaligned?
-+/*
-+ * Preserve the contents of r0 for the return value.
-+ */
-+	mov	ip, r0
-+	ands	r3, ip, #3		@ 1 unaligned?
- 	bne	1b			@ 1
- /*
-- * we know that the pointer in r0 is aligned to a word boundary.
-+ * we know that the pointer in ip is aligned to a word boundary.
-  */
- 	orr	r1, r1, r1, lsl #8
- 	orr	r1, r1, r1, lsl #16
-@@ -43,29 +47,28 @@ ENTRY(memset)
- #if ! CALGN(1)+0
- 
- /*
-- * We need an extra register for this loop - save the return address and
-- * use the LR
-+ * We need 2 extra registers for this loop - use r8 and the LR
-  */
--	str	lr, [sp, #-4]!
--	mov	ip, r1
-+	stmfd	sp!, {r8, lr}
-+	mov	r8, r1
- 	mov	lr, r1
- 
- 2:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
--	stmgeia	r0!, {r1, r3, ip, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
-+	stmgeia	ip!, {r1, r3, r8, lr}
- 	bgt	2b
--	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
-+	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
- /*
-  * No need to correct the count; we're only testing bits from now on
-  */
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3, ip, lr}
--	stmneia	r0!, {r1, r3, ip, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	stmneia	ip!, {r1, r3, r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r1, r3, ip, lr}
--	ldr	lr, [sp], #4
-+	stmneia	ip!, {r1, r3, r8, lr}
-+	ldmfd	sp!, {r8, lr}
- 
- #else
- 
-@@ -74,54 +77,54 @@ ENTRY(memset)
-  * whole cache lines at once.
-  */
- 
--	stmfd	sp!, {r4-r7, lr}
-+	stmfd	sp!, {r4-r8, lr}
- 	mov	r4, r1
- 	mov	r5, r1
- 	mov	r6, r1
- 	mov	r7, r1
--	mov	ip, r1
-+	mov	r8, r1
- 	mov	lr, r1
- 
- 	cmp	r2, #96
--	tstgt	r0, #31
-+	tstgt	ip, #31
- 	ble	3f
- 
--	and	ip, r0, #31
--	rsb	ip, ip, #32
--	sub	r2, r2, ip
--	movs	ip, ip, lsl #(32 - 4)
--	stmcsia	r0!, {r4, r5, r6, r7}
--	stmmiia	r0!, {r4, r5}
--	tst	ip, #(1 << 30)
--	mov	ip, r1
--	strne	r1, [r0], #4
-+	and	r8, ip, #31
-+	rsb	r8, r8, #32
-+	sub	r2, r2, r8
-+	movs	r8, r8, lsl #(32 - 4)
-+	stmcsia	ip!, {r4, r5, r6, r7}
-+	stmmiia	ip!, {r4, r5}
-+	tst	r8, #(1 << 30)
-+	mov	r8, r1
-+	strne	r1, [ip], #4
- 
- 3:	subs	r2, r2, #64
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
--	stmgeia	r0!, {r1, r3-r7, ip, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
-+	stmgeia	ip!, {r1, r3-r8, lr}
- 	bgt	3b
--	ldmeqfd	sp!, {r4-r7, pc}
-+	ldmeqfd	sp!, {r4-r8, pc}
- 
- 	tst	r2, #32
--	stmneia	r0!, {r1, r3-r7, ip, lr}
-+	stmneia	ip!, {r1, r3-r8, lr}
- 	tst	r2, #16
--	stmneia	r0!, {r4-r7}
--	ldmfd	sp!, {r4-r7, lr}
-+	stmneia	ip!, {r4-r7}
-+	ldmfd	sp!, {r4-r8, lr}
- 
- #endif
- 
- 4:	tst	r2, #8
--	stmneia	r0!, {r1, r3}
-+	stmneia	ip!, {r1, r3}
- 	tst	r2, #4
--	strne	r1, [r0], #4
-+	strne	r1, [ip], #4
- /*
-  * When we get here, we've got less than 4 bytes to zero.  We
-  * may have an unaligned pointer as well.
-  */
- 5:	tst	r2, #2
--	strneb	r1, [r0], #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
-+	strneb	r1, [ip], #1
- 	tst	r2, #1
--	strneb	r1, [r0], #1
-+	strneb	r1, [ip], #1
- 	mov	pc, lr
- ENDPROC(memset)
+ fail:
++	hdev->maxchild = 0;
+ 	dev_err (hub_dev, "config failed, %s (err %d)\n",
+ 			message, ret);
+ 	/* hub_disconnect() frees urb and descriptor */
 -- 
 1.8.3.2
 
