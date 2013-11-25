@@ -1,172 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3KYORB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:17:01 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64120 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab3KYOQs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757858Ab3KYOQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:16:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48047 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757831Ab3KYOQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:16:48 -0500
-Date: Mon, 25 Nov 2013 09:16:42 -0500
-From: Matt Porter <matt.porter@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v2 8/9] phy: add Broadcom Kona USB2 PHY driver
-Message-ID: <20131125141642.GS781@beef>
-References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
- <1383335158-19730-9-git-send-email-matt.porter@linaro.org>
- <52773E3E.10909@ti.com>
+Message-ID: <52935BAD.9080908@ti.com>
+Date: Mon, 25 Nov 2013 09:16:13 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52773E3E.10909@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 1/6] watchdog: davinci: change driver to use WDT core
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com> <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 11:57:10AM +0530, Kishon Vijay Abraham I wrote:
-> Hi,
+Ivan,
+
+On Monday 25 November 2013 09:04 AM, Ivan Khoronzhuk wrote:
+> To reduce code duplicate and increase code readability use WDT core
+> code to handle WDT interface.
 > 
-> On Saturday 02 November 2013 01:15 AM, Matt Porter wrote:
-> >Add a driver for the internal Broadcom Kona USB 2.0 PHY found
-> >on the BCM281xx family of SoCs.
-> >
-> >Signed-off-by: Matt Porter <matt.porter@linaro.org>
-> >---
-> >  drivers/phy/Kconfig             |   6 ++
-> >  drivers/phy/Makefile            |   2 +
-> >  drivers/phy/phy-bcm-kona-usb2.c | 161 ++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 169 insertions(+)
-> >  create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
-> >
-> >diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> >index 349bef2..cedada5 100644
-> >--- a/drivers/phy/Kconfig
-> >+++ b/drivers/phy/Kconfig
-> >@@ -15,4 +15,10 @@ config GENERIC_PHY
-> >  	  phy users can obtain reference to the PHY. All the users of this
-> >  	  framework should select this config.
-> >
-> >+config BCM_KONA_USB2_PHY
-> >+	tristate "Broadcom Kona USB2 PHY Driver"
-> >+	depends on GENERIC_PHY
-> >+	help
-> >+	  Enable this to support the Broadcom Kona USB 2.0 PHY.
-> >+
-> >  endmenu
-> >diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> >index 9e9560f..ce83a14 100644
-> >--- a/drivers/phy/Makefile
-> >+++ b/drivers/phy/Makefile
-> >@@ -3,3 +3,5 @@
-> >  #
-> >
-> >  obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
-> >+
-> >+obj-$(CONFIG_BCM_KONA_USB2_PHY)	+= phy-bcm-kona-usb2.o
-> >diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
-> >new file mode 100644
-> >index 0000000..1beea7f
-> >--- /dev/null
-> >+++ b/drivers/phy/phy-bcm-kona-usb2.c
-> >@@ -0,0 +1,161 @@
-> >+/*
-> >+ * phy-bcm-kona-usb2.c - Broadcom Kona USB2 Phy Driver
-> >+ *
-> >+ * Copyright (C) 2013 Linaro Limited
-> >+ * Matt Porter <matt.porter@linaro.org>
-> >+ *
-> >+ * This software is licensed under the terms of the GNU General Public
-> >+ * License version 2, as published by the Free Software Foundation, and
-> >+ * may be copied, distributed, and modified under those terms.
-> >+ *
-> >+ * This program is distributed in the hope that it will be useful,
-> >+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >+ * GNU General Public License for more details.
-> >+ */
-> >+
-> >+#include <linux/module.h>
-> >+#include <linux/of.h>
-> >+#include <linux/delay.h>
-> >+#include <linux/platform_device.h>
-> >+#include <linux/err.h>
-> >+#include <linux/io.h>
-> >+#include <linux/clk.h>
-> >+#include <linux/phy/phy.h>
-> >+
-> >+#define OTGCTL_OTGSTAT2		(1 << 31)
-> >+#define OTGCTL_OTGSTAT1		(1 << 30)
-> >+#define OTGCTL_PRST_N_SW	(1 << 11)
-> >+#define OTGCTL_HRESET_N		(1 << 10)
-> >+#define OTGCTL_UTMI_LINE_STATE1	(1 << 9)
-> >+#define OTGCTL_UTMI_LINE_STATE0	(1 << 8)
-> >+
-> >+#define P1CTL_SOFT_RESET	(1 << 1)
-> >+#define P1CTL_NON_DRIVING	(1 << 0)
-> >+
-> >+struct bcm_kona_usb_phy_regs {
-> >+	u32 ctrl;
-> >+	u32 cfg;
-> >+	u32 p1ctl;
-> >+	u32 status;
-> >+	u32 bc_cfg;
-> >+	u32 tp_in;
-> >+	u32 tp_out;
-> >+	u32 phy_ctrl;
-> >+	u32 usbreg;
-> >+	u32 usbproben;
-> >+};
+> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+> Remove wdt_state as the WDT core tracks state with its own variable.
 > 
-> I would prefer to have constant macros for register offset unless
-> you have a good reason to do otherwise.
-
-I'll switch to constant macros in v3. It's just my personal preference
-for style.
-
-> >+
-> >+struct bcm_kona_usb {
-> >+	struct bcm_kona_usb_phy_regs *regs;
-> >+};
-> >+
-> >+static void bcm_kona_usb_phy_power(struct bcm_kona_usb *phy, int on)
-> >+{
-> >+	u32 val;
-> >+
-> >+	val = readl(&phy->regs->ctrl);
-> >+	if (on) {
-> >+		/* Configure and power PHY */
-> >+		val &= ~(OTGCTL_OTGSTAT2 | OTGCTL_OTGSTAT1 |
-> >+			 OTGCTL_UTMI_LINE_STATE1 | OTGCTL_UTMI_LINE_STATE0);
-> >+		val |= OTGCTL_PRST_N_SW | OTGCTL_HRESET_N;
-> >+		writel(val, &phy->regs->ctrl);
-> >+
-> >+		/* Soft reset PHY */
-> >+		val = readl(&phy->regs->p1ctl);
-> >+		val &= ~P1CTL_NON_DRIVING;
-> >+		val |= P1CTL_SOFT_RESET;
-> >+		writel(val, &phy->regs->p1ctl);
-> >+		writel(val & ~P1CTL_SOFT_RESET, &phy->regs->p1ctl);
-> >+		/* Reset needs to be asserted for 2ms */
-> >+		mdelay(2);
-> >+		writel(val | P1CTL_SOFT_RESET, &phy->regs->p1ctl);
+> The watchdog_init_timeout() can read timeout value from timeout-sec
+> property if the passed value is out of bounds. The heartbeat is
+> initialized in next way. If heartbeat is not set thought module
+> parameter, try to read it's value from WDT node timeout-sec property.
+> If node has no one, use default value.
 > 
-> Is soft reset needed for every power-on? Shouldn't soft reset be
-> present in phy_init?
+> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+> order to set timeout period.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Not needed for every power-on. Yes, I've addressed that now for v3,
-thanks.
+Minor suggestion regarding the SOB line which applies to
+rest of the series as well. Typically your SOB line
+should be the last one like below.
 
--Matt
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+
+No need to repost the series just for that. The last
+patch as I commented earlier, needs to be separate
+patch which will go via linux-keystone tree.
+
+Once the watchdog maintainer is happy with rest of the
+series and applies it, I will pick last patch.
+
+Regards,
+Santosh
+
