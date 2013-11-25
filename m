@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab3KYXnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:43:32 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:58741 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3KYXnb (ORCPT
+	id S1753661Ab3KYXnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:43:46 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:47416 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab3KYXnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:43:31 -0500
+	Mon, 25 Nov 2013 18:43:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVsZfHqKT-+SHBq7kYx-_3Gvr=mUYUw81uvNuiMxgLWNA@mail.gmail.com>
-References: <CALCETrVsZfHqKT-+SHBq7kYx-_3Gvr=mUYUw81uvNuiMxgLWNA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 25 Nov 2013 15:43:08 -0800
-Message-ID: <CALCETrUMS_Rb4Uuw1XEwULzkYYJnaFeLYOYD-7Ao_MjEBABxTw@mail.gmail.com>
-Subject: Re: Setting stack NUMA policy?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <5293DA66.6050902@zytor.com>
+References: <20131125221400.GA11041@www.outflux.net>
+	<5293DA66.6050902@zytor.com>
+Date: Mon, 25 Nov 2013 15:43:40 -0800
+X-Google-Sender-Auth: YpaGmGR-auPUzNIbHgifkpEgTao
+Message-ID: <CAGXu5j+QpAhifwjTdmsvk+i1Yq3Qk2CkzNgfFnttmfMh_B3buQ@mail.gmail.com>
+Subject: Re: [PATCH] use -fstack-protector-strong
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olofj@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 3:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> I'm trying to arrange for a process to have a different memory policy
-> on its stack as compared to everything else (e.g. mapped libraries).
-> Before I start looking for kludges, is there any clean way to do this?
+On Mon, Nov 25, 2013 at 3:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/25/2013 02:14 PM, Kees Cook wrote:
+>> Build the kernel with -fstack-protector-strong when it is available
+>> (gcc 4.9 and later). This increases the coverage of the stack protector
+>> without the heavy performance hit of -fstack-protector-all.
 >
-> So far, the best I can come up with is to either parse /proc/self/maps
-> on startup or to deduce the stack range from the stack pointer and
-> then call mbind.  Then, for added fun, I'll need to hook mmap so that
-> I can mbind MAP_STACK vmas that are created for threads.
->
-> This is awful.  Is there something better?
->
-> (What I really want is a separate policy for MAP_SHARED vs MAP_PRIVATE.)
+> What is the difference between the various options?
 
-After a bit more thought, I think that what I *really* want is for the
-stack for a thread that has affinity for a single NUMA node to
-automatically end up on that node.  This seems like a straightforward
-win if it's implementable.
+-fstack-protector-all:
+Adds the stack-canary saving prefix and stack-canary checking suffix
+to _all_ function entry and exit. Results in substantial use of stack
+space for saving the canary for deep stack users (e.g. historically
+xfs), and measurable (though shockingly still low) performance hit due
+to all the saving/checking. Really not suitable for sane systems, and
+was entirely removed as an option from the kernel many years ago.
 
---Andy
+-fstack-protector:
+Adds the canary save/check to functions that define an 8
+(--param=ssp-buffer-size=N, N=8 by default) or more byte local char
+array. Traditionally, stack overflows happened with string-based
+manipulations, so this was a way to find those functions. Very few
+total functions actually get the canary; no measurable performance or
+size overhead.
+
+-fstack-protector-strong
+Adds the canary for a wider set of functions, since it's not just
+those with strings that have ultimately been vulnerable to
+stack-busting. With this superset, more functions end up with a
+canary, but it still remains small compared to all functions with no
+measurable change in performance. Based on the original design
+document, a function gets the canary when it contains any of:
+- local variable's address used as part of the RHS of an assignment or
+function argument
+- local variable is an array (or union containing an array),
+regardless of array type or length
+- uses register local variables
+https://docs.google.com/a/google.com/document/d/1xXBH6rRZue4f296vGt9YQcuLVQHeE516stHwt8M9xyU
+
+Chrome OS has been using -fstack-protector-strong for its kernel
+builds for the last 8 months with no problems.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
