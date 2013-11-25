@@ -1,145 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3KYGsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 01:48:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39742 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab3KYGsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 01:48:00 -0500
-Date: Mon, 25 Nov 2013 12:17:38 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: linux-kernel@vger.kernel.org
-cc: Hristo Venev <hristo@venev.name>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] Drop INITRAMFS_COMPRESSION_GZIP option
-Message-ID: <alpine.LFD.2.10.1311251208170.14939@wniryva.cad.erqung.pbz>
+	id S1752004Ab3KYG7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 01:59:24 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42142 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3KYG7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 01:59:23 -0500
+X-AuditID: 9c930197-b7caaae000001cef-91-5292f54882dd
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
+References: <20131104155131.GD4440@redhat.com>
+	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
+	<87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com>
+	<20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com>
+	<20131106173754.GA11299@redhat.com>
+	<87a9hgwqal.fsf@sejong.aot.lge.com> <527DA997.4080306@hitachi.com>
+	<20131109152313.GA14630@redhat.com>
+	<87siv2uk1q.fsf@sejong.aot.lge.com>
+Date: Mon, 25 Nov 2013 15:59:20 +0900
+In-Reply-To: <87siv2uk1q.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Tue, 12 Nov 2013 17:00:01 +0900")
+Message-ID: <87siulrmpj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-442623294-1385362072=:14939"
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Oleg,
 
---0-442623294-1385362072=:14939
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+On Tue, 12 Nov 2013 17:00:01 +0900, Namhyung Kim wrote:
+> For @+addr syntax: user-space uses relative symbol address from a loaded
+>                    base address and kernel calculates the base address
+>                    using "current->utask->vaddr - tu->offset".
 
-    Hello Andrew, all
+I tried this approach and realized that current->utask is not set or has
+an invalid vaddr when handler_chain() is called.  So I had to apply
+following patch and it seems to work well for me.  Could you confirm it?
 
-Please see attached herein a patch to replace INITRAMFS_COMPRESSION_GZIP 
-option with a new CONFIG_RD_GZIP=y, for INITRAMFS_COMPRESSION_GZIP is not set. 
-Patch also removes the choice text for INITRAMFS_* options from usr/Kconfig.
+Thanks,
+Namhyung
 
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
---0-442623294-1385362072=:14939
-Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Drop-INITRAMFS_COMPRESSION_GZIP-option.patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LFD.2.10.1311251217380.14939@wniryva.cad.erqung.pbz>
-Content-Description: 
-Content-Disposition: attachment; filename=0001-Drop-INITRAMFS_COMPRESSION_GZIP-option.patch
 
-RnJvbSBlNWFiNjAwMjYwM2E5MDFkNDBjN2Y4NGI0ZDZkMjQwYmYwZTkxYWNh
-IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogSHJpc3RvIFZlbmV2
-IDxocmlzdG9AdmVuZXYubmFtZT4NCkRhdGU6IE1vbiwgMjUgTm92IDIwMTMg
-MTE6NTQ6MjkgKzA1MzANClN1YmplY3Q6IFtQQVRDSCAxLzFdIERyb3AgSU5J
-VFJBTUZTX0NPTVBSRVNTSU9OX0daSVAgb3B0aW9uDQoNClJlcGxhY2VkIElO
-SVRSQU1GU19DT01QUkVTU0lPTl9HWklQPXkgb3B0aW9uIGluIHRoZSBtaXBz
-JyAmDQpwb3dlcnBjJ3MgZGVmY29uZmlnIGZpbGUgd2l0aCB0aGUgQ09ORklH
-X1JEX0daSVA9eSwgZm9yDQpJTklUUkFNRlNfQ09NUFJFU1NJT05fR1pJUCBp
-cyBub3Qgc2V0LiBBbHNvIHJlbW92ZWQgdGhlDQpjb3JyZXNwb25kaW5nIEtj
-b25maWcgY2hvaWNlIHRleHQgZm9yIGFsbCBJTklUUkFNRlNfQ09NUFJFU1NJ
-T05fKg0Kb3B0aW9ucy4NCg0KU2lnbmVkLW9mZi1ieTogUCBKIFAgPHByYXNh
-ZEByZWRoYXQuY29tPg0KDQpkaWZmIC0tZ2l0IGEvYXJjaC9taXBzL2NvbmZp
-Z3MvbmxtX3hscl9kZWZjb25maWcgYi9hcmNoL21pcHMvY29uZmlncy9ubG1f
-eGxyX2RlZmNvbmZpZw0KaW5kZXggNDRiNDczNC4uMTczODhkMCAxMDA2NDQN
-Ci0tLSBhL2FyY2gvbWlwcy9jb25maWdzL25sbV94bHJfZGVmY29uZmlnDQor
-KysgYi9hcmNoL21pcHMvY29uZmlncy9ubG1feGxyX2RlZmNvbmZpZw0KQEAg
-LTI1LDcgKzI1LDcgQEAgQ09ORklHX0JMS19ERVZfSU5JVFJEPXkNCiBDT05G
-SUdfSU5JVFJBTUZTX1NPVVJDRT0iIg0KIENPTkZJR19SRF9CWklQMj15DQog
-Q09ORklHX1JEX0xaTUE9eQ0KLUNPTkZJR19JTklUUkFNRlNfQ09NUFJFU1NJ
-T05fR1pJUD15DQorQ09ORklHX1JEX0daSVA9eQ0KIENPTkZJR19FWFBFUlQ9
-eQ0KIENPTkZJR19LQUxMU1lNU19BTEw9eQ0KICMgQ09ORklHX0VMRl9DT1JF
-IGlzIG5vdCBzZXQNCmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMvY29uZmln
-cy9jaHJvbWFfZGVmY29uZmlnIGIvYXJjaC9wb3dlcnBjL2NvbmZpZ3MvY2hy
-b21hX2RlZmNvbmZpZw0KaW5kZXggNGYzNWZjNC4uNGQwOWE1NiAxMDA2NDQN
-Ci0tLSBhL2FyY2gvcG93ZXJwYy9jb25maWdzL2Nocm9tYV9kZWZjb25maWcN
-CisrKyBiL2FyY2gvcG93ZXJwYy9jb25maWdzL2Nocm9tYV9kZWZjb25maWcN
-CkBAIC0yOSw3ICsyOSw3IEBAIENPTkZJR19CTEtfREVWX0lOSVRSRD15DQog
-Q09ORklHX0lOSVRSQU1GU19TT1VSQ0U9IiINCiBDT05GSUdfUkRfQlpJUDI9
-eQ0KIENPTkZJR19SRF9MWk1BPXkNCi1DT05GSUdfSU5JVFJBTUZTX0NPTVBS
-RVNTSU9OX0daSVA9eQ0KK0NPTkZJR19SRF9HWklQPXkNCiBDT05GSUdfS0FM
-TFNZTVNfQUxMPXkNCiBDT05GSUdfRU1CRURERUQ9eQ0KIENPTkZJR19QRVJG
-X0VWRU5UUz15DQpkaWZmIC0tZ2l0IGEvdXNyL0tjb25maWcgYi91c3IvS2Nv
-bmZpZw0KaW5kZXggNjQyZjUwMy4uMmQ0Yzc3ZSAxMDA2NDQNCi0tLSBhL3Vz
-ci9LY29uZmlnDQorKysgYi91c3IvS2NvbmZpZw0KQEAgLTk4LDgwICs5OCwz
-IEBAIGNvbmZpZyBSRF9MWjQNCiAJaGVscA0KIAkgIFN1cHBvcnQgbG9hZGlu
-ZyBvZiBhIExaNCBlbmNvZGVkIGluaXRpYWwgcmFtZGlzayBvciBjcGlvIGJ1
-ZmZlcg0KIAkgIElmIHVuc3VyZSwgc2F5IE4uDQotDQotY2hvaWNlDQotCXBy
-b21wdCAiQnVpbHQtaW4gaW5pdHJhbWZzIGNvbXByZXNzaW9uIG1vZGUiIGlm
-IElOSVRSQU1GU19TT1VSQ0UhPSIiDQotCWhlbHANCi0JICBUaGlzIG9wdGlv
-biBkZWNpZGVzIGJ5IHdoaWNoIGFsZ29yaXRobSB0aGUgYnVpbHRpbiBpbml0
-cmFtZnMNCi0JICB3aWxsIGJlIGNvbXByZXNzZWQuICBTZXZlcmFsIGNvbXBy
-ZXNzaW9uIGFsZ29yaXRobXMgYXJlDQotCSAgYXZhaWxhYmxlLCB3aGljaCBk
-aWZmZXIgaW4gZWZmaWNpZW5jeSwgY29tcHJlc3Npb24gYW5kDQotCSAgZGVj
-b21wcmVzc2lvbiBzcGVlZC4gIENvbXByZXNzaW9uIHNwZWVkIGlzIG9ubHkg
-cmVsZXZhbnQNCi0JICB3aGVuIGJ1aWxkaW5nIGEga2VybmVsLiAgRGVjb21w
-cmVzc2lvbiBzcGVlZCBpcyByZWxldmFudCBhdA0KLQkgIGVhY2ggYm9vdC4N
-Ci0NCi0JICBJZiB5b3UgaGF2ZSBhbnkgcHJvYmxlbXMgd2l0aCBiemlwMiBv
-ciBMWk1BIGNvbXByZXNzZWQNCi0JICBpbml0cmFtZnMsIG1haWwgbWUgKEFs
-YWluIEtuYWZmKSA8YWxhaW5Aa25hZmYubHU+Lg0KLQ0KLQkgIEhpZ2ggY29t
-cHJlc3Npb24gb3B0aW9ucyBhcmUgbW9zdGx5IHVzZWZ1bCBmb3IgdXNlcnMg
-d2hvIGFyZQ0KLQkgIGxvdyBvbiBSQU0sIHNpbmNlIGl0IHJlZHVjZXMgdGhl
-IG1lbW9yeSBjb25zdW1wdGlvbiBkdXJpbmcNCi0JICBib290Lg0KLQ0KLQkg
-IElmIGluIGRvdWJ0LCBzZWxlY3QgJ2d6aXAnDQotDQotY29uZmlnIElOSVRS
-QU1GU19DT01QUkVTU0lPTl9OT05FDQotCWJvb2wgIk5vbmUiDQotCWhlbHAN
-Ci0JICBEbyBub3QgY29tcHJlc3MgdGhlIGJ1aWx0LWluIGluaXRyYW1mcyBh
-dCBhbGwuIFRoaXMgbWF5DQotCSAgc291bmQgd2FzdGVmdWwgaW4gc3BhY2Us
-IGJ1dCwgeW91IHNob3VsZCBiZSBhd2FyZSB0aGF0IHRoZQ0KLQkgIGJ1aWx0
-LWluIGluaXRyYW1mcyB3aWxsIGJlIGNvbXByZXNzZWQgYXQgYSBsYXRlciBz
-dGFnZQ0KLQkgIGFueXdheXMgYWxvbmcgd2l0aCB0aGUgcmVzdCBvZiB0aGUg
-a2VybmVsLCBvbiB0aG9zZQ0KLQkgIGFyY2hpdGVjdHVyZXMgdGhhdCBzdXBw
-b3J0IHRoaXMuDQotCSAgSG93ZXZlciwgbm90IGNvbXByZXNzaW5nIHRoZSBp
-bml0cmFtZnMgbWF5IGxlYWQgdG8gc2xpZ2h0bHkNCi0JICBoaWdoZXIgbWVt
-b3J5IGNvbnN1bXB0aW9uIGR1cmluZyBhIHNob3J0IHRpbWUgYXQgYm9vdCwg
-d2hpbGUNCi0JICBib3RoIHRoZSBjcGlvIGltYWdlIGFuZCB0aGUgdW5wYWNr
-ZWQgZmlsZXN5c3RlbSBpbWFnZSB3aWxsDQotCSAgYmUgcHJlc2VudCBpbiBt
-ZW1vcnkgc2ltdWx0YW5lb3VzbHkNCi0NCi1jb25maWcgSU5JVFJBTUZTX0NP
-TVBSRVNTSU9OX0daSVANCi0JYm9vbCAiR3ppcCINCi0JZGVwZW5kcyBvbiBS
-RF9HWklQDQotCWhlbHANCi0JICBUaGUgb2xkIGFuZCB0cmllZCBnemlwIGNv
-bXByZXNzaW9uLiBJdCBwcm92aWRlcyBhIGdvb2QgYmFsYW5jZQ0KLQkgIGJl
-dHdlZW4gY29tcHJlc3Npb24gcmF0aW8gYW5kIGRlY29tcHJlc3Npb24gc3Bl
-ZWQuDQotDQotY29uZmlnIElOSVRSQU1GU19DT01QUkVTU0lPTl9CWklQMg0K
-LQlib29sICJCemlwMiINCi0JZGVwZW5kcyBvbiBSRF9CWklQMg0KLQloZWxw
-DQotCSAgSXRzIGNvbXByZXNzaW9uIHJhdGlvIGFuZCBzcGVlZCBpcyBpbnRl
-cm1lZGlhdGUuDQotCSAgRGVjb21wcmVzc2lvbiBzcGVlZCBpcyBzbG93ZXN0
-IGFtb25nIHRoZSBjaG9pY2VzLiAgVGhlIGluaXRyYW1mcw0KLQkgIHNpemUg
-aXMgYWJvdXQgMTAlIHNtYWxsZXIgd2l0aCBiemlwMiwgaW4gY29tcGFyaXNv
-biB0byBnemlwLg0KLQkgIEJ6aXAyIHVzZXMgYSBsYXJnZSBhbW91bnQgb2Yg
-bWVtb3J5LiBGb3IgbW9kZXJuIGtlcm5lbHMgeW91DQotCSAgd2lsbCBuZWVk
-IGF0IGxlYXN0IDhNQiBSQU0gb3IgbW9yZSBmb3IgYm9vdGluZy4NCi0NCi1j
-b25maWcgSU5JVFJBTUZTX0NPTVBSRVNTSU9OX0xaTUENCi0JYm9vbCAiTFpN
-QSINCi0JZGVwZW5kcyBvbiBSRF9MWk1BDQotCWhlbHANCi0JICBUaGlzIGFs
-Z29yaXRobSdzIGNvbXByZXNzaW9uIHJhdGlvIGlzIGJlc3QuDQotCSAgRGVj
-b21wcmVzc2lvbiBzcGVlZCBpcyBiZXR3ZWVuIHRoZSBvdGhlciBjaG9pY2Vz
-Lg0KLQkgIENvbXByZXNzaW9uIGlzIHNsb3dlc3QuIFRoZSBpbml0cmFtZnMg
-c2l6ZSBpcyBhYm91dCAzMyUNCi0JICBzbWFsbGVyIHdpdGggTFpNQSBpbiBj
-b21wYXJpc29uIHRvIGd6aXAuDQotDQotY29uZmlnIElOSVRSQU1GU19DT01Q
-UkVTU0lPTl9YWg0KLQlib29sICJYWiINCi0JZGVwZW5kcyBvbiBSRF9YWg0K
-LQloZWxwDQotCSAgWFogdXNlcyB0aGUgTFpNQTIgYWxnb3JpdGhtLiBUaGUg
-aW5pdHJhbWZzIHNpemUgaXMgYWJvdXQgMzAlDQotCSAgc21hbGxlciB3aXRo
-IFhaIGluIGNvbXBhcmlzb24gdG8gZ3ppcC4gRGVjb21wcmVzc2lvbiBzcGVl
-ZA0KLQkgIGlzIGJldHRlciB0aGFuIHRoYXQgb2YgYnppcDIgYnV0IHdvcnNl
-IHRoYW4gZ3ppcCBhbmQgTFpPLg0KLQkgIENvbXByZXNzaW9uIGlzIHNsb3cu
-DQotDQotY29uZmlnIElOSVRSQU1GU19DT01QUkVTU0lPTl9MWk8NCi0JYm9v
-bCAiTFpPIg0KLQlkZXBlbmRzIG9uIFJEX0xaTw0KLQloZWxwDQotCSAgSXRz
-IGNvbXByZXNzaW9uIHJhdGlvIGlzIHRoZSBwb29yZXN0IGFtb25nIHRoZSBj
-aG9pY2VzLiBUaGUga2VybmVsDQotCSAgc2l6ZSBpcyBhYm91dCAxMCUgYmln
-Z2VyIHRoYW4gZ3ppcDsgaG93ZXZlciBpdHMgc3BlZWQNCi0JICAoYm90aCBj
-b21wcmVzc2lvbiBhbmQgZGVjb21wcmVzc2lvbikgaXMgdGhlIGZhc3Rlc3Qu
-DQotDQotZW5kY2hvaWNlDQotLSANCjEuOC4zLjENCg0K
-
---0-442623294-1385362072=:14939--
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index ad8e1bdca70e..e63748d3520e 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1456,7 +1456,7 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+ 
+ /* Prepare to single-step probed instruction out of line. */
+ static int
+-pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
++pre_ssout(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask;
+ 	unsigned long xol_vaddr;
+@@ -1471,7 +1471,6 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
+ 		return -ENOMEM;
+ 
+ 	utask->xol_vaddr = xol_vaddr;
+-	utask->vaddr = bp_vaddr;
+ 
+ 	err = arch_uprobe_pre_xol(&uprobe->arch, regs);
+ 	if (unlikely(err)) {
+@@ -1701,6 +1700,7 @@ static bool handle_trampoline(struct pt_regs *regs)
+ static void handle_swbp(struct pt_regs *regs)
+ {
+ 	struct uprobe *uprobe;
++	struct uprobe_task *utask;
+ 	unsigned long bp_vaddr;
+ 	int uninitialized_var(is_swbp);
+ 
+@@ -1744,11 +1744,17 @@ static void handle_swbp(struct pt_regs *regs)
+ 	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
+ 		goto out;
+ 
++	utask = get_utask();
++	if (!utask)
++		goto out;
++
++	utask->vaddr = bp_vaddr;
++
+ 	handler_chain(uprobe, regs);
+ 	if (can_skip_sstep(uprobe, regs))
+ 		goto out;
+ 
+-	if (!pre_ssout(uprobe, regs, bp_vaddr))
++	if (!pre_ssout(uprobe, regs))
+ 		return;
+ 
+ 	/* can_skip_sstep() succeeded, or restart if can't singlestep */
