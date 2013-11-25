@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758449Ab3KYO37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:29:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754607Ab3KYO3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:29:55 -0500
-Date: Mon, 25 Nov 2013 16:29:28 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Avi Kivity <avi.kivity@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131125142928.GD959@redhat.com>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131122191429.GA13308@amt.cnet>
- <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com>
- <20131125142351.GA6056@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758400Ab3KYO3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:29:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58855 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753794Ab3KYNxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 08:53:36 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20131125142351.GA6056@amt.cnet>
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <edumazet@google.com>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.704765350@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 18/87] net: unix: inherit SOCK_PASS{CRED, SEC} flags
+ from  socket to fix race
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 12:23:51PM -0200, Marcelo Tosatti wrote:
-> On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
-> > On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
-> > <xiaoguangrong@linux.vnet.ibm.com> wrote:
-> > >
-> > > On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > 
-> > <snip complicated stuff about parent_pte>
-> > 
-> > I'm not really following, but note that parent_pte predates EPT (and
-> > the use of rcu in kvm), so all the complexity that is the result of
-> > trying to pack as many list entries into a cache line can be dropped.
-> > Most setups now would have exactly one list entry, which is handled
-> > specially antyway.
-> > 
-> > Alternatively, the trick of storing multiple entries in one list entry
-> > can be moved to generic code, it may be useful to others.
-> 
-> Yes, can the lockless list walking code be transformed into generic
-> single-linked list walking? So the correctness can be verified
-> independently, and KVM becomes a simple user of that interface.
-> 
-The code will become simpler but the problem of never ending walk of
-rculist_nulls will remain.
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-> The simpler version is to maintain lockless walk on depth-1 rmap entries
-> (and grab the lock once depth-2 entry is found).
-And release it between each rmap walk or at the very end of write
-protect?
+------------------
 
---
-			Gleb.
+From: Daniel Borkmann <dborkman@redhat.com>
+
+[ Upstream commit 90c6bd34f884cd9cee21f1d152baf6c18bcac949 ]
+
+In the case of credentials passing in unix stream sockets (dgram
+sockets seem not affected), we get a rather sparse race after
+commit 16e5726 ("af_unix: dont send SCM_CREDENTIALS by default").
+
+We have a stream server on receiver side that requests credential
+passing from senders (e.g. nc -U). Since we need to set SO_PASSCRED
+on each spawned/accepted socket on server side to 1 first (as it's
+not inherited), it can happen that in the time between accept() and
+setsockopt() we get interrupted, the sender is being scheduled and
+continues with passing data to our receiver. At that time SO_PASSCRED
+is neither set on sender nor receiver side, hence in cmsg's
+SCM_CREDENTIALS we get eventually pid:0, uid:65534, gid:65534
+(== overflow{u,g}id) instead of what we actually would like to see.
+
+On the sender side, here nc -U, the tests in maybe_add_creds()
+invoked through unix_stream_sendmsg() would fail, as at that exact
+time, as mentioned, the sender has neither SO_PASSCRED on his side
+nor sees it on the server side, and we have a valid 'other' socket
+in place. Thus, sender believes it would just look like a normal
+connection, not needing/requesting SO_PASSCRED at that time.
+
+As reverting 16e5726 would not be an option due to the significant
+performance regression reported when having creds always passed,
+one way/trade-off to prevent that would be to set SO_PASSCRED on
+the listener socket and allow inheriting these flags to the spawned
+socket on server side in accept(). It seems also logical to do so
+if we'd tell the listener socket to pass those flags onwards, and
+would fix the race.
+
+Before, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=0, uid=65534, gid=65534}},
+        msg_flags=0}, 0) = 5
+
+After, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=11580, uid=1000, gid=1000}},
+        msg_flags=0}, 0) = 5
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/unix/af_unix.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 5611563..5122b22 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1236,6 +1236,15 @@ static int unix_socketpair(struct socket *socka, struct socket *sockb)
+ 	return 0;
+ }
+ 
++static void unix_sock_inherit_flags(const struct socket *old,
++				    struct socket *new)
++{
++	if (test_bit(SOCK_PASSCRED, &old->flags))
++		set_bit(SOCK_PASSCRED, &new->flags);
++	if (test_bit(SOCK_PASSSEC, &old->flags))
++		set_bit(SOCK_PASSSEC, &new->flags);
++}
++
+ static int unix_accept(struct socket *sock, struct socket *newsock, int flags)
+ {
+ 	struct sock *sk = sock->sk;
+@@ -1270,6 +1279,7 @@ static int unix_accept(struct socket *sock, struct socket *newsock, int flags)
+ 	/* attach accepted sock to socket */
+ 	unix_state_lock(tsk);
+ 	newsock->state = SS_CONNECTED;
++	unix_sock_inherit_flags(sock, newsock);
+ 	sock_graft(tsk, newsock);
+ 	unix_state_unlock(tsk);
+ 	return 0;
+
