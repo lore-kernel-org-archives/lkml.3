@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab3KYQQs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:16:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16287 "EHLO mx1.redhat.com"
+	id S1757311Ab3KYQQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:16:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab3KYQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756724Ab3KYQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 11:14:27 -0500
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH v2 09/11] sh: use generic fixmap.h
-Date: Mon, 25 Nov 2013 11:14:03 -0500
-Message-Id: <1385396045-15852-10-git-send-email-msalter@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: [PATCH v2 02/11] x86: use generic fixmap.h
+Date: Mon, 25 Nov 2013 11:13:56 -0500
+Message-Id: <1385396045-15852-3-git-send-email-msalter@redhat.com>
 In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,34 +21,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Paul Mundt <lethal@linux-sh.org>
-CC: linux-sh@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
 ---
- arch/sh/include/asm/fixmap.h | 39 ++-------------------------------------
- 1 file changed, 2 insertions(+), 37 deletions(-)
+ arch/x86/include/asm/fixmap.h | 59 +------------------------------------------
+ 1 file changed, 1 insertion(+), 58 deletions(-)
 
-diff --git a/arch/sh/include/asm/fixmap.h b/arch/sh/include/asm/fixmap.h
-index cbe0186..4daf91c 100644
---- a/arch/sh/include/asm/fixmap.h
-+++ b/arch/sh/include/asm/fixmap.h
-@@ -79,13 +79,6 @@ extern void __set_fixmap(enum fixed_addresses idx,
- 			 unsigned long phys, pgprot_t flags);
- extern void __clear_fixmap(enum fixed_addresses idx, pgprot_t flags);
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index e846225..7252cd3 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -175,64 +175,7 @@ static inline void __set_fixmap(enum fixed_addresses idx,
+ }
+ #endif
  
--#define set_fixmap(idx, phys) \
--		__set_fixmap(idx, phys, PAGE_KERNEL)
+-#define set_fixmap(idx, phys)				\
+-	__set_fixmap(idx, phys, PAGE_KERNEL)
+-
 -/*
 - * Some hardware wants to get fixmapped without caching.
 - */
--#define set_fixmap_nocache(idx, phys) \
--		__set_fixmap(idx, phys, PAGE_KERNEL_NOCACHE)
- /*
-  * used by vmalloc.c.
-  *
-@@ -101,36 +94,8 @@ extern void __clear_fixmap(enum fixed_addresses idx, pgprot_t flags);
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
- 
+-#define set_fixmap_nocache(idx, phys)			\
+-	__set_fixmap(idx, phys, PAGE_KERNEL_NOCACHE)
+-
+-#define clear_fixmap(idx)			\
+-	__set_fixmap(idx, 0, __pgprot(0))
+-
 -#define __fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
 -#define __virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
 -
@@ -55,10 +56,10 @@ index cbe0186..4daf91c 100644
 -
 -/*
 - * 'index to address' translation. If anyone tries to use the idx
-- * directly without tranlation, we catch the bug with a NULL-deference
+- * directly without translation, we catch the bug with a NULL-deference
 - * kernel oops. Illegal ranges of incoming indices are caught too.
 - */
--static inline unsigned long fix_to_virt(const unsigned int idx)
+-static __always_inline unsigned long fix_to_virt(const unsigned int idx)
 -{
 -	/*
 -	 * this branch gets completely eliminated after inlining,
@@ -71,18 +72,33 @@ index cbe0186..4daf91c 100644
 -	 */
 -	if (idx >= __end_of_fixed_addresses)
 -		__this_fixmap_does_not_exist();
-+#define FIXMAP_PAGE_NOCACHE PAGE_KERNEL_NOCACHE
- 
--        return __fix_to_virt(idx);
+-
+-	return __fix_to_virt(idx);
 -}
-+#include <asm-generic/fixmap.h>
- 
+-
 -static inline unsigned long virt_to_fix(const unsigned long vaddr)
 -{
 -	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
 -	return __virt_to_fix(vaddr);
 -}
- #endif
+-
+-/* Return an pointer with offset calculated */
+-static __always_inline unsigned long
+-__set_fixmap_offset(enum fixed_addresses idx, phys_addr_t phys, pgprot_t flags)
+-{
+-	__set_fixmap(idx, phys, flags);
+-	return fix_to_virt(idx) + (phys & (PAGE_SIZE - 1));
+-}
+-
+-#define set_fixmap_offset(idx, phys)			\
+-	__set_fixmap_offset(idx, phys, PAGE_KERNEL)
+-
+-#define set_fixmap_offset_nocache(idx, phys)			\
+-	__set_fixmap_offset(idx, phys, PAGE_KERNEL_NOCACHE)
++#include <asm-generic/fixmap.h>
+ 
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_X86_FIXMAP_H */
 -- 
 1.8.3.1
 
