@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab3KYOCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:02:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58993 "EHLO
+	id S1757062Ab3KYOCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:02:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58958 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754377Ab3KYNxt (ORCPT
+	by vger.kernel.org with ESMTP id S1753941Ab3KYNxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:49 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wei Yongjun" <yongjun_wei@trendmicro.com.cn>,
-        "Nicholas Bellinger" <nab@linux-iscsi.org>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.619375578@decadent.org.uk>
+Message-ID: <lsq.1385387069.177679047@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 77/87] target/pscsi: fix return value check
+Subject: [PATCH 3.2 41/87] iwlwifi: two more SKUs for 6x05 series
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,48 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit 58932e96e438cd78f75e765d7b87ef39d3533d15 upstream.
+commit 75a56eccb01fcc3c1ae8000130f3c9b3c8ec68d9 upstream.
 
-In case of error, the function scsi_host_lookup() returns NULL
-pointer not ERR_PTR(). The IS_ERR() test in the return value check
-should be replaced with NULL test.
+Add two more SKUs for 6x05 series of device.
+First SKU has low 5GHz channels actives, the other SKU has high 5GHz channels actives.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: pscsi_configure_device() returns a pointer]
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_pscsi.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -129,10 +129,10 @@ static int pscsi_pmode_enable_hba(struct
- 	 * pSCSI Host ID and enable for phba mode
- 	 */
- 	sh = scsi_host_lookup(phv->phv_host_id);
--	if (IS_ERR(sh)) {
-+	if (!sh) {
- 		pr_err("pSCSI: Unable to locate SCSI Host for"
- 			" phv_host_id: %d\n", phv->phv_host_id);
--		return PTR_ERR(sh);
-+		return -EINVAL;
- 	}
+--- a/drivers/net/wireless/iwlwifi/iwl-pci.c
++++ b/drivers/net/wireless/iwlwifi/iwl-pci.c
+@@ -257,6 +257,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x0082, 0xC020, iwl6005_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x0085, 0xC220, iwl6005_2agn_sff_cfg)},
+ 	{IWL_PCI_DEVICE(0x0082, 0x1341, iwl6005_2agn_d_cfg)},
++	{IWL_PCI_DEVICE(0x0082, 0x1304, iwl6005_2agn_cfg)},/* low 5GHz active */
++	{IWL_PCI_DEVICE(0x0082, 0x1305, iwl6005_2agn_cfg)},/* high 5GHz active */
  
- 	phv->phv_lld_host = sh;
-@@ -564,10 +564,10 @@ static struct se_device *pscsi_create_vi
- 			sh = phv->phv_lld_host;
- 		} else {
- 			sh = scsi_host_lookup(pdv->pdv_host_id);
--			if (IS_ERR(sh)) {
-+			if (!sh) {
- 				pr_err("pSCSI: Unable to locate"
- 					" pdv_host_id: %d\n", pdv->pdv_host_id);
--				return ERR_CAST(sh);
-+				return ERR_PTR(-EINVAL);
- 			}
- 		}
- 	} else {
+ /* 6x30 Series */
+ 	{IWL_PCI_DEVICE(0x008A, 0x5305, iwl1030_bgn_cfg)},
 
