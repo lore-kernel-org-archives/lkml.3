@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab3KYV2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 16:28:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46086 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3KYV2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 16:28:39 -0500
-Date: Mon, 25 Nov 2013 13:28:02 -0800
-From: tip-bot for Laxman Dewangan <tipbot@zytor.com>
-Message-ID: <tip-ac01810c9d2814238f08a227062e66a35a0e1ea2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, heiko@sntech.de, hpa@zytor.com,
-        mingo@kernel.org, konrad.wilk@oracle.com, ian.campbell@citrix.com,
-        pavel@ucw.cz, gregkh@linuxfoundation.org, ldewangan@nvidia.com,
-        rjw@rjwysocki.net, tglx@linutronix.de, len.brown@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, heiko@sntech.de,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        ian.campbell@citrix.com, pavel@ucw.cz, gregkh@linuxfoundation.org,
-        ldewangan@nvidia.com, tglx@linutronix.de, rjw@rjwysocki.net,
-        len.brown@intel.com
-In-Reply-To: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
-References: <1385388587-16442-1-git-send-email-ldewangan@nvidia.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irq:
-  Enable all irqs unconditionally in irq_resume
-Git-Commit-ID: ac01810c9d2814238f08a227062e66a35a0e1ea2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752823Ab3KYVaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 16:30:35 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50271 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab3KYVac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 16:30:32 -0500
+Message-ID: <5293C16D.80605@ti.com>
+Date: Mon, 25 Nov 2013 15:30:21 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 25 Nov 2013 13:28:09 -0800 (PST)
+To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>
+CC: <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tianyu.lan@intel.com>,
+        <jinchoi@broadcom.com>, <sebastian.capella@linaro.org>
+Subject: Re: [PATCH V2 1/2] cpufreq: suspend governors on system suspend/hibernate
+References: <cover.1385118255.git.viresh.kumar@linaro.org> <e4bc55fac6bc68694e9905cc3cc6844173b64925.1385118256.git.viresh.kumar@linaro.org>
+In-Reply-To: <e4bc55fac6bc68694e9905cc3cc6844173b64925.1385118256.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ac01810c9d2814238f08a227062e66a35a0e1ea2
-Gitweb:     http://git.kernel.org/tip/ac01810c9d2814238f08a227062e66a35a0e1ea2
-Author:     Laxman Dewangan <ldewangan@nvidia.com>
-AuthorDate: Mon, 25 Nov 2013 19:39:47 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 25 Nov 2013 22:20:02 +0100
+On 11/22/2013 05:29 AM, Viresh Kumar wrote:
+> This patch adds cpufreq callbacks to dpm_{suspend|resume}_noirq() for handling
+> suspend/resume of cpufreq governors. This is required for early suspend and late
+> resume of governors.
+> 
+> There are multiple problems that are fixed by this patch:
+> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+>   wasn't working well with suspend/resume as calls for removing non-boot CPUs
+>   was turning out into a call to drivers ->target() which then tries to play
+>   with regulators. But regulators and their I2C bus were already suspended and
+>   this resulted in a failure. This is why we need a PM notifier here.
+> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+>   tunables configuration for clusters/sockets with non-boot CPUs was getting
+>   lost after suspend/resume, as we were notifying governors with
+>   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+>   deallocating memory for tunables.
+> 
+> Reported-by: Lan Tianyu <tianyu.lan@intel.com>
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Reported-by: Jinhyuk Choi <jinchoi@broadcom.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/base/power/main.c |  3 +++
+>  drivers/cpufreq/cpufreq.c | 62 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/cpufreq.h   |  3 +++
+>  3 files changed, 68 insertions(+)
+yes, this seems to work for me as well.
+http://pastebin.mozilla.org/3670909 - no cpufreq attempts to
+transition were triggered.
 
-irq: Enable all irqs unconditionally in irq_resume
-
-When the system enters suspend, it disables all interrupts in
-suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
-
-On the resume side things are different. The EARLY_RESUME interrupts
-are reenabled in sys_core_ops->resume and the non EARLY_RESUME
-interrupts are reenabled in the normal system resume path.
-
-When suspend_noirq() failed or suspend is aborted for any other
-reason, we might omit the resume side call to sys_core_ops->resume()
-and therefor the interrupts marked EARLY_RESUME are not reenabled and
-stay disabled forever.
-
-To solve this, enable all irqs unconditionally in irq_resume()
-regardless whether interrupts marked EARLY_RESUMEhave been already
-enabled or not.
-
-This might try to reenable already enabled interrupts in the non
-failure case, but the only affected platform is XEN and it has been
-confirmed that it does not cause any side effects.
-
-[ tglx: Massaged changelog. ]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-Cc: <ian.campbell@citrix.com>
-Cc: <rjw@rjwysocki.net>
-Cc: <len.brown@intel.com>
-Cc: <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/pm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..abcd6ca 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
- 
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
+-- 
+Regards,
+Nishanth Menon
