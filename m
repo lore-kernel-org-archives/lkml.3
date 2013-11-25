@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab3KYN5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:57:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41809 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756634Ab3KYN5j (ORCPT
+	id S1754796Ab3KYNyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:54:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58990 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754526Ab3KYNxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:57:39 -0500
-Date: Mon, 25 Nov 2013 14:57:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        David Daney <david.daney@cavium.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: Preventing IPI sending races in arch code
-Message-ID: <20131125135725.GA10022@twins.programming.kicks-ass.net>
-References: <52932BE2.5010201@synopsys.com>
- <20131125110006.GU3866@twins.programming.kicks-ass.net>
- <529334CA.1000401@synopsys.com>
- <20131125122726.GZ10022@twins.programming.kicks-ass.net>
- <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 25 Nov 2013 08:53:43 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
+        "Evan Huus" <eapache@gmail.com>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.447573664@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 66/87] wireless: radiotap: fix parsing buffer overrun
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 01:35:38PM +0000, Vineet Gupta wrote:
-> On 11/25/2013 05:57 PM, Peter Zijlstra wrote:
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-> > So sure, then someone can again assert the interrupt, but given we just
-> > established a protocol for raising the thing; namely something like
-> > this:
-> >
-> > void arch_send_ipi(int cpu, int type)
-> > {
-> >   u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
-> >   u32 new, old;
-> >
-> >   do {
-> >   	new = old = *pending_ptr;
-> > 	new |= 1U << type;
-> >   } while (cmpxchg(pending_ptr, old, new) != old)
-> >
-> >   if (!old) /* only raise the actual IPI if we set the first bit */
-> >   	raise_ipi(cpu);
-> > }
-> >
-> > Who would re-assert it if we have !0 pending?
-> 
-> I see your point. So in receiver, it is OK to de-assert the IPI before processing
-> the msg itself.
-> 
-> Actually your code seems to be optimizing away asserting an IPI, if sender already
-> had a pending msg (assuming we retain the xchg loop in receiver). Was that an
-> intended optimization - or just a side effect of your code ;-)
+------------------
 
-No, full intention. As you mentioned you wanted to avoid sending IPIs
-where none were needed.
+From: Johannes Berg <johannes.berg@intel.com>
 
-> >> IMO the while loop is
-> >> completely useless specially if IPIs are not coalesced in h/w. 
-> > Agreed, the while loops seems superfluous.
-> 
-> Not with your version of sender, since we need it as described above.
+commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
 
-No, even with my code; the receiving end should look like:
+When parsing an invalid radiotap header, the parser can overrun
+the buffer that is passed in because it doesn't correctly check
+ 1) the minimum radiotap header size
+ 2) the space for extended bitmaps
 
-void handle_ipi(struct pt_regs *regs)
-{
-	u32 pending;
+The first issue doesn't affect any in-kernel user as they all
+check the minimum size before calling the radiotap function.
+The second issue could potentially affect the kernel if an skb
+is passed in that consists only of the radiotap header with a
+lot of extended bitmaps that extend past the SKB. In that case
+a read-only buffer overrun by at most 4 bytes is possible.
 
-	ipi_clear(irq);
+Fix this by adding the appropriate checks to the parser.
 
-	pending = xchg(this_cpu_ptr(ipi_bits), 0);
+Reported-by: Evan Huus <eapache@gmail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/wireless/radiotap.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-	while (pending) {
-		bit = ffs(pending);
+--- a/net/wireless/radiotap.c
++++ b/net/wireless/radiotap.c
+@@ -95,6 +95,10 @@ int ieee80211_radiotap_iterator_init(
+ 	struct ieee80211_radiotap_header *radiotap_header,
+ 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
+ {
++	/* check the radiotap header can actually be present */
++	if (max_length < sizeof(struct ieee80211_radiotap_header))
++		return -EINVAL;
++
+ 	/* Linux only supports version 0 radiotap format */
+ 	if (radiotap_header->it_version)
+ 		return -EINVAL;
+@@ -129,7 +133,8 @@ int ieee80211_radiotap_iterator_init(
+ 			 */
+ 
+ 			if ((unsigned long)iterator->_arg -
+-			    (unsigned long)iterator->_rtheader >
++			    (unsigned long)iterator->_rtheader +
++			    sizeof(uint32_t) >
+ 			    (unsigned long)iterator->_max_length)
+ 				return -EINVAL;
+ 		}
 
-		/* handle bit */
-
-		pending &= ~(1U << bit);
-	}
-}
-
-So while it does have a while() loop, it only does a single xchg().
-
-The version you showed before had the xchg() in the loop, that is not
-required.
