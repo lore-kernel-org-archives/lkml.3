@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3KYKDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:03:14 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:63332 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab3KYKDJ (ORCPT
+	id S1753375Ab3KYKD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:03:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46474 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab3KYKDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:03:09 -0500
+	Mon, 25 Nov 2013 05:03:18 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <bcousson@baylibre.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <kishon@ti.com>, <gregkh@linuxfoundation.org>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>
+Subject: [PATCH v3 09/10] phy: omap-usb2: move omap_usb.h from linux/usb/ to linux/phy/
+Date: Mon, 25 Nov 2013 15:31:29 +0530
+Message-ID: <1385373690-12170-10-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1385373690-12170-1-git-send-email-kishon@ti.com>
+References: <1385373690-12170-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20131125090922.GB13358@samfundet.no>
-References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
-	<1385369734-24893-15-git-send-email-geert@linux-m68k.org>
-	<20131125090922.GB13358@samfundet.no>
-Date: Mon, 25 Nov 2013 11:03:08 +0100
-X-Google-Sender-Auth: R5I0h5PhanzBsdVJ0ap8Tt0xpHQ
-Message-ID: <CAMuHMdVyFhwpnRm4fwH5XcgDRC0qASd-Gmg15aOYuxSZOHsB9g@mail.gmail.com>
-Subject: Re: [PATCH 14/24] avr32: Use Kbuild logic to provide <asm/types.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 10:09 AM, Hans-Christian Egtvedt
-<egtvedt@samfundet.no> wrote:
-> Around Mon 25 Nov 2013 09:55:24 +0100 or thereabout, Geert Uytterhoeven wrote:
->> The extra definition for BITS_PER_LONG is also indirectly provided
->> by <asm-generic/types.h>, via <asm-generic/int-ll64.h> and
->> <asm/bitsperlong.h>
->
-> Are you adding a new include/asm-generic/types.h, which will include
-> bitsperlong.h ?
+No functional change. Moved omap_usb.h from linux/usb/ to linux/phy/.
+Also removed the unused members of struct omap_usb (after phy-omap-pipe3
+started using it's own header file)
 
-Yes, that's [PATCH 24/24].
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-omap-usb2.c           |    2 +-
+ include/linux/{usb => phy}/omap_usb.h |    3 ---
+ 2 files changed, 1 insertion(+), 4 deletions(-)
+ rename include/linux/{usb => phy}/omap_usb.h (95%)
 
-Currently you get it through the UAPI <asm-generic/types.h>, via
-<asm-generic/int-ll64.h> and <asm/bitsperlong.h>.
+diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+index 9b3e867..d738dc3 100644
+--- a/drivers/phy/phy-omap-usb2.c
++++ b/drivers/phy/phy-omap-usb2.c
+@@ -21,7 +21,7 @@
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include <linux/io.h>
+-#include <linux/usb/omap_usb.h>
++#include <linux/phy/omap_usb.h>
+ #include <linux/usb/phy_companion.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+diff --git a/include/linux/usb/omap_usb.h b/include/linux/phy/omap_usb.h
+similarity index 95%
+rename from include/linux/usb/omap_usb.h
+rename to include/linux/phy/omap_usb.h
+index 6ae2936..19d343c3 100644
+--- a/include/linux/usb/omap_usb.h
++++ b/include/linux/phy/omap_usb.h
+@@ -33,13 +33,10 @@ struct usb_dpll_params {
+ struct omap_usb {
+ 	struct usb_phy		phy;
+ 	struct phy_companion	*comparator;
+-	void __iomem		*pll_ctrl_base;
+ 	struct device		*dev;
+ 	struct device		*control_dev;
+ 	struct clk		*wkupclk;
+-	struct clk		*sys_clk;
+ 	struct clk		*optclk;
+-	u8			is_suspended:1;
+ };
+ 
+ #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
+-- 
+1.7.10.4
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
