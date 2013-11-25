@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3KYNyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:54:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58990 "EHLO
+	id S1753819Ab3KYN6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:58:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58916 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754526Ab3KYNxn (ORCPT
+	by vger.kernel.org with ESMTP id S1754739Ab3KYNyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:43 -0500
+	Mon, 25 Nov 2013 08:54:00 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
-        "Evan Huus" <eapache@gmail.com>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.447573664@decadent.org.uk>
+Message-ID: <lsq.1385387069.96717894@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 66/87] wireless: radiotap: fix parsing buffer overrun
+Subject: [PATCH 3.2 82/87] ASoC: wm_hubs: Add missing break in
+ hp_supply_event()
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,52 +32,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
+commit 268ff14525edba31da29a12a9dd693cdd6a7872e upstream.
 
-When parsing an invalid radiotap header, the parser can overrun
-the buffer that is passed in because it doesn't correctly check
- 1) the minimum radiotap header size
- 2) the space for extended bitmaps
+Spotted by coverity CID 115170.
 
-The first issue doesn't affect any in-kernel user as they all
-check the minimum size before calling the radiotap function.
-The second issue could potentially affect the kernel if an skb
-is passed in that consists only of the radiotap header with a
-lot of extended bitmaps that extend past the SKB. In that case
-a read-only buffer overrun by at most 4 bytes is possible.
-
-Fix this by adding the appropriate checks to the parser.
-
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/radiotap.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm_hubs.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -95,6 +95,10 @@ int ieee80211_radiotap_iterator_init(
- 	struct ieee80211_radiotap_header *radiotap_header,
- 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
- {
-+	/* check the radiotap header can actually be present */
-+	if (max_length < sizeof(struct ieee80211_radiotap_header))
-+		return -EINVAL;
-+
- 	/* Linux only supports version 0 radiotap format */
- 	if (radiotap_header->it_version)
- 		return -EINVAL;
-@@ -129,7 +133,8 @@ int ieee80211_radiotap_iterator_init(
- 			 */
- 
- 			if ((unsigned long)iterator->_arg -
--			    (unsigned long)iterator->_rtheader >
-+			    (unsigned long)iterator->_rtheader +
-+			    sizeof(uint32_t) >
- 			    (unsigned long)iterator->_max_length)
- 				return -EINVAL;
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -414,6 +414,7 @@ static int hp_supply_event(struct snd_so
+ 				hubs->hp_startup_mode);
+ 			break;
  		}
++		break;
+ 
+ 	case SND_SOC_DAPM_PRE_PMD:
+ 		snd_soc_update_bits(codec, WM8993_CHARGE_PUMP_1,
 
