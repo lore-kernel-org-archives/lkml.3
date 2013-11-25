@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab3KYOe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:34:26 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:40928 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab3KYOeU (ORCPT
+	id S1754311Ab3KYOkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:40:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:43302 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab3KYOkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:34:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAH9JG2UjnL5bZzNUuJhWY3GpwPD=rJvR2O4Hcpm33G+prSS=BA@mail.gmail.com>
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com>
-	<528BB1F2.4080107@wwwdotorg.org>
-	<CAD=FV=XS0dbE7zfgDGVdp84h4fHH6tfO8aN_HNh1LbOjYy51aQ@mail.gmail.com>
-	<528BB913.6080409@wwwdotorg.org>
-	<CAH9JG2UjnL5bZzNUuJhWY3GpwPD=rJvR2O4Hcpm33G+prSS=BA@mail.gmail.com>
-Date: Mon, 25 Nov 2013 15:34:19 +0100
-Message-ID: <CACRpkdbyjm0X9RX+8WjqQxBPyRjBOAunkqVcO-0KUd1PTdGavA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using pinfunc.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <t.figa@samsung.com>,
+	Mon, 25 Nov 2013 09:40:04 -0500
+Date: Mon, 25 Nov 2013 15:39:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ma, Xindong" <xindong.ma@intel.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "ccross@google.com" <ccross@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Subject: Re: Add memory barrier when waiting on futex
+Message-ID: <20131125143952.GB10022@twins.programming.kicks-ass.net>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 20, 2013 at 1:02 AM, Kyungmin Park <kmpark@infradead.org> wrote:
-> On Wed, Nov 20, 2013 at 4:16 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Mon, Nov 25, 2013 at 01:15:17PM +0000, Ma, Xindong wrote:
+> We encountered following panic several times:
 
->> I think that last point should be addressed by having a driver that owns
->> the GPIO set it to the desired output level, and the implementation of
+> [   74.671982] BUG: unable to handle kernel NULL pointer dereference at 00000008
+> [   74.672101] IP: [<c129bb27>] wake_futex+0x47/0x80
 
-> Some pins are not connected (NC). At that cases, there's no drivers to
-> handle it. To reduce power leakage, it sets proper configuration with
-> values instead of reset values.
+> [   74.674144]  [<c129bc29>] futex_wake+0xc9/0x110
+> [   74.674195]  [<c129da0b>] do_futex+0xeb/0x950
+> [   74.674484]  [<c129e30b>] SyS_futex+0x9b/0x140
+> [   74.674582]  [<c195a718>] syscall_call+0x7/0xb
+> 
+> On smp systems, setting current task to q->task in queue_me() may
+> not visible immediately to another cpu, some times this will
+> cause panic in wake_futex(). Adding memory barrier to avoid this.
+> 
+> Signed-off-by: Leon Ma <xindong.ma@intel.com>
+> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+> ---
+>  kernel/futex.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 80ba086..792cd41 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -1529,6 +1529,7 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
+>  	plist_node_init(&q->list, prio);
+>  	plist_add(&q->list, &hb->chain);
+>  	q->task = current;
+> +	smp_mb();
+>  	spin_unlock(&hb->lock);
+>  }
 
-This is correspondant to the PIN_CONFIG_OUTPUT from
-include/linux/pinctrl/pinconf-generic.h
+This is wrong, because an uncommented barrier is wrong per definition.
 
-I.e. driving a pin - any pin, even one that cannot do GPIO - high
-or low as default.
+This is further wrong because wake_futex() is always called with
+hb->lock held, and since queue_me also has hb->lock held, this is in
+fact guaranteed.
 
-One could argue that if you can drive the pin high/low using
-software then by definition it *is* GPIO. Even if it cannot trigger
-IRQs or anything.
-
-The rationale for having it in pinconf-generic is basically for
-use cases such that one of the the pin config states the device
-pass through may relate to what the documentation calls
-the "GPIO mode fallacy" - a state on the pins that is definately
-related to the use case of a certain device, but puts the pin
-in something the manual calls "GPIO mode" in order to save
-power.
-
-But from a use case point of view that is not GPIO, it is the
-typically the sleep state of a certain pin when used with a
-certain device.
-
-I'll see if I can think of some doc patch to make this more clear...
-
-Yours,
-Linus Walleij
+This is even more wrong for adding stable.
