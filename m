@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3KYSHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:07:47 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:51355 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3KYSHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:07:46 -0500
-Date: Mon, 25 Nov 2013 10:07:41 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Airlie <airlied@linux.ie>
-Cc: lm-sensors@lm-sensors.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drm/radeon/dpm: Convert to use
- devm_hwmon_register_with_groups
-Message-ID: <20131125180741.GA20159@roeck-us.net>
-References: <1385185921-17220-1-git-send-email-linux@roeck-us.net>
+	id S1757086Ab3KYSOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:14:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab3KYSOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 13:14:18 -0500
+Date: Mon, 25 Nov 2013 16:12:54 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131125181254.GB21858@amt.cnet>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <5292EE2F.5090305@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385185921-17220-1-git-send-email-linux@roeck-us.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5292EE2F.5090305@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 09:52:00PM -0800, Guenter Roeck wrote:
-> Simplify the code and fix race condition seen because
-> attribute files were created after hwmon device registration.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> Compile tested only; unfortunately I don't have the the necessary hardware.
-> 
-Update: Tested working on actual hardware.
+On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
+> >> Also, there is no guarantee of termination (as long as sptes are
+> >> deleted with the correct timing). BTW, can't see any guarantee of
+> >> termination for rculist nulls either (a writer can race with a lockless
+> >> reader indefinately, restarting the lockless walk every time).
+> > 
+> > Hmm, that can be avoided by checking dirty-bitmap before rewalk,
+> > that means, if the dirty-bitmap has been set during lockless write-protection,
+> > it�s unnecessary to write-protect its sptes. Your idea?
+> This idea is based on the fact that the number of rmap is limited by
+> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
+> we can break the rewalk at once, in the case of deleting, we can only
+> rewalk RMAP_RECYCLE_THRESHOLD times.
 
-Guenter
+Please explain in more detail.
+
