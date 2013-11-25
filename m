@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3KYJRB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:17:01 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51182 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750729Ab3KYJQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 04:16:58 -0500
-Date: Mon, 25 Nov 2013 09:16:52 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Kumar Gala <galak@codeaurora.org>, devicetree <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH] dt-bindings: add ARMv8 PMU binding
-Message-ID: <20131125091651.GA32081@e106331-lin.cambridge.arm.com>
-References: <1385155032-9032-1-git-send-email-robherring2@gmail.com>
- <A8B9EAD7-0DBA-46D7-963F-30DEA0575EE2@codeaurora.org>
- <528FD003.8090607@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <528FD003.8090607@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751723Ab3KYJTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:19:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab3KYJT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 04:19:29 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [PATCH net] macvtap: fix tx_dropped counting error
+Date: Mon, 25 Nov 2013 17:19:04 +0800
+Message-Id: <1385371144-11071-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 09:43:31PM +0000, Rob Herring wrote:
-> On 11/22/2013 03:38 PM, Kumar Gala wrote:
-> > 
-> > On Nov 22, 2013, at 3:17 PM, Rob Herring <robherring2@gmail.com> wrote:
-> > 
-> >> From: Rob Herring <rob.herring@calxeda.com>
-> >>
-> >> Add missing "arm,armv8-pmuv3" compatible property for ARMv8 PMU.
-> >>
-> >> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> >> Cc: Will Deacon <will.deacon@arm.com>
-> >> Cc: Pawel Moll <pawel.moll@arm.com>
-> >> Cc: Mark Rutland <mark.rutland@arm.com>
-> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> >> ---
-> >> Documentation/devicetree/bindings/arm/pmu.txt | 1 +
-> >> 1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
-> >> index 343781b..3e1e498 100644
-> >> --- a/Documentation/devicetree/bindings/arm/pmu.txt
-> >> +++ b/Documentation/devicetree/bindings/arm/pmu.txt
-> >> @@ -7,6 +7,7 @@ representation in the device tree should be done as under:-
-> >> Required properties:
-> >>
-> >> - compatible : should be one of
-> >> +	"arm,armv8-pmuv3”
-> > 
-> > what about arm,armv8-pmu-v3?
-> 
-> I'm just documenting what is already being used:
-> 
-> arch/arm64/boot/dts/foundation-v8.dts:          compatible =
-> "arm,armv8-pmuv3";
-> arch/arm64/boot/dts/rtsm_ve-aemv8a.dts:         compatible =
-> "arm,armv8-pmuv3";
-> 
-> Do we want to change those?
+After commit 8ffab51b3dfc54876f145f15b351c41f3f703195
+(macvlan: lockless tx path), tx stat counter were converted to percpu stat
+structure. So we need use to this also for tx_dropped in macvtap. Otherwise, the
+management won't notice the dropping packet in macvtap tx path.
 
-It would probably have been nicer to have the '-' from the start, but
-adding it now is only going to expand the set of compatible strings for
-no appreciable benefit.
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvtap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I don't see any value in adding a new form of the string, and we can't
-change the existing one as it's already in use.
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index dc76670..0605da8 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -744,7 +744,7 @@ err:
+ 	rcu_read_lock();
+ 	vlan = rcu_dereference(q->vlan);
+ 	if (vlan)
+-		vlan->dev->stats.tx_dropped++;
++		this_cpu_inc(vlan->pcpu_stats->tx_dropped);
+ 	rcu_read_unlock();
+ 
+ 	return err;
+-- 
+1.8.3.2
 
-Thanks,
-Mark.
