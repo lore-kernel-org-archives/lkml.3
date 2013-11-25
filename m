@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab3KYOyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:54:40 -0500
-Received: from mout.gmx.net ([212.227.15.19]:49674 "EHLO mout.gmx.net"
+	id S1756881Ab3KYO4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:56:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49749 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756617Ab3KYOyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:54:38 -0500
-Message-ID: <529364AC.8000305@gmx.de>
-Date: Mon, 25 Nov 2013 15:54:36 +0100
-From: Michael Lawnick <ml.lawnick@gmx.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20131118 Thunderbird/17.0.11
+	id S1754031Ab3KYO4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 09:56:03 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
+        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 6/6] arm: dts: keystone: add watchdog entry
+Date: Mon, 25 Nov 2013 16:54:59 +0200
+Message-ID: <1385391299-27326-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-To: Mike Looijmans <mike.looijmans@topic.nl>
-CC: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
-References: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
-In-Reply-To: <1385387037-3710-1-git-send-email-mike.looijmans@topic.nl>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:lG3Blr1Mgzr4m02fu7WrB/pj56ZJtQDHcFHxHlt5hBfcOITzRBw
- ekSFusVHXtb3HMS1O54dXYapilOmB2Nsb3RKJF+PNTwYJTplhkhY8AiBmuz43FX7nF15/pG
- zEGSpeYFOe+b8IJV/VALKXMdc+Zx9PDsyhhymDhwbSW6PvFbA9GyRKPA+Fp+Y2MkcISIx2p
- 5YDpia0nH17e4mojIJrQA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add watchdog entry to keystone device tree.
 
-Am 25.11.2013 14:43, schrieb Mike Looijmans:
-> Leaving the mux enabled causes needless I2C traffic on the downstream
-> bus. De-selecting after every request causes excess I2C traffic and
-> switching.
->
-> This patch implements a hybrid solution: After 200ms of inactivity,
-> the mux is disabled.
-...
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Acked-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/arm/boot/dts/keystone.dtsi |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Have you checked against behavior on cascaded muxes?
-At least your desired timing will not look as expected.
-200 ms: disable mux1
-201 ms: enable mux1 - disable mux2
-202 ms: enable mux2 - disable mux3
-401 ms: disable mux1
-402 ms: enable mux1 - disable mux2
-602 ms: disable mux1
-And on full second temperature sensor behind mux3 is read again ...
-
-KR
-Michael
-
-
+diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
+index f6d6d9e..54a8ff7 100644
+--- a/arch/arm/boot/dts/keystone.dtsi
++++ b/arch/arm/boot/dts/keystone.dtsi
+@@ -181,5 +181,11 @@
+ 			interrupts = <GIC_SPI 300 IRQ_TYPE_EDGE_RISING>;
+ 			clocks = <&clkspi>;
+ 		};
++
++		wdt: wdt@022f0080 {
++			compatible = "ti,keystone-wdt","ti,davinci-wdt";
++			reg = <0x022f0080 0x80>;
++			clocks = <&clkwdtimer0>;
++		};
+ 	};
+ };
+-- 
+1.7.9.5
 
