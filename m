@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3KYWqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 17:46:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52512 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752117Ab3KYWqT (ORCPT
+	id S1752829Ab3KYW4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 17:56:08 -0500
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:61575 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab3KYW4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 17:46:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Paul Drews <paul.drews@intel.com>
-Cc: lenb@kernel.org, linus.walleij@linaro.org, linux-acpi@vger.kernel.org,
+	Mon, 25 Nov 2013 17:56:05 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
+Cc: Leela Krishna Amudala <l.krishna@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: Add BayTrail SoC GPIO and LPSS ACPI IDs
-Date: Mon, 25 Nov 2013 23:59:06 +0100
-Message-ID: <5357493.LYF5vMpIOb@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1385417755-21776-1-git-send-email-paul.drews@intel.com>
-References: <1385417755-21776-1-git-send-email-paul.drews@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Subject: [PATCH] watchdog: s3c2410_wdt: Only register for cpufreq on CPU_FREQ_S3C24XX
+Date: Mon, 25 Nov 2013 14:55:37 -0800
+Message-Id: <1385420137-32725-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 25, 2013 02:15:55 PM Paul Drews wrote:
-> This adds the new ACPI ID (INT33FC) for the BayTrail GPIO
-> banks as seen on a BayTrail M System-On-Chip platform.  This
-> ACPI ID is used by the BayTrail GPIO (pinctrl) driver to
-> manage the Low Power Subsystem (LPSS).
-> 
-> Signed-off-by: Paul Drews <paul.drews@intel.com>
+On modern SoCs the watchdog timer is parented on a clock that doesn't
+change every time we have a cpufreq change.  That means we don't need
+to constantly adjust the watchdog timer, so avoid registering for and
+dealing with cpufreq transitions unless we've actually got
+CPU_FREQ_S3C24XX defined.
 
-Am I supposed to take this (in which case I need an ACK from the pinctrl
-maintainer)?
+Note that this is more than just an optimization.  The s3c2410
+watchdog driver actually pats the watchdog on every CPU frequency
+change.  On modern systems these happen many times per second (even in
+a system where "nothing" is happening).  That effectively makes any
+userspace watchdog program useless (the watchdog is constantly patted
+by the kernel).  If we need CPU_FREQ_S3C24XX defined on a
+multiplatform kernel we'll need to make sure that kernel supports
+common clock and change this to user common clock framework.
 
-Or is it supposed to go through the pinctrl subsystem?  In which case feel free
-to add
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/watchdog/s3c2410_wdt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com> # for the ACPI part
-
-to the patch.
-
-Thanks!
-
-> ---
->  drivers/acpi/acpi_lpss.c           | 1 +
->  drivers/pinctrl/pinctrl-baytrail.c | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 6745fe1..e603905 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -162,6 +162,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
->  	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
->  	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
->  	{ "INT33B2", },
-> +	{ "INT33FC", },
->  
->  	{ "INT3430", (unsigned long)&lpt_dev_desc },
->  	{ "INT3431", (unsigned long)&lpt_dev_desc },
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index 2832576..114f5ef 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -512,6 +512,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
->  
->  static const struct acpi_device_id byt_gpio_acpi_match[] = {
->  	{ "INT33B2", 0 },
-> +	{ "INT33FC", 0 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
-> 
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index 7d8fd04..4980f84 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -264,7 +264,7 @@ static irqreturn_t s3c2410wdt_irq(int irqno, void *param)
+ 	return IRQ_HANDLED;
+ }
+ 
+-#ifdef CONFIG_CPU_FREQ
++#ifdef CONFIG_CPU_FREQ_S3C24XX
+ 
+ static int s3c2410wdt_cpufreq_transition(struct notifier_block *nb,
+ 					  unsigned long val, void *data)
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.4.1
+
