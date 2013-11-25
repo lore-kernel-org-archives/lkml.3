@@ -1,149 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3KYXS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:18:26 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:11933 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752099Ab3KYXSW (ORCPT
+	id S1753047Ab3KYXVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:21:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35431 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3KYXVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:18:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsoHAGvak1J5LHyk/2dsb2JhbABZgwe3aIVOgSUXdIIlAQEFJxMcHAcQCAMOCgklDwUlAyETiAC+aRaOcQeEMwOYE5ITgzwo
-Date: Tue, 26 Nov 2013 10:17:16 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/9] mm + fs: store shadow entries in page cache
-Message-ID: <20131125231716.GJ8803@dastard>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-7-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385336308-27121-7-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Nov 2013 18:21:16 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] mips: Fix build error seen in some configurations
+Date: Mon, 25 Nov 2013 15:21:00 -0800
+Message-Id: <1385421660-5608-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 06:38:25PM -0500, Johannes Weiner wrote:
-> Reclaim will be leaving shadow entries in the page cache radix tree
-> upon evicting the real page.  As those pages are found from the LRU,
-> an iput() can lead to the inode being freed concurrently.  At this
-> point, reclaim must no longer install shadow pages because the inode
-> freeing code needs to ensure the page tree is really empty.
-> 
-> Add an address_space flag, AS_EXITING, that the inode freeing code
-> sets under the tree lock before doing the final truncate.  Reclaim
-> will check for this flag before installing shadow pages.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-....
-> @@ -545,10 +546,25 @@ static void evict(struct inode *inode)
->  	 */
->  	inode_wait_for_writeback(inode);
->  
-> +	/*
-> +	 * Page reclaim can not do iput() and thus can race with the
-> +	 * inode teardown.  Tell it when the address space is exiting,
-> +	 * so that it does not install eviction information after the
-> +	 * final truncate has begun.
-> +	 *
-> +	 * As truncation uses a lockless tree lookup, acquire the
-> +	 * spinlock to make sure any ongoing tree modification that
-> +	 * does not see AS_EXITING is completed before starting the
-> +	 * final truncate.
-> +	 */
-> +	spin_lock_irq(&inode->i_data.tree_lock);
-> +	mapping_set_exiting(&inode->i_data);
-> +	spin_unlock_irq(&inode->i_data.tree_lock);
-> +
->  	if (op->evict_inode) {
->  		op->evict_inode(inode);
->  	} else {
-> -		if (inode->i_data.nrpages)
-> +		if (inode->i_data.nrpages || inode->i_data.nrshadows)
->  			truncate_inode_pages(&inode->i_data, 0);
->  		clear_inode(inode);
->  	}
+The following build error is seen if CONFIG_32BIT is undefined,
+CONFIG_64BIT is defined, and CONFIG_MIPS32_O32 is undefined.
 
-Ok, so what I see here is that we need a wrapper function that
-handles setting the AS_EXITING flag and doing the "final"
-truncate_inode_pages() call, and the locking for the AS_EXITING flag
-moved into mapping_set_exiting()
+asm/syscall.h: In function 'mips_get_syscall_arg':
+arch/mips/include/asm/syscall.h:32:16: error: unused variable 'usp' [-Werror=unused-variable]
+cc1: all warnings being treated as errors
 
-That is, because this AS_EXITING flag and it's locking constraints
-are directly related to the upcoming truncate_inode_pages() call,
-I'd prefer to see a helper that captures that relationship used
-in all the filesystem code. e.g:
+Fixes: c0ff3c53d4f9 ('MIPS: Enable HAVE_ARCH_TRACEHOOK')
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/mips/include/asm/syscall.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-void truncate_inode_pages_final(struct address_space *mapping)
-{
-	spin_lock_irq(&mapping->tree_lock);
-	mapping_set_exiting(mapping);
-	spin_unlock_irq(&mapping->tree_lock);
-	if (inode->i_data.nrpages || inode->i_data.nrshadows)
-		truncate_inode_pages_range(mapping, 0, (loff_t)-1);
-}
-
-And document it in Documentation/filesystems/porting as a mandatory
-function to be called from ->evict_inode() implementations before
-calling clear_inode().  You can then replace all the direct calls to
-truncate_inode_pages() in the evict_inode() path with a call to
-truncate_inode_pages_final().
-
-As it is, I'd really like to see that unconditional irq disable go
-away from this code - disabling and enabling interrupts for every
-single inode we reclaim is going to add significant overhead to this
-hot code path. And given that:
-
-> +static inline void mapping_set_exiting(struct address_space *mapping)
-> +{
-> +	set_bit(AS_EXITING, &mapping->flags);
-> +}
-> +
-> +static inline int mapping_exiting(struct address_space *mapping)
-> +{
-> +	return test_bit(AS_EXITING, &mapping->flags);
-> +}
-
-these atomic bit ops, why do we need to take the tree_lock and
-disable irqs in evict() to set this bit if there's nothing to
-truncate on the inode? i.e. something like this:
-
-void truncate_inode_pages_final(struct address_space *mapping)
-{
-	mapping_set_exiting(mapping);
-	if (inode->i_data.nrpages || inode->i_data.nrshadows) {
-		/*
-		 * spinlock barrier to ensure all modifications are
-		 * complete before we do the final truncate
-		 */
-		spin_lock_irq(&mapping->tree_lock);
-		spin_unlock_irq(&mapping->tree_lock);
-		truncate_inode_pages_range(mapping, 0, (loff_t)-1);
-}
-
-and thereby avoiding the mapping lock altogether for inodes that do
-not require it to be taken?
-
-Cheers,
-
-Dave.
+diff --git a/arch/mips/include/asm/syscall.h b/arch/mips/include/asm/syscall.h
+index 81c8913..33e8dbf 100644
+--- a/arch/mips/include/asm/syscall.h
++++ b/arch/mips/include/asm/syscall.h
+@@ -29,7 +29,7 @@ static inline long syscall_get_nr(struct task_struct *task,
+ static inline unsigned long mips_get_syscall_arg(unsigned long *arg,
+ 	struct task_struct *task, struct pt_regs *regs, unsigned int n)
+ {
+-	unsigned long usp = regs->regs[29];
++	unsigned long usp __maybe_unused = regs->regs[29];
+ 
+ 	switch (n) {
+ 	case 0: case 1: case 2: case 3:
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.7
+
