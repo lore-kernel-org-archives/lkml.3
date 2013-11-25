@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3KYKNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 05:13:38 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:39266 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209Ab3KYKNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 05:13:36 -0500
-X-IronPort-AV: E=Sophos;i="4.93,766,1378857600"; 
-   d="scan'208";a="77773268"
-Message-ID: <1385374413.11161.28.camel@kazak.uk.xensource.com>
-Subject: Re: IRQF_RESUME_EARLY and errors in dpm_suspend_noirq
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Date: Mon, 25 Nov 2013 10:13:33 +0000
-In-Reply-To: <528C86C2.1070206@nvidia.com>
-References: <201311201020.08158.heiko@sntech.de>
-	 <528C86C2.1070206@nvidia.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1753407Ab3KYKOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 05:14:09 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:40588 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3KYKOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 05:14:05 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+In-Reply-To: <CAKohpomEL8aU_ETaHFG_G8mhYMZc6M6x7i4m+McozP=i7Fzz5A@mail.gmail.com>
+References: <cover.1385118255.git.viresh.kumar@linaro.org>
+	<CAKohpo=RWi1nRUJq4qx8K+Y7swMDaqwEOH24-KfBCMgdbW=hMQ@mail.gmail.com>
+	<528FB2EC.2020202@wwwdotorg.org>
+	<2065978.h16hV1Cgky@vostro.rjw.lan>
+	<CAKohpomEL8aU_ETaHFG_G8mhYMZc6M6x7i4m+McozP=i7Fzz5A@mail.gmail.com>
+Date: Mon, 25 Nov 2013 15:44:02 +0530
+Message-ID: <CAKohpompkiUqOati4B8F0HqN2eTMEADm01SnUuE0_GxnTAWJdQ@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] cpufreq: Change freq before suspending governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, Kukjin Kim <kgene@kernel.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-20 at 15:24 +0530, Laxman Dewangan wrote:
-> On Wednesday 20 November 2013 02:50 PM, Heiko Stübner wrote:
-> > Hi,
-> >
-> > Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such IRQs
-> > earlier) split the suspend/resume of the irqs into two parts.
-> >
-> > The early-irqs get resumed during syscore_resume, while the rest get
-> > resumed by the regular resume_device_irqs.
-> >
-> > I may be blind, but where get the early-irqs resumed in the error
-> > path of dpm_suspend_noirq?
-> >
-> > When a suspend_noirq callback returns an error, dpm_resume_noirq gets called,
-> > which only calls resume_device_irqs while the suspend_device_irqs call in
-> > dpm_suspend_noirq suspends all irqs. So it does not seem that the early-irqs
-> > get resumed at all in this case.
-> >
-> I also faced same issue in our suspend failure path and posted fix 
-> sometime ago as
-> https://lkml.org/lkml/2013/8/13/373
-> 
-> It is still under review.
+On 25 November 2013 09:58, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Giving cpufreq-drivers a chance to do whatever they want looks to be
+> correct. So, maybe prepare() or suspend_prepare() for them can be
+> implemented.
 
-IME zero comments since August is not "under review", it is "has slipped
-through the cracks" ;-)
-
-I would suggest you resend it.
-
-Ian.
-
+I have used the existing infrastructure here, i.e. suspend/resume callbacks
+for drivers.. As we don't need two suspend calls now..
