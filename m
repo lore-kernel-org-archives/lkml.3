@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab3KYXnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:43:46 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:47416 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab3KYXnl (ORCPT
+	id S1752126Ab3KYXuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:50:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57322 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab3KYXuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:43:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <5293DA66.6050902@zytor.com>
-References: <20131125221400.GA11041@www.outflux.net>
-	<5293DA66.6050902@zytor.com>
-Date: Mon, 25 Nov 2013 15:43:40 -0800
-X-Google-Sender-Auth: YpaGmGR-auPUzNIbHgifkpEgTao
-Message-ID: <CAGXu5j+QpAhifwjTdmsvk+i1Yq3Qk2CkzNgfFnttmfMh_B3buQ@mail.gmail.com>
-Subject: Re: [PATCH] use -fstack-protector-strong
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Olof Johansson <olofj@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Nov 2013 18:50:13 -0500
+Date: Mon, 25 Nov 2013 15:50:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/9] mm: thrash detection-based file cache sizing
+Message-Id: <20131125155011.2f1320ab422436b1204bd15e@linux-foundation.org>
+In-Reply-To: <1385336308-27121-8-git-send-email-hannes@cmpxchg.org>
+References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
+	<1385336308-27121-8-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 3:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 11/25/2013 02:14 PM, Kees Cook wrote:
->> Build the kernel with -fstack-protector-strong when it is available
->> (gcc 4.9 and later). This increases the coverage of the stack protector
->> without the heavy performance hit of -fstack-protector-all.
+On Sun, 24 Nov 2013 18:38:26 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+
+> ...
 >
-> What is the difference between the various options?
+> + *		Access frequency and refault distance
+> + *
+> + * A workload is trashing when its pages are frequently used but they
+> + * are evicted from the inactive list every time before another access
+> + * would have promoted them to the active list.
+> + *
+> + * In cases where the average access distance between thrashing pages
+> + * is bigger than the size of memory there is nothing that can be
+> + * done - the thrashing set could never fit into memory under any
+> + * circumstance.
+> + *
+> + * However, the average access distance could be bigger than the
+> + * inactive list, yet smaller than the size of memory.  In this case,
+> + * the set could fit into memory if it weren't for the currently
+> + * active pages - which may be used more, hopefully less frequently:
+> + *
+> + *      +-memory available to cache-+
+> + *      |                           |
+> + *      +-inactive------+-active----+
+> + *  a b | c d e f g h i | J K L M N |
+> + *      +---------------+-----------+
 
--fstack-protector-all:
-Adds the stack-canary saving prefix and stack-canary checking suffix
-to _all_ function entry and exit. Results in substantial use of stack
-space for saving the canary for deep stack users (e.g. historically
-xfs), and measurable (though shockingly still low) performance hit due
-to all the saving/checking. Really not suitable for sane systems, and
-was entirely removed as an option from the kernel many years ago.
+So making the inactive list smaller will worsen this problem?
 
--fstack-protector:
-Adds the canary save/check to functions that define an 8
-(--param=ssp-buffer-size=N, N=8 by default) or more byte local char
-array. Traditionally, stack overflows happened with string-based
-manipulations, so this was a way to find those functions. Very few
-total functions actually get the canary; no measurable performance or
-size overhead.
+If so, don't we have a conflict with this objective:
 
--fstack-protector-strong
-Adds the canary for a wider set of functions, since it's not just
-those with strings that have ultimately been vulnerable to
-stack-busting. With this superset, more functions end up with a
-canary, but it still remains small compared to all functions with no
-measurable change in performance. Based on the original design
-document, a function gets the canary when it contains any of:
-- local variable's address used as part of the RHS of an assignment or
-function argument
-- local variable is an array (or union containing an array),
-regardless of array type or length
-- uses register local variables
-https://docs.google.com/a/google.com/document/d/1xXBH6rRZue4f296vGt9YQcuLVQHeE516stHwt8M9xyU
+> Right now we have a fixed ratio (50:50) between inactive and active
+> list but we already have complaints about working sets exceeding half
+> of memory being pushed out of the cache by simple streaming in the
+> background.  Ultimately, we want to adjust this ratio and allow for a
+> much smaller inactive list.
 
-Chrome OS has been using -fstack-protector-strong for its kernel
-builds for the last 8 months with no problems.
+?
 
--Kees
+> + * It is prohibitively expensive to accurately track access frequency
+> + * of pages.  But a reasonable approximation can be made to measure
+> + * thrashing on the inactive list, after which refaulting pages can be
+> + * activated optimistically to compete with the existing active pages.
+> + *
+> + * Approximating inactive page access frequency - Observations:
+> + *
+> + * 1. When a page is accesed for the first time, it is added to the
 
--- 
-Kees Cook
-Chrome OS Security
+"accessed"
+
+> + *    head of the inactive list, slides every existing inactive page
+> + *    towards the tail by one slot, and pushes the current tail page
+> + *    out of memory.
+> + *
+>
+> ...
+>
