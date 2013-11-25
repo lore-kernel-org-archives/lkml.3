@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab3KYGAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 01:00:33 -0500
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:24864
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751077Ab3KYGAb (ORCPT
+	id S1752286Ab3KYGLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 01:11:45 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59873 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab3KYGLo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 01:00:31 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: <shh.xie@gmail.com>
-To: <linux-kernel@vger.kernel.org>, <davem@davemloft.net>
-CC: <linuxppc-dev@lists.ozlabs.org>, <netdev@vger.kernel.org>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>
-Subject: [PATCH] phy: Add Vitesse 8514 phy ID
-Date: Mon, 25 Nov 2013 12:40:49 +0800
-Message-ID: <1385354449-2943-1-git-send-email-shh.xie@gmail.com>
-X-Mailer: git-send-email 1.8.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Mon, 25 Nov 2013 01:11:44 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <20131122191429.GA13308@amt.cnet>
+Date: Mon, 25 Nov 2013 14:11:31 +0800
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+X-Mailer: Apple Mail (2.1822)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112506-5816-0000-0000-00000B0C4134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
 
-Phy is compatible with Vitesse 82xx
+On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
----
- drivers/net/phy/vitesse.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+> On Wed, Oct 23, 2013 at 09:29:25PM +0800, Xiao Guangrong wrote:
+>> It likes nulls list and we use the pte-list as the nulls which can help us to
+>> detect whether the "desc" is moved to anther rmap then we can re-walk the rmap
+>> if that happened
+>> 
+>> kvm->slots_lock is held when we do lockless walking that prevents rmap
+>> is reused (free rmap need to hold that lock) so that we can not see the same
+>> nulls used on different rmaps
+>> 
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> 
+> How about simplified lockless walk on the slot while rmapp entry
+> contains a single spte? (which should be the case with two-dimensional
+> paging).
+> 
+> That is, grab the lock when finding a rmap with more than one spte in
+> it (and then keep it locked until the end).
 
-diff --git a/drivers/net/phy/vitesse.c b/drivers/net/phy/vitesse.c
-index 508e435..14372c6 100644
---- a/drivers/net/phy/vitesse.c
-+++ b/drivers/net/phy/vitesse.c
-@@ -64,6 +64,7 @@
- 
- #define PHY_ID_VSC8234			0x000fc620
- #define PHY_ID_VSC8244			0x000fc6c0
-+#define PHY_ID_VSC8514			0x00070670
- #define PHY_ID_VSC8574			0x000704a0
- #define PHY_ID_VSC8662			0x00070660
- #define PHY_ID_VSC8221			0x000fc550
-@@ -131,6 +132,7 @@ static int vsc82xx_config_intr(struct phy_device *phydev)
- 		err = phy_write(phydev, MII_VSC8244_IMASK,
- 			(phydev->drv->phy_id == PHY_ID_VSC8234 ||
- 			 phydev->drv->phy_id == PHY_ID_VSC8244 ||
-+			 phydev->drv->phy_id == PHY_ID_VSC8514 ||
- 			 phydev->drv->phy_id == PHY_ID_VSC8574) ?
- 				MII_VSC8244_IMASK_MASK :
- 				MII_VSC8221_IMASK_MASK);
-@@ -246,6 +248,18 @@ static struct phy_driver vsc82xx_driver[] = {
- 	.config_intr	= &vsc82xx_config_intr,
- 	.driver		= { .owner = THIS_MODULE,},
- }, {
-+	.phy_id		= PHY_ID_VSC8514,
-+	.name		= "Vitesse VSC8514",
-+	.phy_id_mask	= 0x000ffff0,
-+	.features	= PHY_GBIT_FEATURES,
-+	.flags		= PHY_HAS_INTERRUPT,
-+	.config_init	= &vsc824x_config_init,
-+	.config_aneg	= &vsc82x4_config_aneg,
-+	.read_status	= &genphy_read_status,
-+	.ack_interrupt	= &vsc824x_ack_interrupt,
-+	.config_intr	= &vsc82xx_config_intr,
-+	.driver		= { .owner = THIS_MODULE,},
-+}, {
- 	.phy_id         = PHY_ID_VSC8574,
- 	.name           = "Vitesse VSC8574",
- 	.phy_id_mask    = 0x000ffff0,
-@@ -315,6 +329,7 @@ module_exit(vsc82xx_exit);
- static struct mdio_device_id __maybe_unused vitesse_tbl[] = {
- 	{ PHY_ID_VSC8234, 0x000ffff0 },
- 	{ PHY_ID_VSC8244, 0x000fffc0 },
-+	{ PHY_ID_VSC8514, 0x000ffff0 },
- 	{ PHY_ID_VSC8574, 0x000ffff0 },
- 	{ PHY_ID_VSC8662, 0x000ffff0 },
- 	{ PHY_ID_VSC8221, 0x000ffff0 },
--- 
-1.8.4.1
+Hmm… that isn't straightforward and more complex than the approach
+in this patchset. Also it can drop the improvement for shadow mmu that
+gets great improvement by this patchset.
+
+> 
+> For example, nothing prevents lockless walker to move into some
+> parent_ptes chain, right?
+
+No.
+
+The nulls can help us to detect this case, for parent_ptes, the nulls points
+to "shadow page" but for rmaps, the nulls points to slot.arch.rmap. There
+is no chance that the “rmap" is used as shadow page when slot-lock is held.
+
+> 
+> Also, there is no guarantee of termination (as long as sptes are
+> deleted with the correct timing). BTW, can't see any guarantee of
+> termination for rculist nulls either (a writer can race with a lockless
+> reader indefinately, restarting the lockless walk every time).
+
+Hmm, that can be avoided by checking dirty-bitmap before rewalk,
+that means, if the dirty-bitmap has been set during lockless write-protection,
+it’s unnecessary to write-protect its sptes. Your idea?
+
+But… do we really need to care it. :(
+
+
+
+
 
 
