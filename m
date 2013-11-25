@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab3KYOSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:18:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42786 "EHLO
+	id S1758029Ab3KYOSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:18:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42784 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab3KYOSO (ORCPT
+	with ESMTP id S1756788Ab3KYOSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 09:18:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/25] perf tools: Allow '--inherit' as the negation of '--no-inherit'
-Date: Mon, 25 Nov 2013 11:17:41 -0300
-Message-Id: <1385389075-7989-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/25] perf tools: Add option macro OPT_BOOLEAN_SET
+Date: Mon, 25 Nov 2013 11:17:42 -0300
+Message-Id: <1385389075-7989-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385389075-7989-1-git-send-email-acme@infradead.org>
 References: <1385389075-7989-1-git-send-email-acme@infradead.org>
@@ -32,14 +32,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Long options can be negated by prefixing them with 'no-'.  However
-options that already start with 'no-', such as '--no-inherit' result in
-ugly double 'no's.
+OPT_BOOLEAN_SET records whether a boolean option was set by the user.
 
-Avoid that by accepting that the removal of 'no-' also negates the long
-option.
+That information can be used to change the default value for the option
+after the options have been parsed.
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -50,49 +47,59 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1384768557-23331-3-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1384768557-23331-4-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ tools/perf/util/parse-options.c | 2 ++
+ tools/perf/util/parse-options.h | 8 ++++++++
+ 2 files changed, 10 insertions(+)
 
 diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 31f404a032a9..b6b39ff14fbb 100644
+index b6b39ff14fbb..d22e3f8017dc 100644
 --- a/tools/perf/util/parse-options.c
 +++ b/tools/perf/util/parse-options.c
-@@ -224,6 +224,24 @@ static int parse_long_opt(struct parse_opt_ctx_t *p, const char *arg,
- 			return 0;
- 		}
- 		if (!rest) {
-+			if (!prefixcmp(options->long_name, "no-")) {
-+				/*
-+				 * The long name itself starts with "no-", so
-+				 * accept the option without "no-" so that users
-+				 * do not have to enter "no-no-" to get the
-+				 * negation.
-+				 */
-+				rest = skip_prefix(arg, options->long_name + 3);
-+				if (rest) {
-+					flags |= OPT_UNSET;
-+					goto match;
-+				}
-+				/* Abbreviated case */
-+				if (!prefixcmp(options->long_name + 3, arg)) {
-+					flags |= OPT_UNSET;
-+					goto is_abbreviated;
-+				}
-+			}
- 			/* abbreviated? */
- 			if (!strncmp(options->long_name, arg, arg_end - arg)) {
- is_abbreviated:
-@@ -259,6 +277,7 @@ is_abbreviated:
- 			if (!rest)
- 				continue;
- 		}
-+match:
- 		if (*rest) {
- 			if (*rest != '=')
- 				continue;
+@@ -78,6 +78,8 @@ static int get_value(struct parse_opt_ctx_t *p,
+ 
+ 	case OPTION_BOOLEAN:
+ 		*(bool *)opt->value = unset ? false : true;
++		if (opt->set)
++			*(bool *)opt->set = true;
+ 		return 0;
+ 
+ 	case OPTION_INCR:
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index b0241e28eaf7..cbf0149cf221 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -82,6 +82,9 @@ typedef int parse_opt_cb(const struct option *, const char *arg, int unset);
+  *   OPTION_{BIT,SET_UINT,SET_PTR} store the {mask,integer,pointer} to put in
+  *   the value when met.
+  *   CALLBACKS can use it like they want.
++ *
++ * `set`::
++ *   whether an option was set by the user
+  */
+ struct option {
+ 	enum parse_opt_type type;
+@@ -94,6 +97,7 @@ struct option {
+ 	int flags;
+ 	parse_opt_cb *callback;
+ 	intptr_t defval;
++	bool *set;
+ };
+ 
+ #define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
+@@ -103,6 +107,10 @@ struct option {
+ #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
+ #define OPT_BIT(s, l, v, h, b)      { .type = OPTION_BIT, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h), .defval = (b) }
+ #define OPT_BOOLEAN(s, l, v, h)     { .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), .value = check_vtype(v, bool *), .help = (h) }
++#define OPT_BOOLEAN_SET(s, l, v, os, h) \
++	{ .type = OPTION_BOOLEAN, .short_name = (s), .long_name = (l), \
++	.value = check_vtype(v, bool *), .help = (h), \
++	.set = check_vtype(os, bool *)}
+ #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
+ #define OPT_SET_UINT(s, l, v, h, i)  { .type = OPTION_SET_UINT, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h), .defval = (i) }
+ #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
 -- 
 1.8.1.4
 
