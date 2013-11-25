@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3KYJGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 04:06:52 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:60349 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab3KYIzo (ORCPT
+	id S1754782Ab3KYJGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 04:06:49 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:50350 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3KYIzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 03:55:44 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org
-Subject: [PATCH 05/24] m32r/uapi: Use Kbuild logic to provide <asm/types.h>
-Date: Mon, 25 Nov 2013 09:55:15 +0100
-Message-Id: <1385369734-24893-6-git-send-email-geert@linux-m68k.org>
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH 02/24] avr32/uapi: Use Kbuild logic to provide <asm/types.h>
+Date: Mon, 25 Nov 2013 09:55:12 +0100
+Message-Id: <1385369734-24893-3-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
 References: <1385369734-24893-1-git-send-email-geert@linux-m68k.org>
@@ -24,40 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Uapi <asm-generic/types.h> just includes <asm-generic/int-ll64.h>
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: linux-m32r@ml.linux-m32r.org
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 ---
- arch/m32r/include/uapi/asm/Kbuild  |    3 ++-
- arch/m32r/include/uapi/asm/types.h |    1 -
- 2 files changed, 2 insertions(+), 2 deletions(-)
- delete mode 100644 arch/m32r/include/uapi/asm/types.h
+ arch/avr32/include/uapi/asm/Kbuild  |    2 +-
+ arch/avr32/include/uapi/asm/types.h |   13 -------------
+ 2 files changed, 1 insertion(+), 14 deletions(-)
+ delete mode 100644 arch/avr32/include/uapi/asm/types.h
 
-diff --git a/arch/m32r/include/uapi/asm/Kbuild b/arch/m32r/include/uapi/asm/Kbuild
-index 43937a61d6cf..87f6d698fb9c 100644
---- a/arch/m32r/include/uapi/asm/Kbuild
-+++ b/arch/m32r/include/uapi/asm/Kbuild
-@@ -1,6 +1,8 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
-+generic-y += types.h
-+
- header-y += auxvec.h
- header-y += bitsperlong.h
- header-y += byteorder.h
-@@ -29,5 +31,4 @@ header-y += statfs.h
+diff --git a/arch/avr32/include/uapi/asm/Kbuild b/arch/avr32/include/uapi/asm/Kbuild
+index 08d8a3d76ea8..1598223f0bfc 100644
+--- a/arch/avr32/include/uapi/asm/Kbuild
++++ b/arch/avr32/include/uapi/asm/Kbuild
+@@ -19,7 +19,6 @@ header-y += stat.h
  header-y += swab.h
  header-y += termbits.h
  header-y += termios.h
 -header-y += types.h
  header-y += unistd.h
-diff --git a/arch/m32r/include/uapi/asm/types.h b/arch/m32r/include/uapi/asm/types.h
+ generic-y += bitsperlong.h
+ generic-y += errno.h
+@@ -34,3 +33,4 @@ generic-y += poll.h
+ generic-y += resource.h
+ generic-y += siginfo.h
+ generic-y += statfs.h
++generic-y += types.h
+diff --git a/arch/avr32/include/uapi/asm/types.h b/arch/avr32/include/uapi/asm/types.h
 deleted file mode 100644
-index 9ec9d4c5ac4d..000000000000
---- a/arch/m32r/include/uapi/asm/types.h
+index 7c986c4e99b5..000000000000
+--- a/arch/avr32/include/uapi/asm/types.h
 +++ /dev/null
-@@ -1 +0,0 @@
+@@ -1,13 +0,0 @@
+-/*
+- * Copyright (C) 2004-2006 Atmel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#ifndef _UAPI__ASM_AVR32_TYPES_H
+-#define _UAPI__ASM_AVR32_TYPES_H
+-
 -#include <asm-generic/int-ll64.h>
+-
+-#endif /* _UAPI__ASM_AVR32_TYPES_H */
 -- 
 1.7.9.5
 
