@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab3KYOGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:06:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58907 "EHLO
+	id S1757396Ab3KYOGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:06:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58939 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754421Ab3KYNxq (ORCPT
+	by vger.kernel.org with ESMTP id S1754232Ab3KYNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Nov 2013 08:53:46 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.525860579@decadent.org.uk>
+Message-ID: <lsq.1385387069.569359192@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 81/87] ALSA: hda - Add a fixup for ASUS N76VZ
+Subject: [PATCH 3.2 76/87] drm/radeon/atom: workaround vbios bug in
+ transmitter table on rs780
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,28 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6fc16e58adf50c0f1e4478538983fb5ff6f453d4 upstream.
+commit c23632d4e57c0dd20bf50eca08fa0eb8ad3ff680 upstream.
 
-ASUS N76VZ needs the same fixup as N56VZ for supporting the boost
-speaker.
+Some rs780 asics seem to be affected as well.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=846529
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+See:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=91f3a6aaf280294b07c05dfe606e6c27b7ba3c72
+
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60791
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/atombios_encoders.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5799,6 +5799,7 @@ static const struct snd_pci_quirk alc662
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
-+	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
- 	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
- 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1390,7 +1390,7 @@ radeon_atom_encoder_dpms_dig(struct drm_
+ 			 * does the same thing and more.
+ 			 */
+ 			if ((rdev->family != CHIP_RV710) && (rdev->family != CHIP_RV730) &&
+-			    (rdev->family != CHIP_RS880))
++			    (rdev->family != CHIP_RS780) && (rdev->family != CHIP_RS880))
+ 				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
+ 		}
+ 		if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(encoder)) && connector) {
 
