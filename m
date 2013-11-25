@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab3KYNIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:08:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57189 "EHLO
+	id S1754719Ab3KYNI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:08:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57194 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab3KYNIO (ORCPT
+	with ESMTP id S1754492Ab3KYNIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:08:14 -0500
+	Mon, 25 Nov 2013 08:08:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 45/78] rt2800usb: slow down TX status polling
-Date: Mon, 25 Nov 2013 13:06:32 +0000
-Message-Id: <1385384825-21681-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 46/78] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesn't exist
+Date: Mon, 25 Nov 2013 13:06:33 +0000
+Message-Id: <1385384825-21681-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
 References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
+commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
 
-Polling TX statuses too frequently has two negative effects. First is
-randomly peek CPU usage, causing overall system functioning delays.
-Second bad effect is that device is not able to fill TX statuses in
-H/W register on some workloads and we get lot of timeouts like below:
+Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
+on ARM. (http://bugs.ruby-lang.org/issues/9008)
 
-ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
-ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
-ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
+Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+RTC device is present) intruduced to return ENOTSUPP when
+clock_get{time,res} can't find a RTC device. However this is incorrect.
 
-This not only cause flood of messages in dmesg, but also bad throughput,
-since rate scaling algorithm can not work optimally.
+First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
+closest userland equivlents).
 
-In the future, we should probably make polling interval be adjusted
-automatically, but for now just increase values, this make mentioned
-problems gone.
+Second, Posix and Linux man pages agree that clock_gettime and
+clock_getres should return EINVAL if clk_id argument is invalid.
+While the arugment that the clockid is valid, but just not supported
+on this hardware could be made, this is just a technicality that
+doesn't help userspace applicaitons, and only complicates error
+handling.
 
-Resolve:
-https://bugzilla.kernel.org/show_bug.cgi?id=62781
+Thus, this patch changes the code to use EINVAL.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[jstultz: Tweaks to commit message to include full rational]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ kernel/time/alarmtimer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index fe42f76..c30797e 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -143,6 +143,8 @@ static bool rt2800usb_txstatus_timeout(struct rt2x00_dev *rt2x00dev)
- 	return false;
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index aa27d39..2cfe9a5 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -474,7 +474,7 @@ static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	return hrtimer_get_res(baseid, tp);
  }
+@@ -491,7 +491,7 @@ static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
+ 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
  
-+#define TXSTATUS_READ_INTERVAL 1000000
-+
- static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
- 						 int urb_status, u32 tx_status)
- {
-@@ -170,8 +172,9 @@ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
- 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
  
- 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
--		/* Read register after 250 us */
--		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
-+		/* Read register after 1 ms */
-+		hrtimer_start(&rt2x00dev->txstatus_timer,
-+			      ktime_set(0, TXSTATUS_READ_INTERVAL),
- 			      HRTIMER_MODE_REL);
- 		return false;
- 	}
-@@ -196,8 +199,9 @@ static void rt2800usb_async_read_tx_status(struct rt2x00_dev *rt2x00dev)
- 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
- 		return;
- 
--	/* Read TX_STA_FIFO register after 500 us */
--	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
-+	/* Read TX_STA_FIFO register after 2 ms */
-+	hrtimer_start(&rt2x00dev->txstatus_timer,
-+		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
- 		      HRTIMER_MODE_REL);
- }
- 
+ 	*tp = ktime_to_timespec(base->gettime());
+ 	return 0;
 -- 
 1.8.3.2
 
