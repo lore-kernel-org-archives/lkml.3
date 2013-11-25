@@ -1,109 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab3KYOJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:09:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55493 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab3KYOJW (ORCPT
+	id S1757252Ab3KYOF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:05:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59027 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754447Ab3KYNxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 09:09:22 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v3 5/6] watchdog: davinci: reuse driver for keystone arch
-Date: Mon, 25 Nov 2013 16:08:18 +0200
-Message-ID: <1385388498-12448-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Nov 2013 08:53:47 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Daniel Santos" <daniel.santos@pobox.com>,
+        "Andi Kleen" <ak@linux.intel.com>, "Borislav Petkov" <bp@alien8.de>,
+        "Joe Perches" <joe@perches.com>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "David Rientjes" <rientjes@google.com>,
+        "Josh Triplett" <josh@joshtriplett.org>
+Date: Mon, 25 Nov 2013 13:44:29 +0000
+Message-ID: <lsq.1385387069.663579247@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 59/87] compiler-gcc.h: Add gcc-recommended GCC_VERSION
+ macro
+In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.212
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The keystone arch uses the same IP watchdog, so add "ti,keystone-wdt"
-compatible and correct identity.
+3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
 
-The Keystone arch is using clocks in DT and source clock for watchdog
-has to be specified, so add this to binding.
+------------------
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+From: Daniel Santos <daniel.santos@pobox.com>
+
+commit 3f3f8d2f48acfd8ed3b8e6b7377935da57b27b16 upstream.
+
+Throughout compiler*.h, many version checks are made.  These can be
+simplified by using the macro that gcc's documentation recommends.
+However, my primary reason for adding this is that I need bug-check
+macros that are enabled at certain gcc versions and it's cleaner to use
+this macro than the tradition method:
+
+  #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+
+If you add patch level, it gets this ugly:
+
+  #if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
+      __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
+
+As opposed to:
+
+  #if GCC_VERSION >= 40201
+
+While having separate headers for gcc 3 & 4 eliminates some of this
+verbosity, they can still be cleaned up by this.
+
+See also:
+
+  http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: Borislav Petkov <bp@alien8.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- .../devicetree/bindings/watchdog/davinci-wdt.txt   |   12 ++++++++++--
- drivers/watchdog/Kconfig                           |    4 ++--
- drivers/watchdog/davinci_wdt.c                     |    2 +-
- 3 files changed, 13 insertions(+), 5 deletions(-)
+ include/linux/compiler-gcc.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-index e450134..4d89317 100644
---- a/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/davinci-wdt.txt
-@@ -1,11 +1,18 @@
--DaVinci Watchdog Timer (WDT) Controller
-+Texas Instruments DaVinci/Keystone Watchdog Timer (WDT) Controller
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -5,6 +5,9 @@
+ /*
+  * Common definitions for all gcc versions go here.
+  */
++#define GCC_VERSION (__GNUC__ * 10000 \
++		   + __GNUC_MINOR__ * 100 \
++		   + __GNUC_PATCHLEVEL__)
  
- Required properties:
--- compatible : Should be "ti,davinci-wdt"
-+- compatible : Should be "ti,davinci-wdt" or "ti,keystone-wdt"
- - reg : Should contain WDT registers location and length
  
- Optional properties:
- - timeout-sec : Contains the watchdog timeout in seconds
-+- clocks : the clock feeding the watchdog timer.
-+	   Needed if platform uses clocks.
-+	   See clock-bindings.txt
-+
-+Documentation:
-+Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
-+Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
- 
- Examples:
- 
-@@ -13,4 +20,5 @@ wdt: wdt@2320000 {
- 	compatible = "ti,davinci-wdt";
- 	reg = <0x02320000 0x80>;
- 	timeout-sec = <30>;
-+	clocks = <&clkwdtimer0>;
- };
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index eb8c89d..01f3f81 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -270,12 +270,12 @@ config IOP_WATCHDOG
- 
- config DAVINCI_WATCHDOG
- 	tristate "DaVinci watchdog"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_KEYSTONE
- 	select WATCHDOG_CORE
- 	select WATCHDOG_NOWAYOUT
- 	help
- 	  Say Y here if to include support for the watchdog timer
--	  in the DaVinci DM644x/DM646x processors.
-+	  in the DaVinci DM644x/DM646x or Keystone processors.
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called davinci_wdt.
- 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index d342fc2..9128c74 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -143,7 +143,7 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
- 
- static const struct watchdog_info davinci_wdt_info = {
- 	.options = WDIOF_KEEPALIVEPING,
--	.identity = "DaVinci Watchdog",
-+	.identity = "DaVinci/Keystone Watchdog",
- };
- 
- static const struct watchdog_ops davinci_wdt_ops = {
--- 
-1.7.9.5
+ /* Optimization barrier */
 
