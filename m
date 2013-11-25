@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3KYSO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 13:14:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62301 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753758Ab3KYSOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 13:14:18 -0500
-Date: Mon, 25 Nov 2013 16:06:56 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi.kivity@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131125180656.GA21858@amt.cnet>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131122191429.GA13308@amt.cnet>
- <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com>
- <20131125142351.GA6056@amt.cnet>
- <20131125142928.GD959@redhat.com>
+	id S1757337Ab3KYSPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 13:15:15 -0500
+Received: from canaima.inia.gob.ve ([190.202.124.227]:51771 "EHLO
+	canaima.inia.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3KYSPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 13:15:12 -0500
+Date: Mon, 25 Nov 2013 18:14:14 +0000
+Message-ID: <20131125181414.Horde.CIy0uztFZg-da0WDg0CFeQ1@webmail.inia.gob.ve>
+From: gerente Webmail <info@inmail24.com>
+Subject: Su =?utf-8?b?YnV6w7Nu?=
+Reply-to: System_manager@mail2world.com
+User-Agent: Internet Messaging Program (IMP) H5 (6.0.2)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131125142928.GD959@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GOn Mon, Nov 25, 2013 at 04:29:28PM +0200, Gleb Natapov wrote:
-> On Mon, Nov 25, 2013 at 12:23:51PM -0200, Marcelo Tosatti wrote:
-> > On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
-> > > On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
-> > > <xiaoguangrong@linux.vnet.ibm.com> wrote:
-> > > >
-> > > > On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > > 
-> > > <snip complicated stuff about parent_pte>
-> > > 
-> > > I'm not really following, but note that parent_pte predates EPT (and
-> > > the use of rcu in kvm), so all the complexity that is the result of
-> > > trying to pack as many list entries into a cache line can be dropped.
-> > > Most setups now would have exactly one list entry, which is handled
-> > > specially antyway.
-> > > 
-> > > Alternatively, the trick of storing multiple entries in one list entry
-> > > can be moved to generic code, it may be useful to others.
-> > 
-> > Yes, can the lockless list walking code be transformed into generic
-> > single-linked list walking? So the correctness can be verified
-> > independently, and KVM becomes a simple user of that interface.
-> > 
-> The code will become simpler but the problem of never ending walk of
-> rculist_nulls will remain.
 
-Yes. Hopefully it can be fixed in some way.
+PROPIETARIO WEBMAIL ATENCIÓN;
 
-> > The simpler version is to maintain lockless walk on depth-1 rmap entries
-> > (and grab the lock once depth-2 entry is found).
-> And release it between each rmap walk or at the very end of write
-> protect?
+Su buzón ha superado el límite de almacenamiento es de 5 GB, según lo  
+definido por el administrador, que se ejecuta en 10.9GB, es posible  
+que no pueda enviar o recibir correo nuevo hasta que vuelva a validar  
+su correo del buzón. Para revalidar su buzón de correo, enviar la  
+siguiente información a continuación:
 
-Or keep it locked until 10 consecutive sptes with depth 1 are found.
+nombre:
+Nombre de usuario:
+contraseña:
+Confirme Contraseña:
+Número de teléfono móvil:
+E-mail:
+
+Si no se puede validar su buzón de correo, el correo será desactivado!
+
+¡gracias
+gerente Webmail
 
