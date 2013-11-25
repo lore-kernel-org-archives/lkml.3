@@ -1,64 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab3KYQpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 11:45:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35573 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab3KYQpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 11:45:10 -0500
-Message-ID: <52937E52.8070502@ti.com>
-Date: Mon, 25 Nov 2013 18:44:02 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1757144Ab3KYQvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 11:51:21 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:52432 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754145Ab3KYQvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 11:51:18 -0500
+Date: Mon, 25 Nov 2013 11:51:13 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, mhocko@suse.cz, glommer@openvz.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v11 07/15] memcg: scan cache objects hierarchically
+Message-ID: <20131125165113.GC22729@cmpxchg.org>
+References: <cover.1385377616.git.vdavydov@parallels.com>
+ <840647939662771e06c375350f3ccb11dd4c6dc1.1385377616.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Strashko Grygorii <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v2 0/6] Update Davinci watchdog driver
-References: <1384795139-19466-1-git-send-email-ivan.khoronzhuk@ti.com> <52934B6C.4060308@ti.com> <52934E7C.9040102@ti.com>
-In-Reply-To: <52934E7C.9040102@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <840647939662771e06c375350f3ccb11dd4c6dc1.1385377616.git.vdavydov@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 03:19 PM, ivan.khoronzhuk wrote:
-> On 11/25/2013 03:06 PM, Sekhar Nori wrote:
->> On Monday 18 November 2013 10:48 PM, Ivan Khoronzhuk wrote:
->>> These patches are intended to update Davinci watchdog to use WDT core
->>> and reuse driver for keystone arch, because Keystone uses the similar
->>> IP like Davinci.
->>
->> This series causes a regression on all DaVinci platforms because after
->> the series is applied the watchdog device does not get registered at
->> all. Since you changed the device name please include a patch to fix the
->> platform references too.
->>
->> Thanks,
->> Sekhar
->>
->
-> Ok, I will replace
->
+On Mon, Nov 25, 2013 at 04:07:40PM +0400, Vladimir Davydov wrote:
+> From: Glauber Costa <glommer@openvz.org>
+> 
+> When reaching shrink_slab, we should descent in children memcg searching
+> for objects that could be shrunk. This is true even if the memcg does
+> not have kmem limits on, since the kmem res_counter will also be billed
+> against the user res_counter of the parent.
+> 
+> It is possible that we will free objects and not free any pages, that
+> will just harm the child groups without helping the parent group at all.
+> But at this point, we basically are prepared to pay the price.
+> 
+> Signed-off-by: Glauber Costa <glommer@openvz.org>
+> Cc: Dave Chinner <dchinner@redhat.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/memcontrol.h |    6 ++++
+>  mm/memcontrol.c            |   13 +++++++++
+>  mm/vmscan.c                |   65 ++++++++++++++++++++++++++++++++++++--------
+>  3 files changed, 73 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index d16ba51..a513fad 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -488,6 +488,7 @@ static inline bool memcg_kmem_enabled(void)
+>  	return static_key_false(&memcg_kmem_enabled_key);
+>  }
+>  
+> +bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg);
+>  bool memcg_kmem_is_active(struct mem_cgroup *memcg);
+>  
+>  /*
+> @@ -624,6 +625,11 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+>  }
+>  #else
+>  
+> +static inline bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
+> +{
+> +	return false;
+> +}
+> +
+>  static inline bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+>  {
+>  	return false;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9be1e8b..f5d7128 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2995,6 +2995,19 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  }
+>  
+>  #ifdef CONFIG_MEMCG_KMEM
+> +bool memcg_kmem_should_reclaim(struct mem_cgroup *memcg)
+> +{
+> +	struct mem_cgroup *iter;
+> +
+> +	for_each_mem_cgroup_tree(iter, memcg) {
+> +		if (memcg_kmem_is_active(iter)) {
+> +			mem_cgroup_iter_break(memcg, iter);
+> +			return true;
+> +		}
+> +	}
+> +	return false;
+> +}
+> +
+>  static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+>  {
+>  	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index cdfc364..36fc133 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -149,7 +149,7 @@ static bool global_reclaim(struct scan_control *sc)
+>  static bool has_kmem_reclaim(struct scan_control *sc)
+>  {
+>  	return !sc->target_mem_cgroup ||
+> -		memcg_kmem_is_active(sc->target_mem_cgroup);
+> +		memcg_kmem_should_reclaim(sc->target_mem_cgroup);
+>  }
+>  
+>  static unsigned long
+> @@ -360,12 +360,35 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+>   *
+>   * Returns the number of slab objects which we shrunk.
+>   */
+> +static unsigned long
+> +shrink_slab_one(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+> +		unsigned long nr_pages_scanned, unsigned long lru_pages)
 
-Sekhar I have replaced names in new patch seria
-https://lkml.org/lkml/2013/11/25/461
-at watchdog: davinci: change driver to use WDT core
+one what?
 
-Is it OK for you?
+> +{
+> +	unsigned long freed = 0;
+> +
+> +	for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+> +		if (!node_online(shrinkctl->nid))
+> +			continue;
+> +
+> +		if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+> +		    (shrinkctl->nid != 0))
+> +			break;
+> +
+> +		freed += shrink_slab_node(shrinkctl, shrinker,
+> +			 nr_pages_scanned, lru_pages);
+> +
+> +	}
+> +
+> +	return freed;
+> +}
+> +
+>  unsigned long shrink_slab(struct shrink_control *shrinkctl,
+>  			  unsigned long nr_pages_scanned,
+>  			  unsigned long lru_pages)
+>  {
+>  	struct shrinker *shrinker;
+>  	unsigned long freed = 0;
+> +	struct mem_cgroup *root = shrinkctl->target_mem_cgroup;
+>  
+>  	if (nr_pages_scanned == 0)
+>  		nr_pages_scanned = SWAP_CLUSTER_MAX;
+> @@ -390,19 +413,39 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+>  		if (shrinkctl->target_mem_cgroup &&
+>  		    !(shrinker->flags & SHRINKER_MEMCG_AWARE))
+>  			continue;
+> +		/*
+> +		 * In a hierarchical chain, it might be that not all memcgs are
+> +		 * kmem active. kmemcg design mandates that when one memcg is
+> +		 * active, its children will be active as well. But it is
+> +		 * perfectly possible that its parent is not.
+> +		 *
+> +		 * We also need to make sure we scan at least once, for the
+> +		 * global case. So if we don't have a target memcg (saved in
+> +		 * root), we proceed normally and expect to break in the next
+> +		 * round.
+> +		 */
+> +		do {
+> +			struct mem_cgroup *memcg = shrinkctl->target_mem_cgroup;
+>  
+> -		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+> -			if (!node_online(shrinkctl->nid))
+> -				continue;
+> -
+> -			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+> -			    (shrinkctl->nid != 0))
+> +			if (!memcg || memcg_kmem_is_active(memcg))
+> +				freed += shrink_slab_one(shrinkctl, shrinker,
+> +					 nr_pages_scanned, lru_pages);
+> +			/*
+> +			 * For non-memcg aware shrinkers, we will arrive here
+> +			 * at first pass because we need to scan the root
+> +			 * memcg.  We need to bail out, since exactly because
+> +			 * they are not memcg aware, instead of noticing they
+> +			 * have nothing to shrink, they will just shrink again,
+> +			 * and deplete too many objects.
+> +			 */
 
--- 
-Regards,
-Ivan Khoronzhuk
+I actually found the code easier to understand without this comment.
+
+> +			if (!(shrinker->flags & SHRINKER_MEMCG_AWARE))
+>  				break;
+> +			shrinkctl->target_mem_cgroup =
+> +				mem_cgroup_iter(root, memcg, NULL);
+
+The target memcg is always the same, don't change this.  Look at the
+lru scan code for reference.  Iterate zones (nodes in this case)
+first, then iterate the memcgs in each zone (node), look up the lruvec
+and then call shrink_slab_lruvec(lruvec, ...).
