@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3KYCJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Nov 2013 21:09:34 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56813 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab3KYCJa (ORCPT
+	id S1753265Ab3KYCbj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Nov 2013 21:31:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58320 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3KYCbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Nov 2013 21:09:30 -0500
-From: Shawn Landden <shawn@churchofgit.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
-        Shawn Landden <shawn@churchofgit.com>
-Subject: [PATCH] update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
-Date: Sun, 24 Nov 2013 18:08:59 -0800
-Message-Id: <1385345339-2184-1-git-send-email-shawn@churchofgit.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+	Sun, 24 Nov 2013 21:31:38 -0500
+Message-ID: <5292B687.1030705@infradead.org>
+Date: Sun, 24 Nov 2013 18:31:35 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: OSDepend <osdepend@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: The man page of /proc/stat needs to be fixed
+References: <201311250659474456900@gmail.com>
+In-Reply-To: <201311250659474456900@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-MSG_MORE.
+On 11/24/13 14:59, OSDepend wrote:
+> The man page of /proc fs only offers defination of the first column of "intr" in /proc/stat. But lack of the explaination of other columns. Same issue for the softirq in /proc/stat!  How can i identify which interrupts the numbers related to respectively?
+> 
 
-algif_hash and algif_skcipher used MSG_MORE from tcp_sendpages()
-and need to see the new flag as identical to MSG_MORE.
+There is a man page for /proc/stat ?
 
-This fixes sendfile() on AF_ALG.
+Anyway, please take a look at <kernel-source-tree>/Documentation/filesystems/proc.txt .
+It contains a section (1.8) for "Miscellaneous kernel statistics in /proc/stat".
+If that does not answer your questions, please let us know.
 
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: <stable@vger.kernel.org> # 3.4.x + 3.2.x
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Original-patch: Richard Weinberger <richard@nod.at>
-Signed-off-by: Shawn Landden <shawn@churchofgit.com>
----
- crypto/algif_hash.c     | 3 +++
- crypto/algif_skcipher.c | 3 +++
- 2 files changed, 6 insertions(+)
+and please use a hard newline in your text every 70-72 characters or so...
 
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index ef5356c..8502462 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- 	struct hash_ctx *ctx = ask->private;
- 	int err;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index 6a6dfc0..a19c027 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
- 	struct skcipher_sg_list *sgl;
- 	int err = -EINVAL;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
+
+> [root@hw092 proc]# cat /proc/stat 
+> cpu  80451071 175 11782191 1329038749 69071 198 147056 0 0 0
+> cpu0 14287214 23 2683574 42127654 40971 35 45265 0 0 0
+> cpu1 9638646 35 1600926 47943968 2389 27 15931 0 0 0
+> intr 1409191313 2119 2 0 0 1 0 0 0 1 0 0 0 4 0 0 0 29 0 2 0 0 0 0 0 0 0 0 0 0 0 0 0 281421 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 57583114 48846505 49762624 51599059 50570653 50783369 53543974 46920184 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+> ctxt 288625991
+> btime 1384770128
+> processes 84957
+> procs_running 1
+> procs_blocked 0
+> softirq 1494638321 158 941224871 35100444 417538347 283479 158 159 59647062 120767 40722876
+
+
 -- 
-1.8.4.4
-
+~Randy
