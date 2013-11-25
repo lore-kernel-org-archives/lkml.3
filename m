@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3KYXgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:36:54 -0500
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:54285 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab3KYXgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:36:52 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
-Cc: Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] watchdog: s3c2410_wdt: Only register for cpufreq on ARM_S3C24XX_CPUFREQ
-Date: Mon, 25 Nov 2013 15:36:43 -0800
-Message-Id: <1385422603-22684-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1385420137-32725-1-git-send-email-dianders@chromium.org>
-References: <1385420137-32725-1-git-send-email-dianders@chromium.org>
+	id S1753281Ab3KYXkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:40:17 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:34692 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab3KYXkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 18:40:15 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 2/2] rtc: add hym8563 rtc-driver
+Date: Tue, 26 Nov 2013 00:40:01 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Mike Turquette <mturquette@linaro.org>
+References: <201311222254.07730.heiko@sntech.de> <201311222255.48943.heiko@sntech.de> <20131125120125.GD32081@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20131125120125.GD32081@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311260040.01716.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On modern SoCs the watchdog timer is parented on a clock that doesn't
-change every time we have a cpufreq change.  That means we don't need
-to constantly adjust the watchdog timer, so avoid registering for and
-dealing with cpufreq transitions unless we've actually got
-CONFIG_ARM_S3C24XX_CPUFREQ defined.
+Am Montag, 25. November 2013, 13:01:25 schrieb Mark Rutland:
+> [...]
+> 
+> > +static int hym8563_probe(struct i2c_client *client,
+> > +                        const struct i2c_device_id *id)
+> > +{
+> > +       struct hym8563 *hym8563;
+> > +       int ret, gpio_int;
+> > +
+> > +       hym8563 = devm_kzalloc(&client->dev, sizeof(hym8563),
+> > GFP_KERNEL); +       if (!hym8563)
+> > +               return -ENOMEM;
+> > +
+> > +       hym8563->client = client;
+> > +       i2c_set_clientdata(client, hym8563);
+> > +
+> > +       device_set_wakeup_capable(&client->dev, true);
+> > +
+> > +       gpio_int = of_get_gpio(client->dev.of_node, 0);
+> > +       if (!gpio_is_valid(gpio_int)) {
+> > +               dev_err(&client->dev, "failed to get interrupt gpio\n");
+> > +               return -EINVAL;
+> > +       }
+> > +
+> > +       ret = devm_gpio_request_one(&client->dev, gpio_int,
+> > +                                     GPIOF_DIR_IN, "hym8563_int");
+> > +       if (ret) {
+> > +               dev_err(&client->dev, "request of gpio %d failed, %d\n",
+> > +                       gpio_int, ret);
+> > +               return ret;
+> > +       }
+> 
+> From here on the gpio is never used or even stashed away anywhere.
+> What's the point in requesting it and then leaking it?
 
-Note that this is more than just an optimization.  The s3c2410
-watchdog driver actually pats the watchdog on every CPU frequency
-change.  On modern systems these happen many times per second (even in
-a system where "nothing" is happening).  That effectively makes any
-userspace watchdog program useless (the watchdog is constantly patted
-by the kernel).  If we need ARM_S3C24XX_CPUFREQ defined on a
-multiplatform kernel we'll need to make sure that kernel supports
-common clock and change this to user common clock framework.
+As I understand it, requesting gpio also is useful as a mechanism to mark them 
+as used and therefore prevent a gpio from wrongly being used multiple times.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Use the updated config name.
+So, I guess it would be better to either ignore client->irq and just use 
+gpio_to_irq or use client->irq alone, without the gpio-functions at all.
 
- drivers/watchdog/s3c2410_wdt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index 7d8fd04..c1ada33 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -264,7 +264,7 @@ static irqreturn_t s3c2410wdt_irq(int irqno, void *param)
- 	return IRQ_HANDLED;
- }
- 
--#ifdef CONFIG_CPU_FREQ
-+#ifdef CONFIG_ARM_S3C24XX_CPUFREQ
- 
- static int s3c2410wdt_cpufreq_transition(struct notifier_block *nb,
- 					  unsigned long val, void *data)
--- 
-1.8.4.1
-
+But what would be preferrable?
