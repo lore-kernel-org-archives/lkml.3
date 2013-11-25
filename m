@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab3KYOLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:11:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58867 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754142Ab3KYNxp (ORCPT
+	id S1757580Ab3KYOMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:12:09 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:34951 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab3KYOMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:45 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Willem de Bruijn" <willemb@google.com>,
-        "Dmitry Kravkov" <dmitry@broadcom.com>,
-        "Eilon Greenstein" <eilong@broadcom.com>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.213751350@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 13/87] bnx2x: record rx queue for LRO packets
-In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.212
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 25 Nov 2013 09:12:01 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nm@ti.com, swarren@wwwdotorg.org,
+        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        tianyu.lan@intel.com, sebastian.capella@linaro.org,
+        jhbird.choi@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V3 0/6] cpufreq: suspend early/resume late
+Date: Mon, 25 Nov 2013 19:41:40 +0530
+Message-Id: <cover.1385374819.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.53-rc1 review patch.  If anyone has any objections, please let me know.
+This patchset adds cpufreq callbacks to dpm_{suspend|resume}() for handling
+suspend/resume of cpufreq governors and core. This is required for early suspend
+and late resume of governors and cpufreq core.
 
-------------------
+There are multiple problems that are fixed by this patch:
+- Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
+  wasn't working well with suspend/resume as calls for removing non-boot CPUs
+  was turning out into a call to drivers ->target() which then tries to play
+  with regulators. But regulators and their I2C bus were already suspended and
+  this resulted in a failure. Many platforms have such problems, samsung, tegra,
+  etc.. They solved it with driver specific PM notifiers where they used to
+  disable their driver's ->target() routine. Most of these are updated in this
+  patchset to use new infrastructure.
 
-From: Eric Dumazet <edumazet@google.com>
+- Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
+  tunables configuration for clusters/sockets with non-boot CPUs was getting
+  lost after suspend/resume, as we were notifying governors with
+  CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
+  deallocating memory for tunables. This is also fixed with this patch as don't
+  allow any operation on Governors during suspend/resume now.
 
-[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
 
-RPS support is kind of broken on bnx2x, because only non LRO packets
-get proper rx queue information. This triggers reorders, as it seems
-bnx2x like to generate a non LRO packet for segment including TCP PUSH
-flag : (this might be pure coincidence, but all the reorders I've
-seen involve segments with a PUSH)
+So to solve these issues we introduce early suspend and late resume callbacks
+which would remove need of cpufreq drivers to implement PM notifiers to disable
+transition after suspend and before resume.
 
-11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
-11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+@Nishanth: Can you please test V2 as well and confirm that suspend_noirq()
+doesn't work for you. I am sure it will not, but would be better if you confirm
+that.
 
-We must call skb_record_rx_queue() to properly give to RPS (and more
-generally for TX queue selection on forward path) the receive queue
-information.
+Viresh Kumar (6):
+  cpufreq: suspend governors on system suspend/hibernate
+  cpufreq: call driver's suspend/resume for each policy
+  cpufreq: Implement cpufreq_generic_suspend()
+  cpufreq: exynos: Use cpufreq_generic_suspend()
+  cpufreq: s5pv210: Use cpufreq_generic_suspend()
+  cpufreq: Tegra: Use cpufreq_generic_suspend()
 
-Similar fix is needed for skb_mark_napi_id(), but will be handled
-in a separate patch to ease stable backports.
+ drivers/base/power/main.c         |   5 ++
+ drivers/cpufreq/cpufreq.c         | 133 +++++++++++++++++++++-----------------
+ drivers/cpufreq/exynos-cpufreq.c  |  97 ++-------------------------
+ drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
+ drivers/cpufreq/tegra-cpufreq.c   |  54 ++--------------
+ include/linux/cpufreq.h           |   6 ++
+ 6 files changed, 99 insertions(+), 245 deletions(-)
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 4c50ac0..bbb6692 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -516,6 +516,7 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
- 		if (!bnx2x_fill_frag_skb(bp, fp, queue, skb, cqe, cqe_idx)) {
- 			if (tpa_info->parsing_flags & PARSING_FLAGS_VLAN)
- 				__vlan_hwaccel_put_tag(skb, tpa_info->vlan_tag);
-+			skb_record_rx_queue(skb, fp->index);
- 			napi_gro_receive(&fp->napi, skb);
- 		} else {
- 			DP(NETIF_MSG_RX_STATUS, "Failed to allocate new pages"
+-- 
+1.7.12.rc2.18.g61b472e
 
