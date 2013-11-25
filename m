@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab3KYO3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 09:29:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58904 "EHLO
+	id S932177Ab3KYO3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 09:29:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58884 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754046Ab3KYNxf (ORCPT
+	by vger.kernel.org with ESMTP id S1753989Ab3KYNxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:53:35 -0500
+	Mon, 25 Nov 2013 08:53:36 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oliver Neukum" <oneukum@suse.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Fan Du" <fan.du@windriver.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Mon, 25 Nov 2013 13:44:29 +0000
-Message-ID: <lsq.1385387069.983270876@decadent.org.uk>
+Message-ID: <lsq.1385387069.690243829@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 70/87] USB: quirks: add touchscreen that is dazzeled
- by remote wakeup
+Subject: [PATCH 3.2 35/87] include/linux/fs.h: disable preempt when
+ acquire i_size_seqcount write lock
 In-Reply-To: <lsq.1385387069.559528559@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.212
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,29 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Fan Du <fan.du@windriver.com>
 
-commit 614ced91fc6fbb5a1cdd12f0f1b6c9197d9f1350 upstream.
+commit 74e3d1e17b2e11d175970b85acd44f5927000ba2 upstream.
 
-The device descriptors are messed up after remote wakeup
+Two rt tasks bind to one CPU core.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The higher priority rt task A preempts a lower priority rt task B which
+has already taken the write seq lock, and then the higher priority rt
+task A try to acquire read seq lock, it's doomed to lockup.
+
+rt task A with lower priority: call write
+i_size_write                                        rt task B with higher priority: call sync, and preempt task A
+  write_seqcount_begin(&inode->i_size_seqcount);    i_size_read
+  inode->i_size = i_size;                             read_seqcount_begin <-- lockup here...
+
+So disable preempt when acquiring every i_size_seqcount *write* lock will
+cure the problem.
+
+Signed-off-by: Fan Du <fan.du@windriver.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/quirks.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/fs.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -97,6 +97,9 @@ static const struct usb_device_id usb_qu
- 	/* Alcor Micro Corp. Hub */
- 	{ USB_DEVICE(0x058f, 0x9254), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* MicroTouch Systems touchscreen */
-+	{ USB_DEVICE(0x0596, 0x051e), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* appletouch */
- 	{ USB_DEVICE(0x05ac, 0x021a), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -911,9 +911,11 @@ static inline loff_t i_size_read(const s
+ static inline void i_size_write(struct inode *inode, loff_t i_size)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
++	preempt_disable();
+ 	write_seqcount_begin(&inode->i_size_seqcount);
+ 	inode->i_size = i_size;
+ 	write_seqcount_end(&inode->i_size_seqcount);
++	preempt_enable();
+ #elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
+ 	preempt_disable();
+ 	inode->i_size = i_size;
 
