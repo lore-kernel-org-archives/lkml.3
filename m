@@ -1,121 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab3KYMIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 07:08:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47526 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab3KYMIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 07:08:12 -0500
-Date: Mon, 25 Nov 2013 13:08:10 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 3/4] printk: Defer printing to irq work when we printed
- too much
-Message-ID: <20131125120810.GA30165@quack.suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-4-git-send-email-jack@suse.cz>
- <CAFTL4hw6wO+3Y8EpW3_swodfyV9UAaLF-KE6KC+u-5sKjKY7eA@mail.gmail.com>
- <20131107225733.GE2054@quack.suse.cz>
- <20131107232148.GE28130@localhost.localdomain>
- <20131107183717.0fc9eb6e@gandalf.local.home>
- <20131107234647.GG28130@localhost.localdomain>
- <20131108102113.GB6343@quack.suse.cz>
- <20131122152711.c644e5acf02b61668c63b59c@linux-foundation.org>
+	id S1754086Ab3KYMIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 07:08:53 -0500
+Received: from relay.parallels.com ([195.214.232.42]:53489 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab3KYMHz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 07:07:55 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>, <mhocko@suse.cz>
+CC: <glommer@openvz.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>
+Subject: [PATCH v11 13/15] vmpressure: in-kernel notifications
+Date: Mon, 25 Nov 2013 16:07:46 +0400
+Message-ID: <7da7c1459634c7d9ec999c46c47f09cf4e41c3e1.1385377616.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1385377616.git.vdavydov@parallels.com>
+References: <cover.1385377616.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131122152711.c644e5acf02b61668c63b59c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.30.24.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-11-13 15:27:11, Andrew Morton wrote:
-> On Fri, 8 Nov 2013 11:21:13 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Fri 08-11-13 00:46:49, Frederic Weisbecker wrote:
-> > > On Thu, Nov 07, 2013 at 06:37:17PM -0500, Steven Rostedt wrote:
-> > > > On Fri, 8 Nov 2013 00:21:51 +0100
-> > > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > > 
-> > > > > Offloading to a workqueue would be perhaps better, and writing to the serial
-> > > > > console could then be done with interrupts enabled, preemptible context, etc...
-> > > > 
-> > > > Oh God no ;-)  Adding workqueue logic into printk just spells a
-> > > > nightmare of much more complexity for a critical kernel infrastructure.
-> > > 
-> > > But yeah that's scary, that means workqueues itself can't printk that safely.
-> > > So, you're right after all.
-> >   Yeah, we've been there (that was actually my initial proposal). But
-> > Andrew and Steven (rightfully) objected and suggested irq_work should be
-> > used instead.
-> 
-> I still hate the patchset and so does everyone else, including you ;)
-> There must be something smarter we can do.  Let's start by restating
-> the problem:
-> 
-> CPU A is in printk, emitting log_buf characters to a slow device. 
-> Meanwhile other CPUs come into printk(), see that the system is busy,
-> dump their load into log_buf then scram, leaving CPU A to do even more
-> work.
-> 
-> Correct so far?
-  Yes, correct.
+From: Glauber Costa <glommer@openvz.org>
 
-> If so, what is the role of local_irq_disabled() in this?  Did CPU A
-> call printk() with local interrupts disabled, or is printk (or the
-> console driver) causing the irqs-off condition?  Where and why is this
-> IRQ disablement happening?
-  So there are couple of places where we disable interrupts.
-a) call_console_drivers() which does the printing to console is always
-   called with interrupts disabled. Commonly it is called from
-   console_unlock() which takes care of disabling interrupts. I presume
-   this is because we want to guard against interrupts doing something
-   unexpected with the console while we are printing to it. But I don't
-   really understand console drivers to be sure...
-b) vprintk_emit() (which is the function usually calling console_unlock())
-   also disables interrupts to make updates of log_buf interrupt safe. It
-   calls console_unlock() with interrupts disabled which seems to be
-   unnecessary as that function takes care of disabling interrupts itself.
-   It makes the situation somewhat worse because console_unlock() could
-   otherwise enable interrupts from time to time. That being said I've
-   tried to fix this shortcoming in previous versions of the patch set but
-   it didn't seem to make a difference - maybe
-     local_irq_restore(flags);
-     spin_lock_irqsafe(&logbuf_lock, flags);
-   which is what console_unlock() does, doesn't give APIC enough time to
-   deliver blocked interrupts.
-c) printk() itself is sometimes called with interrupts disabled. This
-   happens a lot for example from sysrq handlers which is sometimes
-   unpleasant (sysrq-s simply kills large machines) but not a primary
-   concern for me. It doesn't seem to happen too often after an early boot
-   is finished (in particular SCSI messages which make machines unbootable
-   seem to be generated from kernel thread context). But there are some
-   messages like this and if we are unlucky and we get caught in such
-   printk, the machine dies. So I believe we have to reliably handle a
-   situation when printk() itself gets called with interrupts disabled.
-  
-> Could we fix this problem by not permitting CPUs B, C and D to DoS CPU
-> A?  When CPU B comes into printk() and sees that printk is busy, make
-> CPU A hand over to CPU B and let CPU A get out of there?
-  We could. In fact I was proposing this in
-https://lkml.org/lkml/2013/9/5/329
-  It has the advantage that we won't rely on irq work. If we changed
-console_trylock() to console_lock() in console_trylock_for_printk() and
-made console_unlock() only print the messages in log_buf on function entry,
-it would even make things simpler but it would basically undo your change
-from ages ago and I'm not sure about consequences. All printk()s could
-suddently block much more since printk() would essentially become
-completely synchronous.
+During the past weeks, it became clear to us that the shrinker interface
+we have right now works very well for some particular types of users,
+but not that well for others. The later are usually people interested in
+one-shot notifications, that were forced to adapt themselves to the
+count+scan behavior of shrinkers. To do so, they had no choice than to
+greatly abuse the shrinker interface producing little monsters all over.
 
-We could try some more fancy compromise between current "completely async
-printk" and ancient "completely synchronous printk" but then it gets more
-complex and so far dependence on irq work seemed as a lesser evil to me.
+During LSF/MM, one of the proposals that popped out during our session
+was to reuse Anton Voronstsov's vmpressure for this. They are designed
+for userspace consumption, but also provide a well-stablished,
+cgroup-aware entry point for notifications.
 
-								Honza
+This patch extends that to also support in-kernel users. Events that
+should be generated for in-kernel consumption will be marked as such,
+and for those, we will call a registered function instead of triggering
+an eventfd notification.
+
+Please note that due to my lack of understanding of each shrinker user,
+I will stay away from converting the actual users, you are all welcome
+to do so.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Acked-by: Anton Vorontsov <anton@enomsg.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Reviewed-by: Greg Thelen <gthelen@google.com>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/vmpressure.h |    5 +++++
+ mm/vmpressure.c            |   53 +++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
+index 3f3788d..9102e53 100644
+--- a/include/linux/vmpressure.h
++++ b/include/linux/vmpressure.h
+@@ -19,6 +19,9 @@ struct vmpressure {
+ 	/* Have to grab the lock on events traversal or modifications. */
+ 	struct mutex events_lock;
+ 
++	/* False if only kernel users want to be notified, true otherwise. */
++	bool notify_userspace;
++
+ 	struct work_struct work;
+ };
+ 
+@@ -38,6 +41,8 @@ extern int vmpressure_register_event(struct cgroup_subsys_state *css,
+ 				     struct cftype *cft,
+ 				     struct eventfd_ctx *eventfd,
+ 				     const char *args);
++extern int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
++					    void (*fn)(void));
+ extern void vmpressure_unregister_event(struct cgroup_subsys_state *css,
+ 					struct cftype *cft,
+ 					struct eventfd_ctx *eventfd);
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index e0f6283..730e7c1 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -130,8 +130,12 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
+ }
+ 
+ struct vmpressure_event {
+-	struct eventfd_ctx *efd;
++	union {
++		struct eventfd_ctx *efd;
++		void (*fn)(void);
++	};
+ 	enum vmpressure_levels level;
++	bool kernel_event;
+ 	struct list_head node;
+ };
+ 
+@@ -147,12 +151,15 @@ static bool vmpressure_event(struct vmpressure *vmpr,
+ 	mutex_lock(&vmpr->events_lock);
+ 
+ 	list_for_each_entry(ev, &vmpr->events, node) {
+-		if (level >= ev->level) {
++		if (ev->kernel_event) {
++			ev->fn();
++		} else if (vmpr->notify_userspace && level >= ev->level) {
+ 			eventfd_signal(ev->efd, 1);
+ 			signalled = true;
+ 		}
+ 	}
+ 
++	vmpr->notify_userspace = false;
+ 	mutex_unlock(&vmpr->events_lock);
+ 
+ 	return signalled;
+@@ -222,7 +229,7 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+ 	 * we account it too.
+ 	 */
+ 	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
+-		return;
++		goto schedule;
+ 
+ 	/*
+ 	 * If we got here with no pages scanned, then that is an indicator
+@@ -239,8 +246,15 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+ 	vmpr->scanned += scanned;
+ 	vmpr->reclaimed += reclaimed;
+ 	scanned = vmpr->scanned;
++	/*
++	 * If we didn't reach this point, only kernel events will be triggered.
++	 * It is the job of the worker thread to clean this up once the
++	 * notifications are all delivered.
++	 */
++	vmpr->notify_userspace = true;
+ 	spin_unlock(&vmpr->sr_lock);
+ 
++schedule:
+ 	if (scanned < vmpressure_win)
+ 		return;
+ 	schedule_work(&vmpr->work);
+@@ -324,6 +338,39 @@ int vmpressure_register_event(struct cgroup_subsys_state *css,
+ }
+ 
+ /**
++ * vmpressure_register_kernel_event() - Register kernel-side notification
++ * @css:	css that is interested in vmpressure notifications
++ * @fn:		function to be called when pressure happens
++ *
++ * This function register in-kernel users interested in receiving notifications
++ * about pressure conditions. Pressure notifications will be triggered at the
++ * same time as userspace notifications (with no particular ordering relative
++ * to it).
++ *
++ * Pressure notifications are a alternative method to shrinkers and will serve
++ * well users that are interested in a one-shot notification, with a
++ * well-defined cgroup aware interface.
++ */
++int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
++				      void (*fn)(void))
++{
++	struct vmpressure *vmpr = css_to_vmpressure(css);
++	struct vmpressure_event *ev;
++
++	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
++	if (!ev)
++		return -ENOMEM;
++
++	ev->kernel_event = true;
++	ev->fn = fn;
++
++	mutex_lock(&vmpr->events_lock);
++	list_add(&ev->node, &vmpr->events);
++	mutex_unlock(&vmpr->events_lock);
++	return 0;
++}
++
++/**
+  * vmpressure_unregister_event() - Unbind eventfd from vmpressure
+  * @css:	css handle
+  * @cft:	cgroup control files handle
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
