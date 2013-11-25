@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab3KYNa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 08:30:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56957 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab3KYNHR (ORCPT
+	id S1753436Ab3KYNft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 08:35:49 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:45304 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab3KYNfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 08:07:17 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 04/78] mac80211: use sta_info_get_bss() for nl80211 tx and client probing
-Date: Mon, 25 Nov 2013 13:05:51 +0000
-Message-Id: <1385384825-21681-5-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-References: <1385384825-21681-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 25 Nov 2013 08:35:45 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Gilad Ben-Yossef" <gilad@benyossef.com>,
+        Noam Camus <noamc@ezchip.com>, David Daney <david.daney@cavium.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "thomas Gleixner" <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: Preventing IPI sending races in arch code
+Thread-Topic: Preventing IPI sending races in arch code
+Thread-Index: AQHO6c2Ms6yoRQQnb0qE7cyQCkL87g==
+Date: Mon, 25 Nov 2013 13:35:38 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
+References: <52932BE2.5010201@synopsys.com>
+ <20131125110006.GU3866@twins.programming.kicks-ass.net>
+ <529334CA.1000401@synopsys.com>
+ <20131125122726.GZ10022@twins.programming.kicks-ass.net>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.235]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.26 -stable review patch.  If anyone has any objections, please let me know.
+On 11/25/2013 05:57 PM, Peter Zijlstra wrote:
+> On Mon, Nov 25, 2013 at 05:00:18PM +0530, Vineet Gupta wrote:
+>> While we are at it, I wanted to confirm another potential race (ARC/blackfin..)
+>> The IPI handler clears the interrupt before atomically-read-n-clear the msg word.
+>>
+>> do_IPI
+>>    plat_smp_ops.ipi_clear(irq);
+>>    while ((pending = xchg(&ipi_data->bits, 0) != 0)
+>>       find_next_bit(....)
+>>       switch(next-msg)
+>>
+>> Depending on arch this could lead to an immediate IPI interrupt, and again
+>> ipi_data->bits could get out of syn with IPI senders. 
+> I'm obviously lacking in platform knowledge here, what does that
+> ipi_clear() actually do? Tell the platform the interrupt has arrived and
+> it can stop asserting the line?
 
-------------------
+Correct.
 
-From: Felix Fietkau <nbd@openwrt.org>
+> So sure, then someone can again assert the interrupt, but given we just
+> established a protocol for raising the thing; namely something like
+> this:
+>
+> void arch_send_ipi(int cpu, int type)
+> {
+>   u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
+>   u32 new, old;
+>
+>   do {
+>   	new = old = *pending_ptr;
+> 	new |= 1U << type;
+>   } while (cmpxchg(pending_ptr, old, new) != old)
+>
+>   if (!old) /* only raise the actual IPI if we set the first bit */
+>   	raise_ipi(cpu);
+> }
+>
+> Who would re-assert it if we have !0 pending?
 
-commit 03bb7f42765ce596604f03d179f3137d7df05bba upstream.
+I see your point. So in receiver, it is OK to de-assert the IPI before processing
+the msg itself.
 
-This allows calls for clients in AP_VLANs (e.g. for 4-addr) to succeed
+Actually your code seems to be optimizing away asserting an IPI, if sender already
+had a pending msg (assuming we retain the xchg loop in receiver). Was that an
+intended optimization - or just a side effect of your code ;-)
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/mac80211/cfg.c | 1 +
- net/mac80211/tx.c  | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+Before reading ur email I was coding something like below:
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 0042e61..a461c10 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -2847,6 +2847,7 @@ static int ieee80211_probe_client(struct wiphy *wiphy, struct net_device *dev,
- 
- 	rcu_read_lock();
- 	sta = sta_info_get(sdata, peer);
-+	sta = sta_info_get_bss(sdata, peer);
- 	if (sta) {
- 		qos = test_sta_flag(sta, WLAN_STA_WME);
- 		rcu_read_unlock();
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index d417c48..83755a5 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1156,7 +1156,8 @@ ieee80211_tx_prepare(struct ieee80211_sub_if_data *sdata,
- 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
- 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
- 			return TX_DROP;
--	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
-+	} else if (info->flags & (IEEE80211_TX_CTL_INJECTED |
-+				  IEEE80211_TX_INTFL_NL80211_FRAME_TX) ||
- 		   tx->sdata->control_port_protocol == tx->skb->protocol) {
- 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
- 	}
--- 
-1.8.3.2
+void arch_send_ipi(int cpu, int type)
+{
+  u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
 
+  while (cmpxchg(pending_ptr, 0, 1 << type) != 0)
+	cpu_relax();
+
+  raise_ipi(cpu);
+}
+
+But obviously your version is nicer due to optimization, unless I'm over-analyzing it.
+
+
+> Also, the above can be thought of as a memory ordering issue:
+>
+>   STORE pending
+>   MB /* implied by cmpxchg */
+>   STORE ipi /* raise the actual thing */
+>
+> In that case the other end must be:
+>
+>   LOAD ipi
+>   MB /* implied by xchg */
+>   LOAD pending
+>
+> Which is what your code seems to do.
+
+...
+
+>
+>> IMO the while loop is
+>> completely useless specially if IPIs are not coalesced in h/w. 
+> Agreed, the while loops seems superfluous.
+
+Not with your version of sender, since we need it as described above.
+
+>> And we need to move
+>> the xchg ahead of ACK'ing the IPI
+>>
+>> do_IPI
+>>    pending = xchg(&ipi_data->bits, 0);
+>>    plat_smp_ops.ipi_clear(irq);
+>>    while (ffs....)
+>>       switch(next-msg)
+>>       ...
+>>
+>> Does that look sane to you.
+> This I'm not at all certain of; continuing with the memory order analogy
+> this would allow for the case where we see 0 pending, set a bit, try and
+> raise the interrupt but then do not because its already assert.
+>
+> And since you just removed the while() loop, we'll be left with a !0
+> pending vector and nobody processing it.
+
+Right we need it with ur version of sender. Bit don't with my simplistic one.
+
+-Vineet
