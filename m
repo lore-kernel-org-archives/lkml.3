@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3KZRmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:42:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54214 "EHLO mx1.redhat.com"
+	id S1754376Ab3KZRnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 12:43:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab3KZRmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:42:52 -0500
-Date: Tue, 26 Nov 2013 18:43:55 +0100
+	id S1754247Ab3KZRnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 12:43:18 -0500
+Date: Tue, 26 Nov 2013 18:44:23 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [RFC PATCH 0/2] tracing: Teach FETCH_MTD_symbol to handle per-cpu
-	data
-Message-ID: <20131126174355.GB14028@redhat.com>
-References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com>
+Subject: [RFC PATCH 1/2] tracing: Don't update sc->addr in
+	update_symbol_cache()
+Message-ID: <20131126174423.GC14028@redhat.com>
+References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com> <20131126174355.GB14028@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52946B42.40603@hitachi.com>
+In-Reply-To: <20131126174355.GB14028@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26, Masami Hiramatsu wrote:
->
-> (2013/11/26 2:22), Oleg Nesterov wrote:
-> > @symbol can't be used to dump the per-cpu variables. The same is
-> > true for +offset(something) if "something" results in __percpu
-> > pointer.
-> >
-> > With this patch parse_probe_offset() treats "~" before the numeric
-> > offset as "per cpu" mark and stores it in the lowest bit,
-> > calc_probe_offset() simply adds per_cpu_offset(smp_processor_id())
-> > if this bit is set.
->
-> IMHO, if the symbol is a per-cpu symbol, it is meaningless to
-> access the symbol itself. For the symbol(static) percpu, maybe
-> we can use is_kernel_percpu_address() to check.
+Preparation for the next changes. Shift "+= offset" from
+update_symbol_cache() to ->fetch[FETCH_MTD_symbol], this
+allows to detect the per-cpu symbols.
 
-No, we can't use is_kernel_percpu_address(), this is another thing.
-is_kernel_percpu_address(&my_pcpu_var) == F. It is true for
-&per_cpu(my_pcpu_var), this is not what we need.
+Also remove the !offset check in traceprobe_split_symbol_offset(),
+it is never called with offset == NULL.
 
-> If the symbol is
-> percpu, it should be automatically translated to something like
-> FETCH_percpu, instead of such additional expression.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_probe.c |   13 +++----------
+ 1 files changed, 3 insertions(+), 10 deletions(-)
 
-OK. Probably yes, it should be automatically translated, please
-see the patches.
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index fce222f..097cc80 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -219,14 +219,9 @@ struct symbol_cache {
+ 	unsigned long	addr;
+ };
+ 
+-static unsigned long update_symbol_cache(struct symbol_cache *sc)
++static void update_symbol_cache(struct symbol_cache *sc)
+ {
+ 	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
+-
+-	if (sc->addr)
+-		sc->addr += sc->offset;
+-
+-	return sc->addr;
+ }
+ 
+ static void free_symbol_cache(struct symbol_cache *sc)
+@@ -262,8 +257,9 @@ static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
+ 					  void *data, void *dest)	\
+ {									\
+ 	struct symbol_cache *sc = data;					\
++	long off = sc->offset;						\
+ 	if (sc->addr)							\
+-		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
++		fetch_memory_##type(regs, (void *)sc->addr + off, dest);\
+ 	else								\
+ 		*(type *)dest = 0;					\
+ }
+@@ -485,9 +481,6 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
+ 	char *tmp;
+ 	int ret;
+ 
+-	if (!offset)
+-		return -EINVAL;
+-
+ 	tmp = strchr(symbol, '+');
+ 	if (tmp) {
+ 		/* skip sign because kstrtoul doesn't accept '+' */
+-- 
+1.5.5.1
 
-This doesn't allow to read the data from other CPUs, but at least
-the changes are simple and this_cpu_ is better than the reading
-from the obviously wrong address.
-
-> For the dynamic allocated per-cpu things, it is also good to give
-> a straight operation, like +10(percpu(%rdi)).
-
-Probably yes, but this needs more changes and I am still not sure
-this is really useful. And if we do this, we probably also need
-to allow to read from other CPUs...
-
-> Also, please do not be afraid to add fetch operation,
-
-Well, this is what I am trying to avoid ;)
-
-Oleg.
 
