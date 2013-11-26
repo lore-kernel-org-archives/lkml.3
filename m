@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab3KZLyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:54:20 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38445 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab3KZLyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:54:17 -0500
+	id S1756451Ab3KZL4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:56:38 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58851 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754690Ab3KZL4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 06:56:37 -0500
+Date: Tue, 26 Nov 2013 12:56:30 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI runtime mapping work for v3.14
+Message-ID: <20131126115630.GA21146@pd.tnic>
+References: <20131125162854.GK11521@console-pimps.org>
+ <20131126112650.GD2410@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHz1HL65megQ9vDZovZr9oBo8UsrgGS+umWiT9FmHrnK3Q@mail.gmail.com>
-References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
- <1385439977-19077-1-git-send-email-ch.naveen@samsung.com> <CAK9yfHz1HL65megQ9vDZovZr9oBo8UsrgGS+umWiT9FmHrnK3Q@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Tue, 26 Nov 2013 17:23:56 +0530
-Message-ID: <CAHfPSqACobcw-qEA+Pa2KTG3vJN6hPhS=ond3z4L6=BABbh8TQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v2] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, sjg@chromium.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        cpgs@samsung.com, Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131126112650.GD2410@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sachin,
+On Tue, Nov 26, 2013 at 12:26:50PM +0100, Ingo Molnar wrote:
+> Just a side note, for future reference, this title lacks a verb and is 
+> thus not self-describing:
+> 
+>    x86/efi: Runtime services virtual mapping
+> 
+> It should probably have been something like:
+> 
+>    x86/efi: Implement and enable separate, stable virtual mapping for runtime services
+> 
+> ?
 
-On 26 November 2013 16:59, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> On 26 November 2013 09:56, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> This patch adds new compatible to support HSI2C module on Exynos5260
->> HSI2C module on Exynos5260 needs to be reset during during initialization.
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> [snip]
->>
->>  Required properties:
->>    - compatible: value should be.
->> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
->> +       -> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
->> +                               Exynos5250/5420 SoCs.
-The first HSI2C module is available on Exynos5 SoCs from Samsung.
-Hence, "samsung,exynos5-hsi2c"
-HSI2C Module on  Exynos5250 and Exynos5420 was exactly similar
+My bad: it should've been "Reimplement runtime services virtual mapping"
+or sth like that.
 
-HSI2C Module on Exynos5260 differs in hardware.
-Hence, "samsung,exynos5260-hsi2c".
+> Chances are that it will be a popular bisection target ;-)
 
-And as the new variants come we use "samsung,exynosXXX-hsi2c"
-or we can go by "samsung,exynos5-hsi2c-v2"
-
-Changing an existing compatible needs modification in the DT nodes as well.
-
-I will change the compatible string, if anyone else also thinks its wise.
->
-> This string could be made more specific ("samsung,exynos5250-hsi2c")
-> now that we have variants for this.
->
->> +       -> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
->> +                               on Exynos5260 SoCs.
->> +
->>    - reg: physical base address of the controller and length of memory mapped
->>      region.
->>    - interrupts: interrupt number to the cpu.
->> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
->> index da39ff0..497ff91 100644
->> --- a/drivers/i2c/busses/i2c-exynos5.c
->> +++ b/drivers/i2c/busses/i2c-exynos5.c
->> @@ -184,14 +184,35 @@ struct exynos5_i2c {
->>          * 2. Fast speed upto 1Mbps
->>          */
->>         int                     speed_mode;
->> +
->> +       /* Version of HS-I2C Hardware */
->> +       unsigned int            version;
->> +};
->> +
->> +enum hsi2c_version {
->> +       EXYNOS_5,
->
-> ditto.
->
->> +       EXYNOS_5260
->>  };
->>
->
-> --
-> With warm regards,
-> Sachin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+I *so* hope your clairvoyant skills fail you this time :-)
 
 -- 
-Shine bright,
-(: Nav :)
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
