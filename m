@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3KZKHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:07:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21243 "EHLO mga09.intel.com"
+	id S1754913Ab3KZKNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:13:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab3KZKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:06:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,773,1378882800"; 
-   d="scan'208";a="415000264"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
-Date: Tue, 26 Nov 2013 12:05:45 +0200
-Message-Id: <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753850Ab3KZKNK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:13:10 -0500
+Date: Tue, 26 Nov 2013 12:12:42 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131126101242.GH959@redhat.com>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <5292EE2F.5090305@linux.vnet.ibm.com>
+ <20131125181254.GB21858@amt.cnet>
+ <529413C1.60302@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <529413C1.60302@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
+> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
+> > On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
+> >>>> Also, there is no guarantee of termination (as long as sptes are
+> >>>> deleted with the correct timing). BTW, can't see any guarantee of
+> >>>> termination for rculist nulls either (a writer can race with a lockless
+> >>>> reader indefinately, restarting the lockless walk every time).
+> >>>
+> >>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
+> >>> that means, if the dirty-bitmap has been set during lockless write-protection,
+> >>> it�s unnecessary to write-protect its sptes. Your idea?
+> >> This idea is based on the fact that the number of rmap is limited by
+> >> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
+> >> we can break the rewalk at once, in the case of deleting, we can only
+> >> rewalk RMAP_RECYCLE_THRESHOLD times.
+> > 
+> > Please explain in more detail.
+> 
+> Okay.
+> 
+> My proposal is like this:
+> 
+> pte_list_walk_lockless()
+> {
+> restart:
+> 
+> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
+> +		return;
+> 
+> 	code-doing-lockless-walking;
+> 	......
+> }
+> 
+> Before do lockless-walking, we check the dirty-bitmap first, if
+> it is set we can simply skip write-protection for the gfn, that
+> is the case that new spte is being added into rmap when we lockless
+> access the rmap.
+> 
+> For the case of deleting spte from rmap, the number of entry is limited
+> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
+The point is that rmap entry that you are inspecting can be constantly
+deleted and added to the beginning of some other list, so the code that
+traverse the list will never reach the end.
 
-This makes it possible to request the gpio descriptors in
-rfkill_gpio driver regardless of the platform.
-
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/mach-tegra/board-paz00.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
-index 06f024070dab..a309795da665 100644
---- a/arch/arm/mach-tegra/board-paz00.c
-+++ b/arch/arm/mach-tegra/board-paz00.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include <linux/platform_device.h>
-+#include <linux/gpio/driver.h>
- #include <linux/rfkill-gpio.h>
- #include "board.h"
- 
-@@ -36,7 +37,13 @@ static struct platform_device wifi_rfkill_device = {
- 	},
- };
- 
-+static struct gpiod_lookup wifi_gpio_lookup[] = {
-+	GPIO_LOOKUP_IDX("tegra-gpio", 25, "rfkill_gpio", NULL, 0, 0),
-+	GPIO_LOOKUP_IDX("tegra-gpio", 85, "rfkill_gpio", NULL, 1, 0),
-+};
-+
- void __init tegra_paz00_wifikill_init(void)
- {
-+	gpiod_add_table(wifi_gpio_lookup, ARRAY_SIZE(wifi_gpio_lookup));
- 	platform_device_register(&wifi_rfkill_device);
- }
--- 
-1.8.4.3
-
+--
+			Gleb.
