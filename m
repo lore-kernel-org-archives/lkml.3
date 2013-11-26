@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab3KZGdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:33:16 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37527 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab3KZGdM (ORCPT
+	id S1754030Ab3KZGfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:35:53 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:45041 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab3KZGfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:33:12 -0500
-Message-ID: <5294409F.70508@hitachi.com>
-Date: Tue, 26 Nov 2013 15:33:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 26 Nov 2013 01:35:50 -0500
+Message-ID: <52944131.2040609@synopsys.com>
+Date: Tue, 26 Nov 2013 12:05:29 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] 3.13-rc1 kernel crash when enable all tracepoints
-References: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
-In-Reply-To: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Noam Camus" <noamc@ezchip.com>, David Daney <david.daney@cavium.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: Preventing IPI sending races in arch code
+References: <52932BE2.5010201@synopsys.com>	 <20131125110006.GU3866@twins.programming.kicks-ass.net>	 <529334CA.1000401@synopsys.com>	 <20131125122726.GZ10022@twins.programming.kicks-ass.net>	 <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>	 <1385409103.9218.15.camel@pasglop> <529427F1.2080409@synopsys.com> <1385442661.9218.51.camel@pasglop>
+In-Reply-To: <1385442661.9218.51.camel@pasglop>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/26 13:38), Jovi Zhangwei wrote:
-> Hi,
-> 
-> I'm not sure this issue already be fixed or not, it can be reproduced
-> permanently.
-> 
-> (I didn't use git-bisect yet, you guys might can understand it quickly)
-> 
-> #echo 1 > /sys/kernel/debug/tracing/events/enable
+On 11/26/2013 10:41 AM, Benjamin Herrenschmidt wrote:
+>> Right, but the issue per-se is not clobbering of msg holder, but from POV of
+>> > receiver, seeming coalescing of 2 set_bit writes to msg holder.
+> That's fine. There's no expectation that N ipi_send_msg turn into N
+> messages received... it turns into at least one.
 
-Thanks for reporting. I could reproduce it.
+OK, I was not aware of that relaxation in semantics.
 
-To narrow this down, I tried to run the below command
-
-[tracing]# for i in events/*/*/enable ; do echo $i; echo 1 > $i; done
-
-And it ran through the end without any problem.
-Hm, next I checked the difference of available_events and set_event.
-
-[tracing]# diff available_events set_event
-283d282
-< ftrace:function
-
-So, I guess it was caused by enabling ftrace:function, and
-it is unable to do that via set_event, nor events/ftrace/enable
-I'm not sure how, but it seems that ftrace:function can be
-enabled by the events/enable.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thx,
+-Vineet
