@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3KZJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 04:02:26 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:43221 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab3KZJCJ (ORCPT
+	id S1755012Ab3KZJDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:03:12 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14700 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693Ab3KZJCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 04:02:09 -0500
-X-AuditID: cbfec7f4-b7fea6d0000026ac-55-5294638f20e0
+	Tue, 26 Nov 2013 04:02:13 -0500
+X-AuditID: cbfec7f5-b7f706d0000017c2-be-5294639230d9
 From: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -25,126 +25,61 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Tarek Dakhran <t.dakhran@samsung.com>,
         Tyrtov Vyacheslav <v.tyrtov@samsung.com>, Dave.Martin@arm.com,
         nicolas.pitre@linaro.org, tomasz.figa@gmail.com
-Subject: [PATCH v4 2/4] clk: exynos5410: register clocks using common clock
- framework
-Date: Tue, 26 Nov 2013 12:58:06 +0400
-Message-id: <1385456288-20398-3-git-send-email-v.tyrtov@samsung.com>
+Subject: [PATCH v4 4/4] ARM: EXYNOS: add Exynos Dual Cluster Support
+Date: Tue, 26 Nov 2013 12:58:08 +0400
+Message-id: <1385456288-20398-5-git-send-email-v.tyrtov@samsung.com>
 X-Mailer: git-send-email 1.8.1.5
 In-reply-to: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
 References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xK7r9yVOCDPrfclhMWneAyWLeZ1mL
-	prl7GC3mHznHavH/0WtWi3OvVjJa9C64ymax6fE1VouFbUtYLC7vmsNmMeP8PiaL25d5LZZe
-	v8hk8XTCRTaLT8/+sVtMmL6WxeLwCqBp615OZ7HY8rOD0eLVwTYWi/XPTzFabN40ldli1a4/
-	jBZTZ/xgd5DwWDNvDaNHS3MPm8eCz1fYPf6uesHssXPWXXaPlcu/sHm8Wj2T1ePOtT1sHu/O
-	nWP32Lyk3uPVNRaPvi2rGD22X5vH7PF5k5zHxrmhAfxRXDYpqTmZZalF+nYJXBnrbs9jK7iR
-	WLH+2ELmBsaWwC5GTg4JAROJ9js/2CFsMYkL99azdTFycQgJLGWUWDvpAZTTwySx9mAzC0gV
-	m4CeRN+rG2C2iICCxObeZ6wgRcwCh9gkXt+/ywySEBYIl/gz8ylYEYuAqsSMzuuMIDavgIvE
-	5LWHmCDWKUgcbXsLtJqDg1PAVeLS7nCQsBBQyZr3x9kmMPIuYGRYxSiaWppcUJyUnmuoV5yY
-	W1yal66XnJ+7iRESW192MC4+ZnWIUYCDUYmHt6B7cpAQa2JZcWXuIUYJDmYlEV7X+0Ah3pTE
-	yqrUovz4otKc1OJDjEwcnFINjEw/rxg2m07U4lq3RZLJTJ/F4XFnWN1e0xWXP7KZ6Bx16J94
-	W/Vz8Pd0zoPv9i8/EPw1yr7i0bOlvLcvfRHK76+TMqq3DZrKwmj5JW87w94v8fNyp9ysk/4U
-	9yna4bT11Q9++dIpBcmcJ2VCt90TDwrQL27vXyY6Qfng5u6N89fy5QfXSTGcVGIpzkg01GIu
-	Kk4EAKYlkXWLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xK7qTkqcEGXz5ImIxad0BJot5n2Ut
+	mubuYbSYf+Qcq8X/R69ZLc69Wslo0bvgKpvFpsfXWC0Wti1hsbi8aw6bxYzz+5gsbl/mtVh6
+	/SKTxdMJF9ksPj37x24xYfpaFovDK4CmrXs5ncViy88ORotXB9tYLNY/P8VosXnTVGaLVbv+
+	MFpMnfGD3UHCY828NYweLc09bB4LPl9h9/i76gWzx85Zd9k9Vi7/wubxavVMVo871/awebw7
+	d47dY/OSeo9X11g8+rasYvTYfm0es8fnTXIeG+eGBvBHcdmkpOZklqUW6dslcGXc2nuMueCi
+	Z8WViQYNjN+tuxg5OSQETCT2vrnHDmGLSVy4t56ti5GLQ0hgKaPE6Y9NjBBOD5PEslddYFVs
+	AnoSfa9usIDYIgIKEpt7n7GCFDELHGKTeH3/LnMXIweHsICLROtKNhCTRUBVYsVJQRCTFyj6
+	fYUNxC4FiaNtb9lBwpwCrhKXdoeDhIWAKta8P842gZF3ASPDKkbR1NLkguKk9FwjveLE3OLS
+	vHS95PzcTYyQmPq6g3HpMatDjAIcjEo8vBKdk4OEWBPLiitzDzFKcDArifC63gcK8aYkVlal
+	FuXHF5XmpBYfYmTi4JRqYKyI29+2PzrsorTO1v1WqYX8U/luL8gzC90oyb7yU6/OIY0QP/2r
+	d498C1588ul3m+4//6szrUrVcx2Vq7edfTWRQ71LqvVdoreMscUpQ/GHmasZ/vEkP85mVp21
+	YGlN6eSvl4JftV7Tn3qsp8fWqPjwL6ufWaeFt97aJFM31+l5pvkGq7uaa5RYijMSDbWYi4oT
+	AU6lXciHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tarek Dakhran <t.dakhran@samsung.com>
 
-The EXYNOS5410 clocks are statically listed and registered
-using the Samsung specific common clock helper functions.
+Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
+This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
 
 Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
 Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos5410-clock.txt |  54 +++++
- drivers/clk/samsung/Makefile                       |   1 +
- drivers/clk/samsung/clk-exynos5410.c               | 239 +++++++++++++++++++++
- include/dt-bindings/clock/exynos5410.h             |  32 +++
- 4 files changed, 326 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
- create mode 100644 drivers/clk/samsung/clk-exynos5410.c
- create mode 100644 include/dt-bindings/clock/exynos5410.h
+ arch/arm/mach-exynos/Makefile |   2 +
+ arch/arm/mach-exynos/edcs.c   | 297 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 299 insertions(+)
+ create mode 100644 arch/arm/mach-exynos/edcs.c
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos5410-clock.txt b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
+index 8930b66..bc1f7f9 100644
+--- a/arch/arm/mach-exynos/Makefile
++++ b/arch/arm/mach-exynos/Makefile
+@@ -34,3 +34,5 @@ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
+ 
+ obj-$(CONFIG_ARCH_EXYNOS4)	+= mach-exynos4-dt.o
+ obj-$(CONFIG_ARCH_EXYNOS5)	+= mach-exynos5-dt.o
++
++obj-$(CONFIG_SOC_EXYNOS5410)	+= edcs.o
+diff --git a/arch/arm/mach-exynos/edcs.c b/arch/arm/mach-exynos/edcs.c
 new file mode 100644
-index 0000000..604a75c
+index 0000000..29f0bdd
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/exynos5410-clock.txt
-@@ -0,0 +1,54 @@
-+* Samsung Exynos5410 Clock Controller
-+
-+The Exynos5410 clock controller generates and supplies clock to various
-+controllers within the Exynos5410 SoC.
-+
-+Required Properties:
-+
-+- compatible: should be "samsung,exynos5410-clock"
-+
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- #clock-cells: should be 1.
-+
-+All available clocks are defined as preprocessor macros in
-+dt-bindings/clock/exynos5410.h header and can be used in device
-+tree sources.
-+
-+External clock:
-+
-+There is clock that is generated outside the SoC. It is expected
-+that it is defined using standard clock bindings with following
-+clock-output-name:
-+ - "fin_pll" - PLL input clock - required.
-+
-+Example 1: An example of a clock controller node is listed below.
-+
-+	clock: clock-controller@0x10010000 {
-+		compatible = "samsung,exynos5410-clock";
-+		reg = <0x10010000 0x30000>;
-+		#clock-cells = <1>;
-+	};
-+
-+Example 2: Required external clock.
-+
-+	fin_pll: clock-fin-pll {
-+		compatible = "fixed-clock";
-+		reg = <0>;
-+		#clock-cells = <0>;
-+		clock-frequency = <24000000>;
-+		clock-output-names = "fin_pll";
-+	};
-+
-+Example 3: UART controller node that consumes the clock generated by the clock
-+	   controller. Refer to the standard clock bindings for information
-+	   about 'clocks' and 'clock-names' property.
-+
-+	serial@12C20000 {
-+		compatible = "samsung,exynos4210-uart";
-+		reg = <0x12C00000 0x100>;
-+		interrupts = <0 51 0>;
-+		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
-diff --git a/drivers/clk/samsung/Makefile b/drivers/clk/samsung/Makefile
-index 8eb4799..b572dd7 100644
---- a/drivers/clk/samsung/Makefile
-+++ b/drivers/clk/samsung/Makefile
-@@ -5,6 +5,7 @@
- obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-pll.o
- obj-$(CONFIG_ARCH_EXYNOS4)	+= clk-exynos4.o
- obj-$(CONFIG_SOC_EXYNOS5250)	+= clk-exynos5250.o
-+obj-$(CONFIG_SOC_EXYNOS5410)	+= clk-exynos5410.o
- obj-$(CONFIG_SOC_EXYNOS5420)	+= clk-exynos5420.o
- obj-$(CONFIG_SOC_EXYNOS5440)	+= clk-exynos5440.o
- obj-$(CONFIG_ARCH_EXYNOS)	+= clk-exynos-audss.o
-diff --git a/drivers/clk/samsung/clk-exynos5410.c b/drivers/clk/samsung/clk-exynos5410.c
-new file mode 100644
-index 0000000..33d8c8c
---- /dev/null
-+++ b/drivers/clk/samsung/clk-exynos5410.c
-@@ -0,0 +1,239 @@
++++ b/arch/arm/mach-exynos/edcs.c
+@@ -0,0 +1,297 @@
 +/*
++ * arch/arm/mach-exynos/edcs.c - exynos dual cluster power management support
++ *
 + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
 + * Author: Tarek Dakhran <t.dakhran@samsung.com>
 + *
@@ -152,275 +87,293 @@ index 0000000..33d8c8c
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * Common Clock Framework support for Exynos5410 SoC.
-+*/
++ * EDCS(exynos dual cluster support) for Exynos5410 SoC.
++ */
 +
-+#include <dt-bindings/clock/exynos5410.h>
++#define pr_fmt(fmt)	"%s: " fmt, __func__
 +
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/of.h>
++#include <linux/init.h>
++#include <linux/io.h>
 +#include <linux/of_address.h>
++#include <linux/spinlock.h>
++#include <linux/errno.h>
++#include <linux/irqchip/arm-gic.h>
++#include <linux/delay.h>
 +
-+#include "clk.h"
++#include <asm/mcpm.h>
++#include <asm/proc-fns.h>
++#include <asm/cacheflush.h>
++#include <asm/cputype.h>
++#include <asm/cp15.h>
 +
-+#define APLL_LOCK               0x0
-+#define APLL_CON0               0x100
-+#define CPLL_LOCK               0x10020
-+#define CPLL_CON0               0x10120
-+#define MPLL_LOCK               0x4000
-+#define MPLL_CON0               0x4100
-+#define BPLL_LOCK               0x20010
-+#define BPLL_CON0               0x20110
-+#define KPLL_LOCK               0x28000
-+#define KPLL_CON0               0x28100
++#include <linux/arm-cci.h>
++#include <mach/regs-pmu.h>
 +
-+#define SRC_CPU			0x200
-+#define DIV_CPU0		0x500
-+#define SRC_CPERI1		0x4204
-+#define DIV_TOP0		0x10510
-+#define DIV_TOP1		0x10514
-+#define DIV_FSYS1		0x1054c
-+#define DIV_FSYS2		0x10550
-+#define DIV_PERIC0		0x10558
-+#define SRC_TOP0		0x10210
-+#define SRC_TOP1		0x10214
-+#define SRC_TOP2		0x10218
-+#define SRC_FSYS		0x10244
-+#define SRC_PERIC0		0x10250
-+#define SRC_MASK_FSYS		0x10340
-+#define SRC_MASK_PERIC0		0x10350
-+#define GATE_BUS_FSYS0		0x10740
-+#define GATE_IP_FSYS		0x10944
-+#define GATE_IP_PERIC		0x10950
-+#define GATE_IP_PERIS		0x10960
-+#define SRC_CDREX		0x20200
-+#define SRC_KFC			0x28200
-+#define DIV_KFC0		0x28500
++#define EDCS_CPUS_PER_CLUSTER		4
++#define EDCS_CLUSTERS			2
 +
-+/* list of PLLs */
-+enum exynos5410_plls {
-+	apll, cpll, mpll,
-+	bpll, kpll,
-+	nr_plls                 /* number of PLLs */
-+};
++/* Exynos5410 power management registers */
++#define EDCS_CORE_CONFIGURATION(_nr)	(S5P_ARM_CORE0_CONFIGURATION	\
++						+ ((_nr) * 0x80))
++#define EDCS_CORE_STATUS(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x4)
++#define EDCS_CORE_OPTION(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x8)
++
++#define REG_CPU_STATE_ADDR0		(S5P_VA_SYSRAM_NS + 0x28)
++#define REG_CPU_STATE_ADDR(_nr)		(REG_CPU_STATE_ADDR0 +	\
++						 (_nr) * EDCS_CPUS_PER_CLUSTER)
++
++#define SECONDARY_RESET			(1 << 1)
++#define REG_ENTRY_ADDR			(S5P_VA_SYSRAM_NS + 0x1c)
++
++#define EDCS_CORE_PWR_ON		0x3
++#define EDCS_CORE_PWR_OFF		0x0
++#define CORE_PWR_STATE_MASK		0x3
++
++static arch_spinlock_t edcs_lock = __ARCH_SPIN_LOCK_UNLOCKED;
++
++static int edcs_use_count[EDCS_CPUS_PER_CLUSTER][EDCS_CLUSTERS];
++static int core_count[EDCS_CLUSTERS];
 +
 +/*
-+ * list of controller registers to be saved and restored during a
-+ * suspend/resume cycle.
++ * this_core_to_pcpu reads mpidr and defines cluster and cpu.
 + */
-+static unsigned long exynos5410_clk_regs[] __initdata = {
-+	SRC_CPU,
-+	DIV_CPU0,
-+	SRC_CPERI1,
-+	DIV_TOP0,
-+	DIV_TOP1,
-+	DIV_FSYS1,
-+	DIV_FSYS2,
-+	DIV_PERIC0,
-+	SRC_TOP0,
-+	SRC_TOP1,
-+	SRC_TOP2,
-+	SRC_FSYS,
-+	SRC_PERIC0,
-+	SRC_MASK_FSYS,
-+	SRC_MASK_PERIC0,
-+	GATE_BUS_FSYS0,
-+	GATE_IP_FSYS,
-+	GATE_IP_PERIC,
-+	GATE_IP_PERIS,
-+	SRC_CDREX,
-+	SRC_KFC,
-+	DIV_KFC0,
-+};
-+
-+/* list of all parent clocks */
-+PNAME(apll_p)		= { "fin_pll", "fout_apll", };
-+PNAME(bpll_p)		= { "fin_pll", "fout_bpll", };
-+PNAME(cpll_p)		= { "fin_pll", "fout_cpll" };
-+PNAME(mpll_p)		= { "fin_pll", "fout_mpll", };
-+PNAME(kpll_p)		= { "fin_pll", "fout_kpll", };
-+
-+PNAME(mout_cpu_p)	= { "mout_apll", "sclk_mpll", };
-+PNAME(mout_kfc_p)	= { "mout_kpll", "sclk_mpll", };
-+
-+PNAME(mpll_user_p)	= { "fin_pll", "sclk_mpll", };
-+PNAME(bpll_user_p)	= { "fin_pll", "sclk_bpll", };
-+PNAME(mpll_bpll_p)	= { "sclk_mpll_muxed", "sclk_bpll_muxed", };
-+
-+PNAME(group2_p)		= { "fin_pll", "fin_pll", "none", "none",
-+			"none", "none", "sclk_mpll_bpll",
-+			 "none", "none", "sclk_cpll" };
-+
-+static struct samsung_mux_clock exynos5410_mux_clks[] __initdata = {
-+	MUX(0, "mout_apll", apll_p, SRC_CPU, 0, 1),
-+	MUX(0, "mout_cpu", mout_cpu_p, SRC_CPU, 16, 1),
-+
-+	MUX(0, "mout_kpll", kpll_p, SRC_KFC, 0, 1),
-+	MUX(0, "mout_kfc", mout_kfc_p, SRC_KFC, 16, 1),
-+
-+	MUX(0, "sclk_mpll", mpll_p, SRC_CPERI1, 8, 1),
-+	MUX(0, "sclk_mpll_muxed", mpll_user_p, SRC_TOP2, 20, 1),
-+
-+	MUX(0, "sclk_bpll", bpll_p, SRC_CDREX, 0, 1),
-+	MUX(0, "sclk_bpll_muxed", bpll_user_p, SRC_TOP2, 24, 1),
-+
-+	MUX(0, "sclk_cpll", cpll_p, SRC_TOP2, 8, 1),
-+
-+	MUX(0, "sclk_mpll_bpll", mpll_bpll_p, SRC_TOP1, 20, 1),
-+
-+	MUX(0, "mout_mmc0", group2_p, SRC_FSYS, 0, 4),
-+	MUX(0, "mout_mmc1", group2_p, SRC_FSYS, 4, 4),
-+	MUX(0, "mout_mmc2", group2_p, SRC_FSYS, 8, 4),
-+
-+	MUX(0, "mout_uart0", group2_p, SRC_PERIC0, 0, 4),
-+	MUX(0, "mout_uart1", group2_p, SRC_PERIC0, 4, 4),
-+	MUX(0, "mout_uart2", group2_p, SRC_PERIC0, 8, 4),
-+
-+	MUX(0, "mout_aclk200", mpll_bpll_p, SRC_TOP0, 12, 1),
-+	MUX(0, "mout_aclk400", mpll_bpll_p, SRC_TOP0, 20, 1),
-+};
-+
-+static struct samsung_div_clock exynos5410_div_clks[] __initdata = {
-+	DIV(0, "div_arm", "mout_cpu", DIV_CPU0, 0, 3),
-+	DIV(0, "div_arm2", "div_arm", DIV_CPU0, 28, 3),
-+
-+	DIV(0, "div_acp", "div_arm2", DIV_CPU0, 8, 3),
-+	DIV(0, "div_cpud", "div_arm2", DIV_CPU0, 4, 3),
-+	DIV(0, "div_atb", "div_arm2", DIV_CPU0, 16, 3),
-+	DIV(0, "pclk_dbg", "div_arm2", DIV_CPU0, 20, 3),
-+
-+	DIV(0, "div_kfc", "mout_kfc", DIV_KFC0, 0, 3),
-+	DIV(0, "div_aclk", "div_kfc", DIV_KFC0, 4, 3),
-+	DIV(0, "div_pclk", "div_kfc", DIV_KFC0, 20, 3),
-+
-+	DIV(0, "aclk66_pre", "sclk_mpll_muxed", DIV_TOP1, 24, 3),
-+	DIV(0, "aclk66", "aclk66_pre", DIV_TOP0, 0, 3),
-+
-+	DIV(0, "div_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
-+	DIV(0, "div_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
-+	DIV(0, "div_mmc2", "mout_mmc2", DIV_FSYS2, 0, 4),
-+
-+	DIV_F(0, "div_mmc_pre0", "div_mmc0",
-+			DIV_FSYS1, 8, 8, CLK_SET_RATE_PARENT, 0),
-+	DIV_F(0, "div_mmc_pre1", "div_mmc1",
-+			DIV_FSYS1, 24, 8, CLK_SET_RATE_PARENT, 0),
-+	DIV_F(0, "div_mmc_pre2", "div_mmc2",
-+			DIV_FSYS2, 8, 8, CLK_SET_RATE_PARENT, 0),
-+
-+	DIV(0, "div_uart0", "mout_uart0", DIV_PERIC0, 0, 4),
-+	DIV(0, "div_uart1", "mout_uart1", DIV_PERIC0, 4, 4),
-+	DIV(0, "div_uart2", "mout_uart2", DIV_PERIC0, 8, 4),
-+	DIV(0, "div_uart3", "mout_uart3", DIV_PERIC0, 12, 4),
-+
-+	DIV(0, "aclk200", "mout_aclk200", DIV_TOP0, 12, 3),
-+	DIV(0, "aclk400", "mout_aclk400", DIV_TOP0, 24, 3),
-+};
-+
-+static struct samsung_gate_clock exynos5410_gate_clks[] __initdata = {
-+	GATE(CLK_MCT, "mct", "aclk66", GATE_IP_PERIS, 18, 0, 0),
-+
-+	GATE(CLK_SCLK_MMC0, "sclk_mmc0", "div_mmc_pre0",
-+			SRC_MASK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_SCLK_MMC1, "sclk_mmc1", "div_mmc_pre1",
-+			SRC_MASK_FSYS, 4, CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_SCLK_MMC2, "sclk_mmc2", "div_mmc_pre2",
-+			SRC_MASK_FSYS, 8, CLK_SET_RATE_PARENT, 0),
-+
-+	GATE(CLK_MMC0, "sdmmc0", "aclk200", GATE_BUS_FSYS0, 12, 0, 0),
-+	GATE(CLK_MMC1, "sdmmc1", "aclk200", GATE_BUS_FSYS0, 13, 0, 0),
-+	GATE(CLK_MMC2, "sdmmc2", "aclk200", GATE_BUS_FSYS0, 14, 0, 0),
-+
-+	GATE(CLK_UART0, "uart0", "aclk66", GATE_IP_PERIC, 0, 0, 0),
-+	GATE(CLK_UART1, "uart1", "aclk66", GATE_IP_PERIC, 1, 0, 0),
-+	GATE(CLK_UART2, "uart2", "aclk66", GATE_IP_PERIC, 2, 0, 0),
-+
-+	GATE(CLK_SCLK_UART0, "sclk_uart0", "div_uart0",
-+			SRC_MASK_PERIC0, 0, CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_SCLK_UART1, "sclk_uart1", "div_uart1",
-+			SRC_MASK_PERIC0, 4, CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_SCLK_UART2, "sclk_uart2", "div_uart2",
-+			SRC_MASK_PERIC0, 8, CLK_SET_RATE_PARENT, 0),
-+};
-+
-+static struct samsung_pll_clock exynos5410_plls[nr_plls] __initdata = {
-+	[apll] = PLL(pll_35xx, CLK_FOUT_APLL, "fout_apll", "fin_pll", APLL_LOCK,
-+		APLL_CON0, NULL),
-+	[cpll] = PLL(pll_35xx, CLK_FOUT_CPLL, "fout_cpll", "fin_pll", CPLL_LOCK,
-+		CPLL_CON0, NULL),
-+	[mpll] = PLL(pll_35xx, CLK_FOUT_MPLL, "fout_mpll", "fin_pll", MPLL_LOCK,
-+		MPLL_CON0, NULL),
-+	[bpll] = PLL(pll_35xx, CLK_FOUT_BPLL, "fout_bpll", "fin_pll", BPLL_LOCK,
-+		BPLL_CON0, NULL),
-+	[kpll] = PLL(pll_35xx, CLK_FOUT_KPLL, "fout_kpll", "fin_pll", KPLL_LOCK,
-+		KPLL_CON0, NULL),
-+};
-+
-+/* register exynos5410 clocks */
-+static void __init exynos5410_clk_init(struct device_node *np)
++static void this_core_to_pcpu(unsigned int *pcpu, unsigned int *pcluster)
 +{
-+	void __iomem *reg_base;
++	unsigned int mpidr;
 +
-+	reg_base = of_iomap(np, 0);
-+	if (!reg_base)
-+		panic("%s: failed to map registers\n", __func__);
-+
-+	samsung_clk_init(np, reg_base, CLK_NR_CLKS,
-+			exynos5410_clk_regs, ARRAY_SIZE(exynos5410_clk_regs),
-+			NULL, 0);
-+
-+	samsung_clk_register_pll(exynos5410_plls, ARRAY_SIZE(exynos5410_plls),
-+					reg_base);
-+
-+	samsung_clk_register_mux(exynos5410_mux_clks,
-+			ARRAY_SIZE(exynos5410_mux_clks));
-+	samsung_clk_register_div(exynos5410_div_clks,
-+			ARRAY_SIZE(exynos5410_div_clks));
-+	samsung_clk_register_gate(exynos5410_gate_clks,
-+			ARRAY_SIZE(exynos5410_gate_clks));
-+
-+	pr_debug("Exynos5410: clock setup completed.\n");
++	mpidr = read_cpuid_mpidr();
++	*pcpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++	*pcluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
 +}
-+CLK_OF_DECLARE(exynos5410_clk, "samsung,exynos5410-clock", exynos5410_clk_init);
-diff --git a/include/dt-bindings/clock/exynos5410.h b/include/dt-bindings/clock/exynos5410.h
-new file mode 100644
-index 0000000..3df181f
---- /dev/null
-+++ b/include/dt-bindings/clock/exynos5410.h
-@@ -0,0 +1,32 @@
-+#ifndef _DT_BINDINGS_CLOCK_EXYNOS_5410_H
-+#define _DT_BINDINGS_CLOCK_EXYNOS_5410_H
 +
-+/* core clocks */
-+#define CLK_FOUT_APLL 1
-+#define CLK_FOUT_CPLL 2
-+#define CLK_FOUT_MPLL 3
-+#define CLK_FOUT_BPLL 4
-+#define CLK_FOUT_KPLL 5
++/*
++ * core_power_state is used to get core power state.
++ * returns:
++ *        0x0 - powered off;
++ *        0x3 - powered on;
++ *        other values - in process;
++ */
++static int core_power_state(unsigned int cpu, unsigned int cluster)
++{
++	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
++	int status = readl_relaxed(EDCS_CORE_STATUS(offset));
 +
-+/* gate for special clocks (sclk) */
-+#define CLK_SCLK_UART0 128
-+#define CLK_SCLK_UART1 129
-+#define CLK_SCLK_UART2 130
-+#define CLK_SCLK_UART3 131
-+#define CLK_SCLK_MMC0 132
-+#define CLK_SCLK_MMC1 133
-+#define CLK_SCLK_MMC2 134
++	return status & CORE_PWR_STATE_MASK;
++}
 +
-+/* gate clocks */
-+#define CLK_UART0 257
-+#define CLK_UART1 258
-+#define CLK_UART2 259
-+#define CLK_UART3 260
-+#define CLK_MCT 315
-+#define CLK_MMC0 351
-+#define CLK_MMC1 352
-+#define CLK_MMC2 353
++static void edcs_core_power_up(unsigned int cpu, unsigned int cluster)
++{
++	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
++	if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_OFF) {
++		/* boot flag should be written before powering up */
++		wmb();
++		writel_relaxed(EDCS_CORE_PWR_ON,
++				 EDCS_CORE_CONFIGURATION(offset));
++	}
++}
 +
-+#define CLK_NR_CLKS 512
++static void edcs_core_power_down(unsigned int cpu, unsigned int cluster)
++{
++	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
++	if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_ON)
++		writel_relaxed(EDCS_CORE_PWR_OFF,
++				 EDCS_CORE_CONFIGURATION(offset));
++}
 +
-+#endif /* _DT_BINDINGS_CLOCK_EXYNOS_5410_H */
++void set_boot_flag(unsigned int cpu, unsigned int mode)
++{
++	writel_relaxed(mode, REG_CPU_STATE_ADDR(cpu));
++}
++
++static int edcs_power_up(unsigned int cpu, unsigned int cluster)
++{
++	pr_debug("cpu %u cluster %u\n", cpu, cluster);
++	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER || cluster >= EDCS_CLUSTERS);
++
++	local_irq_disable();
++	arch_spin_lock(&edcs_lock);
++
++	edcs_use_count[cpu][cluster]++;
++	if (edcs_use_count[cpu][cluster] == 1) {
++		++core_count[cluster];
++		set_boot_flag(cpu, SECONDARY_RESET);
++		edcs_core_power_up(cpu, cluster);
++	} else if (edcs_use_count[cpu][cluster] != 2) {
++		/*
++		 * The only possible values are:
++		 * 0 = CPU down
++		 * 1 = CPU (still) up
++		 * 2 = CPU requested to be up before it had a chance
++		 *     to actually make itself down.
++		 * Any other value is a bug.
++		 */
++		BUG();
++	}
++
++	arch_spin_unlock(&edcs_lock);
++	local_irq_enable();
++
++	return 0;
++}
++static void edcs_power_down(void)
++{
++	unsigned int mpidr, cpu, cluster;
++	bool last_man = false, skip_wfi = false;
++
++	this_core_to_pcpu(&cpu, &cluster);
++	mpidr = read_cpuid_mpidr();
++
++	pr_debug("cpu %u cluster %u\n", cpu, cluster);
++	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
++
++	__mcpm_cpu_going_down(cpu, cluster);
++
++	arch_spin_lock(&edcs_lock);
++	BUG_ON(__mcpm_cluster_state(cluster) != CLUSTER_UP);
++	edcs_use_count[cpu][cluster]--;
++	if (edcs_use_count[cpu][cluster] == 0) {
++		--core_count[cluster];
++		edcs_core_power_down(cpu, cluster);
++		if (core_count[cluster] == 0)
++			last_man = true;
++	} else if (edcs_use_count[cpu][cluster] == 1) {
++		/*
++		 * A power_up request went ahead of us.
++		 * Even if we do not want to shut this CPU down,
++		 * the caller expects a certain state as if the WFI
++		 * was aborted.  So let's continue with cache cleaning.
++		 */
++		skip_wfi = true;
++	} else
++		BUG();
++
++	if (!skip_wfi)
++		gic_cpu_if_down();
++
++	if (last_man && __mcpm_outbound_enter_critical(cpu, cluster)) {
++		arch_spin_unlock(&edcs_lock);
++
++		if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A15) {
++			/*
++			 * On the Cortex-A15 we need to disable
++			 * L2 prefetching before flushing the cache.
++			 */
++			asm volatile(
++			"mcr	p15, 1, %0, c15, c0, 3\n\t"
++			"isb\n\t"
++			"dsb"
++			: : "r" (0x400));
++		}
++
++		/*
++		 * We need to disable and flush the whole (L1 and L2) cache.
++		 * Let's do it in the safest possible way i.e. with
++		 * no memory access within the following sequence
++		 * including the stack.
++		 *
++		 * Note: fp is preserved to the stack explicitly prior doing
++		 * this since adding it to the clobber list is incompatible
++		 * with having CONFIG_FRAME_POINTER=y.
++		 */
++		v7_exit_coherency_flush(all);
++
++		cci_disable_port_by_cpu(mpidr);
++
++		__mcpm_outbound_leave_critical(cluster, CLUSTER_DOWN);
++
++	} else {
++		arch_spin_unlock(&edcs_lock);
++		/*
++			* We need to disable and flush only the L1 cache.
++			* Let's do it in the safest possible way as above.
++		*/
++		v7_exit_coherency_flush(louis);
++
++	}
++	__mcpm_cpu_down(cpu, cluster);
++
++	if (!skip_wfi)
++		wfi();
++}
++
++static int edcs_power_down_finish(unsigned int cpu, unsigned int cluster)
++{
++	unsigned int timeout = 1000;
++	unsigned int sleep_time = 10;
++
++	pr_debug("cpu %u cluster %u\n", cpu, cluster);
++	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
++
++	do {
++		if (ACCESS_ONCE(edcs_use_count[cpu][cluster]) == 0) {
++			/* checking if core powered down */
++			if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_OFF)
++				return 0;
++		}
++		msleep(sleep_time);
++		timeout -= sleep_time;
++	} while (timeout);
++
++	return -ETIMEDOUT; /* timeout */
++}
++
++static const struct mcpm_platform_ops edcs_power_ops = {
++	.power_up		= edcs_power_up,
++	.power_down		= edcs_power_down,
++	.power_down_finish	= edcs_power_down_finish,
++};
++
++static void __init edcs_data_init(void)
++{
++	unsigned int cpu, cluster;
++
++	this_core_to_pcpu(&cpu, &cluster);
++
++	pr_debug("cpu %u cluster %u\n", cpu, cluster);
++	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
++	edcs_use_count[cpu][cluster] = 1;
++	++core_count[cluster];
++}
++
++/*
++ * Enable cluster-level coherency, in preparation for turning on the MMU.
++ */
++static void __naked edcs_power_up_setup(unsigned int affinity_level)
++{
++	asm volatile ("\n"
++	"b	cci_enable_port_for_self");
++}
++
++static int __init edcs_init(void)
++{
++	int ret;
++	struct device_node *node;
++
++	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
++	if (!node)
++		return -ENODEV;
++
++	if (!cci_probed())
++		return -ENODEV;
++
++	/*
++	 * Future entries into the kernel can now go
++	 * through the cluster entry vectors.
++	 */
++	writel_relaxed(virt_to_phys(mcpm_entry_point), REG_ENTRY_ADDR);
++
++	edcs_data_init();
++	mcpm_smp_set_ops();
++
++	ret = mcpm_platform_register(&edcs_power_ops);
++	if (!ret) {
++		mcpm_sync_init(edcs_power_up_setup);
++		pr_info("EDCS power management initialized\n");
++	}
++	return ret;
++}
++
++early_initcall(edcs_init);
 -- 
 1.8.1.5
 
