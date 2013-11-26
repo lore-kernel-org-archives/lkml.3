@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab3KZS6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:58:38 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:54745 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab3KZS6e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:58:34 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5294EF58.7040905@roeck-us.net>
-Date: Tue, 26 Nov 2013 10:58:32 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S932506Ab3KZS6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:58:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932405Ab3KZS6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:58:45 -0500
+Date: Tue, 26 Nov 2013 13:58:33 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: odd userspace lockups.
+Message-ID: <20131126185833.GA4121@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20131126182157.GA503@redhat.com>
+ <CA+55aFzvc9g896HK2AVU2A37t50PiCL2+tjGzNyn3BJ-om+7fg@mail.gmail.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
-CC: Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] watchdog: core: Make dt "timeout-sec" property work
- on drivers w/out min/max
-References: <1385490173-7511-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1385490173-7511-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzvc9g896HK2AVU2A37t50PiCL2+tjGzNyn3BJ-om+7fg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 10:22 AM, Doug Anderson wrote:
-> It is valid for a watchdog driver to have 0 for a "min" and "max"
-> timeout if the driver doesn't need the core to enforce the concepts of
-> min and max.  The s3c2410_wdt driver is one such driver.  Specifically
-> it can be hard for that driver to come up with a static "max" on all
-> platforms without a lot more information since the input clock on
-> S3C2410 and S3C2440 can change with DVFS.
->
-> As written, watchdog_init_timeout() will not ever read "timeout-sec"
-> on these drivers since watchdog_timeout_invalid() will _never_ return
-> true.  Change to not consider a timeout_parm of 0 as valid even if
-> min/max aren't specified by the driver.  Also handle the case when
-> there is no min/max and no "timeout-sec" property.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Tue, Nov 26, 2013 at 10:44:16AM -0800, Linus Torvalds wrote:
+ 
+ > > At first I thought it was just being really slow, (especially after seeing
+ > > all those congestion related symbols in the stack traces), but even after
+ > > being left for hours, it doesn't seem to progress.
+ > 
+ > It *does* seem to be hung in some congestion thing. Possibly brought
+ > on by being low on memory due to a memory leak.
+ > 
+ > I'm not seeing any suspicious locks: the sshd that holds the mmap_sem
+ > locks for a fork() seems to be in congestion-wait for the disk due to
+ > trying to allocate memory, exactly like all the trinity children are.
+ > 
+ > You don't have memory information in your dump, but to me it looks
+ > like you're basically out of memory (there's a *lot* of
+ > trinity-children trying to allocate pages), and the oom killer isn't
+ > triggering for whatever reason.
+ > 
+ > Of course, it could easily be a kernel memory leak too (rather than
+ > trinity), triggered by your odd workload.
 
-Makes sense to me.
+So, completely different machine: Yesterday I got back from my vacation to
+find my router running 3.12+ from a week earlier had hung completely.
+On the screen was some oom killer output.  After bringing it back up
+I looked at the mrtg graphs of it for the last week:
+http://codemonkey.org.uk/junk/mem.free-week.png
+Those stair-steps are around the time of morning that cron runs.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Normally I reboot that machine every day to update to the latest kernel,
+but because I was on vacation, it had enough uptime to accumulate a leak.
 
-Guenter
+That machine is just routing packets (and making pretty mrtg graphs) though,
+not doing any fuzz testing or anything weird.
 
+Who knows, maybe it's something totally unrelated. I'll keep poking at things,
+and try and find an easier way to reproduce it.
+
+	Dave
 
