@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3KZMrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:47:39 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52142 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3KZMrg (ORCPT
+	id S1756854Ab3KZMwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:52:20 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56153 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3KZMwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:47:36 -0500
-Date: Tue, 26 Nov 2013 07:47:19 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Veaceslav Falico <vfalico@redhat.com>,
-        linux-pci@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, yinghai@kernel.org, Knut_Petersen@t-online.de,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] msi: free msi_desc entry only after we've
- released the kobject
-Message-ID: <20131126124719.GA11637@hmsreliant.think-freely.org>
-References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
- <1383042632-7102-2-git-send-email-vfalico@redhat.com>
- <20131125231248.GB4034@google.com>
- <20131125232936.GA31746@kroah.com>
+	Tue, 26 Nov 2013 07:52:19 -0500
+Message-ID: <52949972.6090101@linaro.org>
+Date: Tue, 26 Nov 2013 20:52:02 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131125232936.GA31746@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, mingo@redhat.com,
+        peterz@infradead.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        tony.luck@intel.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        fengguang.wu@intel.com
+CC: james.hogan@imgtec.com, jason.low2@hp.com, gregkh@linuxfoundation.org,
+        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
+References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org> <528F4A78.1080505@linaro.org> <52918ECC.6080707@linaro.org> <529495AF.4020600@linaro.org>
+In-Reply-To: <529495AF.4020600@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 03:29:36PM -0800, Greg Kroah-Hartman wrote:
-> On Mon, Nov 25, 2013 at 04:12:48PM -0700, Bjorn Helgaas wrote:
-> > On Tue, Oct 29, 2013 at 11:30:30AM +0100, Veaceslav Falico wrote:
-> > > Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
-> > > however kobject_put() doesn't guarantee us that it was the last reference
-> > > and that the kobj isn't used currently by someone else, so after we
-> > > kfree(entry) with the struct kobject - other users will begin using the
-> > > freed memory, instead of the actual kobject.
-> > > 
-> > > Fix this by using the kobject->release callback, which is called last when
-> > > the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
-> > > which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
-> > > kobj itself after ->release() was called, so we're safe).
-> > > 
-> > > In case we've failed to create the sysfs directories - just kfree()
-> > > it - cause we don't have the kobjects attached.
-> > > 
-> > > Also, remove the same functionality from populate_msi_sysfs(), cause on
-> > > failure we anyway call free_msi_irqs(), which will take care of all the
-> > > kobjects properly.
-> > > 
-> > > And add the forgotten pci_dev_put(pdev) in case of failure to register the
-> > > kobject in populate_msi_sysfs().
-> > > 
-> > > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > > CC: Neil Horman <nhorman@tuxdriver.com>
-> > > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > CC: linux-pci@vger.kernel.org
-> > > CC: linux-kernel@vger.kernel.org
-> > > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-> > 
-> > I'm still hoping that Greg (or somebody else; Greg already posted the bulk
-> > of the work) will finish up the conversion to attributes, and that Neil
-> > will confirm that works with no changes to irqbalance.  So I'm going to
-> > drop these patches for now.  Poke me if we need to revive them.
+On 11/26/2013 08:35 PM, Daniel Lezcano wrote:
 > 
-> Ah, sorry about that.  I'll redo my series, dropping the existing format
-> and using the attribute-only code.  Give me a day or so, thanks for the
-> reminder.
 > 
-> greg k-h
+> Here the new results with your patchset + patch #5
 > 
-Thank you greg, I'll make sure Irqbalance doesn't choke on the new format as
-soon as you post them.
+> I have some issues with perf for the moment, so I will fix it up and
+> send the result after.
 
-Neil
+Thanks a lot, Daniel!
+The result is pretty good!, thread/pipe performance has a slight little
+drop, but processes performance increase about 25%!
 
+
+> 
+> 
+> 527d1511310a          / + patchset + #5
+> 
+> hackbench -T -s 4096 -l 1000 -g 10 -f 40
+> 26.677                  30.308
+> 27.914             28.497
+> 28.390             30.360
+> 28.048             28.587
+> 26.344             29.513
+> 27.848             28.706
+> 28.315             30.152
+> 28.232             29.721
+> 26.549             28.766
+> 30.340             38.801
+> hackbench -p -s 4096 -l 1000 -g 10 -f 40
+> 34.522                  35.469
+> 34.545             34.966
+> 34.469             35.342
+> 34.115             35.286
+> 34.457             35.592
+> 34.561             35.314
+> 34.459             35.316
+> 34.054             35.629
+> 34.532             35.149
+> 34.459             34.876
+> hackbench -P -s 4096 -l 1000 -g 10 -f 40
+> 38.938                  30.308
+> 39.363             28.497
+> 39.340             30.360
+> 38.909             28.587
+> 39.095             29.513
+> 38.869             28.706
+> 39.041             30.152
+> 38.939             29.721
+> 38.992             28.766
+> 38.947             38.801
+
+
+-- 
+Thanks
+    Alex
