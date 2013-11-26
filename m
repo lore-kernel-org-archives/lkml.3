@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab3KZHz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 02:55:57 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:43645 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab3KZHzz (ORCPT
+	id S1752510Ab3KZH5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 02:57:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:47617 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab3KZH5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 02:55:55 -0500
-X-AuditID: cbfee68d-b7f1a6d0000055a7-d7-52945409951f
-Message-id: <52945409.5040502@samsung.com>
-Date: Tue, 26 Nov 2013 16:55:53 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] extcon: gpio: Request gpio pin before modifying its state
-References: <1385141161-7785-1-git-send-email-linux@roeck-us.net>
-In-reply-to: <1385141161-7785-1-git-send-email-linux@roeck-us.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsWyRsSkWJczZEqQQe9TI4vLu+awWTxZeIbJ
-	4nbjCjYHZo+d3xvYPfq2rGL0+LxJLoA5issmJTUnsyy1SN8ugSvjaMN99oKDbBU/W9czNjAu
-	Ze1i5OSQEDCReL5kIyOELSZx4d56ti5GLg4hgaWMEh0XF7B0MXKAFW2e6wcRn84o0dm+kx3C
-	ecUo0TZxOzNIN6+AlsT6r0uYQGwWAVWJSYteg9lsQPH9L26wgdiiAmESK6dfYYGoF5T4Mfke
-	mC0ioCbRfKoFrIZZwFPi9K0usJnCAn4SXf/+sYIcISTgKLH8USqIySngJLGyKQCiWkdif+s0
-	qE55ic1r3jKDnCYhMI9d4svlbywQ5whIfJt8COoXWYlNB5gh/pWUOLjiBssERrFZSA6ahWTs
-	LCRjFzAyr2IUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIjJvT/5717mC8fcD6EGMy0MqJzFKi
-	yfnAuMsriTc0NjOyMDUxNTYytzQjTVhJnDfpYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
-	BsZMt+ATVjWbRFM+Kr98FqXJFrjgWtDmBhlh9ayZG1neer9wkSlPqrLrPl948XBG6P5Cqzkd
-	qszVrHnt/W6q57isF6Y88df7ve9d8JySOXGxpY6b2/Y4TFvNk3FTxiSmw7Cig2++wqut6k1e
-	TDPlp66YFPaq4OKDWYbXWDne9E86s/NkFx9zgRJLcUaioRZzUXEiAKMA9C2xAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQV3OkClBBh1TdCwu75rDZvFk4Rkm
-	i9uNK9gcmD12fm9g9+jbsorR4/MmuQDmqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwND
-	XUNLC3MlhbzE3FRbJRefAF23zBygTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqM
-	DNBAwhrGjKMN99kLDrJV/Gxdz9jAuJS1i5GDQ0LARGLzXL8uRk4gU0ziwr31bF2MXBxCAtMZ
-	JTrbd7JDOK8YJdombmcGqeIV0JJY/3UJE4jNIqAqMWnRazCbDSi+/8UNNhBbVCBMYuX0KywQ
-	9YISPybfA7NFBNQkmk+1gNUwC3hKnL7VBTZTWMBPouvfP7CDhAQcJZY/SgUxOQWcJFY2BUBU
-	60jsb50G1SkvsXnNW+YJjAKzkCyYhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNz
-	NzGCo/KZ1A7GlQ0WhxgFOBiVeHglOicHCbEmlhVX5h5ilOBgVhLhdb0PFOJNSaysSi3Kjy8q
-	zUktPsSYDPT/RGYp0eR8YMLIK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFq
-	EcwWJg5OqQbGRTXiOzNY9VXNm/P/TfDKvpl40dNp0oP0yaKv+B5NeekYOW9HU9IahtaDOu/4
-	gy/MP9fSWLLuYKr6ja6tnPWPq1gPXHuW4Fq4RPZyT+Wq566RDz1+e+1j2jRz1b4oEYc1Kzrt
-	n9wKK7/8YPYm+x0mcgLWnusC75rqbPi2Lqi4dpbndP2XPZO+KrEUZyQaajEXFScCAB6yIYwO	AwAA
+	Tue, 26 Nov 2013 02:57:43 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-07-52945474261e
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: cw00.choi@samsung.com, myungjoo.ham@gmail.com, a.sim@samsung.com
+Subject: [PATCH] extcon: fix switch class porting guide (Documentation)
+Date: Tue, 26 Nov 2013 16:57:39 +0900
+Message-id: <1385452659-19417-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsWyRsSkULc0ZEqQQdsCVot3VzoYLa5/ec5q
+	cXnXHDaL55s6WR1YPHbOusvu0bdlFaPH501yAcxRXDYpqTmZZalF+nYJXBnnFx1kKpjBW7F1
+	yn2WBsYJ3F2MnBwSAiYSB9oesEHYYhIX7q0Hsrk4hASWMkrceDeRpYuRA6xob6s6RHwRo8T+
+	DW3sEE4bk8TxNYuYQLrZBHQltm64ywJiiwgoSGzufcYKYjMLuEgsvXmCGcQWFnCXWN1xByzO
+	IqAqsfHCDrBeXgEPibc7+9khrlCQWPZlLTPIAgmB+2wSV35cYodoEJD4NvkQ1EWyEpsOMEPU
+	S0ocXHGDZQKj4AJGhlWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYgUF4+t+ziTsY7x+wPsSY
+	DDRuIrOUaHI+MIjzSuINjc2MLExNTI2NzC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNa
+	fIiRiYNTqoFRXkmGSeGxi6D3bCYbxtkCE0WqedYc9S9LKLOafi/QeY9oUP3ff1JPT9x7aNVY
+	k/g85tKqqU2f63bO9d/5Lazx6ynPX2Yniks0y6basVt9WX08cO6l2nsxsqHqVg8PGU3IDCx5
+	9CXTqPodJ9svD9tV30WZzjytt9c0mzrj0NXQHf/3HBRvEUlVYinOSDTUYi4qTgQA9ZDZPVgC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAd2SkClBBo86rC3eXelgtLj+5Tmr
+	xeVdc9gsnm/qZHVg8dg56y67R9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
+	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jBmnF90kKlgBm/F1in3WRoYJ3B3MXJwSAiYSOxtVe9i5AQyxSQu3FvP1sXI
+	xSEksIhRYv+GNnYIp41J4viaRUwgVWwCuhJbN9xlAbFFBBQkNvc+YwWxmQVcJJbePMEMYgsL
+	uEus7rgDFmcRUJXYeGEHWC+vgIfE25397BDbFCSWfVnLPIGRewEjwypG0dSC5ILipPRcI73i
+	xNzi0rx0veT83E2M4BB/Jr2DcVWDxSFGAQ5GJR5eic7JQUKsiWXFlbmHGCU4mJVEeF3vA4V4
+	UxIrq1KL8uOLSnNSiw8xJgNtn8gsJZqcD4y/vJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJ
+	pCeWpGanphakFsFsYeLglGpgdJDvfHnYw9rVtVchbYPrPPb5wUumsxx5XrLzOrd7Sq8Ov2uk
+	y2XpxksLzshITHrK4fw3dP0ttxeS54VntZtpHl/Canjm4gHD8J4zJ+bGnLVUucwU4B6wXfCb
+	wJUt/lfyRQ8fefDaODVXxrTDIql0uo1m5J/Ha3zLNAvT5ollJ5olN5S+zvZVYinOSDTUYi4q
+	TgQA1Bwa4bUCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,27 +44,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+- Unfinished sentence finished.
+- Incorrect description on the compat-mode condition corrected.
 
-On 11/23/2013 02:26 AM, Guenter Roeck wrote:
-> Commit 338de0ca (extcon: gpio: Use gpio driver/chip debounce if supported)
-> introduced a call to gpio_set_debounce() before actually requesting the
-> respective gpio pin from the gpio subsystem.
-> 
-> The gpio subsystem expects that a gpio pin was requested before modifying its
-> state. Not doing so results in a warning from gpiolib, and the gpio pin is
-> auto-requested. This in turn causes the subsequent devm_gpio_request_one()
-> to fail. So devm_gpio_request_one() must be called prior to calling
-> gpio_set_debounce().
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/extcon/extcon-gpio.c |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ Documentation/extcon/porting-android-switch-class |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-Applid it on extcon-next branch.
-
-Thanks,
-Chanwoo Choi
+diff --git a/Documentation/extcon/porting-android-switch-class b/Documentation/extcon/porting-android-switch-class
+index eb0fa5f..ec5f92d 100644
+--- a/Documentation/extcon/porting-android-switch-class
++++ b/Documentation/extcon/porting-android-switch-class
+@@ -48,7 +48,7 @@ so that they are still compatible with legacy userspace processes.
+ 	Extcon's extended features for switch device drivers with
+ 	complex features usually required magic numbers in state
+ 	value of switch_dev. With extcon, such magic numbers that
+-	support multiple cables (
++	support multiple cables are no more required or supported.
+ 
+   1. Define cable names at edev->supported_cable.
+   2. (Recommended) remove print_state callback.
+@@ -112,11 +112,8 @@ exclusive, the two cables cannot be in ATTACHED state simulteneously.
+ 
+ ****** ABI Location
+ 
+-  If "CONFIG_ANDROID" is enabled and "CONFIG_ANDROID_SWITCH" is
+-disabled, /sys/class/switch/* are created as symbolic links to
+-/sys/class/extcon/*. Because CONFIG_ANDROID_SWITCH creates
+-/sys/class/switch directory, we disable symboling linking if
+-CONFIG_ANDROID_SWITCH is enabled.
++  If "CONFIG_ANDROID" is enabled, /sys/class/switch/* are created
++as symbolic links to /sys/class/extcon/*.
+ 
+   The two files of switch class, name and state, are provided with
+ extcon, too. When the multistate support (STEP 2 of CHAPTER 1.) is
+-- 
+1.7.5.4
 
