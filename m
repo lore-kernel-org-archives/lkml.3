@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab3KZXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:00:56 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42211 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab3KZXAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:00:53 -0500
-Date: Tue, 26 Nov 2013 18:00:10 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20131126230010.GJ22729@cmpxchg.org>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
- <20131125234921.GK8803@dastard>
- <20131126212725.GG22729@cmpxchg.org>
- <20131126222937.GA10988@dastard>
+	id S1756452Ab3KZXDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:03:08 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:58680 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab3KZXDF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 18:03:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126222937.GA10988@dastard>
+In-Reply-To: <20131126183559.GA18570@localhost>
+References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
+	<20131126183559.GA18570@localhost>
+Date: Tue, 26 Nov 2013 15:03:03 -0800
+Message-ID: <CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
+Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 09:29:37AM +1100, Dave Chinner wrote:
-> On Tue, Nov 26, 2013 at 04:27:25PM -0500, Johannes Weiner wrote:
-> > On Tue, Nov 26, 2013 at 10:49:21AM +1100, Dave Chinner wrote:
-> > > On Sun, Nov 24, 2013 at 06:38:28PM -0500, Johannes Weiner wrote:
-> > > > Previously, page cache radix tree nodes were freed after reclaim
-> > > > emptied out their page pointers.  But now reclaim stores shadow
-> > > > entries in their place, which are only reclaimed when the inodes
-> > > > themselves are reclaimed.  This is problematic for bigger files that
-> > > > are still in use after they have a significant amount of their cache
-> > > > reclaimed, without any of those pages actually refaulting.  The shadow
-> > > > entries will just sit there and waste memory.  In the worst case, the
-> > > > shadow entries will accumulate until the machine runs out of memory.
-> ....
-> > > ....
-> > > > +	radix_tree_replace_slot(slot, page);
-> > > > +	if (node) {
-> > > > +		node->count++;
-> > > > +		/* Installed page, can't be shadow-only anymore */
-> > > > +		if (!list_empty(&node->lru))
-> > > > +			list_lru_del(&workingset_shadow_nodes, &node->lru);
-> > > > +	}
-> > > > +	return 0;
-> > > 
-> > > Hmmmmm - what's the overhead of direct management of LRU removal
-> > > here? Most list_lru code uses lazy removal (i.e. via the shrinker)
-> > > to avoid having to touch the LRU when adding new references to an
-> > > object.....
-> > 
-> > It's measurable in microbenchmarks, but not when any real IO is
-> > involved.  The difference was in the noise even on SSD drives.
-> 
-> Well, it's not an SSD or two I'm worried about - it's devices that
-> can do millions of IOPS where this is likely to be noticable...
-> 
-> > The other list_lru users see items only once they become unused and
-> > subsequent references are expected to be few and temporary, right?
-> 
-> They go onto the list when the refcount falls to zero, but reuse can
-> be frequent when being referenced repeatedly by a single user. That
-> avoids every reuse from removing the object from the LRU then
-> putting it back on the LRU for every reference cycle...
+On Tue, Nov 26, 2013 at 10:36 AM, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
 
-That's true, but it's less of a concern in the radix_tree_node case
-because it takes a full inactive list cycle after a refault before the
-node is put back on the LRU.  Or a really unlikely placed partial node
-truncation/invalidation (full truncation would just delete the whole
-node anyway).
+> Since v3.13-rc1, this commit seems to have introduced some oddities on
+> some of our boards. See this log snippet:
+>
+> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> ����R�console [ttyS0] enabled
+> console [ttyS0] enabled
+> bootconsole [earlycon0] disabled
+> bootconsole [earlycon0] disabled
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18, base_baud = 15625000) is a 16550A
+>
+> This behavior appear in at least Armada 370 and Armada XP boxes.
+>
+> I confirm reverting this commit fixes the issue and things get back to normal.
+> Here's the complete kernel log: sprunge.us/gMdL
+>
+> Ideas?
 
-> > We expect pages to refault in spades on certain loads, at which point
-> > we may have thousands of those nodes on the list that are no longer
-> > reclaimable (10k nodes for about 2.5G of cache).
-> 
-> Sure, look at the way the inode and dentry caches work - entire
-> caches of millions of inodes and dentries often sit on the LRUs. A
-> quick look at my workstations dentry cache shows:
-> 
-> $ at /proc/sys/fs/dentry-state 
-> 180108  170596  45      0       0       0
-> 
-> 180k allocated dentries, 170k sitting on the LRU...
+Hi Ezequiel,
 
-Hm, and a significant amount of those 170k could rotate on the next
-shrinker scan due to recent references or do you generally have
-smaller spikes?
+An external device may be keeping the UART busy and preventing LCR
+from being written.
 
-But as per above I think the case for lazily removing shadow nodes is
-less convincing than for inodes and dentries.
+What device is attached to ttyS1?  Also, do you know the version of
+the Synopsys IP?
+
+If built with ADDITIONAL_FEATURES=YES, the version can be read from
+the hardware:
+
+# busybox devmem 0xd00121f8 32
+
+-Tim
