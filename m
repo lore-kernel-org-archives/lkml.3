@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab3KZCAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 21:00:25 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52202 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751897Ab3KZCAW (ORCPT
+	id S1753328Ab3KZCBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 21:01:54 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:51950 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3KZCBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 21:00:22 -0500
-Message-ID: <529400B3.4070003@hurleysoftware.com>
-Date: Mon, 25 Nov 2013 21:00:19 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 25 Nov 2013 21:01:51 -0500
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 1/5] tty: Always handle NULL flag ptr
-References: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com> <1385140198-5822-2-git-send-email-peter@hurleysoftware.com> <20131122222040.GA12800@core.coreip.homeip.net>
-In-Reply-To: <20131122222040.GA12800@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+In-Reply-To: <2997050.eogEtPXZyL@vostro.rjw.lan>
+References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org>
+	<CAKohpok0QJ2xP5uoSaAsX76KwD5yi9Z54pgNyQ7CW3c4Fkbq2A@mail.gmail.com>
+	<52938C5F.7000307@gmail.com>
+	<2997050.eogEtPXZyL@vostro.rjw.lan>
+Date: Tue, 26 Nov 2013 07:31:50 +0530
+Message-ID: <CAKohpon22PxGdTFcaOqzpLpVZd75OPP470Wyy95GjBhG2gViyQ@mail.gmail.com>
+Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/22/2013 05:20 PM, Dmitry Torokhov wrote:
-> Hi Peter,
->
-> On Fri, Nov 22, 2013 at 12:09:54PM -0500, Peter Hurley wrote:
->> Most line disciplines already handle the undocumented NULL flag
->> ptr in their .receive_buf method; however, several don't.
->>
->> Document the NULL flag ptr, and correct handling in the
->> N_MOUSE, N_GSM0710 and N_R394 line disciplines.
->>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   drivers/input/serio/serport.c | 28 +++++++++++++++-------------
->>   drivers/tty/n_gsm.c           |  5 +++--
->>   drivers/tty/n_r3964.c         |  2 +-
->>   include/linux/tty_ldisc.h     |  6 ++++--
->>   4 files changed, 23 insertions(+), 18 deletions(-)
->>
->> diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
->> index 8755f5f..72b4633 100644
->> --- a/drivers/input/serio/serport.c
->> +++ b/drivers/input/serio/serport.c
->> @@ -124,7 +124,7 @@ static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *c
->>   {
->>   	struct serport *serport = (struct serport*) tty->disc_data;
->>   	unsigned long flags;
->> -	unsigned int ch_flags;
->> +	unsigned int ch_flags = TTY_NORMAL;
->
-> We should not be passing tty constants into serio layer as they are
-> different subsystems (even though TTY_NORMAL happens to be encoded as 0
-> and thus happens to work). Please use 0 for 'no flags' as the original
-> code did.
+On 26 November 2013 02:43, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Monday, November 25, 2013 09:43:59 AM Dirk Brandewie wrote:
+>> This is a platform specific bug fix AFAICT and belongs in a platform
+>> specific piece of code
 
-Ah, I see your point. I'll respin this for your ack.
+In case we end up doing that, we will do lots of code redundancy in
+cpufreq drivers. And as Rafael said, some platforms might never
+know they have booted with an out of table frequency and so taking
+care of this at a single place is better, where we are sure that it
+will get fixed.
 
-Regards,
-Peter Hurley
+>> The core should not be working around bootloader bugs IMHO.  Silently
+>> fixing it is evil IMHO at a minimum the core should complain LOUDLY
+>> about this happening otherwise the bootloaders will have no incentive to
+>> get their act together.
 
+That looks correct..
+
+> Yes, we can add a WARN_ON() there.  Still, though, the core's responsibility
+> is to ensure that (a) either we can continue safely or (b) we can't, in which
+> case it should just fail the initialization.  Whether or not it should panic()
+> I'm not sure.
+
+But is this that big crime, that we do a WARN on it? CPU was running on
+a workable frequency, it wasn't mentioned in the table, that's it.
+
+Probably just throw an print message that CPU found to be running on
+out of table frequency, and that got fixed..
