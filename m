@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab3KZSPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:15:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35377 "EHLO
+	id S932530Ab3KZSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:16:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757750Ab3KZSNJ (ORCPT
+	with ESMTP id S932088Ab3KZSNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:09 -0500
+	Tue, 26 Nov 2013 13:13:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 3.11 21/36] PCI: Support PCIe Capability Slot registers only for ports with slots
-Date: Tue, 26 Nov 2013 10:12:31 -0800
-Message-Id: <20131126181029.471123401@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.11 26/36] ACPI / hotplug: Do not execute "insert in progress" _OST
+Date: Tue, 26 Nov 2013 10:12:36 -0800
+Message-Id: <20131126181030.564599399@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -27,44 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 6d3a1741f1e648cfbd5a0cc94477a0d5004c6f5e upstream.
+commit 176a88d79d6b5aebabaff16734e8b3107efcaaad upstream.
 
-Previously we allowed callers to access Slot Capabilities, Status, and
-Control for Root Ports even if the Root Port did not implement a slot.
-This seems dubious because the spec only requires these registers if a
-slot is implemented.
+According to the ACPI spec (5.0, Section 6.3.5), the "Device
+insertion in progress (pending)" (0x80) _OST status code is
+reserved for the "Insertion Processing" (0x200) source event
+which is "a result of an OSPM action".  Specifically, it is not
+a notification, so that status code should not be used during
+notification processing, which unfortunately is done by
+acpi_scan_bus_device_check().
 
-It's true that even Root Ports without slots must have *space* for these
-slot registers, because the Root Capabilities, Status, and Control
-registers are after the slot registers in the capability.  However,
-for a v1 PCIe Capability, the *semantics* of the slot registers are
-undefined unless a slot is implemented.
+For this reason, drop the ACPI_OST_SC_INSERT_IN_PROGRESS _OST
+status evaluation from there (it was a mistake to put it in there
+in the first place).
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/access.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/scan.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -497,9 +497,9 @@ static inline bool pcie_cap_has_sltctl(c
- {
- 	int type = pci_pcie_type(dev);
- 
--	return type == PCI_EXP_TYPE_ROOT_PORT ||
--	       (type == PCI_EXP_TYPE_DOWNSTREAM &&
--		pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
-+	return (type == PCI_EXP_TYPE_ROOT_PORT ||
-+		type == PCI_EXP_TYPE_DOWNSTREAM) &&
-+	       pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT;
- }
- 
- static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -359,8 +359,6 @@ static void acpi_scan_bus_device_check(a
+ 			goto out;
+ 		}
+ 	}
+-	acpi_evaluate_hotplug_ost(handle, ost_source,
+-				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
+ 	error = acpi_bus_scan(handle);
+ 	if (error) {
+ 		acpi_handle_warn(handle, "Namespace scan failure\n");
 
 
