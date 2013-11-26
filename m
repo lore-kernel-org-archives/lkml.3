@@ -1,205 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab3KZQME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:12:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51453 "EHLO
+	id S1757416Ab3KZQMP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:12:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51470 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757341Ab3KZQL4 (ORCPT
+	with ESMTP id S1757373Ab3KZQMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:11:56 -0500
-Message-Id: <20131126160815.084160429@infradead.org>
+	Tue, 26 Nov 2013 11:12:00 -0500
+Message-Id: <20131126155743.116756708@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Nov 2013 16:57:47 +0100
+Date: Tue, 26 Nov 2013 16:57:43 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
         David Miller <davem@davemloft.net>, rui.zhang@intel.com,
         jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
         Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>,
+        paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH 4/8] preempt, locking: Rework local_bh_{dis,en}able()
-References: <20131126155743.116756708@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-inline-local_bh_disable.patch
+Subject: [PATCH 0/8] Cure faux idle wreckage
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently local_bh_disable() is out-of-line for no apparent reason.
-So inline it to save a few cycles on call/return nonsense, the
-function body is a single add on x86 (a few loads and store extra on
-load/store archs).
+Respin of the earlier series that tries to cure the 2 idle injection drivers
+and cleans up some of the preempt_enable_no_resched() mess.
 
-Also expose two new local_bh functions:
+The intel_powerclamp driver is tested by Jacob Pan and needs one more patch to
+cpuidle to work as before. I'll let him provide this patch; since he actually
+has it and tested it.
 
-  __local_bh_{dis,en}able_ip(unsigned long ip, unsigned int cnt);
+Jacob also said he'll try and work with the QoS people to sort out the conflict
+of interest between the idle injectors and the QoS framework.
 
-Which implement the actual local_bh_{dis,en}able() behaviour.
+Can someone please test acpi_pad? Rafael, since the original author seems MIA
+and you're the over-all ACPI maintainer, can you appoint a person who knows
+what he's doing? Alternatively, Jacob would you be willing to have a look at
+that thing? Better still rm drivers/acpi/acpi_pad.c ?
 
-The next patch uses the exposed @cnt argument to optimize bh lock
-functions.
+Thomas, can you pick this series up and merge it into -tip provided acpi_pad
+works?
 
-With build fixes from Jacob Pan.
 
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: lenb@kernel.org
-Cc: rjw@rjwysocki.net
-Cc: rui.zhang@intel.com
-Cc: jacob.jun.pan@linux.intel.com
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/bottom_half.h  |   32 +++++++++++++++++++++++++++++---
- include/linux/hardirq.h      |    1 +
- include/linux/preempt_mask.h |    1 -
- kernel/softirq.c             |   35 ++++++-----------------------------
- 4 files changed, 36 insertions(+), 33 deletions(-)
+Changes since the earlier version:
 
---- a/include/linux/bottom_half.h
-+++ b/include/linux/bottom_half.h
-@@ -1,9 +1,35 @@
- #ifndef _LINUX_BH_H
- #define _LINUX_BH_H
- 
--extern void local_bh_disable(void);
-+#include <linux/preempt.h>
-+#include <linux/preempt_mask.h>
-+
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+extern void __local_bh_disable_ip(unsigned long ip, unsigned int cnt);
-+#else
-+static __always_inline void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
-+{
-+	preempt_count_add(cnt);
-+	barrier();
-+}
-+#endif
-+
-+static inline void local_bh_disable(void)
-+{
-+	__local_bh_disable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
-+}
-+
- extern void _local_bh_enable(void);
--extern void local_bh_enable(void);
--extern void local_bh_enable_ip(unsigned long ip);
-+extern void __local_bh_enable_ip(unsigned long ip, unsigned int cnt);
-+
-+static inline void local_bh_enable_ip(unsigned long ip)
-+{
-+	__local_bh_enable_ip(ip, SOFTIRQ_DISABLE_OFFSET);
-+}
-+
-+static inline void local_bh_enable(void)
-+{
-+	__local_bh_enable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
-+}
- 
- #endif /* _LINUX_BH_H */
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -5,6 +5,7 @@
- #include <linux/lockdep.h>
- #include <linux/ftrace_irq.h>
- #include <linux/vtime.h>
-+#include <asm/hardirq.h>
- 
- 
- extern void synchronize_irq(unsigned int irq);
---- a/include/linux/preempt_mask.h
-+++ b/include/linux/preempt_mask.h
-@@ -2,7 +2,6 @@
- #define LINUX_PREEMPT_MASK_H
- 
- #include <linux/preempt.h>
--#include <asm/hardirq.h>
- 
- /*
-  * We put the hardirq and softirq counter into the preemption
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -89,7 +89,7 @@ static void wakeup_softirqd(void)
-  * where hardirqs are disabled legitimately:
-  */
- #ifdef CONFIG_TRACE_IRQFLAGS
--static void __local_bh_disable(unsigned long ip, unsigned int cnt)
-+void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
- {
- 	unsigned long flags;
- 
-@@ -114,21 +114,9 @@ static void __local_bh_disable(unsigned
- 	if (preempt_count() == cnt)
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
- }
--#else /* !CONFIG_TRACE_IRQFLAGS */
--static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
--{
--	preempt_count_add(cnt);
--	barrier();
--}
-+EXPORT_SYMBOL(__local_bh_disable_ip);
- #endif /* CONFIG_TRACE_IRQFLAGS */
- 
--void local_bh_disable(void)
--{
--	__local_bh_disable(_RET_IP_, SOFTIRQ_DISABLE_OFFSET);
--}
--
--EXPORT_SYMBOL(local_bh_disable);
--
- static void __local_bh_enable(unsigned int cnt)
- {
- 	WARN_ON_ONCE(!irqs_disabled());
-@@ -151,7 +139,7 @@ void _local_bh_enable(void)
- 
- EXPORT_SYMBOL(_local_bh_enable);
- 
--static inline void _local_bh_enable_ip(unsigned long ip)
-+void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
- {
- 	WARN_ON_ONCE(in_irq() || irqs_disabled());
- #ifdef CONFIG_TRACE_IRQFLAGS
-@@ -166,7 +154,7 @@ static inline void _local_bh_enable_ip(u
- 	 * Keep preemption disabled until we are done with
- 	 * softirq processing:
-  	 */
--	preempt_count_sub(SOFTIRQ_DISABLE_OFFSET - 1);
-+	preempt_count_sub(cnt - 1);
- 
- 	if (unlikely(!in_interrupt() && local_softirq_pending())) {
- 		/*
-@@ -182,18 +170,7 @@ static inline void _local_bh_enable_ip(u
- #endif
- 	preempt_check_resched();
- }
--
--void local_bh_enable(void)
--{
--	_local_bh_enable_ip(_RET_IP_);
--}
--EXPORT_SYMBOL(local_bh_enable);
--
--void local_bh_enable_ip(unsigned long ip)
--{
--	_local_bh_enable_ip(ip);
--}
--EXPORT_SYMBOL(local_bh_enable_ip);
-+EXPORT_SYMBOL(__local_bh_enable_ip);
- 
- /*
-  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
-@@ -268,7 +245,7 @@ asmlinkage void __do_softirq(void)
- 	pending = local_softirq_pending();
- 	account_irq_enter_time(current);
- 
--	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
- 	lockdep_softirq_start();
- 
- 	cpu = smp_processor_id();
-
+ - fixed a few build issues; thanks Jacob for spotting them
+ - Added PF_IDLE so that is_idle_task() can work for the faux idle
+   tasks, which in turn is require for RCU-idle support.
+ - added an rcu_sleep_check() to play_idle() to ensure we don't try
+   and play idle while holding rcu_read_lock(), which would counter
+   the previous point.
+ - changed the net busy_poll over to local_clock().
 
