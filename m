@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3KZAD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:03:56 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:46465 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3KZADv (ORCPT
+	id S1752453Ab3KYX5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 18:57:00 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50784 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751524Ab3KYX46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:03:51 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] watchdog: s3c2410_wdt: Only register for cpufreq on ARM_S3C24XX_CPUFREQ
-Date: Tue, 26 Nov 2013 01:03:49 +0100
-Message-ID: <12609399.rlV8OtdFZt@flatron>
-User-Agent: KMail/4.11.3 (Linux/3.12.0-gentoo; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1385422603-22684-1-git-send-email-dianders@chromium.org>
-References: <1385420137-32725-1-git-send-email-dianders@chromium.org> <1385422603-22684-1-git-send-email-dianders@chromium.org>
+	Mon, 25 Nov 2013 18:56:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <zetalog@gmail.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [UPDATE PATCH 4/4] ACPI: Add support to force header inclusion rules for <linux/acpi.h>.
+Date: Tue, 26 Nov 2013 01:09:45 +0100
+Message-ID: <5998708.qlCSNdGapO@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <2930f1fabbb8319c11180c8db3d1693adc71aac1.1385163359.git.lv.zheng@intel.com>
+References: <cover.1385094640.git.lv.zheng@intel.com> <2930f1fabbb8319c11180c8db3d1693adc71aac1.1385163359.git.lv.zheng@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 of November 2013 15:36:43 Doug Anderson wrote:
-> On modern SoCs the watchdog timer is parented on a clock that doesn't
-> change every time we have a cpufreq change.  That means we don't need
-> to constantly adjust the watchdog timer, so avoid registering for and
-> dealing with cpufreq transitions unless we've actually got
-> CONFIG_ARM_S3C24XX_CPUFREQ defined.
+On Saturday, November 23, 2013 07:54:18 AM Lv Zheng wrote:
+> From: Lv Zheng <lv.zheng@intel.com>
 > 
-> Note that this is more than just an optimization.  The s3c2410
-> watchdog driver actually pats the watchdog on every CPU frequency
-> change.  On modern systems these happen many times per second (even in
-> a system where "nothing" is happening).  That effectively makes any
-> userspace watchdog program useless (the watchdog is constantly patted
-> by the kernel).  If we need ARM_S3C24XX_CPUFREQ defined on a
-> multiplatform kernel we'll need to make sure that kernel supports
-> common clock and change this to user common clock framework.
+> (Update due to some typo fixes.)
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> As there is only CONFIG_ACPI=n processing in the <linux/acpi.h>, it is not
+> safe to include <acpi/acpi.h>, <acpi/acpi_drivers.h> and <acpi/acpi_bus.h>
+> directly for source out of Linux ACPI subsystems.
+> 
+> This patch adds error messaging to warn developers of such wrong
+> inclusions.
+> 
+> In order not to be bisected and reverted as a wrong commit, warning
+> messages are carefully split into a seperate patch other than the wrong
+> inclusion cleanups.
+> 
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+
+I don't like this one to be honest.
+
 > ---
-> Changes in v2:
-> - Use the updated config name.
+>  drivers/acpi/acpica/Makefile    |    2 +-
+>  include/acpi/acpi_bus.h         |    5 +++++
+>  include/acpi/acpi_drivers.h     |    5 +++++
+>  include/acpi/platform/aclinux.h |   10 ++++++++++
+>  4 files changed, 21 insertions(+), 1 deletion(-)
 > 
->  drivers/watchdog/s3c2410_wdt.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> diff --git a/drivers/acpi/acpica/Makefile b/drivers/acpi/acpica/Makefile
+> index 4383040..7738677 100644
+> --- a/drivers/acpi/acpica/Makefile
+> +++ b/drivers/acpi/acpica/Makefile
+> @@ -2,7 +2,7 @@
+>  # Makefile for ACPICA Core interpreter
+>  #
+>  
+> -ccflags-y			:= -Os
+> +ccflags-y			:= -Os -DLINUXIZED_ACPICA
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+I don't like this (the naming and the way it is done).
 
-Best regards,
-Tomasz
+>  ccflags-$(CONFIG_ACPI_DEBUG)	+= -DACPI_DEBUG_OUTPUT
+>  
+>  # use acpi.o to put all files here into acpi.o modparam namespace
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 0af9667..0b1ea80 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -26,6 +26,11 @@
+>  #ifndef __ACPI_BUS_H__
+>  #define __ACPI_BUS_H__
+>  
+> +/* <acpi/acpi_bus.h> is not safe for CONFIG_ACPI=n environment */
+> +#ifndef _LINUX_ACPI_H
+> +#error "Please don't include <acpi/acpi_bus.h> directly, include <linux/acpi.h> instead."
+> +#endif
+
+And this should either go into all of the <acpi/*.h> files, not only to the two
+of them you chose, or to none of them.  I prefer none.
+
+Thanks,
+Rafael
 
