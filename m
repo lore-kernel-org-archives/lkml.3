@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3KZXG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:06:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28349 "EHLO mx1.redhat.com"
+	id S1757529Ab3KZXHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:07:20 -0500
+Received: from mail.us.es ([193.147.175.20]:54524 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab3KZXGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:06:24 -0500
-Date: Tue, 26 Nov 2013 17:31:48 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131126193148.GA18071@amt.cnet>
-References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20131122191429.GA13308@amt.cnet>
- <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <5292EE2F.5090305@linux.vnet.ibm.com>
- <20131125181254.GB21858@amt.cnet>
- <529413C1.60302@linux.vnet.ibm.com>
+	id S1756491Ab3KZXHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 18:07:15 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98/18164. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.8/7.5):. 
+ Processed in 1.932816 secs); 26 Nov 2013 23:07:13 -0000
+X-Spam-ASN: AS12715 188.78.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Wed, 27 Nov 2013 00:07:09 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: kaber@trash.net, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: netfilter: active obj WARN when cleaning up
+Message-ID: <20131126230709.GA10948@localhost>
+References: <522B25B5.6000808@oracle.com>
+ <5294F27D.4000108@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <529413C1.60302@linux.vnet.ibm.com>
+In-Reply-To: <5294F27D.4000108@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 11:21:37AM +0800, Xiao Guangrong wrote:
-> On 11/26/2013 02:12 AM, Marcelo Tosatti wrote:
-> > On Mon, Nov 25, 2013 at 02:29:03PM +0800, Xiao Guangrong wrote:
-> >>>> Also, there is no guarantee of termination (as long as sptes are
-> >>>> deleted with the correct timing). BTW, can't see any guarantee of
-> >>>> termination for rculist nulls either (a writer can race with a lockless
-> >>>> reader indefinately, restarting the lockless walk every time).
-> >>>
-> >>> Hmm, that can be avoided by checking dirty-bitmap before rewalk,
-> >>> that means, if the dirty-bitmap has been set during lockless write-protection,
-> >>> it�s unnecessary to write-protect its sptes. Your idea?
-> >> This idea is based on the fact that the number of rmap is limited by
-> >> RMAP_RECYCLE_THRESHOLD. So, in the case of adding new spte into rmap,
-> >> we can break the rewalk at once, in the case of deleting, we can only
-> >> rewalk RMAP_RECYCLE_THRESHOLD times.
-> > 
-> > Please explain in more detail.
-> 
-> Okay.
-> 
-> My proposal is like this:
-> 
-> pte_list_walk_lockless()
-> {
-> restart:
-> 
-> +	if (__test_bit(slot->arch.dirty_bitmap, gfn-index))
-> +		return;
-> 
-> 	code-doing-lockless-walking;
-> 	......
-> }
-> 
-> Before do lockless-walking, we check the dirty-bitmap first, if
-> it is set we can simply skip write-protection for the gfn, that
-> is the case that new spte is being added into rmap when we lockless
-> access the rmap.
+On Tue, Nov 26, 2013 at 02:11:57PM -0500, Sasha Levin wrote:
+> Ping? I still see this warning.
 
-The dirty bit could be set after the check.
+Did your test include patch 0c3c6c00c6?
 
-> For the case of deleting spte from rmap, the number of entry is limited
-> by RMAP_RECYCLE_THRESHOLD, that is not endlessly.
-
-It can shrink and grow while lockless walk is performed.
-
+> On 09/07/2013 09:10 AM, Sasha Levin wrote:
+> >Hi all,
+> >
+> >While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
+> >stumbled on the following:
+> >
+> >[  418.311956] ------------[ cut here ]------------
+> >[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
+> >[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint:
+> >delayed_work_timer_fn+0x0/0x20
+> >[  418.314038] Modules linked in:
+> >[  418.314038] CPU: 6 PID: 4178 Comm: kworker/u16:2 Tainted: G        W 3.11.0-next-20130906-sasha
+> >#3984
+> >[  418.314038] Workqueue: netns cleanup_net
+> >[  418.314038]  0000000000000104 ffff880410371a58 ffffffff841b7815 0000000000000104
+> >[  418.314038]  ffff880410371aa8 ffff880410371a98 ffffffff8112540c ffff880410371a78
+> >[  418.314038]  ffffffff853ea0ab ffff8800bdc68b80 ffffffff85a65c00 ffffffff87676658
+> >[  418.314038] Call Trace:
+> >[  418.314038]  [<ffffffff841b7815>] dump_stack+0x52/0x87
+> >[  418.320315]  [<ffffffff8112540c>] warn_slowpath_common+0x8c/0xc0
+> >[  418.321040]  [<ffffffff811254f6>] warn_slowpath_fmt+0x46/0x50
+> >[  418.321101]  [<ffffffff81a60ded>] debug_print_object+0x8d/0xb0
+> >[  418.321101]  [<ffffffff811444e0>] ? __queue_work+0x390/0x390
+> >[  418.321101]  [<ffffffff81a61605>] __debug_check_no_obj_freed+0xa5/0x220
+> >[  418.321101]  [<ffffffff81249e76>] ? kmem_cache_destroy+0x86/0xe0
+> >[  418.321101]  [<ffffffff81a61795>] debug_check_no_obj_freed+0x15/0x20
+> >[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
+> >[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
+> >[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
+> >[  418.321101]  [<ffffffff83d5ec5d>] nf_conntrack_pernet_exit+0x5d/0x70
+> >[  418.321101]  [<ffffffff83cda1ce>] ops_exit_list+0x5e/0x70
+> >[  418.321101]  [<ffffffff83cda80b>] cleanup_net+0xfb/0x1c0
+> >[  418.321101]  [<ffffffff81145c28>] process_one_work+0x338/0x550
+> >[  418.321101]  [<ffffffff81145b50>] ? process_one_work+0x260/0x550
+> >[  418.321883]  [<ffffffff81147605>] worker_thread+0x215/0x350
+> >[  418.321883]  [<ffffffff811473f0>] ? manage_workers+0x180/0x180
+> >[  418.321883]  [<ffffffff81150887>] kthread+0xe7/0xf0
+> >[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
+> >[  418.321883]  [<ffffffff841c7a2c>] ret_from_fork+0x7c/0xb0
+> >[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
+> >[  418.321883] ---[ end trace c974221542b61d0d ]---
+> >
+> >
+> >Thanks,
+> >Sasha
+> 
