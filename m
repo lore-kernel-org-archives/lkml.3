@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3KYXxw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 18:53:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3KYXxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 18:53:50 -0500
-Message-ID: <5293E2D0.4070206@redhat.com>
-Date: Tue, 26 Nov 2013 00:52:48 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753615Ab3KZADK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:03:10 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19276 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab3KZADI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 19:03:08 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 25 Nov 2013 16:00:45 -0800
+Message-ID: <5293E53A.5050103@nvidia.com>
+Date: Mon, 25 Nov 2013 16:03:06 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-CC: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Yonan <james@openvpn.net>, Florian Weimer <fw@deneb.enyo.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] crypto: more robust crypto_memneq
-References: <1385418918-15901-1-git-send-email-cesarb@cesarb.eti.br>
-In-Reply-To: <1385418918-15901-1-git-send-email-cesarb@cesarb.eti.br>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: clk: clk_round_rate() should return 0, not negative numbers,
+ upon error
+References: <alpine.DEB.2.02.1311251553080.23090@tamien> <20131126000153.GY16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131126000153.GY16735@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 11:35 PM, Cesar Eduardo Barros wrote:
-> Disabling compiler optimizations can be fragile, since a new
-> optimization could be added to -O0 or -Os that breaks the assumptions
-> the code is making.
->
-> Instead of disabling compiler optimizations, use a dummy inline assembly
-> (based on RELOC_HIDE) to block the problematic kinds of optimization,
-> while still allowing other optimizations to be applied to the code.
->
-> The dummy inline assembly is added after every OR, and has the
-> accumulator variable as its input and output. The compiler is forced to
-> assume that the dummy inline assembly could both depend on the
-> accumulator variable and change the accumulator variable, so it is
-> forced to compute the value correctly before the inline assembly, and
-> cannot assume anything about its value after the inline assembly.
->
-> This change should be enough to make crypto_memneq work correctly (with
-> data-independent timing) even if it is inlined at its call sites. That
-> can be done later in a followup patch.
->
-> Compile-tested on x86_64.
->
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+On 11/25/2013 04:01 PM, Russell King - ARM Linux wrote:
+> On Mon, Nov 25, 2013 at 03:55:33PM -0800, Paul Walmsley wrote:
+>> Update the documentation for clk_round_rate() to state that it should
+>> return 0 rather than a negative error code when it encounters an
+>> error.  This describes how the common clock framework currently works;
+>> howeever, some clock code does not yet align to this.
+>>
+>> This change is to prepare for returning unsigned values from
+>> clk_round_rate().
+> You really ought to document why this is being changed here, to help
+> sell the change to parties who are not aware of the background.
+> Otherwise, it just looks like a gratuitous API change.
 
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Will do and resend.
 
-Looks good, thanks!
+- Paul
