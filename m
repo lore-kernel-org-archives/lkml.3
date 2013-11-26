@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3KZHoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 02:44:12 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:40914 "EHLO
+	id S1752007Ab3KZHqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 02:46:10 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:41371 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab3KZHoK (ORCPT
+	with ESMTP id S1751128Ab3KZHqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 02:44:10 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-2d-529451486179
-Message-id: <52945148.2020205@samsung.com>
-Date: Tue, 26 Nov 2013 16:44:08 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [GIT PULL] extcon fixes for 3.13-rc2
-Content-type: text/plain; charset=ISO-8859-1
+	Tue, 26 Nov 2013 02:46:06 -0500
+X-AuditID: cbfee68f-b7f336d00000481b-f1-529451b8e3ed
+Message-id: <1385451905.2417.3.camel@kjgkr>
+Subject: Re: [f2fs-dev][PATCH V2 0/6] f2fs: Enable f2fs support inline data
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Huajun Li <huajun.li.lee@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Huajun Li <huajun.li@intel.com>
+Date: Tue, 26 Nov 2013 16:45:05 +0900
+In-reply-to: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
+References: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
+Organization: Samsung
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsWyRsSkUNcjcEqQwaKrqhbNi9ezWZxtesNu
-	senxNVaLy7vmsFncblzB5sDqsX/uGnaPzUvqPfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugStj
-	Xtt35oI/nBUT7/9kb2Bcy9HFyMkhIWAiseT9UXYIW0ziwr31bF2MXBxCAksZJdobt7LCFL1s
-	2MUMkVjEKHHkzD1WCOcVo8S23/sYQap4BbQkWr+dBGrn4GARUJVoaywACbMBhfe/uMEGYosK
-	hEmsnH6FBaJcUOLH5HtgtoiAhsTLo7dYQGYyCxxilLhw/gzYScICuhLHdx4DK2IW0JHY3zqN
-	DcKWl9i85i3YRRICi9glruxbDnYqi4CAxLfJh1hAjpAQkJXYdIAZ4gNJiYMrbrBMYBSZhWT3
-	LCRjZyEZu4CReRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+7iZGYKSc/vesfwfj3QPWhxiTgVZO
-	ZJYSTc4HRlpeSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQWH2Jk
-	4uCUamBMujX/rpWWj/uvA0c9DfjnvKivf+MsIHVlSx+PjWBZ/mrlsvoao3v7P/Bt+x2j+6xv
-	pp6P1feuGYkM6knuO7f2a/69kBB7NkK8aY2zg93mgsDvVz5uvah8+RWvJf/bmijfM4l3rPRW
-	qhjmzlGcsX3D2h1lkS5u57P4zvdWvfzBuXyBtmF5/zQlluKMREMt5qLiRAChsevXqgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jAV2PwClBBn2n5S2aF69nszjb9Ibd
-	YtPja6wWl3fNYbO43biCzYHVY//cNewem5fUe/RtWcXo8XmTXABLVAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
-	oSFuuhYwjRG6viFBcD1GBmggYQ1jxry278wFfzgrJt7/yd7AuJaji5GTQ0LAROJlwy5mCFtM
-	4sK99WxdjFwcQgKLGCWOnLnHCuG8YpTY9nsfI0gVr4CWROu3k0BVHBwsAqoSbY0FIGE2oPD+
-	FzfYQGxRgTCJldOvsECUC0r8mHwPzBYR0JB4efQWC8hMZoFDjBIXzp9hB0kIC+hKHN95DKyI
-	WUBHYn/rNDYIW15i85q3zBMY+WYhmTULSdksJGULGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl
-	5+duYgTH4TPpHYyrGiwOMQpwMCrx8Ep0Tg4SYk0sK67MBbqGg1lJhNf1PlCINyWxsiq1KD++
-	qDQntfgQYzLQpxOZpUST84EpIq8k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFCAumJJanZqakF
-	qUUwW5g4OKUaGBtv8f/KPlyyW3BFybqQdc/EXhj8aMmt7Vpw53Qsb1O6m8quFbwasavkLaWD
-	Jkw+OpHnlO4Cs9WXOjlf+v47GbExRPxi3dk90TuvxTEILo+Tqnz82DRW9ea/18sfXFhh9KBC
-	/uedVrZ72h95PuYHLz9+aQ6LpLGMcuQ1r2XH+SZv3qezavUUezUlluKMREMt5qLiRADgf4UU
-	BwMAAA==
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI90dgVOCDF7e5LV4eUjTYsuWGIuv
+	/XfYLC4tcrfYs/cki8XlXXPYHNg8ds66y+6xeM9LJo/dCz4zefRtWcXo8XmTXABrFJdNSmpO
+	Zllqkb5dAlfGz6O/WAt+yVb0b/vN3MA4U6KLkYNDQsBE4tEijS5GTiBTTOLCvfVsXYxcHEIC
+	yxgl1u89xgqRMJE4dukSE0RiOqPE0tdnmSGcV4wSF1pPMoFU8QpoS7x8fokZxBYW8Ja40PWE
+	BWQDG1B8834DkLCQgKLE2/13wYaKCKhLvH4xlxVkDrNAF6PEk1vdYL0sAqoST79eYATp5RTw
+	kPi/QRGi113i2N+fYL38AqIShxduBytnBpozad4iZohDlSR2t3eyQ8TlJTavecsMcZqgxI/J
+	91ggau6xS7xZkwaxSkDi2+RDLJCAkJXYdABqjKTEwRU3WCYwSsxCsmEWkqmzkExdwMi8ilE0
+	tSC5oDgpvchYrzgxt7g0L10vOT93EyMkJvt3MN49YH2IMRlo5URmKdHkfGBM55XEGxqbGVmY
+	mpgaG5lbmpEmrCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxr1G/cqXVs5e1lCz
+	SKDI3yt/m3KyoV5PhPmqU3uj3u5PzH0WnL5pdplm4MnTmVzPPufHG9pIbC1qvGCt+Ds2dY7w
+	Nf6IZoFy1o73cfsd53zotDjnZXfkwNY9Xle/XN31zLeqPmXBGxGB1WLb+qY/0lwwnSn2UKn6
+	9Q17a1KU77kZ2lusKGTYo8RSnJFoqMVcVJwIAAoqUhbfAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQd0dgVOCDObe5bB4eUjTYsuWGIuv
+	/XfYLC4tcrfYs/cki8XlXXPYHNg8ds66y+6xeM9LJo/dCz4zefRtWcXo8XmTXABrVAOjTUZq
+	YkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QfiWFssScUqBQ
+	QGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxs+jv1gLfslW9G/7zdzAOFOii5GTQ0LA
+	ROLYpUtMELaYxIV769m6GLk4hASmM0osfX2WGcJ5xShxofUkWBWvgLbEy+eXmEFsYQFviQtd
+	T1i6GDk42IDim/cbgISFBBQl3u6/ywpiiwioS7x+MZcVZA6zQBejxJNb3WC9LAKqEk+/XmAE
+	6eUU8JD4v0ERotdd4tjfn2C9/AKiEocXbgcrZwaaM2neImaIQ5Ukdrd3skPE5SU2r3nLDHGa
+	oMSPyfdYJjAKzULSMgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf9M6kd
+	jCsbLA4xCnAwKvHwSnRODhJiTSwrrsw9xCjBwawkwut6HyjEm5JYWZValB9fVJqTWnyIMRno
+	uYnMUqLJ+cCElFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFIN
+	jKnetr9ftgpNNm5elWbVZFSr5ckTX5y47PvG4HXhjk5Tpz2bFbd2QuG9G/639l4UFIv+s958
+	1to7nr0XHqyK1t95lnv+92et3Zz2P0S/+Ox8YPFo48cX035dDo6dWrfsampzZEny2xdzvtSb
+	hoR4XI/85PhC7ujvdWqzv/Q8mvb6s/jfuQ8enxJSYinOSDTUYi4qTgQALVn/QT4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,36 +55,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Huajun,
 
-This is extcon fixes pull request for 3.13-rc2. I add detailed description of
-this pull request on below. Please pull extcon fixes with following updates.
+Please adjust the following bug fixes in your patches.
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+---
+ fs/f2fs/data.c   |  2 +-
+ fs/f2fs/file.c   | 12 +++++++-----
+ fs/f2fs/inline.c | 19 +++++++++++--------
+ 3 files changed, 19 insertions(+), 14 deletions(-)
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 2eed6e3..e44f0ba 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -534,8 +534,8 @@ static int get_data_block_ro(struct inode *inode,
+sector_t iblock,
+ 
+ static int f2fs_read_data_page(struct file *file, struct page *page)
+ {
++	struct inode *inode = page->mapping->host;
+ 	int ret;
+-	struct inode *inode = file->f_mapping->host;
 
-are available in the git repository at:
+>> The file pointer is NULL if this page contains file's symlink data,
+which induces NULL pointer error.
+ 
+ 	/* If the file has inline data, try to read it directlly */
+ 	if (f2fs_has_inline_data(inode))
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index ffafcb9..52bb211 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -257,8 +257,7 @@ static int truncate_blocks(struct inode *inode, u64
+from)
+ 	unsigned int blocksize = inode->i_sb->s_blocksize;
+ 	struct dnode_of_data dn;
+ 	pgoff_t free_from;
+-	int count = 0;
+-	int err;
++	int count = 0, err = 0;
+ 
+ 	trace_f2fs_truncate_blocks_enter(inode, from);
+ 
+@@ -266,6 +265,10 @@ static int truncate_blocks(struct inode *inode, u64
+from)
+ 			((from + blocksize - 1) >> (sbi->log_blocksize));
+ 
+ 	f2fs_lock_op(sbi);
++
++	if (f2fs_has_inline_data(inode))
++		goto done;
++
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-linus-for-3.13-rc2
+>> We don't need to do the below actions. Let's skip that.
 
-for you to fetch changes up to 7585ca0dc950583be7fc62099ca43a0c9551a875:
+ 	set_new_dnode(&dn, inode, NULL, NULL, 0);
+ 	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
+ 	if (err) {
+@@ -291,9 +294,8 @@ static int truncate_blocks(struct inode *inode, u64
+from)
+ 
+ 	f2fs_put_dnode(&dn);
+ free_next:
+-
+-	if (!f2fs_has_inline_data(inode))
+-		err = truncate_inode_blocks(inode, free_from);
++	err = truncate_inode_blocks(inode, free_from);
++done:
+ 	f2fs_unlock_op(sbi);
+ 
+ 	/* lastly zero out the first data page */
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index e9b33d7..6c301cc 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -48,13 +48,14 @@ int f2fs_read_inline_data(struct inode *inode,
+struct page *page)
+ 	if (IS_ERR(ipage))
+ 		return PTR_ERR(ipage);
+ 
+-	src_addr = inline_data_addr(ipage);
+-	dst_addr = page_address(page);
+-
+ 	zero_user_segment(page, INLINE_DATA_OFFSET,
+ 				INLINE_DATA_OFFSET + MAX_INLINE_DATA);
++
+ 	/* Copy the whole inline data block */
++	src_addr = inline_data_addr(ipage);
++	dst_addr = kmap(page);
+ 	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
++	kunmap(page);
 
-  extcon: remove freed groups caused the panic or warning in unregister flow (2013-11-26 15:17:23 +0900)
+>> We should do kmap/kunmap for normal data pages.
 
-----------------------------------------------------------------
-Update extcon for 3.13-rc2
+ 	f2fs_put_page(ipage, 1);
+ 
+ 	SetPageUptodate(page);
+@@ -89,12 +90,13 @@ static int __f2fs_convert_inline_data(struct inode
+*inode, struct page *page)
+ 		return err;
+ 	}
+ 
+-	src_addr = inline_data_addr(ipage);
+-	dst_addr = page_address(page);
+ 	zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+ 
+ 	/* Copy the whole inline data block */
++	src_addr = inline_data_addr(ipage);
++	dst_addr = kmap(page);
+ 	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
++	kunmap(page);
 
-This patchset fix NULL pointer error of extcon-arizona driver and fix issue
-about memory of device groups when calling extcon_dev_unregister function.
+>> ditto.
+ 
+ 	/* write data page to try to make data consistent */
+ 	old_blk_addr = dn.data_blkaddr;
+@@ -152,12 +154,13 @@ int f2fs_write_inline_data(struct inode *inode,
+ 		return err;
+ 	ipage = dn.inode_page;
+ 
+-	src_addr = page_address(page);
+-	dst_addr = inline_data_addr(ipage);
+-
+ 	zero_user_segment(ipage, INLINE_DATA_OFFSET,
+ 				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
++
++	src_addr = kmap(page);
++	dst_addr = inline_data_addr(ipage);
+ 	memcpy(dst_addr, src_addr, size);
++	kunmap(page);
 
-----------------------------------------------------------------
-Charles Keepax (1):
-      extcon: arizona: Get pdata from arizona structure not device
+>> ditto.
+ 
+ 	/* Release the first data block if it is allocated */
+ 	if (!f2fs_has_inline_data(inode)) {
+-- 
+1.8.4.474.g128a96c
 
-Wang, Xiaoming (1):
-      extcon: remove freed groups caused the panic or warning in unregister flow
 
- drivers/extcon/extcon-arizona.c | 4 +---
- drivers/extcon/extcon-class.c   | 3 ++-
- 2 files changed, 3 insertions(+), 4 deletions(-)
+
+-- 
+Jaegeuk Kim
+Samsung
+
