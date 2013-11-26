@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab3KZSNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35377 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770Ab3KZSNM (ORCPT
+	id S1757869Ab3KZSPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:15:06 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:53145 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830Ab3KZSPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:12 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.11 33/36] rt2x00: fix HT TX descriptor settings regression
-Date: Tue, 26 Nov 2013 10:12:43 -0800
-Message-Id: <20131126181032.091805228@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
-References: <20131126181025.029404973@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Tue, 26 Nov 2013 13:15:00 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5294E51E.60907@roeck-us.net>
+Date: Tue, 26 Nov 2013 10:14:54 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
+CC: Leela Krishna Amudala <l.krishna@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] watchdog: s3c2410_wdt: Only register for cpufreq on
+ ARM_S3C24XX_CPUFREQ
+References: <1385420137-32725-1-git-send-email-dianders@chromium.org> <1385422603-22684-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1385422603-22684-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On 11/25/2013 03:36 PM, Doug Anderson wrote:
+> On modern SoCs the watchdog timer is parented on a clock that doesn't
+> change every time we have a cpufreq change.  That means we don't need
+> to constantly adjust the watchdog timer, so avoid registering for and
+> dealing with cpufreq transitions unless we've actually got
+> CONFIG_ARM_S3C24XX_CPUFREQ defined.
+>
+> Note that this is more than just an optimization.  The s3c2410
+> watchdog driver actually pats the watchdog on every CPU frequency
+> change.  On modern systems these happen many times per second (even in
+> a system where "nothing" is happening).  That effectively makes any
+> userspace watchdog program useless (the watchdog is constantly patted
+> by the kernel).  If we need ARM_S3C24XX_CPUFREQ defined on a
+> multiplatform kernel we'll need to make sure that kernel supports
+> common clock and change this to user common clock framework.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-------------------
-
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-
-commit 3d8bfe141be8e5c21261fc63da8e7964d44f2645 upstream.
-
-Since:
-
-commit 36323f817af0376c78612cfdab714b0feb05fea5
-Author: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
-Date:   Mon Jul 23 21:33:42 2012 +0200
-
-    mac80211: move TX station pointer and restructure TX
-
-we do not pass sta pointer to rt2x00queue_create_tx_descriptor_ht(),
-hence we do not correctly set station WCID and AMPDU density parameters.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rt2x00/rt2x00lib.h   |    2 +-
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    4 ++--
- drivers/net/wireless/rt2x00/rt2x00queue.c |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
---- a/drivers/net/wireless/rt2x00/rt2x00lib.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00lib.h
-@@ -146,7 +146,7 @@ void rt2x00queue_remove_l2pad(struct sk_
-  * @local: frame is not from mac80211
-  */
- int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
--			       bool local);
-+			       struct ieee80211_sta *sta, bool local);
- 
- /**
-  * rt2x00queue_update_beacon - Send new beacon from mac80211
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -90,7 +90,7 @@ static int rt2x00mac_tx_rts_cts(struct r
- 				  frag_skb->data, data_length, tx_info,
- 				  (struct ieee80211_rts *)(skb->data));
- 
--	retval = rt2x00queue_write_tx_frame(queue, skb, true);
-+	retval = rt2x00queue_write_tx_frame(queue, skb, NULL, true);
- 	if (retval) {
- 		dev_kfree_skb_any(skb);
- 		rt2x00_warn(rt2x00dev, "Failed to send RTS/CTS frame\n");
-@@ -151,7 +151,7 @@ void rt2x00mac_tx(struct ieee80211_hw *h
- 			goto exit_fail;
- 	}
- 
--	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
-+	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, control->sta, false)))
- 		goto exit_fail;
- 
- 	/*
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -635,7 +635,7 @@ static void rt2x00queue_bar_check(struct
- }
- 
- int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
--			       bool local)
-+			       struct ieee80211_sta *sta, bool local)
- {
- 	struct ieee80211_tx_info *tx_info;
- 	struct queue_entry *entry;
-@@ -649,7 +649,7 @@ int rt2x00queue_write_tx_frame(struct da
- 	 * after that we are free to use the skb->cb array
- 	 * for our information.
- 	 */
--	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, NULL);
-+	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, sta);
- 
- 	/*
- 	 * All information is retrieved from the skb->cb array,
-
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
