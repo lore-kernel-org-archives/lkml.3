@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3KZDFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:05:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27305 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab3KZDFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:05:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,771,1378882800"; 
-   d="scan'208";a="439833080"
-Subject: Re: [PATCH V2] n_gsm: race between ld close and gsmtty open
-From: channing <chao.bi@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-In-Reply-To: <20131126025432.GA3379@kroah.com>
-References: <1385435645.7741.28.camel@bichao>
-	 <20131126025432.GA3379@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Nov 2013 11:35:14 +0800
-Message-ID: <1385436914.7741.40.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752811Ab3KZDKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:10:31 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:45058 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab3KZDK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 22:10:29 -0500
+Message-ID: <5294111B.5040905@linux.vnet.ibm.com>
+Date: Tue, 26 Nov 2013 11:10:19 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>
+CC: Gleb Natapov <gleb@redhat.com>,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com> <20131125142351.GA6056@amt.cnet>
+In-Reply-To: <20131125142351.GA6056@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112603-9264-0000-0000-000005007570
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 18:54 -0800, Greg KH wrote:
-> On Tue, Nov 26, 2013 at 11:14:05AM +0800, channing wrote:
-
-> > This patch is try to avoid it by:
-> > 
-> > 1) in n_gsm driver, use a global gsm mutex lock to avoid gsm_dlci_release() run in
-> > parallel with gsmtty_install();
-The commit is updated here than formal patch set: we use mutex lock in
-patch V2, while use spin lock in patch V1.
-
-> > 
-> > 2) Increase dlci's ref count in gsmtty_install() instead of in gsmtty_open(), the
-> > purpose is to prevent gsm_dlci_release() releasing dlci after gsmtty_install()
-> > allocats dlci but before gsmtty_open increases dlci's ref count;
-> > 
-> > 3) Decrease dlci's ref count in gsmtty_remove(), a tty framework API, this is the
-> > opposite process of step 2).
-> > 
-> > Signed-off-by: Chao Bi <chao.bi@intel.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 11/25/2013 10:23 PM, Marcelo Tosatti wrote:
+> On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
+>> On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
+>> <xiaoguangrong@linux.vnet.ibm.com> wrote:
+>>>
+>>> On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>>
+>> <snip complicated stuff about parent_pte>
+>>
+>> I'm not really following, but note that parent_pte predates EPT (and
+>> the use of rcu in kvm), so all the complexity that is the result of
+>> trying to pack as many list entries into a cache line can be dropped.
+>> Most setups now would have exactly one list entry, which is handled
+>> specially antyway.
+>>
+>> Alternatively, the trick of storing multiple entries in one list entry
+>> can be moved to generic code, it may be useful to others.
 > 
-> I have not signed off on this additional patch.
-> 
-> What is different from the previous version?  That information needs to
-> be somewhere, otherwise I'm just going to guess and say this is the same
-> as your last one, which was incorrect.
-The difference with previous one is to use a mutex instead of spin lock
-to avoid race, purpose is to avoid sleep in atomic context. I've also
-updated commit a little as above.
+> Yes, can the lockless list walking code be transformed into generic
+> single-linked list walking? So the correctness can be verified
+> independently, and KVM becomes a simple user of that interface.
+
+I'am afraid the signle-entry list is not so good as we expected. In my
+experience, there're too many entries on rmap, more than 300 sometimes.
+(consider a case that a lib shared by all processes).
 
 > 
-> Also, please fix your "From:" line in your email client to match your
-> Signed-off-by: line, or else add the proper "From:" line to your patch,
-> as the Documentation/SubmittingPatches file says.
-> 
-> Care to try again?
-Yes, I'll correct it. thanks.
-> 
-> greg k-h
+> The simpler version is to maintain lockless walk on depth-1 rmap entries
+> (and grab the lock once depth-2 entry is found).
+
+I still think rmap-lockless is more graceful: soft mmu can get benefit
+from it also it is promising to be used in some mmu-notify functions. :)
 
 
