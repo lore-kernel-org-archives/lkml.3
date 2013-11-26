@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab3KZUse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 15:48:34 -0500
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:52453 "EHLO
+	id S1757849Ab3KZUvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 15:51:06 -0500
+Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:52468 "EHLO
 	dhcp-26-207.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932300Ab3KZUsc (ORCPT
+	by vger.kernel.org with ESMTP id S1752492Ab3KZUvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 15:48:32 -0500
+	Tue, 26 Nov 2013 15:51:03 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -16,104 +16,132 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
         David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v3 00/11] Introduce pcim_enable_msi*() family helpers
-Date: Tue, 26 Nov 2013 10:09:49 +0100
-Message-Id: <cover.1385399393.git.agordeev@redhat.com>
+Subject: [PATCH v3 04/11] PCI/MSI/pSeries: Make quota traversing and requesting race-safe
+Date: Tue, 26 Nov 2013 10:09:53 +0100
+Message-Id: <97749db3e9562eb05fb3ee22a0be0ed7a93a0615.1385399393.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1385399393.git.agordeev@redhat.com>
+References: <cover.1385399393.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is against "next" branch in Bjorn's repo:
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
+The current MSI quota handling is not race-safe and might lead
+to incoherent number of MSIs allocated between the firmware and
+Linux MSI data structures. I.e. if the following chain is called
+from concurrently loading drivers: rtas_setup_msi_irqs() ->
+msi_quota_for_device() -> traverse_pci_devices() a driver might
+get a stalled value of MSI limit for its device or possibly even
+crash.
 
-Changes from v2 to v3:
-  - new public interfaces commented in drivers/pci/msi.c;
-  - patch "Make quota traversing and requesting race-safe" explained;
-  - pci_enable_msi/msix() 'nvec' arg type changed from 'unsigned int' to 'int';
-  - pcim_enable_msi*() arg 'nvec' renamed to 'maxvec' when upper limit passed;
-  - pcim_enable_msi*(..., maxvec, minvec) arg order swapped to minvec, maxvec;
-  - "PCI: Fail MSI/MSI-X initialization if device is not in PCI_D0" commit
-    869a161 and "PCI/MSI: Factor out pci_get_msi_cap() interface" patch
-    conflicts resolved;
+This update introduces "rtas_quota_mutex" and serializes all
+accesses to msi_quota_for_device() function. As result, no driver
+could eat into other device's MSI limit.
 
-Tejun, due to last three changes will you keep your "Acked-By" and
-"Reviewed-by" on these patches?
-  PCI/MSI: Factor out pci_get_msi_cap() interface
-  PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
-  PCI/MSI: Convert pci_msix_table_size() to a public interface
-  PCI/MSI: Introduce pcim_enable_msi*() family helpers
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/powerpc/platforms/pseries/msi.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-Currently many device drivers need contiguously call functions
-pci_enable_msix() for MSI-X or pci_enable_msi_block() for MSI
-in a loop until success or failure. This update generalizes
-this usage pattern and introduces pcim_enable_msi*() family
-helpers.
-
-As result, device drivers do not have to deal with tri-state
-return values from pci_enable_msix() and pci_enable_msi_block()
-functions directly and expected to have more clearer and straight
-code.
-
-So i.e. the request loop described in the documentation...
-
-	int foo_driver_enable_msix(struct foo_adapter *adapter,
-				   int nvec)
-	{
-		while (nvec >= FOO_DRIVER_MINIMUM_NVEC) {
-			rc = pci_enable_msix(adapter->pdev,
-					     adapter->msix_entries,
-					     nvec);
-			if (rc > 0)
-				nvec = rc;
-			else
-				return rc;
-		}
-
-		return -ENOSPC;
-	}
-
-...would turn into a single helper call....
-
-	rc = pcim_enable_msix_range(adapter->pdev,
-				    adapter->msix_entries,
-				    FOO_DRIVER_MINIMUM_NVEC,
-				    nvec);
-
-Device drivers with more specific requirements (i.e. a number of
-MSI-Xs which is a multiple of a certain number within a specified
-range) would still need to implement the loop using the two old
-functions.
-
-Patches 1,2	- ACK'ed tweaks for s390 architecture
-Patches 3,4	- fixes for PowerPC pSeries platform
-Patches 5-11	- fixes, tweaks and changes of the generic MSI code
-
-The tree could be found in "pci-next-msi-v3" branch in repo:
-https://github.com/a-gordeev/linux.git
-
-Alexander Gordeev (11):
-  PCI/MSI/s390: Fix single MSI only check
-  PCI/MSI/s390: Remove superfluous check of MSI type
-  PCI/MSI/pSeries: Fix wrong error code reporting
-  PCI/MSI/pSeries: Make quota traversing and requesting race-safe
-  PCI/MSI: Fix return value when populate_msi_sysfs() failed
-  PCI/MSI: Return -ENOSYS for unimplemented interfaces, not -1
-  PCI/MSI: Make pci_enable_msi/msix() 'nvec' argument type as int
-  PCI/MSI: Factor out pci_get_msi_cap() interface
-  PCI/MSI: Get rid of pci_enable_msi_block_auto() interface
-  PCI/MSI: Convert pci_msix_table_size() to a public interface
-  PCI/MSI: Introduce pcim_enable_msi*() family helpers
-
- Documentation/PCI/MSI-HOWTO.txt      |  175 +++++++++++++++++++++++++++++-----
- arch/powerpc/platforms/pseries/msi.c |   26 +++++-
- arch/s390/pci/pci.c                  |    4 +-
- drivers/ata/ahci.c                   |   56 +++++++----
- drivers/pci/msi.c                    |  157 +++++++++++++++++++++++--------
- drivers/pci/pcie/portdrv_core.c      |    5 +-
- include/linux/pci.h                  |   72 ++++++++++++--
- 7 files changed, 395 insertions(+), 100 deletions(-)
-
+diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
+index 009ec73..0e1d288 100644
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -26,6 +26,8 @@ static int query_token, change_token;
+ #define RTAS_CHANGE_MSIX_FN	4
+ #define RTAS_CHANGE_32MSI_FN	5
+ 
++static DEFINE_MUTEX(rtas_quota_mutex);
++
+ /* RTAS Helpers */
+ 
+ static int rtas_change_msi(struct pci_dn *pdn, u32 func, u32 num_irqs)
+@@ -345,7 +347,9 @@ static int rtas_msi_check_device(struct pci_dev *pdev, int nvec, int type)
+ 	if (rc)
+ 		return rc;
+ 
++	mutex_lock(&rtas_quota_mutex);
+ 	quota = msi_quota_for_device(pdev, nvec);
++	mutex_unlock(&rtas_quota_mutex);
+ 
+ 	if (quota && quota < nvec)
+ 		return quota;
+@@ -399,6 +403,7 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
+ 	struct msi_msg msg;
+ 	int nvec = nvec_in;
+ 	int use_32bit_msi_hack = 0;
++	int quota;
+ 
+ 	pdn = pci_get_pdn(pdev);
+ 	if (!pdn)
+@@ -407,13 +412,21 @@ static int rtas_setup_msi_irqs(struct pci_dev *pdev, int nvec_in, int type)
+ 	if (type == PCI_CAP_ID_MSIX && check_msix_entries(pdev))
+ 		return -EINVAL;
+ 
++	mutex_lock(&rtas_quota_mutex);
++
++	quota = msi_quota_for_device(pdev, nvec);
++	if (quota && quota < nvec) {
++		mutex_unlock(&rtas_quota_mutex);
++		return quota;
++	}
++
+ 	/*
+ 	 * Firmware currently refuse any non power of two allocation
+ 	 * so we round up if the quota will allow it.
+ 	 */
+ 	if (type == PCI_CAP_ID_MSIX) {
+ 		int m = roundup_pow_of_two(nvec);
+-		int quota = msi_quota_for_device(pdev, m);
++		quota = msi_quota_for_device(pdev, m);
+ 
+ 		if (quota >= m)
+ 			nvec = m;
+@@ -433,8 +446,11 @@ again:
+ 				 * We only want to run the 32 bit MSI hack below if
+ 				 * the max bus speed is Gen2 speed
+ 				 */
+-				if (pdev->bus->max_bus_speed != PCIE_SPEED_5_0GT)
++				if (pdev->bus->max_bus_speed !=
++				    PCIE_SPEED_5_0GT) {
++					mutex_unlock(&rtas_quota_mutex);
+ 					return rc;
++				}
+ 
+ 				use_32bit_msi_hack = 1;
+ 			}
+@@ -459,6 +475,7 @@ again:
+ 			nvec = nvec_in;
+ 			goto again;
+ 		}
++		mutex_unlock(&rtas_quota_mutex);
+ 		pr_debug("rtas_msi: rtas_change_msi() failed\n");
+ 		return rc;
+ 	}
+@@ -467,6 +484,7 @@ again:
+ 	list_for_each_entry(entry, &pdev->msi_list, list) {
+ 		hwirq = rtas_query_irq_number(pdn, i++);
+ 		if (hwirq < 0) {
++			mutex_unlock(&rtas_quota_mutex);
+ 			pr_debug("rtas_msi: error (%d) getting hwirq\n", hwirq);
+ 			return hwirq;
+ 		}
+@@ -474,6 +492,7 @@ again:
+ 		virq = irq_create_mapping(NULL, hwirq);
+ 
+ 		if (virq == NO_IRQ) {
++			mutex_unlock(&rtas_quota_mutex);
+ 			pr_debug("rtas_msi: Failed mapping hwirq %d\n", hwirq);
+ 			return -ENOSPC;
+ 		}
+@@ -486,6 +505,7 @@ again:
+ 		entry->msg = msg;
+ 	}
+ 
++	mutex_unlock(&rtas_quota_mutex);
+ 	return 0;
+ }
+ 
 -- 
 1.7.7.6
 
