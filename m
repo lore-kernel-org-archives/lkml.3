@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3KZBaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:30:10 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26442 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3KZB3S (ORCPT
+	id S1753490Ab3KZB2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:28:23 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25937 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab3KZB2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:29:18 -0500
+	Mon, 25 Nov 2013 20:28:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 09/10] PCI: Sort pci root bus resources list
-Date: Mon, 25 Nov 2013 17:28:09 -0800
-Message-Id: <1385429290-25397-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 00/10] PCI: Double removing fix and allocate 64bit mmio pref
+Date: Mon, 25 Nov 2013 17:28:00 -0800
+Message-Id: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some x86 systems expose above 4G 64bit mmio in _CRS as non-pref mmio range.
-[   49.415281] PCI host bridge to bus 0000:00
-[   49.419921] pci_bus 0000:00: root bus resource [bus 00-1e]
-[   49.426107] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
-[   49.433041] pci_bus 0000:00: root bus resource [io  0x1000-0x5fff]
-[   49.440010] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
-[   49.447768] pci_bus 0000:00: root bus resource [mem 0xfed8c000-0xfedfffff]
-[   49.455532] pci_bus 0000:00: root bus resource [mem 0x90000000-0x9fffbfff]
-[   49.463259] pci_bus 0000:00: root bus resource [mem 0x380000000000-0x381fffffffff]
+First 4 are for Gu Zheng <guz.fnst@cn.fujitsu.com> to help double pci
+device removing via sysfs.
 
-During assign unassigned 64bit mmio resource, it will go through
-every non-pref mmio for root bus in pci_bus_alloc_resource().
-As the loop is with pci_bus_for_each_resource(), and could have chance
-to use under 4G mmio range instead of above 4G mmio range if the requested
-range is not big enough, even it could handle above 4G 64bit pref mmio.
+Second 6 are about mmio 64 allocation that could help Guo Chao <yan@linux.vnet.ibm.com> on powerpc mmio allocation.
+It will try to assign 64 bit resource above 4g at first.
 
-For root bus, we can order list from high to low in pci_add_resource_offset(),
-during creating root bus, it will still keep the same order in final bus
-resource list.
-	pci_acpi_scan_root
-		==> add_resources
-			==> pci_add_resource_offset: # Add to temp resources
-		==> pci_create_root_bus
-			==> pci_bus_add_resource # add to final bus resources.
+Could be found:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-3.14
 
-After that, we can make sure 64bit pref mmio for pci bridges will be allocated
-higest of mmio non-pref, and in this case it is above 4G instead of under 4G.
+And it is based on current pci/for-linus.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/bus.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+-v2: update after patch that move device_del down to pci_destroy_dev.
+     add "Try best to allocate pref mmio 64bit above 4G"
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index f801f6a..adf17858 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -21,7 +21,8 @@
- void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 			     resource_size_t offset)
- {
--	struct pci_host_bridge_window *window;
-+	struct pci_host_bridge_window *window, *tmp;
-+	struct list_head *n;
- 
- 	window = kzalloc(sizeof(struct pci_host_bridge_window), GFP_KERNEL);
- 	if (!window) {
-@@ -31,7 +32,17 @@ void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 
- 	window->res = res;
- 	window->offset = offset;
--	list_add_tail(&window->list, resources);
-+
-+	/* sorted it according to res end */
-+	n = resources;
-+	list_for_each_entry(tmp, resources, list)
-+		if (window->res->end > tmp->res->end) {
-+			n = &tmp->list;
-+			break;
-+		}
-+
-+	/* Insert it just before n */
-+	list_add_tail(&window->list, n);
- }
- EXPORT_SYMBOL(pci_add_resource_offset);
- 
+Yinghai Lu (10):
+  PCI: Use device_release_driver in pci_stop_root_bus
+  PCI: Move back pci_proc_attach_devices calling
+  PCI: Move resources and bus_list releasing to pci_release_dev
+  PCI: Destroy pci dev only once
+  PCI: pcibus address to resource converting take bus directly
+  PCI: Add pcibios_bus_addr_to_res()
+  PCI: Try to allocate mem64 above 4G at first
+  PCI: Try best to allocate pref mmio 64bit above 4g
+  PCI: Sort pci root bus resources list
+  intel-gtt: Read 64bit for gmar_bus_addr
+
+ arch/x86/include/asm/pci.h   |   1 -
+ drivers/char/agp/intel-gtt.c |  14 +++--
+ drivers/pci/bus.c            |  58 +++++++++++++++----
+ drivers/pci/host-bridge.c    |  48 +++++++++++-----
+ drivers/pci/pci.h            |   2 +
+ drivers/pci/probe.c          |  23 ++++++--
+ drivers/pci/remove.c         |  31 +++-------
+ drivers/pci/setup-bus.c      | 133 ++++++++++++++++++++++++++++---------------
+ drivers/pci/setup-res.c      |  14 ++++-
+ include/linux/pci.h          |  10 ++--
+ 10 files changed, 228 insertions(+), 106 deletions(-)
+
 -- 
 1.8.1.4
 
