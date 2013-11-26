@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab3KZSQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:16:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35409 "EHLO
+	id S932515Ab3KZSQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:16:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab3KZSNH (ORCPT
+	with ESMTP id S932294Ab3KZSNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:07 -0500
+	Tue, 26 Nov 2013 13:13:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.11 26/36] ACPI / hotplug: Do not execute "insert in progress" _OST
-Date: Tue, 26 Nov 2013 10:12:36 -0800
-Message-Id: <20131126181030.564599399@linuxfoundation.org>
+        Jerome Marchand <jmarchan@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 3.11 27/36] Staging: zram: Fix access of NULL pointer
+Date: Tue, 26 Nov 2013 10:12:37 -0800
+Message-Id: <20131126181030.815355006@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -26,39 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Rashika Kheria <rashika.kheria@gmail.com>
 
-commit 176a88d79d6b5aebabaff16734e8b3107efcaaad upstream.
+commit 46a51c80216cb891f271ad021f59009f34677499 upstream.
 
-According to the ACPI spec (5.0, Section 6.3.5), the "Device
-insertion in progress (pending)" (0x80) _OST status code is
-reserved for the "Insertion Processing" (0x200) source event
-which is "a result of an OSPM action".  Specifically, it is not
-a notification, so that status code should not be used during
-notification processing, which unfortunately is done by
-acpi_scan_bus_device_check().
+This patch fixes the bug in reset_store caused by accessing NULL pointer.
 
-For this reason, drop the ACPI_OST_SC_INSERT_IN_PROGRESS _OST
-status evaluation from there (it was a mistake to put it in there
-in the first place).
+The bdev gets its value from bdget_disk() which could fail when memory
+pressure is severe and hence can return NULL because allocation of
+inode in bdget could fail.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hence, this patch introduces a check for bdev to prevent reference to a
+NULL pointer in the later part of the code. It also removes unnecessary
+check of bdev for fsync_bdev().
+
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/zram/zram_drv.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -359,8 +359,6 @@ static void acpi_scan_bus_device_check(a
- 			goto out;
- 		}
- 	}
--	acpi_evaluate_hotplug_ost(handle, ost_source,
--				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
- 	error = acpi_bus_scan(handle);
- 	if (error) {
- 		acpi_handle_warn(handle, "Namespace scan failure\n");
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -647,6 +647,9 @@ static ssize_t reset_store(struct device
+ 	zram = dev_to_zram(dev);
+ 	bdev = bdget_disk(zram->disk, 0);
+ 
++	if (!bdev)
++		return -ENOMEM;
++
+ 	/* Do not reset an active device! */
+ 	if (bdev->bd_holders)
+ 		return -EBUSY;
+@@ -659,8 +662,7 @@ static ssize_t reset_store(struct device
+ 		return -EINVAL;
+ 
+ 	/* Make sure all pending I/O is finished */
+-	if (bdev)
+-		fsync_bdev(bdev);
++	fsync_bdev(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
 
 
