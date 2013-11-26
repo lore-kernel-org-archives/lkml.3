@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab3KZLFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:05:47 -0500
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:41645 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756122Ab3KZLFq (ORCPT
+	id S1756478Ab3KZLLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:11:49 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:30035
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755045Ab3KZLLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:05:46 -0500
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Tue, 26 Nov 2013 15:05:36 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf timechart: remove lock_depth from trace_entry
-Message-ID: <20131126110536.GC3388@stfomichev-desktop>
-References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
- <20131022103223.GA29489@stfomichev-desktop>
- <20131125182139.GD20168@ghostprotocols.net>
+	Tue, 26 Nov 2013 06:11:47 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Emilian.Medve@freescale.com>, <madalin.bucur@freescale.com>
+Subject: [PATCH 1/5][v2] phylib: Add Clause 45 read/write functions
+Date: Tue, 26 Nov 2013 17:51:52 +0800
+Message-ID: <1385459512-23731-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131125182139.GD20168@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This makes the new tool stop processing old files, can you try the patch
-> attached instead?
-I see two downsides to your approach:
-1) with your patch I'm now required to run 'perf timechart record' and
-'perf timechart' on the same machine (otherwise, on the 'perf timechart'
-machine we may have wrong fields definitions that don't match perf.data).
-Currently, it's possible to use 'perf timechart record' on the target and do
-'perf timechart' on the host (at least I do it this way).
-2) only root can run 'perf timechart' now (because of permissions on
-/sys/kernel/debug).
+From: Andy Fleming <afleming@freescale.com>
 
-Maybe we can we make some simple version check against the perf.data file and
-just refuse to process the old one (not sure if it's possible)?
+Need an extra parameter to read or write Clause 45 PHYs, so
+need a different API with the extra parameter.
 
-> Its only compile tested tho.
-Ok, I'll test it if we are fine with the new limitations.
+Signed-off-by: Andy Fleming <afleming@freescale.com>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+v2: no change.
+
+ include/linux/phy.h | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 48a4dc3..2549b42 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -498,6 +498,21 @@ static inline int phy_read(struct phy_device *phydev, u32 regnum)
+ }
+ 
+ /**
++ * phy_read_mmd - Convenience function for reading a register
++ * from an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ *
++ * Same rules as for phy_read();
++ */
++static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
++{
++	return mdiobus_read(phydev->bus, phydev->addr,
++		MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
++}
++
++/**
+  * phy_write - Convenience function for writing a given PHY register
+  * @phydev: the phy_device struct
+  * @regnum: register number to write
+@@ -533,6 +548,24 @@ static inline bool phy_is_internal(struct phy_device *phydev)
+ 	return phydev->is_internal;
+ }
+ 
++/**
++ * phy_write_mmd - Convenience function for writing a register
++ * on an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ * @val: value to write to @regnum
++ *
++ * Same rules as for phy_write();
++ */
++static inline int phy_write_mmd(struct phy_device *phydev, int devad,
++		u32 regnum, u16 val)
++{
++	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
++
++	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
++}
++
+ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 		bool is_c45, struct phy_c45_device_ids *c45_ids);
+ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
+-- 
+1.8.4.1
+
+
