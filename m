@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab3KZMys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:54:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab3KZMyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:54:46 -0500
-Date: Tue, 26 Nov 2013 13:54:12 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCHv2] perf tools: Fix tags/TAGS targets rebuilding
-Message-ID: <20131126125412.GJ1267@krava.brq.redhat.com>
-References: <1385464890-19876-1-git-send-email-jolsa@redhat.com>
- <20131126113108.GE2410@gmail.com>
- <20131126115043.GG1267@krava.brq.redhat.com>
- <20131126120055.GA6103@gmail.com>
+	id S1753031Ab3KZMzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:55:55 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35372 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab3KZMzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:55:52 -0500
+Message-ID: <52949A4F.7030004@parallels.com>
+Date: Tue, 26 Nov 2013 16:55:43 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126120055.GA6103@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: <linux-kernel@vger.kernel.org>, <glommer@openvz.org>, <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <devel@openvz.org>
+Subject: Re: [Devel] [PATCH v11 00/15] kmemcg shrinkers
+References: <cover.1385377616.git.vdavydov@parallels.com> <20131125174135.GE22729@cmpxchg.org> <529443E4.7080602@parallels.com>
+In-Reply-To: <529443E4.7080602@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.24.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 01:00:55PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > On Tue, Nov 26, 2013 at 12:31:08PM +0100, Ingo Molnar wrote:
+On 11/26/2013 10:47 AM, Vladimir Davydov wrote:
+> Hi,
+>
+> Thank you for the review. I agree with all your comments and I'll 
+> resend the fixed version soon.
+>
+> If anyone still has something to say about the patchset, I'd be glad 
+> to hear from them.
+>
+> On 11/25/2013 09:41 PM, Johannes Weiner wrote:
+>> I ran out of steam reviewing these because there were too many things
+>> that should be changed in the first couple patches.
+>>
+>> I realize this is frustrating to see these type of complaints in v11
+>> of a patch series, but the review bandwidth was simply exceeded back
+>> when Glauber submitted this along with the kmem accounting patches.  A
+>> lot of the kmemcg commits themselves don't even have review tags or
+>> acks, but it all got merged anyway, and the author has moved on to
+>> different projects...
+>>
+>> Too much stuff slips past the only two people that have more than one
+>> usecase on their agenda and are willing to maintain this code base -
+>> which is in desparate need of rework and pushback against even more
+>> drive-by feature dumps.  I have repeatedly asked to split the memcg
+>> tree out of the memory tree to better deal with the vastly different
+>> developmental stages of memcg and the rest of the mm code, to no
+>> avail.  So I don't know what to do anymore, but this is not working.
+>>
+>> Thoughts?
+>
+> That's a pity, because w/o this patchset kmemcg is in fact useless. 
+> Perhaps, it's worth trying to split it? (not sure if it'll help much 
+> though since first 11 patches are rather essential :-( )
 
-SNIP
+What do you think about splitting this set into two main series as follows:
 
-> > > 
-> > > Also note that we have duplicate code for this in Makefile.perf 
-> > > already. Would it be possible to pass through this there and keep the 
-> > > main Makefile is just a thin, minimal wrapper that adds default 
-> > > parallelism, etc?
-> > 
-> > well, thats what I actually tried to do.. pass the
-> > processing to the Makefile.perf otherwise it stops
-> > in Makefile
-> > 
-> > I guess you want some generic way of doing that
-> 
-> If it's just these two phony targets that need to be in the main 
-> makefile then I guess your approach is the simplest one and we should 
-> do it like that instead of complicating the interface. If it gets 
-> messier in the future we can reconsider?
-> 
+1) Prepare vmscan to kmemcg-aware shrinkers; would include patches 1-7 
+of this set.
+2) Make fs shrinkers memcg-aware; would include patches 9-11 of this set
 
-sounds good, pelase check v2
+and leave other patches, which are rather for optimization/extending 
+functionality, for future?
 
-thanks,
-jirka
-
-
----
-Once the tags/TAGS file is generated it's never rebuilt
-until it's removed by hand.
-
-The reason is that the Makefile does not treat tags/TAGS
-as targets but as files and thus won't rebuilt them
-once they are in place.
-
-Adding PHONY tags/TAGS targets into Makefile.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4835618..eefb9fb 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -60,8 +60,11 @@ endef
- 
- #
- # Needed if no target specified:
-+# (Except for tags and TAGS targets. The reason is that the
-+# Makefile does not treat tags/TAGS as targets but as files
-+# and thus won't rebuilt them once they are in place.)
- #
--all:
-+all tags TAGS:
-	$(print_msg)
-	$(make)
- 
-@@ -77,3 +80,5 @@ clean:
- %:
-	$(print_msg)
-	$(make)
-+
-+.PHONY: tags TAGS
--- 
-1.8.3.1
-
+Thanks.
