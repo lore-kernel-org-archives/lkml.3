@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab3KZSNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35475 "EHLO
+	id S932402Ab3KZSNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:13:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35463 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756932Ab3KZSNP (ORCPT
+	with ESMTP id S1757776Ab3KZSNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:15 -0500
+	Tue, 26 Nov 2013 13:13:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.11 29/36] Drivers: hv: vmbus: Fix a bug in channel rescind code
-Date: Tue, 26 Nov 2013 10:12:39 -0800
-Message-Id: <20131126181031.204016086@linuxfoundation.org>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 3.11 35/36] Revert "ima: policy for RAMFS"
+Date: Tue, 26 Nov 2013 10:12:45 -0800
+Message-Id: <20131126181032.523697195@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -26,39 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-commit 565ce6422ff92f5af71e4d5a09f78215433b2695 upstream.
+commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
 
-Rescind of subchannels were not being correctly handled. Fix the bug.
+This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Everything in the initramfs should be measured and appraised,
+but until the initramfs has extended attribute support, at
+least measured.
+
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel_mgmt.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ security/integrity/ima/ima_policy.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -172,7 +172,8 @@ static void vmbus_process_rescind_offer(
- 	struct vmbus_channel *primary_channel;
- 	struct vmbus_channel_relid_released msg;
- 
--	vmbus_device_unregister(channel->device_obj);
-+	if (channel->device_obj)
-+		vmbus_device_unregister(channel->device_obj);
- 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
- 	msg.child_relid = channel->offermsg.child_relid;
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
-@@ -185,7 +186,7 @@ static void vmbus_process_rescind_offer(
- 	} else {
- 		primary_channel = channel->primary_channel;
- 		spin_lock_irqsave(&primary_channel->sc_lock, flags);
--		list_del(&channel->listentry);
-+		list_del(&channel->sc_list);
- 		spin_unlock_irqrestore(&primary_channel->sc_lock, flags);
- 	}
- 	free_channel(channel);
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
+ 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+-	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
 
 
