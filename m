@@ -1,371 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab3KZJDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 04:03:18 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8602 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab3KZJCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 04:02:12 -0500
-X-AuditID: cbfec7f4-b7fea6d0000026ac-5f-529463900454
-From: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Tyrtov Vyacheslav <v.tyrtov@samsung.com>, Dave.Martin@arm.com,
-        nicolas.pitre@linaro.org, tomasz.figa@gmail.com
-Subject: [PATCH v4 3/4] ARM: dts: Add initial device tree support for EXYNOS5410
-Date: Tue, 26 Nov 2013 12:58:07 +0400
-Message-id: <1385456288-20398-4-git-send-email-v.tyrtov@samsung.com>
-X-Mailer: git-send-email 1.8.1.5
-In-reply-to: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
-References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/xK7oTkqcEGVyaom8xad0BJot5n2Ut
-	mubuYbSYf+Qcq8X/R69ZLc69Wslo0bvgKpvFpsfXWC0Wti1hsbi8aw6bxYzz+5gsbl/mtVh6
-	/SKTxdMJF9ksPj37x24xYfpaFovDK4CmrXs5ncViy88ORotXB9tYLNY/P8VosXnTVGaLVbv+
-	MFpMnfGD3UHCY828NYweLc09bB4LPl9h9/i76gWzx85Zd9k9Vi7/wubxavVMVo871/awebw7
-	d47dY/OSeo9X11g8+rasYvTYfm0es8fnTXIeG+eGBvBHcdmkpOZklqUW6dslcGW8nLWVteCl
-	Q8X5VTfYGxiPGXUxcnJICJhI3FwwiwnCFpO4cG89G4gtJLCUUaJnml8XIxeQ3cMkcb7vKStI
-	gk1AT6Lv1Q0WEFtEQEFic+8zVpAiZoFDbBKv799lBkkICwRIXGjpAJrKwcEioCqxbK0niMkr
-	4CLx62M9xC4FiaNtb9lBwpwCrhKXdodDrHWRWPP+ONsERt4FjAyrGEVTS5MLipPScw31ihNz
-	i0vz0vWS83M3MUKi6ssOxsXHrA4xCnAwKvHwFnRPDhJiTSwrrsw9xCjBwawkwut6HyjEm5JY
-	WZValB9fVJqTWnyIkYmDU6qBkX3RrAhGxvUmTNyijQk27gyFE25f3HvdeAW30Oznu+z3qtus
-	DJMweBWZEP7/7ONnTpZblrx24/OJez1nYpf5n6kHd5/5Mncn43GrorwECTHvZ8dYXyzRzZzW
-	feTOFX3/xLTLMm8FfCKKLx/NTfpzJGfSeu/biqV+Oj1CPx24rY45FphdumZXpcRSnJFoqMVc
-	VJwIANAenOuIAgAA
+	id S1754466Ab3KZJGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:06:51 -0500
+Received: from sauhun.de ([89.238.76.85]:47118 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752093Ab3KZJGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 04:06:44 -0500
+Date: Tue, 26 Nov 2013 10:06:39 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+Message-ID: <20131126090639.GA2568@katana>
+References: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+Content-Disposition: inline
+In-Reply-To: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tarek Dakhran <t.dakhran@samsung.com>
 
-Add initial device tree nodes for EXYNOS5410 SoC and SMDK5410 board.
+--1yeeQ81UyVL57Vl7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
----
- arch/arm/boot/dts/Makefile                |   1 +
- arch/arm/boot/dts/exynos5410-smdk5410.dts |  72 +++++++++++
- arch/arm/boot/dts/exynos5410.dtsi         | 207 ++++++++++++++++++++++++++++++
- 3 files changed, 280 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
- create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
+On Tue, Nov 26, 2013 at 07:32:00AM +0100, Mike Looijmans wrote:
+> Leaving the mux enabled causes needless I2C traffic on the downstream
+> bus. De-selecting after every request causes excess I2C traffic and
+> switching.
+>=20
+> This patch implements a hybrid solution: After 200ms of inactivity,
+> the mux is disabled.
+>=20
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index d57c1a6..b947387 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -63,6 +63,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos5250-arndale.dtb \
- 	exynos5250-smdk5250.dtb \
- 	exynos5250-snow.dtb \
-+	exynos5410-smdk5410.dtb \
- 	exynos5420-smdk5420.dtb \
- 	exynos5440-sd5v1.dtb \
- 	exynos5440-ssdk5440.dtb
-diff --git a/arch/arm/boot/dts/exynos5410-smdk5410.dts b/arch/arm/boot/dts/exynos5410-smdk5410.dts
-new file mode 100644
-index 0000000..7ffd351
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos5410-smdk5410.dts
-@@ -0,0 +1,72 @@
-+/*
-+ * SAMSUNG SMDK5410 board device tree source
-+ *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+/dts-v1/;
-+#include "exynos5410.dtsi"
-+/ {
-+	model = "Samsung SMDK5410 board based on EXYNOS5410";
-+	compatible = "samsung,smdk5410", "samsung,exynos5410";
-+
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttySAC2,115200";
-+	};
-+
-+	clocks {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		fin_pll: clock-fin-pll {
-+			compatible = "fixed-clock";
-+			reg = <0>;
-+			#clock-cells = <0>;
-+			clock-frequency = <24000000>;
-+			clock-output-names = "fin_pll";
-+		};
-+	};
-+
-+	mmc@12200000 {
-+		status = "okay";
-+		num-slots = <1>;
-+		supports-highspeed;
-+		broken-cd;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <8>;
-+		};
-+	};
-+
-+	mmc@12220000 {
-+		status = "okay";
-+		num-slots = <1>;
-+		supports-highspeed;
-+		card-detect-delay = <200>;
-+		samsung,dw-mshc-ciu-div = <3>;
-+		samsung,dw-mshc-sdr-timing = <2 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <4>;
-+			disable-wp;
-+		};
-+	};
-+
-+};
-diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
-new file mode 100644
-index 0000000..fce54f8
---- /dev/null
-+++ b/arch/arm/boot/dts/exynos5410.dtsi
-@@ -0,0 +1,207 @@
-+/*
-+ * SAMSUNG EXYNOS5410 SoC device tree source
-+ *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com
-+ *
-+ * SAMSUNG EXYNOS5410 SoC device nodes are listed in this file.
-+ * EXYNOS5410 based board files can include this file and provide
-+ * values for board specfic bindings.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <dt-bindings/clock/exynos5410.h>
-+#include "exynos5.dtsi"
-+/ {
-+	compatible = "samsung,exynos5410";
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		CPU0: cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <0>;
-+			cci-control-port = <&cci_control2>;
-+			clock-frequency = <1600000000>;
-+		};
-+
-+		CPU1: cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <1>;
-+			cci-control-port = <&cci_control2>;
-+			clock-frequency = <1600000000>;
-+		};
-+
-+		CPU2: cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <2>;
-+			cci-control-port = <&cci_control2>;
-+			clock-frequency = <1600000000>;
-+		};
-+
-+		CPU3: cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a15";
-+			reg = <3>;
-+			cci-control-port = <&cci_control2>;
-+			clock-frequency = <1600000000>;
-+		};
-+
-+		CPU4: cpu@100 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x100>;
-+			cci-control-port = <&cci_control1>;
-+			clock-frequency = <1200000000>;
-+		};
-+
-+		CPU5: cpu@101 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x101>;
-+			cci-control-port = <&cci_control1>;
-+			clock-frequency = <1200000000>;
-+		};
-+
-+		CPU6: cpu@102 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x102>;
-+			cci-control-port = <&cci_control1>;
-+			clock-frequency = <1200000000>;
-+		};
-+
-+		CPU7: cpu@103 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x103>;
-+			cci-control-port = <&cci_control1>;
-+			clock-frequency = <1200000000>;
-+		};
-+	};
-+
-+	cci@10D20000 {
-+		compatible = "arm,cci-400";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0x10D20000 0x1000>;
-+		ranges = <0 0x10D20000 0x6000>;
-+
-+		cci_control0: slave-if@1000 {
-+			compatible = "arm,cci-400-ctrl-if";
-+			interface-type = "ace-lite";
-+			reg = <0x1000 0x1000>;
-+		};
-+
-+		cci_control1: slave-if@4000 {
-+			compatible = "arm,cci-400-ctrl-if";
-+			interface-type = "ace";
-+			reg = <0x4000 0x1000>;
-+		};
-+
-+		cci_control2: slave-if@5000 {
-+			compatible = "arm,cci-400-ctrl-if";
-+			interface-type = "ace";
-+			reg = <0x5000 0x1000>;
-+		};
-+	};
-+
-+	clock: clock-controller@10010000 {
-+		compatible = "samsung,exynos5410-clock";
-+		reg = <0x10010000 0x30000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	timer@101C0000 {
-+		compatible = "samsung,exynos4210-mct";
-+		reg = <0x101C0000 0xB00>;
-+		interrupt-parent = <&interrupt_map>;
-+		interrupts = <0>, <1>, <2>, <3>,
-+			<4>, <5>, <6>, <7>,
-+			<8>, <9>, <10>, <11>;
-+		clocks = <&fin_pll>, <&clock CLK_MCT>;
-+		clock-names = "fin_pll", "mct";
-+
-+		interrupt_map: interrupt-map {
-+			#interrupt-cells = <1>;
-+			#address-cells = <0>;
-+			#size-cells = <0>;
-+			interrupt-map = <0 &combiner 23 3>,
-+					<1 &combiner 23 4>,
-+					<2 &combiner 25 2>,
-+					<3 &combiner 25 3>,
-+					<4 &gic 0 120 0>,
-+					<5 &gic 0 121 0>,
-+					<6 &gic 0 122 0>,
-+					<7 &gic 0 123 0>,
-+					<8 &gic 0 128 0>,
-+					<9 &gic 0 129 0>,
-+					<10 &gic 0 130 0>,
-+					<11 &gic 0 131 0>;
-+		};
-+	};
-+
-+	mmc_0: mmc@12200000 {
-+		compatible = "samsung,exynos5250-dw-mshc";
-+		interrupts = <0 75 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		reg = <0x12200000 0x1000>;
-+		clocks = <&clock CLK_MMC0>, <&clock CLK_SCLK_MMC0>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x80>;
-+		status = "disabled";
-+	};
-+
-+	mmc_1: mmc@12210000 {
-+		compatible = "samsung,exynos5250-dw-mshc";
-+		interrupts = <0 76 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		reg = <0x12210000 0x1000>;
-+		clocks = <&clock CLK_MMC1>, <&clock CLK_SCLK_MMC1>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x80>;
-+		status = "disabled";
-+	};
-+
-+	mmc_2: mmc@12220000 {
-+		compatible = "samsung,exynos5250-dw-mshc";
-+		interrupts = <0 77 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		reg = <0x12220000 0x1000>;
-+		clocks = <&clock CLK_MMC2>, <&clock CLK_SCLK_MMC2>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x80>;
-+		status = "disabled";
-+	};
-+
-+	serial@12C00000 {
-+		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
-+
-+	serial@12C10000 {
-+		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
-+
-+	serial@12C20000 {
-+		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
-+
-+	serial@12C30000 {
-+		clocks = <&clock CLK_UART3>, <&clock CLK_SCLK_UART3>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
-+
-+};
--- 
-1.8.1.5
+You still haven't answered my initial question. Also, please don't
+resend without saying what changed since the last version.
 
+
+--1yeeQ81UyVL57Vl7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSlGSeAAoJEBQN5MwUoCm2+FsP/Ay72uYokHZl9LlYzQsua0fi
+amxhg0hHx9aVV0JnK3mURp+T9725y/zYOXkijPiT/rMEvDpd5jYUPsWvdB/gbSL9
+CyGyeYUr6G0gUFE/pjP7VFpEMfDo/6lsDWSWFc0grsiN8nJS1pMqGxp75J5i7d3U
+53k4brLxkDKgq2LzeIJ4YaJ+6zlkC2Cuk6sC8LDAtABCjERPfxn8WZ5V5/Uq1Avh
+7SDpKyDkoMygJF9hzHcWg5qa4pfRmIyqWIBqdmtZIpCQrExF1gSvqCZw1Bm4Vmab
+vBPkD4tF5aTiiymj71mXQFFTCJqAP5pYgIAV2n8Hp1mSj04+vG8ruBbQtNqsKocJ
+/3wSPQrRDP1diuPbf2RPSroMXDb/fUQ86cd0XMynJO7qeJIpwKwGeEkJ0bqY8A0h
+91ytsulEhodkOyhNhKEdMJeoU7SUhVn6llN0n8xAVMCRRrO2eEIUmdu1TMErRPlI
+fy+u05AS4IH8R+aBEWG8kUWEvx3YHDijtlB6qEvFVEMbR/9qrJF0jWc8y9HVR2OF
+kJG2f9vdtfyDfqcY/ks+H7RVa79MdU5lEYJ69QQyyYVoxNZjUGO9mGWwv02n641T
+1qB4Iw9Rzws2ub5XdVFSkGrU0GXyk+sCNBy95dw4x4koOArCQyVA8MFdpEB4N7LG
+CC+yzaP4AyuTJoNkTgqT
+=pQ6r
+-----END PGP SIGNATURE-----
+
+--1yeeQ81UyVL57Vl7--
