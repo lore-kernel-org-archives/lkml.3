@@ -1,52 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab3KZSPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:15:06 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53145 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830Ab3KZSPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:15:00 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5294E51E.60907@roeck-us.net>
-Date: Tue, 26 Nov 2013 10:14:54 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757885Ab3KZSPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:15:17 -0500
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:44595
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756311Ab3KZSPM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:15:12 -0500
+X-Greylist: delayed 448 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Nov 2013 13:15:12 EST
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: staging: comedi: drivers: use comedi_dio_update_state() for
+ complex cases
+Thread-Topic: staging: comedi: drivers: use comedi_dio_update_state() for
+ complex cases
+Thread-Index: AQHO3L4bEhqT06FVG0W1HC+tE9Z/tJo36mcg
+Date: Tue, 26 Nov 2013 18:07:41 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817E08AC5@P3PWEX4MB008.ex4.secureserver.net>
+References: <20131107062754.93B2D660F4A@gitolite.kernel.org>
+ <20131108200659.GA2101@redhat.com>
+In-Reply-To: <20131108200659.GA2101@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
-CC: Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] watchdog: s3c2410_wdt: Only register for cpufreq on
- ARM_S3C24XX_CPUFREQ
-References: <1385420137-32725-1-git-send-email-dianders@chromium.org> <1385422603-22684-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1385422603-22684-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 03:36 PM, Doug Anderson wrote:
-> On modern SoCs the watchdog timer is parented on a clock that doesn't
-> change every time we have a cpufreq change.  That means we don't need
-> to constantly adjust the watchdog timer, so avoid registering for and
-> dealing with cpufreq transitions unless we've actually got
-> CONFIG_ARM_S3C24XX_CPUFREQ defined.
+On Friday, November 08, 2013 1:07 PM, Dave Jones wrote:
+> On Thu, Nov 07, 2013 at 06:27:54AM +0000, Linux Kernel wrote:
+>> Gitweb:     http://git.kernel.org/linus/;a=commit;h=b3ff824a81e8978deb56f6d163479c1a0a606037
+>> Commit:     b3ff824a81e8978deb56f6d163479c1a0a606037
+>> Parent:     97f4289ad08cffe55de06d4ac4f89ac540450aee
+>> Author:     H Hartley Sweeten <hsweeten@visionengravers.com>
+>> AuthorDate: Fri Aug 30 11:06:17 2013 -0700
+>> Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> CommitDate: Tue Sep 17 07:47:40 2013 -0700
+>> 
+>>     staging: comedi: drivers: use comedi_dio_update_state() for complex cases
+>>     
+>>     Use comedi_dio_update_state() to handle the boilerplate code to update
+>>     the subdevice s->state for more complex cases where the hardware is only
+>>     updated based on the 'mask' of the channels that are modified.
+>>     
+>>     Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>>     Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+>>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 >
-> Note that this is more than just an optimization.  The s3c2410
-> watchdog driver actually pats the watchdog on every CPU frequency
-> change.  On modern systems these happen many times per second (even in
-> a system where "nothing" is happening).  That effectively makes any
-> userspace watchdog program useless (the watchdog is constantly patted
-> by the kernel).  If we need ARM_S3C24XX_CPUFREQ defined on a
-> multiplatform kernel we'll need to make sure that kernel supports
-> common clock and change this to user common clock framework.
+> This bit looks suspect :-
 >
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>>  	if (mask) {
+>> -		s->state &= ~mask;
+>> -		s->state |= (bits & mask);
+>> -
+>>  		if (mask & 0x00ff)
+>>  			outb(s->state & 0xff, dev->iobase + reg);
+>> -		if ((mask & 0xff00) && (s->n_chan > 8))
+>> +		if ((mask & 0xff00) & (s->n_chan > 8))
+>>  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
+>> -		if ((mask & 0xff0000) && (s->n_chan > 16))
+>> +		if ((mask & 0xff0000) & (s->n_chan > 16))
+>>  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
+>> -		if ((mask & 0xff000000) && (s->n_chan > 24))
+>> +		if ((mask & 0xff000000) & (s->n_chan > 24))
+>>  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
+>>  	}
+>
+>
+> should those be shifts ? Like so ?
+>
+>
+> diff --git a/drivers/staging/comedi/drivers/pcl730.c b/drivers/staging/comedi/drivers/pcl730.c
+> index d041b714db29..29a54e5d73d6 100644
+> --- a/drivers/staging/comedi/drivers/pcl730.c
+> +++ b/drivers/staging/comedi/drivers/pcl730.c
+> @@ -173,11 +173,11 @@ static int pcl730_do_insn_bits(struct comedi_device *dev,
+>  	if (mask) {
+> 		if (mask & 0x00ff)
+>   			outb(s->state & 0xff, dev->iobase + reg);
+> -		if ((mask & 0xff00) & (s->n_chan > 8))
+> +		if ((mask & 0xff00) & (s->n_chan >> 8))
+>  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
+> -		if ((mask & 0xff0000) & (s->n_chan > 16))
+> +		if ((mask & 0xff0000) & (s->n_chan >> 16))
+>  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
+> -		if ((mask & 0xff000000) & (s->n_chan > 24))
+> +		if ((mask & 0xff000000) & (s->n_chan >> 24))
+>  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
+>  	}
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+No, they should not be bit-shifts.
+
+But, there is a bug here. The if tests should be like this:
+
+		if ((mask & 0xff00) && (s->n_chan > 8))
+
+Sorry about that.
+
+Do you want to post a patch? If I don't see one in the next couple days I'll fix it.
+
+Regards,
+Hartley
 
