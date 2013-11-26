@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab3KZSNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35336 "EHLO
+	id S932281Ab3KZSNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:13:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab3KZSMu (ORCPT
+	with ESMTP id S1757681Ab3KZSM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:12:50 -0500
+	Tue, 26 Nov 2013 13:12:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.11 03/36] aacraid: prevent invalid pointer dereference
-Date: Tue, 26 Nov 2013 10:12:13 -0800
-Message-Id: <20131126181025.776678205@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.11 11/36] can: c_can: Fix RX message handling, handle lost message before EOB
+Date: Tue, 26 Nov 2013 10:12:21 -0800
+Message-Id: <20131126181027.347838651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -29,41 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit b4789b8e6be3151a955ade74872822f30e8cd914 upstream.
+commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
 
-It appears that driver runs into a problem here if fibsize is too small
-because we allocate user_srbcmd with fibsize size only but later we
-access it until user_srbcmd->sg.count to copy it over to srbcmd.
+If we handle end of block messages with higher priority than a lost message,
+we can run into an endless interrupt loop.
 
-It is not correct to test (fibsize < sizeof(*user_srbcmd)) because this
-structure already includes one sg element and this is not needed for
-commands without data.  So, we would recommend to add the following
-(instead of test for fibsize == 0).
+This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
+As soon as we loose a packet we can't escape from an interrupt loop.
 
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>
+This patch fixes the problem by handling lost packets before EOB packets.
+
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/aacraid/commctrl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/can/c_can/c_can.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -511,7 +511,8 @@ static int aac_send_raw_srb(struct aac_d
- 		goto cleanup;
- 	}
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -814,9 +814,6 @@ static int c_can_do_rx_poll(struct net_d
+ 			msg_ctrl_save = priv->read_reg(priv,
+ 					C_CAN_IFACE(MSGCTRL_REG, 0));
  
--	if (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr))) {
-+	if ((fibsize < (sizeof(struct user_aac_srb) - sizeof(struct user_sgentry))) ||
-+	    (fibsize > (dev->max_fib_size - sizeof(struct aac_fibhdr)))) {
- 		rcode = -EINVAL;
- 		goto cleanup;
- 	}
+-			if (msg_ctrl_save & IF_MCONT_EOB)
+-				return num_rx_pkts;
+-
+ 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
+ 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
+ 				num_rx_pkts++;
+@@ -824,6 +821,9 @@ static int c_can_do_rx_poll(struct net_d
+ 				continue;
+ 			}
+ 
++			if (msg_ctrl_save & IF_MCONT_EOB)
++				return num_rx_pkts;
++
+ 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
+ 				continue;
+ 
 
 
