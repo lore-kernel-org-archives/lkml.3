@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3KZQrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:47:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29909 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757258Ab3KZQrN (ORCPT
+	id S1757532Ab3KZQsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:48:16 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54790 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757258Ab3KZQsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:47:13 -0500
-Date: Tue, 26 Nov 2013 11:47:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is not
- yet up.
-Message-ID: <20131126164703.GG2959@phenom.dumpdata.com>
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
- <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
- <528DEF9D.4070003@citrix.com>
+	Tue, 26 Nov 2013 11:48:14 -0500
+Date: Tue, 26 Nov 2013 16:47:30 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v11 7/7] ARM: tegra: support Trusted Foundations by
+ default
+Message-ID: <20131126164730.GE2355@e103592.cambridge.arm.com>
+References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
+ <1385274652-16415-8-git-send-email-acourbot@nvidia.com>
+ <20131126000608.GA21634@quad.lixom.net>
+ <CAAVeFu+mMyPhFtVZ09vgYWWCYkPpF3X547ffRAfXXKOOWUUkqg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528DEF9D.4070003@citrix.com>
+In-Reply-To: <CAAVeFu+mMyPhFtVZ09vgYWWCYkPpF3X547ffRAfXXKOOWUUkqg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:33:49AM +0000, David Vrabel wrote:
-> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> > The user can launch the guest in this sequence:
-> > 
-> > xl create -p /vm.cfg	[launch, but pause it]
-> > xl shutdown latest	[sets control/shutdown=poweroff]
-> > xl unpause latest
-> > xl console latest	[and see that the guest has completely
-> > ignored the shutdown request]
-> > 
-> > In reality the guest hasn't ignored it. It registers a watch
-> > and gets a notification that there is value. It then calls
-> > the shutdown_handler which ends up calling orderly_shutdown.
+On Tue, Nov 26, 2013 at 10:35:58AM +0900, Alexandre Courbot wrote:
+> On Tue, Nov 26, 2013 at 9:06 AM, Olof Johansson <olof@lixom.net> wrote:
+> > On Sun, Nov 24, 2013 at 03:30:52PM +0900, Alexandre Courbot wrote:
+> >> Support for Trusted Foundations is light and allows the kernel to run on
+> >> a wider range of devices, so enable it by default.
+> >>
+> >> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> >> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> >> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> >> ---
+> >>  arch/arm/configs/tegra_defconfig | 1 +
+> >>  1 file changed, 1 insertion(+)
+> >
+> > I think we want this enabled on multi_v7_defconfig too? Send a separate
+> > patch for that once this is merged though.
 > 
-> Is this really a bug?.
+> Will do.
 
-Yes. We did get the action, we just did not properly act on it.
-> 
-> >From the xl(1) man page.
-> 
->   shutdown [OPTIONS] -a|domain-id
->      Gracefully shuts down a domain.  This coordinates with the
->      domain OS to perform graceful shutdown, so there is no guarantee
->      that it will succeed, and may take a variable length of time
->      depending on what services must be shutdown in the domain.
-> 
-> Seems like ignoring a shutdown request when the guest cannot yet
-> shutdown gracefully is the expected behaviour.
-> 
-> This also doesn't seem sufficient.  SYSTEM_RUNNING is set prior to
-> starting init in an initramfs and orderly_power_off(false) will still
-> likely fail at this point.
+Should it just be default y if one of the relevant
+CONFIG_ARCH_TEGRA_*_SOC is selected?
 
-Ugh, will have to figure out how else to realize when it the user-space
-is ready to launch programs.
-> 
-> David
+That way, it's automatically included if relevant, and automatically
+excluded if not -- regardless of whether the kernel is multiplatform
+or not.
+
+Cheers
+---Dave
