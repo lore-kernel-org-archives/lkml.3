@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab3KZMXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:23:48 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:34386 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3KZMXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:23:46 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org, hpa@zytor.com,
-        Peter Jones <pjones@redhat.com>
-References: <1384969851-7251-1-git-send-email-vgoyal@redhat.com>
-	<1384969851-7251-5-git-send-email-vgoyal@redhat.com>
-	<20131121190350.GC17070@kroah.com>
-	<20131121190620.GA25951@srcf.ucam.org>
-	<20131121191305.GK16208@redhat.com>
-	<20131121191907.GA26366@srcf.ucam.org>
-	<20131122185706.GK4046@redhat.com> <87vbzju6ql.fsf@xmission.com>
-	<20131125163920.GC23094@redhat.com>
-Date: Tue, 26 Nov 2013 04:23:36 -0800
-In-Reply-To: <20131125163920.GC23094@redhat.com> (Vivek Goyal's message of
-	"Mon, 25 Nov 2013 11:39:21 -0500")
-Message-ID: <87fvqj2vxz.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756683Ab3KZM2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:28:24 -0500
+Received: from sauhun.de ([89.238.76.85]:40362 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744Ab3KZM2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:28:22 -0500
+Date: Tue, 26 Nov 2013 13:28:18 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+Message-ID: <20131126122818.GA7427@katana>
+References: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+ <20131126090639.GA2568@katana>
+ <52946BA6.3080308@topic.nl>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/WA76g037sUYgeaK1zwBFkB/IKkIjMQU4=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1264]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 4/6] kexec: A new system call, kexec_file_load, for in kernel kexec
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <52946BA6.3080308@topic.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
 
-> On Fri, Nov 22, 2013 at 07:39:14PM -0800, Eric W. Biederman wrote:
->
-> [..]
->> > Hmm..., I am running out of ideas here. This is what I understand.
->> >
->> > - If I sign the bzImage (using PKCS1.5 signature), and later it is signed
->> >   with authenticode format signatures, then PKCS1.5 signatures will not be
->> >   valid as PE/COFF signing will do some modification to PE/COFF header in
->> >   bzImage. And another problem is that then I don't have a way to find
->> >   PKCS1.5 signature.
->> >
->> > - If bzImage is first signed with authenticode format signature and then
->> >   signed using PKCS1.5 signature, then  authenticode format signature
->> >   will become invalid as it will also hash the data appened at the end
->> >   of file.
->> >
->> > So looks like both signatures can't co-exist on same file. That means
->> > one signature has to be detached.
->> >
->> > I am beginning to think that create a kernel option which allows to choose
->> > between attached and detached signatures. Extend kexec syscall to allow
->> > a parameter to pass in detached signatures. If detached signatures are
->> > not passed, then look for signatures at the end of file. That way, those
->> > who are signing kernels using platform specific format (authenticode) in 
->> > this case, they can generate detached signature while others can just
->> > use attached signatures.
->> >
->> > Any thoughts on how this should be handled?
->> 
->> Inside of a modern bzImage there is an embedded ELF image.  How about in
->> userspace we just strip out the embedded ELF image and write that to a
->> file.  Then we can use the same signature checking scheme as we do for
->> kernel modules.  And you only have to support one file format.
->
-> I think there is a problem with that. And that we lose the additional
-> metadata info present in bzImage which is important.
->
-> For example, knowing how much memory kernel will consume before it
-> sets up its own GDT and page tables (init_size) is very important. That
-> gives image loader lot of flexibility in figuring out where to place rest
-> of the components safely (initrd, GDT, page tables, ELF header segment, 
-> backup region etc).
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The init_size should be reflected in the .bss of the ELF segments.  If
-not it is a bug when generating the kernel ELF headers and should be
-fixed.
 
-For use by kexec I don't see any issues with just signing the embedded
-ELF image.
+CCing linux-pm, maybe they know more...
 
-Eric
+> The extra I2C traffic consumes extra power. If the bus is terminated
+> using 2k resistors, approximately 1mA of current (assuming ~2V
+> signals) is flowing when the bus is pulled low. On low power
+> designs, this extra power consumption is noticable. There is no way
+> to turn the mux "off" from either user or kernel space. The signals
+> going through the mux to a place where no I2C device is actually
+> listening are only wasting power.
+
+I only have an overview of current linux pm mechanisms. I wonder if
+those can't be used somehow. Like if devices on the multiplexed bus are
+idle (well, only regarding transfers), then we can switch off the muxer.
+
+> The I2C signals are used to control sensitive codecs. When looking
+> at the sampled data, the I2C traffic is visible in the captured
+> analog signal. To prevent this from happening, the mux can be
+
+I wonder: Is this really a feature of sensitive codecs or an issue of
+the board design?
+
+> disabled whenever not communicating with the codec. This could be
+> accomplished with the "deselect_on_exit" boolean, but because audio
+> driver sends the codec parameters in dozens of small transactions,
+> this will result in a lot more needless I2C traffic, constantly
+> switching the mux for each codec setting.
+
+Has this been looked at? ASoC supports grouping of tranfers IIRC. Maybe
+your I2C driver is only missing I2C_M_NOSTART?.
+
+> Would it be acceptable if I made the timeout optional, by making the
+> "deselect_on_exit" boolean into a three-state value (off, on,
+> timeout)? Or, alternatively, implement "deselect_on_exit" using the
+> timeout scheme (probably with a very short timeout)?
+
+I have a number of concerns designwise. First, if we do something like
+shutting-down-a-bus-if-there-are-no-transfers-expected, it definately
+should be in the core, not the driver. As said before, I have the
+assumption it should even be connected to the runtime pm core via some
+callback. And if we have that for I2C, we surely want that for other
+buses as well, at least SPI. Also, the timeout thing sounds too
+heuristic to me. Later, people might want to change the timeout value
+depending on workloads or so, and then a governor, etc... No, thanks.
+
+BTW is it feasible to shut down the whole I2C bus at controller level
+after transfers? No needless transfers and maybe even more power
+savings.
+
+Anyway, thanks for letting me know about your requirements (they should
+have been in the original commit message, though ;))
+
+
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSlJPiAAoJEBQN5MwUoCm2WaAP/jEQxpzpkCRv30ek392aaFSH
+oR+BKUv02Kt/pcbjlGfAX6e0gN1cCVgPMKXU0nf0nb2s+gNQBJWQvWxwLLvhtwu4
+fGbrrfgt2hIxXbdjy+/cTN5r/KkmmJp9bYJyEnDy/bx+H2RVLGB2gyNDlWXRmWIP
++GVs4NO5GgDz5KaBVKhNxfK4K98+2NFY70xZZqCTZEbgTJhCwU+8dbFz9kMkPSrG
+PyHJ13DhLkM6Rwc60PCPcLpFny2lb27kPa1vbnrEphEWvV5uzi3LI7LArD7j6mPk
+iBwU0kayze/wGUgPCAsA1qTeT9SSC7siB2e7RfeglG2xeB0f/z9dT8mbeJPKBDRO
+HxVC6A9nMQelX2V/WsGFcuiKb7Xd7t9+qisvRkqtvB+XF8xIgZWKrXmSXl1pMs/+
+SAyNVbTQK2lLOHdGNVBeFVaZkeqwAQIfK5fqyQmbRbhF5UQHj6CNUHf3ILjmxg55
+Ud0Z0R4ow2ZbOToi5bn96wuYQbFbQyPisb+V9rXnDzAFyHIxzjRFP+5C9NER4gYi
+fAQrTkS1g0fr9erX+58wzDAUZcO8Ue12mmXZnwXpJlEfSwnu/8Zq26sHqsBMeqfE
+sH6ua1yCNAJx/zubQaUtkd/Ot8MGs/3bZvdrGPx14Er9t1lka6fGQQaNZNxMVLFk
+5z0Rv2w6q/iMK9LCvbno
+=8bpp
+-----END PGP SIGNATURE-----
+
+--sdtB3X0nJg68CQEu--
