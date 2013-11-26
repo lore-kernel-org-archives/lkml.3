@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab3KZTaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:30:25 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45244 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754288Ab3KZTaW (ORCPT
+	id S1757993Ab3KZTe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:34:26 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:48847 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab3KZTeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:30:22 -0500
-Date: Tue, 26 Nov 2013 19:30:16 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
-Message-ID: <20131126193016.GA18170@console-pimps.org>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-7-git-send-email-dyoung@redhat.com>
+	Tue, 26 Nov 2013 14:34:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385445477-9665-7-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo7umvs=U1_X--Vxx29hf6+pnm8KQ0bUKG4FZkNS+ffR8Q@mail.gmail.com>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+	<1385429290-25397-5-git-send-email-yinghai@kernel.org>
+	<CAErSpo7umvs=U1_X--Vxx29hf6+pnm8KQ0bUKG4FZkNS+ffR8Q@mail.gmail.com>
+Date: Tue, 26 Nov 2013 11:34:24 -0800
+X-Google-Sender-Auth: ZDcfD3ahPeG51Jpxvb-WadYvt7A
+Message-ID: <CAE9FiQW0_0Mi1WLk2o0phdG22LC6imeO62LG7Jsn7D7e0e_Vhg@mail.gmail.com>
+Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Nov, at 01:57:51PM, Dave Young wrote:
-> kexec kernel will need exactly same mapping for
-> efi runtime memory ranges. Thus here export the
-> runtime ranges mapping to sysfs, kexec-tools
-> will assemble them and pass to 2nd kernel via
-> setup_data.
-> 
-> Introducing a new directly /sys/firmware/efi/runtime-map
+On Mon, Nov 25, 2013 at 7:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Nov 25, 2013 at 6:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Mutliple removing via /sys will call pci_destroy_dev two times.
+>>
+>> | When concurent removing pci devices which are in the same pci subtree
+>> | via sysfs, such as:
+>> | echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+>> | /sys/bus/pci/devices/0000\:1a\:01.0/remove
+>> | (1a:01.0 device is downstream from the 10:00.0 bridge)
+>> |
+>> | the following warning will show:
+>> | [ 1799.280918] ------------[ cut here ]------------
+>> | [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+>> | [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
+>> | [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
+>> | [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
+>> | [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
+>> | [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
+>> | [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
+>> | [ 1800.842282] Call Trace:
+>> | [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
+>> | [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
+>> | [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
+>> | [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
+>> | [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
+>> | [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
+>> | [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
+>> | [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
+>> | [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
+>> | [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
+>> | [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
+>> | [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
+>> | [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
+>> | [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
+>> | [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+>> | [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
+>> | [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+>> | [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
+>> |
+>> | This issue is related to the bug 54411:
+>> | https://bugzilla.kernel.org/show_bug.cgi?id=54411
+>>
+>> Add is_removed to record if pci_destroy_dev is called already.
+>>
+>> During second calling, still have extra dev ref hold via
+>> device_schedule_call, so we are safe to check dev->is_removed.
+>>
+>> It fixs the problem In Gu's test.
+>>
+>> -v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
+>>      refresh after patch of moving device_del from Rafael.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/remove.c | 8 +++++---
+>>  include/linux/pci.h  | 1 +
+>>  2 files changed, 6 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+>> index f452148..b090cec 100644
+>> --- a/drivers/pci/remove.c
+>> +++ b/drivers/pci/remove.c
+>> @@ -20,9 +20,11 @@ static void pci_stop_dev(struct pci_dev *dev)
+>>
+>>  static void pci_destroy_dev(struct pci_dev *dev)
+>>  {
+>> -       device_del(&dev->dev);
+>> -
+>> -       put_device(&dev->dev);
+>> +       if (!dev->is_removed) {
+>> +               device_del(&dev->dev);
+>> +               dev->is_removed = 1;
+>
+> As Rafael pointed out, this looks like a race.  What prevents two
+> concurrent calls to pci_destroy_dev() from seeing "dev->is_removed ==
+> 0" and both calling device_del() on the same device?
 
-I'm not sure why the word "directly" is used here?
+I don't think that is going to happen. as those two pci_destroy_dev is
+serialized
+during
+ echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+     /sys/bus/pci/devices/0000\:1a\:01.0/remove
+is called.
 
-> Just like /sys/firmware/memmap. Containing below attribute
-> in each file of that directory:
-> attribute  num_pages  phys_addr  type  virt_addr
-> 
-> It will not work for efi 32bit. Only x86_64 currently.
- 
-Actually, exporting the tables does work for 32-bit, right? It's just
-that kexec doesn't work for 32-bit EFI?
-
-> Matt: s/efi-runtime-map.c/runtime-map.c
->       change dir name to runtime-map
-> update to use desc_size in efi_runtime_map
-> cleaup the code, add function efi_save_runtime_map
-> improve err handling
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  .../ABI/testing/sysfs-firmware-efi-runtime-map     |  45 +++++
->  arch/x86/platform/efi/efi.c                        |  26 +++
->  drivers/firmware/efi/Kconfig                       |  10 ++
->  drivers/firmware/efi/Makefile                      |   1 +
->  drivers/firmware/efi/efi.c                         |   3 +-
->  drivers/firmware/efi/runtime-map.c                 | 199 +++++++++++++++++++++
->  include/linux/efi.h                                |   6 +
->  7 files changed, 289 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
->  create mode 100644 drivers/firmware/efi/runtime-map.c
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-firmware-efi-runtime-map b/Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
-> new file mode 100644
-> index 0000000..dab8d41
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-firmware-efi-runtime-map
-> @@ -0,0 +1,45 @@
-> +What:		/sys/firmware/efi/runtime-map/
-> +Date:		Oct 2013
-> +Contact:	Dave Young <dyoung@redhat.com>
-> +Description:
-> +		Switching efi runtime services to virtual mode requires
-> +		that all efi memory ranges which has the runtime attribute
-> +		bit set to be mapped to virtual addresses.
-> +
-> +		In kexec kernel kernel can not entering virtual mode again
-> +		because there's a limitation that SetVirtualAddressMap can
-> +		only be called once for entering virtual mode. But kexec
-> +		kernel still need maintain same physical address to virtual
-> +		address mapping as the 1st kernel. The mappings are exported
-> +		to sysfs so userspace tools can reassemble them and pass them
-> +		into kexec kernel.
-
-How about,
-
-		"The efi runtime services can only be switched to virtual
-		 mode once without rebooting. The kexec kernel must maintain
-		 the same physical to virtual address mappings as the first
-		 kernel. The mappings are exported to sysfs so userspace tools
-		 can reassemble them and pass them into the kexec kernel."
-
-?
-
-> +		/sys/firmware/efi/runtim-map/ is what kernel export for
-
-				^^ runtime-map/
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Yinghai
