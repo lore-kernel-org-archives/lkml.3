@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab3KZWMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 17:12:50 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:41904 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758091Ab3KZWMn (ORCPT
+	id S1758244Ab3KZWPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 17:15:19 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:57363 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3KZWPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 17:12:43 -0500
+	Tue, 26 Nov 2013 17:15:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw9wNBoJBYQ+kjpqs6cnVjGHVs2oxfguMmyYXNPcqqzkQ@mail.gmail.com>
-References: <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
-	<CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
-	<CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
-	<20130115183204.GE2668@htj.dyndns.org>
-	<CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
-	<20130115235043.GJ2668@htj.dyndns.org>
-	<CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
-	<CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
-	<20130116025251.GM2668@htj.dyndns.org>
-	<20130812070411.GA2878@elie.Belkin>
-	<20130812150900.GJ15892@htj.dyndns.org>
-	<CAKA=qzY5NBZSv8r9sHqX-3fY-yrSXq26zPM1AvjoANaZkqJavQ@mail.gmail.com>
-	<CA+55aFw9wNBoJBYQ+kjpqs6cnVjGHVs2oxfguMmyYXNPcqqzkQ@mail.gmail.com>
-Date: Tue, 26 Nov 2013 16:12:41 -0600
-Message-ID: <CAKA=qzY2JYxbO=0s8_SnUn-8b=1+RqsdAzXQhfHYxo1isv0K-g@mail.gmail.com>
-Subject: Re: [3.8-rc3 -> 3.8-rc4 regression] Re: [PATCH] module, async:
- async_synchronize_full() on module init iff async is used
-From: Josh Hunt <joshhunt00@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Jonathan Nieder <jrnieder@gmail.com>,
-        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
+In-Reply-To: <20131126210456.GN26766@atomide.com>
+References: <1380012836-29900-1-git-send-email-rogerq@ti.com>
+	<1380012836-29900-10-git-send-email-rogerq@ti.com>
+	<528BD2AF.2030607@ti.com>
+	<528C8FBC.7020407@ti.com>
+	<20131126210456.GN26766@atomide.com>
+Date: Tue, 26 Nov 2013 16:15:10 -0600
+X-Google-Sender-Auth: ekh9al3vepIFmjq_BXThwRAnppE
+Message-ID: <CAGo_u6r63oQ0tKrB4G_CK7Vpd5XOsVE+N-HEdiRYP41U5FsEhw@mail.gmail.com>
+Subject: Re: [PATCH v3 09/10] ARM: dts: omap3-beagle-xm: Add USB Host support
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Roger Quadros <rogerq@ti.com>, dt list <devicetree@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, balbi@ti.com,
+        Mark Brown <broonie@kernel.org>, p.zabel@pengutronix.de,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 3:53 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Nov 26, 2013 at 1:29 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+On Tue, Nov 26, 2013 at 3:04 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Roger Quadros <rogerq@ti.com> [131120 02:33]:
+>> Nishant,
 >>
->> Both ahci and sata_svw call ata_host_activate(), which call
->> ata_host_register() and async_schedule(async_port_probe, ap).
+>> On 11/19/2013 11:05 PM, Nishanth Menon wrote:
+>> >
+>> >
+>> > On 09/24/2013 03:53 AM, Roger Quadros wrote:
+>> >> Provide RESET GPIO and Power regulator for the USB PHY,
+>> >> the USB Host port mode and the PHY device for the controller.
+>> >> Also provide pin multiplexer information for USB host pins.
+>> >>
+>> >> We also relocate omap3_pmx_core pin definations so that they
+>> >> are close to omap3_pmx_wkup pin definations.
+>> >>
+>> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> >> ---
+>> >
+>> > just using this thread, but a question ->
+>> >
+>> > I am kernel * master                                   dec8e46 Merge
+>> > tag 'arc-v3.13-rc1-part2' of
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc
+>> >
+>> > and I see that VAUX2 which supplies USB_1V8[1] is not enabled -> I did
+>> > a quick patch and it did seem to work (Usb keyboard, networking, mouse
+>> > etc on my ehci ports seems to come up good) - any suggestions how we'd
+>> > like to handle this?
+>>
+>> It worked for me without your patch. It could be that u-boot is enabling
+>> that regulator for me. I'm on u-boot-v2013.10.
+>>
+>> In any case, your patch seems the right thing to do. We should take it in
+>> the rc cycle.
 >
-> Well, with the modern logic ("only wait for async probing if the
-> module itself did async probing") the ahci and svw modules didn't
-> really change any behavior.
->
-> But other modules did. I wonder, for example, if people insmod the dm
-> module, and expect all devices to exist afterwards. Which the old
-> logic of "we always wait for all async code regardless of whether we
-> started it ourselves" would do, but the new logic does not.
->
-> Something similar might hit the (non-modular) md auto-detect ioctl.
->
-> So maybe we should just special-case those two issues, and say "let's
-> just wait for async requests here"
->
-> Something like the appended (whitespace-damaged) diff. Does that make
-> a difference to you guys? And if it does, can you check *which* of the
-> two async_synchronize_full() calls it is that matters for your cases?
->
->                  Linus
->
-> --- duh, apply by hand --
->
->     diff --git a/drivers/md/dm.c b/drivers/md/dm.c
->     index 0704c523a76b..7e7a2f743b11 100644
->     --- a/drivers/md/dm.c
->     +++ b/drivers/md/dm.c
->     @@ -351,6 +351,7 @@ static int __init dm_init(void)
->                             goto bad;
->             }
->
->     +       async_synchronize_full();
->             return 0;
->
->            bad:
->     diff --git a/drivers/md/md.c b/drivers/md/md.c
->     index b6b7a2866c9e..1d173dc662fc 100644
->     --- a/drivers/md/md.c
->     +++ b/drivers/md/md.c
->     @@ -8602,6 +8602,7 @@ static void autostart_arrays(int part)
->             i_scanned = 0;
->             i_passed = 0;
->
->     +       async_synchronize_full();
->             printk(KERN_INFO "md: Autodetecting RAID arrays.\n");
->
->             while (!list_empty(&all_detected_devices) && i_scanned < INT_MAX) {
-
-I should have clarified that I'm not using dm/md in my setup. I know
-the modules are getting loaded in the log I attached, but root is not
-a md/dm device.
-
--- 
-Josh
+> Can you guys post a proper fix for this? Meanwhile, I'll mark this
+> thread as read to shrink my inbox a bit.
+already done:
+https://patchwork.kernel.org/patch/3231151/
