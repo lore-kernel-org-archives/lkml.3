@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3KZB2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:28:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26029 "EHLO
+	id S1753940Ab3KZB25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:28:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26053 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3KZB2p (ORCPT
+	with ESMTP id S1753815Ab3KZB2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:28:45 -0500
+	Mon, 25 Nov 2013 20:28:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 04/10] PCI: Destroy pci dev only once
-Date: Mon, 25 Nov 2013 17:28:04 -0800
-Message-Id: <1385429290-25397-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 05/10] PCI: pcibus address to resource converting take bus directly
+Date: Mon, 25 Nov 2013 17:28:05 -0800
+Message-Id: <1385429290-25397-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mutliple removing via /sys will call pci_destroy_dev two times.
-
-| When concurent removing pci devices which are in the same pci subtree
-| via sysfs, such as:
-| echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
-| /sys/bus/pci/devices/0000\:1a\:01.0/remove
-| (1a:01.0 device is downstream from the 10:00.0 bridge)
-|
-| the following warning will show:
-| [ 1799.280918] ------------[ cut here ]------------
-| [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
-| [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
-| [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
-| [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
-| [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
-| [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
-| [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
-| [ 1800.842282] Call Trace:
-| [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
-| [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
-| [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
-| [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
-| [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
-| [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
-| [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
-| [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
-| [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
-| [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
-| [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
-| [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
-| [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
-| [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
-| [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
-| [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
-| [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
-| [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
-|
-| This issue is related to the bug 54411:
-| https://bugzilla.kernel.org/show_bug.cgi?id=54411
-
-Add is_removed to record if pci_destroy_dev is called already.
-
-During second calling, still have extra dev ref hold via
-device_schedule_call, so we are safe to check dev->is_removed.
-
-It fixs the problem In Gu's test.
-
--v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
-     refresh after patch of moving device_del from Rafael.
+For allocating resource under bus path, we do have dev pass along, and we
+could just use bus instead.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/remove.c | 8 +++++---
- include/linux/pci.h  | 1 +
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/pci/host-bridge.c | 34 +++++++++++++++++++++-------------
+ include/linux/pci.h       |  3 +++
+ 2 files changed, 24 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index f452148..b090cec 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -20,9 +20,11 @@ static void pci_stop_dev(struct pci_dev *dev)
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index a68dc61..2e7288b 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -9,22 +9,19 @@
  
- static void pci_destroy_dev(struct pci_dev *dev)
+ #include "pci.h"
+ 
+-static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
++static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
  {
--	device_del(&dev->dev);
+-	struct pci_bus *bus;
 -
--	put_device(&dev->dev);
-+	if (!dev->is_removed) {
-+		device_del(&dev->dev);
-+		dev->is_removed = 1;
-+		put_device(&dev->dev);
-+	}
+-	bus = dev->bus;
+ 	while (bus->parent)
+ 		bus = bus->parent;
+ 
+ 	return bus;
  }
  
- void pci_remove_bus(struct pci_bus *bus)
+-static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
++static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+ {
+-	struct pci_bus *bus = find_pci_root_bus(dev);
++	struct pci_bus *root_bus = find_pci_root_bus(bus);
+ 
+-	return to_pci_host_bridge(bus->bridge);
++	return to_pci_host_bridge(root_bus->bridge);
+ }
+ 
+ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+@@ -40,10 +37,11 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
+ 	return res1->start <= res2->start && res1->end >= res2->end;
+ }
+ 
+-void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+-			     struct resource *res)
++void __pcibios_resource_to_bus(struct pci_bus *bus,
++				      struct pci_bus_region *region,
++				      struct resource *res)
+ {
+-	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+ 	struct pci_host_bridge_window *window;
+ 	resource_size_t offset = 0;
+ 
+@@ -60,6 +58,11 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+ 	region->start = res->start - offset;
+ 	region->end = res->end - offset;
+ }
++void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
++			     struct resource *res)
++{
++	__pcibios_resource_to_bus(dev->bus, region, res);
++}
+ EXPORT_SYMBOL(pcibios_resource_to_bus);
+ 
+ static bool region_contains(struct pci_bus_region *region1,
+@@ -68,10 +71,10 @@ static bool region_contains(struct pci_bus_region *region1,
+ 	return region1->start <= region2->start && region1->end >= region2->end;
+ }
+ 
+-void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+-			     struct pci_bus_region *region)
++static void __pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
++				      struct pci_bus_region *region)
+ {
+-	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+ 	struct pci_host_bridge_window *window;
+ 	resource_size_t offset = 0;
+ 
+@@ -93,4 +96,9 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 	res->start = region->start + offset;
+ 	res->end = region->end + offset;
+ }
++void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
++			     struct pci_bus_region *region)
++{
++	__pcibios_bus_to_resource(dev->bus, res, region);
++}
+ EXPORT_SYMBOL(pcibios_bus_to_resource);
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1084a15..ccb316d 100644
+index ccb316d..55ee90f 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -321,6 +321,7 @@ struct pci_dev {
- 	unsigned int	multifunction:1;/* Part of multi-function device */
- 	/* keep track of device state */
- 	unsigned int	is_added:1;
-+	unsigned int	is_removed:1;	/* pci_destroy_dev is called */
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+@@ -738,6 +738,9 @@ void pci_fixup_cardbus(struct pci_bus *);
+ 
+ /* Generic PCI functions used internally */
+ 
++void __pcibios_resource_to_bus(struct pci_bus *bus,
++			       struct pci_bus_region *region,
++			       struct resource *res);
+ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+ 			     struct resource *res);
+ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
 -- 
 1.8.1.4
 
