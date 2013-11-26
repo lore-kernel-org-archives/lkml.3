@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab3KZS6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:58:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab3KZS6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:58:45 -0500
-Date: Tue, 26 Nov 2013 13:58:33 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: odd userspace lockups.
-Message-ID: <20131126185833.GA4121@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20131126182157.GA503@redhat.com>
- <CA+55aFzvc9g896HK2AVU2A37t50PiCL2+tjGzNyn3BJ-om+7fg@mail.gmail.com>
+	id S932528Ab3KZS65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:58:57 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:53982 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab3KZS6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:58:50 -0500
+Date: Tue, 26 Nov 2013 10:58:46 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-input@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: ads7846: Convert to
+ hwmon_device_register_with_groups
+Message-ID: <20131126185846.GB22242@core.coreip.homeip.net>
+References: <1385440744-6607-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzvc9g896HK2AVU2A37t50PiCL2+tjGzNyn3BJ-om+7fg@mail.gmail.com>
+In-Reply-To: <1385440744-6607-1-git-send-email-linux@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:44:16AM -0800, Linus Torvalds wrote:
- 
- > > At first I thought it was just being really slow, (especially after seeing
- > > all those congestion related symbols in the stack traces), but even after
- > > being left for hours, it doesn't seem to progress.
- > 
- > It *does* seem to be hung in some congestion thing. Possibly brought
- > on by being low on memory due to a memory leak.
- > 
- > I'm not seeing any suspicious locks: the sshd that holds the mmap_sem
- > locks for a fork() seems to be in congestion-wait for the disk due to
- > trying to allocate memory, exactly like all the trinity children are.
- > 
- > You don't have memory information in your dump, but to me it looks
- > like you're basically out of memory (there's a *lot* of
- > trinity-children trying to allocate pages), and the oom killer isn't
- > triggering for whatever reason.
- > 
- > Of course, it could easily be a kernel memory leak too (rather than
- > trinity), triggered by your odd workload.
+Hi Guenter,
 
-So, completely different machine: Yesterday I got back from my vacation to
-find my router running 3.12+ from a week earlier had hung completely.
-On the screen was some oom killer output.  After bringing it back up
-I looked at the mrtg graphs of it for the last week:
-http://codemonkey.org.uk/junk/mem.free-week.png
-Those stair-steps are around the time of morning that cron runs.
+On Mon, Nov 25, 2013 at 08:39:04PM -0800, Guenter Roeck wrote:
+> Simplify the code and create mandatory 'name' attribute by using
+> new hwmon API.
 
-Normally I reboot that machine every day to update to the latest kernel,
-but because I was on vacation, it had enough uptime to accumulate a leak.
+So this moves hwmon attributes from the parent i2c device to the hwmon
+device, right? Would not that break userspace which expects to find the
+attributes where they were?
 
-That machine is just routing packets (and making pretty mrtg graphs) though,
-not doing any fuzz testing or anything weird.
+Thanks.
 
-Who knows, maybe it's something totally unrelated. I'll keep poking at things,
-and try and find an easier way to reproduce it.
-
-	Dave
-
+-- 
+Dmitry
