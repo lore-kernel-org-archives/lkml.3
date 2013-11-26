@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab3KZGBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:01:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11941 "EHLO mx1.redhat.com"
+	id S1754831Ab3KZGCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:02:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab3KZGBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:01:41 -0500
-Date: Tue, 26 Nov 2013 01:01:32 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, kmo@daterainc.com
-Subject: Re: GPF in aio_migratepage
-Message-ID: <20131126060132.GA6400@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, kmo@daterainc.com
-References: <20131126032645.GA32301@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126032645.GA32301@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754382Ab3KZGAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 01:00:44 -0500
+From: Dave Young <dyoung@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        matt@console-pimps.org, toshi.kani@hp.com
+Subject: [PATCH v4 11/12] x86: reserve setup_data ranges late after parsing memmap cmdline
+Date: Tue, 26 Nov 2013 13:57:56 +0800
+Message-Id: <1385445477-9665-12-git-send-email-dyoung@redhat.com>
+In-Reply-To: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 10:26:45PM -0500, Dave Jones wrote:
- > Hi Kent,
- > 
- > I hit the GPF below on a tree based on 8e45099e029bb6b369b27d8d4920db8caff5ecce
- > which has your commit e34ecee2ae791df674dfb466ce40692ca6218e43
- > ("aio: Fix a trinity splat").  Is this another path your patch missed, or
- > a completely different bug to what you were chasing ?
+Kdump kernel using memmap=exactmap, move e820_reserve_setup_data after
+parsing early params so they can be set reserved finally. Or kdump kernel
+will warn about ioremap a normal ram range.
 
-And here's another from a different path, this time on 32bit.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/x86/kernel/setup.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-
-Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: tun fuse hidp rfcomm bnep scsi_transport_iscsi l2tp_ppp l2tp_netlink l2tp_core nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can_raw can_bcm can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper drm i2c_core kvm_intel kvm tg3 ptp pps_core libphy serio_raw pcspkr lpc_ich microcode mfd_core rtc_cmos parport_pc parport shpchp xfs libcrc32c raid0 floppy
-CPU: 0 PID: 4517 Comm: trinity-child0 Not tainted 3.13.0-rc1+ #6 
-Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
-task: ed899630 ti: dea22000 task.ti: dea22000
-EIP: 0060:[<c11c7a02>] EFLAGS: 00010293 CPU: 0
-EIP is at aio_migratepage+0xad/0x126
-EAX: 00000144 EBX: f6844ed8 ECX: deaf4a84 EDX: 6b6b6b6b
-ESI: f68dc508 EDI: deaf4800 EBP: dea23bcc ESP: dea23ba8
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-CR0: 8005003b CR2: 6b6b707b CR3: 2c985000 CR4: 000007f0
-Stack:
- 00000000 00000001 deaf4a84 00000286 d709b280 00000000 f68dc508 c11c7955
- f6844ed8 dea23c0c c116aa9f 00000001 00000001 c11c7955 c1179a33 00000000
- 00000000 c114166d f6844ed8 f6844ed8 c1140fc9 dea23c0c 00000000 f6844ed8
-Call Trace:
- [<c11c7955>] ? free_ioctx+0x62/0x62
- [<c116aa9f>] move_to_new_page+0x63/0x1bb
- [<c11c7955>] ? free_ioctx+0x62/0x62
- [<c1179a33>] ? mem_cgroup_prepare_migration+0xc1/0x243
- [<c114166d>] ? isolate_migratepages_range+0x3fb/0x675
- [<c1140fc9>] ? isolate_freepages_block+0x316/0x316
- [<c116b319>] migrate_pages+0x614/0x72b
- [<c1140fc9>] ? isolate_freepages_block+0x316/0x316
- [<c1141c21>] compact_zone+0x294/0x475
- [<c1142065>] try_to_compact_pages+0x129/0x196
- [<c15b95e7>] __alloc_pages_direct_compact+0x91/0x197
- [<c112a25c>] __alloc_pages_nodemask+0x863/0xa55
- [<c116b68f>] get_huge_zero_page+0x52/0xf9
- [<c116ef78>] do_huge_pmd_anonymous_page+0x24e/0x39f
- [<c1171c4b>] ? __mem_cgroup_count_vm_event+0xa6/0x191
- [<c1171c64>] ? __mem_cgroup_count_vm_event+0xbf/0x191
- [<c114815c>] handle_mm_fault+0x235/0xd9a
- [<c15c7586>] ? __do_page_fault+0xf8/0x5a1
- [<c15c75ee>] __do_page_fault+0x160/0x5a1
- [<c15c7586>] ? __do_page_fault+0xf8/0x5a1
- [<c15c7a2f>] ? __do_page_fault+0x5a1/0x5a1
- [<c15c7a3c>] do_page_fault+0xd/0xf
- [<c15c4e7c>] error_code+0x6c/0x74
- [<c114007b>] ? memcg_update_all_caches+0x23/0x6b
- [<c12d0be5>] ? __copy_from_user_ll+0x30/0xdb
- [<c12d0ccf>] _copy_from_user+0x3f/0x55
- [<c1057aa2>] SyS_setrlimit+0x27/0x50
- [<c1044792>] ? SyS_gettimeofday+0x33/0x6d
- [<c12d0798>] ? trace_hardirqs_on_thunk+0xc/0x10
- [<c15cb33b>] sysenter_do_call+0x12/0x32
-Code: 6e 8d 8f 84 02 00 00 89 c8 89 4d e4 e8 df bf 3f 00 89 45 e8 89 da 89 f0 e8 99 2b fa ff 8b 43 08 3b 47 54 8b 4d e4 73 06 8b 57 50 <89> 34 82 8b 55 e8 89 c8 e8 aa c1 3f 00 8b 45 ec e8 28 c1 3f 00
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ecf225e..4a18f2f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -927,8 +927,6 @@ void __init setup_arch(char **cmdline_p)
+ 	iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
+ 	setup_memory_map();
+ 	parse_setup_data();
+-	/* update the e820_saved too */
+-	e820_reserve_setup_data();
+ 
+ 	copy_edd();
+ 
+@@ -990,6 +988,8 @@ void __init setup_arch(char **cmdline_p)
+ 		early_dump_pci_devices();
+ #endif
+ 
++	/* update the e820_saved too */
++	e820_reserve_setup_data();
+ 	finish_e820_parsing();
+ 
+ 	if (efi_enabled(EFI_BOOT))
+-- 
+1.8.3.1
 
