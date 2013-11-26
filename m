@@ -1,301 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab3KZHt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 02:49:27 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:45093 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3KZHtV convert rfc822-to-8bit (ORCPT
+	id S1752875Ab3KZHuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 02:50:04 -0500
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:3961
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752003Ab3KZHuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 02:49:21 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com
-Subject: Re: [PATCH v2 2/6] net: MOXA ART: connect to PHY
-Date: Tue, 26 Nov 2013 07:49:17 +0000
-Message-ID: <2882257.eZXPo1Jdx9@lenovo>
-User-Agent: KMail/4.11.2 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1385393228-22416-2-git-send-email-jonas.jensen@gmail.com>
-References: <1385393228-22416-1-git-send-email-jonas.jensen@gmail.com> <1385393228-22416-2-git-send-email-jonas.jensen@gmail.com>
+	Tue, 26 Nov 2013 02:50:00 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <herbert@gondor.hengli.com.au>, <davem@davemloft.net>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>
+Subject: [PATCH] crypto/caam/jr.c: include linux/of_address.h
+Date: Tue, 26 Nov 2013 14:30:05 +0800
+Message-ID: <1385447405-7784-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 25 novembre 2013, 16:27:04 Jonas Jensen a écrit :
-> The kernel now has a MDIO bus driver and a phy_driver (RTL8201CP),
-> connect to this PHY using OF.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+From: Shaohui Xie <Shaohui.Xie@freescale.com>
 
-Looks good:
+to avoid a compile error:
 
-Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+drivers/crypto/caam/jr.c: In function 'caam_jr_probe':
+drivers/crypto/caam/jr.c:468:2: error: implicit declaration of function
+'of_iomap' [-Werror=implicit-function-declaration]
+drivers/crypto/caam/jr.c:468:7: warning: assignment makes pointer from
+integer without a cast [enabled by default]
 
-> ---
-> 
-> Notes:
->     Thanks for reviewing!
-> 
->     Changes since v1:
-> 
->     1. split ethtool support to separate patch
->     2. changes to devicetree binding document
->     3. add moxart_mac_update_duplex()
->     4. compare previous link state/speed/duplex on link adjust
->     5. use of_get_phy_mode() not PHY_INTERFACE_MODE_MII
->     6. bail on of_parse_phandle() failure
->     7. remove "if (!priv->phy_dev) return -ENODEV;"
->        moxart_do_ioctl()
->     8. remove "if (priv->phy_dev)"
->        moxart_mac_open(), moxart_mac_stop()
-> 
->     Applies to next-20131125
-> 
->  .../devicetree/bindings/net/moxa,moxart-mac.txt    | 47 ++++++++++-
->  drivers/net/ethernet/moxa/moxart_ether.c           | 92
-> +++++++++++++++++++++- drivers/net/ethernet/moxa/moxart_ether.h           |
->  2 +
->  3 files changed, 138 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
-> b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt index
-> 583418b..56f0374 100644
-> --- a/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
-> +++ b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
-> @@ -1,21 +1,64 @@
->  MOXA ART Ethernet Controller
-> 
-> +Integrated MDIO bus node:
-> +
-> +- compatible: "moxa,moxart-mdio"
-> +- Inherets from MDIO bus node binding[1]
-> +
-> +[1] Documentation/devicetree/bindings/net/phy.txt
-> +
-> +
-> +Ethernet node:
-> +
->  Required properties:
-> 
->  - compatible : Must be "moxa,moxart-mac"
->  - reg : Should contain register location and length
->  - interrupts : Should contain the mac interrupt number
-> 
-> +Optional Properties:
-> +
-> +- phy-handle : the phandle to a PHY node
-> +
-> +
->  Example:
-> 
-> +	mdio0: mdio@90900090 {
-> +		compatible = "moxa,moxart-mdio";
-> +		reg = <0x90900090 0x8>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		ethphy0: ethernet-phy@1 {
-> +			device_type = "ethernet-phy";
-> +			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
-> +			reg = <1>;
-> +		};
-> +	};
-> +
-> +	mdio1: mdio@92000090 {
-> +		compatible = "moxa,moxart-mdio";
-> +		reg = <0x92000090 0x8>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		ethphy1: ethernet-phy@1 {
-> +			device_type = "ethernet-phy";
-> +			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
-> +			reg = <1>;
-> +		};
-> +	};
-> +
->  	mac0: mac@90900000 {
->  		compatible = "moxa,moxart-mac";
-> -		reg =	<0x90900000 0x100>;
-> +		reg = <0x90900000 0x90>;
->  		interrupts = <25 0>;
-> +		phy-handle = <&ethphy0>;
->  	};
-> 
->  	mac1: mac@92000000 {
->  		compatible = "moxa,moxart-mac";
-> -		reg =	<0x92000000 0x100>;
-> +		reg = <0x92000000 0x90>;
->  		interrupts = <27 0>;
-> +		phy-handle = <&ethphy1>;
->  	};
-> diff --git a/drivers/net/ethernet/moxa/moxart_ether.c
-> b/drivers/net/ethernet/moxa/moxart_ether.c index 3c14afd..1b87034 100644
-> --- a/drivers/net/ethernet/moxa/moxart_ether.c
-> +++ b/drivers/net/ethernet/moxa/moxart_ether.c
-> @@ -26,6 +26,9 @@
->  #include <linux/of_irq.h>
->  #include <linux/crc32.h>
->  #include <linux/crc32c.h>
-> +#include <linux/phy.h>
-> +#include <linux/of_mdio.h>
-> +#include <linux/of_net.h>
-> 
->  #include "moxart_ether.h"
-> 
-> @@ -61,6 +64,16 @@ static int moxart_set_mac_address(struct net_device
-> *ndev, void *addr) return 0;
->  }
-> 
-> +static int moxart_do_ioctl(struct net_device *ndev, struct ifreq *ir, int
-> cmd) +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +	if (!netif_running(ndev))
-> +		return -EINVAL;
-> +
-> +	return phy_mii_ioctl(priv->phy_dev, ir, cmd);
-> +}
-> +
->  static void moxart_mac_free_memory(struct net_device *ndev)
->  {
->  	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> @@ -110,6 +123,19 @@ static void moxart_mac_enable(struct net_device *ndev)
->  	writel(priv->reg_maccr, priv->base + REG_MAC_CTRL);
->  }
-> 
-> +static void moxart_mac_update_duplex(struct net_device *ndev)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +
-> +	priv->reg_maccr &= ~(FULLDUP | ENRX_IN_HALFTX);
-> +	if (priv->duplex)
-> +		priv->reg_maccr |= FULLDUP;
-> +	else
-> +		priv->reg_maccr |= ENRX_IN_HALFTX;
-> +
-> +	writel(priv->reg_maccr, priv->base + REG_MAC_CTRL);
-> +}
-> +
->  static void moxart_mac_setup_desc_ring(struct net_device *ndev)
->  {
->  	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> @@ -169,6 +195,9 @@ static int moxart_mac_open(struct net_device *ndev)
->  	moxart_update_mac_address(ndev);
->  	moxart_mac_setup_desc_ring(ndev);
->  	moxart_mac_enable(ndev);
-> +
-> +	phy_start(priv->phy_dev);
-> +
->  	netif_start_queue(ndev);
-> 
->  	netdev_dbg(ndev, "%s: IMR=0x%x, MACCR=0x%x\n",
-> @@ -184,6 +213,8 @@ static int moxart_mac_stop(struct net_device *ndev)
-> 
->  	napi_disable(&priv->napi);
-> 
-> +	phy_stop(priv->phy_dev);
-> +
->  	netif_stop_queue(ndev);
-> 
->  	/* disable all interrupts */
-> @@ -429,12 +460,49 @@ static struct net_device_ops moxart_netdev_ops = {
->  	.ndo_set_mac_address	= moxart_set_mac_address,
->  	.ndo_validate_addr	= eth_validate_addr,
->  	.ndo_change_mtu		= eth_change_mtu,
-> +	.ndo_do_ioctl		= moxart_do_ioctl,
->  };
-> 
-> +static void moxart_adjust_link(struct net_device *ndev)
-> +{
-> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
-> +	unsigned long flags;
-> +	int status_change = 0;
-> +
-> +	if (priv->phy_dev->link) {
-> +		if (priv->speed != priv->phy_dev->speed) {
-> +			priv->speed = priv->phy_dev->speed;
-> +			status_change = 1;
-> +		}
-> +
-> +		if (priv->duplex != priv->phy_dev->duplex) {
-> +			spin_lock_irqsave(&priv->txlock, flags);
-> +
-> +			priv->duplex = priv->phy_dev->duplex;
-> +			moxart_mac_update_duplex(ndev);
-> +
-> +			spin_unlock_irqrestore(&priv->txlock, flags);
-> +			status_change = 1;
-> +		}
-> +	}
-> +
-> +	if (priv->link != priv->phy_dev->link) {
-> +		if (!priv->phy_dev->link) {
-> +			priv->speed = 0;
-> +			priv->duplex = -1;
-> +		}
-> +		priv->link = priv->phy_dev->link;
-> +		status_change = 1;
-> +	}
-> +
-> +	if (status_change)
-> +		phy_print_status(priv->phy_dev);
-> +}
-> +
->  static int moxart_mac_probe(struct platform_device *pdev)
->  {
->  	struct device *p_dev = &pdev->dev;
-> -	struct device_node *node = p_dev->of_node;
-> +	struct device_node *node = p_dev->of_node, *phy_node;
->  	struct net_device *ndev;
->  	struct moxart_mac_priv_t *priv;
->  	struct resource *res;
-> @@ -455,6 +523,28 @@ static int moxart_mac_probe(struct platform_device
-> *pdev) priv = netdev_priv(ndev);
->  	priv->ndev = ndev;
-> 
-> +	priv->link = 0;
-> +	priv->speed = 0;
-> +	priv->duplex = -1;
-> +
-> +	phy_node = of_parse_phandle(node, "phy-handle", 0);
-> +	if (!phy_node) {
-> +		dev_err(p_dev, "of_parse_phandle failed\n");
-> +		ret = -ENODEV;
-> +		goto init_fail;
-> +	}
-> +
-> +	if (phy_node) {
-> +		priv->phy_dev = of_phy_connect(priv->ndev, phy_node,
-> +					       &moxart_adjust_link,
-> +					       0, of_get_phy_mode(node));
-> +		if (!priv->phy_dev) {
-> +			dev_err(p_dev, "of_phy_connect failed\n");
-> +			ret = -ENODEV;
-> +			goto init_fail;
-> +		}
-> +	}
-> +
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	ndev->base_addr = res->start;
->  	priv->base = devm_ioremap_resource(p_dev, res);
-> diff --git a/drivers/net/ethernet/moxa/moxart_ether.h
-> b/drivers/net/ethernet/moxa/moxart_ether.h index 2be9280..b8877bf 100644
-> --- a/drivers/net/ethernet/moxa/moxart_ether.h
-> +++ b/drivers/net/ethernet/moxa/moxart_ether.h
-> @@ -297,6 +297,8 @@ struct moxart_mac_priv_t {
->  	unsigned int reg_imr;
->  	struct napi_struct napi;
->  	struct net_device *ndev;
-> +	struct phy_device *phy_dev;
-> +	int speed, duplex, link;
-> 
->  	dma_addr_t rx_base;
->  	dma_addr_t rx_mapping[RX_DESC_NUM];
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+ drivers/crypto/caam/jr.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c
+index d23356d2..1d80bd3 100644
+--- a/drivers/crypto/caam/jr.c
++++ b/drivers/crypto/caam/jr.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <linux/of_irq.h>
++#include <linux/of_address.h>
+ 
+ #include "compat.h"
+ #include "regs.h"
 -- 
-Florian
+1.8.4.1
+
+
