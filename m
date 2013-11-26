@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3KZCug (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 21:50:36 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:64839 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab3KZCue (ORCPT
+	id S1752742Ab3KZCxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 21:53:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58208 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab3KZCxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 21:50:34 -0500
+	Mon, 25 Nov 2013 21:53:48 -0500
+Date: Mon, 25 Nov 2013 18:54:32 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: channing <chao.bi@intel.com>
+Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH V2] n_gsm: race between ld close and gsmtty open
+Message-ID: <20131126025432.GA3379@kroah.com>
+References: <1385435645.7741.28.camel@bichao>
 MIME-Version: 1.0
-In-Reply-To: <20131126003919.GT14725@sirena.org.uk>
-References: <20131125174037.GR14725@sirena.org.uk>
-	<CA+55aFwPcr8TYpLUg5NP9x3RGCv4+U7vz-nNH6Br5ku3MDwaDw@mail.gmail.com>
-	<20131126003919.GT14725@sirena.org.uk>
-Date: Mon, 25 Nov 2013 18:50:33 -0800
-X-Google-Sender-Auth: vZUPp6XByr4dE44xZBMLyOOAWEY
-Message-ID: <CA+55aFzwPZPTHGfDva0hZwnNStCioXUxtERkDdBo6ae+cbmKMw@mail.gmail.com>
-Subject: Re: [GIT PULL] regulator updates for v3.13-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385435645.7741.28.camel@bichao>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 4:39 PM, Mark Brown <broonie@kernel.org> wrote:
->
-> If you're OK with octopus merges for things like this I'll definitely
-> take another look at using them, the enormous stack of merge commits
-> always looks noisy to me in the logs and pull requests and for things
-> like driver updates there's unlikely to be much doubt about which branch
-> it was if there's a problem.
+On Tue, Nov 26, 2013 at 11:14:05AM +0800, channing wrote:
+> 
+> ttyA has ld associated to n_gsm, when ttyA is closing, it triggers
+> to release gsmttyB's ld data dlci[B], then race would happen if gsmttyB
+> is opening in parallel.
+> 
+> Here are race cases we found recently in test:
+> 
+> CASE #1
+> ====================================================================
+> releasing dlci[B] race with gsmtty_install(gsmttyB), then panic
+> in gsmtty_open(gsmttyB), as below:
+> 
+>  tty_release(ttyA)                  tty_open(gsmttyB)
+>      |                                   |
+>    -----                           gsmtty_install(gsmttyB)
+>      |                                   |
+>    -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
+>  tty_ldisc_release(ttyA)               -----
+>      |                                   |
+>  gsm_dlci_release(dlci[B])             -----
+>      |                                   |
+>  gsm_dlci_free(dlci[B])                -----
+>      |                                   |
+>    -----                           gsmtty_open(gsmttyB)
+> 
+>  gsmtty_open()
+>  {
+>      struct gsm_dlci *dlci = tty->driver_data; => here it uses dlci[B]
+>      ...
+>  }
+> 
+>  In gsmtty_open(gsmttyA), it uses dlci[B] which was release, so hit a panic.
+> =====================================================================
+> 
+> CASE #2
+> =====================================================================
+> releasing dlci[0] race with gsmtty_install(gsmttyB), then panic
+> in gsmtty_open(), as below:
+> 
+>  tty_release(ttyA)                  tty_open(gsmttyB)
+>      |                                   |
+>    -----                           gsmtty_install(gsmttyB)
+>      |                                   |
+>    -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
+>      |                                   |
+>    -----                         gsmtty_open(gsmttyB) fail
+>      |                                   |
+>    -----                           tty_release(gsmttyB)
+>      |                                   |
+>    -----                           gsmtty_close(gsmttyB)
+>      |                                   |
+>    -----                        gsmtty_detach_dlci(dlci[B])
+>      |                                   |
+>    -----                             dlci_put(dlci[B])
+>      |                                   |
+>  tty_ldisc_release(ttyA)               -----
+>      |                                   |
+>  gsm_dlci_release(dlci[0])             -----
+>      |                                   |
+>  gsm_dlci_free(dlci[0])                -----
+>      |                                   |
+>    -----                             dlci_put(dlci[0])
+> 
+>  In gsmtty_detach_dlci(dlci[B]), it tries to use dlci[0] which was released,
+>  then hit panic.
+> =====================================================================
+> 
+> IMHO, n_gsm tty operations would refer released ldisc,  as long as
+> gsm_dlci_release() has chance to release ldisc data when some gsmtty operations
+> are ongoing..
+> 
+> This patch is try to avoid it by:
+> 
+> 1) in n_gsm driver, use a global gsm mutex lock to avoid gsm_dlci_release() run in
+> parallel with gsmtty_install();
+> 
+> 2) Increase dlci's ref count in gsmtty_install() instead of in gsmtty_open(), the
+> purpose is to prevent gsm_dlci_release() releasing dlci after gsmtty_install()
+> allocats dlci but before gsmtty_open increases dlci's ref count;
+> 
+> 3) Decrease dlci's ref count in gsmtty_remove(), a tty framework API, this is the
+> opposite process of step 2).
+> 
+> Signed-off-by: Chao Bi <chao.bi@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Yeah, I'm definitely ok with octopus merges, and I do them myself
-occasionally (especially with the -tip tree, which I get as many
-separate pull requests - see for example commit 669fc2f0c70a).
+I have not signed off on this additional patch.
 
-And various maintainers use them too - Ingo does them for x86, Russell
-King does them for ARM, Roland Dreier for infiniband, Paul McKenney
-for rcu stuff, etc etc. Len Brown used to do them for ACPI all the
-time.
+What is different from the previous version?  That information needs to
+be somewhere, otherwise I'm just going to guess and say this is the same
+as your last one, which was incorrect.
 
-But I do ask people to use them judiciously. Octopus merges are good
-for the "many small topic branches" kind of thing. But they should
-generally be avoided for big merges.
+Also, please fix your "From:" line in your email client to match your
+Signed-off-by: line, or else add the proper "From:" line to your patch,
+as the Documentation/SubmittingPatches file says.
 
-Obligatory git trick of the day:
+Care to try again?
 
-    git rev-list --parents HEAD |
-        egrep '^.{128}' |
-        cut -d' ' -f1 |
-        git log --no-walk --stdin --oneline
-
-shows you the octopus merges. A couple of the older ones are bogus and
-come from the bad old days when git didn't properly filter parent
-lists, so there are redundant parents making a commit _look_ like an
-octopus merge even though it's really just merging one branch. Maybe
-Takashi hit one of those bugs back when..
-
-                      Linus
+greg k-h
