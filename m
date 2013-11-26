@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3KZSQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:16:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35381 "EHLO
+	id S932500Ab3KZSQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:16:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3KZSNI (ORCPT
+	with ESMTP id S1756686Ab3KZSNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 13:13:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 3.11 27/36] Staging: zram: Fix access of NULL pointer
-Date: Tue, 26 Nov 2013 10:12:37 -0800
-Message-Id: <20131126181030.815355006@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.11 28/36] staging: comedi: avoid memleak for subdevice private
+Date: Tue, 26 Nov 2013 10:12:38 -0800
+Message-Id: <20131126181030.987916707@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -28,50 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 46a51c80216cb891f271ad021f59009f34677499 upstream.
+commit 67aa4acbc97f6a55b328e4e2305ef19cbe949d85 upstream.
 
-This patch fixes the bug in reset_store caused by accessing NULL pointer.
+`comedi_alloc_spriv()` allocates private storage for a comedi subdevice
+and sets the `SRF_FREE_SPRIV` flag in the `runflags` member of the
+subdevice to allow the private storage to be automatically freed when
+the comedi device is being cleaned up.  Unfortunately, the flag gets
+clobbered by `do_cmd_ioctl()` which calls
+`comedi_set_subdevice_runflags()` with a mask value `~0` and only the
+`SRF_USER` and `SRF_RUNNING` flags set, all the other SRF flags being
+cleared.
 
-The bdev gets its value from bdget_disk() which could fail when memory
-pressure is severe and hence can return NULL because allocation of
-inode in bdget could fail.
+Change the calls to `comedi_set_subdevice_runflags()` that currently use
+a mask value of `~0` to use a more relevant mask value.  For
+`do_cmd_ioctl()`, the relevant SRF flags are `SRF_USER`, `SRF_ERROR` and
+`SRF_RUNNING`.  (At one time, `SRF_RT` would be included in that set of
+flags, but it is no longer used.)  For `comedi_alloc_spriv()` replace
+the call to `comedi_set_subdevice_runflags()` with a simple
+OR-assignment to avoid unnecessary use of a spin-lock.
 
-Hence, this patch introduces a check for bdev to prevent reference to a
-NULL pointer in the later part of the code. It also removes unnecessary
-check of bdev for fsync_bdev().
-
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -647,6 +647,9 @@ static ssize_t reset_store(struct device
- 	zram = dev_to_zram(dev);
- 	bdev = bdget_disk(zram->disk, 0);
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -543,7 +543,7 @@ void *comedi_alloc_spriv(struct comedi_s
+ {
+ 	s->private = kzalloc(size, GFP_KERNEL);
+ 	if (s->private)
+-		comedi_set_subdevice_runflags(s, ~0, SRF_FREE_SPRIV);
++		s->runflags |= SRF_FREE_SPRIV;
+ 	return s->private;
+ }
+ EXPORT_SYMBOL_GPL(comedi_alloc_spriv);
+@@ -1485,7 +1485,8 @@ static int do_cmd_ioctl(struct comedi_de
+ 	if (async->cmd.flags & TRIG_WAKE_EOS)
+ 		async->cb_mask |= COMEDI_CB_EOS;
  
-+	if (!bdev)
-+		return -ENOMEM;
-+
- 	/* Do not reset an active device! */
- 	if (bdev->bd_holders)
- 		return -EBUSY;
-@@ -659,8 +662,7 @@ static ssize_t reset_store(struct device
- 		return -EINVAL;
+-	comedi_set_subdevice_runflags(s, ~0, SRF_USER | SRF_RUNNING);
++	comedi_set_subdevice_runflags(s, SRF_USER | SRF_ERROR | SRF_RUNNING,
++				      SRF_USER | SRF_RUNNING);
  
- 	/* Make sure all pending I/O is finished */
--	if (bdev)
--		fsync_bdev(bdev);
-+	fsync_bdev(bdev);
- 
- 	zram_reset_device(zram, true);
- 	return len;
+ 	/* set s->busy _after_ setting SRF_RUNNING flag to avoid race with
+ 	 * comedi_read() or comedi_write() */
 
 
