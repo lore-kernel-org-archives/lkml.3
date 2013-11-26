@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab3KZTP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:15:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35739 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab3KZTP1 (ORCPT
+	id S1758009Ab3KZTRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:17:41 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:51561 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab3KZTRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:15:27 -0500
-Date: Tue, 26 Nov 2013 11:15:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Krishna Kumar Reddy Yerramreddy 
-	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH char-misc-linus 4/5] misc: mic: Fix sparse warnings and
- other endianness issues.
-Message-ID: <20131126191525.GA29279@kroah.com>
-References: <cover.1385487752.git.ashutosh.dixit@intel.com>
- <e5bcd02bd49b111e2d4f885655461e889b8049a3.1385487752.git.ashutosh.dixit@intel.com>
+	Tue, 26 Nov 2013 14:17:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e5bcd02bd49b111e2d4f885655461e889b8049a3.1385487752.git.ashutosh.dixit@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1385493242.20100.71.camel@joe-AO722>
+References: <1385492161-27624-1-git-send-email-olof@lixom.net>
+	<1385493242.20100.71.camel@joe-AO722>
+Date: Tue, 26 Nov 2013 11:17:38 -0800
+Message-ID: <CAOesGMgSnW9e4M63RVWyAtqTbhj4_+Kmw_Rm71aCUUhiav25Vw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pl061: print resource_size_t as %pa
+From: Olof Johansson <olof@lixom.net>
+To: Joe Perches <joe@perches.com>
+Cc: LinusW <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:14:21AM -0800, Ashutosh Dixit wrote:
-> Endianness issues are now consistent as per the documentation in
-> host/mic_virtio.h. Note that the host can be both BE or LE whereas the
-> card is always LE.
-> 
-> Memory space sparse warnings are fixed for now by using __force. This is
-> sufficient for now since the driver depends on x86 but will need to be
-> revisited if we support other architectures which treat I/O memory
-> differently from system memory.
+On Tue, Nov 26, 2013 at 11:14 AM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2013-11-26 at 10:56 -0800, Olof Johansson wrote:
+>> commit 73675c8aa07 ('gpio: pl061: proper error messages') added a printout
+>> of a resource_size_t using %x, which produces an error for builds with
+>> 64-bit resources:
+>
+> What tree is this?
 
-There's no need for this for 3.13-final, right?  No bug fixes are here
-that I can tell.
+linux-next
 
-And don't use __force, really, can't you fix this some other way?
+>> drivers/gpio/gpio-pl061.c:345:3: warning: format '%x' expects argument of
+>>     type 'unsigned int', but argument 3 has type 'resource_size_t'
+>>
+>> Switch to %pa (and pass in a pointer to the resource instead).
+>>
+>> Fixes: 73675c8aa07 ('gpio: pl061: proper error messages')
+> []
+>> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+> []
+>> @@ -341,8 +341,8 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+>>       }
+>>
+>>       amba_set_drvdata(adev, chip);
+>> -     dev_err(&adev->dev, "PL061 GPIO chip @%08x registered\n",
+>> -             adev->res.start);
+>> +     dev_err(&adev->dev, "PL061 GPIO chip @%pa registered\n",
+>> +             &adev->res.start);
+>
+> This looks as if this should not use dev_err, but maybe dev_info
+> and maybe it should use %pR, &adev->res
 
-> diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-> index 4dce912..c975c36 100644
-> --- a/drivers/misc/mic/card/mic_virtio.c
-> +++ b/drivers/misc/mic/card/mic_virtio.c
-> @@ -248,17 +248,17 @@ static struct virtqueue *mic_find_vq(struct virtio_device *vdev,
->  	/* First assign the vring's allocated in host memory */
->  	vqconfig = mic_vq_config(mvdev->desc) + index;
->  	memcpy_fromio(&config, vqconfig, sizeof(config));
-> -	_vr_size = vring_size(config.num, MIC_VIRTIO_RING_ALIGN);
-> +	_vr_size = vring_size(le16_to_cpu(config.num), MIC_VIRTIO_RING_ALIGN);
->  	vr_size = PAGE_ALIGN(_vr_size + sizeof(struct _mic_vring_info));
-> -	va = mic_card_map(mvdev->mdev, config.address, vr_size);
-> +	va = mic_card_map(mvdev->mdev, le64_to_cpu(config.address), vr_size);
->  	if (!va)
->  		return ERR_PTR(-ENOMEM);
->  	mvdev->vr[index] = va;
->  	memset_io(va, 0x0, _vr_size);
-> -	vq = vring_new_virtqueue(index,
-> -				config.num, MIC_VIRTIO_RING_ALIGN, vdev,
-> -				false,
-> -				va, mic_notify, callback, name);
-> +	vq = vring_new_virtqueue(index, le16_to_cpu(config.num),
-> +				 MIC_VIRTIO_RING_ALIGN, vdev, false,
-> +				 (void __force *)va, mic_notify, callback,
-> +				 name);
+Yep, I have as a somewhat long-standing todo to scrub for needlessly
+elevated printk levels (err and warn) on various drivers during boot,
+thanks for shortcutting that. :)
 
-Why __force a void * here?  That feels wrong.
+I'll let Linus decide on pR vs pa.
 
-Can you split the endian fixes up from the user pointer fixes to make it
-easier to review/apply?
-
-thanks,
-
-greg k-h
+-Olof
