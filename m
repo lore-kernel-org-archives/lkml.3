@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3KZQTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:19:00 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:58816 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab3KZQS7 (ORCPT
+	id S1757404Ab3KZQcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:32:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20634 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757183Ab3KZQcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:18:59 -0500
-Date: Tue, 26 Nov 2013 17:18:52 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Adrian Hunter <adrian.hunter@intel.com>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 21/25] perf evsel: Skip ignored symbols while printing
- callchain
-Message-ID: <20131126161852.GC7775@gmail.com>
-References: <1385389075-7989-1-git-send-email-acme@infradead.org>
- <1385389075-7989-22-git-send-email-acme@infradead.org>
- <52947D65.4050405@intel.com>
- <20131126142002.GC14838@ghostprotocols.net>
- <5294B06A.60104@gmail.com>
- <20131126143313.GD14838@ghostprotocols.net>
+	Tue, 26 Nov 2013 11:32:09 -0500
+Date: Tue, 26 Nov 2013 11:31:57 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-jens-3.13-take-two (bug-fixes to
+ xen-blkfront)
+Message-ID: <20131126163157.GB2959@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
 Content-Disposition: inline
-In-Reply-To: <20131126143313.GD14838@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Em Tue, Nov 26, 2013 at 07:30:02AM -0700, David Ahern escreveu:
-> > On 11/26/13, 7:20 AM, Arnaldo Carvalho de Melo wrote:
-> > >Em Tue, Nov 26, 2013 at 12:52:21PM +0200, Adrian Hunter escreveu:
-> > >>On 25/11/13 16:17, Arnaldo Carvalho de Melo wrote:
-> > >>>From: David Ahern <dsahern@gmail.com>
-> > >>>  	} else {
-> > >>>+		if (al.sym->ignore)
-> 
-> > >>Seems to segfault here because sym is null
-> 
-> > >>>+			return;
-> 
-> > >Changed it to look at (al.sym && al.sym->ignore), the rest of the code
-> > >already checkfs if al.sym is NULL (printing [unknown], etc), can you
-> > >please take a look at:
-> 
-> > >https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=c0dd57452349779e0e5d436db8f9448dfffcc512
-> 
-> > >In an updated acme/perf/core branch?
->  
-> > Looks good to me. That's what I was going to send you. Sorry for the noise.
-> 
-> No problem, I'll regenerate a +perf-core-for-mingo signed tag and 
-> send it with this new version with a [PATCH N/M v2] together with a 
-> new set of patches that I've put there today, not resending the 
-> unmodified patches from last pull req.
-> 
-> Is that ok with you Ingo?
 
-Sounds good to me!
+Hey Jens,
 
-Thanks,
+Please git pull the following branch:
 
-	Ingo
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.13-take-two
+
+which has bug-fixes. It is based on todays on your 'for-3.13/drivers'
+(f7cb20f03dc6dff1b19942cf3dda6d154c86f29b "floppy: Correct documentation of driver
+options when used as a module.").
+
+Fixes are to fix a compiler warning and a issue discovered by Coverity.
+Please pull!
+
+Thank you!
+
+Felipe Pena (1):
+      block: xen-blkfront: Fix possible NULL ptr dereference
+
+Tim Gardner (1):
+      xen-blkfront: Silence pfn maybe-uninitialized warning
+
+ drivers/block/xen-blkfront.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--pWyiEgJYm5f9v55/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQEcBAEBAgAGBQJSlMzyAAoJEFjIrFwIi8fJpygH/RtDAnILkvhIrn/s9puVJFe/
+f5KNW2lRy/kmdw1PeoUwgmWMPDcr0AZyKk5stlzxPtgWZqYrMxT7+jK5Lq1hPtFl
+hGvjwHehs1xZ1SAnhMEOmBRCgP/HLaHJrIjWoN1Gxf8A1rJxGfL/snC9oi5M/lPh
+YfKv3btEjWk2kFyQc9P1PXm6k1BGIThmpCBYV93ybtmic33Gg9jLWI0hs6Beh3Xj
+DcU2h8VfmEYtRa3/shLDHCuR2LjwIF1lfdZCU7RFYxHVyx8aYRRuQoKZbdXue7JX
+UfMDDsg+WSz9rPqkj9D+1AXe3hal1QkZtD5GvcWig21mlmWMDnoFA0dLdRnbHKk=
+=zUrD
+-----END PGP SIGNATURE-----
+
+--pWyiEgJYm5f9v55/--
