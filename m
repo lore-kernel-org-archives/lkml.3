@@ -1,169 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab3KZTsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:48:19 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49500 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3KZTsP (ORCPT
+	id S932541Ab3KZTwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:52:00 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61354 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758019Ab3KZTv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:48:15 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH V4] dma: add dma_get_any_slave_channel(), for use in of_xlate()
-Date: Tue, 26 Nov 2013 12:40:51 -0700
-Message-Id: <1385494851-22640-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Tue, 26 Nov 2013 14:51:56 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5294FBD5.8030005@roeck-us.net>
+Date: Tue, 26 Nov 2013 11:51:49 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-watchdog@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] watchdog: core: Fix watchdog_init_timeout() when
+ invalid param / valid dt
+References: <1385490173-7511-1-git-send-email-dianders@chromium.org>	<1385490173-7511-2-git-send-email-dianders@chromium.org>	<5294EF42.3090001@roeck-us.net> <CAD=FV=W0Op73P2f5KSWhOG+34N8OyeKUzS17ot3BTtzULApv8A@mail.gmail.com>
+In-Reply-To: <CAD=FV=W0Op73P2f5KSWhOG+34N8OyeKUzS17ot3BTtzULApv8A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On 11/26/2013 11:23 AM, Doug Anderson wrote:
+> Guenter,
+>
+> Thanks for your reviews!
+>
+> On Tue, Nov 26, 2013 at 10:58 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 11/26/2013 10:22 AM, Doug Anderson wrote:
+>>>
+>>> There was a minor bug in watchdog_init_timeout() where it would return
+>>> an error code if someone specified an invalid parameter on the
+>>> command line but then there was a valid parameter in the device tree
+>>> as "timeout-sec".
+>>>
+>>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>>
+>>
+>> I thought that was on purpose.
+>>
+>> Problem as I see it is that users would expect the timeout to be set to
+>> the provided parameter, which would be silently ignored and replaced
+>> by timeout-sec if the parameter is wrong and timeout-sec is specified.
+>> Seems to me that the user should be informed about the problem,
+>> and not be permitted to provide invalid parameters.
+>
+> Wow, really?  ...so it's on purpose that the function will properly
+> read the device tree entry and fill it in but still return an error?
+>
+I said "I thought ...", which wasn't meant to imply that I know.
+Maybe Wim should comment and provide directions.
 
-mmp_pdma.c implements a custom of_xlate() function that is 95% identical
-to what Tegra will need. Create a function to implement the common part,
-so everyone doesn't just cut/paste the implementation.
+> I guess that can make some sense (treating device tree as an extension
+> of the "default"), though it's non-obvious enough to me that it feels
+> like it deserves some documentation.  I'd also question the value of
+> the return code from this function anyway.  I'd vote for:
+>
+> 1. If param is non-zero and invalid, dev_warn() in this function.
+>
+> 2. If "timeout-sec" is specified in device tree and invalid,
+> dev_warn() in this function.
+>
+Makes sense to me. Again up to Wim to provide direction.
 
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
-Cc: dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v3:
-* Re-implemented the common code as dma_get_any_slave_channel(), in
-  dmaengine.c. This allows it to mutex_lock(&dma_list_mutex), and hence
-  avoid the retry loop.
-* Rather than having the common code call out to a driver-provided
-  callback at the tail (which avoided drivers having to implement an
-  of_xlate function themselves), have drivers implement a custom
-  of_xlate() again, which mostly just calls the new
-  dma_get_any_slave_channel(), then does any extra custom work.
+> Function doesn't need to return an error code.  ...or if we keep it
+> then nobody should be looking at it.  They should be putting their
+> default in "timeout" before calling the function and trusting that the
+> function will do the right thing and update it as needed.
+>
+>
+> In practice only one caller ever checks this result in the code I'm
+> looking at (at91sam9_wdt) and it's a little confusing what that's
+> trying to do.  It does look like it would be broken by my suggestions
+> above.  I guess it's trying to do:
+> 1. device tree first (always passes 0 as the "param")
+> 2. a value based on the patting heartbeat second.
+> 3. the value WDT_HEARTBEAT third (starts in ->timeout)
+>
+I thought the idea was to give drivers the ability to handle errors
+this way. Notice the "thought" ... I may be wrong.
 
-v2:
-* Squashed the conversion of mmp_pdma.c into the patch that added the
-  common implementation, so it's easier to see the whole conversion in
-  one go.
+>
+> In any case I'm OK with just dropping this patch.  The code looked
+> wrong and so I thought I'd fix it up, but I have no real need to see
+> it land (we don't use kernel parameters for things like this) in
+> Chrome OS.  I'm also happy to spin it if there is some interest.
+>
 
-This patch is a dependency for a series that reworks many of the Tegra
-drivers.
+It is really be up to Wim to decide what to do, so I'll defer to him.
 
-As such, it needs to go into a topic branch on its own, based directly
-on 3.13-rc1. If the DMA maintainers ack the patches I'm happy to create
-this topic branch myself and send a pull request to the DMA tree. Or the
-patches can be applied to a topic branch by the DMA maintainers and I
-will merge their topic branch into the Tegra rework branch that I
-mentioned.
-
-Note that this patch is independant from the "dma: add channel request
-API that supports deferred probe" which I just sent, so it could
-(should?) be a different topic branch.
----
- drivers/dma/dmaengine.c   | 28 ++++++++++++++++++++++++++++
- drivers/dma/mmp_pdma.c    | 30 +++++++-----------------------
- include/linux/dmaengine.h |  1 +
- 3 files changed, 36 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index e17e9b22d85e..24095ff8a93b 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -535,6 +535,34 @@ struct dma_chan *dma_get_slave_channel(struct dma_chan *chan)
- }
- EXPORT_SYMBOL_GPL(dma_get_slave_channel);
- 
-+struct dma_chan *dma_get_any_slave_channel(struct dma_device *device)
-+{
-+	dma_cap_mask_t mask;
-+	struct dma_chan *chan;
-+	int err;
-+
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+
-+	/* lock against __dma_request_channel */
-+	mutex_lock(&dma_list_mutex);
-+
-+	chan = private_candidate(&mask, device, NULL, NULL);
-+	if (chan) {
-+		err = dma_chan_get(chan);
-+		if (err) {
-+			pr_debug("%s: failed to get %s: (%d)\n",
-+				__func__, dma_chan_name(chan), err);
-+			chan = NULL;
-+		}
-+	}
-+
-+	mutex_unlock(&dma_list_mutex);
-+
-+	return chan;
-+}
-+EXPORT_SYMBOL_GPL(dma_get_any_slave_channel);
-+
- /**
-  * __dma_request_channel - try to allocate an exclusive channel
-  * @mask: capabilities that the channel must satisfy
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index dcb1e05149a7..2998f1bffac1 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -893,33 +893,17 @@ static struct dma_chan *mmp_pdma_dma_xlate(struct of_phandle_args *dma_spec,
- 					   struct of_dma *ofdma)
- {
- 	struct mmp_pdma_device *d = ofdma->of_dma_data;
--	struct dma_chan *chan, *candidate;
-+	struct dma_chan *chan;
-+	struct mmp_pdma_chan *c;
- 
--retry:
--	candidate = NULL;
--
--	/* walk the list of channels registered with the current instance and
--	 * find one that is currently unused */
--	list_for_each_entry(chan, &d->device.channels, device_node)
--		if (chan->client_count == 0) {
--			candidate = chan;
--			break;
--		}
--
--	if (!candidate)
-+	chan = dma_get_any_slave_channel(&d->device);
-+	if (!chan)
- 		return NULL;
- 
--	/* dma_get_slave_channel will return NULL if we lost a race between
--	 * the lookup and the reservation */
--	chan = dma_get_slave_channel(candidate);
--
--	if (chan) {
--		struct mmp_pdma_chan *c = to_mmp_pdma_chan(chan);
--		c->drcmr = dma_spec->args[0];
--		return chan;
--	}
-+	c = to_mmp_pdma_chan(chan);
-+	c->drcmr = dma_spec->args[0];
- 
--	goto retry;
-+	return chan;
- }
- 
- static int mmp_pdma_probe(struct platform_device *op)
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index ed92b30a02fd..bae1568416f8 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -1087,6 +1087,7 @@ int dma_async_device_register(struct dma_device *device);
- void dma_async_device_unregister(struct dma_device *device);
- void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_get_slave_channel(struct dma_chan *chan);
-+struct dma_chan *dma_get_any_slave_channel(struct dma_device *device);
- struct dma_chan *net_dma_find_channel(void);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
- #define dma_request_slave_channel_compat(mask, x, y, dev, name) \
--- 
-1.8.1.5
+Thanks,
+Guenter
 
