@@ -1,131 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab3KZGPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:15:46 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:51089 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab3KZGPm (ORCPT
+	id S1753725Ab3KZGcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:32:12 -0500
+Received: from atl4mhob14.myregisteredsite.com ([209.17.115.52]:48918 "EHLO
+	atl4mhob14.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752799Ab3KZGcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:15:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1440196.1vM1gSXuH1@amdc1032>
-References: <2244251.cWS1a83qbK@amdc1032>
-	<1440196.1vM1gSXuH1@amdc1032>
-Date: Tue, 26 Nov 2013 11:45:41 +0530
-Message-ID: <CADGdYn6O9LdwijYfoFqfMcrndBy3L5H=1cbSsGXMOj4yavZT0A@mail.gmail.com>
-Subject: Re: [PATCH] thermal: EXYNOS: always register TMU driver with core
- thermal framework
-From: Amit Kachhap <amit.kachhap@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Nov 2013 01:32:10 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+Date: Tue, 26 Nov 2013 07:32:00 +0100
+Message-Id: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/13, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
->
-> Hi,
->
-> Could you please also apply this patch?
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
-> On Friday, October 04, 2013 02:38:25 PM Bartlomiej Zolnierkiewicz wrote:
->> There is little sense in having separate config option for
->> registering EXYNOS TMU driver with the core thermal framework.
->> Fix it by integrating EXYNOS_THERMAL_CORE config option with
->> EXYNOS_THERMAL one.
->>
-Sorry for the late reply but this patch is not needed as in my opinion
-as it is just decreasing the flexibility when only sensor hardware
-needs to be initialised and all cooling is hw controlled.
+Leaving the mux enabled causes needless I2C traffic on the downstream
+bus. De-selecting after every request causes excess I2C traffic and
+switching.
 
-Thanks,
-Amit D
->> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  drivers/thermal/samsung/Kconfig                 | 14 +++-----------
->>  drivers/thermal/samsung/Makefile                |  2 +-
->>  drivers/thermal/samsung/exynos_thermal_common.h | 12 ------------
->>  3 files changed, 4 insertions(+), 24 deletions(-)
->>
->> diff --git a/drivers/thermal/samsung/Kconfig
->> b/drivers/thermal/samsung/Kconfig
->> index f760389..04eabee 100644
->> --- a/drivers/thermal/samsung/Kconfig
->> +++ b/drivers/thermal/samsung/Kconfig
->> @@ -5,14 +5,6 @@ config EXYNOS_THERMAL
->>  	  If you say yes here you get support for the TMU (Thermal Management
->>  	  Unit) driver for SAMSUNG EXYNOS series of SoCs. This driver
->> initialises
->>  	  the TMU, reports temperature and handles cooling action if defined.
->> -	  This driver uses the Exynos core thermal APIs and TMU configuration
->> -	  data from the supported SoCs.
->> -
->> -config EXYNOS_THERMAL_CORE
->> -	bool "Core thermal framework support for EXYNOS SOCs"
->> -	depends on EXYNOS_THERMAL
->> -	help
->> -	  If you say yes here you get support for EXYNOS TMU
->> -	  (Thermal Management Unit) common registration/unregistration
->> -	  functions to the core thermal layer and also to use the generic
->> -	  CPU cooling APIs.
->> +	  This driver uses the Exynos core thermal APIs, TMU configuration data
->> +	  from the supported SoCs, common registration/unregistration functions
->> +	  to the core thermal layer and also the generic CPU cooling APIs.
->> diff --git a/drivers/thermal/samsung/Makefile
->> b/drivers/thermal/samsung/Makefile
->> index c09d830..a829107 100644
->> --- a/drivers/thermal/samsung/Makefile
->> +++ b/drivers/thermal/samsung/Makefile
->> @@ -4,4 +4,4 @@
->>  obj-$(CONFIG_EXYNOS_THERMAL)			+= exynos_thermal.o
->>  exynos_thermal-y				:= exynos_tmu.o
->>  exynos_thermal-y				+= exynos_tmu_data.o
->> -exynos_thermal-$(CONFIG_EXYNOS_THERMAL_CORE)	+= exynos_thermal_common.o
->> +exynos_thermal-y				+= exynos_thermal_common.o
->> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h
->> b/drivers/thermal/samsung/exynos_thermal_common.h
->> index 3eb2ed9..8681679 100644
->> --- a/drivers/thermal/samsung/exynos_thermal_common.h
->> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
->> @@ -88,20 +88,8 @@ struct thermal_sensor_conf {
->>  	struct device *dev;
->>  };
->>
->> -/*Functions used exynos based thermal sensor driver*/
->> -#ifdef CONFIG_EXYNOS_THERMAL_CORE
->>  void exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf);
->>  int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf);
->>  void exynos_report_trigger(struct thermal_sensor_conf *sensor_conf);
->> -#else
->> -static inline void
->> -exynos_unregister_thermal(struct thermal_sensor_conf *sensor_conf) {
->> return; }
->>
->> -static inline int
->> -exynos_register_thermal(struct thermal_sensor_conf *sensor_conf) { return
->> 0; }
->> -
->> -static inline void
->> -exynos_report_trigger(struct thermal_sensor_conf *sensor_conf) { return;
->> }
->> -
->> -#endif /* CONFIG_EXYNOS_THERMAL_CORE */
->>  #endif /* _EXYNOS_THERMAL_COMMON_H */
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+This patch implements a hybrid solution: After 200ms of inactivity,
+the mux is disabled.
+
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+ drivers/i2c/muxes/i2c-mux-pca954x.c |   45 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
+index a531d80..1241c97 100644
+--- a/drivers/i2c/muxes/i2c-mux-pca954x.c
++++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
+@@ -41,6 +41,7 @@
+ #include <linux/device.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-mux.h>
++#include <linux/workqueue.h>
+ 
+ #include <linux/i2c/pca954x.h>
+ 
+@@ -60,7 +61,8 @@ enum pca_type {
+ struct pca954x {
+ 	enum pca_type type;
+ 	struct i2c_adapter *virt_adaps[PCA954X_MAX_NCHANS];
+-
++	struct i2c_client *client;
++	struct delayed_work deselect_work;
+ 	u8 last_chan;		/* last register value */
+ };
+ 
+@@ -168,11 +170,43 @@ static int pca954x_select_chan(struct i2c_adapter *adap,
+ 	return ret;
+ }
+ 
+-static int pca954x_deselect_mux(struct i2c_adapter *adap,
++static void pca954x_deselect_work(struct work_struct *work)
++{
++	struct pca954x *data = container_of(
++				work, struct pca954x, deselect_work.work);
++	/* Use the adapter lock as a mutex because any method that changes
++	 * the mux state will also hold this mutex. If the bus is in use,
++	 * the lock will assure that at least that transaction will
++	 * complete. */
++	i2c_lock_adapter(data->client->adapter);
++	if (data->last_chan != 0) {
++		int res;
++		/* Disable mux */
++		dev_dbg(&client->dev, "deselecting mux\n");
++		data->last_chan = 0;
++		res = pca954x_reg_write(data->client->adapter,
++				data->client, data->last_chan);
++		if (res < 0)
++			dev_err(&client->dev,
++				"%s: pca954x_reg_write failed: %d\n",
++				__func__, res);
++	}
++	i2c_unlock_adapter(data->client->adapter);
++}
++
++static int pca954x_deselect_mux_delayed(struct i2c_adapter *adap,
+ 				void *client, u32 chan)
+ {
+ 	struct pca954x *data = i2c_get_clientdata(client);
++	/* Setup timer to disable at a later interval */
++	schedule_delayed_work(&data->deselect_work, msecs_to_jiffies(200));
++	return 0;
++}
+ 
++static int pca954x_deselect_mux_immediate(struct i2c_adapter *adap,
++				void *client, u32 chan)
++{
++	struct pca954x *data = i2c_get_clientdata(client);
+ 	/* Deselect active channel */
+ 	data->last_chan = 0;
+ 	return pca954x_reg_write(adap, client, data->last_chan);
+@@ -212,6 +246,8 @@ static int pca954x_probe(struct i2c_client *client,
+ 
+ 	data->type = id->driver_data;
+ 	data->last_chan = 0;		   /* force the first selection */
++	data->client = client;
++	INIT_DELAYED_WORK(&data->deselect_work, pca954x_deselect_work);
+ 
+ 	/* Now create an adapter for each channel */
+ 	for (num = 0; num < chips[data->type].nchans; num++) {
+@@ -231,7 +267,8 @@ static int pca954x_probe(struct i2c_client *client,
+ 			i2c_add_mux_adapter(adap, &client->dev, client,
+ 				force, num, class, pca954x_select_chan,
+ 				(pdata && pdata->modes[num].deselect_on_exit)
+-					? pca954x_deselect_mux : NULL);
++					? pca954x_deselect_mux_immediate
++					: pca954x_deselect_mux_delayed);
+ 
+ 		if (data->virt_adaps[num] == NULL) {
+ 			ret = -ENODEV;
+@@ -264,6 +301,8 @@ static int pca954x_remove(struct i2c_client *client)
+ 	const struct chip_desc *chip = &chips[data->type];
+ 	int i;
+ 
++	cancel_delayed_work_sync(&data->deselect_work);
++
+ 	for (i = 0; i < chip->nchans; ++i)
+ 		if (data->virt_adaps[i]) {
+ 			i2c_del_mux_adapter(data->virt_adaps[i]);
+-- 
+1.7.9.5
+
