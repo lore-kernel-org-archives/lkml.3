@@ -1,73 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3KZAM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:12:56 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:59684 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3KZAMx (ORCPT
+	id S1753557Ab3KZANh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:13:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57363 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3KZANe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:12:53 -0500
-Date: Mon, 25 Nov 2013 16:10:33 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gnurou@gmail.com
-Subject: Re: [PATCH v11 0/7] ARM: support for the Trusted Foundations secure
- monitor
-Message-ID: <20131126001033.GB21634@quad.lixom.net>
-References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Nov 2013 19:13:34 -0500
+Date: Mon, 25 Nov 2013 16:13:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-Id: <20131125161332.f9d5f37b6fbaba5a43403131@linux-foundation.org>
+In-Reply-To: <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
+References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
+	<1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 24, 2013 at 03:30:45PM +0900, Alexandre Courbot wrote:
-> New rebase that should be ready-to-apply on the latest Tegra tree. The last
-> remaining blocker is Russell's approval for this series and it is my hope to
-> obtain it with this version.
+On Sun, 24 Nov 2013 18:38:28 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+
+> Previously, page cache radix tree nodes were freed after reclaim
+> emptied out their page pointers.  But now reclaim stores shadow
+> entries in their place, which are only reclaimed when the inodes
+> themselves are reclaimed.  This is problematic for bigger files that
+> are still in use after they have a significant amount of their cache
+> reclaimed, without any of those pages actually refaulting.  The shadow
+> entries will just sit there and waste memory.  In the worst case, the
+> shadow entries will accumulate until the machine runs out of memory.
 > 
-> There has been quite some debate around this series, notably about the SMC
-> calling conventions and whether the firmware interface should be moved out of
-> arch/arm. I hope that all the questions have been answered and that we can move
-> forward with this series that enables NVIDIA-branded retail Tegra devices to run
-> mainline.
+> To get this under control, the VM will track radix tree nodes
+> exclusively containing shadow entries on a per-NUMA node list.
+
+Why per-node rather than a global list?
+
+>  A simple shrinker will reclaim these nodes on memory pressure.
+
+Truncate needs to go off and massacre these things as well - some
+description of how that happens would be useful.
+
+> A few things need to be stored in the radix tree node to implement the
+> shadow node LRU and allow tree deletions coming from the list:
 > 
-> Changes since v10:
-> - Rebased on top of more recent sources since some files have been renamed in
->   mach-tegra.
-> - Gave a final proof-read and extensive testing.
+> 1. There is no index available that would describe the reverse path
+>    from the node up to the tree root, which is needed to perform a
+>    deletion.  To solve this, encode in each node its offset inside the
+>    parent.  This can be stored in the unused upper bits of the same
+>    member that stores the node's height at no extra space cost.
 > 
-> Alexandre Courbot (7):
->   ARM: add basic support for Trusted Foundations
->   of: add vendor prefix for Trusted Logic Mobility
->   of: add Trusted Foundations bindings documentation
->   ARM: tegra: add support for Trusted Foundations
->   ARM: tegra: split setting of CPU reset handler
->   ARM: tegra: set CPU reset handler using firmware
->   ARM: tegra: support Trusted Foundations by default
+> 2. The number of shadow entries needs to be counted in addition to the
+>    regular entries, to quickly detect when the node is ready to go to
+>    the shadow node LRU list.  The current entry count is an unsigned
+>    int but the maximum number of entries is 64, so a shadow counter
+>    can easily be stored in the unused upper bits.
+> 
+> 3. Tree modification needs the lock, which is located in the address
+>    space,
 
-Ok, this looks good to me. Russell, do you want the first patch in your
-tree or are you ok with acking that and we can take everything through
-arm-soc?
+Presumably "the lock" == tree_lock.
 
-The alternative is that we can have Stephen provide a stable branch with
-the first patch on it and we both merge that, then the rest goes on top
-of that through arm-soc.
+>    so store a backpointer to it.
 
+<looks at the code>
 
-Thanks!
+"it" is the address_space, not tree_lock, yes?
 
--Olof
+>   The parent pointer is in a
+>    union with the 2-word rcu_head, so the backpointer comes at no
+>    extra cost as well.
+
+So we have a shrinker walking backwards from radix-tree nodes and
+reaching up into address_spaces.  We need to take steps to prevent
+those address_spaces from getting shot down (reclaim, umount, truncate,
+etc) while we're doing this.  What's happening here?
+
+> 4. The node needs to be linked to an LRU list, which requires a list
+>    head inside the node.  This does increase the size of the node, but
+>    it does not change the number of objects that fit into a slab page.
+>
+> ...
+>
+> --- a/include/linux/list_lru.h
+> +++ b/include/linux/list_lru.h
+> @@ -32,7 +32,7 @@ struct list_lru {
+>  };
+>  
+>  void list_lru_destroy(struct list_lru *lru);
+> -int list_lru_init(struct list_lru *lru);
+> +int list_lru_init(struct list_lru *lru, struct lock_class_key *key);
+
+It's a bit of a shame to be adding overhead to non-lockdep kernels.  A
+few ifdefs could fix this.
+
+Presumably this is being done to squish some lockdep warning you hit. 
+A comment at the list_lru_init() implementation site would be useful. 
+One which describes the warning and why it's OK to squish it.
+
+>
+> ...
+>
+>  struct radix_tree_node {
+> -	unsigned int	height;		/* Height from the bottom */
+> +	unsigned int	path;	/* Offset in parent & height from the bottom */
+>  	unsigned int	count;
+>  	union {
+> -		struct radix_tree_node *parent;	/* Used when ascending tree */
+> -		struct rcu_head	rcu_head;	/* Used when freeing node */
+> +		/* Used when ascending tree */
+> +		struct {
+> +			struct radix_tree_node *parent;
+> +			void *private;
+
+Private to whom?  The radix-tree implementation?  The radix-tree caller?
+
+> +		};
+> +		/* Used when freeing node */
+> +		struct rcu_head	rcu_head;
+>  	};
+> +	struct list_head lru;
+
+Locking for this list?
+
+>  	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
+>  	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
+>  };
+>  
+>
+> ...
+>
+> +static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+> +					struct shrink_control *sc)
+> +{
+> +	unsigned long count;
+> +
+> +	local_irq_disable();
+> +	count = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> +	local_irq_enable();
+
+I'm struggling with the local_irq_disable() here.  Presumably it's
+there to quash a lockdep warning, but page_cache_tree_delete() and
+friends can get away without the local_irq_disable().  Some more
+clarity here would be nice.
+
+> +	return count;
+> +}
+> +
+> +#define NOIRQ_BATCH 32
+> +
+> +static enum lru_status shadow_lru_isolate(struct list_head *item,
+> +					  spinlock_t *lru_lock,
+> +					  void *arg)
+> +{
+> +	struct address_space *mapping;
+> +	struct radix_tree_node *node;
+> +	unsigned long *batch = arg;
+> +	unsigned int i;
+> +
+> +	node = container_of(item, struct radix_tree_node, lru);
+> +	mapping = node->private;
+> +
+> +	/* Don't disable IRQs for too long */
+> +	if (--(*batch) == 0) {
+> +		spin_unlock_irq(lru_lock);
+> +		*batch = NOIRQ_BATCH;
+> +		spin_lock_irq(lru_lock);
+> +		return LRU_RETRY;
+> +	}
+> +
+> +	/* Coming from the list, inverse the lock order */
+
+"invert" ;)
+
+> +	if (!spin_trylock(&mapping->tree_lock))
+> +		return LRU_SKIP;
+> +
+> +	/*
+> +	 * The nodes should only contain one or more shadow entries,
+> +	 * no pages, so we expect to be able to remove them all and
+> +	 * delete and free the empty node afterwards.
+> +	 */
+> +
+> +	BUG_ON(!node->count);
+> +	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
+> +
+> +	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
+> +		if (node->slots[i]) {
+> +			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
+> +			node->slots[i] = NULL;
+> +			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
+> +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
+> +			BUG_ON(!mapping->nrshadows);
+> +			mapping->nrshadows--;
+> +		}
+> +	}
+> +	list_del_init(&node->lru);
+> +	BUG_ON(node->count);
+> +	if (!__radix_tree_delete_node(&mapping->page_tree, node))
+> +		BUG();
+> +
+> +	spin_unlock(&mapping->tree_lock);
+> +
+> +	count_vm_event(WORKINGSET_NODES_RECLAIMED);
+> +
+> +	return LRU_REMOVED;
+> +}
+> +
+>
+> ...
+>
+
