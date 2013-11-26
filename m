@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3KZSSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:18:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35381 "EHLO
+	id S932605Ab3KZSSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:18:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757718Ab3KZSNE (ORCPT
+	with ESMTP id S1757728Ab3KZSNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 13:13:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 13/36] ipc,shm: correct error return value in shmctl (SHM_UNLOCK)
-Date: Tue, 26 Nov 2013 10:12:23 -0800
-Message-Id: <20131126181027.767956290@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.11 22/36] perf/ftrace: Fix paranoid level for enabling function tracer
+Date: Tue, 26 Nov 2013 10:12:32 -0800
+Message-Id: <20131126181029.664384524@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -31,58 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesper Nilsson <jesper.nilsson@axis.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 3a72660b07d86d60457ca32080b1ce8c2b628ee2 upstream.
+commit 12ae030d54ef250706da5642fc7697cc60ad0df7 upstream.
 
-Commit 2caacaa82a51 ("ipc,shm: shorten critical region for shmctl")
-restructured the ipc shm to shorten critical region, but introduced a
-path where the return value could be -EPERM, even if the operation
-actually was performed.
+The current default perf paranoid level is "1" which has
+"perf_paranoid_kernel()" return false, and giving any operations that
+use it, access to normal users. Unfortunately, this includes function
+tracing and normal users should not be allowed to enable function
+tracing by default.
 
-Before the commit, the err return value was reset by the return value
-from security_shm_shmctl() after the if (!ns_capable(...)) statement.
+The proper level is defined at "-1" (full perf access), which
+"perf_paranoid_tracepoint_raw()" will only give access to. Use that
+check instead for enabling function tracing.
 
-Now, we still exit the if statement with err set to -EPERM, and in the
-case of SHM_UNLOCK, it is not reset at all, and used as the return value
-from shmctl.
-
-To fix this, we only set err when errors occur, leaving the fallthrough
-case alone.
-
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+CVE: CVE-2013-2930
+Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ kernel/trace/trace_event_perf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -974,12 +974,15 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		ipc_lock_object(&shp->shm_perm);
- 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			kuid_t euid = current_euid();
--			err = -EPERM;
- 			if (!uid_eq(euid, shp->shm_perm.uid) &&
--			    !uid_eq(euid, shp->shm_perm.cuid))
-+			    !uid_eq(euid, shp->shm_perm.cuid)) {
-+				err = -EPERM;
- 				goto out_unlock0;
--			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
-+			}
-+			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK)) {
-+				err = -EPERM;
- 				goto out_unlock0;
-+			}
- 		}
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct
+ {
+ 	/* The ftrace function trace is allowed only for root. */
+ 	if (ftrace_event_is_function(tp_event) &&
+-	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 		shm_file = shp->shm_file;
+ 	/* No tracing, just counting, so no obvious leak */
 
 
