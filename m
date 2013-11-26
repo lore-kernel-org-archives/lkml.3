@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3KZSVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:21:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35358 "EHLO
+	id S1757653Ab3KZSMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:12:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757661Ab3KZSM4 (ORCPT
+	with ESMTP id S1754996Ab3KZSMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:12:56 -0500
+	Tue, 26 Nov 2013 13:12:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 09/36] crypto: ansi_cprng - Fix off by one error in non-block size request
-Date: Tue, 26 Nov 2013 10:12:19 -0800
-Message-Id: <20131126181026.956532161@linuxfoundation.org>
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.11 01/36] ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and BufferField refs.
+Date: Tue, 26 Nov 2013 10:12:11 -0800
+Message-Id: <20131126181025.355965489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -31,49 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Bob Moore <robert.moore@intel.com>
 
-commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
+commit 63660e05ec719613b518547b40a1c501c10f0bc4 upstream.
 
-Stephan Mueller reported to me recently a error in random number generation in
-the ansi cprng. If several small requests are made that are less than the
-instances block size, the remainder for loop code doesn't increment
-rand_data_valid in the last iteration, meaning that the last bytes in the
-rand_data buffer gets reused on the subsequent smaller-than-a-block request for
-random data.
+Previously, references to these objects were resolved only to the actual
+FieldUnit or BufferField object. The correct behavior is to resolve these
+references to an actual value.
+The problem is that DerefOf did not resolve these objects to actual
+values.  An "Integer" object is simple, return the value.  But a field in
+an operation region will require a read operation.  For a BufferField, the
+appropriate data must be extracted from the parent buffer.
 
-The fix is pretty easy, just re-code the for loop to make sure that
-rand_data_valid gets incremented appropriately
+NOTE: It appears that this issues is present in Windows7 but not
+Windows8.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Petr Matousek <pmatouse@redhat.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/ansi_cprng.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/exoparg1.c |   35 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 32 insertions(+), 3 deletions(-)
 
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -230,11 +230,11 @@ remainder:
- 	 */
- 	if (byte_count < DEFAULT_BLK_SZ) {
- empty_rbuf:
--		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
--			ctx->rand_data_valid++) {
-+		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
- 			*ptr = ctx->rand_data[ctx->rand_data_valid];
- 			ptr++;
- 			byte_count--;
-+			ctx->rand_data_valid++;
- 			if (byte_count == 0)
- 				goto done;
- 		}
+--- a/drivers/acpi/acpica/exoparg1.c
++++ b/drivers/acpi/acpica/exoparg1.c
+@@ -990,11 +990,40 @@ acpi_status acpi_ex_opcode_1A_0T_1R(stru
+ 									 acpi_namespace_node
+ 									 *)
+ 									return_desc);
+-				}
++					if (!return_desc) {
++						break;
++					}
++
++					/*
++					 * June 2013:
++					 * buffer_fields/field_units require additional resolution
++					 */
++					switch (return_desc->common.type) {
++					case ACPI_TYPE_BUFFER_FIELD:
++					case ACPI_TYPE_LOCAL_REGION_FIELD:
++					case ACPI_TYPE_LOCAL_BANK_FIELD:
++					case ACPI_TYPE_LOCAL_INDEX_FIELD:
++
++						status =
++						    acpi_ex_read_data_from_field
++						    (walk_state, return_desc,
++						     &temp_desc);
++						if (ACPI_FAILURE(status)) {
++							goto cleanup;
++						}
+ 
+-				/* Add another reference to the object! */
++						return_desc = temp_desc;
++						break;
+ 
+-				acpi_ut_add_reference(return_desc);
++					default:
++
++						/* Add another reference to the object */
++
++						acpi_ut_add_reference
++						    (return_desc);
++						break;
++					}
++				}
+ 				break;
+ 
+ 			default:
 
 
