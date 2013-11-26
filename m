@@ -1,231 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3KZANh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:13:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57363 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3KZANe (ORCPT
+	id S1753782Ab3KZAO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:14:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39147 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3KZAO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:13:34 -0500
-Date: Mon, 25 Nov 2013 16:13:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Dave Chinner <david@fromorbit.com>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-Id: <20131125161332.f9d5f37b6fbaba5a43403131@linux-foundation.org>
-In-Reply-To: <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
-	<1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 25 Nov 2013 19:14:56 -0500
+Message-ID: <5293E7FB.6040300@wwwdotorg.org>
+Date: Mon, 25 Nov 2013 17:14:51 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] pinctrl: Add documentation for pinctrl-msm8x74
+References: <1385249897-16453-1-git-send-email-bjorn.andersson@sonymobile.com> <1385249897-16453-2-git-send-email-bjorn.andersson@sonymobile.com> <1385249897-16453-3-git-send-email-bjorn.andersson@sonymobile.com> <1385249897-16453-4-git-send-email-bjorn.andersson@sonymobile.com>
+In-Reply-To: <1385249897-16453-4-git-send-email-bjorn.andersson@sonymobile.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Nov 2013 18:38:28 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 11/23/2013 04:38 PM, Bjorn Andersson wrote:
+> This adds initial documentation for the pinctrl-msm8x74 driver.
 
-> Previously, page cache radix tree nodes were freed after reclaim
-> emptied out their page pointers.  But now reclaim stores shadow
-> entries in their place, which are only reclaimed when the inodes
-> themselves are reclaimed.  This is problematic for bigger files that
-> are still in use after they have a significant amount of their cache
-> reclaimed, without any of those pages actually refaulting.  The shadow
-> entries will just sit there and waste memory.  In the worst case, the
-> shadow entries will accumulate until the machine runs out of memory.
-> 
-> To get this under control, the VM will track radix tree nodes
-> exclusively containing shadow entries on a per-NUMA node list.
+> diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,msm8x74-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,msm8x74-pinctrl.txt
 
-Why per-node rather than a global list?
-
->  A simple shrinker will reclaim these nodes on memory pressure.
-
-Truncate needs to go off and massacre these things as well - some
-description of how that happens would be useful.
-
-> A few things need to be stored in the radix tree node to implement the
-> shadow node LRU and allow tree deletions coming from the list:
-> 
-> 1. There is no index available that would describe the reverse path
->    from the node up to the tree root, which is needed to perform a
->    deletion.  To solve this, encode in each node its offset inside the
->    parent.  This can be stored in the unused upper bits of the same
->    member that stores the node's height at no extra space cost.
-> 
-> 2. The number of shadow entries needs to be counted in addition to the
->    regular entries, to quickly detect when the node is ready to go to
->    the shadow node LRU list.  The current entry count is an unsigned
->    int but the maximum number of entries is 64, so a shadow counter
->    can easily be stored in the unused upper bits.
-> 
-> 3. Tree modification needs the lock, which is located in the address
->    space,
-
-Presumably "the lock" == tree_lock.
-
->    so store a backpointer to it.
-
-<looks at the code>
-
-"it" is the address_space, not tree_lock, yes?
-
->   The parent pointer is in a
->    union with the 2-word rcu_head, so the backpointer comes at no
->    extra cost as well.
-
-So we have a shrinker walking backwards from radix-tree nodes and
-reaching up into address_spaces.  We need to take steps to prevent
-those address_spaces from getting shot down (reclaim, umount, truncate,
-etc) while we're doing this.  What's happening here?
-
-> 4. The node needs to be linked to an LRU list, which requires a list
->    head inside the node.  This does increase the size of the node, but
->    it does not change the number of objects that fit into a slab page.
->
-> ...
->
-> --- a/include/linux/list_lru.h
-> +++ b/include/linux/list_lru.h
-> @@ -32,7 +32,7 @@ struct list_lru {
->  };
->  
->  void list_lru_destroy(struct list_lru *lru);
-> -int list_lru_init(struct list_lru *lru);
-> +int list_lru_init(struct list_lru *lru, struct lock_class_key *key);
-
-It's a bit of a shame to be adding overhead to non-lockdep kernels.  A
-few ifdefs could fix this.
-
-Presumably this is being done to squish some lockdep warning you hit. 
-A comment at the list_lru_init() implementation site would be useful. 
-One which describes the warning and why it's OK to squish it.
-
->
-> ...
->
->  struct radix_tree_node {
-> -	unsigned int	height;		/* Height from the bottom */
-> +	unsigned int	path;	/* Offset in parent & height from the bottom */
->  	unsigned int	count;
->  	union {
-> -		struct radix_tree_node *parent;	/* Used when ascending tree */
-> -		struct rcu_head	rcu_head;	/* Used when freeing node */
-> +		/* Used when ascending tree */
-> +		struct {
-> +			struct radix_tree_node *parent;
-> +			void *private;
-
-Private to whom?  The radix-tree implementation?  The radix-tree caller?
-
-> +		};
-> +		/* Used when freeing node */
-> +		struct rcu_head	rcu_head;
->  	};
-> +	struct list_head lru;
-
-Locking for this list?
-
->  	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
->  	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
->  };
->  
->
-> ...
->
-> +static unsigned long count_shadow_nodes(struct shrinker *shrinker,
-> +					struct shrink_control *sc)
-> +{
-> +	unsigned long count;
+> +Qualcomm MSM8x74 TLMM block
 > +
-> +	local_irq_disable();
-> +	count = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
-> +	local_irq_enable();
+> +Required properties:
+> +- compatible: "qcom,msm8x74-pinctrl"
+> +- reg: Should be the base address of the TLMM block.
 
-I'm struggling with the local_irq_disable() here.  Presumably it's
-there to quash a lockdep warning, but page_cache_tree_delete() and
-friends can get away without the local_irq_disable().  Some more
-clarity here would be nice.
+base address *and length*?
 
-> +	return count;
-> +}
-> +
-> +#define NOIRQ_BATCH 32
-> +
-> +static enum lru_status shadow_lru_isolate(struct list_head *item,
-> +					  spinlock_t *lru_lock,
-> +					  void *arg)
-> +{
-> +	struct address_space *mapping;
-> +	struct radix_tree_node *node;
-> +	unsigned long *batch = arg;
-> +	unsigned int i;
-> +
-> +	node = container_of(item, struct radix_tree_node, lru);
-> +	mapping = node->private;
-> +
-> +	/* Don't disable IRQs for too long */
-> +	if (--(*batch) == 0) {
-> +		spin_unlock_irq(lru_lock);
-> +		*batch = NOIRQ_BATCH;
-> +		spin_lock_irq(lru_lock);
-> +		return LRU_RETRY;
-> +	}
-> +
-> +	/* Coming from the list, inverse the lock order */
+> +- interrupts: Should be the irq of the TLMM summary interrupt.
 
-"invert" ;)
+s/irq/IRQ/
 
-> +	if (!spin_trylock(&mapping->tree_lock))
-> +		return LRU_SKIP;
+> +- interrupt-controller: Marks the device node as an interrupt controller.
+> +- #interrupt-cells: Should be two.
+> +- gpio-controller: Marks the device node as a GPIO controller.
+> +- #gpio-cells : Should be two.
+> +                The first cell is the gpio pin number and the
+> +                second cell is used for optional parameters.
 > +
-> +	/*
-> +	 * The nodes should only contain one or more shadow entries,
-> +	 * no pages, so we expect to be able to remove them all and
-> +	 * delete and free the empty node afterwards.
-> +	 */
+> +Please refer to ../gpio/gpio.txt for a general description of GPIO bindings.
+
+It's probably worth linking to ../interrupt-controller/interrupts.txt too.
+
+> +Please refer to pinctrl-bindings.txt in this directory for details of the
+> +common pinctrl bindings used by client devices, including the meaning of the
+> +phrase "pin configuration node".
 > +
-> +	BUG_ON(!node->count);
-> +	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
+> +Each subnode describes properties for the given pins.
+
+Which subnodes? It's probably worth describing what subnodes can exist.
+Perhaps try cribbing e.g. the 3 paragraphs in the Tegra binding that
+appear right after the "Please refer to pinctrl-bindings.txt..." that's
+there.
+
+> +Required subnode-properties:
+> +- qcom,pins: An array of strings, each matching a pin or group to be
+> +             configured. Possible values are listed below.
+
+It isn't clear from this that these properties exist in a sub-sub-node,
+not just a sub-node, of the main pinctrl node.
+
+> +Optional subnode-properties:
+> +- qcom,function: A name of the function to be muxed to the specified
+> +                 pins. Possible values are listed below.
+
+Are "pins" and "functions" generic enough now that they don't need a
+vendor prefix? Both those property names are certainly mentioned in
+pinctrl-bindings.txt.
+
+> +- drive-strength: Configure the drive strength of the specified pins.
+
+What units? I assume the definition matches that in
+pinctrl-bindings.txt? Perhaps it'd be simpler to say "The following
+generic properties as defined in pinctrl-bindings.txt: pins, function,
+bias-disable, ...".
+
+> +Valid values for qcom,function are:
+> +  blsp_i2c2, blsp_i2c6, blsp_i2c11, blsp_spi1, blsp_uart2, blsp_uart8, slimbus
 > +
-> +	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
-> +		if (node->slots[i]) {
-> +			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
-> +			node->slots[i] = NULL;
-> +			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
-> +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
-> +			BUG_ON(!mapping->nrshadows);
-> +			mapping->nrshadows--;
-> +		}
-> +	}
-> +	list_del_init(&node->lru);
-> +	BUG_ON(node->count);
-> +	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-> +		BUG();
+> +  (Note that this is not yet the complete list of functions)
+
+It'd be best if the complete list were defined from the start. That
+said, I suppose adding new values into the list would be
+backwards-compatible (if not forwards-compatible i.e. new DTs usable
+with old kernels).
+
+> +Example:
 > +
-> +	spin_unlock(&mapping->tree_lock);
+> +	msmgpio: pinctrl@fd510000 {
+...
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&uart2_default>;
 > +
-> +	count_vm_event(WORKINGSET_NODES_RECLAIMED);
-> +
-> +	return LRU_REMOVED;
-> +}
-> +
->
-> ...
->
+> +		uart2 {
+
+What does that node represent? Other pinctrl bindings  only have 1 or 2
+levels of subnodes, not 3.
+
+> +			uart2_default: uart2_default {
+> +				mux {
+> +					qcom,pins = "gpio4", "gpio5";
+> +					qcom,function = "blsp_uart2";
+> +				};
+
 
