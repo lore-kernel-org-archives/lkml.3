@@ -1,101 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab3KZDgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:36:01 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59344 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab3KZDgA (ORCPT
+	id S1753331Ab3KZDi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:38:58 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34038 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab3KZDix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:36:00 -0500
-Date: Tue, 26 Nov 2013 14:35:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: build warnings after merge of the block tree
-Message-Id: <20131126143550.7a2195476ff4aa5c73db20b2@canb.auug.org.au>
-In-Reply-To: <20131126132946.e402679788ae8269f0c5128a@canb.auug.org.au>
-References: <20131126132946.e402679788ae8269f0c5128a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG"
+	Mon, 25 Nov 2013 22:38:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385429290-25397-5-git-send-email-yinghai@kernel.org>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1385429290-25397-5-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 25 Nov 2013 20:38:32 -0700
+Message-ID: <CAErSpo7umvs=U1_X--Vxx29hf6+pnm8KQ0bUKG4FZkNS+ffR8Q@mail.gmail.com>
+Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Tue, 26 Nov 2013 13:29:46 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, Nov 25, 2013 at 6:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Mutliple removing via /sys will call pci_destroy_dev two times.
 >
-> After merging the block tree, today's linux-next build (arm
-> multi_v7_defconfig) produced these warnings:
->=20
-> block/blk-merge.c: In function 'blk_rq_map_sg':
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialize=
-d in this function [-Wuninitialized]
-> block/blk-merge.c:171:23: note: 'bvprv.bv_len' was declared here
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitializ=
-ed in this function [-Wuninitialized]
-> block/blk-merge.c:171:23: note: 'bvprv.bv_page' was declared here
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitial=
-ized in this function [-Wuninitialized]
-> block/blk-merge.c:171:23: note: 'bvprv.bv_offset' was declared here
-> block/blk-merge.c: In function 'blk_bio_map_sg':
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialize=
-d in this function [-Wuninitialized]
-> block/blk-merge.c:233:23: note: 'bvprv.bv_len' was declared here
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitial=
-ized in this function [-Wuninitialized]
-> block/blk-merge.c:233:23: note: 'bvprv.bv_offset' was declared here
-> block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitializ=
-ed in this function [-Wuninitialized]
-> block/blk-merge.c:233:23: note: 'bvprv.bv_page' was declared here
-> block/blk-merge.c: In function 'attempt_merge':
-> block/blk-merge.c:108:7: warning: 'end_bv.bv_offset' may be used uninitia=
-lized in this function [-Wuninitialized]
-> block/blk-merge.c:89:17: note: 'end_bv.bv_offset' was declared here
-> block/blk-merge.c:108:7: warning: 'end_bv.bv_page' may be used uninitiali=
-zed in this function [-Wuninitialized]
-> block/blk-merge.c:89:17: note: 'end_bv.bv_page' was declared here
-> block/blk-merge.c:108:7: warning: 'end_bv.bv_len' may be used uninitializ=
-ed in this function [-Wuninitialized]
-> block/blk-merge.c:89:17: note: 'end_bv.bv_len' was declared here
->=20
-> arm has its own definition of BIOVEC_PHYS_MERGEABLE() if that is relevant.
+> | When concurent removing pci devices which are in the same pci subtree
+> | via sysfs, such as:
+> | echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+> | /sys/bus/pci/devices/0000\:1a\:01.0/remove
+> | (1a:01.0 device is downstream from the 10:00.0 bridge)
+> |
+> | the following warning will show:
+> | [ 1799.280918] ------------[ cut here ]------------
+> | [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+> | [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
+> | [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
+> | [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
+> | [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
+> | [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
+> | [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
+> | [ 1800.842282] Call Trace:
+> | [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
+> | [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
+> | [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
+> | [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
+> | [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
+> | [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
+> | [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
+> | [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
+> | [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
+> | [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
+> | [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
+> | [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
+> | [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
+> | [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
+> | [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> | [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
+> | [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> | [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
+> |
+> | This issue is related to the bug 54411:
+> | https://bugzilla.kernel.org/show_bug.cgi?id=54411
+>
+> Add is_removed to record if pci_destroy_dev is called already.
+>
+> During second calling, still have extra dev ref hold via
+> device_schedule_call, so we are safe to check dev->is_removed.
+>
+> It fixs the problem In Gu's test.
+>
+> -v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
+>      refresh after patch of moving device_del from Rafael.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/remove.c | 8 +++++---
+>  include/linux/pci.h  | 1 +
+>  2 files changed, 6 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index f452148..b090cec 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -20,9 +20,11 @@ static void pci_stop_dev(struct pci_dev *dev)
+>
+>  static void pci_destroy_dev(struct pci_dev *dev)
+>  {
+> -       device_del(&dev->dev);
+> -
+> -       put_device(&dev->dev);
+> +       if (!dev->is_removed) {
+> +               device_del(&dev->dev);
+> +               dev->is_removed = 1;
 
-For an easier test case, the i386 defcongig does this as well.
+As Rafael pointed out, this looks like a race.  What prevents two
+concurrent calls to pci_destroy_dev() from seeing "dev->is_removed ==
+0" and both calling device_del() on the same device?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSlBcaAAoJEMDTa8Ir7ZwVOZoP/1u40BvJu2GkxHGmr8l/fbbb
-Af9odClkERbHeC9KDI6RGkRCc7aECvs/k8A/fAcclmdK/qnw4purUHxgTx6wvr4y
-wToQv0t6qJpuHSQ6jJ1zOknDIzTmWW8HVwbosUJ6WLu56fA1JxSEDNOYFcuXq9CS
-S/t3HIIvG74LNJfXLITicjY1mxNySUz29kkAXGtP3m5tA/4QJn4nTQQXSCpjfEU+
-ZccfDQ1URYOEs4iuGBauyiCyABOioYRVA1VUHxCWqGi/hTlyvX+WOvhZ7nDyMYtS
-GKPC1cvZJ6RpOJ1VQnEAHauO7AlS6frjytJVrn2fNhA5pTbqc7Z02S4AA0VBBrzc
-+T7IR/U/QywsJYWN6Qpu52p4v4bgXLeSBYuQYPJhlsNONXc41gplTCXpgdVWzfQg
-YgiHwM8spk6yW8BJ1hHt/2mCRWcDtdyS2XgD9bWNib2thCGVFkHcN4m5vSQkp1O2
-20cJvmJEqJqbZUHfA+OARW6TnzfDAqF8Ao1nmCITRNmLi0fNJl+oiMkRT5y2sSWP
-nJfAmYVz4p2nDntFu0i4e0hbPHUVymd00kSObfkl+4ls9n2iRK76idRZqpBcATvL
-VbYnCsuGNhRP+n4VcgdWtQtxUPFhZg3vfRLVXF1wvyiADLbRg3rnOnmuoyTg2mvE
-onu0NLQA7tjc5yzkepNl
-=3fG1
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG--
+> +               put_device(&dev->dev);
+> +       }
+>  }
+>
+>  void pci_remove_bus(struct pci_bus *bus)
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 1084a15..ccb316d 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -321,6 +321,7 @@ struct pci_dev {
+>         unsigned int    multifunction:1;/* Part of multi-function device */
+>         /* keep track of device state */
+>         unsigned int    is_added:1;
+> +       unsigned int    is_removed:1;   /* pci_destroy_dev is called */
+>         unsigned int    is_busmaster:1; /* device is busmaster */
+>         unsigned int    no_msi:1;       /* device may not use msi */
+>         unsigned int    block_cfg_access:1;     /* config space access is blocked */
+> --
+> 1.8.1.4
+>
