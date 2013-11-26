@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab3KZMyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:54:16 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:31368 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3KZMyN (ORCPT
+	id S1753665Ab3KZMy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:54:28 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:46890 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3KZMyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:54:13 -0500
-X-AuditID: cbfee61b-b7f166d000007a34-94-529499f4be93
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Bockholdt Arne <a.bockholdt@precitec-optronik.de>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: Fixed C6 state on Avoton/Rangeley processors
-Date: Tue, 26 Nov 2013 13:53:58 +0100
-Message-id: <1574800.Vl6NB1rGSk@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1385450037.4588.10.camel@po-d-abo-ubu>
-References: <1385450037.4588.10.camel@po-d-abo-ubu>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=utf-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQd0vM6cEGZzdImRxeONHJoudD9+y
-	WVzeNYfN4nPvEUYHFo9NqzrZPG79+sPq8XmTXABzFJdNSmpOZllqkb5dAlfG1g+HWAu6uCue
-	vljH2MD4maOLkZNDQsBEYvudU+wQtpjEhXvr2boYuTiEBKYzSizrXMEE4bQwSVz9dp8VpIpN
-	wEpiYvsqRhBbRMBUYtPEXWAdzAIzGSWezD/PBpIQFvCV+HbhAthYFgFViZ5nH4HiHBy8ApoS
-	Ez9ngYRFBTwldmxfCVbOCXTF58OLWEBsIQFjiePvmsHm8woISvyYfA8sziwgL7Fv/1RWkDHM
-	AuoSU6bkTmAUmIWkahaSqlkIVQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBAfsM+kd
-	jKsaLA4xCnAwKvHwSnRODhJiTSwrrsw9xCjBwawkwhs7fUqQEG9KYmVValF+fFFpTmrxIUZp
-	DhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBkZd09XK1c0H1+wV6X+9cHrOd/9PLDHPDxcL
-	lBwVslH4ZXFMbsKj2/6p7StbDvr3/vtpv/Z/8r5n/JPv6T3qPbiv1+SN75w037/zDrtOu3Bi
-	Q6/PDuYtnG55QY96Na7/uf/D4QWv+3ePmQpXt+faMZttWsd6x0SP6UN7Q+bswJK/Ex6rBb+s
-	4shXYinOSDTUYi4qTgQAD/zENlQCAAA=
+	Tue, 26 Nov 2013 07:54:24 -0500
+MIME-Version: 1.0
+Reply-To: jwboyer@redhat.com
+In-Reply-To: <1378741786-18430-8-git-send-email-matthew.garrett@nebula.com>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	<1378741786-18430-8-git-send-email-matthew.garrett@nebula.com>
+Date: Tue, 26 Nov 2013 07:54:23 -0500
+X-Google-Sender-Auth: 1JmU0SyBIBX0KCDWtrSbusHYONs
+Message-ID: <CA+5PVA6_4o6T7gS7q5uvksUBawxV__J82KQBMC=hE_qdTK2RUA@mail.gmail.com>
+Subject: Re: [PATCH 07/12] acpi: Ignore acpi_rsdp kernel parameter when
+ securelevel is set
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 9, 2013 at 11:49 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> From: Josh Boyer <jwboyer@redhat.com>
+>
+> This option allows userspace to pass the RSDP address to the kernel, which
+> makes it possible for a user to execute arbitrary code in the kernel.
+> Disable this when securelevel is set.
+>
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 
-Hi,
+Dredging up an old thread in the hopes that Matthew runs sed and resubmits...
 
-On Tuesday, November 26, 2013 07:13:57 AM Bockholdt Arne wrote:
-> Corrected the MWAIT flag for C-State C6 on Intel Avoton/Rangeley processors.
-> 
-> Signed-off-by: Arne Bockholdt <linux-kernel@bockholdt.com>
+Also, FWIW, I didn't write this.  It was derived from previous
+versions of something I did write, but there's really no evidence of
+anything I wrote left, so it should probably be From: you.
+
 > ---
-> 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index cbd4e9a..92d1206 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -329,7 +329,7 @@ static struct cpuidle_state atom_cstates[] __initdata = {
->  	{
->  		.enter = NULL }
->  };
-> -static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
-> +static struct cpuidle_state avn_cstates[] __initdata = {
+>  drivers/acpi/osl.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index e5f416c..f6d8977 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -45,6 +45,7 @@
+>  #include <linux/list.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/semaphore.h>
+> +#include <linux/security.h>
+>
+>  #include <asm/io.h>
+>  #include <asm/uaccess.h>
+> @@ -249,7 +250,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
+>  acpi_physical_address __init acpi_os_get_root_pointer(void)
+>  {
+>  #ifdef CONFIG_KEXEC
+> -       if (acpi_rsdp)
+> +       if (acpi_rsdp && (get_securelevel <= 0))
 
-The above fixup has already been submitted in a separate patch:
+This is missing some ( ).  That means you're comparing the
+get_securelevel function pointer to 0.  Pretty sure bad things will
+happen.
 
-	https://lkml.org/lkml/2013/11/21/177
-
-and it has nothing to do with the purpose of your patch.
-
-Thus please drop it from your patch.
-
->  	{
->  		.name = "C1-AVN",
->  		.desc = "MWAIT 0x00",
-> @@ -340,7 +340,7 @@ static struct cpuidle_state avn_cstates[CPUIDLE_STATE_MAX] = {
->  	{
->  		.name = "C6-AVN",
->  		.desc = "MWAIT 0x51",
-> -		.flags = MWAIT2flg(0x58) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-> +		.flags = MWAIT2flg(0x51) | CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
->  		.exit_latency = 15,
->  		.target_residency = 45,
->  		.enter = &intel_idle },
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+josh
