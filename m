@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3KZKQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:16:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab3KZKQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:16:22 -0500
-Date: Tue, 26 Nov 2013 10:16:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/5] mm: compaction: encapsulate defer reset logic
-Message-ID: <20131126101618.GE5285@suse.de>
-References: <1385389570-11393-1-git-send-email-vbabka@suse.cz>
- <1385389570-11393-2-git-send-email-vbabka@suse.cz>
+	id S1755514Ab3KZKQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:16:51 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39070 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126Ab3KZKQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:16:46 -0500
+Message-ID: <529474C7.9050005@linux.vnet.ibm.com>
+Date: Tue, 26 Nov 2013 15:45:35 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1385389570-11393-2-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "mpe@ellerman.id.au" <michael@ozlabs.org>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        sukadev@linux.vnet.ibm.com, eranian@google.com, michaele@au1.ibm.com
+Subject: Re: [V3 01/10] perf: New conditional branch filter criteria in branch
+ stack sampling
+References: <20131126060618.917ED2C00A9@ozlabs.org>
+In-Reply-To: <20131126060618.917ED2C00A9@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112610-8878-0000-0000-000009D56E12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 03:26:06PM +0100, Vlastimil Babka wrote:
-> Currently there are several functions to manipulate the deferred compaction
-> state variables. The remaining case where the variables are touched directly
-> is when a successful allocation occurs in direct compaction, or is expected
-> to be successful in the future by kswapd. Here, the lowest order that is
-> expected to fail is updated, and in the case of direct compaction, the deferred
-> status is reset completely.
+On 11/26/2013 11:36 AM, mpe@ellerman.id.au wrote:
+> Ideally your commit subject would contain a verb, preferably in the present
+> tense.
 > 
-> Create a new function compaction_defer_reset() to encapsulate this
-> functionality and make it easier to understand the code. No functional change.
+> I think simply "perf: Add PERF_SAMPLE_BRANCH_COND" would be clearer.
+
+
+Sure, will change it.
+
 > 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> ---
->  include/linux/compaction.h | 12 ++++++++++++
->  mm/compaction.c            |  9 ++++-----
->  mm/page_alloc.c            |  5 +----
->  3 files changed, 17 insertions(+), 9 deletions(-)
+> On Wed, 2013-16-10 at 06:56:48 UTC, Anshuman Khandual wrote:
+>> POWER8 PMU based BHRB supports filtering for conditional branches.
+>> This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
+>> will extend the existing perf ABI. Other architectures can provide
+>> this functionality with either HW filtering support (if present) or
+>> with SW filtering of instructions.
+>>
+>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>> Reviewed-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>  include/uapi/linux/perf_event.h | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+>> index 0b1df41..5da52b6 100644
+>> --- a/include/uapi/linux/perf_event.h
+>> +++ b/include/uapi/linux/perf_event.h
+>> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
+>>  	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+>>  	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+>>  	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+>> +	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
+>>  
+>> -	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
+>> +	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
+>>  };
 > 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 091d72e..da39978 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -62,6 +62,18 @@ static inline bool compaction_deferred(struct zone *zone, int order)
->  	return zone->compact_considered < defer_limit;
->  }
->  
-> +/* Update defer tracking counters after successful allocation of given order */
-> +static inline void compaction_defer_reset(struct zone *zone, int order,
-> +		bool reset_shift)
-> +{
-> +	if (reset_shift) {
-> +		zone->compact_considered = 0;
-> +		zone->compact_defer_shift = 0;
-> +	}
-> +	if (order >= zone->compact_order_failed)
-> +		zone->compact_order_failed = order + 1;
-> +}
-> +
+> This no longer applies against Linus' tree, you'll need to rebase it.
 
-Nit pick
+Okay
 
-The comment says this is called after a successful allocation but that
-is only true in one case. s/allocation/compaction/ ?
-
-reset_shift says what it does but not why and exposes an unnecessary. If
-this sees a second revision, maybe consider renaming it to something like
-alloc_success?
-
-With or without changes;
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
