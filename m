@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3KZQqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:46:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34564 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757376Ab3KZQqP (ORCPT
+	id S1757494Ab3KZQrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:47:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29909 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757258Ab3KZQrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:46:15 -0500
-Date: Tue, 26 Nov 2013 08:46:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, <linux-kernel@vger.kernel.org>,
-        <glommer@openvz.org>, <mhocko@suse.cz>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [Devel] [PATCH v11 00/15] kmemcg shrinkers
-Message-Id: <20131126084644.405a091d.akpm@linux-foundation.org>
-In-Reply-To: <52949A4F.7030004@parallels.com>
-References: <cover.1385377616.git.vdavydov@parallels.com>
-	<20131125174135.GE22729@cmpxchg.org>
-	<529443E4.7080602@parallels.com>
-	<52949A4F.7030004@parallels.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 11:47:13 -0500
+Date: Tue, 26 Nov 2013 11:47:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH 2/4] xen/manage: Poweroff forcefully if user-space is not
+ yet up.
+Message-ID: <20131126164703.GG2959@phenom.dumpdata.com>
+References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
+ <1383932286-25080-3-git-send-email-konrad.wilk@oracle.com>
+ <528DEF9D.4070003@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528DEF9D.4070003@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Nov 2013 16:55:43 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
-
-> What do you think about splitting this set into two main series as follows:
+On Thu, Nov 21, 2013 at 11:33:49AM +0000, David Vrabel wrote:
+> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
+> > The user can launch the guest in this sequence:
+> > 
+> > xl create -p /vm.cfg	[launch, but pause it]
+> > xl shutdown latest	[sets control/shutdown=poweroff]
+> > xl unpause latest
+> > xl console latest	[and see that the guest has completely
+> > ignored the shutdown request]
+> > 
+> > In reality the guest hasn't ignored it. It registers a watch
+> > and gets a notification that there is value. It then calls
+> > the shutdown_handler which ends up calling orderly_shutdown.
 > 
-> 1) Prepare vmscan to kmemcg-aware shrinkers; would include patches 1-7 
-> of this set.
-> 2) Make fs shrinkers memcg-aware; would include patches 9-11 of this set
+> Is this really a bug?.
 
-Please just resend everything.
+Yes. We did get the action, we just did not properly act on it.
+> 
+> >From the xl(1) man page.
+> 
+>   shutdown [OPTIONS] -a|domain-id
+>      Gracefully shuts down a domain.  This coordinates with the
+>      domain OS to perform graceful shutdown, so there is no guarantee
+>      that it will succeed, and may take a variable length of time
+>      depending on what services must be shutdown in the domain.
+> 
+> Seems like ignoring a shutdown request when the guest cannot yet
+> shutdown gracefully is the expected behaviour.
+> 
+> This also doesn't seem sufficient.  SYSTEM_RUNNING is set prior to
+> starting init in an initramfs and orderly_power_off(false) will still
+> likely fail at this point.
 
-> and leave other patches, which are rather for optimization/extending 
-> functionality, for future?
-
-It will be helpful to describe such splitting opportunities in the
-[0/n] changelog.
-
+Ugh, will have to figure out how else to realize when it the user-space
+is ready to launch programs.
+> 
+> David
