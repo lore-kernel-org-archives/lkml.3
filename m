@@ -1,88 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab3KZPGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 10:06:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34121 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab3KZPGU (ORCPT
+	id S1757222Ab3KZPHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 10:07:22 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:42210 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab3KZPHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 10:06:20 -0500
-Message-ID: <5294B8C4.6040803@ti.com>
-Date: Tue, 26 Nov 2013 10:05:40 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com> <52944BD3.90105@ti.com>
-In-Reply-To: <52944BD3.90105@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 10:07:21 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH v2 00/12] staging/lustre: sync with extern tree, set 2
+Date: Tue, 26 Nov 2013 23:04:34 +0800
+Message-Id: <1385478286-5525-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 November 2013 02:20 AM, Sekhar Nori wrote:
-> On Monday 11 November 2013 10:36 PM, Khoronzhuk, Ivan wrote:
->> Add new AEMIF driver for EMIF16 davinci controller. The EMIF16 module
->> is intended to provide a glue-less interface to a variety of
->> asynchronous memory devices like ASRA M, NOR and NAND memory. A total
->> of 256M bytes of any of these memories can be accessed at any given
->> time via four chip selects with 64M byte access per chip select.
->>
->> Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
->> are not supported.
->>
->> See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
+Hi Greg,
 
-[...]
+PATCH 1 reverts previous commit ad8dbc9. I forgot to remove it from
+my local queue after the discussion last time and ended up resending it.
+Sorry for the noise...
 
->> +static int davinci_aemif_probe(struct platform_device *pdev)
->> +{
->> +       int ret  = -ENODEV, i;
->> +       struct resource *res;
->> +       struct device *dev = &pdev->dev;
->> +       struct device_node *np = dev->of_node;
->> +
->> +       if (np == NULL)
->> +               return 0;
->> +
->> +       if (aemif) {
->> +               dev_err(dev, "davinci_aemif driver is in use currently\n");
->> +               return -EBUSY;
->> +       }
-> 
-> Why expressly prevent multiple AEMIF devices? Its entirely conceivable
-> to have two memories like NAND and NOR flash connect to two different
-> AEMIF interfaces.
-> 
-Ivan wanted me to clarify the Keystone hardware which supports
-1 instance of controller with 4 CS. That allows already four
-devices to be connected. Currently NAND and NOR are connected on it
-and two more slots are free.
+PATCH 2 is updated to fix checkpatch error about return().
+PATCH 3 and 4 are extracted from one external tree commit to do separate things.
+PATCH 5 and 6 are from one external tree commit as well for the same reason.
+PATCh 12 is updated to remove extra GPL notice that kernel already has one.
 
-Since driver support what hardware is, lets not build a driver for
-hardware which don't exist. And if at all such a support would be
-needed in future, we can always add it.
+Please see if they can be merged.
 
-Regards,
-Santosh
+Thanks,
+Tao
 
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+
+Amir Shehata (1):
+  staging/lustre/ptlrpc: Fix a crash when dereferencing NULL pointer
+
+Andrew Perepechko (1):
+  staging/lustre/llite: extended attribute cache
+
+Dmitry Eremin (2):
+  staging/lustre/build: clean up unused variables and dead code
+  staging/lustre/build: fix compilation issue with is_compat_task
+
+Fan Yong (2):
+  staging/lustre/scrub: OI scrub on OST
+  staging/lustre: make code align in lma_incompat
+
+JC Lafoucriere (2):
+  staging/lustre: constify uuid argument of obd_uuid2str
+  staging/lustre: make obd_uuid_equals return bool
+
+Jinshan Xiong (1):
+  staging/lustre/hsm: Add hsm_release feature.
+
+John L. Hammond (1):
+  staging/lustre/llite: don't check for O_CREAT in it_create_mode
+
+Mikhail Pershin (1):
+  staging/lustre/llog: MGC to use OSD API for backup logs
+
+Peng Tao (1):
+  Revert "staging/lustre/nfs: writing to new files will return ENOENT"
+
+ .../staging/lustre/include/linux/libcfs/libcfs.h   |    2 -
+ drivers/staging/lustre/lnet/selftest/rpc.c         |    2 -
+ drivers/staging/lustre/lnet/selftest/selftest.h    |    3 -
+ drivers/staging/lustre/lnet/selftest/timer.c       |    6 +-
+ drivers/staging/lustre/lustre/include/dt_object.h  |    2 +-
+ .../lustre/lustre/include/linux/lustre_compat25.h  |    4 +-
+ .../lustre/lustre/include/linux/lustre_lite.h      |    1 +
+ .../lustre/lustre/include/lustre/lustre_idl.h      |   41 +-
+ .../lustre/lustre/include/lustre/lustre_user.h     |   17 +-
+ drivers/staging/lustre/lustre/include/lustre_ha.h  |    3 -
+ drivers/staging/lustre/lustre/include/lustre_log.h |   13 +-
+ drivers/staging/lustre/lustre/include/lustre_net.h |    2 -
+ .../lustre/lustre/include/lustre_req_layout.h      |    5 +
+ drivers/staging/lustre/lustre/include/md_object.h  |    4 +-
+ drivers/staging/lustre/lustre/include/obd.h        |   15 +-
+ .../staging/lustre/lustre/include/obd_support.h    |    2 +
+ .../staging/lustre/lustre/lclient/lcommon_misc.c   |    4 +-
+ drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     |    2 +
+ drivers/staging/lustre/lustre/ldlm/ldlm_request.c  |    3 -
+ drivers/staging/lustre/lustre/libcfs/workitem.c    |   56 +-
+ drivers/staging/lustre/lustre/llite/Makefile       |    2 +-
+ drivers/staging/lustre/lustre/llite/dcache.c       |   36 +-
+ drivers/staging/lustre/lustre/llite/dir.c          |   24 +-
+ drivers/staging/lustre/lustre/llite/file.c         |  105 +++-
+ .../staging/lustre/lustre/llite/llite_internal.h   |   46 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |   23 +-
+ drivers/staging/lustre/lustre/llite/lproc_llite.c  |   37 ++
+ drivers/staging/lustre/lustre/llite/namei.c        |   15 +-
+ drivers/staging/lustre/lustre/llite/super25.c      |    4 +
+ drivers/staging/lustre/lustre/llite/vvp_object.c   |    2 +-
+ drivers/staging/lustre/lustre/llite/xattr.c        |  102 ++--
+ drivers/staging/lustre/lustre/llite/xattr_cache.c  |  617 ++++++++++++++++++++
+ .../staging/lustre/lustre/lov/lov_cl_internal.h    |   16 +
+ drivers/staging/lustre/lustre/lov/lov_object.c     |   35 +-
+ drivers/staging/lustre/lustre/mdc/mdc_internal.h   |    1 +
+ drivers/staging/lustre/lustre/mdc/mdc_lib.c        |   26 +-
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c      |   63 +-
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   23 +-
+ drivers/staging/lustre/lustre/mgc/libmgc.c         |    3 -
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |  401 ++++++++-----
+ drivers/staging/lustre/lustre/obdclass/llog.c      |  212 ++++---
+ .../staging/lustre/lustre/obdclass/local_storage.c |    9 +-
+ .../staging/lustre/lustre/obdclass/local_storage.h |    3 +
+ .../lustre/lustre/obdclass/lprocfs_status.c        |    4 -
+ drivers/staging/lustre/lustre/obdclass/lu_object.c |    2 +-
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c |    3 +
+ drivers/staging/lustre/lustre/ptlrpc/client.c      |   10 +-
+ drivers/staging/lustre/lustre/ptlrpc/import.c      |    2 -
+ drivers/staging/lustre/lustre/ptlrpc/layout.c      |   53 ++
+ drivers/staging/lustre/lustre/ptlrpc/niobuf.c      |   16 +-
+ .../staging/lustre/lustre/ptlrpc/pack_generic.c    |    7 +
+ drivers/staging/lustre/lustre/ptlrpc/pinger.c      |   65 ---
+ drivers/staging/lustre/lustre/ptlrpc/ptlrpcd.c     |   44 +-
+ drivers/staging/lustre/lustre/ptlrpc/wiretest.c    |    4 +
+ 54 files changed, 1659 insertions(+), 543 deletions(-)
+ create mode 100644 drivers/staging/lustre/lustre/llite/xattr_cache.c
+
+-- 
+1.7.9.5
 
