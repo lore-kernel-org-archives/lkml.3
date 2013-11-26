@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3KZBga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:36:30 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:46621 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab3KZBg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753842Ab3KZBg0 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 25 Nov 2013 20:36:26 -0500
-Date: Mon, 25 Nov 2013 17:36:22 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Vladimir Murzin <murzin.v@gmail.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-In-Reply-To: <20131121171307.GB16703@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1311251731430.27270@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <20131120172119.GA1848@hp530> <20131120173357.GC18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201937120.7167@chino.kir.corp.google.com>
- <20131121171307.GB16703@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:57515 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3KZBgU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 20:36:20 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20131126000608.GA21634@quad.lixom.net>
+References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
+ <1385274652-16415-8-git-send-email-acourbot@nvidia.com> <20131126000608.GA21634@quad.lixom.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 26 Nov 2013 10:35:58 +0900
+Message-ID: <CAAVeFu+mMyPhFtVZ09vgYWWCYkPpF3X547ffRAfXXKOOWUUkqg@mail.gmail.com>
+Subject: Re: [PATCH v11 7/7] ARM: tegra: support Trusted Foundations by default
+To: Olof Johansson <olof@lixom.net>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013, Michal Hocko wrote:
+On Tue, Nov 26, 2013 at 9:06 AM, Olof Johansson <olof@lixom.net> wrote:
+> On Sun, Nov 24, 2013 at 03:30:52PM +0900, Alexandre Courbot wrote:
+>> Support for Trusted Foundations is light and allows the kernel to run on
+>> a wider range of devices, so enable it by default.
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>> ---
+>>  arch/arm/configs/tegra_defconfig | 1 +
+>>  1 file changed, 1 insertion(+)
+>
+> I think we want this enabled on multi_v7_defconfig too? Send a separate
+> patch for that once this is merged though.
 
-> > It's an interesting idea but unfortunately a non-starter for us because 
-> > our users don't have root,
-> 
-> I wouldn't see this as a problem. You can still have a module which
-> exports the notification interface you need. Including timeout
-> fallback. That would be trivial to implement and maybe more appropriate
-> to very specific environments. Moreover the global OOM handling wouldn't
-> be memcg bound.
-> 
+Will do.
 
-The memcg userspace oom handlers are effectively system userspace oom 
-handlers for everything at that memcg and its descendant memcgs, the 
-interface for the system oom handler and the memcg oom handlers would be 
-identical.  We could certainly make the hook into a module by defining 
-some sort of API that could be exported, but I believe the proposal 
-empowers userspace to handle the oom situations in all possible scenarios 
-(notification, memory reserve, timeout) that it would stand alone as the 
-only user in the kernel of such an API and that API itself makes the code 
-unnecessarily complex.
-
-> > we create their memcg tree and then chown it to the user.  They can
-> > freely register for oom notifications but cannot load their own kernel
-> > modules for their own specific policy.
-> 
-> yes I see but that requires just a notification interface. It doesn't
-> have to be memcg specific, right?
-
-They also need the memory reserve to do anything useful when the oom 
-handler wakes up, so you'd need an API exported to modules that allows you 
-to define the set of processes allowed to access such a reserve.  So the 
-kernel code providing the needed functionality (notification, reserve, 
-timeout) remains constant for any possible userspace oom handler.  Unless 
-you're thinking of a possible implementation that can't be addressed in 
-this way?
+Thanks,
+Alex.
