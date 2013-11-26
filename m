@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab3KZVe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 16:34:26 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:65503 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab3KZVeW (ORCPT
+	id S932298Ab3KZVop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 16:44:45 -0500
+Received: from hm1481-26.locaweb.com.br ([201.76.49.238]:8585 "EHLO
+	hm1481-26.locaweb.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757468Ab3KZVom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 16:34:22 -0500
+	Tue, 26 Nov 2013 16:44:42 -0500
+X-LocaWeb-COR: locaweb_2009_x-mail
+Message-ID: <52951640.6080805@cesarb.eti.br>
+Date: Tue, 26 Nov 2013 19:44:32 -0200
+From: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <5294ED12.9080700@roeck-us.net>
-References: <1385490637-10306-1-git-send-email-dianders@chromium.org>
-	<5294ED12.9080700@roeck-us.net>
-Date: Tue, 26 Nov 2013 13:34:20 -0800
-X-Google-Sender-Auth: goj-ioz5vifekP7DmTJiaZvhvuk
-Message-ID: <CAD=FV=UX5gm3Ju8sCd3DSgyo97P6imN_Ay1zvc8yX=qTJ_mbrw@mail.gmail.com>
-Subject: Re: [PATCH] watchdog: s3c2410_wdt: Handle rounding a little better
- for timeout
-From: Doug Anderson <dianders@chromium.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Yonan <james@openvpn.net>, Florian Weimer <fw@deneb.enyo.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] crypto: more robust crypto_memneq
+References: <1385424041-18064-1-git-send-email-cesarb@cesarb.eti.br> <5294F625.5040506@redhat.com>
+In-Reply-To: <5294F625.5040506@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-locaweb-id: 5II90qkwcFl608adNSKU11Mhs1xf0MgAzPC-CIfMoteOMOLYZkorw41aZgtgCBGiz7JOWdNt-MIUbUFIqc5n_VfP5aYHWPJEum0HS-HjJOsqwBSdevEWTmlLT9a_wn7DAlDAu0cnb3aT8-Jj93bJMvdN7S_l1fKoy_NDSUB0G9MlAJ-q3FSdBS4J9BBFGU78k0F9fT43L9t5y9DwmsEOxw==
+x-locaweb-id2: NjM2NTczNjE3MjYyNDA2MzY1NzM2MTcyNjIyZTY1NzQ2OTJlNjI3Mg==
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.0 cv=e46xv9V/ c=1 sm=1 a=huL5MBmc9G6gl4i1lwt7pA==:17
+	a=AizhB-pfR1kA:10 a=ofYueeIUwPYA:10 a=IkcTkHD0fZMA:10 a=5-0HuVhfmKQA:10
+	a=7MAGVB2D-n1pAV5-IHgA:9 a=QEXdDO2ut3YA:10 a=huL5MBmc9G6gl4i1lwt7pA==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter,
+Em 26-11-2013 17:27, Daniel Borkmann escreveu:
+> On 11/26/2013 01:00 AM, Cesar Eduardo Barros wrote:
+>> Compile-tested on x86_64.
+>
+> Actually with yet another version, I hoped that the "compile-tested"-only
+> statement would eventually disappear, ohh well. ;)
 
-On Tue, Nov 26, 2013 at 10:48 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 11/26/2013 10:30 AM, Doug Anderson wrote:
->>
->> The existing watchdog timeout worked OK but didn't deal with
->> rounding in an ideal way when dividing out all of its clocks.
->>
->> Specifically if you had a timeout of 32 seconds and an input clock of
->> 66666666, you'd end up setting a timeout of 31.9998 seconds and
->> reporting a timeout of 31 seconds.
->>
->> Specifically DBG printouts showed:
->>    s3c2410wdt_set_heartbeat: count=16666656, timeout=32, freq=520833
->>    s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666656
->> (0000ff4f)
->> and the final timeout reported to the user was:
->>    ((count / divisor) * divisor) / freq
->>    (0xff4f * 255) / 520833 = 31 (truncated from 31.9998)
->> the technically "correct" value is:
->>    (0xff4f * 255) / (66666666.0 / 128) = 31.9998
->>
->> By using "DIV_ROUND_UP" we can be a little more correct.
->>    s3c2410wdt_set_heartbeat: count=16666688, timeout=32, freq=520834
->>    s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666688
->> (0000ff50)
->> and the final timeout reported to the user:
->>    (0xff50 * 255) / 520834 = 32
->> the technically "correct" value is:
->>    (0xff50 * 255) / (66666666.0 / 128) = 32.0003
->>
->> We'll use a DIV_ROUND_UP to solve this, generally erroring on the side
->> of reporting shorter values to the user and setting the watchdog to
->> slightly longer than requested:
->> * Round input frequency up to assume watchdog is counting faster.
->> * Round divisions by divisor up to give us extra time.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>   drivers/watchdog/s3c2410_wdt.c | 10 +++++-----
->>   1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/watchdog/s3c2410_wdt.c
->> b/drivers/watchdog/s3c2410_wdt.c
->> index 7d8fd04..fe2322b 100644
->> --- a/drivers/watchdog/s3c2410_wdt.c
->> +++ b/drivers/watchdog/s3c2410_wdt.c
->> @@ -188,7 +188,7 @@ static int s3c2410wdt_set_heartbeat(struct
->> watchdog_device *wdd, unsigned timeou
->>         if (timeout < 1)
->>                 return -EINVAL;
->>
->> -       freq /= 128;
->> +       freq = DIV_ROUND_UP(freq, 128);
->>         count = timeout * freq;
->>
->>         DBG("%s: count=%d, timeout=%d, freq=%lu\n",
->> @@ -201,20 +201,20 @@ static int s3c2410wdt_set_heartbeat(struct
->> watchdog_device *wdd, unsigned timeou
->>
->>         if (count >= 0x10000) {
->>                 for (divisor = 1; divisor <= 0x100; divisor++) {
->> -                       if ((count / divisor) < 0x10000)
->> +                       if (DIV_ROUND_UP(count, divisor) < 0x10000)
->>                                 break;
->>                 }
->>
-> Since you are at it,
->         divisor = DIV_ROUND_UP(count + 1, 0x10000);
-> might be faster, simpler, and easier to understand than the loop.
+I did compile test each version ;-) including verifying (with "make 
+crypto/memneq.i") that the macro was really generating the expected 
+inline assembly (with these #ifdef chains, one has to be careful with 
+typos).
 
-Way to see the forest for the trees!
+(Actually, I compile tested with "make crypto/memneq.o crypto/memneq.s 
+crypto/memneq.i". I took a peek at the assembly to see if it made sense.)
 
-Your math ends up with a slightly different result than the old code,
-though.  One example is when the count is 0x1ffff.  You'll end up with
-a divider of 2 and I'll end up with a divider of 3.
+> Resolving the OPTIMIZER_HIDE_VAR() macro for others than GCC jnto a
+> barrier() seems a bit suboptimal, but assuming 99% of people will use
+> GCC anyway, then for the minority of the remaining, they will worst case
+> have a clever compiler and eventually mimic memcmp() in some situations,
+> or have a not-so-clever compiler and execute the full code as is.
 
-I think we just want:
+I do not think any compiler other than gcc and icc can compile 
+unmodified upstream kernel code. LLVM's clang would be the one which 
+comes closest, but it has gcc-compatible inline assembly, as does icc AFAIK.
 
-divisor = DIV_ROUND_UP(count, 0xffff);
+The #define to barrier() within compiler-intel.h is for some compiler 
+called ECC (not icc). From what I could find about it on a quick search, 
+it appears to be some kind of Itanium compiler.
 
-...that produces the same result as the old loop, but am curious to
-know why you chose the "count + 1" and "0x10000".
+That part of the header was added back in 2003, and I do not believe it 
+is still relevant. A comment within that #ifdef block says "Intel ECC 
+compiler doesn't support gcc specific asm stmts", but there are many 
+uses of unprotected inline assembly all over the kernel (including on 
+the ia64 headers), so if that comment is true, the kernel will not 
+compile with that compiler. It is probably a piece of leftover dead 
+code. I only added to it because I am following RELOC_HIDE's example, 
+and RELOC_HIDE is there.
 
-Thanks!
+> Anyway, I think still better than the rather ugly Makefile workaround
+> imho, so I'm generally fine with this.
 
--Doug
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.eti.br
