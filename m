@@ -1,166 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3KZB3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:29:11 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:26368 "EHLO
+	id S1754021Ab3KZB3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:29:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26410 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab3KZB3I (ORCPT
+	with ESMTP id S1751205Ab3KZB3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:29:08 -0500
+	Mon, 25 Nov 2013 20:29:13 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 07/10] PCI: Try to allocate mem64 above 4G at first
-Date: Mon, 25 Nov 2013 17:28:07 -0800
-Message-Id: <1385429290-25397-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 08/10] PCI: Try best to allocate pref mmio 64bit above 4g
+Date: Mon, 25 Nov 2013 17:28:08 -0800
+Message-Id: <1385429290-25397-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will fall back to below 4g if it can not find any above 4g.
+When one of children resources does not support MEM_64, MEM_64 for
+bridge get reset, so pull down whole pref resource on the bridge under 4G.
 
-x86 32bit without X86_PAE support will have bottom set to 0, because
-resource_size_t is 32bit.
+If the bridge support pref mem 64, will only allocate that with pref mem64 to
+children that support it.
+For children resources if they only support pref mem 32, will allocate them
+from non pref mem instead.
 
-Also for 32bit with resource_size_t 64bit kernel on machine with pae support
-we are safe because iomem_resource is limited to 32bit according to
-x86_phys_bits.
+If the bridge only support 32bit pref mmio, will still have all children pref
+mmio under that.
 
--v2: update bottom assigning to make it clear for non-pae support machine.
--v3: Bjorn's change:
-        use MAX_RESOURCE instead of -1
-        use start/end instead of bottom/max
-        for all arch instead of just x86_64
--v4: updated after PCI_MAX_RESOURCE_32 change.
--v5: restore io handling to use PCI_MAX_RESOURCE_32 as limit.
--v6: checking pcibios_resource_to_bus return for every bus res, to decide it
-	if we need to try high at first.
-     It supports all arches instead of just x86_64.
+-v2: Add release bridge res support with bridge mem res for pref_mem children res.
+-v3: refresh and make it can be applied early before for_each_dev_res patchset.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Tested-by: Guo Chao <yan@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/pci.h |  1 -
- drivers/pci/bus.c          | 42 ++++++++++++++++++++++++++++++++++--------
- drivers/pci/pci.h          |  2 ++
- include/linux/pci.h        |  4 ----
- 4 files changed, 36 insertions(+), 13 deletions(-)
+ drivers/pci/setup-bus.c | 133 ++++++++++++++++++++++++++++++++----------------
+ drivers/pci/setup-res.c |  14 ++++-
+ 2 files changed, 101 insertions(+), 46 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 947b5c4..122c299 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -125,7 +125,6 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
- 
- /* generic pci stuff */
- #include <asm-generic/pci.h>
--#define PCIBIOS_MAX_MEM_32 0xffffffff
- 
- #ifdef CONFIG_NUMA
- /* Returns the node based on pci bus */
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 1ffd95b..f801f6a 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -125,15 +125,13 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 219a410..b98419e 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -711,12 +711,11 @@ static void pci_bridge_check_ranges(struct pci_bus *bus)
+    bus resource of a given type. Note: we intentionally skip
+    the bus resources which have already been assigned (that is,
+    have non-NULL parent resource). */
+-static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned long type)
++static struct resource *find_free_bus_resource(struct pci_bus *bus,
++			 unsigned long type_mask, unsigned long type)
  {
- 	int i, ret = -ENOMEM;
+ 	int i;
  	struct resource *r;
--	resource_size_t max = -1;
+-	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+-				  IORESOURCE_PREFETCH;
  
- 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
- 
--	/* don't allocate too high if the pref mem doesn't support 64bit*/
--	if (!(res->flags & IORESOURCE_MEM_64))
--		max = PCIBIOS_MAX_MEM_32;
--
  	pci_bus_for_each_resource(bus, r, i) {
-+		resource_size_t start, end, middle;
-+		struct pci_bus_region region;
-+
- 		if (!r)
- 			continue;
+ 		if (r == &ioport_resource || r == &iomem_resource)
+@@ -813,7 +812,8 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 		resource_size_t add_size, struct list_head *realloc_head)
+ {
+ 	struct pci_dev *dev;
+-	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
++	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO,
++							IORESOURCE_IO);
+ 	resource_size_t size = 0, size0 = 0, size1 = 0;
+ 	resource_size_t children_add_size = 0;
+ 	resource_size_t min_align, align;
+@@ -913,15 +913,16 @@ static inline resource_size_t calculate_mem_align(resource_size_t *aligns,
+  * guarantees that all child resources fit in this size.
+  */
+ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+-			 unsigned long type, resource_size_t min_size,
+-			resource_size_t add_size,
+-			struct list_head *realloc_head)
++			 unsigned long type, unsigned long type2,
++			 resource_size_t min_size, resource_size_t add_size,
++			 struct list_head *realloc_head)
+ {
+ 	struct pci_dev *dev;
+ 	resource_size_t min_align, align, size, size0, size1;
+ 	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
+ 	int order, max_order;
+-	struct resource *b_res = find_free_bus_resource(bus, type);
++	struct resource *b_res = find_free_bus_resource(bus,
++					 mask | IORESOURCE_PREFETCH, type);
+ 	unsigned int mem64_mask = 0;
+ 	resource_size_t children_add_size = 0;
  
-@@ -147,14 +145,42 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 		    !(res->flags & IORESOURCE_PREFETCH))
- 			continue;
+@@ -942,7 +943,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 			struct resource *r = &dev->resource[i];
+ 			resource_size_t r_size;
  
-+		start = 0;
-+		end = MAX_RESOURCE;
-+		/*
-+		 * don't allocate too high if the pref mem doesn't
-+		 * support 64bit, also if this is a 64-bit mem
-+		 * resource, try above 4GB first
-+		 */
-+		__pcibios_resource_to_bus(bus, &region, r);
-+		if (region.start <= PCI_MAX_ADDR_32 &&
-+		    region.end > PCI_MAX_ADDR_32) {
-+			middle = pcibios_bus_addr_to_res(bus, res->flags,
-+						      PCI_MAX_ADDR_32);
-+			if (res->flags & IORESOURCE_MEM_64)
-+				start = middle + 1;
-+			else
-+				end = middle;
-+		} else if (region.start > PCI_MAX_ADDR_32 &&
-+			   !(res->flags & IORESOURCE_MEM_64))
-+				continue;
-+
-+again:
- 		/* Ok, try it out.. */
- 		ret = allocate_resource(r, res, size,
--					r->start ? : min,
--					max, align,
-+					max(start, r->start ? : min),
-+					end, align,
- 					alignf, alignf_data);
- 		if (ret == 0)
--			break;
-+			return 0;
-+
-+		if (start != 0) {
-+			start = 0;
-+			goto again;
+-			if (r->parent || (r->flags & mask) != type)
++			if (r->parent || ((r->flags & mask) != type &&
++					  (r->flags & mask) != type2))
+ 				continue;
+ 			r_size = resource_size(r);
+ #ifdef CONFIG_PCI_IOV
+@@ -1115,8 +1117,9 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+ 			struct list_head *realloc_head)
+ {
+ 	struct pci_dev *dev;
+-	unsigned long mask, prefmask;
++	unsigned long mask, prefmask, type2 = 0;
+ 	resource_size_t additional_mem_size = 0, additional_io_size = 0;
++	struct resource *b_res;
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		struct pci_bus *b = dev->subordinate;
+@@ -1161,15 +1164,31 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+ 		   has already been allocated by arch code, try
+ 		   non-prefetchable range for both types of PCI memory
+ 		   resources. */
++		b_res = &bus->self->resource[PCI_BRIDGE_RESOURCES];
+ 		mask = IORESOURCE_MEM;
+ 		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
+-		if (pbus_size_mem(bus, prefmask, prefmask,
++		if (b_res[2].flags & IORESOURCE_MEM_64) {
++			prefmask |= IORESOURCE_MEM_64;
++			if (pbus_size_mem(bus, prefmask, prefmask, prefmask,
+ 				  realloc_head ? 0 : additional_mem_size,
+-				  additional_mem_size, realloc_head))
+-			mask = prefmask; /* Success, size non-prefetch only. */
+-		else
+-			additional_mem_size += additional_mem_size;
+-		pbus_size_mem(bus, mask, IORESOURCE_MEM,
++				  additional_mem_size, realloc_head)) {
++					/* Success, size non-pref64 only. */
++					mask = prefmask;
++					type2 = prefmask & ~IORESOURCE_MEM_64;
++			}
 +		}
++		if (!type2) {
++			prefmask &= ~IORESOURCE_MEM_64;
++			if (pbus_size_mem(bus, prefmask, prefmask, prefmask,
++					 realloc_head ? 0 : additional_mem_size,
++					 additional_mem_size, realloc_head)) {
++				/* Success, size non-prefetch only. */
++				mask = prefmask;
++			} else
++				additional_mem_size += additional_mem_size;
++			type2 = IORESOURCE_MEM;
++		}
++		pbus_size_mem(bus, mask, IORESOURCE_MEM, type2,
+ 				realloc_head ? 0 : additional_mem_size,
+ 				additional_mem_size, realloc_head);
+ 		break;
+@@ -1255,42 +1274,66 @@ static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
+ static void pci_bridge_release_resources(struct pci_bus *bus,
+ 					  unsigned long type)
+ {
+-	int idx;
+-	bool changed = false;
+-	struct pci_dev *dev;
++	struct pci_dev *dev = bus->self;
+ 	struct resource *r;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+-				  IORESOURCE_PREFETCH;
++				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
++	unsigned old_flags = 0;
++	struct resource *b_res;
++	int idx = 1;
+ 
+-	dev = bus->self;
+-	for (idx = PCI_BRIDGE_RESOURCES; idx <= PCI_BRIDGE_RESOURCE_END;
+-	     idx++) {
+-		r = &dev->resource[idx];
+-		if ((r->flags & type_mask) != type)
+-			continue;
+-		if (!r->parent)
+-			continue;
+-		/*
+-		 * if there are children under that, we should release them
+-		 *  all
+-		 */
+-		release_child_resources(r);
+-		if (!release_resource(r)) {
+-			dev_printk(KERN_DEBUG, &dev->dev,
+-				 "resource %d %pR released\n", idx, r);
+-			/* keep the old size */
+-			r->end = resource_size(r) - 1;
+-			r->start = 0;
+-			r->flags = 0;
+-			changed = true;
+-		}
+-	}
++	b_res = &dev->resource[PCI_BRIDGE_RESOURCES];
++
++	/*
++	 *     1. if there is io port assign fail, will release bridge
++	 *	  io port.
++	 *     2. if there is non pref mmio assign fail, release bridge
++	 *	  nonpref mmio.
++	 *     3. if there is 64bit pref mmio assign fail, and bridge pref
++	 *	  is 64bit, release bridge pref mmio.
++	 *     4. if there is pref mmio assign fail, and bridge pref is
++	 *	  32bit mmio, release bridge pref mmio
++	 *     5. if there is pref mmio assign fail, and bridge pref is not
++	 *	  assigned, release bridge nonpref mmio.
++	 */
++	if (type & IORESOURCE_IO)
++		idx = 0;
++	else if (!(type & IORESOURCE_PREFETCH))
++		idx = 1;
++	else if ((type & IORESOURCE_MEM_64) &&
++		 (b_res[2].flags & IORESOURCE_MEM_64))
++		idx = 2;
++	else if (!(b_res[2].flags & IORESOURCE_MEM_64) &&
++		 (b_res[2].flags & IORESOURCE_PREFETCH))
++		idx = 2;
++	else
++		idx = 1;
++
++	r = &b_res[idx];
++
++	if (!r->parent)
++		return;
++
++	/*
++	 * if there are children under that, we should release them
++	 *  all
++	 */
++	release_child_resources(r);
++	if (!release_resource(r)) {
++		type = old_flags = r->flags & type_mask;
++		dev_printk(KERN_DEBUG, &dev->dev, "resource %d %pR released\n",
++					PCI_BRIDGE_RESOURCES + idx, r);
++		/* keep the old size */
++		r->end = resource_size(r) - 1;
++		r->start = 0;
++		r->flags = 0;
+ 
+-	if (changed) {
+ 		/* avoiding touch the one without PREF */
+ 		if (type & IORESOURCE_PREFETCH)
+ 			type = IORESOURCE_PREFETCH;
+ 		__pci_setup_bridge(bus, type);
++		/* for next child res under same bridge */
++		r->flags = old_flags;
  	}
-+
-+
- 	return ret;
  }
  
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 9c91ecc..aea4efb 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -198,6 +198,8 @@ enum pci_bar_type {
- 	pci_bar_mem64,		/* A 64-bit memory BAR */
- };
+@@ -1469,7 +1512,7 @@ void pci_assign_unassigned_root_bus_resources(struct pci_bus *bus)
+ 	LIST_HEAD(fail_head);
+ 	struct pci_dev_resource *fail_res;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+-				  IORESOURCE_PREFETCH;
++				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
+ 	int pci_try_num = 1;
+ 	enum enable_type enable_local;
  
-+#define PCI_MAX_ADDR_32	((resource_size_t)0xffffffff)
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 83c4d3b..e968412 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -208,9 +208,21 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+ 
+ 	/* First, try exact prefetching match.. */
+ 	ret = pci_bus_alloc_resource(bus, res, size, align, min,
+-				     IORESOURCE_PREFETCH,
++				     IORESOURCE_PREFETCH | IORESOURCE_MEM_64,
+ 				     pcibios_align_resource, dev);
+ 
++	if (ret < 0 &&
++	    (res->flags & (IORESOURCE_PREFETCH | IORESOURCE_MEM_64))) {
++		/*
++		 * That failed.
++		 *
++		 * Try below 4g pref
++		 */
++		ret = pci_bus_alloc_resource(bus, res, size, align, min,
++					     IORESOURCE_PREFETCH,
++					     pcibios_align_resource, dev);
++	}
 +
- bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
- 				int crs_timeout);
- int pci_setup_device(struct pci_dev *dev);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 3c6e399..1c69789 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1491,10 +1491,6 @@ static inline struct pci_dev *pci_dev_get(struct pci_dev *dev)
- 
- #include <asm/pci.h>
- 
--#ifndef PCIBIOS_MAX_MEM_32
--#define PCIBIOS_MAX_MEM_32 (-1)
--#endif
--
- /* these helpers provide future and backwards compatibility
-  * for accessing popular PCI BAR info */
- #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+ 	if (ret < 0 && (res->flags & IORESOURCE_PREFETCH)) {
+ 		/*
+ 		 * That failed.
 -- 
 1.8.1.4
 
