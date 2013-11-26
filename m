@@ -1,51 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab3KZIjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:39:41 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:14423 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3KZIjg (ORCPT
+	id S1752732Ab3KZIo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:44:27 -0500
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:37606 "HELO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751128Ab3KZIoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:39:36 -0500
-From: Rui Xiang <rui.xiang@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 2/2] romfs: remove an redundant if condition in romfs_readpage
-Date: Tue, 26 Nov 2013 16:39:09 +0800
-Message-ID: <1385455149-20752-2-git-send-email-rui.xiang@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1385455149-20752-1-git-send-email-rui.xiang@huawei.com>
-References: <1385455149-20752-1-git-send-email-rui.xiang@huawei.com>
+	Tue, 26 Nov 2013 03:44:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20131125184159.GE28201@mudshark.cambridge.arm.com>
+References: <1385372753-7396-1-git-send-email-vkale@apm.com>
+	<1385372753-7396-3-git-send-email-vkale@apm.com>
+	<20131125184159.GE28201@mudshark.cambridge.arm.com>
+Date: Tue, 26 Nov 2013 14:14:24 +0530
+Message-ID: <CAPrCYkfThbf4GoPrWB=CrnY6SfnaksxiDwqgqevYXdnrH-ynjg@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] arm64: perf: add support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here ret always equals 0, so SetPageUptodate directly.
+On Tue, Nov 26, 2013 at 12:11 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Mon, Nov 25, 2013 at 09:45:53AM +0000, Vinayak Kale wrote:
+>> Add support for irq registration when pmu interrupt is percpu.
+>>
+>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>> Signed-off-by: Tuan Phan <tphan@apm.com>
+>> ---
+>>  arch/arm64/kernel/perf_event.c |  108 ++++++++++++++++++++++++++++++----------
+>>  1 file changed, 81 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+>> index cea1594..a2efab3 100644
+>> --- a/arch/arm64/kernel/perf_event.c
+>> +++ b/arch/arm64/kernel/perf_event.c
+>> @@ -22,6 +22,7 @@
+>>
+>>  #include <linux/bitmap.h>
+>>  #include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/export.h>
+>>  #include <linux/perf_event.h>
+>> @@ -363,22 +364,55 @@ validate_group(struct perf_event *event)
+>>  }
+>>
+>>  static void
+>> +armpmu_disable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
+>> +     disable_percpu_irq(irq);
+>> +}
+>> +
+>> +static void
+>>  armpmu_release_hardware(struct arm_pmu *armpmu)
+>>  {
+>>       int i, irq, irqs;
+>>       struct platform_device *pmu_device = armpmu->plat_device;
+>>
+>>       irqs = min(pmu_device->num_resources, num_possible_cpus());
+>> +     if (irqs < 1)
+>
+> Can you just make irqs unsigned, then do if (!irqs) instead?
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- fs/romfs/super.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Okay. I will also modify already existing similar check in function
+'armpmu_reserve_hardware'.
 
-diff --git a/fs/romfs/super.c b/fs/romfs/super.c
-index d841878..b5e4ad4 100644
---- a/fs/romfs/super.c
-+++ b/fs/romfs/super.c
-@@ -129,8 +129,7 @@ static int romfs_readpage(struct file *file, struct page *page)
- 
- 	if (fillsize < PAGE_SIZE)
- 		memset(buf + fillsize, 0, PAGE_SIZE - fillsize);
--	if (ret == 0)
--		SetPageUptodate(page);
-+	SetPageUptodate(page);
- 
- 	flush_dcache_page(page);
- 	kunmap(page);
--- 
-1.8.2.2
+>
+>> +             return;
+>>
+>> -     for (i = 0; i < irqs; ++i) {
+>> -             if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> -                     continue;
+>> -             irq = platform_get_irq(pmu_device, i);
+>> -             if (irq >= 0)
+>> -                     free_irq(irq, armpmu);
+>> +     irq = platform_get_irq(pmu_device, 0);
+>> +     if (irq <= 0)
+>> +             return;
+>> +
+>> +     if (irq_is_percpu(irq)) {
+>> +             on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
+>> +             free_percpu_irq(irq, &cpu_hw_events);
+>> +     } else {
+>> +             for (i = 0; i < irqs; ++i) {
+>> +                     if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
+>> +                             continue;
+>> +                     irq = platform_get_irq(pmu_device, i);
+>> +                     if (irq > 0)
+>> +                             free_irq(irq, armpmu);
+>> +             }
+>>       }
+>>  }
+>>
+>> +static void
+>> +armpmu_enable_percpu_irq(void *data)
+>> +{
+>> +     struct arm_pmu *armpmu = data;
+>> +     struct platform_device *pmu_device = armpmu->plat_device;
+>> +     int irq = platform_get_irq(pmu_device, 0);
+>> +
+>> +     enable_percpu_irq(irq, 0);
+>
+> IRQ_TYPE_NONE?
 
+Did you mean to use macro instead or 0? If yes, I will modify.
 
+Or, are you asking why are we using 0? For this part here is my comment:
+Inside GIC it's 'implementation specific' whether to allow
+configuration of level/edge type for PPIs.
+So maybe we should leave it to boot-loader to do such config if any
+such explicit config is needed.
+Passing 0 (=IRQ_TYPE_NONE) to 'enable_percpu_irq' ensures that kernel
+doesn't touch the existing configuration.
+
+I observed that arm arch timer code also passes 0 (IRQ_TYPE_NONE) to
+'enable_percpu_irq'.
+
+>
+>> +     cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
+>> +}
+>> +
+>>  static int
+>>  armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>>  {
+>> @@ -396,34 +430,54 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+>>               return -ENODEV;
+>>       }
+>>
+>> -     for (i = 0; i < irqs; ++i) {
+>> -             err = 0;
+>> -             irq = platform_get_irq(pmu_device, i);
+>> -             if (irq < 0)
+>> -                     continue;
+>> +     irq = platform_get_irq(pmu_device, 0);
+>> +     if (irq <= 0) {
+>> +             pr_err("failed to get valid irq for PMU device\n");
+>> +             return -ENODEV;
+>> +     }
+>>
+>> -             /*
+>> -              * If we have a single PMU interrupt that we can't shift,
+>> -              * assume that we're running on a uniprocessor machine and
+>> -              * continue. Otherwise, continue without this interrupt.
+>> -              */
+>> -             if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
+>> -                     pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
+>> -                                 irq, i);
+>> -                     continue;
+>> -             }
+>> +     if (irq_is_percpu(irq)) {
+>> +             err = request_percpu_irq(irq, armpmu->handle_irq,
+>> +                             "arm-pmu", &cpu_hw_events);
+>
+> This is a bit of a kludge passing in the cpu_hw_events as the per-cpu token,
+> but I guess that will do for now. There is potential for something like a
+> master-aware L2 PMU which uses PPIs and expects to pass something different
+> back to the IRQ handler.
+>
+> Will
