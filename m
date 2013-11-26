@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab3KZK3h (ORCPT <rfc822;w@1wt.eu>);
+	id S1756094Ab3KZK3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:29:45 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38342 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755352Ab3KZK3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 05:29:37 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:64006 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab3KZK3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:29:34 -0500
+Message-ID: <529477DD.8000906@ti.com>
+Date: Tue, 26 Nov 2013 15:58:45 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1385048076-7875-3-git-send-email-grygorii.strashko@ti.com>
-References: <1385048076-7875-1-git-send-email-grygorii.strashko@ti.com> <1385048076-7875-3-git-send-email-grygorii.strashko@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 26 Nov 2013 15:59:12 +0530
-Message-ID: <CA+V-a8vh4SE5ALOetdFBv1dEDJdZ58=aXGU3cVNjOMVFBfMeYA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: introduce GPIO_DAVINCI kconfig option
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Porter <matt.porter@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v3 6/9] usb: gadget: s3c-hsotg: get phy bus width from
+ phy subsystem
+References: <1385403367-18144-1-git-send-email-matt.porter@linaro.org> <1385403367-18144-7-git-send-email-matt.porter@linaro.org>
+In-Reply-To: <1385403367-18144-7-git-send-email-matt.porter@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 9:04 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> The compatible to Davinci GPIO HW block is used by other TI SoCs, like
-> Keystone, where GPIO support is declared as optional.
->
-> Hence, introduce GPIO_DAVINCI Kconfig option which will allow to enable
-> Davinci GPIO driver for Keystone SoCs when needed. At same time, kept
-> Davinci GPIO driver enabled for Davinci SoCs by default.
->
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Hi,
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Monday 25 November 2013 11:46 PM, Matt Porter wrote:
+> Adds support for querying the phy bus width from the generic phy
+> subsystem. Configure UTMI bus width in GUSBCFG based on this value.
+> 
+> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  drivers/usb/gadget/s3c-hsotg.c | 14 +++++++++++++-
+>  drivers/usb/gadget/s3c-hsotg.h |  1 +
+>  2 files changed, 14 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+> index 8dfe33f..be41585 100644
+> --- a/drivers/usb/gadget/s3c-hsotg.c
+> +++ b/drivers/usb/gadget/s3c-hsotg.c
+> @@ -144,6 +144,7 @@ struct s3c_hsotg_ep {
+>   * @regs: The memory area mapped for accessing registers.
+>   * @irq: The IRQ number we are using
+>   * @supplies: Definition of USB power supplies
+> + * @phyif: PHY interface width
+>   * @dedicated_fifos: Set if the hardware has dedicated IN-EP fifos.
+>   * @num_of_eps: Number of available EPs (excluding EP0)
+>   * @debug_root: root directrory for debugfs.
+> @@ -171,6 +172,7 @@ struct s3c_hsotg {
+>  
+>  	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
+>  
+> +	u32			phyif;
+>  	unsigned int		dedicated_fifos:1;
+>  	unsigned char           num_of_eps;
+>  
+> @@ -2276,7 +2278,7 @@ static void s3c_hsotg_core_init(struct s3c_hsotg *hsotg)
+>  	 */
+>  
+>  	/* set the PLL on, remove the HNP/SRP and set the PHY */
+> -	writel(GUSBCFG_PHYIf16 | GUSBCFG_TOutCal(7) |
+> +	writel(hsotg->phyif | GUSBCFG_TOutCal(7) |
+>  	       (0x5 << 10), hsotg->regs + GUSBCFG);
+>  
+>  	s3c_hsotg_init_fifo(hsotg);
+> @@ -3622,6 +3624,16 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+>  		goto err_supplies;
+>  	}
+>  
+> +	/* Set default UTMI width */
+> +	hsotg->phyif = GUSBCFG_PHYIf16;
+> +
+> +	/*
+> +	 * If using the generic PHY framework, check if the PHY bus
+> +	 * width is 8-bit and set the phyif appropriately.
+> +	 */
+> +	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
 
-Regards,
---Prabhakar Lad
+what if the phy has error value here?
+
+Thanks
+Kishon
