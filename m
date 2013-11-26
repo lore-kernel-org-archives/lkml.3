@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3KZIMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:12:46 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:15092 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab3KZIMn (ORCPT
+	id S1754325Ab3KZIOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:14:02 -0500
+Received: from smtp-66.nebula.fi ([83.145.220.66]:45074 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752156Ab3KZIN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:12:43 -0500
-Message-ID: <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
- plist in futex_wake()
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jason Low <jason.low2@hp.com>,
-        Ingo Molnar <mingo@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 26 Nov 2013 00:12:31 -0800
-In-Reply-To: <20131125203358.156292370@linutronix.de>
-References: <20131125203358.156292370@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 03:13:59 -0500
+Date: Tue, 26 Nov 2013 10:13:17 +0200
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com
+Subject: Re: [PATCH v3] video: add OpenCores VGA/LCD framebuffer driver
+Message-ID: <20131126081316.GB2838@chokladfabriken.org>
+References: <1385094870-6962-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+ <52944976.4060003@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52944976.4060003@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 20:58 +0000, Thomas Gleixner wrote:
-> The patch set from Davidlohr [1] tried to attempt the same via an
-> atomic counter of waiters in a hash bucket. The atomic counter access
-> provided enough serialization for x86 so that a failure is not
-> observable in testing, but does not provide any guarantees.
+On Tue, Nov 26, 2013 at 08:10:46AM +0100, Michal Simek wrote:
+> On 11/22/2013 05:34 AM, Stefan Kristiansson wrote:
+> > +
+> > +	/* Request I/O resource */
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	if (!res) {
+> > +		dev_err(&pdev->dev, "I/O resource request failed\n");
+> > +		return -ENXIO;
+> > +	}
+> > +	fbdev->regs_phys = res->start;
+> > +	fbdev->regs_phys_size = resource_size(res);
+> > +	mmio = devm_request_mem_region(&pdev->dev, res->start,
+> > +				       resource_size(res), res->name);
+> > +	if (!mmio) {
+> > +		dev_err(&pdev->dev, "I/O memory space request failed\n");
+> > +		return -ENXIO;
+> > +	}
+> > +	fbdev->regs = devm_ioremap_nocache(&pdev->dev, mmio->start,
+> > +					   resource_size(mmio));
+> > +	if (!fbdev->regs) {
+> > +		dev_err(&pdev->dev, "I/O memory remap request failed\n");
+> > +		return -ENXIO;
+> > +	}
 > 
-> The same can be achieved with a smp_mb() pair including proper
-> guarantees for all architectures.
+> 
+> This construction seems to me too complicated and can be simpler.
+> 
+> What about this?
+> 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> 	res->flags &= ~IORESOURCE_CACHEABLE;
+> 	fbdev->regs = devm_ioremap_resource(&pdev->dev, res);
+> 	if (IS_ERR(fbdev->regs))
+> 		return PTR_ERR(fbdev->regs);
+> 
 
-I am becoming hesitant about this approach. The following are some
-results, from my quad-core laptop, measuring the latency of nthread
-wakeups (1 at a time). In addition, failed wait calls never occur -- so
-we don't end up including the (otherwise minimal) overhead of the list
-queue+dequeue, only measuring the smp_mb() usage when !empty list never
-occurs.
+Yes, that looks better.
 
-+---------+--------------------+--------+-------------------+--------+----------+
-| threads | baseline time (ms) | stddev | patched time (ms) | stddev | overhead |
-+---------+--------------------+--------+-------------------+--------+----------+
-|     512 | 4.2410             | 0.9762 | 12.3660           | 5.1020 | +191.58% |
-|     256 | 2.7750             | 0.3997 | 7.0220            | 2.9436 | +153.04% |
-|     128 | 1.4910             | 0.4188 | 3.7430            | 0.8223 | +151.03% |
-|      64 | 0.8970             | 0.3455 | 2.5570            | 0.3710 | +185.06% |
-|      32 | 0.3620             | 0.2242 | 1.1300            | 0.4716 | +212.15% |
-+---------+--------------------+--------+-------------------+--------+----------+
+Slightly related, I also noticed that I have a release_mem_region even though I
+used devm_request_mem_region to request it.
+I will fix that as well.
 
-While the variation is quite a bit in the patched version for higher
-nthreads, the overhead is significant in all cases. Now, this is a very
-specific program and far from what occurs in the real world, but I
-believe it's good data to have to make a future decision about this kind
-of approach.
-
-Thanks,
-Davidlohr
-
+Stefan
