@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3KZLWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:22:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756500Ab3KZLWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:22:08 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tools: Fix tags target rebuilding
-Date: Tue, 26 Nov 2013 12:21:30 +0100
-Message-Id: <1385464890-19876-1-git-send-email-jolsa@redhat.com>
+	id S1756532Ab3KZL06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:26:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49580 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291Ab3KZL0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 06:26:54 -0500
+Date: Tue, 26 Nov 2013 12:26:50 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI runtime mapping work for v3.14
+Message-ID: <20131126112650.GD2410@gmail.com>
+References: <20131125162854.GK11521@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131125162854.GK11521@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once the tags file is generated it's never rebuilt
-until it's removed by hand.
 
-The reason is that the Makefile does not treat tags
-as a target but as a file to be rebuilt.
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-Adding tags as PHONY target into the Makefile.
+> Folks, could you queue up the following for the v3.14 merge window? It
+> would be good to get these patches into linux-next for a full release
+> cycle of testing. They pass all of my tests.
+> 
+> The following changes since commit 72548e836b0c4abbb652e791dee9c91203a9a4c6:
+> 
+>   x86/efi: Add EFI framebuffer earlyprintk support (2013-10-28 18:09:58 +0000)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+> 
+> for you to fetch changes up to ee41143027706d9f342dfe05487a00b20887fde7:
+> 
+>   x86/efi: Check krealloc return value (2013-11-02 11:09:36 +0000)
+> 
+> ----------------------------------------------------------------
+>  * New static EFI runtime services virtual mapping layout which is
+>    groundwork for kexec support on EFI - Borislav Petkov
+> 
+> ----------------------------------------------------------------
+> Borislav Petkov (11):
+>       x86/efi: Simplify EFI_DEBUG
+>       x86/mm/pageattr: Lookup address in an arbitrary PGD
+>       x86/mm/pageattr: Add a PGD pagetable populating function
+>       x86/mm/pageattr: Add a PUD pagetable populating function
+>       x86/mm/pageattr: Add a PMD pagetable populating function
+>       x86/mm/pageattr: Add a PTE pagetable populating function
+>       x86/mm/pageattr: Add a PUD error unwinding path
+>       x86/mm/pageattr: Add last levels of error path
+>       x86/mm/cpa: Map in an arbitrary pgd
+>       x86/efi: Runtime services virtual mapping
+>       x86/efi: Check krealloc return value
+> 
+>  Documentation/kernel-parameters.txt  |   6 +
+>  Documentation/x86/x86_64/mm.txt      |   7 +
+>  arch/x86/include/asm/efi.h           |  64 +++--
+>  arch/x86/include/asm/pgtable_types.h |   3 +-
+>  arch/x86/mm/pageattr.c               | 461 +++++++++++++++++++++++++++++++++--
+>  arch/x86/platform/efi/efi.c          | 111 ++++++---
+>  arch/x86/platform/efi/efi_32.c       |   9 +-
+>  arch/x86/platform/efi/efi_64.c       | 109 +++++++++
+>  arch/x86/platform/efi/efi_stub_64.S  |  54 ++++
+>  include/linux/efi.h                  |   1 +
+>  10 files changed, 755 insertions(+), 70 deletions(-)
+> 
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Pulled into tip:x86/efi, thanks a lot guys!
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4835618..95f5792 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -61,7 +61,7 @@ endef
- #
- # Needed if no target specified:
- #
--all:
-+all tags:
- 	$(print_msg)
- 	$(make)
- 
-@@ -77,3 +77,5 @@ clean:
- %:
- 	$(print_msg)
- 	$(make)
-+
-+.PHONY: tags
--- 
-1.8.3.1
+Just a side note, for future reference, this title lacks a verb and is 
+thus not self-describing:
 
+   x86/efi: Runtime services virtual mapping
+
+It should probably have been something like:
+
+   x86/efi: Implement and enable separate, stable virtual mapping for runtime services
+
+?
+
+Chances are that it will be a popular bisection target ;-)
+
+	Ingo
