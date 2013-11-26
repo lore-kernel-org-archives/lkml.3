@@ -1,279 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab3KZSXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:23:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35338 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab3KZSMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:12:51 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: [PATCH 3.11 05/36] ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a field.
-Date: Tue, 26 Nov 2013 10:12:15 -0800
-Message-Id: <20131126181026.172087974@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
-References: <20131126181025.029404973@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	id S932449Ab3KZS13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:27:29 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47418 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752492Ab3KZS10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:27:26 -0500
+Message-ID: <5294E7E4.3060600@ti.com>
+Date: Tue, 26 Nov 2013 13:26:44 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com> <52944BD3.90105@ti.com> <5294B8C4.6040803@ti.com> <5294D8AD.5030106@ti.com>
+In-Reply-To: <5294D8AD.5030106@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday 26 November 2013 12:21 PM, Sekhar Nori wrote:
+> On 11/26/2013 8:35 PM, Santosh Shilimkar wrote:
+>> On Tuesday 26 November 2013 02:20 AM, Sekhar Nori wrote:
+>>> On Monday 11 November 2013 10:36 PM, Khoronzhuk, Ivan wrote:
+>>>> Add new AEMIF driver for EMIF16 davinci controller. The EMIF16 module
+>>>> is intended to provide a glue-less interface to a variety of
+>>>> asynchronous memory devices like ASRA M, NOR and NAND memory. A total
+>>>> of 256M bytes of any of these memories can be accessed at any given
+>>>> time via four chip selects with 64M byte access per chip select.
+>>>>
+>>>> Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
+>>>> are not supported.
+>>>>
+>>>> See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>>>>
+>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>> ---
+>>
+>> [...]
+>>
+>>>> +static int davinci_aemif_probe(struct platform_device *pdev)
+>>>> +{
+>>>> +       int ret  = -ENODEV, i;
+>>>> +       struct resource *res;
+>>>> +       struct device *dev = &pdev->dev;
+>>>> +       struct device_node *np = dev->of_node;
+>>>> +
+>>>> +       if (np == NULL)
+>>>> +               return 0;
+>>>> +
+>>>> +       if (aemif) {
+>>>> +               dev_err(dev, "davinci_aemif driver is in use currently\n");
+>>>> +               return -EBUSY;
+>>>> +       }
+>>>
+>>> Why expressly prevent multiple AEMIF devices? Its entirely conceivable
+>>> to have two memories like NAND and NOR flash connect to two different
+>>> AEMIF interfaces.
+>>>
+>> Ivan wanted me to clarify the Keystone hardware which supports
+>> 1 instance of controller with 4 CS. That allows already four
+>> devices to be connected. Currently NAND and NOR are connected on it
+>> and two more slots are free.
+>>
+>> Since driver support what hardware is, lets not build a driver for
+>> hardware which don't exist. And if at all such a support would be
+>> needed in future, we can always add it.
+> 
+> I understand the lack of hardware part, but its common to write the
+> driver such that it can handle multiple instances. Is there any gain on
+> current hardware because of this check? From what I am hearing, the code
+> in question wont be exercised at all. So why go all the way and add it
+> in first place?
+> 
+Fair enough. The check can be dropped.
 
-------------------
-
-From: Bob Moore <robert.moore@intel.com>
-
-commit 4be4be8fee2ee99a52f94f90d03d2f287ee1db86 upstream.
-
-This change fixes a problem where a Store operation to an ArgX object
-that contained a reference to a field object did not complete the
-automatic dereference and then write to the actual field object.
-Instead, the object type of the field object was inadvertently changed
-to match the type of the source operand. The new behavior will actually
-write to the field object (buffer field or field unit), thus matching
-the correct ACPI-defined behavior.
-
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/acpi/acpica/exstore.c |  166 +++++++++++++++++++++++++-----------------
- 1 file changed, 102 insertions(+), 64 deletions(-)
-
---- a/drivers/acpi/acpica/exstore.c
-+++ b/drivers/acpi/acpica/exstore.c
-@@ -57,6 +57,11 @@ acpi_ex_store_object_to_index(union acpi
- 			      union acpi_operand_object *dest_desc,
- 			      struct acpi_walk_state *walk_state);
- 
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state);
-+
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_ex_store
-@@ -375,7 +380,11 @@ acpi_ex_store_object_to_index(union acpi
-  *              When storing into an object the data is converted to the
-  *              target object type then stored in the object. This means
-  *              that the target object type (for an initialized target) will
-- *              not be changed by a store operation.
-+ *              not be changed by a store operation. A copy_object can change
-+ *              the target type, however.
-+ *
-+ *              The implicit_conversion flag is set to NO/FALSE only when
-+ *              storing to an arg_x -- as per the rules of the ACPI spec.
-  *
-  *              Assumes parameters are already validated.
-  *
-@@ -399,7 +408,7 @@ acpi_ex_store_object_to_node(union acpi_
- 	target_type = acpi_ns_get_type(node);
- 	target_desc = acpi_ns_get_attached_object(node);
- 
--	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p(%s) into node %p(%s)\n",
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p (%s) to node %p (%s)\n",
- 			  source_desc,
- 			  acpi_ut_get_object_type_name(source_desc), node,
- 			  acpi_ut_get_type_name(target_type)));
-@@ -413,45 +422,30 @@ acpi_ex_store_object_to_node(union acpi_
- 		return_ACPI_STATUS(status);
- 	}
- 
--	/* If no implicit conversion, drop into the default case below */
--
--	if ((!implicit_conversion) ||
--	    ((walk_state->opcode == AML_COPY_OP) &&
--	     (target_type != ACPI_TYPE_LOCAL_REGION_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_BANK_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_INDEX_FIELD))) {
--		/*
--		 * Force execution of default (no implicit conversion). Note:
--		 * copy_object does not perform an implicit conversion, as per the ACPI
--		 * spec -- except in case of region/bank/index fields -- because these
--		 * objects must retain their original type permanently.
--		 */
--		target_type = ACPI_TYPE_ANY;
--	}
--
- 	/* Do the actual store operation */
- 
- 	switch (target_type) {
--	case ACPI_TYPE_BUFFER_FIELD:
--	case ACPI_TYPE_LOCAL_REGION_FIELD:
--	case ACPI_TYPE_LOCAL_BANK_FIELD:
--	case ACPI_TYPE_LOCAL_INDEX_FIELD:
--
--		/* For fields, copy the source data to the target field. */
--
--		status = acpi_ex_write_data_to_field(source_desc, target_desc,
--						     &walk_state->result_obj);
--		break;
--
- 	case ACPI_TYPE_INTEGER:
- 	case ACPI_TYPE_STRING:
- 	case ACPI_TYPE_BUFFER:
- 		/*
--		 * These target types are all of type Integer/String/Buffer, and
--		 * therefore support implicit conversion before the store.
--		 *
--		 * Copy and/or convert the source object to a new target object
-+		 * The simple data types all support implicit source operand
-+		 * conversion before the store.
- 		 */
-+
-+		if ((walk_state->opcode == AML_COPY_OP) || !implicit_conversion) {
-+			/*
-+			 * However, copy_object and Stores to arg_x do not perform
-+			 * an implicit conversion, as per the ACPI specification.
-+			 * A direct store is performed instead.
-+			 */
-+			status = acpi_ex_store_direct_to_node(source_desc, node,
-+							      walk_state);
-+			break;
-+		}
-+
-+		/* Store with implicit source operand conversion support */
-+
- 		status =
- 		    acpi_ex_store_object_to_object(source_desc, target_desc,
- 						   &new_desc, walk_state);
-@@ -465,13 +459,12 @@ acpi_ex_store_object_to_node(union acpi_
- 			 * the Name's type to that of the value being stored in it.
- 			 * source_desc reference count is incremented by attach_object.
- 			 *
--			 * Note: This may change the type of the node if an explicit store
--			 * has been performed such that the node/object type has been
--			 * changed.
-+			 * Note: This may change the type of the node if an explicit
-+			 * store has been performed such that the node/object type
-+			 * has been changed.
- 			 */
--			status =
--			    acpi_ns_attach_object(node, new_desc,
--						  new_desc->common.type);
-+			status = acpi_ns_attach_object(node, new_desc,
-+						       new_desc->common.type);
- 
- 			ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
- 					  "Store %s into %s via Convert/Attach\n",
-@@ -482,38 +475,83 @@ acpi_ex_store_object_to_node(union acpi_
- 		}
- 		break;
- 
--	default:
--
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "Storing [%s] (%p) directly into node [%s] (%p)"
--				  " with no implicit conversion\n",
--				  acpi_ut_get_object_type_name(source_desc),
--				  source_desc,
--				  acpi_ut_get_object_type_name(target_desc),
--				  node));
-+	case ACPI_TYPE_BUFFER_FIELD:
-+	case ACPI_TYPE_LOCAL_REGION_FIELD:
-+	case ACPI_TYPE_LOCAL_BANK_FIELD:
-+	case ACPI_TYPE_LOCAL_INDEX_FIELD:
-+		/*
-+		 * For all fields, always write the source data to the target
-+		 * field. Any required implicit source operand conversion is
-+		 * performed in the function below as necessary. Note, field
-+		 * objects must retain their original type permanently.
-+		 */
-+		status = acpi_ex_write_data_to_field(source_desc, target_desc,
-+						     &walk_state->result_obj);
-+		break;
- 
-+	default:
- 		/*
- 		 * No conversions for all other types. Directly store a copy of
--		 * the source object. NOTE: This is a departure from the ACPI
--		 * spec, which states "If conversion is impossible, abort the
--		 * running control method".
-+		 * the source object. This is the ACPI spec-defined behavior for
-+		 * the copy_object operator.
- 		 *
--		 * This code implements "If conversion is impossible, treat the
--		 * Store operation as a CopyObject".
-+		 * NOTE: For the Store operator, this is a departure from the
-+		 * ACPI spec, which states "If conversion is impossible, abort
-+		 * the running control method". Instead, this code implements
-+		 * "If conversion is impossible, treat the Store operation as
-+		 * a CopyObject".
- 		 */
--		status =
--		    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc,
--						    walk_state);
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--
--		status =
--		    acpi_ns_attach_object(node, new_desc,
--					  new_desc->common.type);
--		acpi_ut_remove_reference(new_desc);
-+		status = acpi_ex_store_direct_to_node(source_desc, node,
-+						      walk_state);
- 		break;
- 	}
- 
- 	return_ACPI_STATUS(status);
- }
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_ex_store_direct_to_node
-+ *
-+ * PARAMETERS:  source_desc             - Value to be stored
-+ *              node                    - Named object to receive the value
-+ *              walk_state              - Current walk state
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: "Store" an object directly to a node. This involves a copy
-+ *              and an attach.
-+ *
-+ ******************************************************************************/
-+
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state)
-+{
-+	acpi_status status;
-+	union acpi_operand_object *new_desc;
-+
-+	ACPI_FUNCTION_TRACE(ex_store_direct_to_node);
-+
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+			  "Storing [%s] (%p) directly into node [%s] (%p)"
-+			  " with no implicit conversion\n",
-+			  acpi_ut_get_object_type_name(source_desc),
-+			  source_desc, acpi_ut_get_type_name(node->type),
-+			  node));
-+
-+	/* Copy the source object to a new object */
-+
-+	status =
-+	    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc, walk_state);
-+	if (ACPI_FAILURE(status)) {
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Attach the new object to the node */
-+
-+	status = acpi_ns_attach_object(node, new_desc, new_desc->common.type);
-+	acpi_ut_remove_reference(new_desc);
-+	return_ACPI_STATUS(status);
-+}
-
-
+Regards,
+Santosh
