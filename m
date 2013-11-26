@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3KZFMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 00:12:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55967 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab3KZFM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 00:12:27 -0500
-Message-ID: <1385442661.9218.51.camel@pasglop>
-Subject: Re: Preventing IPI sending races in arch code
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
-        David Daney <david.daney@cavium.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
-Date: Tue, 26 Nov 2013 16:11:01 +1100
-In-Reply-To: <529427F1.2080409@synopsys.com>
-References: <52932BE2.5010201@synopsys.com>
-	 <20131125110006.GU3866@twins.programming.kicks-ass.net>
-	 <529334CA.1000401@synopsys.com>
-	 <20131125122726.GZ10022@twins.programming.kicks-ass.net>
-	 <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com>
-	 <1385409103.9218.15.camel@pasglop> <529427F1.2080409@synopsys.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751905Ab3KZFRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 00:17:50 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43093 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3KZFRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 00:17:48 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52942E9B.2030003@jp.fujitsu.com>
+Date: Tue, 26 Nov 2013 14:16:11 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        "chaowang@redhat.com" <chaowang@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+References: <20131115142617.GC6637@redhat.com> <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp> <20131118135511.GA30637@redhat.com> <0910DD04CBD6DE4193FCF86B9C00BE971C3862@BPXM01GP.gisp.nec.co.jp> <20131120145901.GB27924@redhat.com> <0910DD04CBD6DE4193FCF86B9C00BE971C43E3@BPXM01GP.gisp.nec.co.jp> <528DC4F2.5040000@jp.fujitsu.com> <20131121165237.GG16208@redhat.com> <0910DD04CBD6DE4193FCF86B9C00BE971C5AB3@BPXM01GP.gisp.nec.co.jp> <529311F1.90603@jp.fujitsu.com> <20131125144150.GC21378@redhat.com>
+In-Reply-To: <20131125144150.GC21378@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-26 at 10:17 +0530, Vineet Gupta wrote:
-> On 11/26/2013 01:21 AM, Benjamin Herrenschmidt wrote:
-> > On Mon, 2013-11-25 at 13:35 +0000, Vineet Gupta wrote:
-> > 
-> >> Before reading ur email I was coding something like below:
-> >>
-> >> void arch_send_ipi(int cpu, int type)
-> >> {
-> >>   u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
-> >>
-> >>   while (cmpxchg(pending_ptr, 0, 1 << type) != 0)
-> >> 	cpu_relax();
-> >>
-> >>   raise_ipi(cpu);
-> >> }
-> > 
-> > So you would have blocked the sender while there was already
-> > a pending IPI on the target ? Why ?
-> 
-> A simplistic (but non optimal) way to cater to the race where 2 senders try to
-> send the exact same msg to same receiver. Upon first IPI, receiver "consumes" the
-> msg (using xchg with 0) so the 2nd IPI seems "empty" i.e. no msg.
+(2013/11/25 23:41), Vivek Goyal wrote:
+> On Mon, Nov 25, 2013 at 06:01:37PM +0900, HATAYAMA Daisuke wrote:
+>
+> [..]
+>>> I agree to avoid this issue by fixing makedumpfile as workaround while to
+>>> fix kernel is so tough and risky. However, it sounds strange to me to fix
+>>> userspace side elaborately for such definite kernel issue whose cause is
+>>> known, so we should fix the kernel itself.
+>>>
+>>
+>>> Otherwise, will you continue to add specific fixes into user tools to
+>>> address kernel issues like this case ?
+>>>
+>>
+>> makedumpfile supports a wide range of kernel versions and needs to satisfy
+>> backward compatibility. mmap() on /proc/vmcore might be backported to some of
+>> the old versions on some distributions if necessary. Then, it's hard to fix
+>> each old kernel at each back port. The method that can be applied to all the
+>> kernels in general, is necessary.
+>>
+>> Also, looking at ia64 case where there's boot loader data on partial pages,
+>> there could be other environments where partial pages contain other important
+>> data other components have. So, the issue depends not only on kernels but also
+>> other components such as boot loader and firmwares that can put data on
+>> partial pages. We need to get there as long as there's important data there
+>> and we have access to there.
+>
+> Hi Atsushi, Hatayama,
+>
+> So even if we fix the mmap() issue in kernel, looks like it will be a
+> good idea to ship the fix in makedumpfile as there have been a kernel
+> release where mmap() will cause issues.
+>
+> Having said that, I think we need to fix it in kernel also. I was not sure
+> that what's the right fix. Should we truncate partial pages or should
+> we just copy partial pages from old memory to new kernel's memory and fill
+> partial page with zeros. And that's why I was hoping that makedumpfile
+> can fill the gap.
+>
+> Copying partial pages to new memory seems like a safer approach. So may
+> be we can take a fix in makeudmpfile and another in kernel.
+>
+> Hatayama, I know that in the past your initial mmap() patches were copying
+> partial pages to new kernel's memory. Would you like to resurrect that
+> patch again?
+>
 
-But there is no race...
+(Oh, I yesterday had totally forgotten partial page handling that was dropped
+from mmap() patch set in the middle of development...)
 
-> > The optimization proposed by Peter is actually the only interesting
-> > change here, without it the existing set_bit was perfectly fine.
-> 
-> I'm not sure, see below.
-> 
-> > Remember that set_bit is atomic.
-> 
-> Right, but the issue per-se is not clobbering of msg holder, but from POV of
-> receiver, seeming coalescing of 2 set_bit writes to msg holder.
+Yes, but wait until next week.
 
-That's fine. There's no expectation that N ipi_send_msg turn into N
-messages received... it turns into at least one.
-
-Just like MSIs or other edge interrupts
-
-Cheers,
-Ben.
-
-> core0		core1		core2
-> 
-> set_bit 1	
-> kick IPI-2	set_bit 1	IPI-0 received
-> 		kick IPI-2	read+clear bit
-> 				IPI-1 received
-> 				no msg
-> 
-> -Vineet
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
