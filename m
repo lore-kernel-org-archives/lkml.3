@@ -1,27 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab3KZUIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 15:08:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51824 "HELO
+	id S1758135Ab3KZUK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 15:10:29 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57284 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755228Ab3KZUIf (ORCPT
+	with SMTP id S1758033Ab3KZUK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 15:08:35 -0500
+	Tue, 26 Nov 2013 15:10:27 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
         Patch Tracking <patches@linaro.org>,
         "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Tue, 26 Nov 2013 21:21:23 +0100
-Message-ID: <2309056.KUZA1Fnj0Y@vostro.rjw.lan>
+        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Kgene Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
+Date: Tue, 26 Nov 2013 21:23:15 +0100
+Message-ID: <4253729.doK7ubnxKx@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpon22PxGdTFcaOqzpLpVZd75OPP470Wyy95GjBhG2gViyQ@mail.gmail.com>
-References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org> <2997050.eogEtPXZyL@vostro.rjw.lan> <CAKohpon22PxGdTFcaOqzpLpVZd75OPP470Wyy95GjBhG2gViyQ@mail.gmail.com>
+In-Reply-To: <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com>
+References: <cover.1385374819.git.viresh.kumar@linaro.org> <40779593.MBXsTetiKz@vostro.rjw.lan> <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,44 +34,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 26, 2013 07:31:50 AM Viresh Kumar wrote:
-> On 26 November 2013 02:43, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Monday, November 25, 2013 09:43:59 AM Dirk Brandewie wrote:
-> >> This is a platform specific bug fix AFAICT and belongs in a platform
-> >> specific piece of code
+On Tuesday, November 26, 2013 07:56:19 AM Viresh Kumar wrote:
+> On 26 November 2013 04:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> @@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+> >>
+> >>       might_sleep();
+> >>
+> >> +     cpufreq_suspend();
+> >> +
+> >>
+> >>       mutex_lock(&dpm_list_mtx);
+> >>       pm_transition = state;
+> >>       async_error = 0;
+> >
+> > Shouldn't it do cpufreq_resume() on errors?
 > 
-> In case we end up doing that, we will do lots of code redundancy in
-> cpufreq drivers. And as Rafael said, some platforms might never
-> know they have booted with an out of table frequency and so taking
-> care of this at a single place is better, where we are sure that it
-> will get fixed.
-> 
-> >> The core should not be working around bootloader bugs IMHO.  Silently
-> >> fixing it is evil IMHO at a minimum the core should complain LOUDLY
-> >> about this happening otherwise the bootloaders will have no incentive to
-> >> get their act together.
-> 
-> That looks correct..
-> 
-> > Yes, we can add a WARN_ON() there.  Still, though, the core's responsibility
-> > is to ensure that (a) either we can continue safely or (b) we can't, in which
-> > case it should just fail the initialization.  Whether or not it should panic()
-> > I'm not sure.
-> 
-> But is this that big crime, that we do a WARN on it? CPU was running on
-> a workable frequency, it wasn't mentioned in the table, that's it.
-> 
-> Probably just throw an print message that CPU found to be running on
-> out of table frequency, and that got fixed..
+> Yes and this is already done I believe. In case dpm_suspend() fails,
+> dpm_resume() gets called. Isn't it?
 
-I was talking about the case when your
+OK
 
-__cpufreq_driver_target(policy, policy->cur - 1, CPUFREQ_RELATION_L);
+> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >> +void cpufreq_suspend(void)
+> >> +{
+> >> +     struct cpufreq_policy *policy;
+> >> +
+> >> +     if (!has_target())
+> >> +             return;
+> >> +
+> >> +     pr_debug("%s: Suspending Governors\n", __func__);
+> >> +
+> >> +     list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> >> +             if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+> >> +                     pr_err("%s: Failed to stop governor for policy: %p\n",
+> >> +                                     __func__, policy);
+> >
+> > This appears to be racy.  Is it really racy, or just seemingly?
+> 
+> Why does it look racy to you? Userspace should be frozen by now,
+> policy_list should be stable as well as nobody would touch it.
 
-fails.  The other case is not really interesting.
+You're stopping governors while they may be in use in principle.  Do we have
+suitable synchronization in place for that?
 
-Thanks!
+Rafael
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
