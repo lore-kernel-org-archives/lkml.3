@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab3KZKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:50:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60441 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377Ab3KZKuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:50:54 -0500
-Message-ID: <52947CCA.2010400@ti.com>
-Date: Tue, 26 Nov 2013 12:49:46 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756133Ab3KZKwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:52:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60894 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830Ab3KZKwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:52:07 -0500
+Date: Tue, 26 Nov 2013 11:51:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer@tamir.org.il>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 6/7] sched: Clean up preempt_enable_no_resched() abuse
+In-Reply-To: <52944A9A.6090906@linux.intel.com>
+Message-ID: <alpine.DEB.2.02.1311261117100.30673@ionos.tec.linutronix.de>
+References: <20131120160450.072555619@infradead.org> <20131120162736.691879744@infradead.org> <528CF94E.8020300@linux.intel.com> <20131121101018.GX10022@twins.programming.kicks-ass.net> <528E09F9.9030501@linux.intel.com> <20131121133936.GF10022@twins.programming.kicks-ass.net>
+ <528F0000.7000505@linux.intel.com> <20131122113044.GL10022@twins.programming.kicks-ass.net> <52944A9A.6090906@linux.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/12] mtd: nand: davinci: adjust DT properties to MTD
- generic
-References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-7-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D20@DNCE04.ent.ti.com> <529447A7.1050605@ti.com> <52947832.3080309@ti.com>
-In-Reply-To: <52947832.3080309@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 12:30 PM, Grygorii Strashko wrote:
-> On 11/26/2013 09:03 AM, Sekhar Nori wrote:
->> On Monday 11 November 2013 10:31 PM, Khoronzhuk, Ivan wrote:
->>> The properties davinci-ecc-mode, davinci-nand-use-bbt, davinci-nand-buswidth
->>> are MTD generic. Correct names for them are: nand-ecc-mode, nand-on-flash-bbt,
->>> nand-bus-width accordingly. So rename them in dts and documentation.
->>>
->>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> ---
->>>    .../devicetree/bindings/mtd/davinci-nand.txt       |   25 ++++++++++++++++----
->>>    drivers/mtd/nand/davinci_nand.c                    |   11 ++++++---
->>>    2 files changed, 28 insertions(+), 8 deletions(-)
->>>
->>> diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
->>> index d2a3fc0..befaa5b 100644
->>> --- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
->>> +++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
->>> @@ -37,7 +37,7 @@ Recommended properties :
->>>    - ti,davinci-mask-chipsel:     mask for chipselect address. Needed to mask
->>>                                   addresses for given chipselect.
->>>
->>> -- ti,davinci-ecc-mode:         operation mode of the NAND ecc mode. ECC mode
->>> +- nand-ecc-mode:               operation mode of the NAND ecc mode. ECC mode
->>>                                   valid values for davinci driver:
->>>                                   - "none"
->>>                                   - "soft"
->>> @@ -45,10 +45,25 @@ Recommended properties :
->>>
->>>    - ti,davinci-ecc-bits:         used ECC bits, currently supported 1 or 4.
->>>
->>> -- ti,davinci-nand-buswidth:    buswidth 8 or 16.
->>
->> Shouldn't we keep the documentation for existing bindings while just
->> marking them as deprecated?
->
-> I haven't found any requirements about this in doc.
-> It's done in both way in other drivers - some keep properties in bindings
-> documentation and some are not.
->
-> Regards,
-> -grygorii
->
+On Tue, 26 Nov 2013, Eliezer Tamir wrote:
 
-For me this is not needed, but for example from mtd:
-Documentation/devicetree/bindings/mtd/gpmc-nand.txt
-,it contains deprecated properties, like a lot of others.
+> On 22/11/2013 13:30, Peter Zijlstra wrote:
+> > On Fri, Nov 22, 2013 at 08:56:00AM +0200, Eliezer Tamir wrote:
+> >> On 21/11/2013 15:39, Peter Zijlstra wrote:
+> >>> On Thu, Nov 21, 2013 at 03:26:17PM +0200, Eliezer Tamir wrote:
+> > 
+> > Please use local_clock(), yes its slightly more expensive, but I doubt
+> > you can actually measure the effects on sane hardware.
+> 
+> If we limit the discussion to sane hardware, I should mention that on
+> current Intel CPUs TSC is guaranteed to be monotonic for anything up to
+> 8 sockets. Even on slightly older HS TSC skew is very small and should
+> not be an issue for this use case.
 
-And this sad me I should remain deprecated properties.
-Anyway if we have these properties in driver we should describe them.
+> Modern sane HW does not have this issue.
 
--- 
-Regards,
-Ivan Khoronzhuk
+That's wrong to begin with. There is no such thing which qualifies as
+"sane hardware". Especially not if we are talking about timers.
+
+> The people that do busy polling typically pin tasks to cores anyway.
+
+This is completely irrelevant. If stuff falls apart if the task is not
+pinned, then you lost nevertheless.
+
+> You need cap_net_admin to use this setting.
+
+And how is that relevant? cap_net_admin does not change the fact, that
+you violate your constraints.
+
+> There is no real damage if the issue happens.
+
+You'r violating the constraints which is not fatal, but not desired
+either.
+
+> This is fast-low-latency-path so we are very sensitive to adding even
+> a small cost.
+> Linus really didn't like adding to the cost of poll/select when busy
+> polling is not being used.
+ 
+And that justifies exposing those who do not have access to "sane"
+hardware and/or did not pin their tasks to constraint violation?
+
+> Having said that, since we need to fix the timeout issue you pointed
+> out, we will test the use of local_clock() and see if it matters or
+> not.
+
+If the hardware provides an indicator that the TSC is sane to use,
+then sched_clock_stable is 1, so local_clock() will not do the slow
+update dance at all. So for "sane" hardware the overhead is minimal
+and on crappy hardware the correctness is still ensured with more
+overhead.
+
+If you are really concerned about the minimal overhead in the
+sched_clock_stable == 1 case, then you better fix that (it's doable
+with some brain) instead of hacking broken crap, based on even more
+broken assumptions, into the networking code.
+
+It's not the kernels fault, that we need to deal with
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK at all. And we have to deal with it
+no matter what, so we cannot make this undone by magic assumptions.
+
+Complain to those who forced us to do this. Hint: It's only ONE CPU
+vendor who thought that providing useless timestamps is a brilliant
+idea.
+
+Thanks,
+
+	tglx
