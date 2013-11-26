@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab3KZVHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 16:07:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35867 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932544Ab3KZVHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 16:07:32 -0500
-Message-ID: <52950D7B.304@zytor.com>
-Date: Tue, 26 Nov 2013 13:07:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Subject: copy_from_user_*() and buffer zeroing
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756647Ab3KZV2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 16:28:04 -0500
+Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:53332 "EHLO
+	dhcp-26-207.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751900Ab3KZV2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 16:28:00 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v3 03/11] PCI/MSI/pSeries: Fix wrong error code reporting
+Date: Tue, 26 Nov 2013 10:09:52 +0100
+Message-Id: <d581b747b29bec18b6c8a8ee2d55c476751fb77c.1385399393.git.agordeev@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <cover.1385399393.git.agordeev@redhat.com>
+References: <cover.1385399393.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just started looking into the horribly confused state of buffer
-zeroing for the various copy_from_user variants.  This came up after we
-did some minor tuning last week.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/powerpc/platforms/pseries/msi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-copy_from_user_inatomic() seems to be documented to not zero the buffer.
- This is definitely *NOT* true on x86-64, although it does seem to be
-true on i386 -- on x86-64, we carry along a "zerorest" flag but in all
-possible codepaths it will be set to true unless the remaining byte
-count is zero anyway.
+diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
+index 6d2f0ab..009ec73 100644
+--- a/arch/powerpc/platforms/pseries/msi.c
++++ b/arch/powerpc/platforms/pseries/msi.c
+@@ -467,7 +467,7 @@ again:
+ 	list_for_each_entry(entry, &pdev->msi_list, list) {
+ 		hwirq = rtas_query_irq_number(pdn, i++);
+ 		if (hwirq < 0) {
+-			pr_debug("rtas_msi: error (%d) getting hwirq\n", rc);
++			pr_debug("rtas_msi: error (%d) getting hwirq\n", hwirq);
+ 			return hwirq;
+ 		}
+ 
+-- 
+1.7.7.6
 
-Furthermore, on at least x86-64, if we do an early bailout, we don't
-zero the entire buffer in the case of a hard-coded 10- or 16-byte buffer
-(why only those sizes is anybody's guess.)  See lines 71-88 of uaccess_64.h.
-
-I'd like to figure out what is the required and what is the desirable
-behavior here, and then fix the code accordingly.
-
-	-hpa
