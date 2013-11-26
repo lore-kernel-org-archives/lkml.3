@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3KZEHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:07:48 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:41901 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3KZEHp (ORCPT
+	id S1753002Ab3KZEKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:10:06 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39253 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3KZEKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:07:45 -0500
+	Mon, 25 Nov 2013 23:10:02 -0500
+Message-ID: <52941F14.2050900@gmail.com>
+Date: Tue, 26 Nov 2013 12:09:56 +0800
+From: Peng Tao <bergwolf@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=Wu13jiFggjp9FZrnB0ejODR7ix_jSby+waZwpcACLwXA@mail.gmail.com>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
- <1384841915-8264-1-git-send-email-ch.naveen@samsung.com> <CAD=FV=Wu13jiFggjp9FZrnB0ejODR7ix_jSby+waZwpcACLwXA@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Tue, 26 Nov 2013 09:37:25 +0530
-Message-ID: <CAHfPSqAT1XgA+3n_SG6R7OYPS1pruMkxE30KjCbbvR6YhDOQew@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c: s3c2410: dont need CPU_FREQ transitions for
- exynos series
-To: Doug Anderson <dianders@chromium.org>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "broonie@kernel.org" <broonie@kernel.org>, "cpgs ." <cpgs@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org,
+        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 08/16] staging/lustre/mdt: HSM coordinator agent interface
+References: <1385431510-18988-1-git-send-email-bergwolf@gmail.com> <1385431510-18988-9-git-send-email-bergwolf@gmail.com> <20131126033012.GA30128@kroah.com>
+In-Reply-To: <20131126033012.GA30128@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Doug,
-
-On 26 November 2013 05:11, Doug Anderson <dianders@chromium.org> wrote:
-> Naveen,
+On 11/26/2013 11:30 AM, Greg Kroah-Hartman wrote:
+> On Tue, Nov 26, 2013 at 10:05:02AM +0800, Peng Tao wrote:
+>> From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+>>
+>> To move data with external storage, HSM coordinator
+>> uses a Copy Tool running on a client named agent.
+>> This patch implements the interface for these agents.
 >
-> On Mon, Nov 18, 2013 at 10:18 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
->> on a fixed 66 MHz peripheral clock, and therefore is completely
->> independent of the cpu frequency.
->> Thus, registering for a CPU freq notifier is very wasteful.
->>
->> This patch modifes the code such that, i2c bus registers to
->> cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
->>
->> This change should save a bunch of cpufreq transitions calls
->> which does not apply to exynos SoCs.
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Interesting text here...
+>
+>> Lustre-change: http://review.whamcloud.com/6534
+>> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3342
+>> Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+>> Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
+>> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+>> Reviewed-by: John L. Hammond <john.hammond@intel.com>
+>> Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+>> Signed-off-by: Peng Tao <bergwolf@gmail.com>
+>> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 >> ---
->> Changes since v2:
->> None, Rebased on for-next of linux-i2c git repo.
+>>   .../lustre/lustre/include/lustre/lustre_user.h     |    6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
 >>
->> Changes since v1:
->> Use CONFIG_CPU_FREQ_S3C24XX instead of (CONFIG_CPU_FREQ & !CONFIG_EXYNOS)
->> As commented by Tomasz
+>> diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+>> index 9436166..631f026 100644
+>> --- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+>> +++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
+>> @@ -428,8 +428,8 @@ struct obd_uuid {
+>>   	char uuid[UUID_MAX];
+>>   };
 >>
->>  drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> -static inline int obd_uuid_equals(const struct obd_uuid *u1,
+>> -				  const struct obd_uuid *u2)
+>> +static inline bool obd_uuid_equals(const struct obd_uuid *u1,
+>> +				   const struct obd_uuid *u2)
+>>   {
+>>   	return strcmp((char *)u1->uuid, (char *)u2->uuid) == 0;
+>>   }
+>> @@ -446,7 +446,7 @@ static inline void obd_str2uuid(struct obd_uuid *uuid, const char *tmp)
+>>   }
+>>
+>>   /* For printf's only, make sure uuid is terminated */
+>> -static inline char *obd_uuid2str(struct obd_uuid *uuid)
+>> +static inline char *obd_uuid2str(const struct obd_uuid *uuid)
+>>   {
+>>   	if (uuid->uuid[sizeof(*uuid) - 1] != '\0') {
+>>   		/* Obviously not safe, but for printfs, no real harm done...
 >
-> Can you please spin this with comments from
-> <https://patchwork.kernel.org/patch/3235091/>?  Thanks!
-Thanks for pointing out for me
-
-To summarize, Post f023f8dd59 commit we should be using
-ARM_S3C24XX_CPUFREQ instead of ARM_S3C24XX_CPUFREQ right.
-
-Will re-spin with this changes.
+> Too bad it doesn't describe the changes made in the code at all.
 >
-> -Doug
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> How can so many people review a patch that is not the same as what it
+> says it really is?
+>
+The main part of the original commit is dropped as it only touches 
+server code. I should have modified the commit message to say what 
+exactly the patch does rather than just copying the original commit 
+message. I'll fix up. Sorry.
+
+> I'm stopping here in the series, sorry.  Please fix up and resend the
+> rest when you can.
+>
+Will do. Thanks for reviewing!
+
+Thanks,
+Tao
 
 
-
--- 
-Thanks & Regards,
-(: Nav :)
