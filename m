@@ -1,128 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab3KZCVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 21:21:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35468 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3KZCVh (ORCPT
+	id S1752098Ab3KZC0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 21:26:22 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:46439 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3KZC0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 21:21:37 -0500
-Message-ID: <529405AC.6090401@hitachi.com>
-Date: Tue, 26 Nov 2013 11:21:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 25 Nov 2013 21:26:19 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tracing: Add $cpu and $current probe-vars
-References: <20131123201543.GA22148@redhat.com> <20131125192926.GA9737@redhat.com> <20131125192952.GB9737@redhat.com>
-In-Reply-To: <20131125192952.GB9737@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <40779593.MBXsTetiKz@vostro.rjw.lan>
+References: <cover.1385374819.git.viresh.kumar@linaro.org>
+	<55cc3fbf9c553d669629e8ba98eef2b0ef33aaad.1385374822.git.viresh.kumar@linaro.org>
+	<40779593.MBXsTetiKz@vostro.rjw.lan>
+Date: Tue, 26 Nov 2013 07:56:19 +0530
+Message-ID: <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com>
+Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Kgene Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/26 4:29), Oleg Nesterov wrote:
-> The probe can dump the registers or memory, but it is not possible
-> to dump, say, current->pid. This patch adds the pseudo regs table,
-> currently it has only two methods to get current/smp_processor_id
-> but it can be trivially extended.
-> 
-> The syntax is '$cpu' and '$current', we overload FETCH_MTD_reg just
-> to avoid the new fetch method(s).
-> 
-> Test-case: 452 == offsetof(task_struct, pid), 39 == __NR_getpid,
-> 
->   # perf probe 'sys_getpid%return ret=$retval:s32 pid=+452($current):s32'
->   # perf record -e probe:sys_getpid perl -e 'syscall 39'
->   # perf --no-pager script | tail -1
-> 	perl   586 [001]   753.102549: probe:sys_getpid: \
-> 	(ffffffff81052c00 <- ffffffff8134d012) ret=586 pid=586
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_probe.c |   61 +++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 57 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 412e959..b066e9d 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -109,13 +109,14 @@ DEFINE_FETCH_##method(u64)
->  	  (FETCH_FUNC_NAME(method, string_size) == fn)) \
->  	 && (fn != NULL))
->  
-> +static unsigned long probe_get_register(struct pt_regs *, unsigned long);
-> +
->  /* Data fetch function templates */
->  #define DEFINE_FETCH_reg(type)						\
->  static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
->  					void *offset, void *dest)	\
->  {									\
-> -	*(type *)dest = (type)regs_get_register(regs,			\
-> -				(unsigned int)((unsigned long)offset));	\
-> +	*(type *)dest = (type)probe_get_register(regs, (long)offset);	\
->  }
->  DEFINE_BASIC_FETCH_FUNCS(reg)
->  /* No string on the register */
-> @@ -513,6 +514,52 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
->  	return 0;
->  }
->  
-> +static unsigned long pseudo_reg_cpu(void)
-> +{
-> +	return (unsigned long)raw_smp_processor_id();
-> +}
-> +
-> +static unsigned long pseudo_reg_current(void)
-> +{
-> +	return (unsigned long)current;
-> +}
-> +
-> +static struct {
-> +	const char *name;
-> +	unsigned long (*fetch)(void);
-> +}
-> +const pseudo_reg_table[] = {
-> +	{
-> +		.name	= "cpu",
-> +		.fetch	= pseudo_reg_cpu,
-> +	},
-> +	{
-> +		.name	= "current",
-> +		.fetch	= pseudo_reg_current,
-> +	},
-> +};
-> +
-> +#define PSEUDO_REG_OFFSET	4096	/* arbitrary value > MAX_REG_OFFSET */
-> +
-> +static unsigned long probe_get_register(struct pt_regs *regs, unsigned long offset)
-> +{
-> +	if (offset < PSEUDO_REG_OFFSET)
-> +		return regs_get_register(regs, offset);
-> +
-> +	return pseudo_reg_table[offset - PSEUDO_REG_OFFSET].fetch();
-> +}
+On 26 November 2013 04:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> @@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+>>
+>>       might_sleep();
+>>
+>> +     cpufreq_suspend();
+>> +
+>>
+>>       mutex_lock(&dpm_list_mtx);
+>>       pm_transition = state;
+>>       async_error = 0;
+>
+> Shouldn't it do cpufreq_resume() on errors?
 
+Yes and this is already done I believe. In case dpm_suspend() fails,
+dpm_resume() gets called. Isn't it?
 
-Hmm, I don't like this, since fetch_reg is the most frequently
-used fetch method, and it actually uses the offset in different
-way.
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> +void cpufreq_suspend(void)
+>> +{
+>> +     struct cpufreq_policy *policy;
+>> +
+>> +     if (!has_target())
+>> +             return;
+>> +
+>> +     pr_debug("%s: Suspending Governors\n", __func__);
+>> +
+>> +     list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+>> +             if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+>> +                     pr_err("%s: Failed to stop governor for policy: %p\n",
+>> +                                     __func__, policy);
+>
+> This appears to be racy.  Is it really racy, or just seemingly?
 
-Why don't you make another fetch function for vars?
-Perhaps, you can make fetch_retval more generic.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Why does it look racy to you? Userspace should be frozen by now,
+policy_list should be stable as well as nobody would touch it.
