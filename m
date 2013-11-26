@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758237Ab3KZW1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 17:27:31 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29666 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756818Ab3KZW1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 17:27:07 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+mzBoVtAiBGr5BQLOnFraA
-Date: Tue, 26 Nov 2013 14:27:03 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, Benoit Cousson <bcousson@baylibre.com>,
-        dt list <devicetree@vger.kernel.org>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: omap3-beagle: Fix USB host on beagle boards
- (for 3.13)
-Message-ID: <20131126222703.GQ26766@atomide.com>
-References: <1385387745-7162-1-git-send-email-rogerq@ti.com>
- <CAGo_u6ryFJvBwd=S9A-nJw+eoGguPj0jMOtgMiZ7mXXAbh4i+w@mail.gmail.com>
- <52946243.70903@ti.com>
+	id S1758291Ab3KZW3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 17:29:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36653 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754797Ab3KZW32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 17:29:28 -0500
+Message-ID: <529520AB.2020407@zytor.com>
+Date: Tue, 26 Nov 2013 14:28:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52946243.70903@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vitaly Mayatskikh <v.mayatskih@gmail.com>,
+        "Murty, Ravi" <ravi.murty@intel.com>, neilb@suse.de
+Subject: Re: copy_from_user_*() and buffer zeroing
+References: <52950D7B.304@zytor.com> <20131126135454.b5e9597a998509f1ab43cee4@linux-foundation.org>
+In-Reply-To: <20131126135454.b5e9597a998509f1ab43cee4@linux-foundation.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [131126 00:57]:
-> On 11/25/2013 05:50 PM, Nishanth Menon wrote:
-> > On Mon, Nov 25, 2013 at 7:55 AM, Roger Quadros <rogerq@ti.com> wrote:
-> >> Beagle (rev. C4) and Beagle-XM (all revs) need VAUX2 1.8V supply
-> >> for the USB PHY.
-> >>
-> >> As the generic PHY driver can't handle more than one supply
-> >> at the moment, we configure this supply to be always on.
-> >> This will cause a very small power impact if the USB host subsystem
-> >> is not in use, about 76.86 micro-W + LDO power.
-> > 
-> >>
-> >> Older Beagle boards (prior to C4) don't have VAUX2 connected anywhere,
-> >> so there won't be any functional impact on those boards other than
-> >> some additional LDO power consumption.
-> >>
-> >> Reported-by: Nishanth Menon <nm@ti.com>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> > 
-> > Tested-by: Nishanth Menon <nm@ti.com>
+On 11/26/2013 01:54 PM, Andrew Morton wrote:
 > 
-> Thanks Nishant.
+> Nine years ago:
+> 
+> commit 7079f897164cb14f616c785d3d01629fd6a97719
+> Author: mingo <mingo>
+> Date:   Fri Aug 27 17:33:18 2004 +0000
+> 
+>     [PATCH] Add a few might_sleep() checks
+>     
+>     Add a whole bunch more might_sleep() checks.  We also enable might_sleep()
+>     checking in copy_*_user().  This was non-trivial because of the "copy_*_user()
+>     in atomic regions" trick would generate false positives.  Fix that up by
+>     adding a new __copy_*_user_inatomic(), which avoids the might_sleep() check.
+>     
+>     Only i386 is supported in this patch.
+> 
+> 
+> I can't think of any reason why __copy_from_user_inatomic() should be
+> non-zeroing.  But maybe I'm missing something - this would pretty
+> easily permit uninitialised data to appear in pagecache and someone
+> surely would have noticed..
+> 
 
-Thanks, applying this into omap-for-v3.13/fixes-take4.
+Yes, and the might_sleep() check is indeed bypassed.
 
-Tony
+However, the non-zeroing bit is currently motivated by the following
+comment:
+
+/**
+ * __copy_from_user: - Copy a block of data from user space, with less
+checking.
+ * @to:   Destination address, in kernel space.
+ * @from: Source address, in user space.
+ * @n:    Number of bytes to copy.
+ *
+ * Context: User context only.  This function may sleep.
+ *
+ * Copy data from user space to kernel space.  Caller must check
+ * the specified block with access_ok() before calling this function.
+ *
+ * Returns number of bytes that could not be copied.
+ * On success, this will be zero.
+ *
+ * If some data could not be copied, this function will pad the copied
+ * data to the requested size using zero bytes.
+ *
+ * An alternate version - __copy_from_user_inatomic() - may be called from
+ * atomic context and will fail rather than sleep.  In this case the
+ * uncopied bytes will *NOT* be padded with zeros.  See fs/filemap.h
+ * for explanation of why this is needed.
+ */
+
+This comment is only present in the 32-bit code.  fs/filemap.h of course
+no longer exists, however, the original commit seems to be
+01408c4939479ec46c15aa7ef6e2406be50eeeca which puts a comment in the
+(now defunct mm/filemap.h).
+
+I have to say I don't follow the explanation in that patch.  It seems
+like if you're concurrently reading a buffer being written you should
+expect to get any kind of mismash...
+
+Neil, is this still an issue?
+
+	-hpa
+
+
+
+
