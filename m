@@ -1,756 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab3KZUcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 15:32:05 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:46961 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757937Ab3KZUbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 15:31:07 -0500
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <adlai@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/7] tpm: Pull all driver sysfs code into tpm-sysfs.c
-Date: Tue, 26 Nov 2013 13:30:42 -0700
-Message-Id: <1385497846-29103-3-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
-References: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1758188Ab3KZUcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 15:32:25 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21532 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754304Ab3KZUcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 15:32:21 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/YbE1iHcC44qXV7REJe97Y
+Date: Tue, 26 Nov 2013 12:32:18 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, benoit.cousson@linaro.org,
+        santosh.shilimkar@ti.com, jgchunter@gmail.com, rnayak@ti.com,
+        balbi@ti.com, Suman Anna <s-anna@ti.com>
+Subject: Re: [PATCH 1/8] ARM: OMAP: Move public portion of dmtimer.h to
+ include/linux/omap-timer.h
+Message-ID: <20131126203217.GM26766@atomide.com>
+References: <1385085414-9034-1-git-send-email-joelf@ti.com>
+ <1385085414-9034-2-git-send-email-joelf@ti.com>
+ <20131122153334.GE10023@atomide.com>
+ <52940F32.3000006@ti.com>
+ <20131126182908.GK26766@atomide.com>
+ <5294FC09.2080604@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5294FC09.2080604@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tpm core now sets up and controls all sysfs attributes, instead
-of having each driver have a unique take on it.
+* Joel Fernandes <joelf@ti.com> [131126 11:53]:
+> On 11/26/2013 12:29 PM, Tony Lindgren wrote:
+> [..]
+> >>> We can implement an irqchip and a clocksource in the dmtimer code for the
+> >>> client drivers to use, and after that we only have a couple of dmtimer
+> >>> specific functions left to export.
+> >>>
+> >>> I'm thinkging some thing like this for the public API:
+> >>>
+> >>> omap_dm_timer_request			request_irq
+> >>> omap_dm_timer_request_specific		request_irq
+> >>> omap_dm_timer_get_irq			request_irq
+> >>> omap_dm_timer_set_source		clk_set_rate
+> >>
+> >> For clk_set_rate, how would one directly access the timer node if we've hidden
+> >> it behind an irq chip abstraction?
+> >>
+> >> per your suggestion, one would have something like:
+> >>
+> >> dsp {
+> >>     interrupt-parent = <&timer1>;
+> >> }
+> >>
+> >> so how do you clk_set_rate rate something like this given the dsp node?
+> > 
+> > All you have to do is implement a clocksource driver in dmtimer.c code.
+> >  
+> >> If the suggestion is to get the timer1 node from the interrupt-parent property,
+> >> if I may say- that's a bit ugly because now you're breaking the irq chip
+> >> abstraction just to access the timer node..
+> > 
+> > Hmm sorry I don't follow you here.
+> 
+> I assumed above that you were suggesting implementing interrupt chaining like
+> gpio-omap driver.
+> 
+> Can you give an example workflow to explain your suggestion?
+> 
+> I'll tell you how I understand what you were suggesting and then you can correct
+> me, and maybe we can meet somewhere:
+> 
+> Typically *without* irqchip or chaining what you suggested, we would  have
+> something like (purely an example):
+> dsp {
+>     timer = <&timer1>;
+> }
+> 
+> There is an API:
+> omap_dm_timer *omap_dm_timer_request_by_node(struct device_node *np); that one
+> would use.
+> 
+> Now moving to your suggestion, the dts would look like:
+> dsp {
+>     interrupt-parrent = <&timer1>;
+>     interrupts = <1>;
+> }
 
-All drivers now now have a uniform set of attributes, and no sysfs
-related entry points are exported from the tpm core module.
+Yes something like that.
+ 
+> Naturally some APIs will not fit into the IRQ framework, so these subset of
+> dmtimer API may need to be exposed as you pointed. To use the API, the timer has
+> to first be retrieved from interrupt-parent property of "dsp" here to get a
+> device_node, and then the timer has to be requested and subset API used on it.
+> This is "hack" that's not acceptable according to me...
 
-This also uses the new method used to declare sysfs attributes
-with DEVICE_ATTR_RO and 'struct attribute *'
+Well it's really the same story with the GPIO framework if you follow the
+request_irq analogy for a GPIO pin. You may still need to configure some things
+manually that don't fit into the IRQ framework using let's say pinctrl framework.
+Sure some of that can be automated eventually for GPIO and also for hardware
+timers when we eventually have some generic hardware timer framework,
+but the request_irq and clock_set_rate parts will stay valid.
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/tpm-interface.c    |  4 +-
- drivers/char/tpm/tpm-sysfs.c        | 99 +++++++++++++++++++++++++------------
- drivers/char/tpm/tpm.h              | 24 +--------
- drivers/char/tpm/tpm_atmel.c        | 16 ------
- drivers/char/tpm/tpm_i2c_atmel.c    | 30 -----------
- drivers/char/tpm/tpm_i2c_infineon.c | 30 -----------
- drivers/char/tpm/tpm_i2c_nuvoton.c  | 30 -----------
- drivers/char/tpm/tpm_i2c_stm_st33.c | 25 ----------
- drivers/char/tpm/tpm_ibmvtpm.c      | 28 -----------
- drivers/char/tpm/tpm_infineon.c     | 16 ------
- drivers/char/tpm/tpm_nsc.c          | 16 ------
- drivers/char/tpm/tpm_tis.c          | 30 -----------
- drivers/char/tpm/xen-tpmfront.c     | 31 ------------
- 13 files changed, 72 insertions(+), 307 deletions(-)
+Regards,
 
-v3 changes:
-- This is the 2nd half of the split patch
-- Explain why the function names changesd [adlai]
-- Spell Rsearch properly [adlai]
-- Remove some minor unnecessary white space changes
-
-Once both are applied together the result is identical to the v2 version
-
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 9cf2f51..f1eedc3 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -879,7 +879,7 @@ void tpm_remove_hardware(struct device *dev)
- 	synchronize_rcu();
- 
- 	tpm_dev_del_device(chip);
--	sysfs_remove_group(&dev->kobj, chip->vendor.attr_group);
-+	tpm_sysfs_del_device(chip);
- 	tpm_remove_ppi(&dev->kobj);
- 	tpm_bios_log_teardown(chip->bios_dir);
- 
-@@ -1096,7 +1096,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
- 	if (tpm_dev_add_device(chip))
- 		goto put_device;
- 
--	if (sysfs_create_group(&dev->kobj, chip->vendor.attr_group))
-+	if (tpm_sysfs_add_device(chip))
- 		goto del_misc;
- 
- 	if (tpm_add_ppi(&dev->kobj))
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 310d960..506a07b 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -6,6 +6,9 @@
-  * Reiner Sailer <sailer@watson.ibm.com>
-  * Kylene Hall <kjhall@us.ibm.com>
-  *
-+ * Copyright (C) 2013 Obsidian Research Corp
-+ * Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-+ *
-  * sysfs filesystem inspection interface to the TPM
-  *
-  * This program is free software; you can redistribute it and/or
-@@ -43,9 +46,8 @@ static struct tpm_input_header tpm_readpubek_header = {
- 	.length = cpu_to_be32(30),
- 	.ordinal = TPM_ORD_READPUBEK
- };
--
--ssize_t tpm_show_pubek(struct device *dev, struct device_attribute *attr,
--		       char *buf)
-+static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
- {
- 	u8 *data;
- 	struct tpm_cmd_t tpm_cmd;
-@@ -99,10 +101,10 @@ out:
- 	rc = str - buf;
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(tpm_show_pubek);
-+static DEVICE_ATTR_RO(pubek);
- 
--ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
--		      char *buf)
-+static ssize_t pcrs_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	cap_t cap;
- 	u8 digest[TPM_DIGEST_SIZE];
-@@ -128,10 +130,10 @@ ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
- 	}
- 	return str - buf;
- }
--EXPORT_SYMBOL_GPL(tpm_show_pcrs);
-+static DEVICE_ATTR_RO(pcrs);
- 
--ssize_t tpm_show_enabled(struct device *dev, struct device_attribute *attr,
--			char *buf)
-+static ssize_t enabled_show(struct device *dev, struct device_attribute *attr,
-+		     char *buf)
- {
- 	cap_t cap;
- 	ssize_t rc;
-@@ -144,10 +146,10 @@ ssize_t tpm_show_enabled(struct device *dev, struct device_attribute *attr,
- 	rc = sprintf(buf, "%d\n", !cap.perm_flags.disable);
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(tpm_show_enabled);
-+static DEVICE_ATTR_RO(enabled);
- 
--ssize_t tpm_show_active(struct device *dev, struct device_attribute *attr,
--			char *buf)
-+ssize_t active_show(struct device *dev, struct device_attribute *attr,
-+		    char *buf)
- {
- 	cap_t cap;
- 	ssize_t rc;
-@@ -160,10 +162,10 @@ ssize_t tpm_show_active(struct device *dev, struct device_attribute *attr,
- 	rc = sprintf(buf, "%d\n", !cap.perm_flags.deactivated);
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(tpm_show_active);
-+static DEVICE_ATTR_RO(active);
- 
--ssize_t tpm_show_owned(struct device *dev, struct device_attribute *attr,
--			char *buf)
-+static ssize_t owned_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
- {
- 	cap_t cap;
- 	ssize_t rc;
-@@ -176,10 +178,10 @@ ssize_t tpm_show_owned(struct device *dev, struct device_attribute *attr,
- 	rc = sprintf(buf, "%d\n", cap.owned);
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(tpm_show_owned);
-+static DEVICE_ATTR_RO(owned);
- 
--ssize_t tpm_show_temp_deactivated(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t temp_deactivated_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
- {
- 	cap_t cap;
- 	ssize_t rc;
-@@ -192,10 +194,10 @@ ssize_t tpm_show_temp_deactivated(struct device *dev,
- 	rc = sprintf(buf, "%d\n", cap.stclear_flags.deactivated);
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(tpm_show_temp_deactivated);
-+static DEVICE_ATTR_RO(temp_deactivated);
- 
--ssize_t tpm_show_caps(struct device *dev, struct device_attribute *attr,
--		      char *buf)
-+static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	cap_t cap;
- 	ssize_t rc;
-@@ -234,10 +236,10 @@ ssize_t tpm_show_caps(struct device *dev, struct device_attribute *attr,
- 
- 	return str - buf;
- }
--EXPORT_SYMBOL_GPL(tpm_show_caps);
-+static DEVICE_ATTR_RO(caps);
- 
--ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
--			const char *buf, size_t count)
-+static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
-+			    const char *buf, size_t count)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 	if (chip == NULL)
-@@ -246,10 +248,10 @@ ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
- 	chip->vendor.cancel(chip);
- 	return count;
- }
--EXPORT_SYMBOL_GPL(tpm_store_cancel);
-+static DEVICE_ATTR_WO(cancel);
- 
--ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
--			  char *buf)
-+static ssize_t durations_show(struct device *dev, struct device_attribute *attr,
-+			      char *buf)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
-@@ -263,10 +265,10 @@ ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
- 		       chip->vendor.duration_adjusted
- 		       ? "adjusted" : "original");
- }
--EXPORT_SYMBOL_GPL(tpm_show_durations);
-+static DEVICE_ATTR_RO(durations);
- 
--ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
--			  char *buf)
-+static ssize_t timeouts_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 
-@@ -278,4 +280,39 @@ ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
- 		       chip->vendor.timeout_adjusted
- 		       ? "adjusted" : "original");
- }
--EXPORT_SYMBOL_GPL(tpm_show_timeouts);
-+static DEVICE_ATTR_RO(timeouts);
-+
-+static struct attribute *tpm_dev_attrs[] = {
-+	&dev_attr_pubek.attr,
-+	&dev_attr_pcrs.attr,
-+	&dev_attr_enabled.attr,
-+	&dev_attr_active.attr,
-+	&dev_attr_owned.attr,
-+	&dev_attr_temp_deactivated.attr,
-+	&dev_attr_caps.attr,
-+	&dev_attr_cancel.attr,
-+	&dev_attr_durations.attr,
-+	&dev_attr_timeouts.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group tpm_dev_group = {
-+	.attrs = tpm_dev_attrs,
-+};
-+
-+int tpm_sysfs_add_device(struct tpm_chip *chip)
-+{
-+	int err;
-+	err = sysfs_create_group(&chip->dev->kobj,
-+				 &tpm_dev_group);
-+
-+	if (err)
-+		dev_err(chip->dev,
-+			"failed to create sysfs attributes, %d\n", err);
-+	return err;
-+}
-+
-+void tpm_sysfs_del_device(struct tpm_chip *chip)
-+{
-+	sysfs_remove_group(&chip->dev->kobj, &tpm_dev_group);
-+}
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 41b1480..14ba162 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -61,27 +61,6 @@ enum tpm_duration {
- #define TPM_ERR_INVALID_POSTINIT 38
- 
- #define TPM_HEADER_SIZE		10
--extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_show_pcrs(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_show_caps(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_store_cancel(struct device *, struct device_attribute *attr,
--				const char *, size_t);
--extern ssize_t tpm_show_enabled(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_show_active(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_show_owned(struct device *, struct device_attribute *attr,
--				char *);
--extern ssize_t tpm_show_temp_deactivated(struct device *,
--					 struct device_attribute *attr, char *);
--extern ssize_t tpm_show_durations(struct device *,
--				  struct device_attribute *attr, char *);
--extern ssize_t tpm_show_timeouts(struct device *,
--				 struct device_attribute *attr, char *);
--
- struct tpm_chip;
- 
- struct tpm_vendor_specific {
-@@ -103,7 +82,6 @@ struct tpm_vendor_specific {
- 	u8 (*status) (struct tpm_chip *);
- 	void (*release) (struct device *);
- 	struct miscdevice miscdev;
--	struct attribute_group *attr_group;
- 	struct list_head list;
- 	int locality;
- 	unsigned long timeout_a, timeout_b, timeout_c, timeout_d; /* jiffies */
-@@ -368,6 +346,8 @@ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
- 
- int tpm_dev_add_device(struct tpm_chip *chip);
- void tpm_dev_del_device(struct tpm_chip *chip);
-+int tpm_sysfs_add_device(struct tpm_chip *chip);
-+void tpm_sysfs_del_device(struct tpm_chip *chip);
- 
- int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
- 
-diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
-index 9692e2f..7e665d0 100644
---- a/drivers/char/tpm/tpm_atmel.c
-+++ b/drivers/char/tpm/tpm_atmel.c
-@@ -121,21 +121,6 @@ static bool tpm_atml_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == ATML_STATUS_READY);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR |S_IWGRP, NULL, tpm_store_cancel);
--
--static struct attribute* atmel_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	NULL,
--};
--
--static struct attribute_group atmel_attr_grp = { .attrs = atmel_attrs };
--
- static const struct tpm_vendor_specific tpm_atmel = {
- 	.recv = tpm_atml_recv,
- 	.send = tpm_atml_send,
-@@ -144,7 +129,6 @@ static const struct tpm_vendor_specific tpm_atmel = {
- 	.req_complete_mask = ATML_STATUS_BUSY | ATML_STATUS_DATA_AVAIL,
- 	.req_complete_val = ATML_STATUS_DATA_AVAIL,
- 	.req_canceled = tpm_atml_req_canceled,
--	.attr_group = &atmel_attr_grp,
- };
- 
- static struct platform_device *pdev;
-diff --git a/drivers/char/tpm/tpm_i2c_atmel.c b/drivers/char/tpm/tpm_i2c_atmel.c
-index f45312d..5b32f5f 100644
---- a/drivers/char/tpm/tpm_i2c_atmel.c
-+++ b/drivers/char/tpm/tpm_i2c_atmel.c
-@@ -135,35 +135,6 @@ static u8 i2c_atmel_read_status(struct tpm_chip *chip)
- 	return ATMEL_STS_OK;
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *i2c_atmel_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr,
--	NULL,
--};
--
--static struct attribute_group i2c_atmel_attr_grp = {
--	.attrs = i2c_atmel_attrs
--};
--
- static bool i2c_atmel_req_canceled(struct tpm_chip *chip, u8 status)
- {
- 	return 0;
-@@ -177,7 +148,6 @@ static const struct tpm_vendor_specific i2c_atmel = {
- 	.req_complete_mask = ATMEL_STS_OK,
- 	.req_complete_val = ATMEL_STS_OK,
- 	.req_canceled = i2c_atmel_req_canceled,
--	.attr_group = &i2c_atmel_attr_grp,
- };
- 
- static int i2c_atmel_probe(struct i2c_client *client,
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index c1ba7fa..ac1218f 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -566,35 +566,6 @@ static bool tpm_tis_i2c_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == TPM_STS_COMMAND_READY);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *tis_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr,
--	NULL,
--};
--
--static struct attribute_group tis_attr_grp = {
--	.attrs = tis_attrs
--};
--
- static struct tpm_vendor_specific tpm_tis_i2c = {
- 	.status = tpm_tis_i2c_status,
- 	.recv = tpm_tis_i2c_recv,
-@@ -603,7 +574,6 @@ static struct tpm_vendor_specific tpm_tis_i2c = {
- 	.req_complete_mask = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_complete_val = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_canceled = tpm_tis_i2c_req_canceled,
--	.attr_group = &tis_attr_grp,
- };
- 
- static int tpm_tis_i2c_init(struct device *dev)
-diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
-index 3766fe7..5cb9670 100644
---- a/drivers/char/tpm/tpm_i2c_nuvoton.c
-+++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
-@@ -456,35 +456,6 @@ static bool i2c_nuvoton_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == TPM_STS_COMMAND_READY);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *i2c_nuvoton_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr,
--	NULL,
--};
--
--static struct attribute_group i2c_nuvoton_attr_grp = {
--	.attrs = i2c_nuvoton_attrs
--};
--
- static const struct tpm_vendor_specific tpm_i2c = {
- 	.status = i2c_nuvoton_read_status,
- 	.recv = i2c_nuvoton_recv,
-@@ -493,7 +464,6 @@ static const struct tpm_vendor_specific tpm_i2c = {
- 	.req_complete_mask = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_complete_val = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_canceled = i2c_nuvoton_req_canceled,
--	.attr_group = &i2c_nuvoton_attr_grp,
- };
- 
- /* The only purpose for the handler is to signal to any waiting threads that
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 225e36f..ab4e7b3 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -569,30 +569,6 @@ static bool tpm_st33_i2c_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == TPM_STS_COMMAND_READY);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--
--static struct attribute *stm_tpm_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr, NULL,
--};
--
--static struct attribute_group stm_tpm_attr_grp = {
--	.attrs = stm_tpm_attrs
--};
--
- static struct tpm_vendor_specific st_i2c_tpm = {
- 	.send = tpm_stm_i2c_send,
- 	.recv = tpm_stm_i2c_recv,
-@@ -601,7 +577,6 @@ static struct tpm_vendor_specific st_i2c_tpm = {
- 	.req_complete_mask = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_complete_val = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_canceled = tpm_st33_i2c_req_canceled,
--	.attr_group = &stm_tpm_attr_grp,
- };
- 
- static int interrupts;
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-index 88a0121..6217d1d 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.c
-+++ b/drivers/char/tpm/tpm_ibmvtpm.c
-@@ -403,33 +403,6 @@ static bool tpm_ibmvtpm_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == 0);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
--		   NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *ibmvtpm_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr, NULL,
--};
--
--static struct attribute_group ibmvtpm_attr_grp = { .attrs = ibmvtpm_attrs };
--
- static const struct tpm_vendor_specific tpm_ibmvtpm = {
- 	.recv = tpm_ibmvtpm_recv,
- 	.send = tpm_ibmvtpm_send,
-@@ -438,7 +411,6 @@ static const struct tpm_vendor_specific tpm_ibmvtpm = {
- 	.req_complete_mask = 0,
- 	.req_complete_val = 0,
- 	.req_canceled = tpm_ibmvtpm_req_canceled,
--	.attr_group = &ibmvtpm_attr_grp,
- };
- 
- static const struct dev_pm_ops tpm_ibmvtpm_pm_ops = {
-diff --git a/drivers/char/tpm/tpm_infineon.c b/drivers/char/tpm/tpm_infineon.c
-index c75c10c..9525be5 100644
---- a/drivers/char/tpm/tpm_infineon.c
-+++ b/drivers/char/tpm/tpm_infineon.c
-@@ -371,21 +371,6 @@ static u8 tpm_inf_status(struct tpm_chip *chip)
- 	return tpm_data_in(STAT);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--
--static struct attribute *inf_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	NULL,
--};
--
--static struct attribute_group inf_attr_grp = {.attrs = inf_attrs };
--
- static const struct tpm_vendor_specific tpm_inf = {
- 	.recv = tpm_inf_recv,
- 	.send = tpm_inf_send,
-@@ -393,7 +378,6 @@ static const struct tpm_vendor_specific tpm_inf = {
- 	.status = tpm_inf_status,
- 	.req_complete_mask = 0,
- 	.req_complete_val = 0,
--	.attr_group = &inf_attr_grp,
- };
- 
- static const struct pnp_device_id tpm_inf_pnp_tbl[] = {
-diff --git a/drivers/char/tpm/tpm_nsc.c b/drivers/char/tpm/tpm_nsc.c
-index a4acac9..ad980be 100644
---- a/drivers/char/tpm/tpm_nsc.c
-+++ b/drivers/char/tpm/tpm_nsc.c
-@@ -232,21 +232,6 @@ static bool tpm_nsc_req_canceled(struct tpm_chip *chip, u8 status)
- 	return (status == NSC_STATUS_RDY);
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR|S_IWGRP, NULL, tpm_store_cancel);
--
--static struct attribute * nsc_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	NULL,
--};
--
--static struct attribute_group nsc_attr_grp = { .attrs = nsc_attrs };
--
- static const struct tpm_vendor_specific tpm_nsc = {
- 	.recv = tpm_nsc_recv,
- 	.send = tpm_nsc_send,
-@@ -255,7 +240,6 @@ static const struct tpm_vendor_specific tpm_nsc = {
- 	.req_complete_mask = NSC_STATUS_OBF,
- 	.req_complete_val = NSC_STATUS_OBF,
- 	.req_canceled = tpm_nsc_req_canceled,
--	.attr_group = &nsc_attr_grp,
- };
- 
- static struct platform_device *pdev = NULL;
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 46f57f5..a362ede 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -432,35 +432,6 @@ static bool tpm_tis_req_canceled(struct tpm_chip *chip, u8 status)
- 	}
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
--		   NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *tis_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr, NULL,
--};
--
--static struct attribute_group tis_attr_grp = {
--	.attrs = tis_attrs
--};
--
- static struct tpm_vendor_specific tpm_tis = {
- 	.status = tpm_tis_status,
- 	.recv = tpm_tis_recv,
-@@ -469,7 +440,6 @@ static struct tpm_vendor_specific tpm_tis = {
- 	.req_complete_mask = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_complete_val = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
- 	.req_canceled = tpm_tis_req_canceled,
--	.attr_group = &tis_attr_grp,
- };
- 
- static irqreturn_t tis_int_probe(int irq, void *dev_id)
-diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
-index e3c7c01..d4f6b521 100644
---- a/drivers/char/tpm/xen-tpmfront.c
-+++ b/drivers/char/tpm/xen-tpmfront.c
-@@ -143,36 +143,6 @@ static int vtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
- 	return length;
- }
- 
--static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
--static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
--static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
--static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
--static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
--static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
--		NULL);
--static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
--static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
--static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
--static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
--
--static struct attribute *vtpm_attrs[] = {
--	&dev_attr_pubek.attr,
--	&dev_attr_pcrs.attr,
--	&dev_attr_enabled.attr,
--	&dev_attr_active.attr,
--	&dev_attr_owned.attr,
--	&dev_attr_temp_deactivated.attr,
--	&dev_attr_caps.attr,
--	&dev_attr_cancel.attr,
--	&dev_attr_durations.attr,
--	&dev_attr_timeouts.attr,
--	NULL,
--};
--
--static struct attribute_group vtpm_attr_grp = {
--	.attrs = vtpm_attrs,
--};
--
- static const struct tpm_vendor_specific tpm_vtpm = {
- 	.status = vtpm_status,
- 	.recv = vtpm_recv,
-@@ -181,7 +151,6 @@ static const struct tpm_vendor_specific tpm_vtpm = {
- 	.req_complete_mask = VTPM_STATUS_IDLE | VTPM_STATUS_RESULT,
- 	.req_complete_val  = VTPM_STATUS_IDLE | VTPM_STATUS_RESULT,
- 	.req_canceled      = vtpm_req_canceled,
--	.attr_group = &vtpm_attr_grp,
- };
- 
- static irqreturn_t tpmif_interrupt(int dummy, void *dev_id)
--- 
-1.8.1.2
-
+Tony
