@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab3KZOHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 09:07:39 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:36130 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3KZOHi (ORCPT
+	id S1756926Ab3KZOKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 09:10:25 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54194 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3KZOKV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 09:07:38 -0500
+	Tue, 26 Nov 2013 09:10:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <1385473828-31078-2-git-send-email-k.kozlowski@samsung.com>
-References: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
-	<1385473828-31078-2-git-send-email-k.kozlowski@samsung.com>
-Date: Tue, 26 Nov 2013 15:07:36 +0100
-X-Google-Sender-Auth: jZ7RtWbzj1qwt_UFkhMCi0-sV3M
-Message-ID: <CAMuHMdWdu2TsvUwmJ4rk3xhMXn4L7MQxdTWRvt80hNttt2sAfA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] rtc: s5m: Fix register updating by adding regmap for RTC
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
+In-Reply-To: <DB0C8A206669AC40B1C4E52A8584A6F614549D77@CFWEX01.americas.cray.com>
+References: <1385431510-18988-1-git-send-email-bergwolf@gmail.com>
+ <1385431510-18988-4-git-send-email-bergwolf@gmail.com> <DB0C8A206669AC40B1C4E52A8584A6F614549D77@CFWEX01.americas.cray.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Tue, 26 Nov 2013 22:09:59 +0800
+Message-ID: <CA+a=Yy4tJg6HunpbhquwoUfuzLp7qDp3AuowuEDP9UHupPaBxA@mail.gmail.com>
+Subject: Re: [PATCH 03/16] staging/lustre/nfs: writing to new files will
+ return ENOENT
+To: Patrick Farrell <paf@cray.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
+        Cheng Shao <cheng_shao@xyratex.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 2:50 PM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> On S5M8767A registers were not properly updated and read due to usage of
-> the same regmap as the PMIC. This could be observed in various hangs,
-> e.g. in infinite loop during waiting for UDR field change.
+On Tue, Nov 26, 2013 at 2:45 PM, Patrick Farrell <paf@cray.com> wrote:
+> Peng,
 >
-> On this chip family the RTC has different I2C address than PMIC so
-> additional regmap is needed.
+> I'm sorry to say, this patch was reverted due to interoperability problems with 2.1 servers (This either a slightly later [but still broken] version of the patch we discussed recently, or the same one.).  If Greg's accepted this upstream (and it looks like he has), it'll have to be reverted.
 >
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Sorry, my bad. I forgot to remove it from my patch queue after we
+discussed last time. I'll send a reverting patch. Sorry for the noise.
+
+Thanks,
+Tao
+
+> Sorry for the trouble here!
+>
+> - Patrick
+> ________________________________________
+> From: Peng Tao [bergwolf@gmail.com]
+> Sent: Monday, November 25, 2013 8:04 PM
+> To: Greg Kroah-Hartman
+> Cc: linux-kernel@vger.kernel.org; Patrick Farrell; Cheng Shao; Peng Tao; Andreas Dilger
+> Subject: [PATCH 03/16] staging/lustre/nfs: writing to new files will return ENOENT
+>
+> From: Patrick Farrell <paf@cray.com>
+>
+> This happend with SLES11SP2 Lustre client, which in turn acts as an
+> NFS server, exporting a subtree of an Lustre fs through NFS.
+>
+> We detected that whenever we are writing to a new file using, fx,
+> 'echo blah > newfile', it will return ENOENT error. We found
+> out that this was caused by the anonymous dentry. In SLESS11SP2,
+> anonymous dentries are assigned '/' as the name, instead of an
+> empty string. When MDT handles the intent_open call, it will look
+> up the obj by the name if it is not an empty string, and thus
+> couldn't find it.
+>
+> As MDS_OPEN_BY_FID is always set on this request, we never need
+> to send the name in this request.  The fid is already available
+> and should be used in case the file has been renamed.
+>
+> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3544
+> Lustre-change: http://review.whamcloud.com/6920
+> Signed-off-by: Cheng Shao <cheng_shao@xyratex.com>
+> Signed-off-by: Patrick Farrell <paf@cray.com>
+> Reviewed-by: Bob Glossman <bob.glossman@intel.com>
+> Reviewed-by: Alexey Shvetsov <alexxy@gentoo.org>
+> Reviewed-by: Lai Siyao <lai.siyao@intel.com>
+> Reviewed-by: James Simmons <uja.ornl@gmail.com>
+> Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+> Signed-off-by: Peng Tao <bergwolf@gmail.com>
+> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 > ---
->  drivers/mfd/sec-core.c           |   14 ++++++++++++++
->  drivers/rtc/rtc-s5m.c            |    2 +-
->  include/linux/mfd/samsung/core.h |    1 +
->  3 files changed, 16 insertions(+), 1 deletion(-)
+>  drivers/staging/lustre/lustre/llite/file.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 >
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index 34c18fb..a1a413a 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -166,6 +166,11 @@ static struct regmap_config s5m8767_regmap_config = {
->         .cache_type = REGCACHE_FLAT,
->  };
+> diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+> index 82248e9..f36c5d8 100644
+> --- a/drivers/staging/lustre/lustre/llite/file.c
+> +++ b/drivers/staging/lustre/lustre/llite/file.c
+> @@ -368,8 +368,6 @@ static int ll_intent_file_open(struct file *file, void *lmm,
+>  {
+>         struct ll_sb_info *sbi = ll_i2sbi(file->f_dentry->d_inode);
+>         struct dentry *parent = file->f_dentry->d_parent;
+> -       const char *name = file->f_dentry->d_name.name;
+> -       const int len = file->f_dentry->d_name.len;
+>         struct md_op_data *op_data;
+>         struct ptlrpc_request *req;
+>         __u32 opc = LUSTRE_OPC_ANY;
+> @@ -394,8 +392,9 @@ static int ll_intent_file_open(struct file *file, void *lmm,
+>         }
 >
-> +static struct regmap_config sec_rtc_regmap_config = {
-
-const please
-
-> --- a/include/linux/mfd/samsung/core.h
-> +++ b/include/linux/mfd/samsung/core.h
-> @@ -40,6 +40,7 @@ struct sec_pmic_dev {
->         struct device *dev;
->         struct sec_platform_data *pdata;
->         struct regmap *regmap;
-> +       struct regmap *regmap_rtc;
-
-Do you think it makes sense to rename the plain "regmap" to "regmap_pmic"?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>         op_data  = ll_prep_md_op_data(NULL, parent->d_inode,
+> -                                     file->f_dentry->d_inode, name, len,
+> +                                     file->f_dentry->d_inode, NULL, 0,
+>                                       O_RDWR, opc, NULL);
+> +
+>         if (IS_ERR(op_data))
+>                 return PTR_ERR(op_data);
+>
+> --
+> 1.7.9.5
+>
