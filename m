@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3KZD33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:29:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58477 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3KZD31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:29:27 -0500
-Date: Mon, 25 Nov 2013 19:30:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 08/16] staging/lustre/mdt: HSM coordinator agent interface
-Message-ID: <20131126033012.GA30128@kroah.com>
-References: <1385431510-18988-1-git-send-email-bergwolf@gmail.com>
- <1385431510-18988-9-git-send-email-bergwolf@gmail.com>
+	id S1753757Ab3KZD3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:29:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab3KZD3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 22:29:48 -0500
+Date: Tue, 26 Nov 2013 11:29:17 +0800
+From: "chaowang@redhat.com" <chaowang@redhat.com>
+To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Cc: "bhe@redhat.com" <bhe@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "dyoung@redhat.com" <dyoung@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: /proc/vmcore mmap() failure issue
+Message-ID: <20131126032917.GA9643@dhcp16-109.nay.redhat.com>
+References: <20131113204130.GD7613@redhat.com>
+ <5284A689.70903@jp.fujitsu.com>
+ <20131114151359.GA3913@redhat.com>
+ <5285EC60.1060906@jp.fujitsu.com>
+ <20131115142617.GC6637@redhat.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971BF592@BPXM01GP.gisp.nec.co.jp>
+ <528B3585.5080606@jp.fujitsu.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971C3845@BPXM01GP.gisp.nec.co.jp>
+ <20131121071441.GA2207@dhcp16-109.nay.redhat.com>
+ <0910DD04CBD6DE4193FCF86B9C00BE971C5AAC@BPXM01GP.gisp.nec.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385431510-18988-9-git-send-email-bergwolf@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE971C5AAC@BPXM01GP.gisp.nec.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:05:02AM +0800, Peng Tao wrote:
-> From: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
+On 11/25/13 at 08:09am, Atsushi Kumagai wrote:
+> Hello WANG,
 > 
-> To move data with external storage, HSM coordinator
-> uses a Copy Tool running on a client named agent.
-> This patch implements the interface for these agents.
-
-Interesting text here...
-
-> Lustre-change: http://review.whamcloud.com/6534
-> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3342
-> Signed-off-by: JC Lafoucriere <jacques-charles.lafoucriere@cea.fr>
-> Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
-> Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-> Reviewed-by: John L. Hammond <john.hammond@intel.com>
-> Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-> Signed-off-by: Peng Tao <bergwolf@gmail.com>
-> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
-> ---
->  .../lustre/lustre/include/lustre/lustre_user.h     |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> On 2013/11/21 16:15:22, kexec <kexec-bounces@lists.infradead.org> wrote:
+> > > How about this fail back structure instead of such an extra option ?
+> > > 
+> > > Thanks
+> > > Atsushi Kumagai
+> > > 
+> > > From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> > > Date: Wed, 20 Nov 2013 14:10:19 +0900
+> > > Subject: [PATCH] Fall back to read() when mmap() fails.
+> > > 
+> > > Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+> > > ---
+> > >  makedumpfile.c | 10 +++++++++-
+> > >  1 file changed, 9 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/makedumpfile.c b/makedumpfile.c
+> > > index ca03440..f583602 100644
+> > > --- a/makedumpfile.c
+> > > +++ b/makedumpfile.c
+> > > @@ -324,7 +324,15 @@ read_from_vmcore(off_t offset, void *bufptr, unsigned long size)
+> > >  		if (!read_with_mmap(offset, bufptr, size)) {
+> > >  			ERRMSG("Can't read the dump memory(%s) with mmap().\n",
+> > >  			       info->name_memory);
+> > > -			return FALSE;
+> > > +
+> > > +			ERRMSG("This kernel might have some problems about mmap().\n");
+> > > +			ERRMSG("read() will be used instead of mmap() from now.\n");
+> > > +
+> > > +			/*
+> > > +			 * Fall back to read().
+> > > +			 */
+> > > +			info->flag_usemmap = FALSE;
+> > > +			read_from_vmcore(offset, bufptr, size);
+> > 
+> > Hi, Atsushi
+> > 
+> > I've got such a workstation too. And I confirm this patch works for me.
 > 
-> diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-> index 9436166..631f026 100644
-> --- a/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-> +++ b/drivers/staging/lustre/lustre/include/lustre/lustre_user.h
-> @@ -428,8 +428,8 @@ struct obd_uuid {
->  	char uuid[UUID_MAX];
->  };
->  
-> -static inline int obd_uuid_equals(const struct obd_uuid *u1,
-> -				  const struct obd_uuid *u2)
-> +static inline bool obd_uuid_equals(const struct obd_uuid *u1,
-> +				   const struct obd_uuid *u2)
->  {
->  	return strcmp((char *)u1->uuid, (char *)u2->uuid) == 0;
->  }
-> @@ -446,7 +446,7 @@ static inline void obd_str2uuid(struct obd_uuid *uuid, const char *tmp)
->  }
->  
->  /* For printf's only, make sure uuid is terminated */
-> -static inline char *obd_uuid2str(struct obd_uuid *uuid)
-> +static inline char *obd_uuid2str(const struct obd_uuid *uuid)
->  {
->  	if (uuid->uuid[sizeof(*uuid) - 1] != '\0') {
->  		/* Obviously not safe, but for printfs, no real harm done...
+> Thanks for your testing !
+> 
+> > However, I have a question:
+> > Why not switch to mmap() back after read()?
+> 
+> I made this patch as a general safety net, not only for the partial page
+> issue.
+> When facing unknown issues related mmap(), the kernel may have some bugs
+> and mmap() can fail for every pages. In the worst case, most all mmap()
+> will fail and try read() with error messages after every fail, but this
+> patch will prevent the chattering of the switch and so many error messages.
 
-Too bad it doesn't describe the changes made in the code at all.
+Thanks for you explanation. I agree with you. Since mmap() is error
+prone after first mmap failure, use read() instead as a fail safe makes
+much sense to me.
 
-How can so many people review a patch that is not the same as what it
-says it really is?
-
-I'm stopping here in the series, sorry.  Please fix up and resend the
-rest when you can.
-
-greg k-h
+WANG Chao
+> 
+> 
+> Thanks
+> Atsushi Kumagai
+> 
+> > Thanks
+> > WANG Chao
+> > 
+> > >  		}
+> > >  	} else {
+> > >  		if (lseek(info->fd_memory, offset, SEEK_SET) == failed) {
+> > > -- 
+> > > 1.8.0.2
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
+> > 
