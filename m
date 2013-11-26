@@ -1,137 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab3KZPTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 10:19:36 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:40135 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab3KZPTd (ORCPT
+	id S932133Ab3KZPUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 10:20:00 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52823 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757174Ab3KZPT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 10:19:33 -0500
-Message-ID: <5294BC01.7090605@gmail.com>
-Date: Tue, 26 Nov 2013 10:19:29 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Sun Paul <paulrbk@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Supporting 4 way connections in LKSCTP
-References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
-In-Reply-To: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 10:19:57 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org, rdunlap@infradead.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] treewide: Fix typo in Kconfig
+Date: Wed, 27 Nov 2013 00:19:49 +0900
+Message-Id: <1385479189-1862-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.5.rc1.28.g7061504
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 08:03 PM, Sun Paul wrote:
-> Hi
-> 
-> we have a problem on using LKSCTP to form a 4 ways multi-homing network.
-> 
-> Configuration
-> - Node-A has 2 IP addresses in different subnets, known as IP-A (eth1),
-> IP-B (eth2)
-> - Node-B has 2 IP addresses in different subnets, known as IP-X (eth1),
-> IP-Y (eth2)
-> 
+Correct spelling typo within various drivers.
 
-First of all, this is not a 4 way multi-homed network.  As far as each
-SCTP association is concerned, it has only 2 destinations to send to
-so it has only 2 ways to get there.  The fact that you have multiple
-local addresses doesn't mean that every local address can and should
-be used to connect to the remote.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ arch/arm/mach-at91/Kconfig.non_dt | 2 +-
+ arch/x86/Kconfig                  | 2 +-
+ arch/xtensa/Kconfig               | 2 +-
+ drivers/gpu/drm/i915/Kconfig      | 2 +-
+ drivers/i2c/busses/Kconfig        | 2 +-
+ drivers/isdn/mISDN/Kconfig        | 2 +-
+ drivers/scsi/Kconfig              | 4 ++--
+ drivers/xen/Kconfig               | 2 +-
+ net/atm/Kconfig                   | 2 +-
+ net/netfilter/ipset/Kconfig       | 2 +-
+ 10 files changed, 11 insertions(+), 11 deletions(-)
 
-> the four way paths are shown below.
-> 1. IP-A (11.1.1.1) to IP-X (11.1.1.11)
-> 2. IP-B (12.1.1.1) to IP-Y (12.1.1.11)
-> 3. IP-A (11.1.1.1) to IP-Y (12.1.1.11)
-> 4. IP-B (12.1.1.1) to IP-X (11.1.1.11)
-
-No, actually you only have 2 paths:  one to IPX and one to IP-Y.
-Which source address you choose is based on routing policy
-decisions and is outside the scope of SCTP.
-
-> 
-> the HB/HB_ACK is normal for the paths " IP-A to IP-X" and "IP-B to
-> IP-Y", but it is not correct for the rest of two.
-
-Right, because linux is using a host addressing model, not an interface
-addressing model.  SCTP stack simply finds the best source address
-that can be used to reach IP-X and it happens to be IP-A.  So that
-is what it is going to use.
-
-The above explains why you are seeing what you describe below.
-
-In the end, linux SCTP implementation determines paths solely based
-on the destination address.
-
--vlad
-
-> 
-> First of all, we are using iproute2 to form 2 table such that when
-> IP-B arrives on IP-X, it will know how to route back to IP-B on the
-> same interface, i.e (eth1). Same logic for the path "IP-A to IP-X".
-> 
-> What we observed here is that when 12.1.1.1 sends INIT to 11.1.1.11,
-> LKSCTP will send back the INIT_ACK to 12.1.1.1 using 12.1.1.11 but not
-> using the IP 11.1.1.11.
-> 
-> The above operation makes the subsequence HB/HB_ACK in using wrong IP address.
-> 
-> TCP trace on eth1
-> 18:02:41.058640 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
-> [init tag: 19933036] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
-> 18:02:41.061634 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
-> 18:02:41.062642 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:41.062846 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-> 18:02:41.361811 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-> 18:02:41.661791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-> 18:02:41.961791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-> 
-> TCP trace on eth2
-> 18:02:41.058755 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
-> [init tag: 424726157] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
-> 3340756356]
-> 18:02:41.061696 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
-> 18:02:41.062663 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-> 18:02:41.062791 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:41.361777 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:41.661772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:41.961772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:42.161771 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:42.461770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 18:02:42.675770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-> 
-> 
-> If we are using single homing, there is no problem on the SCTP
-> communication. Below is the TCP trace on eth1 using sctp_test
-> 
-> 18:09:55.356727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
-> [init tag: 32516609] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
-> 18:09:55.356811 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
-> [init tag: 3168861995] [rwnd: 131072] [OS: 10] [MIS: 16] [init TSN:
-> 1877695021]
-> 18:09:55.357727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
-> 18:09:55.357788 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
-> 18:09:55.358724 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-> 18:09:55.358740 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-> 18:09:55.379715 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [DATA]
-> (B)(E) [TSN: 0] [SID: 0] [SSEQ 0] [PPID 0x3]
-> 18:09:55.379735 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [SACK]
-> [cum ack 0] [a_rwnd 131064] [#gap acks 0] [#dup tsns 0]
-> 18:09:55.657716 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-> 18:09:55.657732 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-> 
-> From the observations, it seems that the LKSCTP library is not able to
-> use the original local address when multi-homing is being used. Is
-> there anyway can be resolved it?
-> 
-> Thanks
-> 
-> PS
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/arch/arm/mach-at91/Kconfig.non_dt b/arch/arm/mach-at91/Kconfig.non_dt
+index ca900be..0363dba 100644
+--- a/arch/arm/mach-at91/Kconfig.non_dt
++++ b/arch/arm/mach-at91/Kconfig.non_dt
+@@ -241,7 +241,7 @@ config MACH_PCONTROL_G20
+ 	bool "PControl G20 CPU module"
+ 	help
+ 	  Select this if you are using taskit's Stamp9G20 CPU module on this
+-	  carrier board, beeing the decentralized unit of a building automation
++	  carrier board, being the decentralized unit of a building automation
+ 	  system; featuring nvram, eth-switch, iso-rs485, display, io
+ 
+ config MACH_GSIA18S
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index dfa6aaf..6e8f07a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -952,7 +952,7 @@ config X86_ANCIENT_MCE
+ 	depends on X86_32 && X86_MCE
+ 	---help---
+ 	  Include support for machine check handling on old Pentium 5 or WinChip
+-	  systems. These typically need to be enabled explicitely on the command
++	  systems. These typically need to be enabled explicitly on the command
+ 	  line.
+ 
+ config X86_MCE_THRESHOLD
+diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
+index 70a160b..49c0bd0 100644
+--- a/arch/xtensa/Kconfig
++++ b/arch/xtensa/Kconfig
+@@ -117,7 +117,7 @@ config HAVE_SMP
+ 	  the CPU core definition and currently needs to be selected manually.
+ 
+ 	  Multiprocessor support in implemented with external cache and
+-	  interrupt controlers.
++	  interrupt controllers.
+ 
+ 	  The MX interrupt distributer adds Interprocessor Interrupts
+ 	  and causes the IRQ numbers to be increased by 4 for devices
+diff --git a/drivers/gpu/drm/i915/Kconfig b/drivers/gpu/drm/i915/Kconfig
+index 6199d0b..7ca35ec 100644
+--- a/drivers/gpu/drm/i915/Kconfig
++++ b/drivers/gpu/drm/i915/Kconfig
+@@ -43,7 +43,7 @@ config DRM_I915_KMS
+ 	  like intelfb.
+ 
+ config DRM_I915_FBDEV
+-	bool "Enable legacy fbdev support for the modesettting intel driver"
++	bool "Enable legacy fbdev support for the modesetting intel driver"
+ 	depends on DRM_I915
+ 	select DRM_KMS_FB_HELPER
+ 	select FB_CFB_FILLRECT
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 3b26129..8531b1d 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -354,7 +354,7 @@ config I2C_BCM_KONA
+ 	  If you say yes to this option, support will be included for the
+ 	  I2C interface on the Broadcom Kona family of processors.
+ 
+-	  If you do not need KONA I2C inteface, say N.
++	  If you do not need KONA I2C interface, say N.
+ 
+ config I2C_BLACKFIN_TWI
+ 	tristate "Blackfin TWI I2C support"
+diff --git a/drivers/isdn/mISDN/Kconfig b/drivers/isdn/mISDN/Kconfig
+index 1747a02..c0730d5 100644
+--- a/drivers/isdn/mISDN/Kconfig
++++ b/drivers/isdn/mISDN/Kconfig
+@@ -17,7 +17,7 @@ config MISDN_DSP
+ 
+ 	  This module may be used for special applications that require
+ 	  cross connecting of bchannels, conferencing, dtmf decoding,
+-	  echo cancelation, tone generation, and Blowfish encryption and
++	  echo cancellation, tone generation, and Blowfish encryption and
+ 	  decryption. It may use hardware features if available.
+ 
+ 	  E.g. it is required for PBX4Linux. Go to http://isdn.eversberg.eu
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index fe25677..a2d61d0 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -204,9 +204,9 @@ config SCSI_MULTI_LUN
+ 	  Some devices support more than one LUN (Logical Unit Number) in order
+ 	  to allow access to several media, e.g. CD jukebox, USB card reader,
+ 	  mobile phone in mass storage mode. This option forces the kernel to
+-	  probe for all LUNs by default. This setting can be overriden by
++	  probe for all LUNs by default. This setting can be overridden by
+ 	  max_luns boot/module parameter. Note that this option does not affect
+-	  devices conforming to SCSI-3 or higher as they can explicitely report
++	  devices conforming to SCSI-3 or higher as they can explicitly report
+ 	  their number of LUNs. It is safe to say Y here unless you have one of
+ 	  those rare devices which reacts in an unexpected way when probed for
+ 	  multiple LUNs.
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index c794ea1..12ba6db 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -222,7 +222,7 @@ config XEN_ACPI_PROCESSOR
+ 
+ 	  To do that the driver parses the Power Management data and uploads
+ 	  said information to the Xen hypervisor. Then the Xen hypervisor can
+-	  select the proper Cx and Pxx states. It also registers itslef as the
++	  select the proper Cx and Pxx states. It also registers itself as the
+ 	  SMM so that other drivers (such as ACPI cpufreq scaling driver) will
+ 	  not load.
+ 
+diff --git a/net/atm/Kconfig b/net/atm/Kconfig
+index 754ea10..1e6de99 100644
+--- a/net/atm/Kconfig
++++ b/net/atm/Kconfig
+@@ -35,7 +35,7 @@ config ATM_CLIP_NO_ICMP
+ 	  cannot be reached because there is no VC to it in the kernel's
+ 	  ATMARP table. This may cause problems when ATMARP table entries are
+ 	  briefly removed during revalidation. If you say Y here, packets to
+-	  such neighbours are silently discarded instead.
++	  such neighbors are silently discarded instead.
+ 
+ config ATM_LANE
+ 	tristate "LAN Emulation (LANE) support"
+diff --git a/net/netfilter/ipset/Kconfig b/net/netfilter/ipset/Kconfig
+index a2d6263..44cd4f5 100644
+--- a/net/netfilter/ipset/Kconfig
++++ b/net/netfilter/ipset/Kconfig
+@@ -21,7 +21,7 @@ config IP_SET_MAX
+ 	  You can define here default value of the maximum number 
+ 	  of IP sets for the kernel.
+ 
+-	  The value can be overriden by the 'max_sets' module
++	  The value can be overridden by the 'max_sets' module
+ 	  parameter of the 'ip_set' module.
+ 
+ config IP_SET_BITMAP_IP
+-- 
+1.8.5.rc1.28.g7061504
 
