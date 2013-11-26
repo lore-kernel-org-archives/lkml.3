@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab3KZLDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:03:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291Ab3KZLDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:03:34 -0500
-Date: Tue, 26 Nov 2013 11:03:30 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 5/5] mm: compaction: reset scanner positions immediately
- when they meet
-Message-ID: <20131126110330.GJ5285@suse.de>
-References: <1385389570-11393-1-git-send-email-vbabka@suse.cz>
- <1385389570-11393-6-git-send-email-vbabka@suse.cz>
+	id S1756525Ab3KZLFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:05:47 -0500
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:41645 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756122Ab3KZLFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 06:05:46 -0500
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Tue, 26 Nov 2013 15:05:36 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf timechart: remove lock_depth from trace_entry
+Message-ID: <20131126110536.GC3388@stfomichev-desktop>
+References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
+ <20131022103223.GA29489@stfomichev-desktop>
+ <20131125182139.GD20168@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385389570-11393-6-git-send-email-vbabka@suse.cz>
+In-Reply-To: <20131125182139.GD20168@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 03:26:10PM +0100, Vlastimil Babka wrote:
-> Compaction used to start its migrate and free page scaners at the zone's lowest
-> and highest pfn, respectively. Later, caching was introduced to remember the
-> scanners' progress across compaction attempts so that pageblocks are not
-> re-scanned uselessly. Additionally, pageblocks where isolation failed are
-> marked to be quickly skipped when encountered again in future compactions.
-> 
-> Currently, both the reset of cached pfn's and clearing of the pageblock skip
-> information for a zone is done in __reset_isolation_suitable(). This function
-> gets called when:
->  - compaction is restarting after being deferred
->  - compact_blockskip_flush flag is set in compact_finished() when the scanners
->    meet (and not again cleared when direct compaction succeeds in allocation)
->    and kswapd acts upon this flag before going to sleep
-> 
-> This behavior is suboptimal for several reasons:
->  - when direct sync compaction is called after async compaction fails (in the
->    allocation slowpath), it will effectively do nothing, unless kswapd
->    happens to process the compact_blockskip_flush flag meanwhile. This is racy
->    and goes against the purpose of sync compaction to more thoroughly retry
->    the compaction of a zone where async compaction has failed.
->    The restart-after-deferring path cannot help here as deferring happens only
->    after the sync compaction fails. It is also done only for the preferred
->    zone, while the compaction might be done for a fallback zone.
->  - the mechanism of marking pageblock to be skipped has little value since the
->    cached pfn's are reset only together with the pageblock skip flags. This
->    effectively limits pageblock skip usage to parallel compactions.
-> 
-> This patch changes compact_finished() so that cached pfn's are reset
-> immediately when the scanners meet. Clearing pageblock skip flags is unchanged,
-> as well as the other situations where cached pfn's are reset. This allows the
-> sync-after-async compaction to retry pageblocks not marked as skipped, such as
-> blocks !MIGRATE_MOVABLE blocks that async compactions now skips without
-> marking them.
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> This makes the new tool stop processing old files, can you try the patch
+> attached instead?
+I see two downsides to your approach:
+1) with your patch I'm now required to run 'perf timechart record' and
+'perf timechart' on the same machine (otherwise, on the 'perf timechart'
+machine we may have wrong fields definitions that don't match perf.data).
+Currently, it's possible to use 'perf timechart record' on the target and do
+'perf timechart' on the host (at least I do it this way).
+2) only root can run 'perf timechart' now (because of permissions on
+/sys/kernel/debug).
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Maybe we can we make some simple version check against the perf.data file and
+just refuse to process the old one (not sure if it's possible)?
 
--- 
-Mel Gorman
-SUSE Labs
+> Its only compile tested tho.
+Ok, I'll test it if we are fine with the new limitations.
