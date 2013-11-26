@@ -1,174 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3KZIo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:44:27 -0500
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:37606 "HELO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751128Ab3KZIoZ (ORCPT
+	id S1752936Ab3KZIuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:50:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40974 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3KZIu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:44:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131125184159.GE28201@mudshark.cambridge.arm.com>
-References: <1385372753-7396-1-git-send-email-vkale@apm.com>
-	<1385372753-7396-3-git-send-email-vkale@apm.com>
-	<20131125184159.GE28201@mudshark.cambridge.arm.com>
-Date: Tue, 26 Nov 2013 14:14:24 +0530
-Message-ID: <CAPrCYkfThbf4GoPrWB=CrnY6SfnaksxiDwqgqevYXdnrH-ynjg@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] arm64: perf: add support for percpu pmu interrupt
-From: Vinayak Kale <vkale@apm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 26 Nov 2013 03:50:28 -0500
+Date: Tue, 26 Nov 2013 09:50:21 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ma, Xindong" <xindong.ma@intel.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "ccross@google.com" <ccross@google.com>,
         "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>, hpa@zytor.com
+Subject: Re: Add memory barrier when waiting on futex
+Message-ID: <20131126085021.GC789@laptop.programming.kicks-ass.net>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+ <20131125143952.GB10022@twins.programming.kicks-ass.net>
+ <3917C05D9F83184EAA45CE249FF1B1DD0252FBF3@SHSMSX103.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0252FBF3@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 12:11 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Mon, Nov 25, 2013 at 09:45:53AM +0000, Vinayak Kale wrote:
->> Add support for irq registration when pmu interrupt is percpu.
->>
->> Signed-off-by: Vinayak Kale <vkale@apm.com>
->> Signed-off-by: Tuan Phan <tphan@apm.com>
->> ---
->>  arch/arm64/kernel/perf_event.c |  108 ++++++++++++++++++++++++++++++----------
->>  1 file changed, 81 insertions(+), 27 deletions(-)
->>
->> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
->> index cea1594..a2efab3 100644
->> --- a/arch/arm64/kernel/perf_event.c
->> +++ b/arch/arm64/kernel/perf_event.c
->> @@ -22,6 +22,7 @@
->>
->>  #include <linux/bitmap.h>
->>  #include <linux/interrupt.h>
->> +#include <linux/irq.h>
->>  #include <linux/kernel.h>
->>  #include <linux/export.h>
->>  #include <linux/perf_event.h>
->> @@ -363,22 +364,55 @@ validate_group(struct perf_event *event)
->>  }
->>
->>  static void
->> +armpmu_disable_percpu_irq(void *data)
->> +{
->> +     struct arm_pmu *armpmu = data;
->> +     struct platform_device *pmu_device = armpmu->plat_device;
->> +     int irq = platform_get_irq(pmu_device, 0);
->> +
->> +     cpumask_test_and_clear_cpu(smp_processor_id(), &armpmu->active_irqs);
->> +     disable_percpu_irq(irq);
->> +}
->> +
->> +static void
->>  armpmu_release_hardware(struct arm_pmu *armpmu)
->>  {
->>       int i, irq, irqs;
->>       struct platform_device *pmu_device = armpmu->plat_device;
->>
->>       irqs = min(pmu_device->num_resources, num_possible_cpus());
->> +     if (irqs < 1)
->
-> Can you just make irqs unsigned, then do if (!irqs) instead?
+On Tue, Nov 26, 2013 at 01:07:25AM +0000, Ma, Xindong wrote:
+> [ 1038.694701] putmetho-11202   1...1 1035007289001: futex_wait: LEON, wait ==, addr:41300384, pid:11202
+> [ 1038.694716] putmetho-11202   1...1 1035007308860: futex_wait_queue_me: LEON, q->task => 11202
+> [ 1038.694731] SharedPr-11272   0...1 1035007319703: futex_wake: LEON, wake xx, addr:41300384, NULL task
 
-Okay. I will also modify already existing similar check in function
-'armpmu_reserve_hardware'.
+> From the log captured, task 11202 runs on cpu1 and wait on futex and set task to its pid in queue_me(). Then
+> task 11272 get scheduled on cpu0, it tries to wake up 11202. But the q->task set by cpu1 is not visible at first to
+> cpu0, after several instructions, it's visible to cpu0 again. So this is the problem maybe in cache or instruction out
+> of order. After adding memory barrier, the issue does not reproduced anymore.
 
->
->> +             return;
->>
->> -     for (i = 0; i < irqs; ++i) {
->> -             if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
->> -                     continue;
->> -             irq = platform_get_irq(pmu_device, i);
->> -             if (irq >= 0)
->> -                     free_irq(irq, armpmu);
->> +     irq = platform_get_irq(pmu_device, 0);
->> +     if (irq <= 0)
->> +             return;
->> +
->> +     if (irq_is_percpu(irq)) {
->> +             on_each_cpu(armpmu_disable_percpu_irq, armpmu, 1);
->> +             free_percpu_irq(irq, &cpu_hw_events);
->> +     } else {
->> +             for (i = 0; i < irqs; ++i) {
->> +                     if (!cpumask_test_and_clear_cpu(i, &armpmu->active_irqs))
->> +                             continue;
->> +                     irq = platform_get_irq(pmu_device, i);
->> +                     if (irq > 0)
->> +                             free_irq(irq, armpmu);
->> +             }
->>       }
->>  }
->>
->> +static void
->> +armpmu_enable_percpu_irq(void *data)
->> +{
->> +     struct arm_pmu *armpmu = data;
->> +     struct platform_device *pmu_device = armpmu->plat_device;
->> +     int irq = platform_get_irq(pmu_device, 0);
->> +
->> +     enable_percpu_irq(irq, 0);
->
-> IRQ_TYPE_NONE?
+So that suggests the spinlock implementation doesn't actually serialize
+proper; why would you place an extra memory barrier at the site that
+shows this and not try and fix the spinlock implementation?
 
-Did you mean to use macro instead or 0? If yes, I will modify.
+That's FAIL 1.
 
-Or, are you asking why are we using 0? For this part here is my comment:
-Inside GIC it's 'implementation specific' whether to allow
-configuration of level/edge type for PPIs.
-So maybe we should leave it to boot-loader to do such config if any
-such explicit config is needed.
-Passing 0 (=IRQ_TYPE_NONE) to 'enable_percpu_irq' ensures that kernel
-doesn't touch the existing configuration.
+Secondly, the current x86 spinlocks are correct and work for all known
+chips. This leads me to believe your chip is broken; esp. since you
+haven't specified what kind of chip you're running on (and are somewhat
+avoiding the issue).
 
-I observed that arm arch timer code also passes 0 (IRQ_TYPE_NONE) to
-'enable_percpu_irq'.
+That's FAIL 2.
 
->
->> +     cpumask_set_cpu(smp_processor_id(), &armpmu->active_irqs);
->> +}
->> +
->>  static int
->>  armpmu_reserve_hardware(struct arm_pmu *armpmu)
->>  {
->> @@ -396,34 +430,54 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
->>               return -ENODEV;
->>       }
->>
->> -     for (i = 0; i < irqs; ++i) {
->> -             err = 0;
->> -             irq = platform_get_irq(pmu_device, i);
->> -             if (irq < 0)
->> -                     continue;
->> +     irq = platform_get_irq(pmu_device, 0);
->> +     if (irq <= 0) {
->> +             pr_err("failed to get valid irq for PMU device\n");
->> +             return -ENODEV;
->> +     }
->>
->> -             /*
->> -              * If we have a single PMU interrupt that we can't shift,
->> -              * assume that we're running on a uniprocessor machine and
->> -              * continue. Otherwise, continue without this interrupt.
->> -              */
->> -             if (irq_set_affinity(irq, cpumask_of(i)) && irqs > 1) {
->> -                     pr_warning("unable to set irq affinity (irq=%d, cpu=%u)\n",
->> -                                 irq, i);
->> -                     continue;
->> -             }
->> +     if (irq_is_percpu(irq)) {
->> +             err = request_percpu_irq(irq, armpmu->handle_irq,
->> +                             "arm-pmu", &cpu_hw_events);
->
-> This is a bit of a kludge passing in the cpu_hw_events as the per-cpu token,
-> but I guess that will do for now. There is potential for something like a
-> master-aware L2 PMU which uses PPIs and expects to pass something different
-> back to the IRQ handler.
->
-> Will
+Having this information and not enriching the initial changelog with it
+to more fully explain your reasoning,
+
+that's FAIL 3.
+
+Peter A, can you please figure out wth these guys are doing?
