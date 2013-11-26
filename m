@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab3KZACH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:02:07 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:62743 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab3KZACE (ORCPT
+	id S1752266Ab3KZAId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:08:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63672 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab3KZAIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:02:04 -0500
-Message-ID: <1385424120.10637.136.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set
- MSG_SENDPAGE_NOTLAST
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, shawnlandden@gmail.com,
-        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
-        herbert@gondor.hengli.com.au, Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
-Date: Mon, 25 Nov 2013 16:02:00 -0800
-In-Reply-To: <47783210.a9ocpbYofP@sandpuppy>
-References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
-	 <1385336527-27304-1-git-send-email-richard@nod.at>
-	 <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <47783210.a9ocpbYofP@sandpuppy>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Nov 2013 19:08:30 -0500
+Date: Mon, 25 Nov 2013 16:06:08 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH v11 7/7] ARM: tegra: support Trusted Foundations by
+ default
+Message-ID: <20131126000608.GA21634@quad.lixom.net>
+References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com>
+ <1385274652-16415-8-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385274652-16415-8-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 08:42 +0100, Richard Weinberger wrote:
+On Sun, Nov 24, 2013 at 03:30:52PM +0900, Alexandre Courbot wrote:
+> Support for Trusted Foundations is light and allows the kernel to run on
+> a wider range of devices, so enable it by default.
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/configs/tegra_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
 
-> In the commit message of your patch you wrote "For all sendpage() providers, 
-> its a transparent change.". Why does AF_ALG need special handling?
-> If users have to care about MSG_SENDPAGE_NOTLAST it is no longer really an 
-> internal flag.
-
-MSG_SENDPAGE_NOTLAST is an internal (kernel) flag.
-
-Fact that I missed some MSG_MORE 'users' in the kernel was an oversight.
-
-I am not saying your patch is not needed, I am only saying it reverts
-a useful TCP optimization, and we can do better, dont we ?
+I think we want this enabled on multi_v7_defconfig too? Send a separate
+patch for that once this is merged though.
 
 
-
+-Olof
