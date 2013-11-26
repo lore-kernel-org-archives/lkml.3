@@ -1,72 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3KZQcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:32:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20634 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab3KZQcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:32:09 -0500
-Date: Tue, 26 Nov 2013 11:31:57 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-jens-3.13-take-two (bug-fixes to
- xen-blkfront)
-Message-ID: <20131126163157.GB2959@phenom.dumpdata.com>
+	id S1757437Ab3KZQc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:32:29 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52232 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757183Ab3KZQc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 11:32:26 -0500
+Message-ID: <5294CC0C.9000203@ti.com>
+Date: Tue, 26 Nov 2013 18:27:56 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Kumar Gala <galak@kernel.crashing.org>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] memory: ti-aemif: add bindings for AEMIF driver
+References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <817E4263-5E61-4471-AED0-5C97FD2B902F@kernel.crashing.org>
+In-Reply-To: <817E4263-5E61-4471-AED0-5C97FD2B902F@kernel.crashing.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/22/2013 11:04 PM, Kumar Gala wrote:
+> 
+> On Nov 20, 2013, at 9:46 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+> 
+>> Add bindings for AEMIF controller drivers/memory/ti-aemif.c
+>>
+> 
+> Binding shouldn’t normally refer to code.
+> 
+> Just saying something like:
+> 
+> Adding binging for TI Async External Memory Interface (AEMIF) controller.
+> 
+> 
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>> .../bindings/memory-controllers/ti-aemif.txt       |  198 ++++++++++++++++++++
+>> 1 file changed, 198 insertions(+)
+>> create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>> new file mode 100644
+>> index 0000000..be0c0cb
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>> @@ -0,0 +1,198 @@
+>> +* Device tree bindings for Texas instruments AEMIF controller
+>> +
+>> +Th Async External Memory Interface (EMIF16/AEMIF) controller is intended to
+> 
+> The?
+> 
+>> +provide a glue-less interface to a variety of asynchronous memory devices like
+>> +ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
+>> +can be accessed at any given time via four chip selects with 64M byte access
+>> +per chip select. Synchronous memories such as DDR1 SD RAM, SDR SDRAM
+>> +and Mobile SDR are not supported.
+>> +
+>> +Documentation:
+>> +Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+>> +OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+>> +Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>> +
+>> +Required properties:
+>> +
+>> +- compatible:		"ti,davinci-aemif"
+>> +			"ti,keystone-aemif"
+>> +			"ti,omap-L138-aemif"
+>> +
+>> +- #address-cells:	Must be 2. The first cell is the memory partition
+>> +			number. The 0 partition is for chip selects. And the
+>> +			second cell is the offset into the partition, for the 0
+>> +			partition it corresponds to chip select offset.
+>> +
+> 
+> Is the first cell just the chip select number?
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No. It's rather memory range/partition number. Now there are 2 partitions:
+- control partition which is common for all CS interfaces
+- CS-specific partition/range
+(this one can be splitted according to specific SoC requirement)
+
+As per Keystone TCI6638K2K
+ Datasheet http://www.ti.com/lit/ds/sprs836d/sprs836d.pdf:
+
+1) the memory range 0 will be from 0x30000000 size 0x10000000:
+00 3000 0000 - 00 33FF FFFF 64M EMIF16 CE0
+00 3400 0000 - 00 37FF FFFF 64M EMIF16 CE1
+00 3800 0000 - 00 3BFF FFFF 64M EMIF16 CE2
+00 3C00 0000 - 00 3FFF FFFF 64M EMIF16 CE3
+
+2) the memory range 1:
+00 2100 0A00 - 00 2100 0AFF 256 AEMIF Config
+
+And AEMIF node contains definition:
+ranges = <0 0 0x30000000 0x10000000
+	  1 0 0x21000A00 0x0000100>;
 
 
-Hey Jens,
+Child node has (nand):
+ reg = <0 0 0x4000000 (cs0)
+        - or - 0 0x4000000 0x4000000 (cs1)
+        - or - 0 0x8000000 0x4000000 (cs2)
+	- or - 0 0xC000000 0x4000000 (cs3)
+	- and -
+        1 0 0x0000100>; (for all cs)
 
-Please git pull the following branch:
+For example for cs2 child node the resulting mem range 0 will be calculated as
 
- git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.13-take-two
+from: 0x30000000 + (0 0x8000000 - 0 0)
+size: 0x4000000
 
-which has bug-fixes. It is based on todays on your 'for-3.13/drivers'
-(f7cb20f03dc6dff1b19942cf3dda6d154c86f29b "floppy: Correct documentation of driver
-options when used as a module.").
+We don't encode CS number in reg/ranges, because it will allow simply change 
+AEMIF DT definitions depending on each SoC
+(AEMIF CS memory range can be continuous as above or not, if not - additional
+range/partition can be added and child device can select the proper one).
 
-Fixes are to fix a compiler warning and a issue discovered by Coverity.
-Please pull!
+> 
+> I’m wondering if this is similar to FSL Localbus controller, see the binding:
+> 
+> bindings/powerpc/fsl/lbc.txt
 
-Thank you!
+Don't think so :) it looks similar just because of using standard bindings
+(gpmc-nand.c mvebu-devbus.txt ti-gpmc.txt and etc.)
 
-Felipe Pena (1):
-      block: xen-blkfront: Fix possible NULL ptr dereference
+> 
+>> +- #size-cells:		Must be set to 1.
+>> +
+>> +- reg:			contains offset/length value for AEMIF control registers
+>> +			space.
+>> +
+>> +- ranges:		Must be set up to reflect the memory layout for 4
+>> +			chipselects and for AEMIF control range.
+>> +
+>> +- clocks:		phandle reference to the controller clock. Required only
+>> +			if clock tree data present in device tree.
+>> +			See clock-bindings.txt
+[..]
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Tim Gardner (1):
-      xen-blkfront: Silence pfn maybe-uninitialized warning
-
- drivers/block/xen-blkfront.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQEcBAEBAgAGBQJSlMzyAAoJEFjIrFwIi8fJpygH/RtDAnILkvhIrn/s9puVJFe/
-f5KNW2lRy/kmdw1PeoUwgmWMPDcr0AZyKk5stlzxPtgWZqYrMxT7+jK5Lq1hPtFl
-hGvjwHehs1xZ1SAnhMEOmBRCgP/HLaHJrIjWoN1Gxf8A1rJxGfL/snC9oi5M/lPh
-YfKv3btEjWk2kFyQc9P1PXm6k1BGIThmpCBYV93ybtmic33Gg9jLWI0hs6Beh3Xj
-DcU2h8VfmEYtRa3/shLDHCuR2LjwIF1lfdZCU7RFYxHVyx8aYRRuQoKZbdXue7JX
-UfMDDsg+WSz9rPqkj9D+1AXe3hal1QkZtD5GvcWig21mlmWMDnoFA0dLdRnbHKk=
-=zUrD
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
+Regards,
+-grygorii
