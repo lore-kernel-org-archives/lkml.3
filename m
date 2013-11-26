@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab3KZM5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:57:41 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:33409 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab3KZM5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:57:37 -0500
-Message-ID: <52949AAF.4040600@linaro.org>
-Date: Tue, 26 Nov 2013 13:57:19 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753367Ab3KZM5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:57:49 -0500
+Received: from sauhun.de ([89.238.76.85]:41377 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752407Ab3KZM5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:57:46 -0500
+Date: Tue, 26 Nov 2013 13:57:40 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Florian Meier <florian.meier@koalo.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] I2C: BCM2835: Linking platform nodes to adapter nodes
+Message-ID: <20131126125739.GG7427@katana>
+References: <529303EE.4080606@koalo.de>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
-        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
-CC: james.hogan@imgtec.com, jason.low2@hp.com, gregkh@linuxfoundation.org,
-        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
-References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org> <528F4A78.1080505@linaro.org> <52918ECC.6080707@linaro.org> <529495AF.4020600@linaro.org> <52949972.6090101@linaro.org>
-In-Reply-To: <52949972.6090101@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MrRUTeZlqqNo1jQ9"
+Content-Disposition: inline
+In-Reply-To: <529303EE.4080606@koalo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 01:52 PM, Alex Shi wrote:
-> On 11/26/2013 08:35 PM, Daniel Lezcano wrote:
->>
->>
->> Here the new results with your patchset + patch #5
->>
->> I have some issues with perf for the moment, so I will fix it up and
->> send the result after.
->
-> Thanks a lot, Daniel!
-> The result is pretty good!, thread/pipe performance has a slight little
-> drop, but processes performance increase about 25%!
 
-Mmh, wait. Let me double check the results, it sounds weird we have so 
-much performance increase.
+--MrRUTeZlqqNo1jQ9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>
->> 527d1511310a          / + patchset + #5
->>
->> hackbench -T -s 4096 -l 1000 -g 10 -f 40
->> 26.677                  30.308
->> 27.914             28.497
->> 28.390             30.360
->> 28.048             28.587
->> 26.344             29.513
->> 27.848             28.706
->> 28.315             30.152
->> 28.232             29.721
->> 26.549             28.766
->> 30.340             38.801
->> hackbench -p -s 4096 -l 1000 -g 10 -f 40
->> 34.522                  35.469
->> 34.545             34.966
->> 34.469             35.342
->> 34.115             35.286
->> 34.457             35.592
->> 34.561             35.314
->> 34.459             35.316
->> 34.054             35.629
->> 34.532             35.149
->> 34.459             34.876
->> hackbench -P -s 4096 -l 1000 -g 10 -f 40
->> 38.938                  30.308
->> 39.363             28.497
->> 39.340             30.360
->> 38.909             28.587
->> 39.095             29.513
->> 38.869             28.706
->> 39.041             30.152
->> 38.939             29.721
->> 38.992             28.766
->> 38.947             38.801
->
->
+On Mon, Nov 25, 2013 at 09:01:50AM +0100, Florian Meier wrote:
+> In order to find I2C devices in the device tree, the platform nodes
+> have to be known by the I2C core. This requires setting the
+> dev.of_node parameter of the adapter.
+>=20
+> Signed-off-by: Florian Meier <florian.meier@koalo.de>
+
+Malformed patch, please resend.
 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+--MrRUTeZlqqNo1jQ9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSlJrDAAoJEBQN5MwUoCm27HgP/3H47gv1ZS4LdqjwRyT2APY1
+fpTQB0bvyJzexjMKFpWUoX7s+yNwnbTHe+Lo/gl9fpzytAD456DTPiYIfRAXYvck
+dgFW8+M6B8rEGRVGebqt6heDeY/ca3j70wFOggggxl6sSpSA3ourCloXQizeGjOl
+3ootYQ+g4nTa47xsqIjB6VjQnLJQxYmVtmgg7wzY0CaUlH7pal8hJNSOxgjd3nTN
+OVveem54ZlPY7oovV7by77zo0qMicxWEOwBO7jzPUrzPbDEb+/J9+YivW0d90MLa
+XnStoAPKv/uvH/HIu4oxVSy3M10VVjoVPD2u4zlJB7Csv1iA/MZB1NKZin1sWNs8
+/iWqwtFbZiiY3J2TSD1N0bpWWPY3eUQ2kGxb1C8pYjueqwHKZSVdrvRLhjpZDyLo
+Da0HHf/MYrjeN8ud+R3RnobUbuz40Z4T8ipFLxsG5liOXW2qCkqURPE0GqAmMVq0
+ot3wVRaMp7DlLMCvAZv7sYL29y8Js+ckV6FzhMU+on2MuVTds8HhXN8zvVIhbi1M
+Eq/I70eqoAo1xT3yJPcgFUi6mYmNYIiO7DuSCrMH9YeOXWWzKyw4UqqrAZIZGoqY
+o1f0WjHP4NMLw8t69QHZXY3u7lDaV4lurCwznqb2Co+3e08IotJronDnzKcHkP5U
+YHi2IS3V+hQLkiMlIB1a
+=krvV
+-----END PGP SIGNATURE-----
+
+--MrRUTeZlqqNo1jQ9--
