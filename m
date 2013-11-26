@@ -1,138 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab3KZEoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:44:32 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:52641 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3KZEoa (ORCPT
+	id S1753978Ab3KZEsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:48:50 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:33260 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3KZEsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:44:30 -0500
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH v1 2/2] USB: storage: use sg_miter_* APIs to access scsi buffer
-Date: Tue, 26 Nov 2013 12:44:13 +0800
-Message-Id: <1385441053-5810-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Nov 2013 23:48:46 -0500
+Message-ID: <529427F1.2080409@synopsys.com>
+Date: Tue, 26 Nov 2013 10:17:45 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kernel
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Noam Camus" <noamc@ezchip.com>, David Daney <david.daney@cavium.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>, Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: Preventing IPI sending races in arch code
+References: <52932BE2.5010201@synopsys.com>	 <20131125110006.GU3866@twins.programming.kicks-ass.net>	 <529334CA.1000401@synopsys.com>	 <20131125122726.GZ10022@twins.programming.kicks-ass.net>	 <C2D7FE5348E1B147BCA15975FBA2307515715C@IN01WEMBXA.internal.synopsys.com> <1385409103.9218.15.camel@pasglop>
+In-Reply-To: <1385409103.9218.15.camel@pasglop>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have sg_miter_* APIs for accessing scsi sg buffer, so
-use them to make code clean and bug free.
+On 11/26/2013 01:21 AM, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-11-25 at 13:35 +0000, Vineet Gupta wrote:
+> 
+>> Before reading ur email I was coding something like below:
+>>
+>> void arch_send_ipi(int cpu, int type)
+>> {
+>>   u32 *pending_ptr = per_cpu_ptr(ipi_bits, cpu);
+>>
+>>   while (cmpxchg(pending_ptr, 0, 1 << type) != 0)
+>> 	cpu_relax();
+>>
+>>   raise_ipi(cpu);
+>> }
+> 
+> So you would have blocked the sender while there was already
+> a pending IPI on the target ? Why ?
 
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/usb/storage/protocol.c |   80 +++++++++++++---------------------------
- 1 file changed, 26 insertions(+), 54 deletions(-)
+A simplistic (but non optimal) way to cater to the race where 2 senders try to
+send the exact same msg to same receiver. Upon first IPI, receiver "consumes" the
+msg (using xchg with 0) so the 2nd IPI seems "empty" i.e. no msg.
 
-diff --git a/drivers/usb/storage/protocol.c b/drivers/usb/storage/protocol.c
-index 5dfb4c3..f54e5fe 100644
---- a/drivers/usb/storage/protocol.c
-+++ b/drivers/usb/storage/protocol.c
-@@ -135,69 +135,41 @@ unsigned int usb_stor_access_xfer_buf(unsigned char *buffer,
- 	unsigned int buflen, struct scsi_cmnd *srb, struct scatterlist **sgptr,
- 	unsigned int *offset, enum xfer_buf_dir dir)
- {
--	unsigned int cnt;
-+	unsigned int cnt = 0;
- 	struct scatterlist *sg = *sgptr;
-+	struct sg_mapping_iter miter;
-+	unsigned int nents = scsi_sg_count(srb);
- 
--	/* We have to go through the list one entry
--	 * at a time.  Each s-g entry contains some number of pages, and
--	 * each page has to be kmap()'ed separately.  If the page is already
--	 * in kernel-addressable memory then kmap() will return its address.
--	 * If the page is not directly accessible -- such as a user buffer
--	 * located in high memory -- then kmap() will map it to a temporary
--	 * position in the kernel's virtual address space.
--	 */
--
--	if (!sg)
-+	if (sg)
-+		nents = sg_nents(sg);
-+	else
- 		sg = scsi_sglist(srb);
- 
--	/* This loop handles a single s-g list entry, which may
--	 * include multiple pages.  Find the initial page structure
--	 * and the starting offset within the page, and update
--	 * the *offset and **sgptr values for the next loop.
--	 */
--	cnt = 0;
--	while (cnt < buflen && sg) {
--		struct page *page = sg_page(sg) +
--				((sg->offset + *offset) >> PAGE_SHIFT);
--		unsigned int poff = (sg->offset + *offset) & (PAGE_SIZE-1);
--		unsigned int sglen = sg->length - *offset;
--
--		if (sglen > buflen - cnt) {
--
--			/* Transfer ends within this s-g entry */
--			sglen = buflen - cnt;
--			*offset += sglen;
--		} else {
-+	sg_miter_start(&miter, sg, nents, dir == FROM_XFER_BUF ?
-+		SG_MITER_FROM_SG: SG_MITER_TO_SG);
- 
--			/* Transfer continues to next s-g entry */
--			*offset = 0;
--			sg = sg_next(sg);
--		}
-+	if (!sg_miter_skip(&miter, *offset))
-+		return cnt;
-+
-+	while (sg_miter_next(&miter) && cnt < buflen) {
-+		unsigned int len = min(miter.length, buflen - cnt);
-+
-+		if (dir == FROM_XFER_BUF)
-+			memcpy(buffer + cnt, miter.addr, len);
-+		else
-+			memcpy(miter.addr, buffer + cnt, len);
- 
--		/* Transfer the data for all the pages in this
--			* s-g entry.  For each page: call kmap(), do the
--			* transfer, and call kunmap() immediately after. */
--		while (sglen > 0) {
--			unsigned int plen = min(sglen, (unsigned int)
--					PAGE_SIZE - poff);
--			unsigned char *ptr = kmap(page);
--
--			if (dir == TO_XFER_BUF)
--				memcpy(ptr + poff, buffer + cnt, plen);
--			else
--				memcpy(buffer + cnt, ptr + poff, plen);
--			kunmap(page);
--
--			/* Start at the beginning of the next page */
--			poff = 0;
--			++page;
--			cnt += plen;
--			sglen -= plen;
-+		if (*offset + len < miter.piter.sg->length) {
-+			*offset += len;
-+			*sgptr = miter.piter.sg;
-+		} else {
-+			*offset = 0;
-+			*sgptr = sg_next(miter.piter.sg);
- 		}
-+		cnt += len;
- 	}
--	*sgptr = sg;
-+	sg_miter_stop(&miter);
- 
--	/* Return the amount actually transferred */
- 	return cnt;
- }
- EXPORT_SYMBOL_GPL(usb_stor_access_xfer_buf);
--- 
-1.7.9.5
+
+> The optimization proposed by Peter is actually the only interesting
+> change here, without it the existing set_bit was perfectly fine.
+
+I'm not sure, see below.
+
+> Remember that set_bit is atomic.
+
+Right, but the issue per-se is not clobbering of msg holder, but from POV of
+receiver, seeming coalescing of 2 set_bit writes to msg holder.
+
+core0		core1		core2
+
+set_bit 1	
+kick IPI-2	set_bit 1	IPI-0 received
+		kick IPI-2	read+clear bit
+				IPI-1 received
+				no msg
+
+-Vineet
 
