@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3KZRWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:22:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39029 "EHLO mx1.redhat.com"
+	id S932403Ab3KZRWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 12:22:39 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44696 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757478Ab3KZRWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:22:08 -0500
-Date: Tue, 26 Nov 2013 18:23:13 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tracing: Add $cpu and $current probe-vars
-Message-ID: <20131126172313.GA14028@redhat.com>
-References: <20131123201543.GA22148@redhat.com> <20131125192926.GA9737@redhat.com> <20131125192952.GB9737@redhat.com> <529405AC.6090401@hitachi.com>
+	id S1757401Ab3KZRWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 12:22:36 -0500
+Message-ID: <5294D8AD.5030106@ti.com>
+Date: Tue, 26 Nov 2013 22:51:49 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529405AC.6090401@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 07/12] memory: davinci-aemif: introduce AEMIF driver
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-8-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D2E@DNCE04.ent.ti.com> <52944BD3.90105@ti.com> <5294B8C4.6040803@ti.com>
+In-Reply-To: <5294B8C4.6040803@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26, Masami Hiramatsu wrote:
->
-> (2013/11/26 4:29), Oleg Nesterov wrote:
-> > +#define PSEUDO_REG_OFFSET	4096	/* arbitrary value > MAX_REG_OFFSET */
-> > +
-> > +static unsigned long probe_get_register(struct pt_regs *regs, unsigned long offset)
-> > +{
-> > +	if (offset < PSEUDO_REG_OFFSET)
-> > +		return regs_get_register(regs, offset);
-> > +
-> > +	return pseudo_reg_table[offset - PSEUDO_REG_OFFSET].fetch();
-> > +}
->
->
-> Hmm, I don't like this, since fetch_reg is the most frequently
-> used fetch method, and it actually uses the offset in different
-> way.
+On 11/26/2013 8:35 PM, Santosh Shilimkar wrote:
+> On Tuesday 26 November 2013 02:20 AM, Sekhar Nori wrote:
+>> On Monday 11 November 2013 10:36 PM, Khoronzhuk, Ivan wrote:
+>>> Add new AEMIF driver for EMIF16 davinci controller. The EMIF16 module
+>>> is intended to provide a glue-less interface to a variety of
+>>> asynchronous memory devices like ASRA M, NOR and NAND memory. A total
+>>> of 256M bytes of any of these memories can be accessed at any given
+>>> time via four chip selects with 64M byte access per chip select.
+>>>
+>>> Synchronous memories such as DDR1 SD RAM, SDR SDRAM and Mobile SDR
+>>> are not supported.
+>>>
+>>> See http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>>>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+> 
+> [...]
+> 
+>>> +static int davinci_aemif_probe(struct platform_device *pdev)
+>>> +{
+>>> +       int ret  = -ENODEV, i;
+>>> +       struct resource *res;
+>>> +       struct device *dev = &pdev->dev;
+>>> +       struct device_node *np = dev->of_node;
+>>> +
+>>> +       if (np == NULL)
+>>> +               return 0;
+>>> +
+>>> +       if (aemif) {
+>>> +               dev_err(dev, "davinci_aemif driver is in use currently\n");
+>>> +               return -EBUSY;
+>>> +       }
+>>
+>> Why expressly prevent multiple AEMIF devices? Its entirely conceivable
+>> to have two memories like NAND and NOR flash connect to two different
+>> AEMIF interfaces.
+>>
+> Ivan wanted me to clarify the Keystone hardware which supports
+> 1 instance of controller with 4 CS. That allows already four
+> devices to be connected. Currently NAND and NOR are connected on it
+> and two more slots are free.
+> 
+> Since driver support what hardware is, lets not build a driver for
+> hardware which don't exist. And if at all such a support would be
+> needed in future, we can always add it.
 
-Sure, this overloads the usage of FETCH_MTD_reg/offset.
-
-And btw, yes, the naming is ugly (I mean pseudo_*). But why this
-is bad? This is cheap and simple.
-
-And,
-
-> Why don't you make another fetch function for vars?
-
-This is what I tried to avoid ;) I do not want to add another
-FETCH_MTD_. To me, this looks like unnecessary complication and
-bloat (but see below).
-
-> Perhaps, you can make fetch_retval more generic.
-
-Please look at 2/2. It kills fetch_retval because we make
-fetch_reg more generic (this patch), and this saves 300 bytes.
-
-However. I understand that this is subjective, so please ignore.
+I understand the lack of hardware part, but its common to write the
+driver such that it can handle multiple instances. Is there any gain on
+current hardware because of this check? From what I am hearing, the code
+in question wont be exercised at all. So why go all the way and add it
+in first place?
 
 Thanks,
-
-Oleg.
-
+Sekhar
