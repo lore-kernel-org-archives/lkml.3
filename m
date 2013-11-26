@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab3KZSNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35371 "EHLO
+	id S1757795Ab3KZSNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:13:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab3KZSM6 (ORCPT
+	with ESMTP id S1757762Ab3KZSNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:12:58 -0500
+	Tue, 26 Nov 2013 13:13:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonas Hahnfeld <linux@hahnjo.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 12/36] alx: Reset phy speed after resume
-Date: Tue, 26 Nov 2013 10:12:22 -0800
-Message-Id: <20131126181027.547818293@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.11 30/36] rt2x00: fix a crash bug in the HT descriptor handling fix
+Date: Tue, 26 Nov 2013 10:12:40 -0800
+Message-Id: <20131126181031.391985125@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -27,34 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: hahnjo <hahnjo@hahnjo.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit b54629e226d196e802abdd30c5e34f2a47cddcf2 upstream.
+commit b4089d6d8e71a7293e2192025dfa507a04f661c4 upstream.
 
-This fixes bug 62491 (https://bugzilla.kernel.org/show_bug.cgi?id=62491).
-After resuming some users got the following error flooding the kernel log:
-alx 0000:02:00.0: invalid PHY speed/duplex: 0xffff
+Commit "rt2x00: fix HT TX descriptor settings regression"
+assumes that the control parameter to rt2x00mac_tx is always non-NULL.
+There is an internal call in rt2x00lib_bc_buffer_iter where NULL is
+passed. Fix the resulting crash by adding an initialized dummy on-stack
+ieee80211_tx_control struct.
 
-Signed-off-by: Jonas Hahnfeld <linux@hahnjo.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: hahnjo <linux@hahnjo.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/atheros/alx/main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/rt2x00/rt2x00dev.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/atheros/alx/main.c
-+++ b/drivers/net/ethernet/atheros/alx/main.c
-@@ -1394,6 +1394,9 @@ static int alx_resume(struct device *dev
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -181,6 +181,7 @@ static void rt2x00lib_autowakeup(struct
+ static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
+ 				     struct ieee80211_vif *vif)
  {
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct alx_priv *alx = pci_get_drvdata(pdev);
-+	struct alx_hw *hw = &alx->hw;
-+
-+	alx_reset_phy(hw);
++	struct ieee80211_tx_control control = {};
+ 	struct rt2x00_dev *rt2x00dev = data;
+ 	struct sk_buff *skb;
  
- 	if (!netif_running(alx->dev))
- 		return 0;
+@@ -195,7 +196,7 @@ static void rt2x00lib_bc_buffer_iter(voi
+ 	 */
+ 	skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	while (skb) {
+-		rt2x00mac_tx(rt2x00dev->hw, NULL, skb);
++		rt2x00mac_tx(rt2x00dev->hw, &control, skb);
+ 		skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	}
+ }
 
 
