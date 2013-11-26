@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab3KZN5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:57:16 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:39677 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab3KZN5P (ORCPT
+	id S1754142Ab3KZOD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 09:03:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48557 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab3KZOD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:57:15 -0500
-Date: Tue, 26 Nov 2013 10:57:09 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf timechart: remove lock_depth from trace_entry
-Message-ID: <20131126135709.GB14838@ghostprotocols.net>
-References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
- <20131022103223.GA29489@stfomichev-desktop>
- <20131125182139.GD20168@ghostprotocols.net>
- <20131126110536.GC3388@stfomichev-desktop>
- <20131126121026.GD27323@ghostprotocols.net>
- <20131126134755.GD3388@stfomichev-desktop>
+	Tue, 26 Nov 2013 09:03:58 -0500
+Date: Tue, 26 Nov 2013 15:03:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
+        Juri Lelli <juri.lelli@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] cpuset: Fix memory allocator deadlock
+Message-ID: <20131126140341.GL10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131126134755.GD3388@stfomichev-desktop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 26, 2013 at 05:47:55PM +0400, Stanislav Fomichev escreveu:
-> > Se above, if before this patch the format_field info was obtained from
-> > the perf.data file, why should it now get it from the local machine?
+Juri hit the below lockdep report:
 
-> Yes, sorry for confusion, I didn't know that we can obtain trace events
-> format from the perf.data. I hence have no concerns regarding your
-> implementation :-)
-> 
-> > Please try. There should be no limitations.
+[    4.303391] ======================================================
+[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+[    4.303395] ------------------------------------------------------
+[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+[    4.303417]
+[    4.303417] and this task is already holding:
+[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+[    4.303431] which would create a new lock dependency:
+[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    4.303436]
 
-> It does not work because lock_depth and common_pid are common fields,
-> while perf_evsel__field looks in non-common fields. And even if we find
+[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+[    4.303922]    HARDIRQ-ON-W at:
+[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303933]    SOFTIRQ-ON-W at:
+[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303959]    INITIAL USE at:
+[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+[    4.303972]  }
 
-Oh, I thought they were linked, my bad, so that makes the implementation
-even easier :-)
+Which reports that we take mems_allowed_seq with interrupts enabled. A
+little digging found that this can only be from
+cpuset_change_task_nodemask().
 
-> lock_depth/common_pid common field we can't do field->next, because
-> common and non-common fields are not linked and ->next in the last common
-> field is NULL (this is what I got when I tried to use pevent_find_any_field
-> instead of pevent_find_field in perf_evsel__field).
-> 
-> I slightly modified timechart__set_payload_offset from you patch to look
-> for the first non-common field and use its offset, but it looks kinda ugly:
-> 
-> static int timechart__set_payload_offset(struct perf_evlist *evlist)
-> {
->        struct perf_evsel *evsel = perf_evlist__first(evlist);
->        struct format_field *field = evsel->tp_format->format.fields;
-> 
->        if (!field)
->                return -1;
-> 
->        payload_offset = field->offset;
->        return 0;
-> }
-> 
-> Maybe we can add some helper routine which returns first non-common
-> field, like:
+This is an actual deadlock because an interrupt doing an allocation will
+hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+forever waiting for the write side to complete.
 
-Humm, I think the above is enough but then having a a helper doesn't
-hurt, but I would prefer it to instead be:
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Juri Lelli <juri.lelli@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/cpuset.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-struct format_field *perf_evsel__fields(struct perf_evsel *evsel)
-{
-	return evsel->tp_format->format.fields;
-}
-
-The "name" parameter is not needed, and in essence getting "all the
-fields" and the "first field" is the same operation, right? We can use
-the shorter form.
-
-In the evlist class we need this:
-
-static inline
-struct perf_evsel *perf_evlist__first(struct perf_evlist *evlist)
-{
-        return list_entry(evlist->entries.next, struct perf_evsel, node);
-}
-
-Because the open coded equivalent is long, as we use list_head to
-maintain that list, but format.fields is a singly linked list.
-
-Can you send a respinned patch with all we discussed, please?
-
-- Arnaldo
-
-> 
-> struct format_field *perf_evsel__first_field(struct perf_evsel *evsel, const char *name)
-> {
-> 	return evsel->tp_format->format.fields;
-> }
-> 
-> and call it in timechart__set_payload_offset?
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 6bf981e13c43..4772034b4b17 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1033,8 +1033,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 	need_loop = task_has_mempolicy(tsk) ||
+ 			!nodes_intersects(*newmems, tsk->mems_allowed);
+ 
+-	if (need_loop)
++	if (need_loop) {
++		local_irq_disable();
+ 		write_seqcount_begin(&tsk->mems_allowed_seq);
++	}
+ 
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+@@ -1042,8 +1044,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+ 	tsk->mems_allowed = *newmems;
+ 
+-	if (need_loop)
++	if (need_loop) {
+ 		write_seqcount_end(&tsk->mems_allowed_seq);
++		local_irq_enable();
++	}
+ 
+ 	task_unlock(tsk);
+ }
