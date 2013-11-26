@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab3KZLP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:15:28 -0500
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:45577
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756597Ab3KZLPZ (ORCPT
+	id S1756714Ab3KZLQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:16:38 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:17458 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291Ab3KZLQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:15:25 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: <shh.xie@gmail.com>
-To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
-        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <Emilian.Medve@freescale.com>, <madalin.bucur@freescale.com>
-Subject: [PATCH 5/5][v2] phylib: Add of_phy_attach
-Date: Tue, 26 Nov 2013 17:55:35 +0800
-Message-ID: <1385459735-722-1-git-send-email-shh.xie@gmail.com>
-X-Mailer: git-send-email 1.8.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Tue, 26 Nov 2013 06:16:36 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfec7f5-b7f706d0000017c2-b8-5294831245a8
+Content-transfer-encoding: 8BIT
+Message-id: <52948310.9080409@samsung.com>
+Date: Tue, 26 Nov 2013 12:16:32 +0100
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+Newsgroups: gmane.linux.kernel
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: s5m-rtc: Fix info->rtc assignment
+References: <1384516479-31791-1-git-send-email-geert@linux-m68k.org>
+ <5294673B.4050608@samsung.com>
+In-reply-to: <5294673B.4050608@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xy7pCzVOCDI4/krWYs34Nm8WzW3uZ
+	LF6/MLS4vGsOm8X+zg5Gi5N/ehktLq74wuTA7rFn4kk2jzvX9rB5nJjxm8Xj0OEORo++LasY
+	PT5vkgtgi+KySUnNySxLLdK3S+DKaHj2k63gLWfFyot3mRsYOzi6GDk5JARMJG7ceMsOYYtJ
+	XLi3nq2LkYtDSGApo8TP2e+ZQBK8AoISPybfY+li5OBgFpCXOHIpGyTMLGAm8ahlHTOILSTw
+	mVHi3hZfiHItiZdbOsDiLAKqEkv+zmIBsdkEjCU2L1/CBmKLCkRI/J23nhHE5hOQk5i49Rkz
+	yF4RgRWMEje6zrNBLLCRWPhjOivIXmEBa4lrz/MhdqVK/Hp6D6yXU0Bb4lLHbqYJjIKzkFw6
+	C+HSWUguXcDIvIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJAK+7mBceszqEKMAB6MSD69E
+	5+QgIdbEsuLK3EOMEhzMSiK898umBAnxpiRWVqUW5ccXleakFh9iZOLglGpgLP5vdMFsWZ2h
+	j3ZDtgX/DK7q4PLVCrtM2R13n2XtsD60aIG0JHPYsdKpCpNfZXs8MOJ4kmv8T/nwH0/Lc/a+
+	GaI/FGu3/EwQ2eNqJlNtfoOnNjGPzVGueXu+quYtB56f0w2WbmmUb4pw/h6hMm+KRs+a8rBm
+	menutlFR/uEcc19qGCs1BSuxFGckGmoxFxUnAgBgH98TXgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Fleming <afleming@freescale.com>
+On 11/26/2013 10:17 AM, Krzysztof Kozlowski wrote:
+> On 11/15/2013 12:54 PM, Geert Uytterhoeven wrote:
+>> drivers/rtc/rtc-s5m.c: In function ‘s5m_rtc_probe’:
+>> drivers/rtc/rtc-s5m.c:545: warning: assignment from incompatible
+>> pointer type
+>>
+>> struct s5m_rtc_info.rtc has type "struct regmap *", while
+>> struct sec_pmic_dev.rtc has type "struct i2c_client *".
+>>
+>> Probably the author wanted to assign "struct sec_pmic_dev.regmap", which
+>> has the correct type.
+>>
+>> Also, as "rtc" doesn't make much sense as a name for a regmap, rename
+>> it to
+>> "regmap".
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> ---
+>> I would be really surprised if this driver didn't just crash...
+>> Please test. Thanks!
+>>
+>>   drivers/rtc/rtc-s5m.c |   54
+>> ++++++++++++++++++++++++-------------------------
+>>   1 file changed, 27 insertions(+), 27 deletions(-)
+>
+> Seems good, tested on device with S5M8767.
+>
+> Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-10G PHYs don't currently support running the state machine, which
-is implicitly setup via of_phy_connect(). Therefore, it is necessary
-to implement an OF version of phy_attach(), which does everything
-except start the state machine.
+Arrrg, the fix is needed but not sufficient. The chip has different I2C 
+addresses for RTC and PMIC so additional regmap is needed. Currently 
+this rtc-s5m driver does not work. I'll send patches fixing it.
 
-Signed-off-by: Andy Fleming <afleming@freescale.com>
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
----
-v2: no changes.
+Best regards,
+Krzysztof
 
- drivers/of/of_mdio.c    | 19 +++++++++++++++++++
- include/linux/of_mdio.h |  9 +++++++++
- 2 files changed, 28 insertions(+)
 
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index d5a57a9..21076ac 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -247,3 +247,22 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 	return IS_ERR(phy) ? NULL : phy;
- }
- EXPORT_SYMBOL(of_phy_connect_fixed_link);
-+
-+/**
-+ * of_phy_attach - Attach to a PHY without starting the state machine
-+ * @dev: pointer to net_device claiming the phy
-+ * @phy_np: Node pointer for the PHY
-+ * @flags: flags to pass to the PHY
-+ * @iface: PHY data interface type
-+ */
-+struct phy_device *of_phy_attach(struct net_device *dev,
-+		struct device_node *phy_np, u32 flags, phy_interface_t iface)
-+{
-+	struct phy_device *phy = of_phy_find_device(phy_np);
-+
-+	if (!phy)
-+		return NULL;
-+
-+	return phy_attach_direct(dev, phy, flags, iface) ? NULL : phy;
-+}
-+EXPORT_SYMBOL(of_phy_attach);
-diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-index 8163107..108583a 100644
---- a/include/linux/of_mdio.h
-+++ b/include/linux/of_mdio.h
-@@ -19,6 +19,9 @@ extern struct phy_device *of_phy_connect(struct net_device *dev,
- 					 struct device_node *phy_np,
- 					 void (*hndlr)(struct net_device *),
- 					 u32 flags, phy_interface_t iface);
-+struct phy_device *of_phy_attach(struct net_device *dev,
-+				 struct device_node *phy_np, u32 flags,
-+				 phy_interface_t iface);
- extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 					 void (*hndlr)(struct net_device *),
- 					 phy_interface_t iface);
-@@ -44,6 +47,12 @@ static inline struct phy_device *of_phy_connect(struct net_device *dev,
- 	return NULL;
- }
- 
-+static inline struct phy_device *of_phy_attach(struct net_device *dev,
-+		struct device_node *phy_np, u32 flags, phy_interface_t iface)
-+{
-+	return NULL;
-+}
-+
- static inline struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 							   void (*hndlr)(struct net_device *),
- 							   phy_interface_t iface)
--- 
-1.8.4.1
 
 
