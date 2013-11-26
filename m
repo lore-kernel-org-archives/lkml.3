@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab3KZADK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:03:10 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19276 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3KZADI (ORCPT
+	id S1753065Ab3KZACH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:02:07 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:62743 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab3KZACE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:03:08 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 25 Nov 2013 16:00:45 -0800
-Message-ID: <5293E53A.5050103@nvidia.com>
-Date: Mon, 25 Nov 2013 16:03:06 -0800
-From: Paul Walmsley <pwalmsley@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: clk: clk_round_rate() should return 0, not negative numbers,
- upon error
-References: <alpine.DEB.2.02.1311251553080.23090@tamien> <20131126000153.GY16735@n2100.arm.linux.org.uk>
-In-Reply-To: <20131126000153.GY16735@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 25 Nov 2013 19:02:04 -0500
+Message-ID: <1385424120.10637.136.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] pipe_to_sendpage: Ensure that MSG_MORE is set if we set
+ MSG_SENDPAGE_NOTLAST
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, shawnlandden@gmail.com,
+        linux-crypto@vger.kernel.org, netdev@vger.kernel.org,
+        herbert@gondor.hengli.com.au, Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org
+Date: Mon, 25 Nov 2013 16:02:00 -0800
+In-Reply-To: <47783210.a9ocpbYofP@sandpuppy>
+References: <CAJusiZXN4dOxg9S4ZiCziVXfNZ+=yu7a=84vUikV2RhbhYU7QA@mail.gmail.com>
+	 <1385336527-27304-1-git-send-email-richard@nod.at>
+	 <1385342706.10637.125.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <47783210.a9ocpbYofP@sandpuppy>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 04:01 PM, Russell King - ARM Linux wrote:
-> On Mon, Nov 25, 2013 at 03:55:33PM -0800, Paul Walmsley wrote:
->> Update the documentation for clk_round_rate() to state that it should
->> return 0 rather than a negative error code when it encounters an
->> error.  This describes how the common clock framework currently works;
->> howeever, some clock code does not yet align to this.
->>
->> This change is to prepare for returning unsigned values from
->> clk_round_rate().
-> You really ought to document why this is being changed here, to help
-> sell the change to parties who are not aware of the background.
-> Otherwise, it just looks like a gratuitous API change.
+On Mon, 2013-11-25 at 08:42 +0100, Richard Weinberger wrote:
 
-Will do and resend.
+> In the commit message of your patch you wrote "For all sendpage() providers, 
+> its a transparent change.". Why does AF_ALG need special handling?
+> If users have to care about MSG_SENDPAGE_NOTLAST it is no longer really an 
+> internal flag.
 
-- Paul
+MSG_SENDPAGE_NOTLAST is an internal (kernel) flag.
+
+Fact that I missed some MSG_MORE 'users' in the kernel was an oversight.
+
+I am not saying your patch is not needed, I am only saying it reverts
+a useful TCP optimization, and we can do better, dont we ?
+
+
+
