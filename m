@@ -1,101 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab3KZBDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:03:35 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:49397 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3KZBDd (ORCPT
+	id S1753643Ab3KZBEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:04:06 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:35044 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab3KZBEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:03:33 -0500
+	Mon, 25 Nov 2013 20:04:04 -0500
+Date: Tue, 26 Nov 2013 01:03:48 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Paul Drews <paul.drews@intel.com>
+Cc: lenb@kernel.org, rjw@rjwysocki.net, linus.walleij@linaro.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: Add BayTrail SoC GPIO and LPSS ACPI IDs
+Message-ID: <20131126010348.GA29198@srcf.ucam.org>
+References: <1385417755-21776-1-git-send-email-paul.drews@intel.com>
 MIME-Version: 1.0
-Date: Tue, 26 Nov 2013 09:03:31 +0800
-Message-ID: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
-Subject: Supporting 4 way connections in LKSCTP
-From: Sun Paul <paulrbk@gmail.com>
-To: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385417755-21776-1-git-send-email-paul.drews@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, Nov 25, 2013 at 02:15:55PM -0800, Paul Drews wrote:
+> This adds the new ACPI ID (INT33FC) for the BayTrail GPIO
+> banks as seen on a BayTrail M System-On-Chip platform.  This
+> ACPI ID is used by the BayTrail GPIO (pinctrl) driver to
+> manage the Low Power Subsystem (LPSS).
 
-we have a problem on using LKSCTP to form a 4 ways multi-homing network.
+Not that we can do anything about this now, but if they have the same 
+programming model why isn't there a CID that covers them?
 
-Configuration
-- Node-A has 2 IP addresses in different subnets, known as IP-A (eth1),
-IP-B (eth2)
-- Node-B has 2 IP addresses in different subnets, known as IP-X (eth1),
-IP-Y (eth2)
-
-the four way paths are shown below.
-1. IP-A (11.1.1.1) to IP-X (11.1.1.11)
-2. IP-B (12.1.1.1) to IP-Y (12.1.1.11)
-3. IP-A (11.1.1.1) to IP-Y (12.1.1.11)
-4. IP-B (12.1.1.1) to IP-X (11.1.1.11)
-
-the HB/HB_ACK is normal for the paths " IP-A to IP-X" and "IP-B to
-IP-Y", but it is not correct for the rest of two.
-
-First of all, we are using iproute2 to form 2 table such that when
-IP-B arrives on IP-X, it will know how to route back to IP-B on the
-same interface, i.e (eth1). Same logic for the path "IP-A to IP-X".
-
-What we observed here is that when 12.1.1.1 sends INIT to 11.1.1.11,
-LKSCTP will send back the INIT_ACK to 12.1.1.1 using 12.1.1.11 but not
-using the IP 11.1.1.11.
-
-The above operation makes the subsequence HB/HB_ACK in using wrong IP address.
-
-TCP trace on eth1
-18:02:41.058640 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
-[init tag: 19933036] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
-18:02:41.061634 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
-18:02:41.062642 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-18:02:41.062846 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-18:02:41.361811 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-18:02:41.661791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-18:02:41.961791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
-
-TCP trace on eth2
-18:02:41.058755 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
-[init tag: 424726157] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
-3340756356]
-18:02:41.061696 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
-18:02:41.062663 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-18:02:41.062791 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:41.361777 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:41.661772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:41.961772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:42.161771 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:42.461770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-18:02:42.675770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
-
-
-If we are using single homing, there is no problem on the SCTP
-communication. Below is the TCP trace on eth1 using sctp_test
-
-18:09:55.356727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
-[init tag: 32516609] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
-18:09:55.356811 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
-[init tag: 3168861995] [rwnd: 131072] [OS: 10] [MIS: 16] [init TSN:
-1877695021]
-18:09:55.357727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
-18:09:55.357788 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
-18:09:55.358724 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-18:09:55.358740 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-18:09:55.379715 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [DATA]
-(B)(E) [TSN: 0] [SID: 0] [SSEQ 0] [PPID 0x3]
-18:09:55.379735 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [SACK]
-[cum ack 0] [a_rwnd 131064] [#gap acks 0] [#dup tsns 0]
-18:09:55.657716 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
-18:09:55.657732 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
-
->From the observations, it seems that the LKSCTP library is not able to
-use the original local address when multi-homing is being used. Is
-there anyway can be resolved it?
-
-Thanks
-
-PS
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
