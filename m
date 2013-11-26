@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3KZGtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:49:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24925 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117Ab3KZGtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:49:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,772,1378882800"; 
-   d="scan'208";a="414901710"
-Message-ID: <529441B7.90505@intel.com>
-Date: Tue, 26 Nov 2013 14:37:43 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754253Ab3KZGva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:51:30 -0500
+Received: from exprod6og110.obsmtp.com ([64.18.1.25]:34943 "EHLO
+	exprod6og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3KZGv2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 01:51:28 -0500
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Nov 2013 01:51:27 EST
+From: Patrick Farrell <paf@cray.com>
+To: Peng Tao <bergwolf@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cheng Shao <cheng_shao@xyratex.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: RE: [PATCH 03/16] staging/lustre/nfs: writing to new files will
+ return ENOENT
+Thread-Topic: [PATCH 03/16] staging/lustre/nfs: writing to new files will
+ return ENOENT
+Thread-Index: AQHO6kwJQpYosj08KUyMoLCP4bFXF5o3ESgv
+Date: Tue, 26 Nov 2013 06:45:57 +0000
+Message-ID: <DB0C8A206669AC40B1C4E52A8584A6F614549D77@CFWEX01.americas.cray.com>
+References: <1385431510-18988-1-git-send-email-bergwolf@gmail.com>,<1385431510-18988-4-git-send-email-bergwolf@gmail.com>
+In-Reply-To: <1385431510-18988-4-git-send-email-bergwolf@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.234.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nm@ti.com, swarren@wwwdotorg.org,
-        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        sebastian.capella@linaro.org, jhbird.choi@samsung.com
-Subject: Re: [PATCH V3 0/6] cpufreq: suspend early/resume late
-References: <cover.1385374819.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1385374819.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年11月25日 22:11, Viresh Kumar wrote:
-> This patchset adds cpufreq callbacks to dpm_{suspend|resume}() for handling
-> suspend/resume of cpufreq governors and core. This is required for early suspend
-> and late resume of governors and cpufreq core.
-> 
-> There are multiple problems that are fixed by this patch:
-> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
->   wasn't working well with suspend/resume as calls for removing non-boot CPUs
->   was turning out into a call to drivers ->target() which then tries to play
->   with regulators. But regulators and their I2C bus were already suspended and
->   this resulted in a failure. Many platforms have such problems, samsung, tegra,
->   etc.. They solved it with driver specific PM notifiers where they used to
->   disable their driver's ->target() routine. Most of these are updated in this
->   patchset to use new infrastructure.
-> 
-> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
->   tunables configuration for clusters/sockets with non-boot CPUs was getting
->   lost after suspend/resume, as we were notifying governors with
->   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
->   deallocating memory for tunables. This is also fixed with this patch as don't
->   allow any operation on Governors during suspend/resume now.
-> 
-> 
-> So to solve these issues we introduce early suspend and late resume callbacks
-> which would remove need of cpufreq drivers to implement PM notifiers to disable
-> transition after suspend and before resume.
-> 
-> @Nishanth: Can you please test V2 as well and confirm that suspend_noirq()
-> doesn't work for you. I am sure it will not, but would be better if you confirm
-> that.
-> 
-> Viresh Kumar (6):
->   cpufreq: suspend governors on system suspend/hibernate
->   cpufreq: call driver's suspend/resume for each policy
->   cpufreq: Implement cpufreq_generic_suspend()
->   cpufreq: exynos: Use cpufreq_generic_suspend()
->   cpufreq: s5pv210: Use cpufreq_generic_suspend()
->   cpufreq: Tegra: Use cpufreq_generic_suspend()
-> 
+Peng,
 
-Patch 1-2,
-Tested-by: Lan Tianyu <tianyu.lan@intel.com>
+I'm sorry to say, this patch was reverted due to interoperability problems with 2.1 servers (This either a slightly later [but still broken] version of the patch we discussed recently, or the same one.).  If Greg's accepted this upstream (and it looks like he has), it'll have to be reverted.
 
->  drivers/base/power/main.c         |   5 ++
->  drivers/cpufreq/cpufreq.c         | 133 +++++++++++++++++++++-----------------
->  drivers/cpufreq/exynos-cpufreq.c  |  97 ++-------------------------
->  drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
->  drivers/cpufreq/tegra-cpufreq.c   |  54 ++--------------
->  include/linux/cpufreq.h           |   6 ++
->  6 files changed, 99 insertions(+), 245 deletions(-)
-> 
+Sorry for the trouble here!
 
+- Patrick
+________________________________________
+From: Peng Tao [bergwolf@gmail.com]
+Sent: Monday, November 25, 2013 8:04 PM
+To: Greg Kroah-Hartman
+Cc: linux-kernel@vger.kernel.org; Patrick Farrell; Cheng Shao; Peng Tao; Andreas Dilger
+Subject: [PATCH 03/16] staging/lustre/nfs: writing to new files will return ENOENT
 
--- 
-Best regards
-Tianyu Lan
+From: Patrick Farrell <paf@cray.com>
+
+This happend with SLES11SP2 Lustre client, which in turn acts as an
+NFS server, exporting a subtree of an Lustre fs through NFS.
+
+We detected that whenever we are writing to a new file using, fx,
+'echo blah > newfile', it will return ENOENT error. We found
+out that this was caused by the anonymous dentry. In SLESS11SP2,
+anonymous dentries are assigned '/' as the name, instead of an
+empty string. When MDT handles the intent_open call, it will look
+up the obj by the name if it is not an empty string, and thus
+couldn't find it.
+
+As MDS_OPEN_BY_FID is always set on this request, we never need
+to send the name in this request.  The fid is already available
+and should be used in case the file has been renamed.
+
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3544
+Lustre-change: http://review.whamcloud.com/6920
+Signed-off-by: Cheng Shao <cheng_shao@xyratex.com>
+Signed-off-by: Patrick Farrell <paf@cray.com>
+Reviewed-by: Bob Glossman <bob.glossman@intel.com>
+Reviewed-by: Alexey Shvetsov <alexxy@gentoo.org>
+Reviewed-by: Lai Siyao <lai.siyao@intel.com>
+Reviewed-by: James Simmons <uja.ornl@gmail.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
+Signed-off-by: Peng Tao <bergwolf@gmail.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+---
+ drivers/staging/lustre/lustre/llite/file.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index 82248e9..f36c5d8 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -368,8 +368,6 @@ static int ll_intent_file_open(struct file *file, void *lmm,
+ {
+        struct ll_sb_info *sbi = ll_i2sbi(file->f_dentry->d_inode);
+        struct dentry *parent = file->f_dentry->d_parent;
+-       const char *name = file->f_dentry->d_name.name;
+-       const int len = file->f_dentry->d_name.len;
+        struct md_op_data *op_data;
+        struct ptlrpc_request *req;
+        __u32 opc = LUSTRE_OPC_ANY;
+@@ -394,8 +392,9 @@ static int ll_intent_file_open(struct file *file, void *lmm,
+        }
+
+        op_data  = ll_prep_md_op_data(NULL, parent->d_inode,
+-                                     file->f_dentry->d_inode, name, len,
++                                     file->f_dentry->d_inode, NULL, 0,
+                                      O_RDWR, opc, NULL);
++
+        if (IS_ERR(op_data))
+                return PTR_ERR(op_data);
+
+--
+1.7.9.5
+
