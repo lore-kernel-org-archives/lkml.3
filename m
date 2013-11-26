@@ -1,272 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab3KZKgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:36:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9542 "EHLO mga01.intel.com"
+	id S1755961Ab3KZKkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:40:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40351 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab3KZKgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:36:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,773,1378882800"; 
-   d="scan'208";a="440045668"
-Date: Tue, 26 Nov 2013 18:37:19 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING: CPU: 0 PID: 1 at init/main.c:711 do_one_initcall()
-Message-ID: <20131126103719.GG17626@yliu-dev.sh.intel.com>
-References: <20131122060223.GP9991@yliu-dev.sh.intel.com>
- <529329DE.4010709@panasas.com>
- <20131125132542.GX9991@yliu-dev.sh.intel.com>
- <52935754.1070208@panasas.com>
+	id S1754991Ab3KZKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:40:37 -0500
+Date: Tue, 26 Nov 2013 11:40:34 +0100
+From: Jan Kara <jack@suse.cz>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
+        mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        sjayaraman@suse.de, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
+Message-ID: <20131126104034.GA4854@quack.suse.cz>
+References: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52935754.1070208@panasas.com>
+In-Reply-To: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 03:57:40PM +0200, Boaz Harrosh wrote:
-> On 11/25/2013 03:25 PM, Yuanhan Liu wrote:
-> > 
-> > Hi Boaz,
-> > 
-> > We are running an 0day kernel testing system. We will test all developers'
-> > tree we tracked in our system automatically. And obviously, linux-open-osd
-> > is in that list.
-> > 
-> > This system can't tell whether a branch is experimental unless
-> > - You put one extra line of "Dont-Auto-Build" to the head commit log.
-> > 
-> > - the branch name contains "experimental", say exofs_ioctl-experimental
-> > 
-> > If both items aren't convenient to you, you can ask us to remove your
-> > tree from that list. Then you will never get report like this from us.
-> > However, you may lose a chance to find build, boot and performance bug
-> > automatically for you ;)
-> > 
-> > 	--yliu
-> > 
+  Hello,
+
+On Wed 30-06-10 02:16:56, David Howells wrote:
+> Implement a pair of new system calls to provide extended and further extensible
+> stat functions.
+> 
+> The third of the associated patches provides these new system calls:
+> 
+> 	struct xstat_dev {
+> 		unsigned int	major;
+> 		unsigned int	minor;
+> 	};
+> 
+> 	struct xstat_time {
+> 		unsigned long long	tv_sec;
+> 		unsigned long long	tv_nsec;
+> 	};
+> 
+> 	struct xstat {
+> 		unsigned int		struct_version;
+> 	#define XSTAT_STRUCT_VERSION	0
+> 		unsigned int		st_mode;
+> 		unsigned int		st_nlink;
+> 		unsigned int		st_uid;
+> 		unsigned int		st_gid;
+> 		unsigned int		st_blksize;
+> 		struct xstat_dev	st_rdev;
+> 		struct xstat_dev	st_dev;
+> 		unsigned long long	st_ino;
+> 		unsigned long long	st_size;
+> 		struct xstat_time	st_atime;
+> 		struct xstat_time	st_mtime;
+> 		struct xstat_time	st_ctime;
+> 		struct xstat_time	st_btime;
+> 		unsigned long long	st_blocks;
+  When we are doing this, can we please also change 'st_blocks' to
+'st_bytes'? We track space usage in kernel in bytes for a long time so it
+would be nice to propagate it to userspace via stat instead of a special
+ioctl (at least quotacheck(8) needs to know the exact value).
+
+								Honza
+  
+> 		unsigned long long	st_gen;
+> 		unsigned long long	st_data_version;
+> 		unsigned long long	query_flags;
+> 	#define XSTAT_QUERY_SIZE		0x00000001ULL
+> 	#define XSTAT_QUERY_NLINK		0x00000002ULL
+> 	#define XSTAT_QUERY_AMC_TIMES		0x00000004ULL
+> 	#define XSTAT_QUERY_CREATION_TIME	0x00000008ULL
+> 	#define XSTAT_QUERY_BLOCKS		0x00000010ULL
+> 	#define XSTAT_QUERY_INODE_GENERATION	0x00000020ULL
+> 	#define XSTAT_QUERY_DATA_VERSION	0x00000040ULL
+> 	#define XSTAT_QUERY__ORDINARY_SET	0x00000017ULL
+> 	#define XSTAT_QUERY__GET_ANYWAY		0x0000007fULL
+> 	#define XSTAT_QUERY__DEFINED_SET	0x0000007fULL
+> 		unsigned long long	extra_results[0];
+> 	};
+> 
+> 	ssize_t ret = xstat(int dfd,
+> 			    const char *filename,
+> 			    unsigned atflag,
+> 			    struct xstat *buffer,
+> 			    size_t buflen);
+> 
+> 	ssize_t ret = fxstat(int fd,
+> 			     struct xstat *buffer,
+> 			     size_t buflen);
+> 
+> which are more fully documented in that patch's description.
+> 
+> The bonuses of these new stat functions are:
+> 
+>  (1) The fields in the xstat struct are cleaned up.  There are no split or
+>      duplicated fields.
+> 
+>  (2) Some extra information is made available (file creation time, inode
+>      generation number and data version number) where provided by the
+>      underlying filesystem.
+> 
+>      These are implemented here for Ext4 and AFS, but could also be provided
+>      for CIFS, NTFS and BtrFS and probably others.
+> 
+>  (3) The structure is versioned and extensible, meaning that further new system
+>      calls shouldn't be required.
+> 
+> Note that no lstat() equivalent is required as that can be implemented through
+> xstat() with atflag == 0.
 > 
 > 
-> Ha OK very cool. I will remember to put -experimental on the branch name
-> this is fine I will do it ASAP.
+> The first patch makes const a bunch of system call userspace string/buffer
+> arguments.  I can then make sys_xstat()'s filename pointer const too (though
+> the entire first patch is not required for that).
 > 
-> Thanks so much. Do you have some web based info on the build system?
-
-Sorry, nope.
-
-> Do you have a place I can see test results and tests summery?
-
-If you like, I can add you into the build-notify list. Once the build
-finished, you might get an email like following:
-
-	--yliu
-
-----
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: [yuanhan:branch] a828a375f9fcc422c8d2613d774d031fa8a02a97 BUILD SUCCESS
-
-git://bee.sh.intel.com/git/yliu/linux.git  branch
-a828a375f9fcc422c8d2613d774d031fa8a02a97  branch: commit summary
-
-elapsed time: 262m
-
-configs tested: 189
-
-arm                               allnoconfig
-arm                               almodconfig
-arm                         at91_dt_defconfig
-arm                       imx_v6_v7_defconfig
-arm                          marzen_defconfig
-arm                       omap2plus_defconfig
-arm                          prima2_defconfig
-arm                         s3c2410_defconfig
-arm                       spear13xx_defconfig
-arm                           tegra_defconfig
-avr32                      atngw100_defconfig
-avr32                     atstk1006_defconfig
-frv                                 defconfig
-m68k                          amiga_defconfig
-m68k                       m5475evb_defconfig
-m68k                          multi_defconfig
-microblaze                      mmu_defconfig
-microblaze                    nommu_defconfig
-mn10300                     asb2364_defconfig
-openrisc                    or1ksim_defconfig
-tile                         tilegx_defconfig
-um                                  defconfig
-x86_64                             acpi-redef
-x86_64                     randconfig-a0-1105
-x86_64                     randconfig-a1-1105
-x86_64                     randconfig-a2-1105
-x86_64                     randconfig-a3-1105
-x86_64                     randconfig-a4-1105
-x86_64                     randconfig-a5-1105
-i386                       randconfig-c0-1105
-i386                       randconfig-c1-1105
-i386                       randconfig-c2-1105
-i386                       randconfig-c3-1105
-i386                       randconfig-c4-1105
-i386                       randconfig-c5-1105
-i386                       randconfig-c6-1105
-i386                       randconfig-c7-1105
-i386                       randconfig-c8-1105
-i386                       randconfig-c9-1105
-x86_64                     randconfig-c0-1105
-x86_64                     randconfig-c1-1105
-x86_64                     randconfig-c2-1105
-x86_64                     randconfig-c3-1105
-x86_64                     randconfig-c4-1105
-x86_64                     randconfig-c5-1105
-x86_64                     randconfig-c6-1105
-x86_64                     randconfig-c7-1105
-x86_64                     randconfig-c8-1105
-x86_64                     randconfig-c9-1105
-ia64                             alldefconfig
-ia64                             allmodconfig
-ia64                              allnoconfig
-ia64                                defconfig
-mips                             allmodconfig
-mips                              allnoconfig
-mips                      fuloong2e_defconfig
-i386                     randconfig-i000-1105
-i386                     randconfig-i001-1105
-i386                     randconfig-i002-1105
-i386                     randconfig-i003-1105
-i386                     randconfig-i004-1105
-i386                     randconfig-i005-1105
-i386                     randconfig-i006-1105
-i386                     randconfig-i007-1105
-i386                     randconfig-i008-1105
-i386                     randconfig-i009-1105
-powerpc                      chroma_defconfig
-powerpc               corenet64_smp_defconfig
-powerpc                    gamecube_defconfig
-powerpc                 linkstation_defconfig
-powerpc                         wii_defconfig
-sparc                               defconfig
-sparc64                          allmodconfig
-sparc64                           allnoconfig
-sparc64                             defconfig
-x86_64                           allyesconfig
-x86_64                   randconfig-x000-1104
-x86_64                   randconfig-x001-1104
-x86_64                   randconfig-x002-1104
-x86_64                   randconfig-x003-1104
-x86_64                   randconfig-x004-1104
-x86_64                   randconfig-x005-1104
-x86_64                   randconfig-x006-1104
-x86_64                   randconfig-x007-1104
-x86_64                   randconfig-x008-1104
-x86_64                   randconfig-x009-1104
-i386                     randconfig-x000-1104
-i386                     randconfig-x001-1104
-i386                     randconfig-x002-1104
-i386                     randconfig-x003-1104
-i386                     randconfig-x004-1104
-i386                     randconfig-x005-1104
-i386                     randconfig-x006-1104
-i386                     randconfig-x007-1104
-i386                     randconfig-x008-1104
-i386                     randconfig-x009-1104
-alpha                            allyesconfig
-avr32                            allyesconfig
-blackfin                         allyesconfig
-cris                             allyesconfig
-ia64                             allyesconfig
-m68k                             allyesconfig
-mips                             allyesconfig
-parisc                           allyesconfig
-powerpc                          allyesconfig
-s390                             allyesconfig
-sh                               allyesconfig
-sparc                            allyesconfig
-sparc64                          allyesconfig
-tile                             allyesconfig
-um                               allyesconfig
-xtensa                           allyesconfig
-x86_64                           allyesdebian
-x86_64                                    lkp
-x86_64               lkp-CONFIG_DEBUG_MUTEXES
-x86_64                lkp-CONFIG_DEBUG_RODATA
-x86_64                 lkp-CONFIG_SCHED_DEBUG
-x86_64                  lkp-CONFIG_SCSI_DEBUG
-x86_64                                nfsroot
-x86_64                     randconfig-j0-1105
-x86_64                     randconfig-j1-1105
-x86_64                     randconfig-j2-1105
-x86_64                     randconfig-j3-1105
-x86_64                     randconfig-j4-1105
-x86_64                     randconfig-j5-1105
-x86_64                     randconfig-j6-1105
-x86_64                     randconfig-j7-1105
-x86_64                     randconfig-j8-1105
-x86_64                     randconfig-j9-1105
-blackfin                BF526-EZBRD_defconfig
-blackfin                BF533-EZKIT_defconfig
-blackfin            BF561-EZKIT-SMP_defconfig
-blackfin                  TCM-BF537_defconfig
-cris                 etrax-100lx_v2_defconfig
-m32r                       m32104ut_defconfig
-m32r                     mappi3.smp_defconfig
-m32r                         opsput_defconfig
-m32r                           usrv_defconfig
-sh                                allnoconfig
-sh                          rsk7269_defconfig
-sh                  sh7785lcr_32bit_defconfig
-sh                            titan_defconfig
-xtensa                       common_defconfig
-xtensa                          iss_defconfig
-i386                       randconfig-r0-1105
-i386                       randconfig-r1-1105
-i386                       randconfig-r2-1105
-i386                       randconfig-r3-1105
-i386                       randconfig-r4-1105
-i386                       randconfig-r5-1105
-i386                       randconfig-r6-1105
-i386                       randconfig-r7-1105
-i386                       randconfig-r8-1105
-i386                       randconfig-r9-1105
-alpha                               defconfig
-parisc                            allnoconfig
-parisc                         b180_defconfig
-parisc                        c3000_defconfig
-parisc                              defconfig
-s390                             allmodconfig
-s390                              allnoconfig
-s390                                defconfig
-x86_64                            allnoconfig
-i386                             allyesconfig
-powerpc                          allmodconfig
-powerpc                           allnoconfig
-powerpc                             defconfig
-powerpc                       ppc64_defconfig
-x86_64                           allmodconfig
-i386                       randconfig-x0-1105
-i386                       randconfig-x1-1105
-i386                       randconfig-x2-1105
-i386                       randconfig-x3-1105
-i386                       randconfig-x4-1105
-i386                       randconfig-x5-1105
-i386                       randconfig-x6-1105
-i386                       randconfig-x7-1105
-i386                       randconfig-x8-1105
-i386                       randconfig-x9-1105
-x86_64                     randconfig-x0-1105
-x86_64                     randconfig-x1-1105
-x86_64                     randconfig-x2-1105
-x86_64                     randconfig-x3-1105
-x86_64                     randconfig-x4-1105
-x86_64                     randconfig-x5-1105
-x86_64                     randconfig-x6-1105
-x86_64                     randconfig-x7-1105
-x86_64                     randconfig-x8-1105
-x86_64                     randconfig-x9-1105
-
-Thanks,
-Fengguang
+> The second patch makes the AFS filesystem use i_generation for the vnode ID
+> uniquifier rather than i_version, and assigns i_version to hold the AFS data
+> version number, making them more logical for when I want to get at them from
+> afs_getattr().
+> 
+> There's a test program attached to the description for patch 3.  It can be run
+> as follows:
+> 
+> 	[root@andromeda ~]# /tmp/xstat /afs/archive/linuxdev/fedora9/i386/repodata/
+> 	xstat(/afs/archive/linuxdev/fedora9/i386/repodata/) = 152
+> 	sv=0 qf=77 cr=0.0 iv=7a5 dv=5
+> 	  Size: 2048            Blocks: 0          IO Block: 4096    directory
+> 	Device: 00:15           Inode: 83          Links: 2
+> 	Access: (0755/drwxr-xr-x)  Uid: 75338   Gid: 0
+> 	Access: 2008-11-05 20:00:12.000000000+0000
+> 	Modify: 2008-11-05 20:00:12.000000000+0000
+> 	Change: 2008-11-05 20:00:12.000000000+0000
+> 	Inode version: 7a5h
+> 	Data version: 5h
+> 
+> 
+> Things that need consideration:
+> 
+>  (1) Is it worth retaining the ability to arbitrarily add extra bits onto the
+>      end of the stat buffer?  And what's the best way to do this?
+> 
+>      I've defined a way that from userspace involves assigning bits in
+>      query_flags to extra results that you might want.  But this could instead
+>      be done, say, by just upping the struct version number any time we want to
+>      pass back more information.  Alternatively, we could go for a tagged data
+>      method, perhaps using the same format as the recvmsg() control message
+>      field.
+> 
+>      If we use tagged data then rather than being selective, we could just
+>      return as many tagged data items as we feel the user might want and we can
+>      cram into the buffer.  That could be rather slow, though.
+> 
+>  (2) What extra bits of information might we like to see available through the
+>      stat interface?  Security labels?  NFS file IDs?  Xattrs?
+> 
+>      If we went for a tagged data method, xstat() could be modified to take a
+>      list of tags as an argument, and could then return arbitrarily-sized
+>      tagged results, including fs-specific stuff.
+> 
+>  (3) Does st_blksize really need to be 64 bits on a 64-bit system?  Or can it
+>      be 32-bits?  Are we really likely to see something with a 4Gb+ blocksize?
+> 
+>  (4) Should the inode number and data version number fields be 128-bit?
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
