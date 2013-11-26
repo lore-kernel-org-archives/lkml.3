@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3KZTjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:39:08 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37179 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3KZTjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:39:04 -0500
-Date: Tue, 26 Nov 2013 20:39:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tianyu.lan@intel.com, nm@ti.com,
-        jinchoi@broadcom.com, sebastian.capella@linaro.org
-Subject: Re: [PATCH V2 1/2] cpufreq: suspend governors on system
- suspend/hibernate
-Message-ID: <20131126193902.GA2481@amd.pavel.ucw.cz>
-References: <cover.1385118255.git.viresh.kumar@linaro.org>
- <e4bc55fac6bc68694e9905cc3cc6844173b64925.1385118256.git.viresh.kumar@linaro.org>
+	id S932480Ab3KZToF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:44:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50756 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753617Ab3KZToB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 14:44:01 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-gpio@vger.kernel.org>, <nsekhar@ti.com>
+CC: <prabhakar.csengg@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [RFC v1 0/9] gpio: davinci: reuse for keystone arch
+Date: Tue, 26 Nov 2013 21:40:06 +0200
+Message-ID: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e4bc55fac6bc68694e9905cc3cc6844173b64925.1385118256.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This series is intended to update Davinci GPIO driver and reuse
+it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+Keystone GPIO IP: supports:
+- up to 32 GPIO lines;
+- only unbanked irqs;
 
-> This patch adds cpufreq callbacks to dpm_{suspend|resume}_noirq() for handling
-> suspend/resume of cpufreq governors. This is required for early suspend and late
-> resume of governors.
-> 
-> There are multiple problems that are fixed by this patch:
-> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
->   wasn't working well with suspend/resume as calls for removing non-boot CPUs
->   was turning out into a call to drivers ->target() which then tries to play
->   with regulators. But regulators and their I2C bus were already suspended and
->   this resulted in a failure. This is why we need a PM notifier here.
-> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found another issue where
->   tunables configuration for clusters/sockets with non-boot CPUs was getting
->   lost after suspend/resume, as we were notifying governors with
->   CPUFREQ_GOV_POLICY_EXIT on removal of the last cpu for that policy and so
->   deallocating memory for tunables.
-> 
-> +/*
-> + * Callbacks for suspending/resuming governors as some platforms can't change
-> + * frequency after this point in suspend cycle. Because some of the devices
-> + * (like: i2c, regulators, etc) they use for changing frequency are suspended
-> + * quickly after this point.
-> + */
-> +void cpufreq_suspend(void)
-> +{
-> +	struct cpufreq_policy *policy;
-> +	unsigned long flags;
-> +
-> +	if (!has_target())
-> +		return;
-> +
-> +	pr_debug("%s: Suspending Governors\n", __func__);
-> +
-> +	list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
-> +		if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
-> +			pr_err("%s: Failed to stop governor for policy: %p\n",
-> +					__func__, policy);
+See Documentation:
+Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
 
-So... we freeze frequencies in whatever state they are, yes?
+[1] Depends on patch:
+"[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
+https://lkml.org/lkml/2013/11/8/22
 
-Should we go to some specific frequency?
+[2] and depends on series from Prabhakar Lad:
+"[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
+https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
 
-For example, early athlon64 notebooks were unable to run on battery
-power on max frequency... these days there are various "Turbo"
-modes, but IIRC staying at high frequency there is only safe as long
-as CPU stays cool enough...
-									Pavel
+Based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+branch: keystone/master
+
+This series has been marked as RFC because it's based on an unfinished
+series of patches [2], but with hope that it will help to reach final decisions 
+and satisfy all interested parties.
+
+Grygorii Strashko (9):
+  gpio: davinci: get rid of DAVINCI_N_GPIO
+  gpio: introduce GPIO_DAVINCI kconfig option
+  gpio: davinci: use chained_irq_enter/chained_irq_exit API
+  gpio: davinci: make IRQ initialization soc specific
+  gpio: davinci: reuse for Keystone SoC
+  arm: dts: keystone: add GPIO device entry
+  ARM: keystone_defconfig: enable gpio support
+  arm: dts: keystone-evm: add LEDs supports
+  ARM: keystone_defconfig: enable LED support
+
+ .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+ arch/arm/boot/dts/k2hk-evm.dts                     |   23 ++
+ arch/arm/boot/dts/keystone.dtsi                    |   45 +++
+ arch/arm/configs/keystone_defconfig                |   11 +
+ drivers/gpio/Kconfig                               |    7 +
+ drivers/gpio/Makefile                              |    2 +-
+ drivers/gpio/gpio-davinci.c                        |  306 ++++++++++++++------
+ 7 files changed, 305 insertions(+), 93 deletions(-)
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.9.5
+
