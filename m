@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab3KZEoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:44:08 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43340 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab3KZEoF (ORCPT
+	id S1754130Ab3KZEoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:44:32 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:52641 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab3KZEoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:44:05 -0500
+	Mon, 25 Nov 2013 23:44:30 -0500
 From: Ming Lei <ming.lei@canonical.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Ming Lei <ming.lei@canonical.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v1 1/2] lib/scatterlist: export sg_miter_skip()
-Date: Tue, 26 Nov 2013 12:43:37 +0800
-Message-Id: <1385441017-5773-1-git-send-email-ming.lei@canonical.com>
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH v1 2/2] USB: storage: use sg_miter_* APIs to access scsi buffer
+Date: Tue, 26 Nov 2013 12:44:13 +0800
+Message-Id: <1385441053-5810-1-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sg_copy_buffer() can't meet demand for some drrivers(such usb
-mass storage), so we have to use the sg_miter_* APIs to access
-sg buffer, then need export sg_miter_skip() for these drivers.
+We have sg_miter_* APIs for accessing scsi sg buffer, so
+use them to make code clean and bug free.
 
-The API is needed for converting to sg_miter_* APIs in USB storage
-driver for accessing sg buffer.
-
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- include/linux/scatterlist.h |    1 +
- lib/scatterlist.c           |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/storage/protocol.c |   80 +++++++++++++---------------------------
+ 1 file changed, 26 insertions(+), 54 deletions(-)
 
-diff --git a/include/linux/scatterlist.h b/include/linux/scatterlist.h
-index adae88f..a964f72 100644
---- a/include/linux/scatterlist.h
-+++ b/include/linux/scatterlist.h
-@@ -345,6 +345,7 @@ struct sg_mapping_iter {
- 
- void sg_miter_start(struct sg_mapping_iter *miter, struct scatterlist *sgl,
- 		    unsigned int nents, unsigned int flags);
-+bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset);
- bool sg_miter_next(struct sg_mapping_iter *miter);
- void sg_miter_stop(struct sg_mapping_iter *miter);
- 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index d16fa29..3a8e8e8 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -495,7 +495,7 @@ static bool sg_miter_get_next_page(struct sg_mapping_iter *miter)
-  *   true if @miter contains the valid mapping.  false if end of sg
-  *   list is reached.
-  */
--static bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
-+bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
+diff --git a/drivers/usb/storage/protocol.c b/drivers/usb/storage/protocol.c
+index 5dfb4c3..f54e5fe 100644
+--- a/drivers/usb/storage/protocol.c
++++ b/drivers/usb/storage/protocol.c
+@@ -135,69 +135,41 @@ unsigned int usb_stor_access_xfer_buf(unsigned char *buffer,
+ 	unsigned int buflen, struct scsi_cmnd *srb, struct scatterlist **sgptr,
+ 	unsigned int *offset, enum xfer_buf_dir dir)
  {
- 	sg_miter_stop(miter);
+-	unsigned int cnt;
++	unsigned int cnt = 0;
+ 	struct scatterlist *sg = *sgptr;
++	struct sg_mapping_iter miter;
++	unsigned int nents = scsi_sg_count(srb);
  
-@@ -513,6 +513,7 @@ static bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset)
+-	/* We have to go through the list one entry
+-	 * at a time.  Each s-g entry contains some number of pages, and
+-	 * each page has to be kmap()'ed separately.  If the page is already
+-	 * in kernel-addressable memory then kmap() will return its address.
+-	 * If the page is not directly accessible -- such as a user buffer
+-	 * located in high memory -- then kmap() will map it to a temporary
+-	 * position in the kernel's virtual address space.
+-	 */
+-
+-	if (!sg)
++	if (sg)
++		nents = sg_nents(sg);
++	else
+ 		sg = scsi_sglist(srb);
  
- 	return true;
+-	/* This loop handles a single s-g list entry, which may
+-	 * include multiple pages.  Find the initial page structure
+-	 * and the starting offset within the page, and update
+-	 * the *offset and **sgptr values for the next loop.
+-	 */
+-	cnt = 0;
+-	while (cnt < buflen && sg) {
+-		struct page *page = sg_page(sg) +
+-				((sg->offset + *offset) >> PAGE_SHIFT);
+-		unsigned int poff = (sg->offset + *offset) & (PAGE_SIZE-1);
+-		unsigned int sglen = sg->length - *offset;
+-
+-		if (sglen > buflen - cnt) {
+-
+-			/* Transfer ends within this s-g entry */
+-			sglen = buflen - cnt;
+-			*offset += sglen;
+-		} else {
++	sg_miter_start(&miter, sg, nents, dir == FROM_XFER_BUF ?
++		SG_MITER_FROM_SG: SG_MITER_TO_SG);
+ 
+-			/* Transfer continues to next s-g entry */
+-			*offset = 0;
+-			sg = sg_next(sg);
+-		}
++	if (!sg_miter_skip(&miter, *offset))
++		return cnt;
++
++	while (sg_miter_next(&miter) && cnt < buflen) {
++		unsigned int len = min(miter.length, buflen - cnt);
++
++		if (dir == FROM_XFER_BUF)
++			memcpy(buffer + cnt, miter.addr, len);
++		else
++			memcpy(miter.addr, buffer + cnt, len);
+ 
+-		/* Transfer the data for all the pages in this
+-			* s-g entry.  For each page: call kmap(), do the
+-			* transfer, and call kunmap() immediately after. */
+-		while (sglen > 0) {
+-			unsigned int plen = min(sglen, (unsigned int)
+-					PAGE_SIZE - poff);
+-			unsigned char *ptr = kmap(page);
+-
+-			if (dir == TO_XFER_BUF)
+-				memcpy(ptr + poff, buffer + cnt, plen);
+-			else
+-				memcpy(buffer + cnt, ptr + poff, plen);
+-			kunmap(page);
+-
+-			/* Start at the beginning of the next page */
+-			poff = 0;
+-			++page;
+-			cnt += plen;
+-			sglen -= plen;
++		if (*offset + len < miter.piter.sg->length) {
++			*offset += len;
++			*sgptr = miter.piter.sg;
++		} else {
++			*offset = 0;
++			*sgptr = sg_next(miter.piter.sg);
+ 		}
++		cnt += len;
+ 	}
+-	*sgptr = sg;
++	sg_miter_stop(&miter);
+ 
+-	/* Return the amount actually transferred */
+ 	return cnt;
  }
-+EXPORT_SYMBOL(sg_miter_skip);
- 
- /**
-  * sg_miter_next - proceed mapping iterator to the next mapping
+ EXPORT_SYMBOL_GPL(usb_stor_access_xfer_buf);
 -- 
 1.7.9.5
 
