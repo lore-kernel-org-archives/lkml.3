@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3KZBAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:00:34 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48908 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab3KZBAc (ORCPT
+	id S1753510Ab3KZBDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:03:35 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:49397 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3KZBDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:00:32 -0500
-Date: Tue, 26 Nov 2013 12:00:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chao Yu <chao2.yu@samsung.com>
-Subject: linux-next: manual merge of the block tree with the f2fs tree
-Message-Id: <20131126120024.3532de1b44c22372ac1c37f5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Nov_2013_12_00_24_+1100_vWatN8D0KUb08/kt"
+	Mon, 25 Nov 2013 20:03:33 -0500
+MIME-Version: 1.0
+Date: Tue, 26 Nov 2013 09:03:31 +0800
+Message-ID: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
+Subject: Supporting 4 way connections in LKSCTP
+From: Sun Paul <paulrbk@gmail.com>
+To: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Nov_2013_12_00_24_+1100_vWatN8D0KUb08/kt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi
 
-Hi Jens,
+we have a problem on using LKSCTP to form a 4 ways multi-homing network.
 
-Today's linux-next merge of the block tree got a conflict in
-include/trace/events/f2fs.h between commit 4bfc388c73a1 ("f2fs: adds a
-tracepoint for f2fs_submit_read_bio") from the  tree and commit
-4f024f3797c4 ("block: Abstract out bvec iterator") from the block tree.
+Configuration
+- Node-A has 2 IP addresses in different subnets, known as IP-A (eth1),
+IP-B (eth2)
+- Node-B has 2 IP addresses in different subnets, known as IP-X (eth1),
+IP-Y (eth2)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+the four way paths are shown below.
+1. IP-A (11.1.1.1) to IP-X (11.1.1.11)
+2. IP-B (12.1.1.1) to IP-Y (12.1.1.11)
+3. IP-A (11.1.1.1) to IP-Y (12.1.1.11)
+4. IP-B (12.1.1.1) to IP-X (11.1.1.11)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+the HB/HB_ACK is normal for the paths " IP-A to IP-X" and "IP-B to
+IP-Y", but it is not correct for the rest of two.
 
-diff --cc include/trace/events/f2fs.h
-index 204fcc3201b1,bd3ee4fbe7a7..000000000000
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@@ -627,16 -614,16 +627,16 @@@ DECLARE_EVENT_CLASS(f2fs__submit_bio
- =20
-  	TP_fast_assign(
-  		__entry->dev		=3D sb->s_dev;
- -		__entry->btype		=3D btype;
- -		__entry->sync		=3D sync;
- +		__entry->rw		=3D rw;
- +		__entry->type		=3D type;
-- 		__entry->sector		=3D bio->bi_sector;
-- 		__entry->size		=3D bio->bi_size;
-+ 		__entry->sector		=3D bio->bi_iter.bi_sector;
-+ 		__entry->size		=3D bio->bi_iter.bi_size;
-  	),
- =20
- -	TP_printk("dev =3D (%d,%d), type =3D %s, io =3D %s, sector =3D %lld, siz=
-e =3D %u",
- +	TP_printk("dev =3D (%d,%d), %s%s, %s, sector =3D %lld, size =3D %u",
-  		show_dev(__entry),
- -		show_block_type(__entry->btype),
- -		__entry->sync ? "sync" : "no sync",
- +		show_bio_type(__entry->rw),
- +		show_block_type(__entry->type),
-  		(unsigned long long)__entry->sector,
-  		__entry->size)
-  );
+First of all, we are using iproute2 to form 2 table such that when
+IP-B arrives on IP-X, it will know how to route back to IP-B on the
+same interface, i.e (eth1). Same logic for the path "IP-A to IP-X".
 
---Signature=_Tue__26_Nov_2013_12_00_24_+1100_vWatN8D0KUb08/kt
-Content-Type: application/pgp-signature
+What we observed here is that when 12.1.1.1 sends INIT to 11.1.1.11,
+LKSCTP will send back the INIT_ACK to 12.1.1.1 using 12.1.1.11 but not
+using the IP 11.1.1.11.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+The above operation makes the subsequence HB/HB_ACK in using wrong IP address.
 
-iQIcBAEBCAAGBQJSk/KtAAoJEMDTa8Ir7ZwVMSAQAJJPhJU0/96v5fr5piMydiU+
-QevF7FQiYhiZtm+dri00J9tzT7WYpHLvOtDxlchZA30mbCF/xevRVoPD9NFy2gQ0
-1eiYiJvwhacaSEutpd2lUZC1nnL1SIBrSzKKYaz3XVFtj2upsWAkP9AaNH/hTTjM
-5GOPIunZaIoFnatsFCY1oJLkQ2waYZnJPCRe9G8ua7NmPSUALSWY0che9gbwzSyA
-V4uf7ITML6a97Oylb4jUjdhEvsyNw5wP+VRhiNoi4xJhZXJhdRdbs6cCngqCc7D+
-2DkNA5bXdOg8xpnVkGPezDJqIP0r/4U5ljy+RBsVP76KaL5JkOgszfEf61TUwwb9
-UAh4jCdGHnWqKU1+os7Rk7mkKR5Jg6qxnz9MsGWKIKvWKnnW5zWegIbQYPUUNIJM
-5R8FS+sTvQGmJMeLQXKoOfHUCwNUUqryTIrBQnnjokvMG4hLPCDVg9J0XvbxGvIf
-trn5Tgevt4P4+YMKb7zLzSyGG/pkBezhmQbynZJ4ksJiNEppAT7fur35NKkOJeF8
-DxKLY2eTxMZE3zoewanJEv997zE2m2kpxKTNeKJzNg6BG/nEpwtoR19nSh39UayT
-L9U6zlk3QqC0v5VOgT+jrK/rpnack6rV5xL9jJLx/ylvh36heqboiLMOjOrP8n4H
-8kR0mvO4hiJJc/paDzEZ
-=dMOK
------END PGP SIGNATURE-----
+TCP trace on eth1
+18:02:41.058640 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
+[init tag: 19933036] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
+18:02:41.061634 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
+18:02:41.062642 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+18:02:41.062846 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+18:02:41.361811 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+18:02:41.661791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+18:02:41.961791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
 
---Signature=_Tue__26_Nov_2013_12_00_24_+1100_vWatN8D0KUb08/kt--
+TCP trace on eth2
+18:02:41.058755 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
+[init tag: 424726157] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
+3340756356]
+18:02:41.061696 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
+18:02:41.062663 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+18:02:41.062791 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:41.361777 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:41.661772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:41.961772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:42.161771 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:42.461770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+18:02:42.675770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+
+
+If we are using single homing, there is no problem on the SCTP
+communication. Below is the TCP trace on eth1 using sctp_test
+
+18:09:55.356727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
+[init tag: 32516609] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
+18:09:55.356811 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
+[init tag: 3168861995] [rwnd: 131072] [OS: 10] [MIS: 16] [init TSN:
+1877695021]
+18:09:55.357727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
+18:09:55.357788 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
+18:09:55.358724 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+18:09:55.358740 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+18:09:55.379715 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [DATA]
+(B)(E) [TSN: 0] [SID: 0] [SSEQ 0] [PPID 0x3]
+18:09:55.379735 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [SACK]
+[cum ack 0] [a_rwnd 131064] [#gap acks 0] [#dup tsns 0]
+18:09:55.657716 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+18:09:55.657732 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+
+>From the observations, it seems that the LKSCTP library is not able to
+use the original local address when multi-homing is being used. Is
+there anyway can be resolved it?
+
+Thanks
+
+PS
