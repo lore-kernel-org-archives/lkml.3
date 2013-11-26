@@ -1,231 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab3KZX4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:56:04 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:40336 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab3KZXzF (ORCPT
+	id S1752716Ab3KZX4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:56:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37192 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab3KZX4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:55:05 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
-        dev@lynxeye.de
-Cc: mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stefan Agner <stefan@agner.ch>
-Subject: [PATCH 2/3] regulator: tps6586x: add voltage table for tps658643
-Date: Wed, 27 Nov 2013 00:45:44 +0100
-Message-Id: <8be2fe8560cc19f03d5be40ad3dc21d5979c8358.1385508112.git.stefan@agner.ch>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <cover.1385508112.git.stefan@agner.ch>
-References: <cover.1385508112.git.stefan@agner.ch>
+	Tue, 26 Nov 2013 18:56:34 -0500
+Date: Wed, 27 Nov 2013 00:56:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Davidlohr Bueso <davidlohr@hp.com>
+cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
+ plist in futex_wake()
+In-Reply-To: <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+Message-ID: <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
+References: <20131125203358.156292370@linutronix.de>  <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>  <20131126085256.GD789@laptop.programming.kicks-ass.net>  <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
+ <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on version, the voltage table might be different. Add version
-compatibility to the regulator information in order to select correct
-voltage table.
+On Tue, 26 Nov 2013, Davidlohr Bueso wrote:
+> On Tue, 2013-11-26 at 11:25 -0800, Davidlohr Bueso wrote:
+> > *sigh* I just realized I had some extra debugging options in the .config
+> > I ran for the patched kernel. This probably explains why the huge
+> > overhead. I'll rerun and report shortly.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/regulator/tps6586x-regulator.c | 97 ++++++++++++++++++++++------------
- 1 file changed, 64 insertions(+), 33 deletions(-)
+So you pulled a FUTEX, i.e. F*d Up That EXperiment :)
 
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index e8e3a8a..4fe844c 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -57,6 +57,8 @@
- #define TPS6586X_SMODE2		0x48
- 
- struct tps6586x_regulator {
-+	enum tps6586x_version version;
-+
- 	struct regulator_desc desc;
- 
- 	int enable_bit[2];
-@@ -86,7 +88,7 @@ static const unsigned int tps6586x_ldo0_voltages[] = {
- 	1200000, 1500000, 1800000, 2500000, 2700000, 2850000, 3100000, 3300000,
- };
- 
--static const unsigned int tps6586x_ldo4_voltages[] = {
-+static const unsigned int tps6586x_ldo4_sm2_voltages[] = {
- 	1700000, 1725000, 1750000, 1775000, 1800000, 1825000, 1850000, 1875000,
- 	1900000, 1925000, 1950000, 1975000, 2000000, 2025000, 2050000, 2075000,
- 	2100000, 2125000, 2150000, 2175000, 2200000, 2225000, 2250000, 2275000,
-@@ -104,6 +106,13 @@ static const unsigned int tps6586x_sm2_voltages[] = {
- 	4200000, 4250000, 4300000, 4350000, 4400000, 4450000, 4500000, 4550000,
- };
- 
-+static const unsigned int tps658643_sm2_voltages[] = {
-+	1025000, 1050000, 1075000, 1100000, 1125000, 1150000, 1175000, 1200000,
-+	1225000, 1250000, 1275000, 1300000, 1325000, 1350000, 1375000, 1400000,
-+	1425000, 1450000, 1475000, 1500000, 1525000, 1550000, 1575000, 1600000,
-+	1625000, 1650000, 1675000, 1700000, 1725000, 1750000, 1775000, 1800000,
-+};
-+
- static const unsigned int tps6586x_dvm_voltages[] = {
- 	 725000,  750000,  775000,  800000,  825000,  850000,  875000,  900000,
- 	 925000,  950000,  975000, 1000000, 1025000, 1050000, 1075000, 1100000,
-@@ -111,16 +120,16 @@ static const unsigned int tps6586x_dvm_voltages[] = {
- 	1325000, 1350000, 1375000, 1400000, 1425000, 1450000, 1475000, 1500000,
- };
- 
--#define TPS6586X_REGULATOR(_id, _pin_name, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
-+#define TPS6586X_REG(_ver, _id, _pin_name, vdata, vreg, shift,	nbits,	\
-+		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
- 	.desc	= {							\
- 		.supply_name = _pin_name,				\
- 		.name	= "REG-" #_id,					\
- 		.ops	= &tps6586x_regulator_ops,			\
- 		.type	= REGULATOR_VOLTAGE,				\
- 		.id	= TPS6586X_ID_##_id,				\
--		.n_voltages = ARRAY_SIZE(tps6586x_##vdata##_voltages),	\
--		.volt_table = tps6586x_##vdata##_voltages,		\
-+		.n_voltages = ARRAY_SIZE(vdata##_voltages),		\
-+		.volt_table = vdata##_voltages,				\
- 		.owner	= THIS_MODULE,					\
- 		.enable_reg = TPS6586X_SUPPLY##ereg0,			\
- 		.enable_mask = 1 << (ebit0),				\
-@@ -129,23 +138,24 @@ static const unsigned int tps6586x_dvm_voltages[] = {
- 		.apply_reg = (goreg),				\
- 		.apply_bit = (gobit),				\
- 	},								\
-+	.version	= _ver,						\
- 	.enable_reg[0]	= TPS6586X_SUPPLY##ereg0,			\
- 	.enable_bit[0]	= (ebit0),					\
- 	.enable_reg[1]	= TPS6586X_SUPPLY##ereg1,			\
- 	.enable_bit[1]	= (ebit1),
- 
--#define TPS6586X_LDO(_id, _pname, vdata, vreg, shift, nbits,		\
-+#define TPS6586X_LDO(_ver, _id, _pname, vdata, vreg, shift, nbits,	\
- 		     ereg0, ebit0, ereg1, ebit1)			\
- {									\
--	TPS6586X_REGULATOR(_id, _pname, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1, 0, 0)		\
-+	TPS6586X_REG(_ver, _id, _pname, vdata, vreg, shift, nbits,	\
-+		     ereg0, ebit0, ereg1, ebit1, 0, 0)	\
- }
- 
--#define TPS6586X_DVM(_id, _pname, vdata, vreg, shift, nbits,		\
-+#define TPS6586X_DVM(_ver, _id, _pname, vdata, vreg, shift, nbits,	\
- 		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
- {									\
--	TPS6586X_REGULATOR(_id, _pname, vdata, vreg, shift, nbits,	\
--			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
-+	TPS6586X_REG(_ver, _id, _pname, vdata, vreg, shift, nbits,	\
-+		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
- }
- 
- #define TPS6586X_SYS_REGULATOR()					\
-@@ -158,29 +168,45 @@ static const unsigned int tps6586x_dvm_voltages[] = {
- 		.id	= TPS6586X_ID_SYS,				\
- 		.owner	= THIS_MODULE,					\
- 	},								\
-+	.version	= TPS6586X_ANY,					\
- }
- 
-+/* Add version specific entries before any */
- static struct tps6586x_regulator tps6586x_regulator[] = {
- 	TPS6586X_SYS_REGULATOR(),
--	TPS6586X_LDO(LDO_0, "vinldo01", ldo0, SUPPLYV1, 5, 3, ENC, 0, END, 0),
--	TPS6586X_LDO(LDO_3, "vinldo23", ldo, SUPPLYV4, 0, 3, ENC, 2, END, 2),
--	TPS6586X_LDO(LDO_5, "REG-SYS", ldo, SUPPLYV6, 0, 3, ENE, 6, ENE, 6),
--	TPS6586X_LDO(LDO_6, "vinldo678", ldo, SUPPLYV3, 0, 3, ENC, 4, END, 4),
--	TPS6586X_LDO(LDO_7, "vinldo678", ldo, SUPPLYV3, 3, 3, ENC, 5, END, 5),
--	TPS6586X_LDO(LDO_8, "vinldo678", ldo, SUPPLYV2, 5, 3, ENC, 6, END, 6),
--	TPS6586X_LDO(LDO_9, "vinldo9", ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
--	TPS6586X_LDO(LDO_RTC, "REG-SYS", ldo, SUPPLYV4, 3, 3, V4, 7, V4, 7),
--	TPS6586X_LDO(LDO_1, "vinldo01", dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
--	TPS6586X_LDO(SM_2, "vin-sm2", sm2, SUPPLYV2, 0, 5, ENC, 7, END, 7),
--
--	TPS6586X_DVM(LDO_2, "vinldo23", dvm, LDO2BV1, 0, 5, ENA, 3,
--					ENB, 3, TPS6586X_VCC2, BIT(6)),
--	TPS6586X_DVM(LDO_4, "vinldo4", ldo4, LDO4V1, 0, 5, ENC, 3,
--					END, 3, TPS6586X_VCC1, BIT(6)),
--	TPS6586X_DVM(SM_0, "vin-sm0", dvm, SM0V1, 0, 5, ENA, 1,
--					ENB, 1, TPS6586X_VCC1, BIT(2)),
--	TPS6586X_DVM(SM_1, "vin-sm1", dvm, SM1V1, 0, 5, ENA, 0,
--					ENB, 0, TPS6586X_VCC1, BIT(0)),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_0, "vinldo01", tps6586x_ldo0, SUPPLYV1,
-+			5, 3, ENC, 0, END, 0),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_3, "vinldo23", tps6586x_ldo, SUPPLYV4,
-+			0, 3, ENC, 2, END, 2),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_5, "REG-SYS", tps6586x_ldo, SUPPLYV6,
-+			0, 3, ENE, 6, ENE, 6),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_6, "vinldo678", tps6586x_ldo, SUPPLYV3,
-+			0, 3, ENC, 4, END, 4),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_7, "vinldo678", tps6586x_ldo, SUPPLYV3,
-+			3, 3, ENC, 5, END, 5),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_8, "vinldo678", tps6586x_ldo, SUPPLYV2,
-+			5, 3, ENC, 6, END, 6),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_9, "vinldo9", tps6586x_ldo, SUPPLYV6,
-+			3, 3, ENE, 7, ENE, 7),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_RTC, "REG-SYS", tps6586x_ldo, SUPPLYV4,
-+			3, 3, V4, 7, V4, 7),
-+	TPS6586X_LDO(TPS6586X_ANY, LDO_1, "vinldo01", tps6586x_dvm, SUPPLYV1,
-+			0, 5, ENC, 1, END, 1),
-+	TPS6586X_LDO(TPS658623, SM_2, "vin-sm2", tps6586x_ldo4_sm2, SUPPLYV2,
-+			0, 5, ENC, 7, END, 7),
-+	TPS6586X_LDO(TPS658643, SM_2, "vin-sm2", tps658643_sm2, SUPPLYV2,
-+			0, 5, ENC, 7, END, 7),
-+	TPS6586X_LDO(TPS6586X_ANY, SM_2, "vin-sm2", tps6586x_sm2, SUPPLYV2,
-+			0, 5, ENC, 7, END, 7),
-+
-+	TPS6586X_DVM(TPS6586X_ANY, LDO_2, "vinldo23", tps6586x_dvm, LDO2BV1,
-+			0, 5, ENA, 3, ENB, 3, TPS6586X_VCC2, BIT(6)),
-+	TPS6586X_DVM(TPS6586X_ANY, LDO_4, "vinldo4", tps6586x_ldo4_sm2, LDO4V1,
-+			0, 5, ENC, 3, END, 3, TPS6586X_VCC1, BIT(6)),
-+	TPS6586X_DVM(TPS6586X_ANY, SM_0, "vin-sm0", tps6586x_dvm, SM0V1,
-+			0, 5, ENA, 1, ENB, 1, TPS6586X_VCC1, BIT(2)),
-+	TPS6586X_DVM(TPS6586X_ANY, SM_1, "vin-sm1", tps6586x_dvm, SM1V1,
-+			0, 5, ENA, 0, ENB, 0, TPS6586X_VCC1, BIT(0)),
- };
- 
- /*
-@@ -254,14 +280,16 @@ static int tps6586x_regulator_set_slew_rate(struct platform_device *pdev,
- 			setting->slew_rate & TPS6586X_SLEW_RATE_MASK);
- }
- 
--static inline struct tps6586x_regulator *find_regulator_info(int id)
-+static inline struct tps6586x_regulator *find_regulator_info(int id,
-+			enum tps6586x_version version)
- {
- 	struct tps6586x_regulator *ri;
- 	int i;
- 
- 	for (i = 0; i < ARRAY_SIZE(tps6586x_regulator); i++) {
- 		ri = &tps6586x_regulator[i];
--		if (ri->desc.id == id)
-+		if (ri->desc.id == id && ((ri->version == version) ||
-+					  (ri->version == TPS6586X_ANY)))
- 			return ri;
- 	}
- 	return NULL;
-@@ -351,6 +379,7 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
- 	struct regulator_init_data *reg_data;
- 	struct tps6586x_platform_data *pdata;
- 	struct of_regulator_match *tps6586x_reg_matches = NULL;
-+	enum tps6586x_version reg_version;
- 	int id;
- 	int err;
- 
-@@ -373,10 +402,12 @@ static int tps6586x_regulator_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	reg_version = tps6586x_get_version(pdev->dev.parent);
-+
- 	for (id = 0; id < TPS6586X_ID_MAX_REGULATOR; ++id) {
- 		reg_data = pdata->reg_init_data[id];
- 
--		ri = find_regulator_info(id);
-+		ri = find_regulator_info(id, reg_version);
- 		if (!ri) {
- 			dev_err(&pdev->dev, "invalid regulator ID specified\n");
- 			return -EINVAL;
--- 
-1.8.4.2
+> I'm very sorry about the false alarm -- after midnight my brain starts
+> to melt. After re-running everything on my laptop (yes, with the
+> correct .config file), I can see that the differences are rather minimal
+> and variation also goes down, as expected. I've also included the
+> results for the original atomic ops approach, which mostly measures the
+> atomic_dec when we dequeue the woken task. Results are in the noise
+> range and virtually the same for both approaches (at least on a smaller
+> x86_64 system).
+>
+> +---------+-----------------------------+----------------------------+------------------------------+
+> | threads | baseline time (ms) [stddev] | barrier time (ms) [stddev] | atomicops time (ms) [stddev] |
+> +---------+-----------------------------+----------------------------+------------------------------+
+> |     512 | 2.8360 [0.5168]             | 4.4100 [1.1150]            | 3.8150 [1.3293]              |
+> |     256 | 2.5080 [0.6375]             | 2.3070 [0.5112]            | 2.5980 [0.9079]              |
+> |     128 | 1.0200 [0.4264]             | 1.3980 [0.3391]            | 1.5180 [0.4902]              |
+> |      64 | 0.7890 [0.2667]             | 0.6970 [0.3374]            | 0.4020 [0.2447]              |
+> |      32 | 0.1150 [0.0184]             | 0.1870 [0.1428]            | 0.1490 [0.1156]              |
+> +---------+-----------------------------+----------------------------+------------------------------+
 
+That probably wants more than 10 repeated runs to converge into stable
+numbers. Thanks for providing the atomicops comparison! That's very
+helpful.
+
+It would be interesting to measure the overhead on the waiter side as
+well for both approaches (mb and atomic_inc), but I'm sure that at
+least for x86 it's going to be in the same ballpark.
+
+So I discovered earlier today, that your atomic ops variant is working
+because the atomic_inc() in get_futex_key_refs() is accidentally
+providing the required memory barrier on the waker side (on x86 and
+all other architectures which have an implict mb in atomic_inc()).
+
+For !fshared ones it's even a full mb on all architectiures today, see
+ihold().
+
+Aside of that get_user_pages_fast() is using atomic ops as well, not
+sure if it's a full mb on all architectures today, but it is on x86
+and others.
+
+Now I'm tempted to turn this accidental into a documented behaviour.
+The basic requirement for the fast lockless check of the plist is:
+
+    record_waiter(hb)   |      *uaddr = newval
+    mb                  |      mb
+    *uaddr == oldval ?  |      nr_waiters(hb) != 0?
+
+So on the waker side we can conditonally (dependent on the arch
+implementation) rely on the mb in get_futex_key_refs(). See below.
+
+Now it does not matter much in terms of barrier related overhead
+whether the record_waiter() is implemented via atomic_inc() or via the
+early enqueue into the plist + smp_mb. In both cases we have a full
+smp_mb(), whether implicit or explicit.
+
+And versus memory/cache footprint it's probably not relevant either
+whether we add the counter or not. Assumed we have no debug options
+enabled then the resulting size of futex_hash_bucket will be:
+
+ 16 bytes on 32bit (12 bytes today)
+
+ 24 bytes on 64bit (24 bytes today)
+
+In fact for 32bit despite the slightly larger memory foot print the
+cache line efficiency is actually better than now as we avoid hash
+buckets crossing cache line boundaries.
+
+No change on the 64 bit side.
+
+As a side note, it might be worthwhile to epxlore whether forcing the
+hash buckets to be cache line aligned gives us an advantage over
+blindly increasing the hash size:
+
+ We could avoid access across cacheline boundaries and also avoid
+ massive cache line bouncing if multiple cpus are hammering away at
+ different hash buckets which happen to reside in the same cache line.
+
+But back to the problem at hand.
+
+I'm leaning towards your initial atomic_inc() approach for the
+following reasons:
+
+1) It avoids the queue/unqueue dance in the error and (*uaddr != uval)
+   case. The latter is the one you are optimizing for.
+
+   We dirty the cache line in any case on the waiter side.
+
+   With the optimized check, we avoid dirtying the cache line on the
+   waker side in the case that there is no waiter in flight or
+   enqueued.
+
+2) It's very simple to make it OPT-IN. That allows architectures to
+   trade the mb/memory overhead with the spinlock contention overhead.
+
+   A lot of [embedded] architectures do not care at all about the
+   futex performance simply because they do not run futex sensitive
+   workloads. And others might want to avoid the heavy smp_mb() for
+   obvious reasons.
+
+   Make that a CONFIG switch which can be selected by the user or by a
+   select statement in the arch. That also allows archs to determine
+   the costs of that optimization just by recompiling with a different
+   .config.
+
+   All it needs are conditional implementations for futex_get_mm(),
+   hb_waiters_inc(x), hb_waiters_dec() and hb_waiters_pending()
+
+   futex_get_mm(x)
+   {
+      atomic_inc(x); 
+      #ifdef CONFIG_FUTEX_SOMESENSIBLE_OPTION
+        /*
+	 * Reduced to a simple barrier() where the atomic_inc
+	 * has an implicit mb()
+	 */
+        smp_mb__after_atomic_inc();
+      #endif
+   }
+
+   futex_get_mm() must be used for incrementing the refcount of
+   &key->private.mm->mm_count in get_futex_key_refs().
+
+   hb_waiters_inc(hb)
+   {
+      #ifdef CONFIG_FUTEX_SOMESENSIBLE_OPTION
+      atomic_inc(&hb->waiters); 
+        /*
+	 * Reduced to a simple barrier() where the atomic_inc
+	 * has an implicit mb()
+	 */
+        smp_mb__after_atomic_inc();
+      #endif
+   }
+
+   hb_waiters_inc() must be used in futex_wait()
+
+   hb_waiters_dec(hb)
+   {
+      #ifdef CONFIG_FUTEX_SOMESENSIBLE_OPTION
+      atomic_dec(&hb->waiters); 
+        /*
+	 * Reduced to a simple barrier() where the atomic_dec
+	 * has an implicit mb().
+	 *
+	 * For the other archs it's debatable whether this has
+	 * a hard requirement to be guarded. The optimized
+	 * hb_waiters_pending() check for pending wakers might
+	 * fail in rare cases, but just for the cost of a
+	 * spinlock/unlock. The consistency of hb->waiters itself
+	 * is always guaranteed, i.e. it can't go below 0.
+	 */
+        smp_mb__after_atomic_dec();
+      #endif }
+
+   hb_waiters_dec() must be used for dequeueing in all cases which
+   are counterparts to a queueing futex_wait().
+
+   hb_waiters_pending(x)
+   {
+      #ifdef CONFIG_FUTEX_SOMESENSIBLE_OPTION
+          return atomic_read(x);
+      #else
+	  return 1;
+      #endif
+   }
+
+   So the compiler can optimize the quick check in futex_wait() out:
+
+   	   if (!hb_waiters_pending(&hb->waiters))
+	      goto out_put_keys;
+
+
+Of course that wants to be documented very carefully in the code, so
+we can avoid the brain melting exercise of the futex/memory ordering
+combo next time.
+
+Thanks,
+
+      tglx, who is about to apply a full memory barrier to himself in
+      	    order to cure all this FU[BAR]TEX induced brain damage.
