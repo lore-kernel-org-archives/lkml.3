@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab3KZNvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:51:38 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62485 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab3KZNur (ORCPT
+	id S1756928Ab3KZNve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:51:34 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:26606 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab3KZNur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 08:50:47 -0500
-X-AuditID: cbfec7f5-b7f706d0000017c2-a0-5294a7309b4c
+X-AuditID: cbfec7f5-b7f706d0000017c2-9d-5294a730a313
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>,
@@ -17,115 +17,107 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 4/5] mfd: sec: Add PM ops and make it a wake up source
-Date: Tue, 26 Nov 2013 14:50:27 +0100
-Message-id: <1385473828-31078-5-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 3/5] rtc: s5m: Limit endless loop waiting for register update
+Date: Tue, 26 Nov 2013 14:50:26 +0100
+Message-id: <1385473828-31078-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
 References: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4FV2D5VOCDHYeVrRYcvEqu8WzW3uZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4FV2D5VOCDP78Y7JYcvEqu8WzW3uZ
 	LF6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF/s4ORovT3awWF1d8YXLg8tgz8SSbx51re9g8
-	Dh3uYPSYdzLQo2/LKkaP6fN+Mnl83iQXwB7FZZOSmpNZllqkb5fAldG7egdjwRbxitnLZ7I0
-	MP4U6mLk5JAQMJG4dvwlK4QtJnHh3nq2LkYuDiGBpYwSvb9/sEA4fUwSvz/dZgOpYhMwlti8
-	fAlYlYjAVUaJiUsWs4M4zAK7GCXe/tzFCFIlLOAm8fXTbKAEBweLgKrElU/GIGFeAXeJF9vO
-	soKEJQQUJOZMsgEJcwp4SMzsWcYCYgsBlZw7uItpAiPvAkaGVYyiqaXJBcVJ6blGesWJucWl
-	eel6yfm5mxghIfh1B+PSY1aHGAU4GJV4eCU6JwcJsSaWFVfmHmKU4GBWEuGNnT4lSIg3JbGy
-	KrUoP76oNCe1+BAjEwenVAOj0abCsvPPPjdpn2E22D7XWPmlzkyRKdNNrWLaI+On+vbeXdHM
-	EGD6YdN8K7GVKipTVoiznX9+ra9Ec0Jt2ZG3W9WsXzHOmBj9rHcjg1Z7MONlvRSxgn7XSF/l
-	Pd8PBdpaz9890++VzZnXDpwKjXWqe6YG8e4P2Lqii+eITu3GEyyBh6fotVgpsRRnJBpqMRcV
-	JwIAQ+8w9B8CAAA=
+	Dh3uYPSYdzLQo2/LKkaP6fN+Mnl83iQXwB7FZZOSmpNZllqkb5fAlXHsVwdrwSehivsTH7M2
+	MK7i72Lk5JAQMJGY/uITI4QtJnHh3nq2LkYuDiGBpYwSuy/3skM4fUwSvz/dZgOpYhMwlti8
+	fAlYlYjAVUaJiUsWg1UxC+xilHj7cxfQLA4OYQFfiZUv8kAaWARUJZZf6GYGsXkF3CUev/nD
+	DFIiIaAgMWeSDUiYU8BDYmbPMhYQWwio5NzBXUwTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7N
+	S9dLzs/dxAgJwa87GJceszrEKMDBqMTDK9E5OUiINbGsuDL3EKMEB7OSCG/s9ClBQrwpiZVV
+	qUX58UWlOanFhxiZODilGhizzb7c4lpfekJjIgNz5U/PN/PyA5zjolWLm+O9ZZ8uijskGn3M
+	X3P1j09+Myzzq/VFN7/7+3vbo8uu0j+L28RvcaixB1zPNNV5aS/R2/3tUdF9TvsVvGu7eIqF
+	ZjGmbc98xtIUXyOvYfLw0nXPpaUL4j8fXSNxUFZR5tXFppwloX+ndYSEJSmxFGckGmoxFxUn
+	AgClHcAPHwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PM suspend/resume ops to the sec MFD core driver and make it a wake
-up source. This allows proper waking from suspend to RAM and also fixes
-broken interrupts after resuming:
-[   42.705703] sec_pmic 7-0066: Failed to read IRQ status: -5
+After setting alarm or time the driver is waiting for UDR register to be
+cleared indicating that registers data have been transferred.
 
-Interrupts stop working after first resume initiated by them (e.g. by
-RTC Alarm interrupt) because interrupt registers were not cleared properly.
-
-When device is woken up from suspend by RTC Alarm, an interrupt occurs
-before resuming I2C bus controller. The interrupt is handled by
-regmap_irq_thread which tries to read RTC registers. This read fails
-(I2C is still suspended) and RTC Alarm interrupt is disabled.
-
-Disable the S5M8767 interrupts during suspend (disable_irq()) and enable
-them during resume so the device will be still woken up but the interrupt
-won't happen before resuming I2C bus.
+Limit the endless loop to only 5 retries.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/sec-core.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/rtc/rtc-s5m.c |   37 +++++++++++++++++++++++++++++++------
+ 1 file changed, 31 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index a1a413a..8c86da4 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -323,6 +323,8 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	if (ret)
- 		goto err;
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 66686d9..51471c1 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -28,6 +28,16 @@
+ #include <linux/mfd/samsung/irq.h>
+ #include <linux/mfd/samsung/rtc.h>
  
-+	device_init_wakeup(sec_pmic->dev, sec_pmic->wakeup);
++/*
++ * Maximum number of retries for checking changes in UDR field
++ * of SEC_RTC_UDR_CON register (to limit possible endless loop).
++ *
++ * After writing to RTC registers (setting time or alarm) read the UDR field
++ * in SEC_RTC_UDR_CON register. UDR is auto-cleared when data have
++ * been transferred.
++ */
++#define UDR_READ_RETRY_CNT	5
 +
- 	return ret;
- 
- err:
-@@ -341,6 +343,43 @@ static int sec_pmic_remove(struct i2c_client *i2c)
- 	return 0;
+ struct s5m_rtc_info {
+ 	struct device *dev;
+ 	struct sec_pmic_dev *s5m87xx;
+@@ -84,6 +94,25 @@ static int s5m8767_tm_to_data(struct rtc_time *tm, u8 *data)
+ 	}
  }
  
-+static int sec_pmic_suspend(struct device *dev)
++/*
++ * Read RTC_UDR_CON register and wait till UDR field is cleared.
++ * This indicates that time/alarm update ended.
++ */
++static inline int s5m8767_wait_for_udr_update(struct s5m_rtc_info *info)
 +{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct sec_pmic_dev *sec_pmic = i2c_get_clientdata(i2c);
++	int ret, retry = UDR_READ_RETRY_CNT;
++	unsigned int data;
 +
-+	if (device_may_wakeup(dev)) {
-+		enable_irq_wake(sec_pmic->irq);
-+		/*
-+		 * PMIC IRQ must be disabled during suspend for RTC alarm
-+		 * to work properly.
-+		 * When device is woken up from suspend by RTC Alarm, an
-+		 * interrupt occurs before resuming I2C bus controller.
-+		 * The interrupt is handled by regmap_irq_thread which tries
-+		 * to read RTC registers. This read fails (I2C is still
-+		 * suspended) and RTC Alarm interrupt is disabled.
-+		 */
-+		disable_irq(sec_pmic->irq);
-+	}
++	do {
++		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
++	} while (--retry && (data & RTC_UDR_MASK) && !ret);
 +
-+	return 0;
++	if (!retry)
++		dev_err(info->dev, "waiting for UDR update, reached max number of retries\n");
++
++	return ret;
 +}
 +
-+static int sec_pmic_resume(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct sec_pmic_dev *sec_pmic = i2c_get_clientdata(i2c);
-+
-+	if (device_may_wakeup(dev)) {
-+		disable_irq_wake(sec_pmic->irq);
-+		enable_irq(sec_pmic->irq);
-+	}
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(sec_pmic_pm_ops, sec_pmic_suspend, sec_pmic_resume);
-+
- static const struct i2c_device_id sec_pmic_id[] = {
- 	{ "sec_pmic", 0 },
- 	{ }
-@@ -351,6 +390,7 @@ static struct i2c_driver sec_pmic_driver = {
- 	.driver = {
- 		   .name = "sec_pmic",
- 		   .owner = THIS_MODULE,
-+		   .pm = &sec_pmic_pm_ops,
- 		   .of_match_table = of_match_ptr(sec_dt_match),
- 	},
- 	.probe = sec_pmic_probe,
+ static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
+ {
+ 	int ret;
+@@ -104,9 +133,7 @@ static inline int s5m8767_rtc_set_time_reg(struct s5m_rtc_info *info)
+ 		return ret;
+ 	}
+ 
+-	do {
+-		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
+-	} while ((data & RTC_UDR_MASK) && !ret);
++	ret = s5m8767_wait_for_udr_update(info);
+ 
+ 	return ret;
+ }
+@@ -133,9 +160,7 @@ static inline int s5m8767_rtc_set_alarm_reg(struct s5m_rtc_info *info)
+ 		return ret;
+ 	}
+ 
+-	do {
+-		ret = regmap_read(info->regmap, SEC_RTC_UDR_CON, &data);
+-	} while ((data & RTC_UDR_MASK) && !ret);
++	ret = s5m8767_wait_for_udr_update(info);
+ 
+ 	return ret;
+ }
 -- 
 1.7.9.5
 
