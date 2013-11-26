@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab3KZSM5 (ORCPT <rfc822;w@1wt.eu>);
+	id S932694Ab3KZSU6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:20:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21739 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757680Ab3KZSM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 13:12:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35327 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755864Ab3KZSMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:12:50 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.11 02/36] libertas: potential oops in debugfs
-Date: Tue, 26 Nov 2013 10:12:12 -0800
-Message-Id: <20131126181025.544527975@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
-References: <20131126181025.029404973@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,776,1378882800"; 
+   d="scan'208";a="434562060"
+Message-ID: <5294E4A1.9080905@intel.com>
+Date: Tue, 26 Nov 2013 10:12:49 -0800
+From: "H. Peter Anvin" <h.peter.anvin@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+CC: Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Krishna Kumar Reddy Yerramreddy 
+	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH char-misc-linus 5/5] misc: mic: Fix user space namespace
+ pollution from mic_common.h.
+References: <cover.1385487752.git.ashutosh.dixit@intel.com> <a0760d072de1531018bdfb4a1f5d1f6e35def26c.1385487752.git.ashutosh.dixit@intel.com>
+In-Reply-To: <a0760d072de1531018bdfb4a1f5d1f6e35def26c.1385487752.git.ashutosh.dixit@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+On 11/26/2013 10:15 AM, Ashutosh Dixit wrote:
+> Avoid declaring ALIGN() and __aligned() in
+> include/uapi/linux/mic_common.h since they pollute user space
+> namespace. Also, mic_aligned_size() can be simply replaced simply by
+> sizeof() since all structures where mic_aligned_size() is used are
+> declared using __attribute__ ((aligned(8)));
+> 
+> +#define MIC_ALIGN(a, x) (((a) + (x) - 1) & ~((x) - 1))
+>  
 
-------------------
+This is still user namespace.  I would suggest __mic_align() or
+_MIC_ALIGN() instead, unless you're actively expecting user code to make
+use of this macro (in which case it should be made more robust.)
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
-
-commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88 upstream.
-
-If we do a zero size allocation then it will oops.  Also we can't be
-sure the user passes us a NUL terminated string so I've added a
-terminator.
-
-This code can only be triggered by root.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/libertas/debugfs.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/net/wireless/libertas/debugfs.c
-+++ b/drivers/net/wireless/libertas/debugfs.c
-@@ -913,7 +913,10 @@ static ssize_t lbs_debugfs_write(struct
- 	char *p2;
- 	struct debug_data *d = f->private_data;
- 
--	pdata = kmalloc(cnt, GFP_KERNEL);
-+	if (cnt == 0)
-+		return 0;
-+
-+	pdata = kmalloc(cnt + 1, GFP_KERNEL);
- 	if (pdata == NULL)
- 		return 0;
- 
-@@ -922,6 +925,7 @@ static ssize_t lbs_debugfs_write(struct
- 		kfree(pdata);
- 		return 0;
- 	}
-+	pdata[cnt] = '\0';
- 
- 	p0 = pdata;
- 	for (i = 0; i < num_of_items; i++) {
+	-hpa
 
 
