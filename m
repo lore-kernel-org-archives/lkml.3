@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3KZGcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:32:12 -0500
-Received: from atl4mhob14.myregisteredsite.com ([209.17.115.52]:48918 "EHLO
-	atl4mhob14.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752799Ab3KZGcK (ORCPT
+	id S1754107Ab3KZGdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:33:16 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37527 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab3KZGdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:32:10 -0500
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
-Date: Tue, 26 Nov 2013 07:32:00 +0100
-Message-Id: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 26 Nov 2013 01:33:12 -0500
+Message-ID: <5294409F.70508@hitachi.com>
+Date: Tue, 26 Nov 2013 15:33:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] 3.13-rc1 kernel crash when enable all tracepoints
+References: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
+In-Reply-To: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leaving the mux enabled causes needless I2C traffic on the downstream
-bus. De-selecting after every request causes excess I2C traffic and
-switching.
+(2013/11/26 13:38), Jovi Zhangwei wrote:
+> Hi,
+> 
+> I'm not sure this issue already be fixed or not, it can be reproduced
+> permanently.
+> 
+> (I didn't use git-bisect yet, you guys might can understand it quickly)
+> 
+> #echo 1 > /sys/kernel/debug/tracing/events/enable
 
-This patch implements a hybrid solution: After 200ms of inactivity,
-the mux is disabled.
+Thanks for reporting. I could reproduce it.
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- drivers/i2c/muxes/i2c-mux-pca954x.c |   45 ++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
+To narrow this down, I tried to run the below command
 
-diff --git a/drivers/i2c/muxes/i2c-mux-pca954x.c b/drivers/i2c/muxes/i2c-mux-pca954x.c
-index a531d80..1241c97 100644
---- a/drivers/i2c/muxes/i2c-mux-pca954x.c
-+++ b/drivers/i2c/muxes/i2c-mux-pca954x.c
-@@ -41,6 +41,7 @@
- #include <linux/device.h>
- #include <linux/i2c.h>
- #include <linux/i2c-mux.h>
-+#include <linux/workqueue.h>
- 
- #include <linux/i2c/pca954x.h>
- 
-@@ -60,7 +61,8 @@ enum pca_type {
- struct pca954x {
- 	enum pca_type type;
- 	struct i2c_adapter *virt_adaps[PCA954X_MAX_NCHANS];
--
-+	struct i2c_client *client;
-+	struct delayed_work deselect_work;
- 	u8 last_chan;		/* last register value */
- };
- 
-@@ -168,11 +170,43 @@ static int pca954x_select_chan(struct i2c_adapter *adap,
- 	return ret;
- }
- 
--static int pca954x_deselect_mux(struct i2c_adapter *adap,
-+static void pca954x_deselect_work(struct work_struct *work)
-+{
-+	struct pca954x *data = container_of(
-+				work, struct pca954x, deselect_work.work);
-+	/* Use the adapter lock as a mutex because any method that changes
-+	 * the mux state will also hold this mutex. If the bus is in use,
-+	 * the lock will assure that at least that transaction will
-+	 * complete. */
-+	i2c_lock_adapter(data->client->adapter);
-+	if (data->last_chan != 0) {
-+		int res;
-+		/* Disable mux */
-+		dev_dbg(&client->dev, "deselecting mux\n");
-+		data->last_chan = 0;
-+		res = pca954x_reg_write(data->client->adapter,
-+				data->client, data->last_chan);
-+		if (res < 0)
-+			dev_err(&client->dev,
-+				"%s: pca954x_reg_write failed: %d\n",
-+				__func__, res);
-+	}
-+	i2c_unlock_adapter(data->client->adapter);
-+}
-+
-+static int pca954x_deselect_mux_delayed(struct i2c_adapter *adap,
- 				void *client, u32 chan)
- {
- 	struct pca954x *data = i2c_get_clientdata(client);
-+	/* Setup timer to disable at a later interval */
-+	schedule_delayed_work(&data->deselect_work, msecs_to_jiffies(200));
-+	return 0;
-+}
- 
-+static int pca954x_deselect_mux_immediate(struct i2c_adapter *adap,
-+				void *client, u32 chan)
-+{
-+	struct pca954x *data = i2c_get_clientdata(client);
- 	/* Deselect active channel */
- 	data->last_chan = 0;
- 	return pca954x_reg_write(adap, client, data->last_chan);
-@@ -212,6 +246,8 @@ static int pca954x_probe(struct i2c_client *client,
- 
- 	data->type = id->driver_data;
- 	data->last_chan = 0;		   /* force the first selection */
-+	data->client = client;
-+	INIT_DELAYED_WORK(&data->deselect_work, pca954x_deselect_work);
- 
- 	/* Now create an adapter for each channel */
- 	for (num = 0; num < chips[data->type].nchans; num++) {
-@@ -231,7 +267,8 @@ static int pca954x_probe(struct i2c_client *client,
- 			i2c_add_mux_adapter(adap, &client->dev, client,
- 				force, num, class, pca954x_select_chan,
- 				(pdata && pdata->modes[num].deselect_on_exit)
--					? pca954x_deselect_mux : NULL);
-+					? pca954x_deselect_mux_immediate
-+					: pca954x_deselect_mux_delayed);
- 
- 		if (data->virt_adaps[num] == NULL) {
- 			ret = -ENODEV;
-@@ -264,6 +301,8 @@ static int pca954x_remove(struct i2c_client *client)
- 	const struct chip_desc *chip = &chips[data->type];
- 	int i;
- 
-+	cancel_delayed_work_sync(&data->deselect_work);
-+
- 	for (i = 0; i < chip->nchans; ++i)
- 		if (data->virt_adaps[i]) {
- 			i2c_del_mux_adapter(data->virt_adaps[i]);
+[tracing]# for i in events/*/*/enable ; do echo $i; echo 1 > $i; done
+
+And it ran through the end without any problem.
+Hm, next I checked the difference of available_events and set_event.
+
+[tracing]# diff available_events set_event
+283d282
+< ftrace:function
+
+So, I guess it was caused by enabling ftrace:function, and
+it is unable to do that via set_event, nor events/ftrace/enable
+I'm not sure how, but it seems that ftrace:function can be
+enabled by the events/enable.
+
+Thank you,
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
