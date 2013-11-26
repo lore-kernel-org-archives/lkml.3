@@ -1,50 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab3KZBbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:31:35 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:53161 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab3KZBbc (ORCPT
+	id S1752922Ab3KZBdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:33:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27663 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab3KZBdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:31:32 -0500
-Date: Mon, 25 Nov 2013 17:31:28 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
-cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: user defined OOM policies
-In-Reply-To: <20131122001859.GA9510@logfs.org>
-Message-ID: <alpine.DEB.2.02.1311251730160.27270@chino.kir.corp.google.com>
-References: <20131119131400.GC20655@dhcp22.suse.cz> <20131122001859.GA9510@logfs.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-602059341-1385429491=:27270"
+	Mon, 25 Nov 2013 20:33:37 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 03/10] PCI: Move resources and bus_list releasing to pci_release_dev
+Date: Mon, 25 Nov 2013 17:28:03 -0800
+Message-Id: <1385429290-25397-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+We should not release resource in pci_destroy that is too early
+as there could be still other use hold reference.
 
---531381512-602059341-1385429491=:27270
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+release them or remove it from bus devices list at last
+in pci_release_dev instead.
 
-On Thu, 21 Nov 2013, Jörn Engel wrote:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c  | 21 +++++++++++++++++++--
+ drivers/pci/remove.c | 19 -------------------
+ 2 files changed, 19 insertions(+), 21 deletions(-)
 
-> One ancient option I sometime miss was this:
-> 	- Kill the biggest process.
-> 
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 173a9cf..12ec56c 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1154,6 +1154,18 @@ static void pci_release_capabilities(struct pci_dev *dev)
+ 	pci_free_cap_save_buffers(dev);
+ }
+ 
++static void pci_free_resources(struct pci_dev *dev)
++{
++	int i;
++
++	pci_cleanup_rom(dev);
++	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
++		struct resource *res = dev->resource + i;
++		if (res->parent)
++			release_resource(res);
++	}
++}
++
+ /**
+  * pci_release_dev - free a pci device structure when all users of it are finished.
+  * @dev: device that's been disconnected
+@@ -1163,9 +1175,14 @@ static void pci_release_capabilities(struct pci_dev *dev)
+  */
+ static void pci_release_dev(struct device *dev)
+ {
+-	struct pci_dev *pci_dev;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++
++	down_write(&pci_bus_sem);
++	list_del(&pci_dev->bus_list);
++	up_write(&pci_bus_sem);
++
++	pci_free_resources(pci_dev);
+ 
+-	pci_dev = to_pci_dev(dev);
+ 	pci_release_capabilities(pci_dev);
+ 	pci_release_of_node(pci_dev);
+ 	pcibios_release_device(pci_dev);
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 692f4c3..f452148 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -3,20 +3,6 @@
+ #include <linux/pci-aspm.h>
+ #include "pci.h"
+ 
+-static void pci_free_resources(struct pci_dev *dev)
+-{
+-	int i;
+-
+-	msi_remove_pci_irq_vectors(dev);
+-
+-	pci_cleanup_rom(dev);
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-		struct resource *res = dev->resource + i;
+-		if (res->parent)
+-			release_resource(res);
+-	}
+-}
+-
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
+ 	pci_pme_active(dev, false);
+@@ -36,11 +22,6 @@ static void pci_destroy_dev(struct pci_dev *dev)
+ {
+ 	device_del(&dev->dev);
+ 
+-	down_write(&pci_bus_sem);
+-	list_del(&dev->bus_list);
+-	up_write(&pci_bus_sem);
+-
+-	pci_free_resources(dev);
+ 	put_device(&dev->dev);
+ }
+ 
+-- 
+1.8.1.4
 
-That's what both the system and memcg oom killer currently do unless you 
-change how "biggest process" is defined with /proc/pid/oom_score_adj.  The 
-goal is the kill a single process with the highest rss to avoid having to 
-kill many different processes.
---531381512-602059341-1385429491=:27270--
