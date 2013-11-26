@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3KZJDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 04:03:12 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14700 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab3KZJCN (ORCPT
+	id S1755075Ab3KZJDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:03:18 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:8602 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab3KZJCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 04:02:13 -0500
-X-AuditID: cbfec7f5-b7f706d0000017c2-be-5294639230d9
+	Tue, 26 Nov 2013 04:02:12 -0500
+X-AuditID: cbfec7f4-b7fea6d0000026ac-5f-529463900454
 From: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -25,355 +25,347 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Tarek Dakhran <t.dakhran@samsung.com>,
         Tyrtov Vyacheslav <v.tyrtov@samsung.com>, Dave.Martin@arm.com,
         nicolas.pitre@linaro.org, tomasz.figa@gmail.com
-Subject: [PATCH v4 4/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-Date: Tue, 26 Nov 2013 12:58:08 +0400
-Message-id: <1385456288-20398-5-git-send-email-v.tyrtov@samsung.com>
+Subject: [PATCH v4 3/4] ARM: dts: Add initial device tree support for EXYNOS5410
+Date: Tue, 26 Nov 2013 12:58:07 +0400
+Message-id: <1385456288-20398-4-git-send-email-v.tyrtov@samsung.com>
 X-Mailer: git-send-email 1.8.1.5
 In-reply-to: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
 References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xK7qTkqcEGXz5ImIxad0BJot5n2Ut
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/xK7oTkqcEGVyaom8xad0BJot5n2Ut
 	mubuYbSYf+Qcq8X/R69ZLc69Wslo0bvgKpvFpsfXWC0Wti1hsbi8aw6bxYzz+5gsbl/mtVh6
 	/SKTxdMJF9ksPj37x24xYfpaFovDK4CmrXs5ncViy88ORotXB9tYLNY/P8VosXnTVGaLVbv+
 	MFpMnfGD3UHCY828NYweLc09bB4LPl9h9/i76gWzx85Zd9k9Vi7/wubxavVMVo871/awebw7
-	d47dY/OSeo9X11g8+rasYvTYfm0es8fnTXIeG+eGBvBHcdmkpOZklqUW6dslcGXc2nuMueCi
-	Z8WViQYNjN+tuxg5OSQETCT2vrnHDmGLSVy4t56ti5GLQ0hgKaPE6Y9NjBBOD5PEslddYFVs
-	AnoSfa9usIDYIgIKEpt7n7GCFDELHGKTeH3/LnMXIweHsICLROtKNhCTRUBVYsVJQRCTFyj6
-	fYUNxC4FiaNtb9lBwpwCrhKXdoeDhIWAKta8P842gZF3ASPDKkbR1NLkguKk9FwjveLE3OLS
-	vHS95PzcTYyQmPq6g3HpMatDjAIcjEo8vBKdk4OEWBPLiitzDzFKcDArifC63gcK8aYkVlal
-	FuXHF5XmpBYfYmTi4JRqYKyI29+2PzrsorTO1v1WqYX8U/luL8gzC90oyb7yU6/OIY0QP/2r
-	d498C1588ul3m+4//6szrUrVcx2Vq7edfTWRQ71LqvVdoreMscUpQ/GHmasZ/vEkP85mVp21
-	YGlN6eSvl4JftV7Tn3qsp8fWqPjwL6ufWaeFt97aJFM31+l5pvkGq7uaa5RYijMSDbWYi4oT
-	AU6lXciHAgAA
+	d47dY/OSeo9X11g8+rasYvTYfm0es8fnTXIeG+eGBvBHcdmkpOZklqUW6dslcGW8nLWVteCl
+	Q8X5VTfYGxiPGXUxcnJICJhI3FwwiwnCFpO4cG89G4gtJLCUUaJnml8XIxeQ3cMkcb7vKStI
+	gk1AT6Lv1Q0WEFtEQEFic+8zVpAiZoFDbBKv799lBkkICwRIXGjpAJrKwcEioCqxbK0niMkr
+	4CLx62M9xC4FiaNtb9lBwpwCrhKXdodDrHWRWPP+ONsERt4FjAyrGEVTS5MLipPScw31ihNz
+	i0vz0vWS83M3MUKi6ssOxsXHrA4xCnAwKvHwFnRPDhJiTSwrrsw9xCjBwawkwut6HyjEm5JY
+	WZValB9fVJqTWnyIkYmDU6qBkX3RrAhGxvUmTNyijQk27gyFE25f3HvdeAW30Oznu+z3qtus
+	DJMweBWZEP7/7ONnTpZblrx24/OJez1nYpf5n6kHd5/5Mncn43GrorwECTHvZ8dYXyzRzZzW
+	feTOFX3/xLTLMm8FfCKKLx/NTfpzJGfSeu/biqV+Oj1CPx24rY45FphdumZXpcRSnJFoqMVc
+	VJwIANAenOuIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tarek Dakhran <t.dakhran@samsung.com>
 
-Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
+Add initial device tree nodes for EXYNOS5410 SoC and SMDK5410 board.
 
 Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
 ---
- arch/arm/mach-exynos/Makefile |   2 +
- arch/arm/mach-exynos/edcs.c   | 297 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 299 insertions(+)
- create mode 100644 arch/arm/mach-exynos/edcs.c
+ arch/arm/boot/dts/Makefile                |   1 +
+ arch/arm/boot/dts/exynos5410-smdk5410.dts |  72 +++++++++++
+ arch/arm/boot/dts/exynos5410.dtsi         | 207 ++++++++++++++++++++++++++++++
+ 3 files changed, 280 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
+ create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
 
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index 8930b66..bc1f7f9 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -34,3 +34,5 @@ AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
- 
- obj-$(CONFIG_ARCH_EXYNOS4)	+= mach-exynos4-dt.o
- obj-$(CONFIG_ARCH_EXYNOS5)	+= mach-exynos5-dt.o
-+
-+obj-$(CONFIG_SOC_EXYNOS5410)	+= edcs.o
-diff --git a/arch/arm/mach-exynos/edcs.c b/arch/arm/mach-exynos/edcs.c
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index d57c1a6..b947387 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -63,6 +63,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+ 	exynos5250-arndale.dtb \
+ 	exynos5250-smdk5250.dtb \
+ 	exynos5250-snow.dtb \
++	exynos5410-smdk5410.dtb \
+ 	exynos5420-smdk5420.dtb \
+ 	exynos5440-sd5v1.dtb \
+ 	exynos5440-ssdk5440.dtb
+diff --git a/arch/arm/boot/dts/exynos5410-smdk5410.dts b/arch/arm/boot/dts/exynos5410-smdk5410.dts
 new file mode 100644
-index 0000000..29f0bdd
+index 0000000..7ffd351
 --- /dev/null
-+++ b/arch/arm/mach-exynos/edcs.c
-@@ -0,0 +1,297 @@
++++ b/arch/arm/boot/dts/exynos5410-smdk5410.dts
+@@ -0,0 +1,72 @@
 +/*
-+ * arch/arm/mach-exynos/edcs.c - exynos dual cluster power management support
++ * SAMSUNG SMDK5410 board device tree source
 + *
 + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Tarek Dakhran <t.dakhran@samsung.com>
++ *		http://www.samsung.com
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * EDCS(exynos dual cluster support) for Exynos5410 SoC.
-+ */
++*/
 +
-+#define pr_fmt(fmt)	"%s: " fmt, __func__
++/dts-v1/;
++#include "exynos5410.dtsi"
++/ {
++	model = "Samsung SMDK5410 board based on EXYNOS5410";
++	compatible = "samsung,smdk5410", "samsung,exynos5410";
 +
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
-+#include <linux/irqchip/arm-gic.h>
-+#include <linux/delay.h>
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
 +
-+#include <asm/mcpm.h>
-+#include <asm/proc-fns.h>
-+#include <asm/cacheflush.h>
-+#include <asm/cputype.h>
-+#include <asm/cp15.h>
++	chosen {
++		bootargs = "console=ttySAC2,115200";
++	};
 +
-+#include <linux/arm-cci.h>
-+#include <mach/regs-pmu.h>
++	clocks {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+#define EDCS_CPUS_PER_CLUSTER		4
-+#define EDCS_CLUSTERS			2
++		fin_pll: clock-fin-pll {
++			compatible = "fixed-clock";
++			reg = <0>;
++			#clock-cells = <0>;
++			clock-frequency = <24000000>;
++			clock-output-names = "fin_pll";
++		};
++	};
 +
-+/* Exynos5410 power management registers */
-+#define EDCS_CORE_CONFIGURATION(_nr)	(S5P_ARM_CORE0_CONFIGURATION	\
-+						+ ((_nr) * 0x80))
-+#define EDCS_CORE_STATUS(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x4)
-+#define EDCS_CORE_OPTION(_nr)		(EDCS_CORE_CONFIGURATION(_nr) + 0x8)
++	mmc@12200000 {
++		status = "okay";
++		num-slots = <1>;
++		supports-highspeed;
++		broken-cd;
++		card-detect-delay = <200>;
++		samsung,dw-mshc-ciu-div = <3>;
++		samsung,dw-mshc-sdr-timing = <2 3>;
++		samsung,dw-mshc-ddr-timing = <1 2>;
 +
-+#define REG_CPU_STATE_ADDR0		(S5P_VA_SYSRAM_NS + 0x28)
-+#define REG_CPU_STATE_ADDR(_nr)		(REG_CPU_STATE_ADDR0 +	\
-+						 (_nr) * EDCS_CPUS_PER_CLUSTER)
++		slot@0 {
++			reg = <0>;
++			bus-width = <8>;
++		};
++	};
 +
-+#define SECONDARY_RESET			(1 << 1)
-+#define REG_ENTRY_ADDR			(S5P_VA_SYSRAM_NS + 0x1c)
++	mmc@12220000 {
++		status = "okay";
++		num-slots = <1>;
++		supports-highspeed;
++		card-detect-delay = <200>;
++		samsung,dw-mshc-ciu-div = <3>;
++		samsung,dw-mshc-sdr-timing = <2 3>;
++		samsung,dw-mshc-ddr-timing = <1 2>;
 +
-+#define EDCS_CORE_PWR_ON		0x3
-+#define EDCS_CORE_PWR_OFF		0x0
-+#define CORE_PWR_STATE_MASK		0x3
++		slot@0 {
++			reg = <0>;
++			bus-width = <4>;
++			disable-wp;
++		};
++	};
 +
-+static arch_spinlock_t edcs_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+static int edcs_use_count[EDCS_CPUS_PER_CLUSTER][EDCS_CLUSTERS];
-+static int core_count[EDCS_CLUSTERS];
-+
-+/*
-+ * this_core_to_pcpu reads mpidr and defines cluster and cpu.
-+ */
-+static void this_core_to_pcpu(unsigned int *pcpu, unsigned int *pcluster)
-+{
-+	unsigned int mpidr;
-+
-+	mpidr = read_cpuid_mpidr();
-+	*pcpu = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+	*pcluster = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-+}
-+
-+/*
-+ * core_power_state is used to get core power state.
-+ * returns:
-+ *        0x0 - powered off;
-+ *        0x3 - powered on;
-+ *        other values - in process;
-+ */
-+static int core_power_state(unsigned int cpu, unsigned int cluster)
-+{
-+	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
-+	int status = readl_relaxed(EDCS_CORE_STATUS(offset));
-+
-+	return status & CORE_PWR_STATE_MASK;
-+}
-+
-+static void edcs_core_power_up(unsigned int cpu, unsigned int cluster)
-+{
-+	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
-+	if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_OFF) {
-+		/* boot flag should be written before powering up */
-+		wmb();
-+		writel_relaxed(EDCS_CORE_PWR_ON,
-+				 EDCS_CORE_CONFIGURATION(offset));
-+	}
-+}
-+
-+static void edcs_core_power_down(unsigned int cpu, unsigned int cluster)
-+{
-+	unsigned int offset = cluster * EDCS_CPUS_PER_CLUSTER + cpu;
-+	if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_ON)
-+		writel_relaxed(EDCS_CORE_PWR_OFF,
-+				 EDCS_CORE_CONFIGURATION(offset));
-+}
-+
-+void set_boot_flag(unsigned int cpu, unsigned int mode)
-+{
-+	writel_relaxed(mode, REG_CPU_STATE_ADDR(cpu));
-+}
-+
-+static int edcs_power_up(unsigned int cpu, unsigned int cluster)
-+{
-+	pr_debug("cpu %u cluster %u\n", cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER || cluster >= EDCS_CLUSTERS);
-+
-+	local_irq_disable();
-+	arch_spin_lock(&edcs_lock);
-+
-+	edcs_use_count[cpu][cluster]++;
-+	if (edcs_use_count[cpu][cluster] == 1) {
-+		++core_count[cluster];
-+		set_boot_flag(cpu, SECONDARY_RESET);
-+		edcs_core_power_up(cpu, cluster);
-+	} else if (edcs_use_count[cpu][cluster] != 2) {
-+		/*
-+		 * The only possible values are:
-+		 * 0 = CPU down
-+		 * 1 = CPU (still) up
-+		 * 2 = CPU requested to be up before it had a chance
-+		 *     to actually make itself down.
-+		 * Any other value is a bug.
-+		 */
-+		BUG();
-+	}
-+
-+	arch_spin_unlock(&edcs_lock);
-+	local_irq_enable();
-+
-+	return 0;
-+}
-+static void edcs_power_down(void)
-+{
-+	unsigned int mpidr, cpu, cluster;
-+	bool last_man = false, skip_wfi = false;
-+
-+	this_core_to_pcpu(&cpu, &cluster);
-+	mpidr = read_cpuid_mpidr();
-+
-+	pr_debug("cpu %u cluster %u\n", cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-+
-+	__mcpm_cpu_going_down(cpu, cluster);
-+
-+	arch_spin_lock(&edcs_lock);
-+	BUG_ON(__mcpm_cluster_state(cluster) != CLUSTER_UP);
-+	edcs_use_count[cpu][cluster]--;
-+	if (edcs_use_count[cpu][cluster] == 0) {
-+		--core_count[cluster];
-+		edcs_core_power_down(cpu, cluster);
-+		if (core_count[cluster] == 0)
-+			last_man = true;
-+	} else if (edcs_use_count[cpu][cluster] == 1) {
-+		/*
-+		 * A power_up request went ahead of us.
-+		 * Even if we do not want to shut this CPU down,
-+		 * the caller expects a certain state as if the WFI
-+		 * was aborted.  So let's continue with cache cleaning.
-+		 */
-+		skip_wfi = true;
-+	} else
-+		BUG();
-+
-+	if (!skip_wfi)
-+		gic_cpu_if_down();
-+
-+	if (last_man && __mcpm_outbound_enter_critical(cpu, cluster)) {
-+		arch_spin_unlock(&edcs_lock);
-+
-+		if (read_cpuid_part_number() == ARM_CPU_PART_CORTEX_A15) {
-+			/*
-+			 * On the Cortex-A15 we need to disable
-+			 * L2 prefetching before flushing the cache.
-+			 */
-+			asm volatile(
-+			"mcr	p15, 1, %0, c15, c0, 3\n\t"
-+			"isb\n\t"
-+			"dsb"
-+			: : "r" (0x400));
-+		}
-+
-+		/*
-+		 * We need to disable and flush the whole (L1 and L2) cache.
-+		 * Let's do it in the safest possible way i.e. with
-+		 * no memory access within the following sequence
-+		 * including the stack.
-+		 *
-+		 * Note: fp is preserved to the stack explicitly prior doing
-+		 * this since adding it to the clobber list is incompatible
-+		 * with having CONFIG_FRAME_POINTER=y.
-+		 */
-+		v7_exit_coherency_flush(all);
-+
-+		cci_disable_port_by_cpu(mpidr);
-+
-+		__mcpm_outbound_leave_critical(cluster, CLUSTER_DOWN);
-+
-+	} else {
-+		arch_spin_unlock(&edcs_lock);
-+		/*
-+			* We need to disable and flush only the L1 cache.
-+			* Let's do it in the safest possible way as above.
-+		*/
-+		v7_exit_coherency_flush(louis);
-+
-+	}
-+	__mcpm_cpu_down(cpu, cluster);
-+
-+	if (!skip_wfi)
-+		wfi();
-+}
-+
-+static int edcs_power_down_finish(unsigned int cpu, unsigned int cluster)
-+{
-+	unsigned int timeout = 1000;
-+	unsigned int sleep_time = 10;
-+
-+	pr_debug("cpu %u cluster %u\n", cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-+
-+	do {
-+		if (ACCESS_ONCE(edcs_use_count[cpu][cluster]) == 0) {
-+			/* checking if core powered down */
-+			if (core_power_state(cpu, cluster) == EDCS_CORE_PWR_OFF)
-+				return 0;
-+		}
-+		msleep(sleep_time);
-+		timeout -= sleep_time;
-+	} while (timeout);
-+
-+	return -ETIMEDOUT; /* timeout */
-+}
-+
-+static const struct mcpm_platform_ops edcs_power_ops = {
-+	.power_up		= edcs_power_up,
-+	.power_down		= edcs_power_down,
-+	.power_down_finish	= edcs_power_down_finish,
 +};
-+
-+static void __init edcs_data_init(void)
-+{
-+	unsigned int cpu, cluster;
-+
-+	this_core_to_pcpu(&cpu, &cluster);
-+
-+	pr_debug("cpu %u cluster %u\n", cpu, cluster);
-+	BUG_ON(cpu >= EDCS_CPUS_PER_CLUSTER  || cluster >= EDCS_CLUSTERS);
-+	edcs_use_count[cpu][cluster] = 1;
-+	++core_count[cluster];
-+}
-+
+diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
+new file mode 100644
+index 0000000..fce54f8
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos5410.dtsi
+@@ -0,0 +1,207 @@
 +/*
-+ * Enable cluster-level coherency, in preparation for turning on the MMU.
++ * SAMSUNG EXYNOS5410 SoC device tree source
++ *
++ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * SAMSUNG EXYNOS5410 SoC device nodes are listed in this file.
++ * EXYNOS5410 based board files can include this file and provide
++ * values for board specfic bindings.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+static void __naked edcs_power_up_setup(unsigned int affinity_level)
-+{
-+	asm volatile ("\n"
-+	"b	cci_enable_port_for_self");
-+}
 +
-+static int __init edcs_init(void)
-+{
-+	int ret;
-+	struct device_node *node;
++#include <dt-bindings/clock/exynos5410.h>
++#include "exynos5.dtsi"
++/ {
++	compatible = "samsung,exynos5410";
 +
-+	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
-+	if (!node)
-+		return -ENODEV;
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+	if (!cci_probed())
-+		return -ENODEV;
++		CPU0: cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0>;
++			cci-control-port = <&cci_control2>;
++			clock-frequency = <1600000000>;
++		};
 +
-+	/*
-+	 * Future entries into the kernel can now go
-+	 * through the cluster entry vectors.
-+	 */
-+	writel_relaxed(virt_to_phys(mcpm_entry_point), REG_ENTRY_ADDR);
++		CPU1: cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <1>;
++			cci-control-port = <&cci_control2>;
++			clock-frequency = <1600000000>;
++		};
 +
-+	edcs_data_init();
-+	mcpm_smp_set_ops();
++		CPU2: cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <2>;
++			cci-control-port = <&cci_control2>;
++			clock-frequency = <1600000000>;
++		};
 +
-+	ret = mcpm_platform_register(&edcs_power_ops);
-+	if (!ret) {
-+		mcpm_sync_init(edcs_power_up_setup);
-+		pr_info("EDCS power management initialized\n");
-+	}
-+	return ret;
-+}
++		CPU3: cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <3>;
++			cci-control-port = <&cci_control2>;
++			clock-frequency = <1600000000>;
++		};
 +
-+early_initcall(edcs_init);
++		CPU4: cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x100>;
++			cci-control-port = <&cci_control1>;
++			clock-frequency = <1200000000>;
++		};
++
++		CPU5: cpu@101 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x101>;
++			cci-control-port = <&cci_control1>;
++			clock-frequency = <1200000000>;
++		};
++
++		CPU6: cpu@102 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x102>;
++			cci-control-port = <&cci_control1>;
++			clock-frequency = <1200000000>;
++		};
++
++		CPU7: cpu@103 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a7";
++			reg = <0x103>;
++			cci-control-port = <&cci_control1>;
++			clock-frequency = <1200000000>;
++		};
++	};
++
++	cci@10D20000 {
++		compatible = "arm,cci-400";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x10D20000 0x1000>;
++		ranges = <0 0x10D20000 0x6000>;
++
++		cci_control0: slave-if@1000 {
++			compatible = "arm,cci-400-ctrl-if";
++			interface-type = "ace-lite";
++			reg = <0x1000 0x1000>;
++		};
++
++		cci_control1: slave-if@4000 {
++			compatible = "arm,cci-400-ctrl-if";
++			interface-type = "ace";
++			reg = <0x4000 0x1000>;
++		};
++
++		cci_control2: slave-if@5000 {
++			compatible = "arm,cci-400-ctrl-if";
++			interface-type = "ace";
++			reg = <0x5000 0x1000>;
++		};
++	};
++
++	clock: clock-controller@10010000 {
++		compatible = "samsung,exynos5410-clock";
++		reg = <0x10010000 0x30000>;
++		#clock-cells = <1>;
++	};
++
++	timer@101C0000 {
++		compatible = "samsung,exynos4210-mct";
++		reg = <0x101C0000 0xB00>;
++		interrupt-parent = <&interrupt_map>;
++		interrupts = <0>, <1>, <2>, <3>,
++			<4>, <5>, <6>, <7>,
++			<8>, <9>, <10>, <11>;
++		clocks = <&fin_pll>, <&clock CLK_MCT>;
++		clock-names = "fin_pll", "mct";
++
++		interrupt_map: interrupt-map {
++			#interrupt-cells = <1>;
++			#address-cells = <0>;
++			#size-cells = <0>;
++			interrupt-map = <0 &combiner 23 3>,
++					<1 &combiner 23 4>,
++					<2 &combiner 25 2>,
++					<3 &combiner 25 3>,
++					<4 &gic 0 120 0>,
++					<5 &gic 0 121 0>,
++					<6 &gic 0 122 0>,
++					<7 &gic 0 123 0>,
++					<8 &gic 0 128 0>,
++					<9 &gic 0 129 0>,
++					<10 &gic 0 130 0>,
++					<11 &gic 0 131 0>;
++		};
++	};
++
++	mmc_0: mmc@12200000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 75 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12200000 0x1000>;
++		clocks = <&clock CLK_MMC0>, <&clock CLK_SCLK_MMC0>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	mmc_1: mmc@12210000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 76 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12210000 0x1000>;
++		clocks = <&clock CLK_MMC1>, <&clock CLK_SCLK_MMC1>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	mmc_2: mmc@12220000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 77 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12220000 0x1000>;
++		clocks = <&clock CLK_MMC2>, <&clock CLK_SCLK_MMC2>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	serial@12C00000 {
++		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++	serial@12C10000 {
++		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++	serial@12C20000 {
++		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++	serial@12C30000 {
++		clocks = <&clock CLK_UART3>, <&clock CLK_SCLK_UART3>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++};
 -- 
 1.8.1.5
 
