@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab3KZXXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:23:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7542 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab3KZXXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:23:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,778,1378882800"; 
-   d="scan'208";a="415601053"
-Date: Tue, 26 Nov 2013 15:23:32 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
-        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
-        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/8] Cure faux idle wreckage
-Message-ID: <20131126152332.1b0dbbdb@ultegra>
-In-Reply-To: <20131126155743.116756708@infradead.org>
-References: <20131126155743.116756708@infradead.org>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757511Ab3KZX1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:27:08 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:51195 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab3KZX1D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 18:27:03 -0500
+X-Auth-Info: qxyaEiakoj8sWUR/aNgmysEObGyaGKyjUsA1YgDMCUM=
+From: Marek Vasut <marex@denx.de>
+To: linux-kernel@vger.kernel.org
+Subject: Possible bug in firmware/Makefile
+Date: Wed, 27 Nov 2013 00:26:58 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+Cc: ming.lei@canonical.com, mike.marciniszyn@intel.com, roland@purestorage.com,
+        dean.luick@intel.com, vinit.abhay.agnihotri@intel.com
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201311270026.58626.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Nov 2013 16:57:43 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hello,
 
-> Respin of the earlier series that tries to cure the 2 idle injection
-> drivers and cleans up some of the preempt_enable_no_resched() mess.
-> 
-> The intel_powerclamp driver is tested by Jacob Pan and needs one more
-> patch to cpuidle to work as before. I'll let him provide this patch;
-> since he actually has it and tested it.
-> 
-> Jacob also said he'll try and work with the QoS people to sort out
-> the conflict of interest between the idle injectors and the QoS
-> framework.
-[Jacob Pan] I have sent out a patch to hook up powerclamp with qos.
-Please review. Ideally, this should be in one patchset to avoid
-performance regression in powerclamp. If the qos hook is acceptable, it
-can be easily used by ACPI PAD, I think.
+I am observing a possible bug when trying to build external firmware file into 
+the kernel. Here are the steps to reproduce the problem I observe.
 
-Jacob
+1) Retrieve Linux 3.13-rc1 (I can confirm this in 3.10.18 stable as well)
+2) Clean up the source tree
+$ git clean -fdx
+3) Configure the kernel (minimal configuration is sufficient)
+$ make allnoconfig
+4) Produce a dummy firmware file to be built into the kernel
+$ echo "hello" > /tmp/firmware.fw
+5) Build the kernel (note: I tested this bug on ARCH=arm and ARCH=x86_64)
+$ make CONFIG_EXTRA_FIRMWARE="firmware.fw" CONFIG_EXTRA_FIRMWARE_DIR="/tmp/"
+
+What I observe is this output:
+
+  LD      sound/built-in.o
+make[1]: *** No rule to make target `include/config/extra/firmware/dir.h', 
+needed by `firmware//tmp/firmware.fw.gen.S'.  Stop.
+make: *** [firmware] Error 2
+
+Interestingly enough, if I place these same options into the kernel .config, 
+using the commands like these below for example, the kernel builds correctly.
+
+echo -e \ 
+  'CONFIG_EXTRA_FIRMWARE_DIR="/tmp/"\nCONFIG_EXTRA_FIRMWARE="firmware.fw"' \
+  >> .config
+make oldconfig
+make
+
+Is this a known issue please? Is there a way to specify the extra firmware file 
+to be built into the kernel on the kernel build command line please?
+
+Thank you very much!
+
+Best regards,
+Marek Vasut
