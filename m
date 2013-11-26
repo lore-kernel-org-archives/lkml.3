@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab3KZS62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:58:28 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:53923 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757622Ab3KZS6Z (ORCPT
+	id S932467Ab3KZS6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:58:38 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:54745 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab3KZS6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:58:25 -0500
-From: Olof Johansson <olof@lixom.net>
-To: linus.walleij@linaro.org
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] gpio: pl061: print resource_size_t as %pa
-Date: Tue, 26 Nov 2013 10:56:01 -0800
-Message-Id: <1385492161-27624-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.4.1.601.g02b3b1d
+	Tue, 26 Nov 2013 13:58:34 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5294EF58.7040905@roeck-us.net>
+Date: Tue, 26 Nov 2013 10:58:32 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
+CC: Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] watchdog: core: Make dt "timeout-sec" property work
+ on drivers w/out min/max
+References: <1385490173-7511-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1385490173-7511-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 73675c8aa07 ('gpio: pl061: proper error messages') added a printout
-of a resource_size_t using %x, which produces an error for builds with
-64-bit resources:
+On 11/26/2013 10:22 AM, Doug Anderson wrote:
+> It is valid for a watchdog driver to have 0 for a "min" and "max"
+> timeout if the driver doesn't need the core to enforce the concepts of
+> min and max.  The s3c2410_wdt driver is one such driver.  Specifically
+> it can be hard for that driver to come up with a static "max" on all
+> platforms without a lot more information since the input clock on
+> S3C2410 and S3C2440 can change with DVFS.
+>
+> As written, watchdog_init_timeout() will not ever read "timeout-sec"
+> on these drivers since watchdog_timeout_invalid() will _never_ return
+> true.  Change to not consider a timeout_parm of 0 as valid even if
+> min/max aren't specified by the driver.  Also handle the case when
+> there is no min/max and no "timeout-sec" property.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-drivers/gpio/gpio-pl061.c:345:3: warning: format '%x' expects argument of
-    type 'unsigned int', but argument 3 has type 'resource_size_t'
+Makes sense to me.
 
-Switch to %pa (and pass in a pointer to the resource instead).
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Fixes: 73675c8aa07 ('gpio: pl061: proper error messages')
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/gpio/gpio-pl061.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Guenter
 
-diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-index f08e5e2cbe50..4ed16d7bd13d 100644
---- a/drivers/gpio/gpio-pl061.c
-+++ b/drivers/gpio/gpio-pl061.c
-@@ -341,8 +341,8 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
- 	}
- 
- 	amba_set_drvdata(adev, chip);
--	dev_err(&adev->dev, "PL061 GPIO chip @%08x registered\n",
--		adev->res.start);
-+	dev_err(&adev->dev, "PL061 GPIO chip @%pa registered\n",
-+		&adev->res.start);
- 
- 	return 0;
- }
--- 
-1.8.4.1.601.g02b3b1d
 
