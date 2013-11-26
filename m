@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab3KZKPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:15:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39068 "EHLO mx2.suse.de"
+	id S1755347Ab3KZKQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:16:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab3KZKP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:15:28 -0500
-Date: Tue, 26 Nov 2013 09:04:36 +0100
-From: Jan Kara <jack@suse.cz>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        zab@redhat.com, jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: Re: [PATCH 08/11] ext4: rename: create ext4_renament structure for
- local vars
-Message-ID: <20131126080436.GA1384@quack.suse.cz>
-References: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
- <1384952512-21600-9-git-send-email-miklos@szeredi.hu>
+	id S1755227Ab3KZKQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:16:20 -0500
+Date: Tue, 26 Nov 2013 12:15:55 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131126101555.GI959@redhat.com>
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <CAEbWaipqSpf4PdRo6YD=xBjucdWjZrs0Mibfi+jJeF7uj-NaCw@mail.gmail.com>
+ <20131125142351.GA6056@amt.cnet>
+ <5294111B.5040905@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384952512-21600-9-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5294111B.5040905@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-11-13 14:01:49, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, Nov 26, 2013 at 11:10:19AM +0800, Xiao Guangrong wrote:
+> On 11/25/2013 10:23 PM, Marcelo Tosatti wrote:
+> > On Mon, Nov 25, 2013 at 02:48:37PM +0200, Avi Kivity wrote:
+> >> On Mon, Nov 25, 2013 at 8:11 AM, Xiao Guangrong
+> >> <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> >>>
+> >>> On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> >>
+> >> <snip complicated stuff about parent_pte>
+> >>
+> >> I'm not really following, but note that parent_pte predates EPT (and
+> >> the use of rcu in kvm), so all the complexity that is the result of
+> >> trying to pack as many list entries into a cache line can be dropped.
+> >> Most setups now would have exactly one list entry, which is handled
+> >> specially antyway.
+> >>
+> >> Alternatively, the trick of storing multiple entries in one list entry
+> >> can be moved to generic code, it may be useful to others.
+> > 
+> > Yes, can the lockless list walking code be transformed into generic
+> > single-linked list walking? So the correctness can be verified
+> > independently, and KVM becomes a simple user of that interface.
 > 
-> Need to split up ext4_rename() into helpers but there are two many local
-                                                            ^^ too
-
-> variables involved, so create a new structure.  This also, apparently,
-> makes the generated code size slightly smaller.
+> I'am afraid the signle-entry list is not so good as we expected. In my
+> experience, there're too many entries on rmap, more than 300 sometimes.
+> (consider a case that a lib shared by all processes).
 > 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/ext4/namei.c | 211 ++++++++++++++++++++++++++++++--------------------------
->  1 file changed, 114 insertions(+), 97 deletions(-)
-> 
-> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-> index e0129b6e74cf..c9e38bd30e8b 100644
-> --- a/fs/ext4/namei.c
-> +++ b/fs/ext4/namei.c
-> @@ -3001,6 +3001,22 @@ static struct buffer_head *ext4_get_first_dir_block(handle_t *handle,
->  	return ext4_get_first_inline_block(inode, parent_de, retval);
->  }
->  
-> +struct ext4_renament {
-> +	struct inode *dir;
-> +	struct dentry *dentry;
-> +	struct inode *inode;
-> +
-> +	/* entry for "dentry" */
-> +	struct buffer_head *bh;
-> +	struct ext4_dir_entry_2 *de;
-> +	int inlined;
-> +
-> +	/* entry for parent block of inode if it's a directory */
-  Maybe "entry for '..' in inode if it is a directory"? It looks more
-comprehensible to me.
+This is without EPT though and non EPT HW is not performance king
+anyway. Nested EPT uses shadow paging too, but VMs hardly share any
+pages. With KSM they may though.
 
-> +	struct buffer_head *dir_bh;
-> +	struct ext4_dir_entry_2 *parent_de;
-> +	int dir_inlined;
-> +};
-> +
->  /*
->   * Anybody can rename anything with this: the permission checks are left to the
->   * higher-level routines.
-> @@ -3014,196 +3030,197 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
->  		       unsigned int flags)
->  {
->  	handle_t *handle = NULL;
-> -	struct inode *old_inode, *new_inode;
-> -	struct buffer_head *old_bh, *new_bh, *dir_bh;
-> -	struct ext4_dir_entry_2 *old_de, *new_de;
-> +	struct ext4_renament old = {
-> +		.dir = old_dir,
-> +		.dentry = old_dentry,
-> +	};
-> +	struct ext4_renament new = {
-> +		.dir = new_dir,
-> +		.dentry = new_dentry,
-> +	};
-  The code would look slightly more logical if we initialized .inode as
-well. Not sure if it is worth an extra patch or if you just fold it here...
-
-  Otherwise the patch looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--
+			Gleb.
