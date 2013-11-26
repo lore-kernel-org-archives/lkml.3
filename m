@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3KZSA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:00:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:46709 "EHLO mga09.intel.com"
+	id S1755126Ab3KZSDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:03:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7214 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab3KZSA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:00:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,776,1378882800"; 
-   d="scan'208";a="442467488"
-From: Ashutosh Dixit <ashutosh.dixit@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Krishna Kumar Reddy Yerramreddy 
-	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH char-misc-linus 1/5] misc: mic: Change mic_notify(...) to return true.
-Date: Tue, 26 Nov 2013 10:08:29 -0800
-Message-Id: <100078a1f4e7f56ef9dc1c4a51c8165a2e090de9.1385487752.git.ashutosh.dixit@intel.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <cover.1385487752.git.ashutosh.dixit@intel.com>
-References: <cover.1385487752.git.ashutosh.dixit@intel.com>
+	id S1753933Ab3KZSDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:03:11 -0500
+Date: Tue, 26 Nov 2013 19:04:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: zhang.yi20@zte.com.cn
+Cc: htejun@gmail.com, lkml <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
+	userspace child
+Message-ID: <20131126180420.GA18172@redhat.com>
+References: <OFC3933D9B.5510E97E-ON48257C23.0007B7CD-48257C23.000A4246@zte.com.cn> <20131114052326.GA29031@mtj.dyndns.org> <20131114114039.GA29277@redhat.com> <20131114115551.GA30824@redhat.com> <20131114115618.GB30824@redhat.com> <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com> <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn> <20131125121416.GB23829@redhat.com> <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Dutt <sudeep.dutt@intel.com>
+On 11/26, zhang.yi20@zte.com.cn wrote:
+>
+> Userspace process doesn't want the PF_NO_SETAFFINITY, but its parent may be
+> a kernel worker thread which has PF_NO_SETAFFINITY set.
 
-virtqueue_{kick()/notify()} methods are required to return bool due to
-API changes introduced in commit 5b1bf7cb673a.
+... and this worker thread can do kernel_thread() to create the child.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
----
- drivers/misc/mic/card/mic_virtio.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> Clearing this flag in usersapce child to enable its migrating capability.
+>
+>
+> Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+>
+> --- linux-3.12.old/fs/exec.c	2013-11-26 08:53:12.175811856 +0000
+> +++ linux-3.12/fs/exec.c	2013-11-26 09:26:53.575999604 +0000
+> @@ -1091,7 +1091,8 @@ int flush_old_exec(struct linux_binprm *
+>
+>  	set_fs(USER_DS);
+>  	current->flags &=
+> -		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE);
+> +		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE
+> +		| PF_NO_SETAFFINITY);
 
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index 8aa42e7..1ebc51c 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -187,11 +187,12 @@ static void mic_reset(struct virtio_device *vdev)
- /*
-  * The virtio_ring code calls this API when it wants to notify the Host.
-  */
--static void mic_notify(struct virtqueue *vq)
-+static bool mic_notify(struct virtqueue *vq)
- {
- 	struct mic_vdev *mvdev = vq->priv;
- 
- 	mic_send_intr(mvdev->mdev, mvdev->c2h_vdev_db);
-+	return true;
- }
- 
- static void mic_del_vq(struct virtqueue *vq, int n)
--- 
-1.8.2.3
+Thanks,
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+
+
+
+Can't resist... perhaps
+
+	current->flags &= ~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD |
+			    PF_NOFREEZE | PF_NO_SETAFFINITY);
+
+looks a bit better, but this is minor and I won't insist.
+
+Oleg.
 
