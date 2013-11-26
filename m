@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3KZGGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:06:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:47961 "EHLO ozlabs.org"
+	id S1754178Ab3KZGGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:06:23 -0500
+Received: from ozlabs.org ([203.10.76.45]:58170 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab3KZGGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:06:20 -0500
-In-Reply-To: <1381906617-11392-3-git-send-email-khandual@linux.vnet.ibm.com>
+	id S1754101Ab3KZGGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 01:06:19 -0500
+In-Reply-To: <1381906617-11392-2-git-send-email-khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
 Cc: mikey@neuling.org, sukadev@linux.vnet.ibm.com, michaele@au1.ibm.com,
         eranian@google.com
-Subject: RE: [V3 02/10] powerpc, perf: Enable conditional branch filter for POWER8
-Message-Id: <20131126060619.48B5D2C00BC@ozlabs.org>
-Date: Tue, 26 Nov 2013 17:06:19 +1100 (EST)
+Subject: RE: [V3 01/10] perf: New conditional branch filter criteria in branch stack sampling
+Message-Id: <20131126060618.917ED2C00A9@ozlabs.org>
+Date: Tue, 26 Nov 2013 17:06:18 +1100 (EST)
 From: michael@ozlabs.org (mpe@ellerman.id.au)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-16-10 at 06:56:49 UTC, Anshuman Khandual wrote:
-> Enables conditional branch filter support for POWER8
-> utilizing MMCRA register based filter and also invalidates
-> a BHRB branch filter combination involving conditional
-> branches.
+Ideally your commit subject would contain a verb, preferably in the present
+tense.
+
+I think simply "perf: Add PERF_SAMPLE_BRANCH_COND" would be clearer.
+
+On Wed, 2013-16-10 at 06:56:48 UTC, Anshuman Khandual wrote:
+> POWER8 PMU based BHRB supports filtering for conditional branches.
+> This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
+> will extend the existing perf ABI. Other architectures can provide
+> this functionality with either HW filtering support (if present) or
+> with SW filtering of instructions.
 > 
 > Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> Reviewed-by: Stephane Eranian <eranian@google.com>
 > ---
->  arch/powerpc/perf/power8-pmu.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
+>  include/uapi/linux/perf_event.h | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-> index 2ee4a70..6e28587 100644
-> --- a/arch/powerpc/perf/power8-pmu.c
-> +++ b/arch/powerpc/perf/power8-pmu.c
-> @@ -580,11 +580,21 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
->  	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
->  		return -1;
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 0b1df41..5da52b6 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
+>  	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+>  	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+>  	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+> +	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
 >  
-> +	/* Invalid branch filter combination - HW does not support */
-> +	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
-> +			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
-> +		return -1;
+> -	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
+> +	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
+>  };
 
-What this doesn't make obvious is that the hardware doesn't support any
-combinations. It just happens that these are the only two possibilities we
-allow, and so this is the only combination we have to disallow.
-
->
->  	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
->  		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
->  		return pmu_bhrb_filter;
->  	}
->  
-> +	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
-> +		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
-> +		return pmu_bhrb_filter;
-> +	}
-> +
->  	/* Every thing else is unsupported */
->  	return -1;
->  }
-
-I think it would be clearer if we actually checked for the possibilities we
-allow and let everything else fall through, eg:
-
-	/* Ignore user/kernel/hv bits */
-	branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
-
-	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
-		return 0;
-
-	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL)
-		return POWER8_MMCRA_IFM1;
- 
-	if (branch_sample_type == PERF_SAMPLE_BRANCH_COND)
-		return POWER8_MMCRA_IFM3;
-	
-	return -1;
+This no longer applies against Linus' tree, you'll need to rebase it.
 
 cheers
