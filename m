@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab3KZEbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:31:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55816 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab3KZEbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:31:20 -0500
-Date: Tue, 26 Nov 2013 15:31:06 +1100
-From: NeilBrown <neilb@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: fengguang.wu@intel.com, "Li, Shaohua" <shaohua.li@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: kernel BUG at drivers/md/raid5.c:693!
-Message-ID: <20131126153106.6ae734c0@notabene.brown>
-In-Reply-To: <20131125095323.GW10022@twins.programming.kicks-ass.net>
-References: <20131123032205.GB20794@localhost>
-	<20131125103522.6a1c1b36@notabene.brown>
-	<20131125095323.GW10022@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/nrEUlSL7i4ap.UJKWo9K/be"; protocol="application/pgp-signature"
+	id S1753124Ab3KZEei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:34:38 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:48825 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3KZEef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 23:34:35 -0500
+Message-ID: <5294255E.7040105@gmail.com>
+Date: Tue, 26 Nov 2013 12:36:46 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: rkuo <rkuo@codeaurora.org>
+CC: linux-hexagon@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] arch: hexagon: include: asm: add prefix "vm_" for
+ all enum members in "hexagon_vm.h"
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com>
+In-Reply-To: <5292B8A0.7020409@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/nrEUlSL7i4ap.UJKWo9K/be
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 11/25/2013 10:40 AM, Chen Gang wrote:
+> Append "vm_" to all enum members (which are too common to make conflict
+> with another sub-systems). The related error with allmodconfig:
+> 
+>     CC [M]  drivers/md/raid1.o
+>   drivers/md/raid1.c:1440:13: error: 'status' redeclared as different kind of symbol
+>   arch/hexagon/include/asm/hexagon_vm.h:76:2: note: previous definition of 'status' was here
+> 
 
-On Mon, 25 Nov 2013 10:53:23 +0100 Peter Zijlstra <peterz@infradead.org>
-wrote:
+Oh, sorry, The new prefix "vm_" is still conflict with others. One case
+is below (bottom of this mail)
 
-> On Mon, Nov 25, 2013 at 10:35:22AM +1100, NeilBrown wrote:
-> > Ingo/Peter: is it considered OK to call wake_up while holding a spinloc=
-k?
->=20
-> Yes, very much so. Doing a wakeup isn't _that_ expensive.
+I will use "hvmc_" for VM_CACHE_OPS and "hvmi_" for VM_INT_OPS instead
+of. If get no rejections within 1 day, I will send patch v2 for it.
 
-Oh good.  Thanks.
+And also I will merge the related 2 patches together (although they are
+for 2 issues).
 
->=20
-> > Could "sleeping spinlocks" affect this at all? (some sample stack trace=
-s are
-> > below).
->=20
-> Not entirely sure, are you referencing to -rt where me make spinlock_t
-> pi-mutexes?
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/hexagon/include/asm/hexagon_vm.h |   70 ++++++++++++++++----------------
+>  1 files changed, 35 insertions(+), 35 deletions(-)
+> 
+> diff --git a/arch/hexagon/include/asm/hexagon_vm.h b/arch/hexagon/include/asm/hexagon_vm.h
+> index 67bb6d6..e1e0470 100644
+> --- a/arch/hexagon/include/asm/hexagon_vm.h
+> +++ b/arch/hexagon/include/asm/hexagon_vm.h
+> @@ -55,27 +55,27 @@
+>  #ifndef __ASSEMBLY__
+>  
+>  enum VM_CACHE_OPS {
+> -	ickill,
+> -	dckill,
+> -	l2kill,
+> -	dccleaninva,
+> -	icinva,
+> -	idsync,
+> -	fetch_cfg
+> +	vm_ickill,
+> +	vm_dckill,
+> +	vm_l2kill,
+> +	vm_dccleaninva,
+> +	vm_icinva,
+> +	vm_idsync,
+> +	vm_fetch_cfg
+>  };
+>  
+>  enum VM_INT_OPS {
+> -	nop,
+> -	globen,
+> -	globdis,
+> -	locen,
+> -	locdis,
+> -	affinity,
+> -	get,
+> -	peek,
+> -	status,
+> -	post,
+> -	clear
+> +	vm_nop,
+> +	vm_globen,
+> +	vm_globdis,
+> +	vm_locen,
+> +	vm_locdis,
+> +	vm_affinity,
+> +	vm_get,
 
-I'm not sure either.  Just stabbing in the dark really.
+The new prefix "vm_" for "get" is still conflict with others:
 
-The stack trace in the previous email seemed to suggest that a process was
-blocking inside a wake_up call, but it wasn't at all conclusive.  And I've
-seen a few wake_ups in other stack traces which seem to be connected with
-other deadlock.  Probably some sort of co-incidence.
+    CC [M]  drivers/virtio/virtio_mmio.o
+  drivers/virtio/virtio_mmio.c:170:13: error: 'vm_get' redeclared as different kind of symbol
+  arch/hexagon/include/asm/hexagon_vm.h:74:2: note: previous definition of 'vm_get' was here
 
-Thanks,
-NeilBrown
 
---Sig_/nrEUlSL7i4ap.UJKWo9K/be
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBUpQkCjnsnt1WYoG5AQLKSRAApDI4zj/SkSRojgZ31ChTeMgyDpa8brOT
-Z5mDETeH0OZpJ7FSyuc7Gd+32dXydhVdp+Ky2HsUlQb3q5M2FRtDEIlFtNTYROlx
-1oVXBx65HiQhM9IdFY6xJH+CvG6xVLzNs0UHN//xtbzKta/4S1EIRRRXpj8YV94Q
-RdI7bb9A9gpx/uE4r/pIq1vSTA547y777Tec9ndwRgncTVwnWIIbpa0jOUuLitcn
-5iNujrfjcYm1sG4jPi8pZwdEiTjCM+uHUWfhzEnc0jLQHpna3/zCa+3JgKqe1O8j
-lLQuYAW32DL8X7FcVW8Pq5SGg6XZg+yXNPoDxeRJy9E2I0qtUpOo+e5XeOc0wTYJ
-DiHyjq+zwAAIwTeWfxEE9zzennVcdTuEJX1D5FTpc55qUOjJ/sQxJdopeeMhkzIH
-b6RWshXzWWFAWkUAtwwn3GgKGQdEkGLu+ME9X+lWnS9eMi2KhjE6eBkUsCwsNNQq
-WI9rcQEB9I/AAqkagPOaykydXk7okbyFgzWRiBXhLCQsNklkCkxGKxTXFZD9YHss
-Ggrkkf1NGvm5R7vnAo8UfuMk72k/NRyiworAEkwYzeVJ3YmF5a/bPExD/ixZ9Chq
-edebveJwyguWAM1hWzj9Yw6PhO6POP4Wv3hhetdBlmRFAseaY9Ewy7lRQf2f8Vi8
-1afKZO3OWx4=
-=FL5n
------END PGP SIGNATURE-----
-
---Sig_/nrEUlSL7i4ap.UJKWo9K/be--
+Thanks.
+-- 
+Chen Gang
