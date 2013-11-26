@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3KZM5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:57:49 -0500
-Received: from sauhun.de ([89.238.76.85]:41377 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab3KZM5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:57:46 -0500
-Date: Tue, 26 Nov 2013 13:57:40 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Florian Meier <florian.meier@koalo.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] I2C: BCM2835: Linking platform nodes to adapter nodes
-Message-ID: <20131126125739.GG7427@katana>
-References: <529303EE.4080606@koalo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MrRUTeZlqqNo1jQ9"
-Content-Disposition: inline
-In-Reply-To: <529303EE.4080606@koalo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753622Ab3KZM7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:59:06 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19048 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752889Ab3KZM7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:59:01 -0500
+Date: Tue, 26 Nov 2013 07:58:59 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] 3.13-rc1 kernel crash when enable all tracepoints
+Message-ID: <20131126075859.2060f6fd@gandalf.local.home>
+In-Reply-To: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
+References: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 26 Nov 2013 12:38:53 +0800
+Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
 
---MrRUTeZlqqNo1jQ9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi,
+> 
+> I'm not sure this issue already be fixed or not, it can be reproduced
+> permanently.
+> 
+> (I didn't use git-bisect yet, you guys might can understand it quickly)
+> 
+> #echo 1 > /sys/kernel/debug/tracing/events/enable
+> 
+> [  160.472176] BUG: unable to handle kernel NULL pointer dereference
+> at           (null)
+> [  160.472176] IP: [<ffffffff8132ae40>] strlen+0x0/0x30
 
-On Mon, Nov 25, 2013 at 09:01:50AM +0100, Florian Meier wrote:
-> In order to find I2C devices in the device tree, the platform nodes
-> have to be known by the I2C core. This requires setting the
-> dev.of_node parameter of the adapter.
->=20
-> Signed-off-by: Florian Meier <florian.meier@koalo.de>
+I hit this bug last night when testing a fix for another bug. I have a
+patch for this too, and will send it out after I put it through my
+tests.
 
-Malformed patch, please resend.
+You can try it out.
 
+-- Steve
 
---MrRUTeZlqqNo1jQ9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 52594b2..bdac88c 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -372,7 +372,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
+ 	__data_size += (len) * sizeof(type);
+ 
+ #undef __string
+-#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
++#define __string(item, src) __dynamic_array(char, item,			\
++				    strlen((src) ? (src) : "(null)") + 1)
+ 
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+@@ -501,7 +502,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
+ 
+ #undef __assign_str
+ #define __assign_str(dst, src)						\
+-	strcpy(__get_str(dst), src);
++	strcpy(__get_str(dst), (src) ? (src) : "(null)");
+ 
+ #undef TP_fast_assign
+ #define TP_fast_assign(args...) args
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlJrDAAoJEBQN5MwUoCm27HgP/3H47gv1ZS4LdqjwRyT2APY1
-fpTQB0bvyJzexjMKFpWUoX7s+yNwnbTHe+Lo/gl9fpzytAD456DTPiYIfRAXYvck
-dgFW8+M6B8rEGRVGebqt6heDeY/ca3j70wFOggggxl6sSpSA3ourCloXQizeGjOl
-3ootYQ+g4nTa47xsqIjB6VjQnLJQxYmVtmgg7wzY0CaUlH7pal8hJNSOxgjd3nTN
-OVveem54ZlPY7oovV7by77zo0qMicxWEOwBO7jzPUrzPbDEb+/J9+YivW0d90MLa
-XnStoAPKv/uvH/HIu4oxVSy3M10VVjoVPD2u4zlJB7Csv1iA/MZB1NKZin1sWNs8
-/iWqwtFbZiiY3J2TSD1N0bpWWPY3eUQ2kGxb1C8pYjueqwHKZSVdrvRLhjpZDyLo
-Da0HHf/MYrjeN8ud+R3RnobUbuz40Z4T8ipFLxsG5liOXW2qCkqURPE0GqAmMVq0
-ot3wVRaMp7DlLMCvAZv7sYL29y8Js+ckV6FzhMU+on2MuVTds8HhXN8zvVIhbi1M
-Eq/I70eqoAo1xT3yJPcgFUi6mYmNYIiO7DuSCrMH9YeOXWWzKyw4UqqrAZIZGoqY
-o1f0WjHP4NMLw8t69QHZXY3u7lDaV4lurCwznqb2Co+3e08IotJronDnzKcHkP5U
-YHi2IS3V+hQLkiMlIB1a
-=krvV
------END PGP SIGNATURE-----
-
---MrRUTeZlqqNo1jQ9--
