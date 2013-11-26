@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab3KZC0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 21:26:22 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:46439 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab3KZC0T (ORCPT
+	id S1752225Ab3KZCaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 21:30:15 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:46195 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3KZCaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 21:26:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <40779593.MBXsTetiKz@vostro.rjw.lan>
-References: <cover.1385374819.git.viresh.kumar@linaro.org>
-	<55cc3fbf9c553d669629e8ba98eef2b0ef33aaad.1385374822.git.viresh.kumar@linaro.org>
-	<40779593.MBXsTetiKz@vostro.rjw.lan>
-Date: Tue, 26 Nov 2013 07:56:19 +0530
-Message-ID: <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com>
-Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Nov 2013 21:30:14 -0500
+Date: Tue, 26 Nov 2013 13:29:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: linux-next: build warnings after merge of the block tree
+Message-Id: <20131126132946.e402679788ae8269f0c5128a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Nov_2013_13_29_46_+1100_G8qkB_sFFX6B/9G6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 November 2013 04:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> @@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
->>
->>       might_sleep();
->>
->> +     cpufreq_suspend();
->> +
->>
->>       mutex_lock(&dpm_list_mtx);
->>       pm_transition = state;
->>       async_error = 0;
->
-> Shouldn't it do cpufreq_resume() on errors?
+--Signature=_Tue__26_Nov_2013_13_29_46_+1100_G8qkB_sFFX6B/9G6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes and this is already done I believe. In case dpm_suspend() fails,
-dpm_resume() gets called. Isn't it?
+Hi Jens,
 
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> +void cpufreq_suspend(void)
->> +{
->> +     struct cpufreq_policy *policy;
->> +
->> +     if (!has_target())
->> +             return;
->> +
->> +     pr_debug("%s: Suspending Governors\n", __func__);
->> +
->> +     list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
->> +             if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
->> +                     pr_err("%s: Failed to stop governor for policy: %p\n",
->> +                                     __func__, policy);
->
-> This appears to be racy.  Is it really racy, or just seemingly?
+After merging the block tree, today's linux-next build (arm
+multi_v7_defconfig) produced these warnings:
 
-Why does it look racy to you? Userspace should be frozen by now,
-policy_list should be stable as well as nobody would touch it.
+block/blk-merge.c: In function 'blk_rq_map_sg':
+block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialized =
+in this function [-Wuninitialized]
+block/blk-merge.c:171:23: note: 'bvprv.bv_len' was declared here
+block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitialized=
+ in this function [-Wuninitialized]
+block/blk-merge.c:171:23: note: 'bvprv.bv_page' was declared here
+block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitializ=
+ed in this function [-Wuninitialized]
+block/blk-merge.c:171:23: note: 'bvprv.bv_offset' was declared here
+block/blk-merge.c: In function 'blk_bio_map_sg':
+block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialized =
+in this function [-Wuninitialized]
+block/blk-merge.c:233:23: note: 'bvprv.bv_len' was declared here
+block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitializ=
+ed in this function [-Wuninitialized]
+block/blk-merge.c:233:23: note: 'bvprv.bv_offset' was declared here
+block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitialized=
+ in this function [-Wuninitialized]
+block/blk-merge.c:233:23: note: 'bvprv.bv_page' was declared here
+block/blk-merge.c: In function 'attempt_merge':
+block/blk-merge.c:108:7: warning: 'end_bv.bv_offset' may be used uninitiali=
+zed in this function [-Wuninitialized]
+block/blk-merge.c:89:17: note: 'end_bv.bv_offset' was declared here
+block/blk-merge.c:108:7: warning: 'end_bv.bv_page' may be used uninitialize=
+d in this function [-Wuninitialized]
+block/blk-merge.c:89:17: note: 'end_bv.bv_page' was declared here
+block/blk-merge.c:108:7: warning: 'end_bv.bv_len' may be used uninitialized=
+ in this function [-Wuninitialized]
+block/blk-merge.c:89:17: note: 'end_bv.bv_len' was declared here
+
+arm has its own definition of BIOVEC_PHYS_MERGEABLE() if that is relevant.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__26_Nov_2013_13_29_46_+1100_G8qkB_sFFX6B/9G6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSlAeeAAoJEMDTa8Ir7ZwVB08P/3kHITWK9aOvj0NducY/Q9zg
+kdC1HofJUdURZj3WNPqDexewjFcfzAOGun89t2CLccfyxVkJTNJ6mhaH56+LnL8V
+faVtg66O6IM6vJaOomSkdhJAVTSHQZq751yj6QXwGMaTdLDtkItfsQXQ8r5id7d2
+Qd6ll95YG1IfJx9Bvf3N29oZyM1h/TBPG+d98Fg6rbsjAWmVPqckRWpHMpxgpLSf
+ED55uxErgJ4jmQ4TQ9HY4GpfCYmKplNdqysQysfzbLiz9j2zwqOgrFqVwZ5e5Yua
+GJvReyAIRc9bHZmYSGI7m0qkFdCDrZaJN7VoMB8JO3S3ZYj+ElXIr5Yg0aB7axMG
+Gizwxefp1GUx9DluKz2v9Ty0pF0+v+E6aq9iFv6T+puMAMGB7dGuez0T/H5v8Q5H
+GUrEXJxj4VOLeMTfB2IBQWfUqfZHLjhh+ui++UpHnlGhi5hpGdcXoCiLBiQ1eGit
+W7mQw0CeIdK3LuqVi1jnf8sgCmZIn8y+Gk8l4XrTCwEM2HwlX0bkLTLwrW3zoKAZ
+0t8UGFxwfniBJUP0ovG8yIv2CB1HLQcJpqRdirSvTG5NYwo1fizpqPNHSi492OiP
+o36scg9mZZY7GVEuJtIWDqcACsjeBo+m73RayiTaIlRkEU/LEXUn2hyhHyQdTvN5
+waTgsqEpQR1RcopKK4U8
+=CsG3
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Nov_2013_13_29_46_+1100_G8qkB_sFFX6B/9G6--
