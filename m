@@ -1,110 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab3KZSPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:15:17 -0500
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:44595
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756311Ab3KZSPM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:15:12 -0500
-X-Greylist: delayed 448 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Nov 2013 13:15:12 EST
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: staging: comedi: drivers: use comedi_dio_update_state() for
- complex cases
-Thread-Topic: staging: comedi: drivers: use comedi_dio_update_state() for
- complex cases
-Thread-Index: AQHO3L4bEhqT06FVG0W1HC+tE9Z/tJo36mcg
-Date: Tue, 26 Nov 2013 18:07:41 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817E08AC5@P3PWEX4MB008.ex4.secureserver.net>
-References: <20131107062754.93B2D660F4A@gitolite.kernel.org>
- <20131108200659.GA2101@redhat.com>
-In-Reply-To: <20131108200659.GA2101@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932357Ab3KZSNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:13:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35409 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab3KZSNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:13:14 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vasily Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.11 36/36] exec/ptrace: fix get_dumpable() incorrect tests
+Date: Tue, 26 Nov 2013 10:12:46 -0800
+Message-Id: <20131126181032.752815772@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
+References: <20131126181025.029404973@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 08, 2013 1:07 PM, Dave Jones wrote:
-> On Thu, Nov 07, 2013 at 06:27:54AM +0000, Linux Kernel wrote:
->> Gitweb:     http://git.kernel.org/linus/;a=commit;h=b3ff824a81e8978deb56f6d163479c1a0a606037
->> Commit:     b3ff824a81e8978deb56f6d163479c1a0a606037
->> Parent:     97f4289ad08cffe55de06d4ac4f89ac540450aee
->> Author:     H Hartley Sweeten <hsweeten@visionengravers.com>
->> AuthorDate: Fri Aug 30 11:06:17 2013 -0700
->> Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> CommitDate: Tue Sep 17 07:47:40 2013 -0700
->> 
->>     staging: comedi: drivers: use comedi_dio_update_state() for complex cases
->>     
->>     Use comedi_dio_update_state() to handle the boilerplate code to update
->>     the subdevice s->state for more complex cases where the hardware is only
->>     updated based on the 'mask' of the channels that are modified.
->>     
->>     Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->>     Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
->>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> This bit looks suspect :-
->
->>  	if (mask) {
->> -		s->state &= ~mask;
->> -		s->state |= (bits & mask);
->> -
->>  		if (mask & 0x00ff)
->>  			outb(s->state & 0xff, dev->iobase + reg);
->> -		if ((mask & 0xff00) && (s->n_chan > 8))
->> +		if ((mask & 0xff00) & (s->n_chan > 8))
->>  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
->> -		if ((mask & 0xff0000) && (s->n_chan > 16))
->> +		if ((mask & 0xff0000) & (s->n_chan > 16))
->>  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
->> -		if ((mask & 0xff000000) && (s->n_chan > 24))
->> +		if ((mask & 0xff000000) & (s->n_chan > 24))
->>  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
->>  	}
->
->
-> should those be shifts ? Like so ?
->
->
-> diff --git a/drivers/staging/comedi/drivers/pcl730.c b/drivers/staging/comedi/drivers/pcl730.c
-> index d041b714db29..29a54e5d73d6 100644
-> --- a/drivers/staging/comedi/drivers/pcl730.c
-> +++ b/drivers/staging/comedi/drivers/pcl730.c
-> @@ -173,11 +173,11 @@ static int pcl730_do_insn_bits(struct comedi_device *dev,
->  	if (mask) {
-> 		if (mask & 0x00ff)
->   			outb(s->state & 0xff, dev->iobase + reg);
-> -		if ((mask & 0xff00) & (s->n_chan > 8))
-> +		if ((mask & 0xff00) & (s->n_chan >> 8))
->  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
-> -		if ((mask & 0xff0000) & (s->n_chan > 16))
-> +		if ((mask & 0xff0000) & (s->n_chan >> 16))
->  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
-> -		if ((mask & 0xff000000) & (s->n_chan > 24))
-> +		if ((mask & 0xff000000) & (s->n_chan >> 24))
->  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
->  	}
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-No, they should not be bit-shifts.
+------------------
 
-But, there is a bug here. The if tests should be like this:
+From: Kees Cook <keescook@chromium.org>
 
-		if ((mask & 0xff00) && (s->n_chan > 8))
+commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
 
-Sorry about that.
+The get_dumpable() return value is not boolean.  Most users of the
+function actually want to be testing for non-SUID_DUMP_USER(1) rather than
+SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
+protected state.  Almost all places did this correctly, excepting the two
+places fixed in this patch.
 
-Do you want to post a patch? If I don't see one in the next couple days I'll fix it.
+Wrong logic:
+    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
+        or
+    if (dumpable == 0) { /* be protective */ }
+        or
+    if (!dumpable) { /* be protective */ }
 
-Regards,
-Hartley
+Correct logic:
+    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
+        or
+    if (dumpable != 1) { /* be protective */ }
+
+Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
+user was able to ptrace attach to processes that had dropped privileges to
+that user.  (This may have been partially mitigated if Yama was enabled.)
+
+The macros have been moved into the file that declares get/set_dumpable(),
+which means things like the ia64 code can see them too.
+
+CVE-2013-2929
+
+Reported-by: Vasily Kulikov <segoon@openwall.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/ia64/include/asm/processor.h |    2 +-
+ fs/exec.c                         |    6 ++++++
+ include/linux/binfmts.h           |    3 ---
+ include/linux/sched.h             |    4 ++++
+ kernel/ptrace.c                   |    3 ++-
+ 5 files changed, 13 insertions(+), 5 deletions(-)
+
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -319,7 +319,7 @@ struct thread_struct {
+ 	regs->loadrs = 0;									\
+ 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
+ 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
+-	if (unlikely(!get_dumpable(current->mm))) {							\
++	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
+ 		/*										\
+ 		 * Zap scratch regs to avoid leaking bits between processes with different	\
+ 		 * uid/privileges.								\
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1670,6 +1670,12 @@ int __get_dumpable(unsigned long mm_flag
+ 	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
+ }
+ 
++/*
++ * This returns the actual value of the suid_dumpable flag. For things
++ * that are using this for checking for privilege transitions, it must
++ * test against SUID_DUMP_USER rather than treating it as a boolean
++ * value.
++ */
+ int get_dumpable(struct mm_struct *mm)
+ {
+ 	return __get_dumpable(mm->flags);
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -99,9 +99,6 @@ extern void setup_new_exec(struct linux_
+ extern void would_dump(struct linux_binprm *, struct file *);
+ 
+ extern int suid_dumpable;
+-#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
+-#define SUID_DUMP_USER		1	/* Dump as user of process */
+-#define SUID_DUMP_ROOT		2	/* Dump as root */
+ 
+ /* Stack area protections */
+ #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -330,6 +330,10 @@ static inline void arch_pick_mmap_layout
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
++#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
++#define SUID_DUMP_USER		1	/* Dump as user of process */
++#define SUID_DUMP_ROOT		2	/* Dump as root */
++
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -257,7 +257,8 @@ ok:
+ 	if (task->mm)
+ 		dumpable = get_dumpable(task->mm);
+ 	rcu_read_lock();
+-	if (!dumpable && !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
++	if (dumpable != SUID_DUMP_USER &&
++	    !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
+ 		rcu_read_unlock();
+ 		return -EPERM;
+ 	}
+
 
