@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab3KZSNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35463 "EHLO
+	id S932454Ab3KZSN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:13:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757776Ab3KZSNN (ORCPT
+	with ESMTP id S1757767Ab3KZSNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:13 -0500
+	Tue, 26 Nov 2013 13:13:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 3.11 35/36] Revert "ima: policy for RAMFS"
-Date: Tue, 26 Nov 2013 10:12:45 -0800
-Message-Id: <20131126181032.523697195@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.11 32/36] rt2x00: rt2800lib: fix VGC adjustment for RT5592
+Date: Tue, 26 Nov 2013 10:12:42 -0800
+Message-Id: <20131126181031.855871068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -26,32 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
+commit 0beb1bbf19c72f17809e42b8f33522a55c2cc18c upstream.
 
-This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
+In commit 3d81535ea5940446510a8a5cee1c6ad23c90c753
+(rt2800: 5592: add chip specific vgc calculations)
+the rt2800_link_tuner function has been modified to
+adjust VGC level for the RT5592 chipset.
 
-Everything in the initramfs should be measured and appraised,
-but until the initramfs has extended attribute support, at
-least measured.
+On the RT5592 chipset, the VGC level must be adjusted
+only if rssi is greater than -65. However the current
+code adjusts the VGC value by 0x10 regardless of the
+actual chipset if the rssi value is between -80 and
+-65.
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Fix the broken behaviour by reordering the if-else
+statements.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Acked-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/integrity/ima/ima_policy.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
- 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
--	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -3423,10 +3423,13 @@ void rt2800_link_tuner(struct rt2x00_dev
+ 
+ 	vgc = rt2800_get_default_vgc(rt2x00dev);
+ 
+-	if (rt2x00_rt(rt2x00dev, RT5592) && qual->rssi > -65)
+-		vgc += 0x20;
+-	else if (qual->rssi > -80)
+-		vgc += 0x10;
++	if (rt2x00_rt(rt2x00dev, RT5592)) {
++		if (qual->rssi > -65)
++			vgc += 0x20;
++	} else {
++		if (qual->rssi > -80)
++			vgc += 0x10;
++	}
+ 
+ 	rt2800_set_vgc(rt2x00dev, qual, vgc);
+ }
 
 
