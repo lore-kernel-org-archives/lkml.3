@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab3KZLMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:12:42 -0500
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:21241
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755291Ab3KZLMl (ORCPT
+	id S1756581Ab3KZLOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:14:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53408 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab3KZLOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:12:41 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h129fi1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: <shh.xie@gmail.com>
-To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
-        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <Emilian.Medve@freescale.com>, <madalin.bucur@freescale.com>
-Subject: [PATCH 2/5][v2] phylib: introduce PHY_INTERFACE_MODE_XGMII for 10G PHY
-Date: Tue, 26 Nov 2013 17:52:53 +0800
-Message-ID: <1385459573-29092-1-git-send-email-shh.xie@gmail.com>
-X-Mailer: git-send-email 1.8.4.1
+	Tue, 26 Nov 2013 06:14:12 -0500
+Message-ID: <52948184.50604@ti.com>
+Date: Tue, 26 Nov 2013 13:09:56 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 1/6] watchdog: davinci: change driver to use WDT core
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com> <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
+On 11/25/2013 04:04 PM, Ivan Khoronzhuk wrote:
+> To reduce code duplicate and increase code readability use WDT core
+> code to handle WDT interface.
+>
+> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+> Remove wdt_state as the WDT core tracks state with its own variable.
+>
+> The watchdog_init_timeout() can read timeout value from timeout-sec
+> property if the passed value is out of bounds. The heartbeat is
+> initialized in next way. If heartbeat is not set thought module
+> parameter, try to read it's value from WDT node timeout-sec property.
+> If node has no one, use default value.
+>
+> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+> order to set timeout period.
+>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>   arch/arm/mach-davinci/da8xx-dt.c      |    2 +-
+>   arch/arm/mach-davinci/devices-da8xx.c |    4 +-
+>   arch/arm/mach-davinci/devices.c       |    2 +-
+>   drivers/watchdog/Kconfig              |    2 +
+>   drivers/watchdog/davinci_wdt.c        |  151 ++++++++-------------------------
+>   5 files changed, 43 insertions(+), 118 deletions(-)
 
-Signed-off-by: Andy Fleming <afleming@freescale.com>
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
----
-v2: update of_net.c.
+Pls note, that this patch contains both changes in platform and driver 
+code to fix regression reported by Sekhar Nori on v2 of this series and 
+caused by driver name changing.
 
- drivers/of/of_net.c | 1 +
- include/linux/phy.h | 1 +
- 2 files changed, 2 insertions(+)
+Is it ok?
 
-diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-index 8f9be2e..a208a45 100644
---- a/drivers/of/of_net.c
-+++ b/drivers/of/of_net.c
-@@ -30,6 +30,7 @@ static const char *phy_modes[] = {
- 	[PHY_INTERFACE_MODE_RGMII_TXID] = "rgmii-txid",
- 	[PHY_INTERFACE_MODE_RTBI]	= "rtbi",
- 	[PHY_INTERFACE_MODE_SMII]	= "smii",
-+	[PHY_INTERFACE_MODE_XGMII]	= "xgmii",
- };
- 
- /**
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 2549b42..2606599 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -66,6 +66,7 @@ typedef enum {
- 	PHY_INTERFACE_MODE_RGMII_TXID,
- 	PHY_INTERFACE_MODE_RTBI,
- 	PHY_INTERFACE_MODE_SMII,
-+	PHY_INTERFACE_MODE_XGMII,
- } phy_interface_t;
- 
- 
--- 
-1.8.4.1
+It can be splitted, but then both patches will introduce regression by 
+itself and thing will work only if both of them will be applied together.
 
+>
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index d2bc574..ed19287 100644
+[...]
+> -MODULE_ALIAS("platform:watchdog");
+> +MODULE_ALIAS("platform:davinci-wdt");
+>
+Regards,
+-Grygorii
 
