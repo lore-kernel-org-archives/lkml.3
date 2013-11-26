@@ -1,108 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab3KZNqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:46:11 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:57060 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab3KZNqH (ORCPT
+	id S1756575Ab3KZNrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:47:13 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:34366 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab3KZNrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:46:07 -0500
+	Tue, 26 Nov 2013 08:47:08 -0500
+Date: Tue, 26 Nov 2013 14:47:16 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Jan Kara <jack@suse.cz>
+Cc: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        zab@redhat.com, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 11/11] ext4: add cross rename support
+Message-ID: <20131126134659.GA528@tucsk.piliscsaba.szeredi.hu>
+References: <1384952512-21600-1-git-send-email-miklos@szeredi.hu>
+ <1384952512-21600-12-git-send-email-miklos@szeredi.hu>
+ <20131126095125.GB1384@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <528DE1C4.6060900@overkiz.com>
-References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
-	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>
-	<20131120145926.GE14627@ns203013.ovh.net>
-	<528CDFFB.1020601@overkiz.com>
-	<CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>
-	<528DE1C4.6060900@overkiz.com>
-Date: Tue, 26 Nov 2013 14:46:05 +0100
-Message-ID: <CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>
-Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek board
-From: Linus Walleij <linus.walleij@linaro.org>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131126095125.GB1384@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:34 AM, boris brezillon
-<b.brezillon@overkiz.com> wrote:
-> On 21/11/2013 10:48, Linus Walleij wrote:
+On Tue, Nov 26, 2013 at 10:51:25AM +0100, Jan Kara wrote:
+> On Wed 20-11-13 14:01:52, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > Implement RENAME_EXCHANGE flag in renameat2 syscall.
+> > 
+> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> > ---
+> >  fs/ext4/namei.c | 97 ++++++++++++++++++++++++++++++++++++++++-----------------
+> >  1 file changed, 69 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+> > index d258b354b937..5307e482f403 100644
+> > --- a/fs/ext4/namei.c
+> > +++ b/fs/ext4/namei.c
+> ...
+> > -	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
+> > -	ext4_update_dx_flag(old.dir);
+> > +	/* S_ISDIR(old.inode->i_mode */
+> >  	if (old.dir_bh) {
+> >  		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
+> >  		if (retval)
+> >  			goto end_rename;
+> >  
+> > -		ext4_dec_count(handle, old.dir);
+> > -		if (new.inode) {
+> > -			/* checked empty_dir above, can't have another parent,
+> > -			 * ext4_dec_count() won't work for many-linked dirs */
+> > -			clear_nlink(new.inode);
+> > -		} else {
+> > +		if (!(flags & RENAME_EXCHANGE) || !S_ISDIR(new.inode->i_mode))
+> > +			ext4_dec_count(handle, old.dir);
+> > +
+> > +		if (!new.inode || !S_ISDIR(new.inode->i_mode)) {
+> >  			ext4_inc_count(handle, new.dir);
+> >  			ext4_update_dx_flag(new.dir);
+> >  			ext4_mark_inode_dirty(handle, new.dir);
+> >  		}
+> >  	}
+> > +	/* (flags & RENAME_EXCHANGE) && S_ISDIR(new.inode->i_mode */
+> > +	if (new.dir_bh) {
+> > +		retval = ext4_rename_dir_finish(handle, &new, old.dir->i_ino);
+> > +		if (retval)
+> > +			goto end_rename;
+> > +
+> > +		if (!S_ISDIR(old.inode->i_mode)) {
+> > +			ext4_dec_count(handle, new.dir);
+> > +			ext4_inc_count(handle, old.dir);
+> > +			ext4_mark_inode_dirty(handle, new.dir);
+> > +		}
+> > +	}
+> >  	ext4_mark_inode_dirty(handle, old.dir);
+> > -	if (new.inode) {
+> > +	if (!(flags & RENAME_EXCHANGE) && new.inode) {
+> > +		ext4_dec_count(handle, new.inode);
+> > +		new.inode->i_ctime = ext4_current_time(new.inode);
+> > +		if (S_ISDIR(old.inode->i_mode)) {
+> > +			/* checked empty_dir above, can't have another parent,
+> > +			 * ext4_dec_count() won't work for many-linked dirs */
+> > +			clear_nlink(new.inode);
+> > +		}
+>   This hunk looks strange. Why do you check S_ISDIR(old.inode->i_mode)? I'd
+> presume we need to clear nlink if new.inode is a directory...
 
->> No matter whether it's a switch or a GPIO regulator it seems we
->> are in violent agreement that it should not be controlled by the
->> pin control states at least.
->>
->> Start with making it a GPIO then you can figure out whether
->> a GPIO regulator or drivers/extcon/extcon-gpio.c should be
->> used.
->
-> Thanks for pointing this out. I wasn't aware of the extcon subsystem.
->
-> Actually, I think it's a little bit more tricky.
+It's confusing, that's for sure.  I think it's correct, since S_ISDIR(old) is
+equivalent to S_ISDIR(new) if not cross-renaming, but that's not a lot of
+consolation to someone trying to understand the code.
 
-Hm, yeah extcon is for things like audio jacks on phones that
-userspace need to detect.
+> 
+> >  		ext4_mark_inode_dirty(handle, new.inode);
+> >  		if (!new.inode->i_nlink)
+> > 			ext4_orphan_add(handle, new.inode);
+>   Generally, I'm a bit unhappy about the number of various RENAME_EXCHANGE
+> checks and the asymmetry between new & old which now shouldn't needed (that
+> much). Especially the link count handling looks more complex than it should
+> be.
+> 
+> I'd hope that it should be possible to "delete new.inode iff
+> !RENAME_EXCHANGE" and then the rest shouldn't need to care about
+> RENAME_EXCHANGE at all and treat old & new completely symmetrically... Now I
+> realize this isn't that easy because we want to do all error checks first
+> before doing any changes on disk but still I hope some improvement can be
+> made (maybe just zero out new.inode in our 'new' ext4_renament to allow for
+> code to be symmetric and delete it on disk only when ext4_rename() is
+> finishing).
+> 
+> If the above won't be workable, we might at least make the link count
+> handling more obvious by computing "old_link_cnt_update,
+> new_link_cnt_update" - how link counts of parent dirs should be updated
+> (-1, 0, +1) and then do the checks and updates based on this in one place.
 
-drivers/input/keyboard/gpio_keys* is for things that actually
-input characters to userspace stuff.
+Okay, will try to clean this up.  I agree that it became a bit too complicated.
 
-None of it is applicable here it seems ...
-
-> The switch connected to gpio PB22 is used to enable one device or the other:
->  - PB22 set to high level enables slot0 of mmc0 (connect mmc signals to the
-> mmc
->    connector)
->  - PB22 set to low level enables the dataflash (connect to the SPI0 signals
-> to the
->    dataflash device)
-
-So this is something like a "jumper" of the old type, configuring
-the entire system?
-
-Something like that:
-http://www.mignonette-game.com/images/v2/21-arduino-com-jumper.jpg
-
-But in this case it is a mechanical switch rather than a jumper?
-
-This is not much different from the GPIOs people use to e.g. encode
-the board type, just that it can change.
-
-Do people switch this thing at runtime?
-
-> The pinctrl approach has the benefit of providing a transparent way (no
-> existing
-> drivers modifications) to enable one device or the other.
->
-> But if you think this is better done (or cleaner) with an extcon or a
-> regulator device,
-> I'll try to find a way to do it this way.
-
-I'm uncertain. If this is something that changes at runtime, the
-input from the switch should be read through GPIO and used
-to select the "default" state of one device and something like
-"sleep" on the other (I suspect more things than pin control
-may be affected by that!)
-
-If this is a switch that you want to take the simple shortcut
-of just reading at boot, the approach would still be similar, just
-less code.
-
-So use gpio_get() to read the value, and then select which
-*entire device* goes active depending on the setting would
-be the right approach I guess?
-
-Yours,
-Linus Walleij
+Thanks,
+Miklos
