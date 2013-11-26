@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab3KZWrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 17:47:53 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:56743 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757399Ab3KZWrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 17:47:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ag8IAIsjlVJ5LHyk/2dsb2JhbABZgweDMbMRhUyBKRd0giUBAQU6HCMQCAMOCgklDwUlAyETiAC/cBaOZgeDIIETA5gTkhSDPCg
-Date: Wed, 27 Nov 2013 09:47:42 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
-        mhocko@suse.cz, glommer@openvz.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v11 00/15] kmemcg shrinkers
-Message-ID: <20131126224742.GB10988@dastard>
-References: <cover.1385377616.git.vdavydov@parallels.com>
- <20131125174135.GE22729@cmpxchg.org>
- <529443E4.7080602@parallels.com>
+	id S1757434Ab3KZWvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 17:51:14 -0500
+Received: from void.printf.net ([89.145.121.20]:57308 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab3KZWvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 17:51:11 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chuanxiao.dong@intel.com
+Subject: Re: [PATCH] mmc: sdhci: Setting the host->mrq to NULL before executing tuning
+References: <1383634365.26153.100.camel@cliu38-desktop-build>
+Date: Tue, 26 Nov 2013 17:50:59 -0500
+In-Reply-To: <1383634365.26153.100.camel@cliu38-desktop-build> (Chuansheng
+	Liu's message of "Tue, 05 Nov 2013 14:52:45 +0800")
+Message-ID: <87r4a2eq0c.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529443E4.7080602@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:47:00AM +0400, Vladimir Davydov wrote:
-> Hi,
-> 
-> Thank you for the review. I agree with all your comments and I'll
-> resend the fixed version soon.
-> 
-> If anyone still has something to say about the patchset, I'd be glad
-> to hear from them.
+Hi Chuansheng,
 
-Please CC me on all the shrinker/list-lru changes being made as I am
-the original author of the list-lru code and the shrinker
-integration and have more than a passing interest in ensuring
-it doesn't get broken or crippled....
+On Tue, Nov 05 2013, Chuansheng Liu wrote:
+> In function sdhci_request(), it is possible to do the tuning execution
+> like below:
+>
+> sdhci_request() {
+> 	spin_lock_irqsave(&host->lock, flags);
+> 	host->mrq = mrq;
+> 	...
+> 	spin_unlock_irqrestore(&host->lock, flags);
+>
+> <=== Here it is possible one pending finish_tasklet get running
+>      and it will operate the original mrq, and notified the mrq
+>      is done, and causes memory corruption.
+>
+> 	sdhci_execute_tuning(mmc, tuning_opcode);
+> 	spin_lock_irqsave(&host->lock, flags);
+> 	host->mrq = mrq;
+> ...
+> }
+>
+> In the above race place, the original mrq should not be finished wrongly,
+> so here before unlock the spinlock, we need to set the host->mrq to NULL
+> to avoid this case.
+>
+> Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/mmc/host/sdhci.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 7a7fb4f..c7a001a 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1391,6 +1391,13 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+>  					mmc->card->type == MMC_TYPE_MMC ?
+>  					MMC_SEND_TUNING_BLOCK_HS200 :
+>  					MMC_SEND_TUNING_BLOCK;
+> +
+> +				/* Here we need to set the host->mrq to NULL,
+> +				 * in case the penging finish_tasklet
+> +				 * operates it wrongly.
+> +				 */
+> +				host->mrq = NULL;
+> +
+>  				spin_unlock_irqrestore(&host->lock, flags);
+>  				sdhci_execute_tuning(mmc, tuning_opcode);
+>  				spin_lock_irqsave(&host->lock, flags);
 
-Cheers,
+Thanks, pushed to mmc-next for 3.14.
 
-Dave.
+- Chris.
 -- 
-Dave Chinner
-david@fromorbit.com
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
