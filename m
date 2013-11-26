@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3KZRsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:48:18 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47746 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab3KZRsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:48:16 -0500
-Date: Tue, 26 Nov 2013 17:48:06 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Khalid Aziz <khalid.aziz@oracle.com>, Chang Liu <cl91tp@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, Jility <jility09@gmail.com>,
-        Florian Otti <f.otti@gmx.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] PCI: add a quirk for keeping Bus Master bit on shutdown
-Message-ID: <20131126174806.GA14789@srcf.ucam.org>
-References: <1384285203-642-1-git-send-email-cl91tp@gmail.com>
- <CAErSpo5E4584zgTt4ySPSEFhtwdHDOyrrowirp=SmtmJjDyHgg@mail.gmail.com>
- <5294CF1A.6080707@oracle.com>
- <CAErSpo6eAbVDfc8PFPP4b4HLzAjkFe23pJytu-TZq-V8-pfQMA@mail.gmail.com>
+	id S1754369Ab3KZRtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 12:49:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753911Ab3KZRtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 12:49:32 -0500
+Date: Tue, 26 Nov 2013 18:50:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: modules, add_kallsyms() && DEFINE_PER_CPU
+Message-ID: <20131126175037.GE14028@redhat.com>
+References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com> <20131126174355.GB14028@redhat.com> <20131126174446.GD14028@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6eAbVDfc8PFPP4b4HLzAjkFe23pJytu-TZq-V8-pfQMA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20131126174446.GD14028@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:35:26AM -0700, Bjorn Helgaas wrote:
-> On Tue, Nov 26, 2013 at 9:40 AM, Khalid Aziz <khalid.aziz@oracle.com> wrote:
-> > Disabling Bus Master bit is effectively a brute force and not an elegant way
-> > to stop unwanted DMA. It can have side effects as Alan and others pointed
-> > out in the original discussion, and we are now seeing one with Lynx Point on
-> > Acer.
-> 
-> I'm getting more queasy all the time about disabling Bus Master.  I
-> don't think RHEL does it, and that's probably where most kexec use is.
->  So I doubt we really have much experience with it yet.
+On 11/26, Oleg Nesterov wrote:
+>
+> Note: this doesn't work for modules, but module's per-cpu data is
+> not visible for kallsyms_lookup_name() anyway.
 
-Does Windows disable the BM bit on shutdown? If not, it's likely that 
-there are platforms where the SMM code assumes it's still enabled. We 
-also know that there are devices that hang if BM is disabled while their 
-DMA engines are still running.
+Rusty, I am just curious if it makes sense to change this or not...
 
-Unless we verify that Windows does this, I think there's no way we can 
-guarantee that firmware won't make assumptions about the state of PCI. 
-The easiest compromise would probably be to set a flag that disables 
-busmastering purely when we're performing a kexec.
+But DEFINE_PER_CPU'ed symbols are ignored by add_kallsyms(). I guess
+this is because is_core_symbol() requires "sh_flags & SHF_ALLOC".
+And probably because of INIT_OFFSET_MASK.
 
-> > Eric had pointed out in original discussion -
-> > <http://marc.info/?l=linux-pci&m=133901193430829&w=2> that this code change
-> > moves failure from a random point in the kexec'd kernel to a predictable
-> > point on shutdown path where it becomes lot easier to debug than a random
-> > memory overwrite.
-> 
-> That is probably true in some cases, but not this one.  I have no idea
-> how to debug this poweroff hang.  Poweroff is a path *everybody* uses,
-> so it's much more important to have that work reliably than it is to
-> have kexec work.
+Oleg.
 
-If it's hanging after we've performed the io writes that trap us into 
-SMM, there's no meaningful way for us to debug it. We're violating 
-assumptions that the firmware is making, and the only way to fix that is 
-to cease violating those assumptions.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
