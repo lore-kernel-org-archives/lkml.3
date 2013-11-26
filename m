@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3KZEZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:25:29 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:47518 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3KZEZY (ORCPT
+	id S1754075Ab3KZE1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:27:16 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:56762 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3KZE1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:25:24 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-06-529422b2e211
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-i2c@vger.kernel.org
-Cc: sjg@chromium.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, wsa@the-dreams.de,
-        ben-linux@fluff.org, grant.likely@secretlab.ca, broonie@kernel.org,
-        dianders@chromium.org, cpgs@samsung.com, t.figa@samsung.com
-Subject: [PATCH 2/2 v2] i2c: exynos5: configure fifo_depth based on HSI2C
- module version
-Date: Tue, 26 Nov 2013 09:56:39 +0530
-Message-id: <1385439999-19123-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1385100851-32254-1-git-send-email-ch.naveen@samsung.com>
-References: <1385100851-32254-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkWneT0pQgg3dbxCwmrTvAZDH14RM2
-	i5eHNC3OLjvIZvHqzEY2i46/XxgtLu+aw2Yx4/w+JotvW7YxWqyf8ZrFYuWJWcwO3B6zGy6y
-	ePxd9YLZY9OqTjaPvi2rGD1+vtTxOHnqCYvH501yAexRXDYpqTmZZalF+nYJXBmN1+exFCyR
-	qviz/gNzA+Me0S5GTg4JAROJDavvMUPYYhIX7q1n62Lk4hASWMoo8aurgwWmaNM2kCKQxHRG
-	iU0fXrFDOD1MEoemvmIDqWITMJM4uGg1O4gtIiAr0fpgDVgHs8B7Rol7t7vBEsICURLzbj4D
-	s1kEVCWuX54HtIKDg1fAVeL5PhWIbYoS3c8mgM3kFHCT+PdkIhNIiRBQyfWJkSAjJQSOsUtM
-	ejOLEWKMgMS3yYfAxkgA7d10AOobSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IWK84Mbe4NC9d
-	Lzk/dxMjMD5O/3vWv4Px7gHrQ4zJQOMmMkuJJucD4yuvJN7Q2MzIwtTE1NjI3NKMNGElcd77
-	D5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDO1OpzE5nBUhNQI2J3y79BOntqkv/jBZ9v
-	8cuEaWp0JN44xyMft1DO4/PV4B9qHdaOkiJzE/UTtRumrLe+GMbiuT1p50LTJ56FXkuiv2wu
-	80kU03uz5MAdhxd917lKLz9aYcH9OjZ6/Q7DT7eP9c5S4me828ZldqQy8EdG8zPu1v3OD7f6
-	SiqxFGckGmoxFxUnAgAuuuTHpQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd1NSlOCDCY85bOYtO4Ak8XUh0/Y
-	LF4e0rQ4u+wgm8WrMxvZLDr+fmG0uLxrDpvFjPP7mCy+bdnGaLF+xmsWi5UnZjE7cHvMbrjI
-	4vF31Qtmj02rOtk8+rasYvT4+VLH4+SpJywenzfJBbBHNTDaZKQmpqQWKaTmJeenZOal2yp5
-	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDdqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
-	MULXNyQIrsfIAA0krGHMaLw+j6VgiVTFn/UfmBsY94h2MXJySAiYSGzado8ZwhaTuHBvPVsX
-	IxeHkMB0RolNH16xQzg9TBKHpr5iA6liEzCTOLhoNTuILSIgK9H6YA0zSBGzwHtGiXu3u8ES
-	wgJREvNuPgOzWQRUJa5fnsfSxcjBwSvgKvF8nwrENkWJ7mcTwGZyCrhJ/HsykQmkRAio5PrE
-	yAmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBEffM+kdjKsaLA4xCnAwKvHwSnRO
-	DhJiTSwrrsw9xCjBwawkwut6HyjEm5JYWZValB9fVJqTWnyIMRnoponMUqLJ+cDEkFcSb2hs
-	Ym5qbGppYmFiZkmasJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjAYytXf6njMVXhe/llSR
-	KmFg+cMy5/Wbni0fs+O/LOJfctLZ9eyO3/1ua1nZ5yQ0zGRXCTY+/J5h8qHtrfeTo1Q0eSqm
-	38rU/50Z5b8+6tHuzxHVz/6p3w1XTo30OZDpssBVzfnAlHvOhd9/35z0aZZxx4681knr2TZV
-	3GPs2izz+sX165LJl5VYijMSDbWYi4oTAThl7uACAwAA
+	Mon, 25 Nov 2013 23:27:12 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-54-5294231fee77
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Kay Sievers'" <kay@vrfy.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <20131112033906.GA30454@july>
+In-reply-to: <20131112033906.GA30454@july>
+Subject: Re: [PATCH v2] video: backlight: Remove backlight sysfs uevent
+Date: Tue, 26 Nov 2013 13:27:11 +0900
+Message-id: <001001ceea5f$c6642e50$532c8af0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7fWLLJJ5g8UvCZScqyHwCOo0hhJQLBrPQg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zA1155SlBBm0TlS3mrF/DZnF54SVW
+	i1urnrNb3Lq8isXiRN8HVovLu+awWeze9ZTVgd1j8wotjxMzfrN47Jn/g9Wjb8sqRo/Pm+Q8
+	Pq73DGCL4rJJSc3JLEst0rdL4Mrof9rLVLCYt2LnQtsGxs9cXYwcHBICJhKn1gd0MXICmWIS
+	F+6tZ+ti5OIQEljGKPHw0FUWiISJxNqWB+wQiUWMEjuvbIRyfjFKTGvZxwhSxSagJvHly2F2
+	kKkiAvoSbS0aIDXMApcZJXoX7WIHqRES0JRY+mg3I0gNp4CWxKTvmSBhYQF3iff3T7CC2CwC
+	qhJLZ55gA7F5BWwl+pf9ZIewBSV+TL4HdhAzUOv6nceZIGx5ic1r3jJDPKMu8eivLkhYRMBI
+	YvGDr6wQJSIS+168YwQ5R0LgK7vElZ0/mSF2CUh8m3yIBaJXVmLTAWaIfyUlDq64wTKBUWIW
+	ks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1StOzC0uzUvXS87P3cQIid+JOxjvH7A+xJgM
+	tH4is5Rocj4w/vNK4g2NzYwsTE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8
+	iJGJg1OqgVFN8FB02b5sT+XXEwIYq6a7z1I+0GmzZe7B36lTGm9ICc26bl1kuDjiz/GEL5Xn
+	g4KEj39deLknWd0nf2pGu+6CK70HAy7fZ50imaAxo9Lg/oVDH5J/XmBetqxfmE38suRdy8gf
+	/TnKllbO3v6B3HqfzJTsd7xfHn9T7gvHxNt7cg/fqLCW1FRiKc5INNRiLipOBADGtF4n9QIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAV155SlBBl8eyVnMWb+GzeLywkus
+	FrdWPWe3uHV5FYvFib4PrBaXd81hs9i96ymrA7vH5hVaHidm/Gbx2DP/B6tH35ZVjB6fN8l5
+	fFzvGcAW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuW
+	mQN0ipJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xo/9pL1PBYt6KnQtt
+	Gxg/c3UxcnJICJhIrG15wA5hi0lcuLeerYuRi0NIYBGjxM4rG9khnF+MEtNa9jGCVLEJqEl8
+	+XIYKMHBISKgL9HWogFSwyxwmVGid9EusElCApoSSx/tZgSp4RTQkpj0PRMkLCzgLvH+/glW
+	EJtFQFVi6cwTbCA2r4CtRP+yn+wQtqDEj8n3WEBsZqDW9TuPM0HY8hKb17xlBhkpIaAu8eiv
+	LkhYRMBIYvGDr6wQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoT
+	c4tL89L1kvNzNzGC08MzqR2MKxssDjEKcDAq8fBKdE4OEmJNLCuuzD3EKMHBrCTC63ofKMSb
+	klhZlVqUH19UmpNafIgxGejRicxSosn5wNSVVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbrQCGB
+	9MSS1OzU1ILUIpgtTBycUg2MOSJ8/Hs2/j17O+D/gWPzhdd2/fj+SDNDne/VTtag0oqyrPVH
+	q/STZk85K1KT+i6qxP/LUin30M8vU6udjDnKF33Rnbpy0yW9mv3sB0W+hmTVRu0RLF5bob7n
+	NMePwsUz1Ffsqf5sOsecTa0tVPbPEYlJzIqblM/4ZeZFbNq6RN/4k/r8p5tnKbEUZyQaajEX
+	FScCANj6j55TAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,105 +58,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fifo_depth of the HSI2C is not constant
-Exynos5420 and Exynos5250 supports fifo_depth of 64bytes
-Exynos5260 supports fifo_depth of 16bytes
+On Tuesday, November 12, 2013 12:39 PM, Kyungmin Park wrote:
+>
+> From: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> The most mobile phones have Ambient Light Sensors and it changes brightness according lux.
+> It means it changes backlight brightness frequently by just writing sysfs node, so it generates uevent.
+> 
+> Usually there's no user to use this backlight changes. But it forks udev worker threads and it takes
+> about 5ms. The main problem is that it hurts other process activities. so remove it.
+> 
+> Kay said
+> "Uevents are for the major, low-frequent, global device state-changes,
+>  not for carrying-out any sort of measurement data. Subsystems which
+>  need that should use other facilities like poll()-able sysfs file or
+>  any other subscription-based, client-tracking interface which does not
+>  cause overhead if it isn't used. Uevents are not the right thing to
+>  use here, and upstream udev should not paper-over broken kernel
+>  subsystems."
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-This patch configures the fifo_depth based on HSI2C modules version.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Signed-off-by: Naveen Krishna Chatradhi <ich.naveen@samsung.com>
-[For finding out the difference and initial contribution]
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
-Changes since v1:
-Added missed out Signed-off-by line for initial contribution
-Also rebasing on linux-i2c for-next
+Best regards,
+Jingoo Han
 
- drivers/i2c/busses/i2c-exynos5.c |   29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
-index 497ff91..a3fdcd8 100644
---- a/drivers/i2c/busses/i2c-exynos5.c
-+++ b/drivers/i2c/busses/i2c-exynos5.c
-@@ -77,12 +77,6 @@
- #define HSI2C_RXFIFO_TRIGGER_LEVEL(x)		((x) << 4)
- #define HSI2C_TXFIFO_TRIGGER_LEVEL(x)		((x) << 16)
- 
--/* As per user manual FIFO max depth is 64bytes */
--#define HSI2C_FIFO_MAX				0x40
--/* default trigger levels for Tx and Rx FIFOs */
--#define HSI2C_DEF_TXFIFO_LVL			(HSI2C_FIFO_MAX - 0x30)
--#define HSI2C_DEF_RXFIFO_LVL			(HSI2C_FIFO_MAX - 0x10)
--
- /* I2C_TRAILING_CTL Register bits */
- #define HSI2C_TRAILING_COUNT			(0xf)
- 
-@@ -187,6 +181,9 @@ struct exynos5_i2c {
- 
- 	/* Version of HS-I2C Hardware */
- 	unsigned int		version;
-+
-+	/* FIFO depth */
-+	unsigned int		fifo_depth;
- };
- 
- enum hsi2c_version {
-@@ -437,7 +434,7 @@ static irqreturn_t exynos5_i2c_irq(int irqno, void *dev_id)
- 		fifo_status = readl(i2c->regs + HSI2C_FIFO_STATUS);
- 		fifo_level = HSI2C_TX_FIFO_LVL(fifo_status);
- 
--		len = HSI2C_FIFO_MAX - fifo_level;
-+		len = i2c->fifo_depth - fifo_level;
- 		if (len > (i2c->msg->len - i2c->msg_ptr))
- 			len = i2c->msg->len - i2c->msg_ptr;
- 
-@@ -505,6 +502,7 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
- 	u32 i2c_auto_conf = 0;
- 	u32 fifo_ctl;
- 	unsigned long flags;
-+	unsigned short trig_lvl;
- 
- 	i2c_ctl = readl(i2c->regs + HSI2C_CTL);
- 	i2c_ctl &= ~(HSI2C_TXCHON | HSI2C_RXCHON);
-@@ -515,13 +513,19 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
- 
- 		i2c_auto_conf = HSI2C_READ_WRITE;
- 
--		fifo_ctl |= HSI2C_RXFIFO_TRIGGER_LEVEL(HSI2C_DEF_TXFIFO_LVL);
-+		trig_lvl = (i2c->msg->len > i2c->fifo_depth) ?
-+			(i2c->fifo_depth * 3/4) : i2c->msg->len;
-+		fifo_ctl |= HSI2C_RXFIFO_TRIGGER_LEVEL(trig_lvl);
-+
- 		int_en |= (HSI2C_INT_RX_ALMOSTFULL_EN |
- 			HSI2C_INT_TRAILING_EN);
- 	} else {
- 		i2c_ctl |= HSI2C_TXCHON;
- 
--		fifo_ctl |= HSI2C_TXFIFO_TRIGGER_LEVEL(HSI2C_DEF_RXFIFO_LVL);
-+		trig_lvl = (i2c->msg->len > i2c->fifo_depth) ?
-+			(i2c->fifo_depth * 1/4) : i2c->msg->len;
-+		fifo_ctl |= HSI2C_TXFIFO_TRIGGER_LEVEL(trig_lvl);
-+
- 		int_en |= HSI2C_INT_TX_ALMOSTEMPTY_EN;
- 	}
- 
-@@ -716,10 +720,13 @@ static int exynos5_i2c_probe(struct platform_device *pdev)
- 	i2c->version = exynos5_i2c_get_version(pdev);
- 
- 	/* The HS-I2C core on Exynos5260 needs a reset to start with */
--	if (i2c->version == EXYNOS_5260)
-+	if (i2c->version == EXYNOS_5260) {
-+		i2c->fifo_depth = 16;
- 		exynos5_i2c_reset(i2c);
--	else
-+	} else {
-+		i2c->fifo_depth = 64;
- 		exynos5_i2c_init(i2c);
-+	}
- 
- 	ret = i2c_add_adapter(&i2c->adap);
- 	if (ret < 0) {
--- 
-1.7.10.4
+> ---
+> v1: there's still user to use BACKLIGHT_UPDATE_SYSFS. so just remove store sysfs node uevent
+> 
+> ---
+> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+> index 94a403a..292cf99 100644
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+> @@ -172,8 +172,6 @@ static ssize_t brightness_store(struct device *dev,
+>  	}
+>  	mutex_unlock(&bd->ops_lock);
+> 
+> -	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
+> -
+>  	return rc;
+>  }
+>  static DEVICE_ATTR_RW(brightness);
 
