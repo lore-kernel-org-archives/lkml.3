@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab3KZXqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:46:51 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61342 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756653Ab3KZXqu (ORCPT
+	id S1758486Ab3KZXtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:49:19 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:46546 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757347Ab3KZXtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:46:50 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18uul8VU0LwLZ2HwrXbcEBG
-Date: Tue, 26 Nov 2013 15:46:43 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Eunbong Song <eunb.song@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nsekhar@ti.com,
-        davinci-linux-open-source@linux.davincidsp.com, dwmw2@infradead.org
-Subject: Re: [PATCH] ARM: Kill CONFIG_MTD_PARTITIONS
-Message-ID: <20131126234643.GU26766@atomide.com>
-References: <17954130.75631385509274999.JavaMail.weblogic@epml11>
+	Tue, 26 Nov 2013 18:49:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17954130.75631385509274999.JavaMail.weblogic@epml11>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAOesGMgSnW9e4M63RVWyAtqTbhj4_+Kmw_Rm71aCUUhiav25Vw@mail.gmail.com>
+References: <1385492161-27624-1-git-send-email-olof@lixom.net>
+	<1385493242.20100.71.camel@joe-AO722>
+	<CAOesGMgSnW9e4M63RVWyAtqTbhj4_+Kmw_Rm71aCUUhiav25Vw@mail.gmail.com>
+Date: Wed, 27 Nov 2013 00:49:17 +0100
+Message-ID: <CACRpkdaK3Lvw+DjWTjkU-AUyHY98YWQD58Lw10COG44WvOJSgQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pl061: print resource_size_t as %pa
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Joe Perches <joe@perches.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eunbong Song <eunb.song@samsung.com> [131126 15:42]:
-> 
-> This patch removes CONFIG_MTD_PARTITIONS in config files for ARM.
-> Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
+On Tue, Nov 26, 2013 at 8:17 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Tue, Nov 26, 2013 at 11:14 AM, Joe Perches <joe@perches.com> wrote:
+>> On Tue, 2013-11-26 at 10:56 -0800, Olof Johansson wrote:
 
-Missing Signed-off-by?
+>>>       amba_set_drvdata(adev, chip);
+>>> -     dev_err(&adev->dev, "PL061 GPIO chip @%08x registered\n",
+>>> -             adev->res.start);
+>>> +     dev_err(&adev->dev, "PL061 GPIO chip @%pa registered\n",
+>>> +             &adev->res.start);
+>>
+>> This looks as if this should not use dev_err, but maybe dev_info
+>> and maybe it should use %pR, &adev->res
+>
+> Yep, I have as a somewhat long-standing todo to scrub for needlessly
+> elevated printk levels (err and warn) on various drivers during boot,
+> thanks for shortcutting that. :)
 
-This patch is probably best sent to the arm-soc maintainers so
-they can pick it up. For the omap changes:
+Bah copy/paste bug from my side ...
 
-Acked-by: Tony Lindgren <tony@atomide.com> 
- 
+> I'll let Linus decide on pR vs pa.
+
+I go with the thing you tested, fixed up the commit and also
+switched to dev_info().
+
+But now I have worse PL061 problems than this.
+
+Yours,
+Linus Walleij
