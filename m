@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab3KZQL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:11:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51447 "EHLO
+	id S1757394Ab3KZQME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:12:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51453 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757176Ab3KZQLy (ORCPT
+	with ESMTP id S1757341Ab3KZQL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:11:54 -0500
-Message-Id: <20131126160815.158875692@infradead.org>
+	Tue, 26 Nov 2013 11:11:56 -0500
+Message-Id: <20131126160815.084160429@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 26 Nov 2013 16:57:48 +0100
+Date: Tue, 26 Nov 2013 16:57:47 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -19,189 +19,187 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [PATCH 5/8] locking: Optimize lock_bh functions
+Subject: [PATCH 4/8] preempt, locking: Rework local_bh_{dis,en}able()
 References: <20131126155743.116756708@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-remove_preempt_enable_no_sched-from-locks.patch
+Content-Disposition: inline; filename=peter_zijlstra-inline-local_bh_disable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all _bh_ lock functions do two preempt_count operations:
+Currently local_bh_disable() is out-of-line for no apparent reason.
+So inline it to save a few cycles on call/return nonsense, the
+function body is a single add on x86 (a few loads and store extra on
+load/store archs).
 
-  local_bh_disable();
-  preempt_disable();
+Also expose two new local_bh functions:
 
-and for the unlock:
+  __local_bh_{dis,en}able_ip(unsigned long ip, unsigned int cnt);
 
-  preempt_enable_no_resched();
-  local_bh_enable();
+Which implement the actual local_bh_{dis,en}able() behaviour.
 
-Since its a waste of perfectly good cycles to modify the same variable
-twice when you can do it in one go; use the new
-__local_bh_{dis,en}able_ip() functions that allow us to provide a
-preempt_count value to add/sub.
+The next patch uses the exposed @cnt argument to optimize bh lock
+functions.
 
-So define SOFTIRQ_LOCK_OFFSET as the offset a _bh_ lock needs to
-add/sub to be done in one go.
+With build fixes from Jacob Pan.
 
-As a bonus it gets rid of the preempt_enable_no_resched() usage.
-
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: lenb@kernel.org
 Cc: rjw@rjwysocki.net
 Cc: rui.zhang@intel.com
 Cc: jacob.jun.pan@linux.intel.com
 Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: hpa@zytor.com
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: lenb@kernel.org
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/preempt_mask.h     |   15 +++++++++++++++
- include/linux/rwlock_api_smp.h   |   12 ++++--------
- include/linux/spinlock_api_smp.h |   12 ++++--------
- include/linux/spinlock_api_up.h  |   16 +++++++++++-----
- 4 files changed, 34 insertions(+), 21 deletions(-)
+ include/linux/bottom_half.h  |   32 +++++++++++++++++++++++++++++---
+ include/linux/hardirq.h      |    1 +
+ include/linux/preempt_mask.h |    1 -
+ kernel/softirq.c             |   35 ++++++-----------------------------
+ 4 files changed, 36 insertions(+), 33 deletions(-)
 
+--- a/include/linux/bottom_half.h
++++ b/include/linux/bottom_half.h
+@@ -1,9 +1,35 @@
+ #ifndef _LINUX_BH_H
+ #define _LINUX_BH_H
+ 
+-extern void local_bh_disable(void);
++#include <linux/preempt.h>
++#include <linux/preempt_mask.h>
++
++#ifdef CONFIG_TRACE_IRQFLAGS
++extern void __local_bh_disable_ip(unsigned long ip, unsigned int cnt);
++#else
++static __always_inline void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
++{
++	preempt_count_add(cnt);
++	barrier();
++}
++#endif
++
++static inline void local_bh_disable(void)
++{
++	__local_bh_disable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
++}
++
+ extern void _local_bh_enable(void);
+-extern void local_bh_enable(void);
+-extern void local_bh_enable_ip(unsigned long ip);
++extern void __local_bh_enable_ip(unsigned long ip, unsigned int cnt);
++
++static inline void local_bh_enable_ip(unsigned long ip)
++{
++	__local_bh_enable_ip(ip, SOFTIRQ_DISABLE_OFFSET);
++}
++
++static inline void local_bh_enable(void)
++{
++	__local_bh_enable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
++}
+ 
+ #endif /* _LINUX_BH_H */
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -5,6 +5,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/ftrace_irq.h>
+ #include <linux/vtime.h>
++#include <asm/hardirq.h>
+ 
+ 
+ extern void synchronize_irq(unsigned int irq);
 --- a/include/linux/preempt_mask.h
 +++ b/include/linux/preempt_mask.h
-@@ -78,6 +78,21 @@
- #endif
+@@ -2,7 +2,6 @@
+ #define LINUX_PREEMPT_MASK_H
+ 
+ #include <linux/preempt.h>
+-#include <asm/hardirq.h>
  
  /*
-+ * The preempt_count offset needed for things like:
-+ *
-+ *  spin_lock_bh()
-+ *
-+ * Which need to disable both preemption (CONFIG_PREEMPT_COUNT) and
-+ * softirqs, such that unlock sequences of:
-+ *
-+ *  spin_unlock();
-+ *  local_bh_enable();
-+ *
-+ * Work as expected.
-+ */
-+#define SOFTIRQ_LOCK_OFFSET (SOFTIRQ_DISABLE_OFFSET + PREEMPT_CHECK_OFFSET)
-+
-+/*
-  * Are we running in atomic context?  WARNING: this macro cannot
-  * always detect atomic context; in particular, it cannot know about
-  * held spinlocks in non-preemptible kernels.  Thus it should not be
---- a/include/linux/rwlock_api_smp.h
-+++ b/include/linux/rwlock_api_smp.h
-@@ -172,8 +172,7 @@ static inline void __raw_read_lock_irq(r
- 
- static inline void __raw_read_lock_bh(rwlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire_read(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_read_trylock, do_raw_read_lock);
- }
-@@ -200,8 +199,7 @@ static inline void __raw_write_lock_irq(
- 
- static inline void __raw_write_lock_bh(rwlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_write_trylock, do_raw_write_lock);
- }
-@@ -250,8 +248,7 @@ static inline void __raw_read_unlock_bh(
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_read_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- static inline void __raw_write_unlock_irqrestore(rwlock_t *lock,
-@@ -275,8 +272,7 @@ static inline void __raw_write_unlock_bh
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_write_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- #endif /* __LINUX_RWLOCK_API_SMP_H */
---- a/include/linux/spinlock_api_smp.h
-+++ b/include/linux/spinlock_api_smp.h
-@@ -131,8 +131,7 @@ static inline void __raw_spin_lock_irq(r
- 
- static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
- }
-@@ -174,20 +173,17 @@ static inline void __raw_spin_unlock_bh(
- {
- 	spin_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_spin_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
- 
- static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	if (do_raw_spin_trylock(lock)) {
- 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
- 		return 1;
- 	}
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	return 0;
- }
- 
---- a/include/linux/spinlock_api_up.h
-+++ b/include/linux/spinlock_api_up.h
-@@ -24,11 +24,14 @@
-  * flags straight, to suppress compiler warnings of unused lock
-  * variables, and to add the proper checker annotations:
+  * We put the hardirq and softirq counter into the preemption
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -89,7 +89,7 @@ static void wakeup_softirqd(void)
+  * where hardirqs are disabled legitimately:
   */
-+#define ___LOCK(lock) \
-+  do { __acquire(lock); (void)(lock); } while (0)
-+
- #define __LOCK(lock) \
--  do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
-+  do { preempt_disable(); ___LOCK(lock); } while (0);
+ #ifdef CONFIG_TRACE_IRQFLAGS
+-static void __local_bh_disable(unsigned long ip, unsigned int cnt)
++void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
+ {
+ 	unsigned long flags;
  
- #define __LOCK_BH(lock) \
--  do { local_bh_disable(); __LOCK(lock); } while (0)
-+  do { __local_bh_disable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); ___LOCK(lock); } while (0)
+@@ -114,21 +114,9 @@ static void __local_bh_disable(unsigned
+ 	if (preempt_count() == cnt)
+ 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+ }
+-#else /* !CONFIG_TRACE_IRQFLAGS */
+-static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
+-{
+-	preempt_count_add(cnt);
+-	barrier();
+-}
++EXPORT_SYMBOL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
  
- #define __LOCK_IRQ(lock) \
-   do { local_irq_disable(); __LOCK(lock); } while (0)
-@@ -36,12 +39,15 @@
- #define __LOCK_IRQSAVE(lock, flags) \
-   do { local_irq_save(flags); __LOCK(lock); } while (0)
+-void local_bh_disable(void)
+-{
+-	__local_bh_disable(_RET_IP_, SOFTIRQ_DISABLE_OFFSET);
+-}
+-
+-EXPORT_SYMBOL(local_bh_disable);
+-
+ static void __local_bh_enable(unsigned int cnt)
+ {
+ 	WARN_ON_ONCE(!irqs_disabled());
+@@ -151,7 +139,7 @@ void _local_bh_enable(void)
  
-+#define ___UNLOCK(lock) \
-+  do { __release(lock); (void)(lock); } while (0)
-+
- #define __UNLOCK(lock) \
--  do { preempt_enable(); __release(lock); (void)(lock); } while (0)
-+  do { preempt_enable(); ___UNLOCK(lock); } while (0)
+ EXPORT_SYMBOL(_local_bh_enable);
  
- #define __UNLOCK_BH(lock) \
--  do { preempt_enable_no_resched(); local_bh_enable(); \
--	  __release(lock); (void)(lock); } while (0)
-+  do { __local_bh_enable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); \
-+       ___UNLOCK(lock); } while (0)
+-static inline void _local_bh_enable_ip(unsigned long ip)
++void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
+ {
+ 	WARN_ON_ONCE(in_irq() || irqs_disabled());
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -166,7 +154,7 @@ static inline void _local_bh_enable_ip(u
+ 	 * Keep preemption disabled until we are done with
+ 	 * softirq processing:
+  	 */
+-	preempt_count_sub(SOFTIRQ_DISABLE_OFFSET - 1);
++	preempt_count_sub(cnt - 1);
  
- #define __UNLOCK_IRQ(lock) \
-   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+ 	if (unlikely(!in_interrupt() && local_softirq_pending())) {
+ 		/*
+@@ -182,18 +170,7 @@ static inline void _local_bh_enable_ip(u
+ #endif
+ 	preempt_check_resched();
+ }
+-
+-void local_bh_enable(void)
+-{
+-	_local_bh_enable_ip(_RET_IP_);
+-}
+-EXPORT_SYMBOL(local_bh_enable);
+-
+-void local_bh_enable_ip(unsigned long ip)
+-{
+-	_local_bh_enable_ip(ip);
+-}
+-EXPORT_SYMBOL(local_bh_enable_ip);
++EXPORT_SYMBOL(__local_bh_enable_ip);
+ 
+ /*
+  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
+@@ -268,7 +245,7 @@ asmlinkage void __do_softirq(void)
+ 	pending = local_softirq_pending();
+ 	account_irq_enter_time(current);
+ 
+-	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
+ 	lockdep_softirq_start();
+ 
+ 	cpu = smp_processor_id();
 
 
