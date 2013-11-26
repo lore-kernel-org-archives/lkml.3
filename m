@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3KZNpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:45:00 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59461 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3KZNo7 (ORCPT
+	id S1754184Ab3KZNqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:46:11 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:57060 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3KZNqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:44:59 -0500
-Date: Tue, 26 Nov 2013 13:44:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        fabio.estevam@freescale.com, LW@KARO-electronics.de, oskar@scara.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20131126134411.GQ14725@sirena.org.uk>
-References: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
+	Tue, 26 Nov 2013 08:46:07 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="enbeIAqa8YisR7TD"
-Content-Disposition: inline
-In-Reply-To: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
- regulator consumers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <528DE1C4.6060900@overkiz.com>
+References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>
+	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>
+	<20131120145926.GE14627@ns203013.ovh.net>
+	<528CDFFB.1020601@overkiz.com>
+	<CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>
+	<528DE1C4.6060900@overkiz.com>
+Date: Tue, 26 Nov 2013 14:46:05 +0100
+Message-ID: <CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>
+Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek board
+From: Linus Walleij <linus.walleij@linaro.org>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 21, 2013 at 11:34 AM, boris brezillon
+<b.brezillon@overkiz.com> wrote:
+> On 21/11/2013 10:48, Linus Walleij wrote:
 
---enbeIAqa8YisR7TD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> No matter whether it's a switch or a GPIO regulator it seems we
+>> are in violent agreement that it should not be controlled by the
+>> pin control states at least.
+>>
+>> Start with making it a GPIO then you can figure out whether
+>> a GPIO regulator or drivers/extcon/extcon-gpio.c should be
+>> used.
+>
+> Thanks for pointing this out. I wasn't aware of the extcon subsystem.
+>
+> Actually, I think it's a little bit more tricky.
 
-On Tue, Nov 26, 2013 at 05:55:13PM +0800, Xiubo Li wrote:
+Hm, yeah extcon is for things like audio jacks on phones that
+userspace need to detect.
 
-> +static int sgtl5000_external_vddd_used(struct snd_soc_codec *codec)
-> +{
-> +	struct regulator *consumer;
-> +	struct sgtl5000_priv *sgtl5000 =3D snd_soc_codec_get_drvdata(codec);
-> +
-> +	consumer =3D regulator_get(codec->dev, sgtl5000->supplies[VDDD].supply);
-> +	if (IS_ERR(consumer)) {
-> +		return 0;
-> +	}
-> +	regulator_put(consumer);
-> +
-> +	return 1;
-> +}
+drivers/input/keyboard/gpio_keys* is for things that actually
+input characters to userspace stuff.
 
-This is going to fail to do what you expect if a dummy regulator is
-substituted which it will almost all of the time when the supply is
-genuinely absent.  It's also going to interact poorly with probe
-deferral.
+None of it is applicable here it seems ...
 
-> -	ret =3D regulator_bulk_get(codec->dev, ARRAY_SIZE(sgtl5000->supplies),
-> -				sgtl5000->supplies);
-> -	if (!ret)
-> +	if (sgtl5000_external_vddd_used(codec))
->  		external_vddd =3D 1;
->  	else {
->  		ret =3D sgtl5000_replace_vddd_with_ldo(codec);
+> The switch connected to gpio PB22 is used to enable one device or the other:
+>  - PB22 set to high level enables slot0 of mmc0 (connect mmc signals to the
+> mmc
+>    connector)
+>  - PB22 set to low level enables the dataflash (connect to the SPI0 signals
+> to the
+>    dataflash device)
 
-This looks buggy, it removes the regulator_get() for most of the
-supplies for the device.
+So this is something like a "jumper" of the old type, configuring
+the entire system?
 
-I think the driver may want to use regulator_get_optional(), though
-looking at the fact that there's an external_vdd flag there already it
-seems like there's already some attempt to handle these configuratins in
-the driver that isn't working so perhaps that just needs to be fixed.
-Or possibly DTs need to be changed to describe the supply. =20
+Something like that:
+http://www.mignonette-game.com/images/v2/21-arduino-com-jumper.jpg
 
-I'd expect to see a commit description that describes how the driver
-currently tries to handle this, why it doesn't work and how the patch
-fixes it.  Right now it seems like the change is jumping to a solution
-without understanding the problem and making some already problematic
-code more confused.
+But in this case it is a mechanical switch rather than a jumper?
 
---enbeIAqa8YisR7TD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This is not much different from the GPIOs people use to e.g. encode
+the board type, just that it can change.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Do people switch this thing at runtime?
 
-iQIcBAEBAgAGBQJSlKWoAAoJELSic+t+oim9jvEP/jiqKsqaqMskeVpdahMP0xmk
-p8qQ76t45yX0wYbNoDh7Fo35p919a1oS22Q225Z7LpkpFmceTfYjn8ZkL9277yNq
-MamaIOZaJM3/6FnMUb/NfRl+3rFN7R9xCepqb+s7twyjhp2RLHdKuasFG69jFqsV
-uzIE+1lGOPaIxD+OvP9xeNYoZSfIOmrJkSljpfMt/gnLqEBjLKuIsAA0/Bd0HyMj
-HkUIOUcOH7ceUBQPim0Lr95EZoD7vv2BzpT8lgvqJFUe5s03+swLajOMisvAiHeV
-6KBXgngLdiybDPYbKguzEW3LiAGidKxYbwWL/ydvGSn2UvonHPXTAryZzPUevvEz
-4ANo9Eld2JagmxLO8brXSLdM4Z/MtKTSoKZrH32LKblyY6SLyvluSEACktCuWexm
-HdLcfQtHTjZMfw2Ig7MUPN9EF2pLmzclvhDhAwuBg16c5CenU79ODZGZFvMWXtr+
-vKyiVfpQ5lBLzy4jplnkV6QbPqixwecY6ueOEquSt9qer45YL9G6V60qO2tWMcyB
-GYBy3kJTn6zgF0EdV37N5lE+pO0a3pXThb8R/fxv3FBpIUdDmwRf37Ez8Y9oVWJZ
-nzLvZZtiqP/4Tlmf9793koJC5bIJ/dmZTtukLL2NFaZv1v3FG8hB3kYxuQEtyvOZ
-UZz8l0ruvtCIF2UorNKZ
-=BShb
------END PGP SIGNATURE-----
+> The pinctrl approach has the benefit of providing a transparent way (no
+> existing
+> drivers modifications) to enable one device or the other.
+>
+> But if you think this is better done (or cleaner) with an extcon or a
+> regulator device,
+> I'll try to find a way to do it this way.
 
---enbeIAqa8YisR7TD--
+I'm uncertain. If this is something that changes at runtime, the
+input from the switch should be read through GPIO and used
+to select the "default" state of one device and something like
+"sleep" on the other (I suspect more things than pin control
+may be affected by that!)
+
+If this is a switch that you want to take the simple shortcut
+of just reading at boot, the approach would still be similar, just
+less code.
+
+So use gpio_get() to read the value, and then select which
+*entire device* goes active depending on the setting would
+be the right approach I guess?
+
+Yours,
+Linus Walleij
