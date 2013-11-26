@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab3KZSNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:13:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35409 "EHLO
+	id S1757905Ab3KZSPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:15:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab3KZSNO (ORCPT
+	with ESMTP id S1757750Ab3KZSNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:13:14 -0500
+	Tue, 26 Nov 2013 13:13:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vasily Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 36/36] exec/ptrace: fix get_dumpable() incorrect tests
-Date: Tue, 26 Nov 2013 10:12:46 -0800
-Message-Id: <20131126181032.752815772@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH 3.11 21/36] PCI: Support PCIe Capability Slot registers only for ports with slots
+Date: Tue, 26 Nov 2013 10:12:31 -0800
+Message-Id: <20131126181029.471123401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -31,116 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
+commit 6d3a1741f1e648cfbd5a0cc94477a0d5004c6f5e upstream.
 
-The get_dumpable() return value is not boolean.  Most users of the
-function actually want to be testing for non-SUID_DUMP_USER(1) rather than
-SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
-protected state.  Almost all places did this correctly, excepting the two
-places fixed in this patch.
+Previously we allowed callers to access Slot Capabilities, Status, and
+Control for Root Ports even if the Root Port did not implement a slot.
+This seems dubious because the spec only requires these registers if a
+slot is implemented.
 
-Wrong logic:
-    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
-        or
-    if (dumpable == 0) { /* be protective */ }
-        or
-    if (!dumpable) { /* be protective */ }
+It's true that even Root Ports without slots must have *space* for these
+slot registers, because the Root Capabilities, Status, and Control
+registers are after the slot registers in the capability.  However,
+for a v1 PCIe Capability, the *semantics* of the slot registers are
+undefined unless a slot is implemented.
 
-Correct logic:
-    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
-        or
-    if (dumpable != 1) { /* be protective */ }
-
-Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
-user was able to ptrace attach to processes that had dropped privileges to
-that user.  (This may have been partially mitigated if Yama was enabled.)
-
-The macros have been moved into the file that declares get/set_dumpable(),
-which means things like the ia64 code can see them too.
-
-CVE-2013-2929
-
-Reported-by: Vasily Kulikov <segoon@openwall.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Myron Stowe <myron.stowe@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/include/asm/processor.h |    2 +-
- fs/exec.c                         |    6 ++++++
- include/linux/binfmts.h           |    3 ---
- include/linux/sched.h             |    4 ++++
- kernel/ptrace.c                   |    3 ++-
- 5 files changed, 13 insertions(+), 5 deletions(-)
+ drivers/pci/access.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/ia64/include/asm/processor.h
-+++ b/arch/ia64/include/asm/processor.h
-@@ -319,7 +319,7 @@ struct thread_struct {
- 	regs->loadrs = 0;									\
- 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
- 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
--	if (unlikely(!get_dumpable(current->mm))) {							\
-+	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
- 		/*										\
- 		 * Zap scratch regs to avoid leaking bits between processes with different	\
- 		 * uid/privileges.								\
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1670,6 +1670,12 @@ int __get_dumpable(unsigned long mm_flag
- 	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
+--- a/drivers/pci/access.c
++++ b/drivers/pci/access.c
+@@ -497,9 +497,9 @@ static inline bool pcie_cap_has_sltctl(c
+ {
+ 	int type = pci_pcie_type(dev);
+ 
+-	return type == PCI_EXP_TYPE_ROOT_PORT ||
+-	       (type == PCI_EXP_TYPE_DOWNSTREAM &&
+-		pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
++	return (type == PCI_EXP_TYPE_ROOT_PORT ||
++		type == PCI_EXP_TYPE_DOWNSTREAM) &&
++	       pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT;
  }
  
-+/*
-+ * This returns the actual value of the suid_dumpable flag. For things
-+ * that are using this for checking for privilege transitions, it must
-+ * test against SUID_DUMP_USER rather than treating it as a boolean
-+ * value.
-+ */
- int get_dumpable(struct mm_struct *mm)
- {
- 	return __get_dumpable(mm->flags);
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -99,9 +99,6 @@ extern void setup_new_exec(struct linux_
- extern void would_dump(struct linux_binprm *, struct file *);
- 
- extern int suid_dumpable;
--#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
--#define SUID_DUMP_USER		1	/* Dump as user of process */
--#define SUID_DUMP_ROOT		2	/* Dump as root */
- 
- /* Stack area protections */
- #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -330,6 +330,10 @@ static inline void arch_pick_mmap_layout
- extern void set_dumpable(struct mm_struct *mm, int value);
- extern int get_dumpable(struct mm_struct *mm);
- 
-+#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
-+#define SUID_DUMP_USER		1	/* Dump as user of process */
-+#define SUID_DUMP_ROOT		2	/* Dump as root */
-+
- /* mm flags */
- /* dumpable bits */
- #define MMF_DUMPABLE      0  /* core dump is permitted */
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -257,7 +257,8 @@ ok:
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
- 	rcu_read_lock();
--	if (!dumpable && !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
-+	if (dumpable != SUID_DUMP_USER &&
-+	    !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
- 		rcu_read_unlock();
- 		return -EPERM;
- 	}
+ static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
 
 
