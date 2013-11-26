@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3KZPID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 10:08:03 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:36131 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757269Ab3KZPH7 (ORCPT
+	id S1757391Ab3KZPId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 10:08:33 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51172 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab3KZPI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 10:07:59 -0500
+	Tue, 26 Nov 2013 10:08:29 -0500
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Fan Yong <fan.yong@intel.com>,
+Cc: linux-kernel@vger.kernel.org, "John L. Hammond" <john.hammond@intel.com>,
         Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH v2 05/12] staging/lustre/scrub: OI scrub on OST
-Date: Tue, 26 Nov 2013 23:04:39 +0800
-Message-Id: <1385478286-5525-6-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH v2 07/12] staging/lustre/llite: don't check for O_CREAT in it_create_mode
+Date: Tue, 26 Nov 2013 23:04:41 +0800
+Message-Id: <1385478286-5525-8-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1385478286-5525-1-git-send-email-bergwolf@gmail.com>
 References: <1385478286-5525-1-git-send-email-bergwolf@gmail.com>
@@ -22,85 +22,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fan Yong <fan.yong@intel.com>
+From: "John L. Hammond" <john.hammond@intel.com>
 
-Main part of original patch in Lustre tree
-(http://review.whamcloud.com/6669) changes server code and
-is unneeded by client. The patch only picks up common
-functions and data structures change.
+ll_lookup_it() checks for O_CREAT in struct lookup_intent's
+it_create_mode member which is nonsensical, as it_create_mode is used
+for file mode bits (S_IFREG, S_IRUSR, ...). Fix this by just checking
+for IT_CREATE in it_op and do the same in llu_lookup_it(). This will
+not affect the behavior of either function, since if O_CREATE (0100)
+is actually set in o_create_mode then IT_CREATE must have been set in
+it_op. In ll_atomic_open() check for O_CREAT in the open_flags
+parameter rather than testing mode.
 
-Quoting original commit message here:
-"
-OI scrub should has the ability to handle kinds of OI, including
-both the OI files on MDT and the /O directory on OST.
-
-We trust the FID in LMA for both MDT objects and OST objects. So
-if some /O sub-item does not match related LMA, then the /O will
-be updated, instead of the LMA.
-
-To guarantee that the OI scrub can run without MDT0 involved for
-FLDB, the OST object needs to store some flag in its LMA to tell
-OI scrub that it is for an OST object, no need to query the MDT0.
-"
-
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3335
-Lustre-change: http://review.whamcloud.com/6669
-Signed-off-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Alex Zhuravlev <alexey.zhuravlev@intel.com>
+Lustre-change: http://review.whamcloud.com/6786
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3517
+Signed-off-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: Lai Siyao <lai.siyao@intel.com>
+Reviewed-by: Peng Tao <bergwolf@gmail.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <bergwolf@gmail.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- .../lustre/lustre/include/lustre/lustre_idl.h      |    7 +++++--
- .../staging/lustre/lustre/include/obd_support.h    |    1 +
- drivers/staging/lustre/lustre/ptlrpc/wiretest.c    |    4 ++++
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/staging/lustre/lustre/llite/namei.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-index 7dfb925..08da4f3 100644
---- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-+++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
-@@ -321,8 +321,11 @@ static inline int range_compare_loc(const struct lu_seq_range *r1,
-  * xattr.
-  */
- enum lma_compat {
--	LMAC_HSM = 0x00000001,
--	LMAC_SOM = 0x00000002,
-+	LMAC_HSM	= 0x00000001,
-+	LMAC_SOM	= 0x00000002,
-+	LMAC_NOT_IN_OI	= 0x00000004, /* the object does NOT need OI mapping */
-+	LMAC_FID_ON_OST = 0x00000008, /* For OST-object, its OI mapping is
-+				       * under /O/<seq>/d<x>. */
- };
+diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
+index 804451f..5242233 100644
+--- a/drivers/staging/lustre/lustre/llite/namei.c
++++ b/drivers/staging/lustre/lustre/llite/namei.c
+@@ -523,8 +523,7 @@ static struct dentry *ll_lookup_it(struct inode *parent, struct dentry *dentry,
+ 	icbd.icbd_childp = &dentry;
+ 	icbd.icbd_parent = parent;
  
- /**
-diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
-index 825a0c9..1748985 100644
---- a/drivers/staging/lustre/lustre/include/obd_support.h
-+++ b/drivers/staging/lustre/lustre/include/obd_support.h
-@@ -256,6 +256,7 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
- #define OBD_FAIL_OSD_SCRUB_FATAL			0x192
- #define OBD_FAIL_OSD_FID_MAPPING			0x193
- #define OBD_FAIL_OSD_LMA_INCOMPAT			0x194
-+#define OBD_FAIL_OSD_COMPAT_INVALID_ENTRY		0x195
+-	if (it->it_op & IT_CREAT ||
+-	    (it->it_op & IT_OPEN && it->it_create_mode & O_CREAT))
++	if (it->it_op & IT_CREAT)
+ 		opc = LUSTRE_OPC_CREATE;
+ 	else
+ 		opc = LUSTRE_OPC_ANY;
+@@ -623,7 +622,7 @@ static int ll_atomic_open(struct inode *dir, struct dentry *dentry,
+ 		return -ENOMEM;
  
- #define OBD_FAIL_OST		     0x200
- #define OBD_FAIL_OST_CONNECT_NET	 0x201
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/wiretest.c b/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
-index e3f02c7..7160a23 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/wiretest.c
-@@ -433,6 +433,10 @@ void lustre_assert_wire_constants(void)
- 		(unsigned)LMAC_HSM);
- 	LASSERTF(LMAC_SOM == 0x00000002UL, "found 0x%.8xUL\n",
- 		(unsigned)LMAC_SOM);
-+	LASSERTF(LMAC_NOT_IN_OI == 0x00000004UL, "found 0x%.8xUL\n",
-+		(unsigned)LMAC_NOT_IN_OI);
-+	LASSERTF(LMAC_FID_ON_OST == 0x00000008UL, "found 0x%.8xUL\n",
-+		(unsigned)LMAC_FID_ON_OST);
- 	LASSERTF(OBJ_CREATE == 1, "found %lld\n",
- 		 (long long)OBJ_CREATE);
- 	LASSERTF(OBJ_DESTROY == 2, "found %lld\n",
+ 	it->it_op = IT_OPEN;
+-	if (mode) {
++	if (open_flags & O_CREAT) {
+ 		it->it_op |= IT_CREAT;
+ 		lookup_flags |= LOOKUP_CREATE;
+ 	}
 -- 
 1.7.9.5
 
