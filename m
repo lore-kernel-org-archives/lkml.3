@@ -1,201 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3KZHqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 02:46:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:41371 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3KZHqG (ORCPT
+	id S1752506Ab3KZHt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 02:49:27 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:45093 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3KZHtV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 02:46:06 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-f1-529451b8e3ed
-Message-id: <1385451905.2417.3.camel@kjgkr>
-Subject: Re: [f2fs-dev][PATCH V2 0/6] f2fs: Enable f2fs support inline data
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Huajun Li <huajun.li.lee@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Huajun Li <huajun.li@intel.com>
-Date: Tue, 26 Nov 2013 16:45:05 +0900
-In-reply-to: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
-References: <1384096401-25169-1-git-send-email-huajun.li.lee@gmail.com>
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t8zI90dgVOCDF7e5LV4eUjTYsuWGIuv
-	/XfYLC4tcrfYs/cki8XlXXPYHNg8ds66y+6xeM9LJo/dCz4zefRtWcXo8XmTXABrFJdNSmpO
-	Zllqkb5dAlfGz6O/WAt+yVb0b/vN3MA4U6KLkYNDQsBE4tEijS5GTiBTTOLCvfVsXYxcHEIC
-	yxgl1u89xgqRMJE4dukSE0RiOqPE0tdnmSGcV4wSF1pPMoFU8QpoS7x8fokZxBYW8Ja40PWE
-	BWQDG1B8834DkLCQgKLE2/13wYaKCKhLvH4xlxVkDrNAF6PEk1vdYL0sAqoST79eYATp5RTw
-	kPi/QRGi113i2N+fYL38AqIShxduBytnBpozad4iZohDlSR2t3eyQ8TlJTavecsMcZqgxI/J
-	91ggau6xS7xZkwaxSkDi2+RDLJCAkJXYdABqjKTEwRU3WCYwSsxCsmEWkqmzkExdwMi8ilE0
-	tSC5oDgpvchYrzgxt7g0L10vOT93EyMkJvt3MN49YH2IMRlo5URmKdHkfGBM55XEGxqbGVmY
-	mpgaG5lbmpEmrCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxr1G/cqXVs5e1lCz
-	SKDI3yt/m3KyoV5PhPmqU3uj3u5PzH0WnL5pdplm4MnTmVzPPufHG9pIbC1qvGCt+Ds2dY7w
-	Nf6IZoFy1o73cfsd53zotDjnZXfkwNY9Xle/XN31zLeqPmXBGxGB1WLb+qY/0lwwnSn2UKn6
-	9Q17a1KU77kZ2lusKGTYo8RSnJFoqMVcVJwIAAoqUhbfAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQd0dgVOCDObe5bB4eUjTYsuWGIuv
-	/XfYLC4tcrfYs/cki8XlXXPYHNg8ds66y+6xeM9LJo/dCz4zefRtWcXo8XmTXABrVAOjTUZq
-	YkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QfiWFssScUqBQ
-	QGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxs+jv1gLfslW9G/7zdzAOFOii5GTQ0LA
-	ROLYpUtMELaYxIV769m6GLk4hASmM0osfX2WGcJ5xShxofUkWBWvgLbEy+eXmEFsYQFviQtd
-	T1i6GDk42IDim/cbgISFBBQl3u6/ywpiiwioS7x+MZcVZA6zQBejxJNb3WC9LAKqEk+/XmAE
-	6eUU8JD4v0ERotdd4tjfn2C9/AKiEocXbgcrZwaaM2neImaIQ5Ukdrd3skPE5SU2r3nLDHGa
-	oMSPyfdYJjAKzULSMgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf9M6kd
-	jCsbLA4xCnAwKvHwSnRODhJiTSwrrsw9xCjBwawkwut6HyjEm5JYWZValB9fVJqTWnyIMRno
-	uYnMUqLJ+cCElFcSb2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFIN
-	jKnetr9ftgpNNm5elWbVZFSr5ckTX5y47PvG4HXhjk5Tpz2bFbd2QuG9G/639l4UFIv+s958
-	1to7nr0XHqyK1t95lnv+92et3Zz2P0S/+Ox8YPFo48cX035dDo6dWrfsampzZEny2xdzvtSb
-	hoR4XI/85PhC7ujvdWqzv/Q8mvb6s/jfuQ8enxJSYinOSDTUYi4qTgQALVn/QT4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 26 Nov 2013 02:49:21 -0500
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH v2 2/6] net: MOXA ART: connect to PHY
+Date: Tue, 26 Nov 2013 07:49:17 +0000
+Message-ID: <2882257.eZXPo1Jdx9@lenovo>
+User-Agent: KMail/4.11.2 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1385393228-22416-2-git-send-email-jonas.jensen@gmail.com>
+References: <1385393228-22416-1-git-send-email-jonas.jensen@gmail.com> <1385393228-22416-2-git-send-email-jonas.jensen@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huajun,
+Le lundi 25 novembre 2013, 16:27:04 Jonas Jensen a écrit :
+> The kernel now has a MDIO bus driver and a phy_driver (RTL8201CP),
+> connect to this PHY using OF.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
-Please adjust the following bug fixes in your patches.
+Looks good:
 
----
- fs/f2fs/data.c   |  2 +-
- fs/f2fs/file.c   | 12 +++++++-----
- fs/f2fs/inline.c | 19 +++++++++++--------
- 3 files changed, 19 insertions(+), 14 deletions(-)
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 2eed6e3..e44f0ba 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -534,8 +534,8 @@ static int get_data_block_ro(struct inode *inode,
-sector_t iblock,
- 
- static int f2fs_read_data_page(struct file *file, struct page *page)
- {
-+	struct inode *inode = page->mapping->host;
- 	int ret;
--	struct inode *inode = file->f_mapping->host;
+> ---
+> 
+> Notes:
+>     Thanks for reviewing!
+> 
+>     Changes since v1:
+> 
+>     1. split ethtool support to separate patch
+>     2. changes to devicetree binding document
+>     3. add moxart_mac_update_duplex()
+>     4. compare previous link state/speed/duplex on link adjust
+>     5. use of_get_phy_mode() not PHY_INTERFACE_MODE_MII
+>     6. bail on of_parse_phandle() failure
+>     7. remove "if (!priv->phy_dev) return -ENODEV;"
+>        moxart_do_ioctl()
+>     8. remove "if (priv->phy_dev)"
+>        moxart_mac_open(), moxart_mac_stop()
+> 
+>     Applies to next-20131125
+> 
+>  .../devicetree/bindings/net/moxa,moxart-mac.txt    | 47 ++++++++++-
+>  drivers/net/ethernet/moxa/moxart_ether.c           | 92
+> +++++++++++++++++++++- drivers/net/ethernet/moxa/moxart_ether.h           |
+>  2 +
+>  3 files changed, 138 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+> b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt index
+> 583418b..56f0374 100644
+> --- a/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+> +++ b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+> @@ -1,21 +1,64 @@
+>  MOXA ART Ethernet Controller
+> 
+> +Integrated MDIO bus node:
+> +
+> +- compatible: "moxa,moxart-mdio"
+> +- Inherets from MDIO bus node binding[1]
+> +
+> +[1] Documentation/devicetree/bindings/net/phy.txt
+> +
+> +
+> +Ethernet node:
+> +
+>  Required properties:
+> 
+>  - compatible : Must be "moxa,moxart-mac"
+>  - reg : Should contain register location and length
+>  - interrupts : Should contain the mac interrupt number
+> 
+> +Optional Properties:
+> +
+> +- phy-handle : the phandle to a PHY node
+> +
+> +
+>  Example:
+> 
+> +	mdio0: mdio@90900090 {
+> +		compatible = "moxa,moxart-mdio";
+> +		reg = <0x90900090 0x8>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		ethphy0: ethernet-phy@1 {
+> +			device_type = "ethernet-phy";
+> +			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
+> +			reg = <1>;
+> +		};
+> +	};
+> +
+> +	mdio1: mdio@92000090 {
+> +		compatible = "moxa,moxart-mdio";
+> +		reg = <0x92000090 0x8>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		ethphy1: ethernet-phy@1 {
+> +			device_type = "ethernet-phy";
+> +			compatible = "moxa,moxart-rtl8201cp", "ethernet-phy-ieee802.3-c22";
+> +			reg = <1>;
+> +		};
+> +	};
+> +
+>  	mac0: mac@90900000 {
+>  		compatible = "moxa,moxart-mac";
+> -		reg =	<0x90900000 0x100>;
+> +		reg = <0x90900000 0x90>;
+>  		interrupts = <25 0>;
+> +		phy-handle = <&ethphy0>;
+>  	};
+> 
+>  	mac1: mac@92000000 {
+>  		compatible = "moxa,moxart-mac";
+> -		reg =	<0x92000000 0x100>;
+> +		reg = <0x92000000 0x90>;
+>  		interrupts = <27 0>;
+> +		phy-handle = <&ethphy1>;
+>  	};
+> diff --git a/drivers/net/ethernet/moxa/moxart_ether.c
+> b/drivers/net/ethernet/moxa/moxart_ether.c index 3c14afd..1b87034 100644
+> --- a/drivers/net/ethernet/moxa/moxart_ether.c
+> +++ b/drivers/net/ethernet/moxa/moxart_ether.c
+> @@ -26,6 +26,9 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/crc32.h>
+>  #include <linux/crc32c.h>
+> +#include <linux/phy.h>
+> +#include <linux/of_mdio.h>
+> +#include <linux/of_net.h>
+> 
+>  #include "moxart_ether.h"
+> 
+> @@ -61,6 +64,16 @@ static int moxart_set_mac_address(struct net_device
+> *ndev, void *addr) return 0;
+>  }
+> 
+> +static int moxart_do_ioctl(struct net_device *ndev, struct ifreq *ir, int
+> cmd) +{
+> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +
+> +	if (!netif_running(ndev))
+> +		return -EINVAL;
+> +
+> +	return phy_mii_ioctl(priv->phy_dev, ir, cmd);
+> +}
+> +
+>  static void moxart_mac_free_memory(struct net_device *ndev)
+>  {
+>  	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> @@ -110,6 +123,19 @@ static void moxart_mac_enable(struct net_device *ndev)
+>  	writel(priv->reg_maccr, priv->base + REG_MAC_CTRL);
+>  }
+> 
+> +static void moxart_mac_update_duplex(struct net_device *ndev)
+> +{
+> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +
+> +	priv->reg_maccr &= ~(FULLDUP | ENRX_IN_HALFTX);
+> +	if (priv->duplex)
+> +		priv->reg_maccr |= FULLDUP;
+> +	else
+> +		priv->reg_maccr |= ENRX_IN_HALFTX;
+> +
+> +	writel(priv->reg_maccr, priv->base + REG_MAC_CTRL);
+> +}
+> +
+>  static void moxart_mac_setup_desc_ring(struct net_device *ndev)
+>  {
+>  	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> @@ -169,6 +195,9 @@ static int moxart_mac_open(struct net_device *ndev)
+>  	moxart_update_mac_address(ndev);
+>  	moxart_mac_setup_desc_ring(ndev);
+>  	moxart_mac_enable(ndev);
+> +
+> +	phy_start(priv->phy_dev);
+> +
+>  	netif_start_queue(ndev);
+> 
+>  	netdev_dbg(ndev, "%s: IMR=0x%x, MACCR=0x%x\n",
+> @@ -184,6 +213,8 @@ static int moxart_mac_stop(struct net_device *ndev)
+> 
+>  	napi_disable(&priv->napi);
+> 
+> +	phy_stop(priv->phy_dev);
+> +
+>  	netif_stop_queue(ndev);
+> 
+>  	/* disable all interrupts */
+> @@ -429,12 +460,49 @@ static struct net_device_ops moxart_netdev_ops = {
+>  	.ndo_set_mac_address	= moxart_set_mac_address,
+>  	.ndo_validate_addr	= eth_validate_addr,
+>  	.ndo_change_mtu		= eth_change_mtu,
+> +	.ndo_do_ioctl		= moxart_do_ioctl,
+>  };
+> 
+> +static void moxart_adjust_link(struct net_device *ndev)
+> +{
+> +	struct moxart_mac_priv_t *priv = netdev_priv(ndev);
+> +	unsigned long flags;
+> +	int status_change = 0;
+> +
+> +	if (priv->phy_dev->link) {
+> +		if (priv->speed != priv->phy_dev->speed) {
+> +			priv->speed = priv->phy_dev->speed;
+> +			status_change = 1;
+> +		}
+> +
+> +		if (priv->duplex != priv->phy_dev->duplex) {
+> +			spin_lock_irqsave(&priv->txlock, flags);
+> +
+> +			priv->duplex = priv->phy_dev->duplex;
+> +			moxart_mac_update_duplex(ndev);
+> +
+> +			spin_unlock_irqrestore(&priv->txlock, flags);
+> +			status_change = 1;
+> +		}
+> +	}
+> +
+> +	if (priv->link != priv->phy_dev->link) {
+> +		if (!priv->phy_dev->link) {
+> +			priv->speed = 0;
+> +			priv->duplex = -1;
+> +		}
+> +		priv->link = priv->phy_dev->link;
+> +		status_change = 1;
+> +	}
+> +
+> +	if (status_change)
+> +		phy_print_status(priv->phy_dev);
+> +}
+> +
+>  static int moxart_mac_probe(struct platform_device *pdev)
+>  {
+>  	struct device *p_dev = &pdev->dev;
+> -	struct device_node *node = p_dev->of_node;
+> +	struct device_node *node = p_dev->of_node, *phy_node;
+>  	struct net_device *ndev;
+>  	struct moxart_mac_priv_t *priv;
+>  	struct resource *res;
+> @@ -455,6 +523,28 @@ static int moxart_mac_probe(struct platform_device
+> *pdev) priv = netdev_priv(ndev);
+>  	priv->ndev = ndev;
+> 
+> +	priv->link = 0;
+> +	priv->speed = 0;
+> +	priv->duplex = -1;
+> +
+> +	phy_node = of_parse_phandle(node, "phy-handle", 0);
+> +	if (!phy_node) {
+> +		dev_err(p_dev, "of_parse_phandle failed\n");
+> +		ret = -ENODEV;
+> +		goto init_fail;
+> +	}
+> +
+> +	if (phy_node) {
+> +		priv->phy_dev = of_phy_connect(priv->ndev, phy_node,
+> +					       &moxart_adjust_link,
+> +					       0, of_get_phy_mode(node));
+> +		if (!priv->phy_dev) {
+> +			dev_err(p_dev, "of_phy_connect failed\n");
+> +			ret = -ENODEV;
+> +			goto init_fail;
+> +		}
+> +	}
+> +
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	ndev->base_addr = res->start;
+>  	priv->base = devm_ioremap_resource(p_dev, res);
+> diff --git a/drivers/net/ethernet/moxa/moxart_ether.h
+> b/drivers/net/ethernet/moxa/moxart_ether.h index 2be9280..b8877bf 100644
+> --- a/drivers/net/ethernet/moxa/moxart_ether.h
+> +++ b/drivers/net/ethernet/moxa/moxart_ether.h
+> @@ -297,6 +297,8 @@ struct moxart_mac_priv_t {
+>  	unsigned int reg_imr;
+>  	struct napi_struct napi;
+>  	struct net_device *ndev;
+> +	struct phy_device *phy_dev;
+> +	int speed, duplex, link;
+> 
+>  	dma_addr_t rx_base;
+>  	dma_addr_t rx_mapping[RX_DESC_NUM];
 
->> The file pointer is NULL if this page contains file's symlink data,
-which induces NULL pointer error.
- 
- 	/* If the file has inline data, try to read it directlly */
- 	if (f2fs_has_inline_data(inode))
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index ffafcb9..52bb211 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -257,8 +257,7 @@ static int truncate_blocks(struct inode *inode, u64
-from)
- 	unsigned int blocksize = inode->i_sb->s_blocksize;
- 	struct dnode_of_data dn;
- 	pgoff_t free_from;
--	int count = 0;
--	int err;
-+	int count = 0, err = 0;
- 
- 	trace_f2fs_truncate_blocks_enter(inode, from);
- 
-@@ -266,6 +265,10 @@ static int truncate_blocks(struct inode *inode, u64
-from)
- 			((from + blocksize - 1) >> (sbi->log_blocksize));
- 
- 	f2fs_lock_op(sbi);
-+
-+	if (f2fs_has_inline_data(inode))
-+		goto done;
-+
-
->> We don't need to do the below actions. Let's skip that.
-
- 	set_new_dnode(&dn, inode, NULL, NULL, 0);
- 	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
- 	if (err) {
-@@ -291,9 +294,8 @@ static int truncate_blocks(struct inode *inode, u64
-from)
- 
- 	f2fs_put_dnode(&dn);
- free_next:
--
--	if (!f2fs_has_inline_data(inode))
--		err = truncate_inode_blocks(inode, free_from);
-+	err = truncate_inode_blocks(inode, free_from);
-+done:
- 	f2fs_unlock_op(sbi);
- 
- 	/* lastly zero out the first data page */
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index e9b33d7..6c301cc 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -48,13 +48,14 @@ int f2fs_read_inline_data(struct inode *inode,
-struct page *page)
- 	if (IS_ERR(ipage))
- 		return PTR_ERR(ipage);
- 
--	src_addr = inline_data_addr(ipage);
--	dst_addr = page_address(page);
--
- 	zero_user_segment(page, INLINE_DATA_OFFSET,
- 				INLINE_DATA_OFFSET + MAX_INLINE_DATA);
-+
- 	/* Copy the whole inline data block */
-+	src_addr = inline_data_addr(ipage);
-+	dst_addr = kmap(page);
- 	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
-+	kunmap(page);
-
->> We should do kmap/kunmap for normal data pages.
-
- 	f2fs_put_page(ipage, 1);
- 
- 	SetPageUptodate(page);
-@@ -89,12 +90,13 @@ static int __f2fs_convert_inline_data(struct inode
-*inode, struct page *page)
- 		return err;
- 	}
- 
--	src_addr = inline_data_addr(ipage);
--	dst_addr = page_address(page);
- 	zero_user_segment(page, 0, PAGE_CACHE_SIZE);
- 
- 	/* Copy the whole inline data block */
-+	src_addr = inline_data_addr(ipage);
-+	dst_addr = kmap(page);
- 	memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
-+	kunmap(page);
-
->> ditto.
- 
- 	/* write data page to try to make data consistent */
- 	old_blk_addr = dn.data_blkaddr;
-@@ -152,12 +154,13 @@ int f2fs_write_inline_data(struct inode *inode,
- 		return err;
- 	ipage = dn.inode_page;
- 
--	src_addr = page_address(page);
--	dst_addr = inline_data_addr(ipage);
--
- 	zero_user_segment(ipage, INLINE_DATA_OFFSET,
- 				 INLINE_DATA_OFFSET + MAX_INLINE_DATA);
-+
-+	src_addr = kmap(page);
-+	dst_addr = inline_data_addr(ipage);
- 	memcpy(dst_addr, src_addr, size);
-+	kunmap(page);
-
->> ditto.
- 
- 	/* Release the first data block if it is allocated */
- 	if (!f2fs_has_inline_data(inode)) {
 -- 
-1.8.4.474.g128a96c
-
-
-
--- 
-Jaegeuk Kim
-Samsung
-
+Florian
