@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3KZBdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:33:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27663 "EHLO
+	id S1753718Ab3KZBeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:34:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27749 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab3KZBdh (ORCPT
+	with ESMTP id S1751744Ab3KZBeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:33:37 -0500
+	Mon, 25 Nov 2013 20:34:03 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 03/10] PCI: Move resources and bus_list releasing to pci_release_dev
-Date: Mon, 25 Nov 2013 17:28:03 -0800
-Message-Id: <1385429290-25397-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 06/10] PCI: Add pcibios_bus_addr_to_res()
+Date: Mon, 25 Nov 2013 17:28:06 -0800
+Message-Id: <1385429290-25397-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
@@ -24,95 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not release resource in pci_destroy that is too early
-as there could be still other use hold reference.
-
-release them or remove it from bus devices list at last
-in pci_release_dev instead.
+it takes addr and return converted address only.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c  | 21 +++++++++++++++++++--
- drivers/pci/remove.c | 19 -------------------
- 2 files changed, 19 insertions(+), 21 deletions(-)
+ drivers/pci/host-bridge.c | 14 ++++++++++++++
+ include/linux/pci.h       |  2 ++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 173a9cf..12ec56c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1154,6 +1154,18 @@ static void pci_release_capabilities(struct pci_dev *dev)
- 	pci_free_cap_save_buffers(dev);
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 2e7288b..c911adb 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -102,3 +102,17 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 	__pcibios_bus_to_resource(dev->bus, res, region);
  }
- 
-+static void pci_free_resources(struct pci_dev *dev)
+ EXPORT_SYMBOL(pcibios_bus_to_resource);
++
++resource_size_t pcibios_bus_addr_to_res(struct pci_bus *bus, int flags,
++					resource_size_t addr)
 +{
-+	int i;
++	struct pci_bus_region region;
++	struct resource r;
 +
-+	pci_cleanup_rom(dev);
-+	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-+		struct resource *res = dev->resource + i;
-+		if (res->parent)
-+			release_resource(res);
-+	}
++	r.flags = flags;
++	region.start = addr;
++	region.end = addr;
++	__pcibios_bus_to_resource(bus, &r, &region);
++
++	return r.end;
 +}
-+
- /**
-  * pci_release_dev - free a pci device structure when all users of it are finished.
-  * @dev: device that's been disconnected
-@@ -1163,9 +1175,14 @@ static void pci_release_capabilities(struct pci_dev *dev)
-  */
- static void pci_release_dev(struct device *dev)
- {
--	struct pci_dev *pci_dev;
-+	struct pci_dev *pci_dev = to_pci_dev(dev);
-+
-+	down_write(&pci_bus_sem);
-+	list_del(&pci_dev->bus_list);
-+	up_write(&pci_bus_sem);
-+
-+	pci_free_resources(pci_dev);
- 
--	pci_dev = to_pci_dev(dev);
- 	pci_release_capabilities(pci_dev);
- 	pci_release_of_node(pci_dev);
- 	pcibios_release_device(pci_dev);
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 692f4c3..f452148 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -3,20 +3,6 @@
- #include <linux/pci-aspm.h>
- #include "pci.h"
- 
--static void pci_free_resources(struct pci_dev *dev)
--{
--	int i;
--
--	msi_remove_pci_irq_vectors(dev);
--
--	pci_cleanup_rom(dev);
--	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
--		struct resource *res = dev->resource + i;
--		if (res->parent)
--			release_resource(res);
--	}
--}
--
- static void pci_stop_dev(struct pci_dev *dev)
- {
- 	pci_pme_active(dev, false);
-@@ -36,11 +22,6 @@ static void pci_destroy_dev(struct pci_dev *dev)
- {
- 	device_del(&dev->dev);
- 
--	down_write(&pci_bus_sem);
--	list_del(&dev->bus_list);
--	up_write(&pci_bus_sem);
--
--	pci_free_resources(dev);
- 	put_device(&dev->dev);
- }
- 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 55ee90f..3c6e399 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -745,6 +745,8 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+ 			     struct resource *res);
+ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 			     struct pci_bus_region *region);
++resource_size_t pcibios_bus_addr_to_res(struct pci_bus *bus, int flags,
++					resource_size_t addr);
+ void pcibios_scan_specific_bus(int busn);
+ struct pci_bus *pci_find_bus(int domain, int busnr);
+ void pci_bus_add_devices(const struct pci_bus *bus);
 -- 
 1.8.1.4
 
