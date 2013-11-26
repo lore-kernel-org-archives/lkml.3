@@ -1,140 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3KZDeD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:34:03 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59558 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3KZDd7 (ORCPT
+	id S1753590Ab3KZDgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:36:01 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59344 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752674Ab3KZDgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:33:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <1384285203-642-1-git-send-email-cl91tp@gmail.com>
-References: <1384285203-642-1-git-send-email-cl91tp@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 25 Nov 2013 20:33:37 -0700
-Message-ID: <CAErSpo5E4584zgTt4ySPSEFhtwdHDOyrrowirp=SmtmJjDyHgg@mail.gmail.com>
-Subject: Re: [PATCH] PCI: add a quirk for keeping Bus Master bit on shutdown
-To: Chang Liu <cl91tp@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, Jility <jility09@gmail.com>,
-        Florian Otti <f.otti@gmx.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Nov 2013 22:36:00 -0500
+Date: Tue, 26 Nov 2013 14:35:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: Re: linux-next: build warnings after merge of the block tree
+Message-Id: <20131126143550.7a2195476ff4aa5c73db20b2@canb.auug.org.au>
+In-Reply-To: <20131126132946.e402679788ae8269f0c5128a@canb.auug.org.au>
+References: <20131126132946.e402679788ae8269f0c5128a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Lan, Khalid, Konstantin, Alan, Takao, Jility, Florian, linux-kernel]
+--Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 12, 2013 at 07:40:03PM +0000, Chang Liu wrote:
-> This fixes https://bugzilla.kernel.org/show_bug.cgi?id=63861
->
-> Commit b566a22c2 and 7897e60227 made pci_device_shutdown()
-> unconditionally clear Bus Master bit for every pci devices.
-> While this works for most hardware, certain devices are not
-> compatible with this. Intel Lynx Point-LP SATA Controller,
-> for example, will hang the system if its Bus Master bit is
-> cleared during device shutdown. This patch adds a pci quirk
-> so that device drivers can instruct pci_device_shutdown()
-> to keep Bus Master from being cleared, and then implements
-> this mechanism for the Intel Lynx Point-LP AHCI driver.
->
-> Signed-off-by: Chang Liu <cl91tp@gmail.com>
+Hi all,
 
-I'm not 100% comfortable with disabling bus mastering in general;
-see [1] for more details.
+On Tue, 26 Nov 2013 13:29:46 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the block tree, today's linux-next build (arm
+> multi_v7_defconfig) produced these warnings:
+>=20
+> block/blk-merge.c: In function 'blk_rq_map_sg':
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialize=
+d in this function [-Wuninitialized]
+> block/blk-merge.c:171:23: note: 'bvprv.bv_len' was declared here
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitializ=
+ed in this function [-Wuninitialized]
+> block/blk-merge.c:171:23: note: 'bvprv.bv_page' was declared here
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitial=
+ized in this function [-Wuninitialized]
+> block/blk-merge.c:171:23: note: 'bvprv.bv_offset' was declared here
+> block/blk-merge.c: In function 'blk_bio_map_sg':
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_len' may be used uninitialize=
+d in this function [-Wuninitialized]
+> block/blk-merge.c:233:23: note: 'bvprv.bv_len' was declared here
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_offset' may be used uninitial=
+ized in this function [-Wuninitialized]
+> block/blk-merge.c:233:23: note: 'bvprv.bv_offset' was declared here
+> block/blk-merge.c:133:8: warning: 'bvprv.bv_page' may be used uninitializ=
+ed in this function [-Wuninitialized]
+> block/blk-merge.c:233:23: note: 'bvprv.bv_page' was declared here
+> block/blk-merge.c: In function 'attempt_merge':
+> block/blk-merge.c:108:7: warning: 'end_bv.bv_offset' may be used uninitia=
+lized in this function [-Wuninitialized]
+> block/blk-merge.c:89:17: note: 'end_bv.bv_offset' was declared here
+> block/blk-merge.c:108:7: warning: 'end_bv.bv_page' may be used uninitiali=
+zed in this function [-Wuninitialized]
+> block/blk-merge.c:89:17: note: 'end_bv.bv_page' was declared here
+> block/blk-merge.c:108:7: warning: 'end_bv.bv_len' may be used uninitializ=
+ed in this function [-Wuninitialized]
+> block/blk-merge.c:89:17: note: 'end_bv.bv_len' was declared here
+>=20
+> arm has its own definition of BIOVEC_PHYS_MERGEABLE() if that is relevant.
 
-But given that we have been doing it for quite a while (b566a22c2 appeared
-in v3.5 on Jul 21, 2012), and Lynx Point should be in lots of machines, I'm
-surprised that we don't see more reports of this problem if it really
-affects all Lynx Point parts.
+For an easier test case, the i386 defcongig does this as well.
 
-Jility reported the same problem [2], and I did find one other similar
-report [3] from Florian.  All three reports (Chang, Jility, Florian) are on
-the same exact machine (Acer V5-573G), which seems sort of suspicious.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Lan, do you have access to any Lynx Point boxes?  Can you test and see
-whether they hang on power-off also?  I suspect this might be something
-specific to the Acer box, not a generic Lynx Point issue.
+--Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG
+Content-Type: application/pgp-signature
 
-Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-[1] http://lkml.kernel.org/r/20120427190033.GA17588@ldl.usa.hp.com
-[2] https://bugzilla.kernel.org/show_bug.cgi?id=63861#c21
-[3] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1249329
+iQIcBAEBCAAGBQJSlBcaAAoJEMDTa8Ir7ZwVOZoP/1u40BvJu2GkxHGmr8l/fbbb
+Af9odClkERbHeC9KDI6RGkRCc7aECvs/k8A/fAcclmdK/qnw4purUHxgTx6wvr4y
+wToQv0t6qJpuHSQ6jJ1zOknDIzTmWW8HVwbosUJ6WLu56fA1JxSEDNOYFcuXq9CS
+S/t3HIIvG74LNJfXLITicjY1mxNySUz29kkAXGtP3m5tA/4QJn4nTQQXSCpjfEU+
+ZccfDQ1URYOEs4iuGBauyiCyABOioYRVA1VUHxCWqGi/hTlyvX+WOvhZ7nDyMYtS
+GKPC1cvZJ6RpOJ1VQnEAHauO7AlS6frjytJVrn2fNhA5pTbqc7Z02S4AA0VBBrzc
++T7IR/U/QywsJYWN6Qpu52p4v4bgXLeSBYuQYPJhlsNONXc41gplTCXpgdVWzfQg
+YgiHwM8spk6yW8BJ1hHt/2mCRWcDtdyS2XgD9bWNib2thCGVFkHcN4m5vSQkp1O2
+20cJvmJEqJqbZUHfA+OARW6TnzfDAqF8Ao1nmCITRNmLi0fNJl+oiMkRT5y2sSWP
+nJfAmYVz4p2nDntFu0i4e0hbPHUVymd00kSObfkl+4ls9n2iRK76idRZqpBcATvL
+VbYnCsuGNhRP+n4VcgdWtQtxUPFhZg3vfRLVXF1wvyiADLbRg3rnOnmuoyTg2mvE
+onu0NLQA7tjc5yzkepNl
+=3fG1
+-----END PGP SIGNATURE-----
 
-> ---
-> As per Takao's suggestion, add a new member into struct pci_dev
-> and add a quirk in the ahci driver. I tested this on my
-> machine (Acer V5-573G) and it works fine.
->
->  drivers/ata/ahci.c       |  8 ++++++++
->  drivers/pci/pci-driver.c | 11 ++++++++---
->  include/linux/pci.h      |  1 +
->  3 files changed, 17 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index 8e28f92..de6efcb 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -1385,6 +1385,14 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->
->   pci_set_master(pdev);
->
-> + /* We normally clear Bus Master on pci device shutdown. However,
-> + * doing so for Intel Lynx Point-LP SATA Controller [AHCI mode]
-> + * hangs the system. Therefore keep it.
-> + * See bug report: https://bugzilla.kernel.org/show_bug.cgi?id=63861
-> + */
-> + if (pdev->vendor == PCI_VENDOR_ID_INTEL && pdev->device == 0x9c03)
-> + pdev->keep_busmaster_on_shutdown = 1;
-> +
->   if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
->   return ahci_host_activate(host, pdev->irq, n_msis);
->
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 38f3c01..ff15b0c 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -392,10 +392,15 @@ static void pci_device_shutdown(struct device *dev)
->   pci_msix_shutdown(pci_dev);
->
->   /*
-> - * Turn off Bus Master bit on the device to tell it to not
-> - * continue to do DMA. Don't touch devices in D3cold or unknown states.
-> + * If the hardware is okay with it, turn off Bus Master bit
-> + * on the device to tell it not to continue doing DMA.
-> + * Don't touch devices in D3cold or unknown states.
-> + * On certain hardware clearing Bus Master bit on shutdown
-> + * may hang the entire system. In these cases the driver of
-> + * these devices should set keep_busmaster_on_shutdown to 1.
->   */
-> - if (pci_dev->current_state <= PCI_D3hot)
-> + if (!pci_dev->keep_busmaster_on_shutdown
-> +    && pci_dev->current_state <= PCI_D3hot)
->   pci_clear_master(pci_dev);
->  }
->
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index da172f9..63db735 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -322,6 +322,7 @@ struct pci_dev {
->   /* keep track of device state */
->   unsigned int is_added:1;
->   unsigned int is_busmaster:1; /* device is busmaster */
-> + unsigned int keep_busmaster_on_shutdown:1; /* do not clear busmaster on shutdown */
->   unsigned int no_msi:1; /* device may not use msi */
->   unsigned int block_cfg_access:1; /* config space access is blocked */
->   unsigned int broken_parity_status:1; /* Device generates false positive parity */
-> --
-> 1.8.4.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--Signature=_Tue__26_Nov_2013_14_35_50_+1100_Y/PZPIYZJkUSC7iG--
