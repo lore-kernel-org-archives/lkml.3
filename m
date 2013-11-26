@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab3KZLvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:51:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab3KZLvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:51:20 -0500
-Date: Tue, 26 Nov 2013 12:50:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf tools: Fix tags target rebuilding
-Message-ID: <20131126115043.GG1267@krava.brq.redhat.com>
-References: <1385464890-19876-1-git-send-email-jolsa@redhat.com>
- <20131126113108.GE2410@gmail.com>
+	id S1756456Ab3KZLyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:54:20 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38445 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286Ab3KZLyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 06:54:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126113108.GE2410@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK9yfHz1HL65megQ9vDZovZr9oBo8UsrgGS+umWiT9FmHrnK3Q@mail.gmail.com>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+ <1385439977-19077-1-git-send-email-ch.naveen@samsung.com> <CAK9yfHz1HL65megQ9vDZovZr9oBo8UsrgGS+umWiT9FmHrnK3Q@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Tue, 26 Nov 2013 17:23:56 +0530
+Message-ID: <CAHfPSqACobcw-qEA+Pa2KTG3vJN6hPhS=ond3z4L6=BABbh8TQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-i2c@vger.kernel.org, sjg@chromium.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        cpgs@samsung.com, Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 12:31:08PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > Once the tags file is generated it's never rebuilt
-> > until it's removed by hand.
-> > 
-> > The reason is that the Makefile does not treat tags
-> > as a target but as a file to be rebuilt.
-> > 
-> > Adding tags as PHONY target into the Makefile.
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Stephane Eranian <eranian@google.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Adrian Hunter <adrian.hunter@intel.com>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > ---
-> >  tools/perf/Makefile | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> > index 4835618..95f5792 100644
-> > --- a/tools/perf/Makefile
-> > +++ b/tools/perf/Makefile
-> > @@ -61,7 +61,7 @@ endef
-> >  #
-> >  # Needed if no target specified:
-> >  #
-> > -all:
-> > +all tags:
-> 
-> Obviously the change invalidates the comment above.
+Hello Sachin,
 
-ugh, haven't noticed that comment ;-)
+On 26 November 2013 16:59, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> On 26 November 2013 09:56, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> This patch adds new compatible to support HSI2C module on Exynos5260
+>> HSI2C module on Exynos5260 needs to be reset during during initialization.
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> [snip]
+>>
+>>  Required properties:
+>>    - compatible: value should be.
+>> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+>> +       -> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
+>> +                               Exynos5250/5420 SoCs.
+The first HSI2C module is available on Exynos5 SoCs from Samsung.
+Hence, "samsung,exynos5-hsi2c"
+HSI2C Module on  Exynos5250 and Exynos5420 was exactly similar
 
-> 
-> >  	$(print_msg)
-> >  	$(make)
-> >  
-> > @@ -77,3 +77,5 @@ clean:
-> >  %:
-> >  	$(print_msg)
-> >  	$(make)
-> > +
-> > +.PHONY: tags
-> 
-> Note that there's also a TAGS file that uses etags - which probably 
-> needs similar treatment.
+HSI2C Module on Exynos5260 differs in hardware.
+Hence, "samsung,exynos5260-hsi2c".
 
-yes
+And as the new variants come we use "samsung,exynosXXX-hsi2c"
+or we can go by "samsung,exynos5-hsi2c-v2"
 
-> 
-> Also note that we have duplicate code for this in Makefile.perf 
-> already. Would it be possible to pass through this there and keep the 
-> main Makefile is just a thin, minimal wrapper that adds default 
-> parallelism, etc?
+Changing an existing compatible needs modification in the DT nodes as well.
 
-well, thats what I actually tried to do.. pass the
-processing to the Makefile.perf otherwise it stops
-in Makefile
+I will change the compatible string, if anyone else also thinks its wise.
+>
+> This string could be made more specific ("samsung,exynos5250-hsi2c")
+> now that we have variants for this.
+>
+>> +       -> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
+>> +                               on Exynos5260 SoCs.
+>> +
+>>    - reg: physical base address of the controller and length of memory mapped
+>>      region.
+>>    - interrupts: interrupt number to the cpu.
+>> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+>> index da39ff0..497ff91 100644
+>> --- a/drivers/i2c/busses/i2c-exynos5.c
+>> +++ b/drivers/i2c/busses/i2c-exynos5.c
+>> @@ -184,14 +184,35 @@ struct exynos5_i2c {
+>>          * 2. Fast speed upto 1Mbps
+>>          */
+>>         int                     speed_mode;
+>> +
+>> +       /* Version of HS-I2C Hardware */
+>> +       unsigned int            version;
+>> +};
+>> +
+>> +enum hsi2c_version {
+>> +       EXYNOS_5,
+>
+> ditto.
+>
+>> +       EXYNOS_5260
+>>  };
+>>
+>
+> --
+> With warm regards,
+> Sachin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I guess you want some generic way of doing that
 
-jirka
+
+-- 
+Shine bright,
+(: Nav :)
