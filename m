@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3KZGGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:06:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:58170 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab3KZGGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:06:19 -0500
-In-Reply-To: <1381906617-11392-2-git-send-email-khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: mikey@neuling.org, sukadev@linux.vnet.ibm.com, michaele@au1.ibm.com,
-        eranian@google.com
-Subject: RE: [V3 01/10] perf: New conditional branch filter criteria in branch stack sampling
-Message-Id: <20131126060618.917ED2C00A9@ozlabs.org>
-Date: Tue, 26 Nov 2013 17:06:18 +1100 (EST)
-From: michael@ozlabs.org (mpe@ellerman.id.au)
+	id S1754551Ab3KZGHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:07:32 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45989 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab3KZGHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 01:07:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <2958660.aJeCDrTTOe@amdc1032>
+References: <2958660.aJeCDrTTOe@amdc1032>
+Date: Tue, 26 Nov 2013 11:37:28 +0530
+Message-ID: <CADGdYn4YQL9-8WCDNWP8x9Gec9sMV09q3OsYPz3tTdMxDGnyvg@mail.gmail.com>
+Subject: Re: [PATCH] thermal: offer Samsung thermal support only when
+ ARCH_EXYNOS is defined
+From: Amit Kachhap <amit.kachhap@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ideally your commit subject would contain a verb, preferably in the present
-tense.
+On 10/4/13, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> Menu for Samsung thermal support is visible on all Samsung
+> platforms while thermal drivers are currently available only
+> for EXYNOS SoCs. Fix it by replacing PLAT_SAMSUNG dependency
+> with ARCH_EXYNOS one.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Looks good, so
+Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-I think simply "perf: Add PERF_SAMPLE_BRANCH_COND" would be clearer.
-
-On Wed, 2013-16-10 at 06:56:48 UTC, Anshuman Khandual wrote:
-> POWER8 PMU based BHRB supports filtering for conditional branches.
-> This patch introduces new branch filter PERF_SAMPLE_BRANCH_COND which
-> will extend the existing perf ABI. Other architectures can provide
-> this functionality with either HW filtering support (if present) or
-> with SW filtering of instructions.
-> 
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> Reviewed-by: Stephane Eranian <eranian@google.com>
 > ---
->  include/uapi/linux/perf_event.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 0b1df41..5da52b6 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
->  	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
->  	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
->  	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
-> +	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
->  
-> -	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
-> +	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
->  };
-
-This no longer applies against Linus' tree, you'll need to rebase it.
-
-cheers
+>  drivers/thermal/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index a709c63..05cf95c 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -198,7 +198,7 @@ source "drivers/thermal/ti-soc-thermal/Kconfig"
+>  endmenu
+>
+>  menu "Samsung thermal drivers"
+> -depends on PLAT_SAMSUNG
+> +depends on ARCH_EXYNOS
+>  source "drivers/thermal/samsung/Kconfig"
+>  endmenu
+>
+> --
+> 1.8.2.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
