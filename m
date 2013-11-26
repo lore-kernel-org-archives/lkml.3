@@ -1,136 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab3KZKku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:40:50 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:24995 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab3KZKkn (ORCPT
+	id S1756185Ab3KZKlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:41:39 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56084 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab3KZKlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:40:43 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,7270"; a="55793472"
-X-IronPort-AV: E=McAfee;i="5400,1158,7270"; a="553052890"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Jason Liu <r64343@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ath6kl-devel@qca.qualcomm.com>
-Subject: Re: [PATCH] ath6kl: sdio: fix system panic when doing wifi stress test
-References: <1384221185-8645-1-git-send-email-r64343@freescale.com>
-Date: Tue, 26 Nov 2013 12:40:19 +0200
-In-Reply-To: <1384221185-8645-1-git-send-email-r64343@freescale.com> (Jason
-	Liu's message of "Tue, 12 Nov 2013 09:53:05 +0800")
-Message-ID: <87k3fvjvjg.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 26 Nov 2013 05:41:37 -0500
+Message-ID: <52947A8E.1040200@linux.vnet.ibm.com>
+Date: Tue, 26 Nov 2013 16:10:14 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+To: "mpe@ellerman.id.au" <michael@ozlabs.org>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        sukadev@linux.vnet.ibm.com, eranian@google.com, michaele@au1.ibm.com
+Subject: Re: [V3 02/10] powerpc, perf: Enable conditional branch filter for
+ POWER8
+References: <20131126060619.48B5D2C00BC@ozlabs.org>
+In-Reply-To: <20131126060619.48B5D2C00BC@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112610-5490-0000-0000-0000048DFAE1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On 11/26/2013 11:36 AM, mpe@ellerman.id.au wrote:
+> On Wed, 2013-16-10 at 06:56:49 UTC, Anshuman Khandual wrote:
+>> Enables conditional branch filter support for POWER8
+>> utilizing MMCRA register based filter and also invalidates
+>> a BHRB branch filter combination involving conditional
+>> branches.
+>>
+>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>> ---
+>>  arch/powerpc/perf/power8-pmu.c | 10 ++++++++++
+>>  1 file changed, 10 insertions(+)
+>>
+>> diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+>> index 2ee4a70..6e28587 100644
+>> --- a/arch/powerpc/perf/power8-pmu.c
+>> +++ b/arch/powerpc/perf/power8-pmu.c
+>> @@ -580,11 +580,21 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+>>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
+>>  		return -1;
+>>  
+>> +	/* Invalid branch filter combination - HW does not support */
+>> +	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
+>> +			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
+>> +		return -1;
+> 
+> What this doesn't make obvious is that the hardware doesn't support any
+> combinations. It just happens that these are the only two possibilities we
+> allow, and so this is the only combination we have to disallow.
+> 
+>>
+>>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
+>>  		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
+>>  		return pmu_bhrb_filter;
+>>  	}
+>>  
+>> +	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
+>> +		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
+>> +		return pmu_bhrb_filter;
+>> +	}
+>> +
+>>  	/* Every thing else is unsupported */
+>>  	return -1;
+>>  }
+> 
+> I think it would be clearer if we actually checked for the possibilities we
+> allow and let everything else fall through, eg:
+> 
+> 	/* Ignore user/kernel/hv bits */
+> 	branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
+> 
+> 	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+> 		return 0;
+> 
+> 	if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL)
+> 		return POWER8_MMCRA_IFM1;
+> 
+> 	if (branch_sample_type == PERF_SAMPLE_BRANCH_COND)
+> 		return POWER8_MMCRA_IFM3;
+> 	
+> 	return -1;
+> 
 
-Jason Liu <r64343@freescale.com> writes:
+Please look at the 9th patch (power8, perf: Change BHRB branch filter configuration).
+All these issues are taken care of in this patch. It clearly indicates that any combination
+of HW BHRB filters will not be supported in the PMU and hence zero out the HW filter component
+and processes all of those filters in the SW.
 
-> When did the wifi iperf test, meet one following kernel panic:
-> command: iperf -c $TARGET_IP -i 5 -t 50 -w 1M
->
-> Unable to handle kernel paging request at virtual address 1a480000
-> pgd = 80004000
-> [1a480000] *pgd=00000000
-> Internal error: Oops: 805 [#1] SMP ARM
-
-[...]
-
-> The kernel panic is caused by the sg_buf is not set correctly with the
-> following code when compiled with Yocto GCC 4.8.1:
->
-> drivers/net/wireless/ath/ath6kl/hif.h:
-> struct hif_scatter_req {
->         struct list_head list;
->         /* address for the read/write operation */
->         u32 addr;
-> 	...
->
->         /* bounce buffer for upper layers to copy to/from */
->         u8 *virt_dma_buf;
->
->         struct hif_scatter_item scat_list[1];
->
->         u32 scat_q_depth;
-> };
->
-> (Note: the scat_req.scat_list[] will dynamiclly grow with run-time)
-
-There's actually a major bug right there, scat_list can corrupt scat_q_depth.
-
-> The GCC 4.8.1 compiler will not do the for-loop till scat_entries, instead,
-> it only run one round loop. This may be caused by that the GCC 4.8.1 thought
-> that the scat_list only have one item and then no need to do full iteration,
-> but this is simply wrong by looking at the assebly code. This will cause the
-> sg buffer not get set when scat_entries > 1 and thus lead to kernel panic.
->
-> This patch is a workaround to the GCC 4.8.1 complier issue by passing the
-> entry address of the scat_req->scat_list to the for-loop and interate it,
-> then, GCC 4.8.1 will do the full for-loop correctly.
-> (Note: This issue not observed with GCC 4.7.2, only found on the GCC 4.8.1)
->
-> This patch does not change any function logic and no any performance downgrade.
-
-[...]
-
-> +	scat_list = &scat_req->scat_list[0];
-> +
->  	/* assemble SG list */
-> -	for (i = 0; i < scat_req->scat_entries; i++, sg++) {
-> +	for (i = 0; i < scat_req->scat_entries; i++, sg++, scat_list++) {
->  		ath6kl_dbg(ATH6KL_DBG_SCATTER, "%d: addr:0x%p, len:%d\n",
-> -			   i, scat_req->scat_list[i].buf,
-> -			   scat_req->scat_list[i].len);
-> +			   i, scat_list->buf, scat_list->len);
->  
-> -		sg_set_buf(sg, scat_req->scat_list[i].buf,
-> -			   scat_req->scat_list[i].len);
-> +		sg_set_buf(sg, scat_list->buf, scat_list->len);
->  	}
-
-Working around the problem by adding a temporary variable makes me a bit
-worried, I would rather fix the root cause. Is the root cause by that we
-define the field with scat_list[1]?
-
-Does the patch below help? It would also fix the corruption with
-scat_q_depth. Please note that I have only compile tested it. And I
-might have also missed something important, so please review it
-carefully.
-
---- a/drivers/net/wireless/ath/ath6kl/hif.h
-+++ b/drivers/net/wireless/ath/ath6kl/hif.h
-@@ -197,9 +197,9 @@ struct hif_scatter_req {
- 	/* bounce buffer for upper layers to copy to/from */
- 	u8 *virt_dma_buf;
- 
--	struct hif_scatter_item scat_list[1];
--
- 	u32 scat_q_depth;
-+
-+	struct hif_scatter_item scat_list[0];
- };
- 
- struct ath6kl_irq_proc_registers {
-diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
-index 7126bdd..6bf15a3 100644
---- a/drivers/net/wireless/ath/ath6kl/sdio.c
-+++ b/drivers/net/wireless/ath/ath6kl/sdio.c
-@@ -348,7 +348,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
- 	int i, scat_req_sz, scat_list_sz, size;
- 	u8 *virt_buf;
- 
--	scat_list_sz = (n_scat_entry - 1) * sizeof(struct hif_scatter_item);
-+	scat_list_sz = n_scat_entry * sizeof(struct hif_scatter_item);
- 	scat_req_sz = sizeof(*s_req) + scat_list_sz;
- 
- 	if (!virt_scat)
-
-
--- 
-Kalle Valo
