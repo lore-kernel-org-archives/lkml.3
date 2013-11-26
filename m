@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab3KZGHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 01:07:32 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45989 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3KZGHa (ORCPT
+	id S1753938Ab3KZGJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:09:26 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:38363 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab3KZGJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 01:07:30 -0500
+	Tue, 26 Nov 2013 01:09:23 -0500
+Date: Mon, 25 Nov 2013 22:09:21 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        axboe@kernel.dk, Neil Brown <neilb@suse.de>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
+Subject: Re: [PATCH 1/5] block: Make generic_make_request handle arbitrary
+ sized bios
+Message-ID: <20131126060921.GB6434@infradead.org>
+References: <1385418633-9753-1-git-send-email-kmo@daterainc.com>
+ <1385418633-9753-2-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
-In-Reply-To: <2958660.aJeCDrTTOe@amdc1032>
-References: <2958660.aJeCDrTTOe@amdc1032>
-Date: Tue, 26 Nov 2013 11:37:28 +0530
-Message-ID: <CADGdYn4YQL9-8WCDNWP8x9Gec9sMV09q3OsYPz3tTdMxDGnyvg@mail.gmail.com>
-Subject: Re: [PATCH] thermal: offer Samsung thermal support only when
- ARCH_EXYNOS is defined
-From: Amit Kachhap <amit.kachhap@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385418633-9753-2-git-send-email-kmo@daterainc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/13, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> Menu for Samsung thermal support is visible on all Samsung
-> platforms while thermal drivers are currently available only
-> for EXYNOS SoCs. Fix it by replacing PLAT_SAMSUNG dependency
-> with ARCH_EXYNOS one.
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Looks good, so
-Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> +	q->bio_split = bioset_create(4, 0);
+> +	if (!q->bio_split)
+> +		goto fail_id;
 
-> ---
->  drivers/thermal/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index a709c63..05cf95c 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -198,7 +198,7 @@ source "drivers/thermal/ti-soc-thermal/Kconfig"
->  endmenu
->
->  menu "Samsung thermal drivers"
-> -depends on PLAT_SAMSUNG
-> +depends on ARCH_EXYNOS
->  source "drivers/thermal/samsung/Kconfig"
->  endmenu
->
-> --
-> 1.8.2.3
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+How did we arrive at a mempool size of 4 to make sure we can always make
+progress with arbitrarily sized bios?  Shouldn't we document the design
+decision somewhere?
+
+> +static struct bio *blk_bio_discard_split(struct request_queue *q,
+> +					 struct bio *bio,
+> +					 struct bio_set *bs)
+> +{
+
+One fallout of this should be that it would allows us to impement
+a range UNMAP/TRIP much more easily, which would help dramatically
+with TRIM performance!
+
