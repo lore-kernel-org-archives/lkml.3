@@ -1,147 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab3KZKpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:45:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40610 "EHLO mx2.suse.de"
+	id S1755588Ab3KZKu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:50:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60441 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755565Ab3KZKpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:45:45 -0500
-Date: Tue, 26 Nov 2013 10:45:42 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 3/5] mm: compaction: detect when scanners meet in
- isolate_freepages
-Message-ID: <20131126104542.GH5285@suse.de>
-References: <1385389570-11393-1-git-send-email-vbabka@suse.cz>
- <1385389570-11393-4-git-send-email-vbabka@suse.cz>
+	id S1752377Ab3KZKuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:50:54 -0500
+Message-ID: <52947CCA.2010400@ti.com>
+Date: Tue, 26 Nov 2013 12:49:46 +0200
+From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1385389570-11393-4-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grygorii Strashko <grygorii.strashko@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 06/12] mtd: nand: davinci: adjust DT properties to MTD
+ generic
+References: <1384187188-5776-1-git-send-email-ivan.khoronzhuk@ti.com>, <1384187188-5776-7-git-send-email-ivan.khoronzhuk@ti.com> <4F5844B3A985794BA902E12C070812375F8D20@DNCE04.ent.ti.com> <529447A7.1050605@ti.com> <52947832.3080309@ti.com>
+In-Reply-To: <52947832.3080309@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.122]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 03:26:08PM +0100, Vlastimil Babka wrote:
-> Compaction of a zone is finished when the migrate scanner (which begins at the
-> zone's lowest pfn) meets the free page scanner (which begins at the zone's
-> highest pfn). This is detected in compact_zone() and in the case of direct
-> compaction, the compact_blockskip_flush flag is set so that kswapd later resets
-> the cached scanner pfn's, and a new compaction may again start at the zone's
-> borders.
-> 
-> The meeting of the scanners can happen during either scanner's activity.
-> However, it may currently fail to be detected when it occurs in the free page
-> scanner, due to two problems. First, isolate_freepages() keeps free_pfn at the
-> highest block where it isolated pages from, for the purposes of not missing the
-> pages that are returned back to allocator when migration fails. Second, failing
-> to isolate enough free pages due to scanners meeting results in -ENOMEM being
-> returned by migrate_pages(), which makes compact_zone() bail out immediately
-> without calling compact_finished() that would detect scanners meeting.
-> 
-> This failure to detect scanners meeting might result in repeated attempts at
-> compaction of a zone that keep starting from the cached pfn's close to the
-> meeting point, and quickly failing through the -ENOMEM path, without the cached
-> pfns being reset, over and over. This has been observed (through additional
-> tracepoints) in the third phase of the mmtests stress-highalloc benchmark, where
-> the allocator runs on an otherwise idle system. The problem was observed in the
-> DMA32 zone, which was used as a fallback to the preferred Normal zone, but on
-> the 4GB system it was actually the largest zone. The problem is even amplified
-> for such fallback zone - the deferred compaction logic, which could (after
-> being fixed by a previous patch) reset the cached scanner pfn's, is only
-> applied to the preferred zone and not for the fallbacks.
-> 
-> The problem in the third phase of the benchmark was further amplified by commit
-> 81c0a2bb ("mm: page_alloc: fair zone allocator policy") which resulted in a
-> non-deterministic regression of the allocation success rate from ~85% to ~65%.
-> This occurs in about half of benchmark runs, making bisection problematic.
-> It is unlikely that the commit itself is buggy, but it should put more pressure
-> on the DMA32 zone during phases 1 and 2, which may leave it more fragmented in
-> phase 3 and expose the bugs that this patch fixes.
-> 
-> The fix is to make scanners meeting in isolate_freepage() stay that way, and
-> to check in compact_zone() for scanners meeting when migrate_pages() returns
-> -ENOMEM. The result is that compact_finished() also detects scanners meeting
-> and sets the compact_blockskip_flush flag to make kswapd reset the scanner
-> pfn's.
-> 
-> The results in stress-highalloc benchmark show that the "regression" by commit
-> 81c0a2bb in phase 3 no longer occurs, and phase 1 and 2 allocation success rates
-> are significantly improved.
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> ---
->  mm/compaction.c | 19 +++++++++++++++----
->  1 file changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 6a2f0c2..0702bdf 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -656,7 +656,7 @@ static void isolate_freepages(struct zone *zone,
->  	 * is the end of the pageblock the migration scanner is using.
->  	 */
->  	pfn = cc->free_pfn;
-> -	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
-> +	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
->  
->  	/*
->  	 * Take care that if the migration scanner is at the end of the zone
-> @@ -672,7 +672,7 @@ static void isolate_freepages(struct zone *zone,
->  	 * pages on cc->migratepages. We stop searching if the migrate
->  	 * and free page scanners meet or enough free pages are isolated.
->  	 */
-> -	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
-> +	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
->  					pfn -= pageblock_nr_pages) {
->  		unsigned long isolated;
->  
-> @@ -734,7 +734,14 @@ static void isolate_freepages(struct zone *zone,
->  	/* split_free_page does not map the pages */
->  	map_pages(freelist);
->  
-> -	cc->free_pfn = high_pfn;
-> +        /*
-> +         * If we crossed the migrate scanner, we want to keep it that way
-> +	 * so that compact_finished() may detect this
-> +	 */
+On 11/26/2013 12:30 PM, Grygorii Strashko wrote:
+> On 11/26/2013 09:03 AM, Sekhar Nori wrote:
+>> On Monday 11 November 2013 10:31 PM, Khoronzhuk, Ivan wrote:
+>>> The properties davinci-ecc-mode, davinci-nand-use-bbt, davinci-nand-buswidth
+>>> are MTD generic. Correct names for them are: nand-ecc-mode, nand-on-flash-bbt,
+>>> nand-bus-width accordingly. So rename them in dts and documentation.
+>>>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+>>>    .../devicetree/bindings/mtd/davinci-nand.txt       |   25 ++++++++++++++++----
+>>>    drivers/mtd/nand/davinci_nand.c                    |   11 ++++++---
+>>>    2 files changed, 28 insertions(+), 8 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+>>> index d2a3fc0..befaa5b 100644
+>>> --- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+>>> +++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+>>> @@ -37,7 +37,7 @@ Recommended properties :
+>>>    - ti,davinci-mask-chipsel:     mask for chipselect address. Needed to mask
+>>>                                   addresses for given chipselect.
+>>>
+>>> -- ti,davinci-ecc-mode:         operation mode of the NAND ecc mode. ECC mode
+>>> +- nand-ecc-mode:               operation mode of the NAND ecc mode. ECC mode
+>>>                                   valid values for davinci driver:
+>>>                                   - "none"
+>>>                                   - "soft"
+>>> @@ -45,10 +45,25 @@ Recommended properties :
+>>>
+>>>    - ti,davinci-ecc-bits:         used ECC bits, currently supported 1 or 4.
+>>>
+>>> -- ti,davinci-nand-buswidth:    buswidth 8 or 16.
+>>
+>> Shouldn't we keep the documentation for existing bindings while just
+>> marking them as deprecated?
+>
+> I haven't found any requirements about this in doc.
+> It's done in both way in other drivers - some keep properties in bindings
+> documentation and some are not.
+>
+> Regards,
+> -grygorii
+>
 
-Whitespace damage.
+For me this is not needed, but for example from mtd:
+Documentation/devicetree/bindings/mtd/gpmc-nand.txt
+,it contains deprecated properties, like a lot of others.
 
-> +	if (pfn < low_pfn)
-> +		cc->free_pfn = max(pfn, zone->zone_start_pfn);
-
-Is it even possible for this condition to occur? low_pfn bound is
-cc->migrate_pfn and the free scanner should only start after some pages
-have already been isolated for migration.
-
-> +	else
-> +		cc->free_pfn = high_pfn;
->  	cc->nr_freepages = nr_freepages;
->  }
->  
-> @@ -999,7 +1006,11 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  		if (err) {
->  			putback_movable_pages(&cc->migratepages);
->  			cc->nr_migratepages = 0;
-> -			if (err == -ENOMEM) {
-> +			/*
-> +			 * migrate_pages() may return -ENOMEM when scanners meet
-> +			 * and we want compact_finished() to detect it
-> +			 */
-> +			if (err == -ENOMEM && cc->free_pfn > cc->migrate_pfn) {
->  				ret = COMPACT_PARTIAL;
->  				goto out;
->  			}
-> -- 
-> 1.8.1.4
-> 
+And this sad me I should remain deprecated properties.
+Anyway if we have these properties in driver we should describe them.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards,
+Ivan Khoronzhuk
