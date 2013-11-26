@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3KZF7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 00:59:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32615 "EHLO mx1.redhat.com"
+	id S1753186Ab3KZGFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 01:05:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35228 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab3KZF7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 00:59:00 -0500
+	id S1751633Ab3KZGFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 01:05:16 -0500
+Date: Tue, 26 Nov 2013 14:04:29 +0800
 From: Dave Young <dyoung@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -13,45 +14,22 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
         matt@console-pimps.org, toshi.kani@hp.com
-Subject: [PATCH v4 01/12] efi: remove unused variables in __map_region
-Date: Tue, 26 Nov 2013 13:57:46 +0800
-Message-Id: <1385445477-9665-2-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+Subject: Re: [PATCH v4 00/12] kexec kernel efi runtime support
+Message-ID: <20131126060429.GA9727@dhcp-16-126.nay.redhat.com>
 References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-variables size and end is useless in this function, thus remove them.
+This is the resend of V4, there's no update for kexec-tools patches.
 
-Reported-by: Toshi Kani <toshi.kani@hp.com>
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/platform/efi/efi_64.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+BTW, below is a git repo for anyone who want to test the patches:
+https://github.com/daveyoung/linux.git
+branch kexec-efi
 
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index bf286c3..c5a6491 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -148,15 +148,11 @@ void efi_setup_page_tables(void)
- static void __init __map_region(efi_memory_desc_t *md, u64 va)
- {
- 	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
--	unsigned long pf = 0, size;
--	u64 end;
-+	unsigned long pf = 0;
- 
- 	if (!(md->attribute & EFI_MEMORY_WB))
- 		pf |= _PAGE_PCD;
- 
--	size = md->num_pages << PAGE_SHIFT;
--	end  = va + size;
--
- 	if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
- 		pr_warn("Error mapping PA 0x%llx -> VA 0x%llx!\n",
- 			   md->phys_addr, va);
--- 
-1.8.3.1
-
+To Boris: finally I created a git repo ;) Thanks.
