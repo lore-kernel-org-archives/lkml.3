@@ -1,287 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab3KZV2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 16:28:15 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42142 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752255Ab3KZV2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 16:28:04 -0500
-Date: Tue, 26 Nov 2013 16:27:25 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-Message-ID: <20131126212725.GG22729@cmpxchg.org>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-10-git-send-email-hannes@cmpxchg.org>
- <20131125234921.GK8803@dastard>
+	id S1758212Ab3KZV3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 16:29:34 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37644 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3KZV3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 16:29:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131125234921.GK8803@dastard>
+In-Reply-To: <20130812150900.GJ15892@htj.dyndns.org>
+References: <CACVXFVNB3bOxF8aZ3Cg3vtOQZR=jNsDj=RbUQcKAhuc0c--Tyg@mail.gmail.com>
+	<CACVXFVMFyhM+EsBytw0MKVW4Vp4aOtc_5sfX0v-643m7fwnc3Q@mail.gmail.com>
+	<CA+55aFyOyTS1ZCm6UWqGLteoPuFXKu0WSYB-aTeRYvJUYPqe5A@mail.gmail.com>
+	<20130115183204.GE2668@htj.dyndns.org>
+	<CA+55aFzZ1NJz34r99N7+mU4CN5Ju4QpHrDoWv5Kbd5-Z4QzgaA@mail.gmail.com>
+	<20130115235043.GJ2668@htj.dyndns.org>
+	<CA+55aFzm4k2CyQ_mZVHyeasjw4ybqfO2SpJrZZNZeUsSW8PB=g@mail.gmail.com>
+	<CA+55aFxLJ=Yfms9SkPJLjQ-ZASPNZC0JUBsb3OwonJvTCcBzxA@mail.gmail.com>
+	<20130116025251.GM2668@htj.dyndns.org>
+	<20130812070411.GA2878@elie.Belkin>
+	<20130812150900.GJ15892@htj.dyndns.org>
+Date: Tue, 26 Nov 2013 15:29:30 -0600
+Message-ID: <CAKA=qzY5NBZSv8r9sHqX-3fY-yrSXq26zPM1AvjoANaZkqJavQ@mail.gmail.com>
+Subject: Re: [3.8-rc3 -> 3.8-rc4 regression] Re: [PATCH] module, async:
+ async_synchronize_full() on module init iff async is used
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <ming.lei@canonical.com>, Alex Riesen <raa.lkml@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: multipart/mixed; boundary=089e0111b33a087ceb04ec1b2dd1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:49:21AM +1100, Dave Chinner wrote:
-> On Sun, Nov 24, 2013 at 06:38:28PM -0500, Johannes Weiner wrote:
-> > Previously, page cache radix tree nodes were freed after reclaim
-> > emptied out their page pointers.  But now reclaim stores shadow
-> > entries in their place, which are only reclaimed when the inodes
-> > themselves are reclaimed.  This is problematic for bigger files that
-> > are still in use after they have a significant amount of their cache
-> > reclaimed, without any of those pages actually refaulting.  The shadow
-> > entries will just sit there and waste memory.  In the worst case, the
-> > shadow entries will accumulate until the machine runs out of memory.
-> > 
-> > To get this under control, the VM will track radix tree nodes
-> > exclusively containing shadow entries on a per-NUMA node list.  A
-> > simple shrinker will reclaim these nodes on memory pressure.
-> > 
-> > A few things need to be stored in the radix tree node to implement the
-> > shadow node LRU and allow tree deletions coming from the list:
-> > 
-> > 1. There is no index available that would describe the reverse path
-> >    from the node up to the tree root, which is needed to perform a
-> >    deletion.  To solve this, encode in each node its offset inside the
-> >    parent.  This can be stored in the unused upper bits of the same
-> >    member that stores the node's height at no extra space cost.
-> > 
-> > 2. The number of shadow entries needs to be counted in addition to the
-> >    regular entries, to quickly detect when the node is ready to go to
-> >    the shadow node LRU list.  The current entry count is an unsigned
-> >    int but the maximum number of entries is 64, so a shadow counter
-> >    can easily be stored in the unused upper bits.
-> > 
-> > 3. Tree modification needs the lock, which is located in the address
-> >    space, so store a backpointer to it.  The parent pointer is in a
-> >    union with the 2-word rcu_head, so the backpointer comes at no
-> >    extra cost as well.
-> > 
-> > 4. The node needs to be linked to an LRU list, which requires a list
-> >    head inside the node.  This does increase the size of the node, but
-> >    it does not change the number of objects that fit into a slab page.
-> > 
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  fs/super.c                    |   4 +-
-> >  fs/xfs/xfs_buf.c              |   2 +-
-> >  fs/xfs/xfs_qm.c               |   2 +-
-> >  include/linux/list_lru.h      |   2 +-
-> >  include/linux/radix-tree.h    |  30 +++++++---
-> >  include/linux/swap.h          |   1 +
-> >  include/linux/vm_event_item.h |   1 +
-> >  lib/radix-tree.c              |  36 +++++++-----
-> >  mm/filemap.c                  |  70 ++++++++++++++++++++----
-> >  mm/list_lru.c                 |   4 +-
-> >  mm/truncate.c                 |  19 ++++++-
-> >  mm/vmstat.c                   |   2 +
-> >  mm/workingset.c               | 124 ++++++++++++++++++++++++++++++++++++++++++
-> >  13 files changed, 255 insertions(+), 42 deletions(-)
-> > 
-> > diff --git a/fs/super.c b/fs/super.c
-> > index 0225c20..a958d52 100644
-> > --- a/fs/super.c
-> > +++ b/fs/super.c
-> > @@ -196,9 +196,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
-> >  		INIT_HLIST_BL_HEAD(&s->s_anon);
-> >  		INIT_LIST_HEAD(&s->s_inodes);
-> >  
-> > -		if (list_lru_init(&s->s_dentry_lru))
-> > +		if (list_lru_init(&s->s_dentry_lru, NULL))
-> >  			goto err_out;
-> > -		if (list_lru_init(&s->s_inode_lru))
-> > +		if (list_lru_init(&s->s_inode_lru, NULL))
-> >  			goto err_out_dentry_lru;
-> 
-> rather than modifying all the callers of list_lru_init(), can you
-> add a new function list_lru_init_key() and implement list_lru_init()
-> as a wrapper around it?
+--089e0111b33a087ceb04ec1b2dd1
+Content-Type: text/plain; charset=ISO-8859-1
 
-Ok, sure.
+On Mon, Aug 12, 2013 at 10:09 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Jonathan.
+>
+> On Mon, Aug 12, 2013 at 12:04:11AM -0700, Jonathan Nieder wrote:
+>> My laptop fails to boot[1] with the message 'Volume group "data" not
+>> found'.  Bisects to v3.8-rc4~17 (the above commit).  Reverting that
+>> commit on top of current "master" (d92581fcad18, 2013-08-10) produces
+>> a working kernel.  dmesg output from that working kernel attached.
+>> More details, including .config, at [2].
+>>
+>> Any ideas for tracking this down?
+>
+> Which initrd / boot script are you using?  It looks like lvm assemble
+> scripts are running before sdX are detected leading to volume assembly
+> failure.  Before the patch, any module loading would end up
+> synchronizing async probes but after the patch modprobe invocations
+> which don't schedule them won't be.  Does your boot script happen to
+> run multiple modprobes in parallel and proceed to configure lvm
+> without waiting for modprobes of libata drivers to finish?
+>
+> Thanks.
+>
+> --
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> >  static int page_cache_tree_insert(struct address_space *mapping,
-> >  				  struct page *page, void **shadowp)
-> >  {
-> ....
-> > +	radix_tree_replace_slot(slot, page);
-> > +	if (node) {
-> > +		node->count++;
-> > +		/* Installed page, can't be shadow-only anymore */
-> > +		if (!list_empty(&node->lru))
-> > +			list_lru_del(&workingset_shadow_nodes, &node->lru);
-> > +	}
-> > +	return 0;
-> 
-> Hmmmmm - what's the overhead of direct management of LRU removal
-> here? Most list_lru code uses lazy removal (i.e. via the shrinker)
-> to avoid having to touch the LRU when adding new references to an
-> object.....
+I'm also hitting a regression b/c of this patch. Booting 3.10.20 on a
+number of older machines with onboard sata controllers are unable to
+find their root device quickly enough. I bisected the issue down to
+774a1221e862b343388347bac9b318767336b20b. Reverting it allows my
+systems to boot fine. I'm seeing this with both sata_svw and ahci. I'm
+using ubuntu precise userspace which is using initramfs-tools
+0.99ubuntu13.1. From what I can tell the modprobes in this initrd are
+done in serial, but the port probing is async. This allows init to
+continue on to try and mount root, but it's not there yet.
 
-It's measurable in microbenchmarks, but not when any real IO is
-involved.  The difference was in the noise even on SSD drives.
+I'm attaching some serial log output with initcall_debug enabled.
 
-The other list_lru users see items only once they become unused and
-subsequent references are expected to be few and temporary, right?
+Both ahci and sata_svw call ata_host_activate(), which call
+ata_host_register() and async_schedule(async_port_probe, ap).
 
-We expect pages to refault in spades on certain loads, at which point
-we may have thousands of those nodes on the list that are no longer
-reclaimable (10k nodes for about 2.5G of cache).
+Let me know what other information you may need.
+Thanks
 
-> > + * Page cache radix tree nodes containing only shadow entries can grow
-> > + * excessively on certain workloads.  That's why they are tracked on
-> > + * per-(NUMA)node lists and pushed back by a shrinker, but with a
-> > + * slightly higher threshold than regular shrinkers so we don't
-> > + * discard the entries too eagerly - after all, during light memory
-> > + * pressure is exactly when we need them.
-> > + *
-> > + * The list_lru lock nests inside the IRQ-safe mapping->tree_lock, so
-> > + * we have to disable IRQs for any list_lru operation as well.
-> > + */
-> > +
-> > +struct list_lru workingset_shadow_nodes;
-> > +
-> > +static unsigned long count_shadow_nodes(struct shrinker *shrinker,
-> > +					struct shrink_control *sc)
-> > +{
-> > +	unsigned long count;
-> > +
-> > +	local_irq_disable();
-> > +	count = list_lru_count_node(&workingset_shadow_nodes, sc->nid);
-> > +	local_irq_enable();
-> 
-> The count returned is not perfectly accurate, and the use of it in
-> the shrinker will be concurrent with other modifications, so
-> disabling IRQs here doesn't add any anything but unnecessary
-> overhead.
+-- 
+Josh
 
-Lockdep complains when taking an IRQ-unsafe lock (lru_lock) inside an
-IRQ-safe lock (mapping->tree_lock).
+--089e0111b33a087ceb04ec1b2dd1
+Content-Type: application/octet-stream; name=seriallog
+Content-Disposition: attachment; filename=seriallog
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hohm6k7b0
 
-end_page_writeback should not modify the radix tree beyond tags and so
-should never try to acquire the lru_lock.  It would be good if we
-could annotate lockdep accordingly and get rid of the IRQ-disabling.
-
-> > +#define NOIRQ_BATCH 32
-> > +
-> > +static enum lru_status shadow_lru_isolate(struct list_head *item,
-> > +					  spinlock_t *lru_lock,
-> > +					  void *arg)
-> > +{
-> > +	struct address_space *mapping;
-> > +	struct radix_tree_node *node;
-> > +	unsigned long *batch = arg;
-> > +	unsigned int i;
-> > +
-> > +	node = container_of(item, struct radix_tree_node, lru);
-> > +	mapping = node->private;
-> > +
-> > +	/* Don't disable IRQs for too long */
-> > +	if (--(*batch) == 0) {
-> > +		spin_unlock_irq(lru_lock);
-> > +		*batch = NOIRQ_BATCH;
-> > +		spin_lock_irq(lru_lock);
-> > +		return LRU_RETRY;
-> > +	}
-> 
-> Ugh.
-> 
-> > +	/* Coming from the list, inverse the lock order */
-> > +	if (!spin_trylock(&mapping->tree_lock))
-> > +		return LRU_SKIP;
-> 
-> Why not spin_trylock_irq(&mapping->tree_lock) and get rid of the
-> nasty irq batching stuff? The LRU list is internally consistent,
-> so I don't see why irqs need to be disabled to walk across the
-> objects in the list - we only need that to avoid taking an interrupt
-> while holding the mapping->tree_lock() and the interrupt running
-> I/O completion which may try to take the mapping->tree_lock....
-
-Same reason, IRQ-unsafe nesting inside IRQ-safe lock...
-
-> > +	/*
-> > +	 * The nodes should only contain one or more shadow entries,
-> > +	 * no pages, so we expect to be able to remove them all and
-> > +	 * delete and free the empty node afterwards.
-> > +	 */
-> > +
-> > +	BUG_ON(!node->count);
-> > +	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
-> > +
-> > +	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
-> > +		if (node->slots[i]) {
-> > +			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
-> > +			node->slots[i] = NULL;
-> > +			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
-> > +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
-> > +			BUG_ON(!mapping->nrshadows);
-> > +			mapping->nrshadows--;
-> > +		}
-> > +	}
-> > +	list_del_init(&node->lru);
-> > +	BUG_ON(node->count);
-> > +	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-> > +		BUG();
-> 
-> That's a lot of work to be doing under the LRU spinlock and with
-> irqs disabled. That's going to cause hold-off issues for other LRU
-> operations on the node, and other operations on the CPU....
-> 
-> Given that we should always be removing the item from the head of
-> the LRU list (except when we can't get the mapping lock), I'd
-> suggest that it would be better to do something like this:
-> 
-> 	/*
-> 	 * Coming from the list, inverse the lock order. Drop the
-> 	 * list lock, too, so that if a caller is spinning on it we
-> 	 * don't get stuck here.
-> 	 */
-> 	if (!spin_trylock(&mapping->tree_lock)) {
-> 		spin_unlock(lru_lock);
-> 		goto out_retry;
-> 	}
-> 
-> 	/*
-> 	 * The nodes should only contain one or more shadow entries,
-> 	 * no pages, so we expect to be able to remove them all and
-> 	 * delete and free the empty node afterwards.
-> 	 */
-> 	list_del_init(&node->lru);
-> 	spin_unlock(lru_lock);
-> 
-> 	BUG_ON(!node->count);
-> 	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
-> .....
-> 	if (!__radix_tree_delete_node(&mapping->page_tree, node))
-> 		BUG();
-> 
-> 	spin_unlock_irq(&mapping->tree_lock);
-> 	count_vm_event(WORKINGSET_NODES_RECLAIMED);
-> 
-> out_retry:
-> 	cond_resched();
-> 	spin_lock(lru_lock);
-> 	return LRU_RETRY;
-> }
-
-Yes, that should work.  I'll update the patch, thanks.
-
-> So that we don't hold off other LRU operations, we don't hold IRQs
-> disabled for too long, and we don't cause too much scheduler latency
-> when doing long scans...
-
-Yep.
+WyAgICA4LjIwNjk0MF0gYXN5bmNfd2FpdGluZyBAIDEKWyAgICA4LjIxMDA1N10gYXN5bmNfY29u
+dGludWluZyBAIDEgYWZ0ZXIgMSB1c2VjClsgICAgOC4yMTUxNDRdIEZyZWVpbmcgdW51c2VkIGtl
+cmVsIG1lbW9yeTogMTEyNGsgZnJlZWQKWyAgICA4LjI4MTIzNF0gY2FsbGluZyAgYXRhX2luaXQr
+MHgwLzB4M2RlIFtsaWJhdGFdIEAgMTI2NApbICAgIDguMjg2NjE1XSBBQ1BJOiBidXMgdHlwZSBB
+VEEgcmVnaXN0ZXJlZApbICAgIDguMjk4MTYwXSBsaWJhdGEgdmVyc2lvbiAzLjAwIGxvYWRlZC4K
+WyAgICA4LjMwMjE2Ml0gaW5pdGNhbGwgYXRhX2luaXQrMHgwLzB4M2RlIFtsaWJhdGFdIHJldHVy
+bmVkIDAgYWZ0ZXIgMTUxNzAgdXNlY3MKWyAgICA4LjM2NDY2NV0gY2FsbGluZyAgYWhjaV9wY2lf
+ZHJpdmVyX2luaXQrMHgwLzB4MjAgW2FoY2ldIEAgMTI2NApbICAgIDguMzcwODU4XSBhaGNpIDAw
+MDA6MDA6MTEuMDogdmVyc2lvbiAzLjAKWyAgICA4LjM3NTM0Ml0gYWhjaSAwMDAwOjAwOjExLjA6
+IEFIQ0kgMDAwMS4wMTAwIDMyIHNsb3RzIDYgcG9ydHMgMyBHYnBzIDB4M2YgaW1wbCBTQVRBIG1v
+ZGUKWyAgICA4LjM4Mzc1N10gYWhjaSAwMDAwOjAwOjExLjA6IGZsYWdzOiA2NGJpdCBuY3Egc250
+ZiBpbGNrIHBtIGxlZCBjbG8gcG1wIHBpbyBzbHVtIHBhcnQgY2NjIApbICAgIDguNDI2MTk5XSBz
+Y3NpMCA6IGFoY2kKWyAgICA4LjQyODk4M10gc2NzaTEgOiBhaGNpClsgICAgOC40MzE3OTldIHNj
+c2kyIDogYWhjaQpbICAgIDguNDM0NTQ0XSBzY3NpMyA6IGFoY2kKWyAgICA4LjQzNzUxM10gc2Nz
+aTQgOiBhaGNpClsgICAgOC40NDAyNDddIHNjc2k1IDogYWhjaQpbICAgIDguNDQyOTU3XSBhdGEx
+OiBTQVRBIG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0QDB4ZmRmZjk4MDAgcG9ydCAweGZkZmY5OTAw
+IGlycSAyMgpbICAgIDguNDUwNTk4XSBhdGEyOiBTQVRBIG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0
+QDB4ZmRmZjk4MDAgcG9ydCAweGZkZmY5OTgwIGlycSAyMgpbICAgIDguNDU4MjM0XSBhdGEzOiBT
+QVRBIG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0QDB4ZmRmZjk4MDAgcG9ydCAweGZkZmY5YTAwIGly
+cSAyMgpbICAgIDguNDY1ODYxXSBhdGE0OiBTQVRBIG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0QDB4
+ZmRmZjk4MDAgcG9ydCAweGZkZmY5YTgwIGlycSAyMgpbICAgIDguNDczNDk4XSBhdGE1OiBTQVRB
+IG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0QDB4ZmRmZjk4MDAgcG9ydCAweGZkZmY5YjAwIGlycSAy
+MgpbICAgIDguNDgxMTI2XSBhdGE2OiBTQVRBIG1heCBVRE1BLzEzMyBhYmFyIG0xMDI0QDB4ZmRm
+Zjk4MDAgcG9ydCAweGZkZmY5YjgwIGlycSAyMgpbICAgIDguNTMwMDI3XSBpbml0Y2FsbCBhaGNp
+X3BjaV9kcml2ZXJfaW5pdCsweDAvMHgyMCBbYWhjaV0gcmV0dXJuZWQgMCBhZnRlciAxNTU0NTkg
+dXNlY3MKWyAgICA4LjYyNDQ0OF0gY2FsbGluZyAgZG1faW5pdCsweDAvMHg0OCBbZG1fbW9kXSBA
+IDE0NjIKWyAgICAuNjI5Njk3XSBkZXZpY2UtbWFwcGVyOiBpb2N0bDogNC4yNC4wLWlvY3RsICgy
+MDEzLTAxLTE1KSBpbml0aWFsaXNlZDogZG0tZGV2ZWxAcmVkaGF0LmNvbQpbICAgIDguNjM4Mzgw
+XSBpbml0Y2FsbCBkbV9pbml0KzB4MC8weDQ4IFtkbV9tb2RdIHJldHVybmVkIDAgYWZ0ZXIgODUx
+NCB1c2VjcwpbICAgIDguNjcyMTg3XSBjYWxsaW5nICBtZF9pbml0KzB4MC8weDE2ZiBbbWRfbW9k
+XSBAIDE0NjgKWyAgICA4LjY3NzU0N10gaW5pdGNhbGwgbWRfaW5pdCsweDAvMHgxNmYgW21kX21v
+ZF0gcmV0dXJuZWQgMCBhZnRlciA2OSB1c2VjcwpbICAgIDguNjk4MTc1XSBjYWxsaW5nICBsaW5l
+YXJfaW5pdCsweDAvMHgxMiBbbGluZWFyXSBAIDE0NjgKWyAgICA4LjcwMzcyOV0gbWQ6IGxpbmVh
+ciBwZXJzb25hbGl0eSByZWdpc3RlcmVkIGZvciBsZXZlbCAtMQpbICAgIDguNzA5MzcxXSBpbml0
+Y2FsbCBsaW5lYXJfaW5pdCsweDAvMHgxMiBbbGluZWFyXSByZXR1cm5lZCAwIGFmdGVyIDU1MDkg
+dXNlY3MKWyAgICA4LjczODI2Ml0gY2FsbGluZyAgcmFpZDBfaW5pdCsweDAvMHgxMiBbcmFpZDBd
+IEAgMTQ3MwpbICAgIDguNzQzNjM4XSBtZDogcmFpZDAgcGVyc29uYWxpdHkgcmVnaXN0ZXJlZCBm
+b3IgbGV2ZWwgMApbICAgIDguNzQ5MTAwXSBpbml0Y2FsbCByYWlkMF9pbml0KzB4MC8weDEyIFty
+YWlkMF0gcmV0dXJuZWQgMCBhZnRlciA1MzMzIHVzZWNzClsgICAgOC43NzM5NjZdIGNhbGxpbmcg
+IHJhaWRfaW5pdCsweDAvMHgxMiBbcmFpZDFdIEAgMTQ3NQpbICAgIDguNzc5MjYxXSBtZDogcmFp
+ZDEgcGVyc29uYWxpdHkgcmVnaXN0ZXJlZCBmb3IgbGV2ZWwgMQpbICAgIDguNzg0NzIxXSBpbml0
+Y2FsbCByYWlkX2luaXQrMHgwLzB4MTIgW3JhaWQxXSByZXR1cm5lZCAwIGFmdGVyIDUzMzAgdXNl
+Y3MKWyAgICA4LjgwOTM4OV0gY2FsbGluZyAgYXN5bmNfdHhfaW5pdCsweDAvMHgxYiBbYXN5bmNf
+dHhdIEAgMTQ3NwpbICAgIDguODE1MzAxXSBhc3luY190eDogYXBpIGluaXRpYWxpemVkIChhc3lu
+YykKWyAgICA4LjgxOTgxMl0gaW5pdGNhbGwgYXN5bmNfdHhfaW5pdCsweDAvMHgxYiBbYXN5bmNf
+dHhdIHJldHVybmVkIDAgYWZ0ZXIgNDQwNCB1c2VjcwpbICAgIDguODI4MTM3XSBhdGE0OiBTQVRB
+IGxpbmsgZG93biAoU1N0YXR1cyAwIFNDb250cm9sIDMwMCkKWyAgICA4Ljg0MTA2OV0gYXRhNjog
+U0FUQSBsaW5rIGRvd24gKFNTdGF0dXMgMCBTQ29udHJvbCAzMDApClsgICAgOC44NDExMThdIGF0
+YTU6IFNBVEEgbGluayBkb3duIChTU3RhdHVzIDAgU0NvbnRyb2wgMzAwKQpbICAgIDguODcyMTU5
+XSBjYWxsaW5nICBjYWxpYnJhdGVfeG9yX2Jsb2NrcysweDAvMHgxNDQgW3hvcl0gQCAxNDc3Clsg
+ICAgOC44NzgzMjFdIHhvcjogbWVhdXJpbmcgc29mdHdhcmUgY2hlY2tzdW0gc3BlZWQKWyAgICA4
+Ljg5MzAxMl0gICAgcHJlZmV0Y2g2NC1zc2U6IDExMjQwLjAwMCBNQi9zZWMKWyAgICA4LjkwNzAx
+M10gICAgZ2VuZXJpY19zc2U6IDEwNjQwLjAwMCBNQi9zZWMKWyAgICA4LjkxMTQzNV0geG9yOiB1
+c2luZyBmdW5jdGlvbjogcHJlZmV0Y2g2NC1zc2UgKDExMjQwLjAwMCBNQi9zZWMpClsgICAgOC45
+MTc3NjVdIGluaXRjYWxsIGNhbGlicmF0ZV94b3JfYmxvY2tzKzB4MC8weDE0NCBbeG9yXSByZXR1
+cm5lZCAwIGFmdGVyIDM4NTE4IHVzZWNzClsgICAgOC45NTQ0MjBdIGNhbGxpbmcgIGluaXRfbW9k
+dWxlKzB4MC8weDIyOSBbcmFpZDZfcHFdIEAgMTQ3NwpbICAgIDguOTcwMDUyXSBhdGExOiBTQVRB
+IGxpbmsgdXAgMS41IEdicHMgKFNTdGF0dXMgMTEzIFNDb250cm9sIDMwMCkKWyAgICA4Ljk3Njcz
+N10gYXRhMS4wMDogQVRBUEk6IEFUQVBJICAgaUhEUzExOCAgIDUsIFJMMDgsIG1heCBVRE1BLzEw
+MApbICAgIDguOTc3MDE0XSByYWlkNjogc3NlMngxICAgIDM4NjMgTUIvcwpbICAgIDguOTg4MDk5
+XSBhdGExLjAwOiBjb25maWd1cmVkIGZvciBVRE1BLzEwMApbICAgIDguOTk0MDI1XSByYWlkNjog
+c3NlMngyICAgIDU5MTcgTUIvcwpbICAgIDguOTk0NDgxXSBzY3NpIDA6MDowOjA6IENELVJPTSAg
+ICAgICAgICAgIEFUQVBJICAgIGlIRFMxMTggICA1ICAgICAgUkwwOCBQUTogMCBBTlNJOiA1Clsg
+ICAgOC45OTQ1NjZdIHNjc2kgMDowOjA6MDogQXR0YWNoZWQgc2NzaSBnZW5lcmljIHNnMCB0eXBl
+IDUKWyAgICA5LjAxMjA2NV0gYXRhMjogU0FUQSBsaW5rIHVwIDMuMCBHYnBzIChTU3RhdHVzIDEy
+MyBTQ29udHJvbCAzMDApClsgICAgOS4wMTg0MjBdIGF0YTM6IFNBVEEgbGluayB1cCAzLjAgR2Jw
+cyAoU1N0YXR1cyAxMjMgU0NvbnRyb2wgMzAwKQpbICAgIDkuMDI2MjU2XSBhdGEzLjAwOiBBVEEt
+ODogV0RDIFdEMjUwMkFCWVMtMDJCN0EwLCAwMi4wM0IwMywgbWF4IFVETUEvMTMzClsgICAgOS4w
+MjgwMjNdIHJhaWQ2OiBzc2UyeDQgICAgNzE2MCBNQi9zClsgICAgOS4wMjgwMjRdIHJhaWQ2OiB1
+c2luZyBhbGdvcml0aG0gc3NlMng0ICg3MTYwIE1CL3MpClsgICAgOS4wMjgwMjVdIHJhaWQ2OiB1
+c2luZyBpbnR4MSByZWNvdmVyeSBhbGdvcml0aG0KWyAgICA5LjAyODAzMV0gaW5pdGNhbGwgaW5p
+dF9tb2R1bGUrMHgwLzB4MjI5IFtyYWlkNl9wcV0gcmV0dXJuZWQgMCBhZnRlciA2NjIwNiB1c2Vj
+cwpbICAgIDkuMDI4MzM3XSBjYWxsaW5nICBhc3luY19wcV9pbml0KzB4MC8weDNiIFthc3luY19w
+cV0gQCAxNDc3ClsgICAgOS4wMjgzNDNdIGluaXRjYWxsIGFzeW5jX3BxX2luaXQrMHgwLzB4M2Ig
+W2FzeW5jX3BxXSByZXR1cm5lZCAwIGFmdGVyIDIgdXNlY3MKWyAgICA5LjAyOTcyOF0gY2FsbGlu
+ZyAgcmFpZDVfaW5pdCsweDAvMHgyYyBbcmFpZDQ1Nl0gQCAxNDc3ClsgICAgOS4wMjk3MzFdIG1k
+OiByYWlkNiBwZXJzb25hbGl0eSByZWdpc3RlcmVkIGZvciBsZXZlbCA2ClsgICAgOS4wMjk3MzJd
+IG1kOiByYWlkNSBwZXJzb25hbGl0IHJlZ2lzdGVyZWQgZm9yIGxldmVsIDUKWyAgICA5LjAyOTcz
+Ml0gbWQ6IHJhaWQ0IHBlcnNvbmFsaXR5IHJlZ2lzdGVyZWQgZm9yIGxldmVsIDQKWyAgICA5LjAy
+OTczNl0gaW5pdGNhbGwgcmFpZDVfaW5pdCsweDAvMHgyYyBbcmFpZDQ1Nl0gcmV0dXJuZWQgMCBh
+ZnRlciAzIHVzZWNzClsgICAgOS4xNDY3NTddIGF0YTMuMDA6IDQ5MDM1MDY3MiBzZWN0b3JzLCBt
+dWx0aSAwOiBMQkE0OCBOQ1EgKGRlcHRoIDMxLzMyKSwgQUEKWyAgICA5MTU0MTY3XSBhdGEyLjAw
+OiBBVEEtODogV0RDIFdEMjUwMkFCWVMtMDJCN0EwLCAwMi4wM0IwMywgbWF4IFVETUEvMTMzClsg
+ICAgOS4xNTQxNjldIGF0YTIuMDA6IDQ5MDM1MDY3MiBzZWN0b3JzLCBtdWx0aSAwOiBMQkE0OCBO
+Q1EgKGRlcHRoIDMxLzMyKSwgQUEKWyAgICA5LjE2ODQ1OV0gYXRhMy4wMDogY29uZmlndXJlZCBm
+b3IgVURNQS8xMzMKWyAgICA5LjE3MjkyMF0gYXRhMi4wMDogY29uZmlndXJlZCBmb3IgVURNQS8x
+MzMKWyAgICA5LjE3MzA3OV0gc2NzaSAxOjA6MDowOiBEaXJlY3QtQWNjZXNzICAgICBBVEEgICAg
+ICBXREMgV0QyNTAyQUJZUy0wIDAyLjAgUFE6IDAgQU5TSTogNQpbICAgIDkuMTczMTczXSBzZCAx
+OjA6MDowOiBBdHRhY2hlZCBzY3NpIGdlbmVyaWMgc2cxIHR5cGUgMApbICAgIDkuMTczNDk0XSBz
+Y3NpIDI6MDowOjA6IERpcmVjdC1BY2Nlc3MgICAgIEFUQSAgICAgIFdEQyBXRDI1MDJBQllTMCAw
+Mi4wIFBROiAwIEFOU0k6IDUKWyAgIDkuMTczNTUzXSBzZCAyOjA6MDowOiBBdHRhY2hlZCBzY3Np
+IGdlbmVyaWMgc2cyIHR5cGUgMApbICAgIDkuMTczOTE3XSBzZCAyOjA6MDowOiBbc2RiXSA0OTAz
+NTA2NzIgNTEyLWJ5dGUgbG9naWNhbCBibG9ja3M6ICgyNTEgR0IvMjMzIEdpQikKWyAgICA5LjE3
+Mzk2NV0gc2QgMjowOjA6MDogW3NkYl0gV3JpdGUgUHJvdGVjdCBpcyBvZmYKWyAgICA5LjE3Mzk2
+Nl0gc2QgMjowOjA6MDogW3NkYl0gTW9kZSBTZW5zZTogMDAgM2EgMDAgMDAKWyAgICA5LjE3NDE3
+Ml0gc2QgMjowOjA6MDogc2RiXSBXcml0ZSBjYWNoZTogZW5hYmxlZCwgcmVhZCBjYWNoZTogZW5h
+YmxlZCwgZG9lc24ndCBzdXBwb3J0IERQTyBvciBGVUEKWyAgICA5LjE3NDM2OF0gc2QgMTowOjA6
+MDogW3NkYV0gNDkwMzUwNjcyIDUxMi1ieXRlIGxvZ2ljYWwgYmxvY2tzOiAoMjUxIEdCLzIzMyBH
+aUIpClsgICAgOS4xNzQ0NDNdIHNkIDE6MDowOjA6IFtzZGFdIFdyaXRlIFByb3RlY3QgaXMgb2Zm
+ClsgICAgOS4xNzQ0NDRdIHNkIDE6MDowOjA6IFtzZGFdIE1vZGUgU2Vuc2U6IDAwIDNhIDAwIDAw
+ClsgICAgOS4xNzQ0ODJdIHNkIDE6MDowOjA6IFtzZGFdIFdyaXRlIGNhY2hlOiBlbmFibGVkLCBy
+ZWFkIGNhY2hlOiBlbmFibGVkLCBkb2Vzbid0IHN1cHBvcnQgRFBPIG9yIEZVQQpbICAgIDkuMTc5
+MjQ3XSAgc2RhOiBzZGExIHNkYTIgc2RhMyBzZGE0ClsgICAgOS4xNzk5NzddIHNkIDE6MDowOjA6
+IFtzZGFdIEF0dGFjaGVkIFNDU0kgZGlzawpbICAgIDkuMTg0MTkzXSAgc2RiOiBzZGIxIHNkYjIg
+c2RiMyBzZGI0ClsgICAgOS4xODQ5MDVdIHNkIDI6MDowOjA6IFtzZGJdIEF0dGFjaGVkIFNDU0kg
+ZGlzawo=
+--089e0111b33a087ceb04ec1b2dd1--
