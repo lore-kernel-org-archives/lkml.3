@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab3KZMzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:55:55 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35372 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab3KZMzw (ORCPT
+	id S1752613Ab3KZM5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:57:41 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:33409 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab3KZM5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:55:52 -0500
-Message-ID: <52949A4F.7030004@parallels.com>
-Date: Tue, 26 Nov 2013 16:55:43 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Tue, 26 Nov 2013 07:57:37 -0500
+Message-ID: <52949AAF.4040600@linaro.org>
+Date: Tue, 26 Nov 2013 13:57:19 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: <linux-kernel@vger.kernel.org>, <glommer@openvz.org>, <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <devel@openvz.org>
-Subject: Re: [Devel] [PATCH v11 00/15] kmemcg shrinkers
-References: <cover.1385377616.git.vdavydov@parallels.com> <20131125174135.GE22729@cmpxchg.org> <529443E4.7080602@parallels.com>
-In-Reply-To: <529443E4.7080602@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.24.145]
+To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
+        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
+CC: james.hogan@imgtec.com, jason.low2@hp.com, gregkh@linuxfoundation.org,
+        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
+References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org> <528F4A78.1080505@linaro.org> <52918ECC.6080707@linaro.org> <529495AF.4020600@linaro.org> <52949972.6090101@linaro.org>
+In-Reply-To: <52949972.6090101@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 10:47 AM, Vladimir Davydov wrote:
-> Hi,
->
-> Thank you for the review. I agree with all your comments and I'll 
-> resend the fixed version soon.
->
-> If anyone still has something to say about the patchset, I'd be glad 
-> to hear from them.
->
-> On 11/25/2013 09:41 PM, Johannes Weiner wrote:
->> I ran out of steam reviewing these because there were too many things
->> that should be changed in the first couple patches.
+On 11/26/2013 01:52 PM, Alex Shi wrote:
+> On 11/26/2013 08:35 PM, Daniel Lezcano wrote:
 >>
->> I realize this is frustrating to see these type of complaints in v11
->> of a patch series, but the review bandwidth was simply exceeded back
->> when Glauber submitted this along with the kmem accounting patches.  A
->> lot of the kmemcg commits themselves don't even have review tags or
->> acks, but it all got merged anyway, and the author has moved on to
->> different projects...
 >>
->> Too much stuff slips past the only two people that have more than one
->> usecase on their agenda and are willing to maintain this code base -
->> which is in desparate need of rework and pushback against even more
->> drive-by feature dumps.  I have repeatedly asked to split the memcg
->> tree out of the memory tree to better deal with the vastly different
->> developmental stages of memcg and the rest of the mm code, to no
->> avail.  So I don't know what to do anymore, but this is not working.
+>> Here the new results with your patchset + patch #5
 >>
->> Thoughts?
+>> I have some issues with perf for the moment, so I will fix it up and
+>> send the result after.
 >
-> That's a pity, because w/o this patchset kmemcg is in fact useless. 
-> Perhaps, it's worth trying to split it? (not sure if it'll help much 
-> though since first 11 patches are rather essential :-( )
+> Thanks a lot, Daniel!
+> The result is pretty good!, thread/pipe performance has a slight little
+> drop, but processes performance increase about 25%!
 
-What do you think about splitting this set into two main series as follows:
+Mmh, wait. Let me double check the results, it sounds weird we have so 
+much performance increase.
 
-1) Prepare vmscan to kmemcg-aware shrinkers; would include patches 1-7 
-of this set.
-2) Make fs shrinkers memcg-aware; would include patches 9-11 of this set
+>>
+>> 527d1511310a          / + patchset + #5
+>>
+>> hackbench -T -s 4096 -l 1000 -g 10 -f 40
+>> 26.677                  30.308
+>> 27.914             28.497
+>> 28.390             30.360
+>> 28.048             28.587
+>> 26.344             29.513
+>> 27.848             28.706
+>> 28.315             30.152
+>> 28.232             29.721
+>> 26.549             28.766
+>> 30.340             38.801
+>> hackbench -p -s 4096 -l 1000 -g 10 -f 40
+>> 34.522                  35.469
+>> 34.545             34.966
+>> 34.469             35.342
+>> 34.115             35.286
+>> 34.457             35.592
+>> 34.561             35.314
+>> 34.459             35.316
+>> 34.054             35.629
+>> 34.532             35.149
+>> 34.459             34.876
+>> hackbench -P -s 4096 -l 1000 -g 10 -f 40
+>> 38.938                  30.308
+>> 39.363             28.497
+>> 39.340             30.360
+>> 38.909             28.587
+>> 39.095             29.513
+>> 38.869             28.706
+>> 39.041             30.152
+>> 38.939             29.721
+>> 38.992             28.766
+>> 38.947             38.801
+>
+>
 
-and leave other patches, which are rather for optimization/extending 
-functionality, for future?
 
-Thanks.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
