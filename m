@@ -1,114 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab3KZQNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:13:24 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:65182 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab3KZQNU (ORCPT
+	id S1757505Ab3KZQMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:12:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51459 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757363Ab3KZQL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:13:20 -0500
-Date: Tue, 26 Nov 2013 17:13:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCHv2] perf tools: Fix tags/TAGS targets rebuilding
-Message-ID: <20131126161316.GA7775@gmail.com>
-References: <1385464890-19876-1-git-send-email-jolsa@redhat.com>
- <20131126113108.GE2410@gmail.com>
- <20131126115043.GG1267@krava.brq.redhat.com>
- <20131126120055.GA6103@gmail.com>
- <20131126125412.GJ1267@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131126125412.GJ1267@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Nov 2013 11:11:57 -0500
+Message-Id: <20131126160815.293633156@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 26 Nov 2013 16:57:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        David Miller <davem@davemloft.net>, rui.zhang@intel.com,
+        jacob.jun.pan@linux.intel.com, Mike Galbraith <bitbucket@online.de>,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH 7/8] sched, net: Fixup busy_loop_us_clock()
+References: <20131126155743.116756708@infradead.org>
+Content-Disposition: inline; filename=peterz-fixup-busy_poll.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The only valid use of preempt_enable_no_resched() is if the very next
+line is schedule() or if we know preemption cannot actually be enabled
+by that statement due to known more preempt_count 'refs'.
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+This busy_poll stuff looks to be completely and utterly broken,
+sched_clock() can return utter garbage with interrupts enabled (rare
+but still) and it can drift unbounded between CPUs.
 
-> On Tue, Nov 26, 2013 at 01:00:55PM +0100, Ingo Molnar wrote:
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > On Tue, Nov 26, 2013 at 12:31:08PM +0100, Ingo Molnar wrote:
-> 
-> SNIP
-> 
-> > > > 
-> > > > Also note that we have duplicate code for this in Makefile.perf 
-> > > > already. Would it be possible to pass through this there and keep the 
-> > > > main Makefile is just a thin, minimal wrapper that adds default 
-> > > > parallelism, etc?
-> > > 
-> > > well, thats what I actually tried to do.. pass the
-> > > processing to the Makefile.perf otherwise it stops
-> > > in Makefile
-> > > 
-> > > I guess you want some generic way of doing that
-> > 
-> > If it's just these two phony targets that need to be in the main 
-> > makefile then I guess your approach is the simplest one and we should 
-> > do it like that instead of complicating the interface. If it gets 
-> > messier in the future we can reconsider?
-> > 
-> 
-> sounds good, pelase check v2
-> 
-> thanks,
-> jirka
-> 
-> 
-> ---
-> Once the tags/TAGS file is generated it's never rebuilt
-> until it's removed by hand.
-> 
-> The reason is that the Makefile does not treat tags/TAGS
-> as targets but as files and thus won't rebuilt them
-> once they are in place.
-> 
-> Adding PHONY tags/TAGS targets into Makefile.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/Makefile | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 4835618..eefb9fb 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -60,8 +60,11 @@ endef
->  
->  #
->  # Needed if no target specified:
-> +# (Except for tags and TAGS targets. The reason is that the
-> +# Makefile does not treat tags/TAGS as targets but as files
-> +# and thus won't rebuilt them once they are in place.)
+This means that if you get preempted/migrated and your new CPU is
+years behind on the previous CPU we get to busy spin for a _very_ long
+time.
 
-s/rebuilt/rebuild
+There is a _REASON_ sched_clock() warns about preemptability -
+papering over it with a preempt_disable()/preempt_enable_no_resched()
+is just terminal brain damage on so many levels.
 
-Btw., could we perhaps change the targets to 'ctags' and 'etags' 
-instead? (That will make it natural to add 'gtags' in the future, 
-should anyone want that.)
+Replace sched_clock() usage with local_clock() which has a bounded
+drift between CPUs (<2 jiffies).
 
-Thanks,
+There is a further problem with the entire busy wait poll thing in
+that the spin time is additive to the syscall timeout, not inclusive.
 
-	Ingo
+Cc: David S. Miller <davem@davemloft.net>
+Cc: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: lenb@kernel.org
+Cc: rjw@rjwysocki.net
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/net/busy_poll.h |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
+
+--- a/include/net/busy_poll.h
++++ b/include/net/busy_poll.h
+@@ -42,27 +42,10 @@ static inline bool net_busy_loop_on(void
+ 	return sysctl_net_busy_poll;
+ }
+ 
+-/* a wrapper to make debug_smp_processor_id() happy
+- * we can use sched_clock() because we don't care much about precision
+- * we only care that the average is bounded
+- */
+-#ifdef CONFIG_DEBUG_PREEMPT
+ static inline u64 busy_loop_us_clock(void)
+ {
+-	u64 rc;
+-
+-	preempt_disable_notrace();
+-	rc = sched_clock();
+-	preempt_enable_no_resched_notrace();
+-
+-	return rc >> 10;
+-}
+-#else /* CONFIG_DEBUG_PREEMPT */
+-static inline u64 busy_loop_us_clock(void)
+-{
+-	return sched_clock() >> 10;
++	return local_clock() >> 10;
+ }
+-#endif /* CONFIG_DEBUG_PREEMPT */
+ 
+ static inline unsigned long sk_busy_loop_end_time(struct sock *sk)
+ {
+
+
