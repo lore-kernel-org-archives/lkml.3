@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3KZNQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:16:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46012 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab3KZNQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:16:19 -0500
-Message-ID: <52949F1C.2060607@redhat.com>
-Date: Tue, 26 Nov 2013 08:16:12 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753645Ab3KZNWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:22:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:58018 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab3KZNWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 08:22:43 -0500
+Message-ID: <5294A097.3070903@ti.com>
+Date: Tue, 26 Nov 2013 09:22:31 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 2/5] mm: compaction: reset cached scanner pfn's before
- reading them
-References: <1385389570-11393-1-git-send-email-vbabka@suse.cz> <1385389570-11393-3-git-send-email-vbabka@suse.cz>
-In-Reply-To: <1385389570-11393-3-git-send-email-vbabka@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Amit Kachhap <amit.kachhap@gmail.com>
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] thermal: offer Samsung thermal support only when ARCH_EXYNOS
+ is defined
+References: <2958660.aJeCDrTTOe@amdc1032> <CADGdYn4YQL9-8WCDNWP8x9Gec9sMV09q3OsYPz3tTdMxDGnyvg@mail.gmail.com>
+In-Reply-To: <CADGdYn4YQL9-8WCDNWP8x9Gec9sMV09q3OsYPz3tTdMxDGnyvg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="4VVi7QlD6urIRFNS2FQm5NJVhP3htvdSh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 09:26 AM, Vlastimil Babka wrote:
-> Compaction caches pfn's for its migrate and free scanners to avoid scanning
-> the whole zone each time. In compact_zone(), the cached values are read to
-> set up initial values for the scanners. There are several situations when
-> these cached pfn's are reset to the first and last pfn of the zone,
-> respectively. One of these situations is when a compaction has been deferred
-> for a zone and is now being restarted during a direct compaction, which is also
-> done in compact_zone().
-> 
-> However, compact_zone() currently reads the cached pfn's *before* resetting
-> them. This means the reset doesn't affect the compaction that performs it, and
-> with good chance also subsequent compactions, as update_pageblock_skip() is
-> likely to be called and update the cached pfn's to those being processed.
-> Another chance for a successful reset is when a direct compaction detects that
-> migration and free scanners meet (which has its own problems addressed by
-> another patch) and sets update_pageblock_skip flag which kswapd uses to do the
-> reset because it goes to sleep.
-> 
-> This is clearly a bug that results in non-deterministic behavior, so this patch
-> moves the cached pfn reset to be performed *before* the values are read.
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+--4VVi7QlD6urIRFNS2FQm5NJVhP3htvdSh
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rik van Riel <riel@redhat.com>
+On 26-11-2013 02:07, Amit Kachhap wrote:
+> On 10/4/13, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:=
 
--- 
-All rights reversed
+>> Menu for Samsung thermal support is visible on all Samsung
+>> platforms while thermal drivers are currently available only
+>> for EXYNOS SoCs. Fix it by replacing PLAT_SAMSUNG dependency
+>> with ARCH_EXYNOS one.
+>>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Looks good, so
+> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+
+I will be queuing this one in my tree.
+
+Thanks Bartlomiej.
+
+>=20
+>> ---
+>>  drivers/thermal/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>> index a709c63..05cf95c 100644
+>> --- a/drivers/thermal/Kconfig
+>> +++ b/drivers/thermal/Kconfig
+>> @@ -198,7 +198,7 @@ source "drivers/thermal/ti-soc-thermal/Kconfig"
+>>  endmenu
+>>
+>>  menu "Samsung thermal drivers"
+>> -depends on PLAT_SAMSUNG
+>> +depends on ARCH_EXYNOS
+>>  source "drivers/thermal/samsung/Kconfig"
+>>  endmenu
+>>
+>> --
+>> 1.8.2.3
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-samsun=
+g-soc"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>=20
+>=20
+
+
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
+
+Eduardo Valentin
+
+
+--4VVi7QlD6urIRFNS2FQm5NJVhP3htvdSh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlKUoJcACgkQCXcVR3XQvP0mkAD8CkNGFWvuceTAtZomSCDOR+WZ
+Gx4FNdnQFbfpsuAfwx4A/1FKV6e/uL1jV3GSW9Nhm26DsMkWkA4LWYcFDz4DGEVg
+=ixY5
+-----END PGP SIGNATURE-----
+
+--4VVi7QlD6urIRFNS2FQm5NJVhP3htvdSh--
