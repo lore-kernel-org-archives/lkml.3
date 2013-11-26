@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab3KZOVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 09:21:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58310 "EHLO
+	id S1757021Ab3KZOV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 09:21:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58312 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756847Ab3KZOVq (ORCPT
+	with ESMTP id S1756949Ab3KZOVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 09:21:46 -0500
-Date: Tue, 26 Nov 2013 06:21:27 -0800
-From: tip-bot for Jason Baron <tipbot@zytor.com>
-Message-ID: <tip-b71d47c14fba6270c0b5a0d56639bf042017025b@git.kernel.org>
+	Tue, 26 Nov 2013 09:21:48 -0500
+Date: Tue, 26 Nov 2013 06:21:16 -0800
+From: tip-bot for Ralf Baechle <tipbot@zytor.com>
+Message-ID: <tip-7972e966b032939afe63d8db22975240879dfd2a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        jbaron@akamai.com, akpm@linux-foundation.org, tglx@linutronix.de
+        jbaron@akamai.com, skuribay@pobox.com, ralf@linux-mips.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        jbaron@akamai.com, akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <705bbe0f70fb20759151642ba0176a6414ec9f7a.1385418410.git.jbaron@akamai.com>
-References: <705bbe0f70fb20759151642ba0176a6414ec9f7a.1385418410.git.jbaron@akamai.com>
+        jbaron@akamai.com, skuribay@pobox.com, akpm@linux-foundation.org,
+        ralf@linux-mips.org, tglx@linutronix.de
+In-Reply-To: <d19dc75fca343ec5d9ada75a1400f57330021976.1385418410.git.jbaron@akamai.com>
+References: <d19dc75fca343ec5d9ada75a1400f57330021976.1385418410.git.jbaron@akamai.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debug] powerpc: Clean up panic_timeout usage
-Git-Commit-ID: b71d47c14fba6270c0b5a0d56639bf042017025b
+Subject: [tip:core/debug] MIPS: Remove panic_timeout settings
+Git-Commit-ID: 7972e966b032939afe63d8db22975240879dfd2a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,114 +31,106 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 26 Nov 2013 06:21:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 26 Nov 2013 06:21:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b71d47c14fba6270c0b5a0d56639bf042017025b
-Gitweb:     http://git.kernel.org/tip/b71d47c14fba6270c0b5a0d56639bf042017025b
-Author:     Jason Baron <jbaron@akamai.com>
-AuthorDate: Mon, 25 Nov 2013 23:23:11 +0000
+Commit-ID:  7972e966b032939afe63d8db22975240879dfd2a
+Gitweb:     http://git.kernel.org/tip/7972e966b032939afe63d8db22975240879dfd2a
+Author:     Ralf Baechle <ralf@linux-mips.org>
+AuthorDate: Mon, 25 Nov 2013 23:23:07 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 26 Nov 2013 12:12:28 +0100
+CommitDate: Tue, 26 Nov 2013 12:12:27 +0100
 
-powerpc: Clean up panic_timeout usage
+MIPS: Remove panic_timeout settings
 
-Default CONFIG_PANIC_TIMEOUT to 180 seconds on powerpc. The
-pSeries continue to set the timeout to 10 seconds at run-time.
+Now that we have a CONFIG_PANIC_TIMEOUT=x setting, remove the
+mips settings. The default is 0, which means don't reboot on
+panic.
 
-Thus, there's a small window where we don't have the correct
-value on pSeries, but if this is only run-time discoverable we
-don't have a better option. In any case, if the user changes the
-default setting of 180 seconds, we honor that user setting.
-
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Acked-by: Shinya Kuribayashi <skuribay@pobox.com>
 Signed-off-by: Jason Baron <jbaron@akamai.com>
 Cc: benh@kernel.crashing.org
 Cc: paulus@samba.org
-Cc: ralf@linux-mips.org
 Cc: mpe@ellerman.id.au
 Cc: felipe.contreras@gmail.com
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-mips@linux-mips.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/705bbe0f70fb20759151642ba0176a6414ec9f7a.1385418410.git.jbaron@akamai.com
+Link: http://lkml.kernel.org/r/d19dc75fca343ec5d9ada75a1400f57330021976.1385418410.git.jbaron@akamai.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/powerpc/Kconfig                   | 4 ++++
- arch/powerpc/include/asm/setup.h       | 1 +
- arch/powerpc/kernel/setup_32.c         | 3 ---
- arch/powerpc/kernel/setup_64.c         | 3 ---
- arch/powerpc/platforms/pseries/setup.c | 2 +-
- 5 files changed, 6 insertions(+), 7 deletions(-)
+ arch/mips/ar7/setup.c           | 1 -
+ arch/mips/emma/markeins/setup.c | 3 ---
+ arch/mips/netlogic/xlp/setup.c  | 1 -
+ arch/mips/netlogic/xlr/setup.c  | 1 -
+ arch/mips/sibyte/swarm/setup.c  | 2 --
+ 5 files changed, 8 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index b44b52c..b2be8e8 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -147,6 +147,10 @@ config EARLY_PRINTK
- 	bool
- 	default y
+diff --git a/arch/mips/ar7/setup.c b/arch/mips/ar7/setup.c
+index 9a357ff..820b7a3 100644
+--- a/arch/mips/ar7/setup.c
++++ b/arch/mips/ar7/setup.c
+@@ -92,7 +92,6 @@ void __init plat_mem_setup(void)
+ 	_machine_restart = ar7_machine_restart;
+ 	_machine_halt = ar7_machine_halt;
+ 	pm_power_off = ar7_machine_power_off;
+-	panic_timeout = 3;
  
-+config PANIC_TIMEOUT
-+	int
-+	default 180
-+
- config COMPAT
- 	bool
- 	default y if PPC64
-diff --git a/arch/powerpc/include/asm/setup.h b/arch/powerpc/include/asm/setup.h
-index 703a841..11ba86e 100644
---- a/arch/powerpc/include/asm/setup.h
-+++ b/arch/powerpc/include/asm/setup.h
-@@ -26,6 +26,7 @@ extern void reloc_got2(unsigned long);
- void check_for_initrd(void);
- void do_init_bootmem(void);
- void setup_panic(void);
-+#define ARCH_PANIC_TIMEOUT 180
+ 	io_base = (unsigned long)ioremap(AR7_REGS_BASE, 0x10000);
+ 	if (!io_base)
+diff --git a/arch/mips/emma/markeins/setup.c b/arch/mips/emma/markeins/setup.c
+index d710058..9100122 100644
+--- a/arch/mips/emma/markeins/setup.c
++++ b/arch/mips/emma/markeins/setup.c
+@@ -111,9 +111,6 @@ void __init plat_mem_setup(void)
+ 	iomem_resource.start = EMMA2RH_IO_BASE;
+ 	iomem_resource.end = EMMA2RH_ROM_BASE - 1;
  
- #endif /* !__ASSEMBLY__ */
- 
-diff --git a/arch/powerpc/kernel/setup_32.c b/arch/powerpc/kernel/setup_32.c
-index b903dc5..2b0da27 100644
---- a/arch/powerpc/kernel/setup_32.c
-+++ b/arch/powerpc/kernel/setup_32.c
-@@ -296,9 +296,6 @@ void __init setup_arch(char **cmdline_p)
- 	if (cpu_has_feature(CPU_FTR_UNIFIED_ID_CACHE))
- 		ucache_bsize = icache_bsize = dcache_bsize;
- 
--	/* reboot on panic */
+-	/* Reboot on panic */
 -	panic_timeout = 180;
 -
- 	if (ppc_md.panic)
- 		setup_panic();
+ 	markeins_sio_setup();
+ }
  
-diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
-index 4085aaa..856dd4e 100644
---- a/arch/powerpc/kernel/setup_64.c
-+++ b/arch/powerpc/kernel/setup_64.c
-@@ -588,9 +588,6 @@ void __init setup_arch(char **cmdline_p)
- 	dcache_bsize = ppc64_caches.dline_size;
- 	icache_bsize = ppc64_caches.iline_size;
+diff --git a/arch/mips/netlogic/xlp/setup.c b/arch/mips/netlogic/xlp/setup.c
+index 6d981bb..54e75c7 100644
+--- a/arch/mips/netlogic/xlp/setup.c
++++ b/arch/mips/netlogic/xlp/setup.c
+@@ -92,7 +92,6 @@ static void __init xlp_init_mem_from_bars(void)
  
--	/* reboot on panic */
--	panic_timeout = 180;
--
- 	if (ppc_md.panic)
- 		setup_panic();
- 
-diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-index c1f1908..6f76ae4 100644
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -470,7 +470,7 @@ static long pseries_little_endian_exceptions(void)
- 
- static void __init pSeries_setup_arch(void)
+ void __init plat_mem_setup(void)
  {
--	panic_timeout = 10;
-+	set_arch_panic_timeout(10, ARCH_PANIC_TIMEOUT);
+-	panic_timeout	= 5;
+ 	_machine_restart = (void (*)(char *))nlm_linux_exit;
+ 	_machine_halt	= nlm_linux_exit;
+ 	pm_power_off	= nlm_linux_exit;
+diff --git a/arch/mips/netlogic/xlr/setup.c b/arch/mips/netlogic/xlr/setup.c
+index 214d123..921be5f 100644
+--- a/arch/mips/netlogic/xlr/setup.c
++++ b/arch/mips/netlogic/xlr/setup.c
+@@ -92,7 +92,6 @@ static void nlm_linux_exit(void)
  
- 	/* Discover PIC type and setup ppc_md accordingly */
- 	pseries_discover_pic();
+ void __init plat_mem_setup(void)
+ {
+-	panic_timeout	= 5;
+ 	_machine_restart = (void (*)(char *))nlm_linux_exit;
+ 	_machine_halt	= nlm_linux_exit;
+ 	pm_power_off	= nlm_linux_exit;
+diff --git a/arch/mips/sibyte/swarm/setup.c b/arch/mips/sibyte/swarm/setup.c
+index 41707a2..3462c83 100644
+--- a/arch/mips/sibyte/swarm/setup.c
++++ b/arch/mips/sibyte/swarm/setup.c
+@@ -134,8 +134,6 @@ void __init plat_mem_setup(void)
+ #error invalid SiByte board configuration
+ #endif
+ 
+-	panic_timeout = 5;  /* For debug.  */
+-
+ 	board_be_handler = swarm_be_handler;
+ 
+ 	if (xicor_probe())
