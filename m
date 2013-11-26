@@ -1,245 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab3KZREd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:04:33 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56493 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436Ab3KZREa (ORCPT
+	id S932320Ab3KZRKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 12:10:33 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:55291 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757336Ab3KZRKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:04:30 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V4] dma: add channel request API that supports deferred probe
-Date: Tue, 26 Nov 2013 10:04:22 -0700
-Message-Id: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Tue, 26 Nov 2013 12:10:30 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Felipe Balbi <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: BUG: usb: obex in g_nokia.ko causing kernel panic
+Date: Tue, 26 Nov 2013 18:10:22 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        freemangordon@abv.bg, Sebastian Reichel <sre@ring0.de>
+References: <201311191151.17153@pali>
+In-Reply-To: <201311191151.17153@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart3110369.lOJQhOTTZU";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311261810.22885@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+--nextPart3110369.lOJQhOTTZU
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-dma_request_slave_channel() simply returns NULL whenever DMA channel
-lookup fails. Lookup could fail for two distinct reasons:
+On Tuesday 19 November 2013 11:51:12 Pali Roh=C3=A1r wrote:
+> Hi!
+>=20
+> For a long time (since 3.5 or 3.8? - I do not remember) obex
+> subdriver in g_nokia usb gadget module causing kernel panic
+> after module is loaded on Nokia N900. I do not know where is
+> problem and due to immediatelly kernel crash when loading
+> driver I was not able to see any dmesg output. Now I was able
+> to store something into mtd log and here is crash backtrace:
+>=20
+> Log Entry 437 (at position 52)
+> <4>[   18.606414] [<c037eac0>] (__schedule+0x5c/0x50c) from
+> [<c037d3bc>] (schedule_timeout+0x1f4/0x25c) <4>[   18.623809]
+> [<c037d3bc>] (schedule_timeout+0x1f4/0x25c) from [<c037f12c>]
+> (wait_for_common+0xc8/0x1ac) <4>[   18.649291] [<c037f12c>]
+> (wait_for_common+0xc8/0x1ac) from [<c028c1c0>]
+> (omap_i2c_xfer+0x338/0x488) <4>[   18.674499] [<c028c1c0>]
+> (omap_i2c_xfer+0x338/0x488) from [<c0288144>]
+> (__i2c_transfer+0x40/0x74) <4>[   18.692047] [<c0288144>]
+> (__i2c_transfer+0x40/0x74) from [<c0288a2c>]
+> (i2c_transfer+0x6c/0x90) <4>[   18.709320] [<c0288a2c>]
+> (i2c_transfer+0x6c/0x90) from [<c02351c8>]
+> (regmap_i2c_read+0x48/0x68) <4>[   18.726715] [<c02351c8>]
+> (regmap_i2c_read+0x48/0x68) from [<c023161c>]
+> (_regmap_raw_read+0x128/0x220) <4>[   18.752685] [<c023161c>]
+> (_regmap_raw_read+0x128/0x220) from [<c02317b4>]
+> (regmap_raw_read+0xa0/0x130) <4>[   18.779052] [<c02317b4>]
+> (regmap_raw_read+0xa0/0x130) from [<c023193c>]
+> (regmap_bulk_read+0xf8/0x16c) <4>[   18.805694] [<c023193c>]
+> (regmap_bulk_read+0xf8/0x16c) from [<c0238ea8>]
+> (twl_i2c_read+0xa4/0xe0) <4>[   18.823730] [<c0238ea8>]
+> (twl_i2c_read+0xa4/0xe0) from [<c0274d34>]
+> (__twl4030_phy_power.isra.12+0x1c/0x58) <4>[   18.850921]
+> [<c0274d34>] (__twl4030_phy_power.isra.12+0x1c/0x58) from
+> [<c0274df0>] (twl4030_phy_power.part.14+0x80/0xc8)
+> <4>[   18.879699] [<c0274df0>]
+> (twl4030_phy_power.part.14+0x80/0xc8) from [<c0274f9c>]
+> (twl4030_set_suspend+0x54/0x1e8)
+> <4>[   18.908325] [<c0274f9c>]
+> (twl4030_set_suspend+0x54/0x1e8) from [<c027c8c4>]
+> (omap2430_runtime_resume+0x5c/0x64)
+> <4>[   18.937042] [<c027c8c4>]
+> (omap2430_runtime_resume+0x5c/0x64) from [<c0225dd0>]
+> (pm_generic_runtime_resume+0x2c/0x38)
+> <4>[   18.966461] [<c0225dd0>]
+> (pm_generic_runtime_resume+0x2c/0x38) from [<c0229fe0>]
+> (__rpm_callback+0x54/0x80) <4>[   18.995117] [<c0229fe0>]
+> (__rpm_callback+0x54/0x80) from [<c022a04c>]
+> (rpm_callback+0x40/0x74) <4>[   19.013610] [<c022a04c>]
+> (rpm_callback+0x40/0x74) from [<c022b3c8>]
+> (rpm_resume+0x448/0x63c) <4>[   19.031921] [<c022b3c8>]
+> (rpm_resume+0x448/0x63c) from [<c022b2e4>]
+> (rpm_resume+0x364/0x63c) <4>[   19.050140] [<c022b2e4>]
+> (rpm_resume+0x364/0x63c) from [<c022b874>]
+> (__pm_runtime_resume+0x48/0x74) <4>[   19.077728]
+> [<c022b874>] (__pm_runtime_resume+0x48/0x74) from
+> [<c027b4fc>] (musb_gadget_pullup+0x1c/0xb4) <4>[   19.105895]
+> [<c027b4fc>] (musb_gadget_pullup+0x1c/0xb4) from [<bf025c14>]
+> (usb_function_deactivate+0x54/0xa4 [libcomposite])
+> <4>[   19.135955] [<bf025c14>]
+> (usb_function_deactivate+0x54/0xa4 [libcomposite]) from
+> [<bf05b3b8>] (obex_bind+0x124/0x1d8 [usb_f_obex])
+> <4>[   19.166870] [<bf05b3b8>] (obex_bind+0x124/0x1d8
+> [usb_f_obex]) from [<bf025794>] (usb_add_function+0x58/0xf4
+> [libcomposite])
+> <4>[   19.197143] [<bf025794>] (usb_add_function+0x58/0xf4
+> [libcomposite]) from [<bf037420>]
+> (nokia_bind_config+0x204/0x250 [g_nokia])
+> <4>[   19.227905] [<bf037420>] (nokia_bind_config+0x204/0x250
+> [g_nokia]) from [<bf0263fc>] (usb_add_config+0x28/0xc0
+> [libcomposite])
+> <4>[   19.258483] [<bf0263fc>] (usb_add_config+0x28/0xc0
+> [libcomposite]) from [<bf03709c>] (nokia_bind+0x9c/0x21c
+> [g_nokia])
+> <4>[   19.288421] [<bf03709c>] (nokia_bind+0x9c/0x21c
+> [g_nokia]) from [<bf0275bc>] (composite_bind+0x74/0x180
+> [libcomposite])
+> <4>[   19.318420] [<bf0275bc>] (composite_bind+0x74/0x180
+> [libcomposite]) from [<c027d658>]
+> (udc_bind_to_driver+0x2c/0xc4)
+> <4>[   19.348114] [<c027d658>] (udc_bind_to_driver+0x2c/0xc4)
+> from [<c027d764>] (usb_gadget_probe_driver+0x74/0x94) <4>[ =20
+> 19.377166] [<c027d764>] (usb_gadget_probe_driver+0x74/0x94)
+> from [<c00086f8>] (do_one_initcall+0x94/0x138) <4>[ =20
+> 19.406005] [<c00086f8>] (do_one_initcall+0x94/0x138) from
+> [<c007a460>] (load_module+0x113c/0x13c4) <4>[   19.434051]
+> [<c007a460>] (load_module+0x113c/0x13c4) from [<c007a7b4>]
+> (SyS_init_module+0xcc/0xec) <4>[   19.462127] [<c007a7b4>]
+> (SyS_init_module+0xcc/0xec) from [<c000dd40>]
+> (ret_fast_syscall+0x0/0x30) <0>[   19.490753] Code: 0a00002e
+> e1a00004 eb001438 e598300c (e5d3202c) <4>[   19.506805] ---[
+> end trace 060b62ec0d68a78b ]--- <0>[   19.523132] Kernel
+> panic - not syncing: Fatal exception in interrupt
+>=20
+> (above dump is from 3.12-rc5 kernel)
+>=20
+> When I disable obex code in drivers/usb/gadget/nokia.c then
+> gadget driver working fine without any crash, error or
+> warning.
+>=20
+> Here is patch which disabling obex code which I using (for
+> 3.12):
+>=20
+> diff --git a/drivers/usb/gadget/nokia.c
+> b/drivers/usb/gadget/nokia.c index ba47977..869cbfa 100644
+> --- a/drivers/usb/gadget/nokia.c
+> +++ b/drivers/usb/gadget/nokia.c
+> @@ -110,10 +110,10 @@ static struct usb_function *f_acm_cfg1;
+>  static struct usb_function *f_acm_cfg2;
+>  static struct usb_function *f_ecm_cfg1;
+>  static struct usb_function *f_ecm_cfg2;
+> -static struct usb_function *f_obex1_cfg1;
+> +/*static struct usb_function *f_obex1_cfg1;
+>  static struct usb_function *f_obex2_cfg1;
+>  static struct usb_function *f_obex1_cfg2;
+> -static struct usb_function *f_obex2_cfg2;
+> +static struct usb_function *f_obex2_cfg2;*/
+>  static struct usb_function *f_phonet_cfg1;
+>  static struct usb_function *f_phonet_cfg2;
+>=20
+> @@ -136,20 +136,20 @@ static struct usb_configuration
+> nokia_config_100ma_driver =3D {
+>=20
+>  static struct usb_function_instance *fi_acm;
+>  static struct usb_function_instance *fi_ecm;
+> -static struct usb_function_instance *fi_obex1;
+> -static struct usb_function_instance *fi_obex2;
+> +/*static struct usb_function_instance *fi_obex1;
+> +static struct usb_function_instance *fi_obex2;*/
+>  static struct usb_function_instance *fi_phonet;
+>=20
+>  static int __init nokia_bind_config(struct usb_configuration
+> *c) {
+>  	struct usb_function *f_acm;
+>  	struct usb_function *f_phonet =3D NULL;
+> -	struct usb_function *f_obex1 =3D NULL;
+> +/*	struct usb_function *f_obex1 =3D NULL; */
+>  	struct usb_function *f_ecm;
+> -	struct usb_function *f_obex2 =3D NULL;
+> +/*	struct usb_function *f_obex2 =3D NULL; */
+>  	int status =3D 0;
+> -	int obex1_stat =3D 0;
+> -	int obex2_stat =3D 0;
+> +/*	int obex1_stat =3D 0;
+> +	int obex2_stat =3D 0;*/
+>  	int phonet_stat =3D 0;
+>=20
+>  	if (!IS_ERR(fi_phonet)) {
+> @@ -158,7 +158,7 @@ static int __init nokia_bind_config(struct
+> usb_configuration *c) pr_debug("could not get phonet
+> function\n");
+>  	}
+>=20
+> -	if (!IS_ERR(fi_obex1)) {
+> +/*	if (!IS_ERR(fi_obex1)) {
+>  		f_obex1 =3D usb_get_function(fi_obex1);
+>  		if (IS_ERR(f_obex1))
+>  			pr_debug("could not get obex function 0\n");
+> @@ -168,7 +168,7 @@ static int __init nokia_bind_config(struct
+> usb_configuration *c) f_obex2 =3D usb_get_function(fi_obex2);
+>  		if (IS_ERR(f_obex2))
+>  			pr_debug("could not get obex function 1\n");
+> -	}
+> +	}*/
+>=20
+>  	f_acm =3D usb_get_function(fi_acm);
+>  	if (IS_ERR(f_acm)) {
+> @@ -188,7 +188,7 @@ static int __init nokia_bind_config(struct
+> usb_configuration *c) pr_debug("could not add phonet
+> function\n");
+>  	}
+>=20
+> -	if (!IS_ERR_OR_NULL(f_obex1)) {
+> +/*	if (!IS_ERR_OR_NULL(f_obex1)) {
+>  		obex1_stat =3D usb_add_function(c, f_obex1);
+>  		if (obex1_stat)
+>  			pr_debug("could not add obex function 0\n");
+> @@ -198,7 +198,7 @@ static int __init nokia_bind_config(struct
+> usb_configuration *c) obex2_stat =3D usb_add_function(c,
+> f_obex2);
+>  		if (obex2_stat)
+>  			pr_debug("could not add obex function 1\n");
+> -	}
+> +	}*/
+>=20
+>  	status =3D usb_add_function(c, f_acm);
+>  	if (status)
+> @@ -213,14 +213,14 @@ static int __init
+> nokia_bind_config(struct usb_configuration *c) f_acm_cfg1 =3D
+> f_acm;
+>  		f_ecm_cfg1 =3D f_ecm;
+>  		f_phonet_cfg1 =3D f_phonet;
+> -		f_obex1_cfg1 =3D f_obex1;
+> -		f_obex2_cfg1 =3D f_obex2;
+> +/*		f_obex1_cfg1 =3D f_obex1;
+> +		f_obex2_cfg1 =3D f_obex2;*/
+>  	} else {
+>  		f_acm_cfg2 =3D f_acm;
+>  		f_ecm_cfg2 =3D f_ecm;
+>  		f_phonet_cfg2 =3D f_phonet;
+> -		f_obex1_cfg2 =3D f_obex1;
+> -		f_obex2_cfg2 =3D f_obex2;
+> +/*		f_obex1_cfg2 =3D f_obex1;
+> +		f_obex2_cfg2 =3D f_obex2;*/
+>  	}
+>=20
+>  	status =3D fsg_bind_config(c->cdev, c, &fsg_common);
+> @@ -232,20 +232,20 @@ static int __init
+> nokia_bind_config(struct usb_configuration *c) err_ecm:
+>  	usb_remove_function(c, f_acm);
+>  err_conf:
+> -	if (!obex2_stat)
+> +/*	if (!obex2_stat)
+>  		usb_remove_function(c, f_obex2);
+>  	if (!obex1_stat)
+> -		usb_remove_function(c, f_obex1);
+> +		usb_remove_function(c, f_obex1);*/
+>  	if (!phonet_stat)
+>  		usb_remove_function(c, f_phonet);
+>  	usb_put_function(f_ecm);
+>  err_get_ecm:
+>  	usb_put_function(f_acm);
+>  err_get_acm:
+> -	if (!IS_ERR_OR_NULL(f_obex2))
+> +/*	if (!IS_ERR_OR_NULL(f_obex2))
+>  		usb_put_function(f_obex2);
+>  	if (!IS_ERR_OR_NULL(f_obex1))
+> -		usb_put_function(f_obex1);
+> +		usb_put_function(f_obex1);*/
+>  	if (!IS_ERR_OR_NULL(f_phonet))
+>  		usb_put_function(f_phonet);
+>  	return status;
+> @@ -285,13 +285,13 @@ static int __init nokia_bind(struct
+> usb_composite_dev *cdev) if (IS_ERR(fi_phonet))
+>  		pr_debug("could not find phonet function\n");
+>=20
+> -	fi_obex1 =3D usb_get_function_instance("obex");
+> +/*	fi_obex1 =3D usb_get_function_instance("obex");
+>  	if (IS_ERR(fi_obex1))
+>  		pr_debug("could not find obex function 1\n");
+>=20
+>  	fi_obex2 =3D usb_get_function_instance("obex");
+>  	if (IS_ERR(fi_obex2))
+> -		pr_debug("could not find obex function 2\n");
+> +		pr_debug("could not find obex function 2\n");*/
+>=20
+>  	fi_acm =3D usb_get_function_instance("acm");
+>  	if (IS_ERR(fi_acm)) {
+> @@ -323,10 +323,10 @@ static int __init nokia_bind(struct
+> usb_composite_dev *cdev)
+>=20
+>  err_put_cfg1:
+>  	usb_put_function(f_acm_cfg1);
+> -	if (!IS_ERR_OR_NULL(f_obex1_cfg1))
+> +/*	if (!IS_ERR_OR_NULL(f_obex1_cfg1))
+>  		usb_put_function(f_obex1_cfg1);
+>  	if (!IS_ERR_OR_NULL(f_obex2_cfg1))
+> -		usb_put_function(f_obex2_cfg1);
+> +		usb_put_function(f_obex2_cfg1);*/
+>  	if (!IS_ERR_OR_NULL(f_phonet_cfg1))
+>  		usb_put_function(f_phonet_cfg1);
+>  	usb_put_function(f_ecm_cfg1);
+> @@ -335,10 +335,10 @@ err_ecm_inst:
+>  err_acm_inst:
+>  	usb_put_function_instance(fi_acm);
+>  err_obex2_inst:
+> -	if (!IS_ERR(fi_obex2))
+> +/*	if (!IS_ERR(fi_obex2))
+>  		usb_put_function_instance(fi_obex2);
+>  	if (!IS_ERR(fi_obex1))
+> -		usb_put_function_instance(fi_obex1);
+> +		usb_put_function_instance(fi_obex1);*/
+>  	if (!IS_ERR(fi_phonet))
+>  		usb_put_function_instance(fi_phonet);
+>  err_usb:
+> @@ -349,14 +349,14 @@ err_fsg:
+>=20
+>  static int __exit nokia_unbind(struct usb_composite_dev
+> *cdev) {
+> -	if (!IS_ERR_OR_NULL(f_obex1_cfg2))
+> +/*	if (!IS_ERR_OR_NULL(f_obex1_cfg2))
+>  		usb_put_function(f_obex1_cfg2);
+>  	if (!IS_ERR_OR_NULL(f_obex2_cfg2))
+>  		usb_put_function(f_obex2_cfg2);
+>  	if (!IS_ERR_OR_NULL(f_obex1_cfg1))
+>  		usb_put_function(f_obex1_cfg1);
+>  	if (!IS_ERR_OR_NULL(f_obex2_cfg1))
+> -		usb_put_function(f_obex2_cfg1);
+> +		usb_put_function(f_obex2_cfg1);*/
+>  	if (!IS_ERR_OR_NULL(f_phonet_cfg1))
+>  		usb_put_function(f_phonet_cfg1);
+>  	if (!IS_ERR_OR_NULL(f_phonet_cfg2))
+> @@ -367,10 +367,10 @@ static int __exit nokia_unbind(struct
+> usb_composite_dev *cdev) usb_put_function(f_ecm_cfg2);
+>=20
+>  	usb_put_function_instance(fi_ecm);
+> -	if (!IS_ERR(fi_obex2))
+> +/*	if (!IS_ERR(fi_obex2))
+>  		usb_put_function_instance(fi_obex2);
+>  	if (!IS_ERR(fi_obex1))
+> -		usb_put_function_instance(fi_obex1);
+> +		usb_put_function_instance(fi_obex1);*/
+>  	if (!IS_ERR(fi_phonet))
+>  		usb_put_function_instance(fi_phonet);
+>  	usb_put_function_instance(fi_acm);
+>=20
+> Please can you look where can be problem and why gadget
+> causing immediatelly kernel panic?
+>=20
+> Note that g_nokia.ko usb gadget is for nokia n900 device. And
+> because it crashing (without above patch) I suggesting to
+> remove or comment obex code, because really driver is
+> unusable on that device...
 
-a) No DMA specification exists for the channel name.
-   This includes situations where no DMA specifications exist at all, or
-   other general lookup problems.
+Hi! can you look at this problem?
 
-b) A DMA specification does exist, yet the driver for that channel is not
-   yet registered.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Case (b) should trigger deferred probe in client drivers. However, since
-they have no way to differentiate the two situations, it cannot.
+--nextPart3110369.lOJQhOTTZU
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Implement new function dma_request_slave_channel_reason(), which performs
-identically to dma_request_slave_channel(), except that it returns an
-error-pointer rather than NULL, which allows callers to detect when
-deferred probe should occur.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Eventually, all drivers should be converted to this new API, the old API
-removed, and the new API renamed to the more desirable name. This patch
-doesn't convert the existing API and all drivers in one go, since some
-drivers call dma_request_slave_channel() then dma_request_channel() if
-that fails. That would require either modifying dma_request_channel() in
-the same way, or adding extra error-handling code to all affected
-drivers, and there are close to 100 drivers using the other API, rather
-than just the 15-20 or so that use dma_request_slave_channel(), which
-might be tenable in a single patch.
+iEYEABECAAYFAlKU1f4ACgkQi/DJPQPkQ1JoVgCeJrQ2ydPpqA+WKxU6eFDi7vWq
+Qy0AmwaJaumnFv+6vPE6vlKG6hbwoB/8
+=dYSs
+-----END PGP SIGNATURE-----
 
-acpi_dma_request_slave_chan_by_name() doesn't currently implement
-deferred probe. It should, but this will be addressed later.
-
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v4:
-* Add {} around both branches in of_dma_request_slave_channel().
-v3:
-* s/_or_err/_reason/ in the new API name.
-* Simplify changes to of_dma_request_slave_channel() so that the new
-  "bool defer" parameter is not needed.
-* Revert changes to acpi-dma.c and handle the return value conversion
-  in dma_request_slave_channel_reason() instead.
-* Mention that acpi_dma_request_slave_chan_by_name() should implement
-  deferred probe, but that will happen later.
-v2:
-* include <linux/err.h> in <linux/dmaengine.h>
-* Return -ENODATA if slave_id or chan_id out-of-range.
-* Return an error-pointer not NULL if we can't find a matching DMA
-  controller or translate the channel.
-
-This patch is a dependency for:
-* A series that reworks many of the Tegra drivers.
-* A series that enhances ASoC's dmaengine code to support deferred probe.
-
-As such, it needs to go into a topic branch on its own, based directly
-on 3.13-rc1. If the DMA maintainers ack the patches I'm happy to create
-this topic branch myself and send a pull request to the DMA tree. Or the
-patches can be applied to a topic branch by the DMA maintainers and I
-will merge their topic branch into the Tegra rework branch that I
-mentioned.
----
- drivers/dma/dmaengine.c   | 35 +++++++++++++++++++++++++++++++----
- drivers/dma/of-dma.c      | 15 +++++++++------
- include/linux/dmaengine.h |  8 ++++++++
- 3 files changed, 48 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index ea806bdc12ef..e17e9b22d85e 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -540,6 +540,8 @@ EXPORT_SYMBOL_GPL(dma_get_slave_channel);
-  * @mask: capabilities that the channel must satisfy
-  * @fn: optional callback to disposition available channels
-  * @fn_param: opaque parameter to pass to dma_filter_fn
-+ *
-+ * Returns pointer to appropriate DMA channel on success or NULL.
-  */
- struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
- 				       dma_filter_fn fn, void *fn_param)
-@@ -591,18 +593,43 @@ EXPORT_SYMBOL_GPL(__dma_request_channel);
-  * dma_request_slave_channel - try to allocate an exclusive slave channel
-  * @dev:	pointer to client device structure
-  * @name:	slave channel name
-+ *
-+ * Returns pointer to appropriate DMA channel on success or an error pointer.
-  */
--struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name)
-+struct dma_chan *dma_request_slave_channel_reason(struct device *dev,
-+						  const char *name)
- {
-+	struct dma_chan *chan;
-+
- 	/* If device-tree is present get slave info from here */
- 	if (dev->of_node)
- 		return of_dma_request_slave_channel(dev->of_node, name);
- 
- 	/* If device was enumerated by ACPI get slave info from here */
--	if (ACPI_HANDLE(dev))
--		return acpi_dma_request_slave_chan_by_name(dev, name);
-+	if (ACPI_HANDLE(dev)) {
-+		chan = acpi_dma_request_slave_chan_by_name(dev, name);
-+		if (chan)
-+			return chan;
-+	}
- 
--	return NULL;
-+	return ERR_PTR(-ENODEV);
-+}
-+EXPORT_SYMBOL_GPL(dma_request_slave_channel_reason);
-+
-+/**
-+ * dma_request_slave_channel - try to allocate an exclusive slave channel
-+ * @dev:	pointer to client device structure
-+ * @name:	slave channel name
-+ *
-+ * Returns pointer to appropriate DMA channel on success or NULL.
-+ */
-+struct dma_chan *dma_request_slave_channel(struct device *dev,
-+					   const char *name)
-+{
-+	struct dma_chan *ch = dma_request_slave_channel_reason(dev, name);
-+	if (IS_ERR(ch))
-+		return NULL;
-+	return ch;
- }
- EXPORT_SYMBOL_GPL(dma_request_slave_channel);
- 
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index 0b88dd3d05f4..e8fe9dc455f4 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -143,7 +143,7 @@ static int of_dma_match_channel(struct device_node *np, const char *name,
-  * @np:		device node to get DMA request from
-  * @name:	name of desired channel
-  *
-- * Returns pointer to appropriate dma channel on success or NULL on error.
-+ * Returns pointer to appropriate DMA channel on success or an error pointer.
-  */
- struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 					      const char *name)
-@@ -152,17 +152,18 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 	struct of_dma		*ofdma;
- 	struct dma_chan		*chan;
- 	int			count, i;
-+	int			ret_no_channel = -ENODEV;
- 
- 	if (!np || !name) {
- 		pr_err("%s: not enough information provided\n", __func__);
--		return NULL;
-+		return ERR_PTR(-ENODEV);
- 	}
- 
- 	count = of_property_count_strings(np, "dma-names");
- 	if (count < 0) {
- 		pr_err("%s: dma-names property of node '%s' missing or empty\n",
- 			__func__, np->full_name);
--		return NULL;
-+		return ERR_PTR(-ENODEV);
- 	}
- 
- 	for (i = 0; i < count; i++) {
-@@ -172,10 +173,12 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 		mutex_lock(&of_dma_lock);
- 		ofdma = of_dma_find_controller(&dma_spec);
- 
--		if (ofdma)
-+		if (ofdma) {
- 			chan = ofdma->of_dma_xlate(&dma_spec, ofdma);
--		else
-+		} else {
-+			ret_no_channel = -EPROBE_DEFER;
- 			chan = NULL;
-+		}
- 
- 		mutex_unlock(&of_dma_lock);
- 
-@@ -185,7 +188,7 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 			return chan;
- 	}
- 
--	return NULL;
-+	return ERR_PTR(ret_no_channel);
- }
- 
- /**
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 41cf0c399288..ed92b30a02fd 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -22,6 +22,7 @@
- #define LINUX_DMAENGINE_H
- 
- #include <linux/device.h>
-+#include <linux/err.h>
- #include <linux/uio.h>
- #include <linux/bug.h>
- #include <linux/scatterlist.h>
-@@ -1040,6 +1041,8 @@ enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
- void dma_issue_pending_all(void);
- struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
- 					dma_filter_fn fn, void *fn_param);
-+struct dma_chan *dma_request_slave_channel_reason(struct device *dev,
-+						  const char *name);
- struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name);
- void dma_release_channel(struct dma_chan *chan);
- #else
-@@ -1063,6 +1066,11 @@ static inline struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
- {
- 	return NULL;
- }
-+static inline struct dma_chan *dma_request_slave_channel_reason(
-+					struct device *dev, const char *name)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
- static inline struct dma_chan *dma_request_slave_channel(struct device *dev,
- 							 const char *name)
- {
--- 
-1.8.1.5
-
+--nextPart3110369.lOJQhOTTZU--
