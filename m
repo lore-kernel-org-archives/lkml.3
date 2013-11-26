@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab3KZQqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:46:07 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29230 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab3KZQqD (ORCPT
+	id S1757467Ab3KZQqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:46:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34564 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757376Ab3KZQqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:46:03 -0500
-Date: Tue, 26 Nov 2013 11:45:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian.Campbell@citrix.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        boris.ostrovsky@oracle.com
-Subject: Re: [PATCH 3/4] xen/manage: Guard against user-space initiated
- poweroff and XenBus.
-Message-ID: <20131126164552.GF2959@phenom.dumpdata.com>
-References: <1383932286-25080-1-git-send-email-konrad.wilk@oracle.com>
- <1383932286-25080-4-git-send-email-konrad.wilk@oracle.com>
- <528DEA00.7070505@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <528DEA00.7070505@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 26 Nov 2013 11:46:15 -0500
+Date: Tue, 26 Nov 2013 08:46:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, <linux-kernel@vger.kernel.org>,
+        <glommer@openvz.org>, <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [Devel] [PATCH v11 00/15] kmemcg shrinkers
+Message-Id: <20131126084644.405a091d.akpm@linux-foundation.org>
+In-Reply-To: <52949A4F.7030004@parallels.com>
+References: <cover.1385377616.git.vdavydov@parallels.com>
+	<20131125174135.GE22729@cmpxchg.org>
+	<529443E4.7080602@parallels.com>
+	<52949A4F.7030004@parallels.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 21, 2013 at 11:09:52AM +0000, David Vrabel wrote:
-> On 08/11/13 17:38, Konrad Rzeszutek Wilk wrote:
-> > There is a race case where the user does 'poweroff'
-> > and at the same time the system admin does 'xl shutdown'.
-> 
-> This isn't a Xen-specific problem is it?  Wouldn't it be better to fix
-> this in generic code?
+On Tue, 26 Nov 2013 16:55:43 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-Possibly. I believe the reason for the reboot_notifier to exist is
-to provide a means to fix the race.
+> What do you think about splitting this set into two main series as follows:
+> 
+> 1) Prepare vmscan to kmemcg-aware shrinkers; would include patches 1-7 
+> of this set.
+> 2) Make fs shrinkers memcg-aware; would include patches 9-11 of this set
 
-> 
-> Especially since I don't think this patch actually fixes the race
-> completely.
-> 
-> > --- a/drivers/xen/manage.c
-> > +++ b/drivers/xen/manage.c
-> [...]
-> > @@ -222,7 +230,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
-> >  	};
-> >  	static struct shutdown_handler *handler;
-> >  
-> > -	if (shutting_down != SHUTDOWN_INVALID)
-> > +	if (atomic_read(&shutting_down) != SHUTDOWN_INVALID)
-> >  		return;
-> 
-> In guest initiated poweroff at this time will still race with this
-> toolstack initiated poweroff.
+Please just resend everything.
 
-No, b/c the reboot notifier would have set 'shutting_down' already.
+> and leave other patches, which are rather for optimization/extending 
+> functionality, for future?
 
-> 
-> David
+It will be helpful to describe such splitting opportunities in the
+[0/n] changelog.
+
