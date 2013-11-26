@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3KZKGF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:06:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50778 "EHLO mga11.intel.com"
+	id S1755382Ab3KZKGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:06:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16473 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755122Ab3KZKF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:05:59 -0500
+	id S1752524Ab3KZKGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:06:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,773,1378882800"; 
-   d="scan'208";a="440032059"
+   d="scan'208";a="442073176"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -24,66 +24,110 @@ Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thierry Reding <thierry.reding@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/6] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
-Date: Tue, 26 Nov 2013 12:05:44 +0200
-Message-Id: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v3 3/6] mmc: sdhci-acpi: convert to use GPIO descriptor API
+Date: Tue, 26 Nov 2013 12:05:47 +0200
+Message-Id: <1385460350-17543-4-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.3
+In-Reply-To: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The new descriptor based GPIO interface is now the recommended and safer
+way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
+use that interface.
 
-Now that the mainline kernel has full ACPI support for the GPIO descriptor
-interface we can get rid of ACPI specific GPIO functions in favor of GPIO
-descriptor (gpiod_*) interfaces.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/mmc/host/sdhci-acpi.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
-This series first converts the existing two users to this interface and
-then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
-called internally in drivers/gpio. We then remove the acpi_gpio.h and
-require all users to use gpiod_* interfaces.
-
-This is third version of the series. Changes to the previous version [1]:
-
- * Instead of adding temporary conversion from GPIO descriptors to numbers
-   in rfkill-gpio.c we now first introduce a lookup table for paz00 and
-   in the next patch convert the driver to use only GPIO descriptors.
-
- * Corrected a typo in subject of patch [3/6] "covert" -> "convert".
-
- * Corrected a typo in changelog of patch [5/6] "user" -> "use".
-
- * Dropped EXPORT_SYMBOL_GPL(acpi_get_gpiod_by_index) from patch [5/6] that
-   was left there accidentally.
-
-Since the patches in the series depend on each other I would propose this
-to be merged via GPIO tree.
-
-[1] http://www.spinics.net/lists/linux-acpi/msg47472.html (v2 of the series)
-
-Heikki Krogerus (2):
-  ARM: tegra: add gpiod_lookup table for paz00
-  net: rfkill: gpio: convert to descriptor-based GPIO interface
-
-Mika Westerberg (4):
-  mmc: sdhci-acpi: convert to use GPIO descriptor API
-  gpio / ACPI: register to ACPI events automatically
-  gpio / ACPI: get rid of acpi_gpio.h
-  Documentation / ACPI: update to GPIO descriptor API
-
- Documentation/acpi/enumeration.txt | 36 ++++--------------
- arch/arm/mach-tegra/board-paz00.c  |  7 ++++
- drivers/gpio/gpiolib-acpi.c        | 21 ++++++++---
- drivers/gpio/gpiolib.c             |  5 ++-
- drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
- drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
- drivers/pinctrl/pinctrl-baytrail.c |  4 --
- include/linux/acpi_gpio.h          | 51 -------------------------
- net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
- 9 files changed, 125 insertions(+), 148 deletions(-)
- create mode 100644 drivers/gpio/gpiolib.h
- delete mode 100644 include/linux/acpi_gpio.h
-
+diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
+index ef19874fcd1f..5c86550f83ad 100644
+--- a/drivers/mmc/host/sdhci-acpi.c
++++ b/drivers/mmc/host/sdhci-acpi.c
+@@ -31,10 +31,9 @@
+ #include <linux/bitops.h>
+ #include <linux/types.h>
+ #include <linux/err.h>
+-#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
+ #include <linux/interrupt.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_gpio.h>
+ #include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/delay.h>
+@@ -199,22 +198,23 @@ static irqreturn_t sdhci_acpi_sd_cd(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
+-				 struct mmc_host *mmc)
++static int sdhci_acpi_add_own_cd(struct device *dev, struct mmc_host *mmc)
+ {
++	struct gpio_desc *desc;
+ 	unsigned long flags;
+ 	int err, irq;
+ 
+-	if (gpio < 0) {
+-		err = gpio;
++	desc = devm_gpiod_get_index(dev, "sd_cd", 0);
++	if (IS_ERR(desc)) {
++		err = PTR_ERR(desc);
+ 		goto out;
+ 	}
+ 
+-	err = devm_gpio_request_one(dev, gpio, GPIOF_DIR_IN, "sd_cd");
++	err = gpiod_direction_input(desc);
+ 	if (err)
+-		goto out;
++		goto out_free;
+ 
+-	irq = gpio_to_irq(gpio);
++	irq = gpiod_to_irq(desc);
+ 	if (irq < 0) {
+ 		err = irq;
+ 		goto out_free;
+@@ -228,7 +228,7 @@ static int sdhci_acpi_add_own_cd(struct device *dev, int gpio,
+ 	return 0;
+ 
+ out_free:
+-	devm_gpio_free(dev, gpio);
++	devm_gpiod_put(dev, desc);
+ out:
+ 	dev_warn(dev, "failed to setup card detect wake up\n");
+ 	return err;
+@@ -254,7 +254,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
+ 	struct resource *iomem;
+ 	resource_size_t len;
+ 	const char *hid;
+-	int err, gpio;
++	int err;
+ 
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return -ENODEV;
+@@ -279,8 +279,6 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
+ 	if (IS_ERR(host))
+ 		return PTR_ERR(host);
+ 
+-	gpio = acpi_get_gpio_by_index(dev, 0, NULL);
+-
+ 	c = sdhci_priv(host);
+ 	c->host = host;
+ 	c->slot = sdhci_acpi_get_slot(handle, hid);
+@@ -338,7 +336,7 @@ static int sdhci_acpi_probe(struct platform_device *pdev)
+ 		goto err_free;
+ 
+ 	if (sdhci_acpi_flag(c, SDHCI_ACPI_SD_CD)) {
+-		if (sdhci_acpi_add_own_cd(dev, gpio, host->mmc))
++		if (sdhci_acpi_add_own_cd(dev, host->mmc))
+ 			c->use_runtime_pm = false;
+ 	}
+ 
 -- 
 1.8.4.3
 
