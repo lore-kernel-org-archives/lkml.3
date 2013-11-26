@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab3KZSTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:19:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35381 "EHLO
+	id S932661Ab3KZSTh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:19:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757694Ab3KZSNA (ORCPT
+	with ESMTP id S1757704Ab3KZSNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 13:13:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH 3.11 15/36] drm/nvc0-/gr: fix a number of missing explicit array terminators...
-Date: Tue, 26 Nov 2013 10:12:25 -0800
-Message-Id: <20131126181028.144295220@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 3.11 16/36] thinkpad_acpi: Fix build error when CONFIG_SND_MAX_CARDS > 32
+Date: Tue, 26 Nov 2013 10:12:26 -0800
+Message-Id: <20131126181028.381800688@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -26,73 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 13d2b35a065399fb447c84e80368927e5f8bf086 upstream.
+commit cab6661344f14a09d7aecdf821a40f68ef9b18cc upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>
+SNDRV_CARDS can be specified via Kconfig since 3.11 kernel, so this
+can be over 32bit integer range, which leads to a build error.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c |    4 ++++
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c |    1 +
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c |    1 +
- 3 files changed, 6 insertions(+)
+ drivers/platform/x86/thinkpad_acpi.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c
-@@ -587,6 +587,7 @@ nvc1_grctx_init_unk58xx[] = {
- 	{ 0x405870,   4, 0x04, 0x00000001 },
- 	{ 0x405a00,   2, 0x04, 0x00000000 },
- 	{ 0x405a18,   1, 0x04, 0x00000000 },
-+	{}
- };
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -6438,7 +6438,12 @@ static struct ibm_struct brightness_driv
+ #define TPACPI_ALSA_SHRTNAME "ThinkPad Console Audio Control"
+ #define TPACPI_ALSA_MIXERNAME TPACPI_ALSA_SHRTNAME
  
- static struct nvc0_graph_init
-@@ -598,6 +599,7 @@ nvc1_grctx_init_rop[] = {
- 	{ 0x408904,   1, 0x04, 0x62000001 },
- 	{ 0x408908,   1, 0x04, 0x00c80929 },
- 	{ 0x408980,   1, 0x04, 0x0000011d },
-+	{}
- };
+-static int alsa_index = ~((1 << (SNDRV_CARDS - 3)) - 1); /* last three slots */
++#if SNDRV_CARDS <= 32
++#define DEFAULT_ALSA_IDX		~((1 << (SNDRV_CARDS - 3)) - 1)
++#else
++#define DEFAULT_ALSA_IDX		~((1 << (32 - 3)) - 1)
++#endif
++static int alsa_index = DEFAULT_ALSA_IDX; /* last three slots */
+ static char *alsa_id = "ThinkPadEC";
+ static bool alsa_enable = SNDRV_DEFAULT_ENABLE1;
  
- static struct nvc0_graph_init
-@@ -671,6 +673,7 @@ nvc1_grctx_init_gpc_0[] = {
- 	{ 0x419000,   1, 0x04, 0x00000780 },
- 	{ 0x419004,   2, 0x04, 0x00000000 },
- 	{ 0x419014,   1, 0x04, 0x00000004 },
-+	{}
- };
- 
- static struct nvc0_graph_init
-@@ -717,6 +720,7 @@ nvc1_grctx_init_tpc[] = {
- 	{ 0x419e98,   1, 0x04, 0x00000000 },
- 	{ 0x419ee0,   1, 0x04, 0x00011110 },
- 	{ 0x419f30,  11, 0x04, 0x00000000 },
-+	{}
- };
- 
- void
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c
-@@ -258,6 +258,7 @@ nvd7_grctx_init_hub[] = {
- 	nvc0_grctx_init_unk78xx,
- 	nvc0_grctx_init_unk80xx,
- 	nvd9_grctx_init_rop,
-+	NULL
- };
- 
- struct nvc0_graph_init *
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c
-@@ -466,6 +466,7 @@ nvd9_grctx_init_hub[] = {
- 	nvc0_grctx_init_unk78xx,
- 	nvc0_grctx_init_unk80xx,
- 	nvd9_grctx_init_rop,
-+	NULL
- };
- 
- struct nvc0_graph_init *
 
 
