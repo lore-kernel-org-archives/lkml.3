@@ -1,140 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab3KZX2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:28:24 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25985 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757605Ab3KZX2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:28:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,778,1378882800"; 
-   d="scan'208";a="434762210"
-Message-ID: <52952E90.4000604@intel.com>
-Date: Wed, 27 Nov 2013 00:28:16 +0100
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1758167Ab3KZXav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:30:51 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41823 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826Ab3KZXas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 18:30:48 -0500
 MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH 1/3] pm/qos: allow state control of qos class
-References: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com> <1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1385403450-18018-1-git-send-email-sre@debian.org>
+References: <1385403450-18018-1-git-send-email-sre@debian.org>
+Date: Wed, 27 Nov 2013 00:30:48 +0100
+Message-ID: <CACRpkdYSXDAwS1mxLtUL7qpHkfD1efo1QF0OMKS-YHKM-689Kw@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: add HSI subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 12:20 AM, Jacob Pan wrote:
-> When power capping or thermal control is needed, CPU QOS latency cannot
-> be satisfied. This patch adds a state variable to indicate whether a QOS
-> class (including all constraint requests) should be ignored.
+On Mon, Nov 25, 2013 at 7:17 PM, Sebastian Reichel <sre@debian.org> wrote:
+
+> This adds me as maintainer for the HSI subsystem and
+> Carlos Chinea (original author) to the CREDITS file.
 >
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
 
-Honestly, I don't like this.  I know the motivation and what you're 
-trying to achieve, but I don't like the approach.
+(Good idea)
 
-I need to think a bit more about that.
+> +HSI SUBSYSTEM
+> +M:     Sebastian Reichel <sre@debian.org>
+> +S:     Maintained
+> +F:     Documentation/hsi/
+> +F:     drivers/hsi/
+> +F:     include/linux/hsi/
+> +F:     include/uapi/linux/hsi/
 
-Thanks,
-Rafael
+Don't add directories that do not exist (yet).
 
-
-> ---
->   include/linux/pm_qos.h | 10 +++++++++-
->   kernel/power/qos.c     | 24 ++++++++++++++++++++++++
->   2 files changed, 33 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index 5a95013..648b50b 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -10,7 +10,7 @@
->   #include <linux/device.h>
->   #include <linux/workqueue.h>
->   
-> -enum {
-> +enum pm_qos_class {
->   	PM_QOS_RESERVED = 0,
->   	PM_QOS_CPU_DMA_LATENCY,
->   	PM_QOS_NETWORK_LATENCY,
-> @@ -20,6 +20,11 @@ enum {
->   	PM_QOS_NUM_CLASSES,
->   };
->   
-> +enum pm_qos_state {
-> +	PM_QOS_CONSTRAINT_AVAILABLE,
-> +	PM_QOS_CONSTRAINT_IGNORED,
-> +};
-> +
->   enum pm_qos_flags_status {
->   	PM_QOS_FLAGS_UNDEFINED = -1,
->   	PM_QOS_FLAGS_NONE,
-> @@ -77,6 +82,7 @@ struct pm_qos_constraints {
->   	struct plist_head list;
->   	s32 target_value;	/* Do not change to 64 bit */
->   	s32 default_value;
-> +	enum pm_qos_state state;
->   	enum pm_qos_type type;
->   	struct blocking_notifier_head *notifiers;
->   };
-> @@ -123,6 +129,8 @@ int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier);
->   int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
->   int pm_qos_request_active(struct pm_qos_request *req);
->   s32 pm_qos_read_value(struct pm_qos_constraints *c);
-> +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
-> +				enum pm_qos_state state);
->   
->   #ifdef CONFIG_PM
->   enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev, s32 mask);
-> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> index 8dff9b4..cf475b0 100644
-> --- a/kernel/power/qos.c
-> +++ b/kernel/power/qos.c
-> @@ -146,6 +146,11 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
->   
->   s32 pm_qos_read_value(struct pm_qos_constraints *c)
->   {
-> +	/* return invalid default value if constraints cannot be met, e.g.
-> +	 * during idle injection.
-> +	 */
-> +	if (c->state == PM_QOS_CONSTRAINT_IGNORED)
-> +		return PM_QOS_DEFAULT_VALUE;
->   	return c->target_value;
->   }
->   
-> @@ -353,6 +358,25 @@ void pm_qos_add_request(struct pm_qos_request *req,
->   }
->   EXPORT_SYMBOL_GPL(pm_qos_add_request);
->   
-> +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
-> +				enum pm_qos_state state)
-> +{
-> +	struct pm_qos_constraints *c = pm_qos_array[class]->constraints;
-> +	unsigned long curr_value;
-> +
-> +	if (c->state == state)
-> +		return;
-> +	curr_value = (state == PM_QOS_CONSTRAINT_IGNORED) ?
-> +		PM_QOS_DEFAULT_VALUE : c->target_value;
-> +	c->state = state;
-> +
-> +	/* notify existing QOS requests change */
-> +	blocking_notifier_call_chain(c->notifiers,
-> +				curr_value,
-> +				NULL);
-> +}
-> +EXPORT_SYMBOL_GPL(pm_qos_set_constraint_class_state);
-> +
->   /**
->    * pm_qos_update_request - modifies an existing qos request
->    * @req : handle to list element holding a pm_qos request to use
-
+Yours,
+Linus Walleij
