@@ -1,64 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab3KZX1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:27:08 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:51195 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab3KZX1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:27:03 -0500
-X-Auth-Info: qxyaEiakoj8sWUR/aNgmysEObGyaGKyjUsA1YgDMCUM=
-From: Marek Vasut <marex@denx.de>
-To: linux-kernel@vger.kernel.org
-Subject: Possible bug in firmware/Makefile
-Date: Wed, 27 Nov 2013 00:26:58 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: ming.lei@canonical.com, mike.marciniszyn@intel.com, roland@purestorage.com,
-        dean.luick@intel.com, vinit.abhay.agnihotri@intel.com
+	id S1757519Ab3KZX2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:28:24 -0500
+Received: from mga14.intel.com ([143.182.124.37]:25985 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757605Ab3KZX2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 18:28:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,778,1378882800"; 
+   d="scan'208";a="434762210"
+Message-ID: <52952E90.4000604@intel.com>
+Date: Wed, 27 Nov 2013 00:28:16 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH 1/3] pm/qos: allow state control of qos class
+References: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com> <1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1385508011-26914-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201311270026.58626.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/27/2013 12:20 AM, Jacob Pan wrote:
+> When power capping or thermal control is needed, CPU QOS latency cannot
+> be satisfied. This patch adds a state variable to indicate whether a QOS
+> class (including all constraint requests) should be ignored.
+>
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-I am observing a possible bug when trying to build external firmware file into 
-the kernel. Here are the steps to reproduce the problem I observe.
+Honestly, I don't like this.  I know the motivation and what you're 
+trying to achieve, but I don't like the approach.
 
-1) Retrieve Linux 3.13-rc1 (I can confirm this in 3.10.18 stable as well)
-2) Clean up the source tree
-$ git clean -fdx
-3) Configure the kernel (minimal configuration is sufficient)
-$ make allnoconfig
-4) Produce a dummy firmware file to be built into the kernel
-$ echo "hello" > /tmp/firmware.fw
-5) Build the kernel (note: I tested this bug on ARCH=arm and ARCH=x86_64)
-$ make CONFIG_EXTRA_FIRMWARE="firmware.fw" CONFIG_EXTRA_FIRMWARE_DIR="/tmp/"
+I need to think a bit more about that.
 
-What I observe is this output:
+Thanks,
+Rafael
 
-  LD      sound/built-in.o
-make[1]: *** No rule to make target `include/config/extra/firmware/dir.h', 
-needed by `firmware//tmp/firmware.fw.gen.S'.  Stop.
-make: *** [firmware] Error 2
 
-Interestingly enough, if I place these same options into the kernel .config, 
-using the commands like these below for example, the kernel builds correctly.
+> ---
+>   include/linux/pm_qos.h | 10 +++++++++-
+>   kernel/power/qos.c     | 24 ++++++++++++++++++++++++
+>   2 files changed, 33 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index 5a95013..648b50b 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -10,7 +10,7 @@
+>   #include <linux/device.h>
+>   #include <linux/workqueue.h>
+>   
+> -enum {
+> +enum pm_qos_class {
+>   	PM_QOS_RESERVED = 0,
+>   	PM_QOS_CPU_DMA_LATENCY,
+>   	PM_QOS_NETWORK_LATENCY,
+> @@ -20,6 +20,11 @@ enum {
+>   	PM_QOS_NUM_CLASSES,
+>   };
+>   
+> +enum pm_qos_state {
+> +	PM_QOS_CONSTRAINT_AVAILABLE,
+> +	PM_QOS_CONSTRAINT_IGNORED,
+> +};
+> +
+>   enum pm_qos_flags_status {
+>   	PM_QOS_FLAGS_UNDEFINED = -1,
+>   	PM_QOS_FLAGS_NONE,
+> @@ -77,6 +82,7 @@ struct pm_qos_constraints {
+>   	struct plist_head list;
+>   	s32 target_value;	/* Do not change to 64 bit */
+>   	s32 default_value;
+> +	enum pm_qos_state state;
+>   	enum pm_qos_type type;
+>   	struct blocking_notifier_head *notifiers;
+>   };
+> @@ -123,6 +129,8 @@ int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier);
+>   int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
+>   int pm_qos_request_active(struct pm_qos_request *req);
+>   s32 pm_qos_read_value(struct pm_qos_constraints *c);
+> +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
+> +				enum pm_qos_state state);
+>   
+>   #ifdef CONFIG_PM
+>   enum pm_qos_flags_status __dev_pm_qos_flags(struct device *dev, s32 mask);
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index 8dff9b4..cf475b0 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -146,6 +146,11 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
+>   
+>   s32 pm_qos_read_value(struct pm_qos_constraints *c)
+>   {
+> +	/* return invalid default value if constraints cannot be met, e.g.
+> +	 * during idle injection.
+> +	 */
+> +	if (c->state == PM_QOS_CONSTRAINT_IGNORED)
+> +		return PM_QOS_DEFAULT_VALUE;
+>   	return c->target_value;
+>   }
+>   
+> @@ -353,6 +358,25 @@ void pm_qos_add_request(struct pm_qos_request *req,
+>   }
+>   EXPORT_SYMBOL_GPL(pm_qos_add_request);
+>   
+> +void pm_qos_set_constraint_class_state(enum pm_qos_class class,
+> +				enum pm_qos_state state)
+> +{
+> +	struct pm_qos_constraints *c = pm_qos_array[class]->constraints;
+> +	unsigned long curr_value;
+> +
+> +	if (c->state == state)
+> +		return;
+> +	curr_value = (state == PM_QOS_CONSTRAINT_IGNORED) ?
+> +		PM_QOS_DEFAULT_VALUE : c->target_value;
+> +	c->state = state;
+> +
+> +	/* notify existing QOS requests change */
+> +	blocking_notifier_call_chain(c->notifiers,
+> +				curr_value,
+> +				NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(pm_qos_set_constraint_class_state);
+> +
+>   /**
+>    * pm_qos_update_request - modifies an existing qos request
+>    * @req : handle to list element holding a pm_qos request to use
 
-echo -e \ 
-  'CONFIG_EXTRA_FIRMWARE_DIR="/tmp/"\nCONFIG_EXTRA_FIRMWARE="firmware.fw"' \
-  >> .config
-make oldconfig
-make
-
-Is this a known issue please? Is there a way to specify the extra firmware file 
-to be built into the kernel on the kernel build command line please?
-
-Thank you very much!
-
-Best regards,
-Marek Vasut
