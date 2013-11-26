@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab3KZUbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 15:31:12 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:37560 "EHLO quartz.orcorp.ca"
+	id S932451Ab3KZUbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 15:31:33 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:36644 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757929Ab3KZUbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 15:31:06 -0500
+	id S1757929Ab3KZUbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 15:31:13 -0500
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <adlai@linux.vnet.ibm.com>,
         tpmdd-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 RESEND 6/7] tpm: Make tpm-dev allocate a per-file structure
-Date: Tue, 26 Nov 2013 13:30:45 -0700
-Message-Id: <1385497846-29103-6-git-send-email-jgunthorpe@obsidianresearch.com>
+Subject: [PATCH v2 RESEND 5/7] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
+Date: Tue, 26 Nov 2013 13:30:44 -0700
+Message-Id: <1385497846-29103-5-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
 References: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
@@ -21,243 +21,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This consolidates everything that is only used within tpm-dev.c
-into tpm-dev.c and out of the publicly visible struct tpm_chip.
-
-The per-file allocation lays the ground work for someday fixing the
-strange forced O_EXCL behaviour of the current code.
+This builds on the last commit to use the ops structure in the core
+and reduce the size of tpm_vendor_specific.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
 Reviewed-by: Ashley Lai <adlai@linux.vnet.ibm.com>
 ---
- drivers/char/tpm/tpm-dev.c | 100 ++++++++++++++++++++++++++-------------------
- drivers/char/tpm/tpm.h     |   7 ----
- 2 files changed, 57 insertions(+), 50 deletions(-)
+ drivers/char/tpm/tpm-interface.c    | 34 ++++++++++++----------------------
+ drivers/char/tpm/tpm-sysfs.c        |  2 +-
+ drivers/char/tpm/tpm.h              |  9 +--------
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
+ 4 files changed, 16 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-dev.c b/drivers/char/tpm/tpm-dev.c
-index 4f0cf2b..d9b774e 100644
---- a/drivers/char/tpm/tpm-dev.c
-+++ b/drivers/char/tpm/tpm-dev.c
-@@ -22,21 +22,34 @@
- #include <linux/uaccess.h>
- #include "tpm.h"
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 5a0a3dd..77a1052 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -353,7 +353,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
  
-+struct file_priv {
-+	struct tpm_chip *chip;
-+
-+	/* Data passed to and from the tpm via the read/write calls */
-+	atomic_t data_pending;
-+	struct mutex buffer_mutex;
-+
-+	struct timer_list user_read_timer;      /* user needs to claim result */
-+	struct work_struct work;
-+
-+	u8 data_buffer[TPM_BUFSIZE];
-+};
-+
- static void user_reader_timeout(unsigned long ptr)
+ 	mutex_lock(&chip->tpm_mutex);
+ 
+-	rc = chip->vendor.send(chip, (u8 *) buf, count);
++	rc = chip->ops->send(chip, (u8 *) buf, count);
+ 	if (rc < 0) {
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_send: error %zd\n", rc);
+@@ -365,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 
+ 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
+ 	do {
+-		u8 status = chip->vendor.status(chip);
+-		if ((status & chip->vendor.req_complete_mask) ==
+-		    chip->vendor.req_complete_val)
++		u8 status = chip->ops->status(chip);
++		if ((status & chip->ops->req_complete_mask) ==
++		    chip->ops->req_complete_val)
+ 			goto out_recv;
+ 
+-		if (chip->vendor.req_canceled(chip, status)) {
++		if (chip->ops->req_canceled(chip, status)) {
+ 			dev_err(chip->dev, "Operation Canceled\n");
+ 			rc = -ECANCELED;
+ 			goto out;
+@@ -380,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 		rmb();
+ 	} while (time_before(jiffies, stop));
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	dev_err(chip->dev, "Operation Timed out\n");
+ 	rc = -ETIME;
+ 	goto out;
+ 
+ out_recv:
+-	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
++	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
+ 	if (rc < 0)
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_recv: error %zd\n", rc);
+@@ -807,12 +807,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
+ static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask,
+ 					bool check_cancel, bool *canceled)
  {
--	struct tpm_chip *chip = (struct tpm_chip *) ptr;
-+	struct file_priv *priv = (struct file_priv *)ptr;
+-	u8 status = chip->vendor.status(chip);
++	u8 status = chip->ops->status(chip);
  
--	schedule_work(&chip->work);
-+	schedule_work(&priv->work);
- }
- 
- static void timeout_work(struct work_struct *work)
- {
--	struct tpm_chip *chip = container_of(work, struct tpm_chip, work);
-+	struct file_priv *priv = container_of(work, struct file_priv, work);
- 
--	mutex_lock(&chip->buffer_mutex);
--	atomic_set(&chip->data_pending, 0);
--	memset(chip->data_buffer, 0, TPM_BUFSIZE);
--	mutex_unlock(&chip->buffer_mutex);
-+	mutex_lock(&priv->buffer_mutex);
-+	atomic_set(&priv->data_pending, 0);
-+	memset(priv->data_buffer, 0, sizeof(priv->data_buffer));
-+	mutex_unlock(&priv->buffer_mutex);
- }
- 
- static int tpm_open(struct inode *inode, struct file *file)
-@@ -44,6 +57,7 @@ static int tpm_open(struct inode *inode, struct file *file)
- 	struct miscdevice *misc = file->private_data;
- 	struct tpm_chip *chip = container_of(misc, struct tpm_chip,
- 					     vendor.miscdev);
-+	struct file_priv *priv;
- 
- 	/* It's assured that the chip will be opened just once,
- 	 * by the check of is_open variable, which is protected
-@@ -53,15 +67,20 @@ static int tpm_open(struct inode *inode, struct file *file)
- 		return -EBUSY;
+ 	*canceled = false;
+ 	if ((status & mask) == mask)
+ 		return true;
+-	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
++	if (check_cancel && chip->ops->req_canceled(chip, status)) {
+ 		*canceled = true;
+ 		return true;
  	}
+@@ -828,7 +828,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
+ 	bool canceled = false;
  
--	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
--	if (chip->data_buffer == NULL) {
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (priv == NULL) {
- 		clear_bit(0, &chip->is_open);
- 		return -ENOMEM;
- 	}
+ 	/* check current status */
+-	status = chip->vendor.status(chip);
++	status = chip->ops->status(chip);
+ 	if ((status & mask) == mask)
+ 		return 0;
  
--	atomic_set(&chip->data_pending, 0);
-+	priv->chip = chip;
-+	atomic_set(&priv->data_pending, 0);
-+	mutex_init(&priv->buffer_mutex);
-+	setup_timer(&priv->user_read_timer, user_reader_timeout,
-+			(unsigned long)priv);
-+	INIT_WORK(&priv->work, timeout_work);
+@@ -855,7 +855,7 @@ again:
+ 	} else {
+ 		do {
+ 			msleep(TPM_TIMEOUT);
+-			status = chip->vendor.status(chip);
++			status = chip->ops->status(chip);
+ 			if ((status & mask) == mask)
+ 				return 0;
+ 		} while (time_before(jiffies, stop));
+@@ -1027,9 +1027,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
+ 	if (!chip)
+ 		return;
  
--	file->private_data = chip;
-+	file->private_data = priv;
- 	get_device(chip->dev);
- 	return 0;
- }
-@@ -69,28 +88,28 @@ static int tpm_open(struct inode *inode, struct file *file)
- static ssize_t tpm_read(struct file *file, char __user *buf,
- 			size_t size, loff_t *off)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 	ssize_t ret_size;
- 	int rc;
- 
--	del_singleshot_timer_sync(&chip->user_read_timer);
--	flush_work(&chip->work);
--	ret_size = atomic_read(&chip->data_pending);
-+	del_singleshot_timer_sync(&priv->user_read_timer);
-+	flush_work(&priv->work);
-+	ret_size = atomic_read(&priv->data_pending);
- 	if (ret_size > 0) {	/* relay data */
- 		ssize_t orig_ret_size = ret_size;
- 		if (size < ret_size)
- 			ret_size = size;
- 
--		mutex_lock(&chip->buffer_mutex);
--		rc = copy_to_user(buf, chip->data_buffer, ret_size);
--		memset(chip->data_buffer, 0, orig_ret_size);
-+		mutex_lock(&priv->buffer_mutex);
-+		rc = copy_to_user(buf, priv->data_buffer, ret_size);
-+		memset(priv->data_buffer, 0, orig_ret_size);
- 		if (rc)
- 			ret_size = -EFAULT;
- 
--		mutex_unlock(&chip->buffer_mutex);
-+		mutex_unlock(&priv->buffer_mutex);
- 	}
- 
--	atomic_set(&chip->data_pending, 0);
-+	atomic_set(&priv->data_pending, 0);
- 
- 	return ret_size;
- }
-@@ -98,7 +117,7 @@ static ssize_t tpm_read(struct file *file, char __user *buf,
- static ssize_t tpm_write(struct file *file, const char __user *buf,
- 			 size_t size, loff_t *off)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 	size_t in_size = size;
- 	ssize_t out_size;
- 
-@@ -106,32 +125,33 @@ static ssize_t tpm_write(struct file *file, const char __user *buf,
- 	   either via tpm_read or a user_read_timer timeout.
- 	   This also prevents splitted buffered writes from blocking here.
- 	*/
--	if (atomic_read(&chip->data_pending) != 0)
-+	if (atomic_read(&priv->data_pending) != 0)
- 		return -EBUSY;
- 
- 	if (in_size > TPM_BUFSIZE)
- 		return -E2BIG;
- 
--	mutex_lock(&chip->buffer_mutex);
-+	mutex_lock(&priv->buffer_mutex);
- 
- 	if (copy_from_user
--	    (chip->data_buffer, (void __user *) buf, in_size)) {
--		mutex_unlock(&chip->buffer_mutex);
-+	    (priv->data_buffer, (void __user *) buf, in_size)) {
-+		mutex_unlock(&priv->buffer_mutex);
- 		return -EFAULT;
- 	}
- 
- 	/* atomic tpm command send and result receive */
--	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-+	out_size = tpm_transmit(priv->chip, priv->data_buffer,
-+				sizeof(priv->data_buffer));
- 	if (out_size < 0) {
--		mutex_unlock(&chip->buffer_mutex);
-+		mutex_unlock(&priv->buffer_mutex);
- 		return out_size;
- 	}
- 
--	atomic_set(&chip->data_pending, out_size);
--	mutex_unlock(&chip->buffer_mutex);
-+	atomic_set(&priv->data_pending, out_size);
-+	mutex_unlock(&priv->buffer_mutex);
- 
- 	/* Set a timeout by which the reader must come claim the result */
--	mod_timer(&chip->user_read_timer, jiffies + (60 * HZ));
-+	mod_timer(&priv->user_read_timer, jiffies + (60 * HZ));
- 
- 	return in_size;
- }
-@@ -141,15 +161,15 @@ static ssize_t tpm_write(struct file *file, const char __user *buf,
-  */
- static int tpm_release(struct inode *inode, struct file *file)
- {
--	struct tpm_chip *chip = file->private_data;
-+	struct file_priv *priv = file->private_data;
- 
--	del_singleshot_timer_sync(&chip->user_read_timer);
--	flush_work(&chip->work);
-+	del_singleshot_timer_sync(&priv->user_read_timer);
-+	flush_work(&priv->work);
- 	file->private_data = NULL;
--	atomic_set(&chip->data_pending, 0);
--	kzfree(chip->data_buffer);
--	clear_bit(0, &chip->is_open);
--	put_device(chip->dev);
-+	atomic_set(&priv->data_pending, 0);
-+	clear_bit(0, &priv->chip->is_open);
-+	put_device(priv->chip->dev);
-+	kfree(priv);
- 	return 0;
- }
- 
-@@ -166,12 +186,6 @@ int tpm_dev_add_device(struct tpm_chip *chip)
- {
- 	int rc;
- 
--	mutex_init(&chip->buffer_mutex);
--	INIT_WORK(&chip->work, timeout_work);
+-	if (chip->vendor.release)
+-		chip->vendor.release(chip->dev);
 -
--	setup_timer(&chip->user_read_timer, user_reader_timeout,
--			(unsigned long)chip);
+ 	clear_bit(chip->dev_num, dev_mask);
+ }
+ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+@@ -1074,14 +1071,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 	mutex_init(&chip->tpm_mutex);
+ 	INIT_LIST_HEAD(&chip->list);
+ 
+-	chip->vendor.req_complete_mask = ops->req_complete_mask;
+-	chip->vendor.req_complete_val = ops->req_complete_val;
+-	chip->vendor.req_canceled = ops->req_canceled;
+-	chip->vendor.recv = ops->recv;
+-	chip->vendor.send = ops->send;
+-	chip->vendor.cancel = ops->cancel;
+-	chip->vendor.status = ops->status;
 -
- 	chip->vendor.miscdev.fops = &tpm_fops;
- 	if (chip->dev_num == 0)
- 		chip->vendor.miscdev.minor = TPM_MINOR;
++	chip->ops = ops;
+ 	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+ 
+ 	if (chip->dev_num >= TPM_NUM_DEVICES) {
+diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+index 506a07b..c3503cb 100644
+--- a/drivers/char/tpm/tpm-sysfs.c
++++ b/drivers/char/tpm/tpm-sysfs.c
+@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
+ 	if (chip == NULL)
+ 		return 0;
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	return count;
+ }
+ static DEVICE_ATTR_WO(cancel);
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 7b0a46e..e4d0888 100644
+index a56af2c..7b0a46e 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -103,13 +103,6 @@ struct tpm_chip {
- 	unsigned long is_open;	/* only one allowed */
- 	int time_expired;
+@@ -64,9 +64,6 @@ enum tpm_duration {
+ struct tpm_chip;
  
--	/* Data passed to and from the tpm via the read/write calls */
--	u8 *data_buffer;
--	atomic_t data_pending;
--	struct mutex buffer_mutex;
--
--	struct timer_list user_read_timer;	/* user needs to claim result */
--	struct work_struct work;
- 	struct mutex tpm_mutex;	/* tpm is processing */
+ struct tpm_vendor_specific {
+-	u8 req_complete_mask;
+-	u8 req_complete_val;
+-	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
+ 	void __iomem *iobase;		/* ioremapped address */
+ 	unsigned long base;		/* TPM base address */
  
- 	struct tpm_vendor_specific vendor;
+@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
+ 	int region_size;
+ 	int have_region;
+ 
+-	int (*recv) (struct tpm_chip *, u8 *, size_t);
+-	int (*send) (struct tpm_chip *, u8 *, size_t);
+-	void (*cancel) (struct tpm_chip *);
+-	u8 (*status) (struct tpm_chip *);
+-	void (*release) (struct device *);
+ 	struct miscdevice miscdev;
+ 	struct list_head list;
+ 	int locality;
+@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
+ 
+ struct tpm_chip {
+ 	struct device *dev;	/* Device stuff */
++	const struct tpm_class_ops *ops;
+ 
+ 	int dev_num;		/* /dev/tpm# */
+ 	char devname[7];
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index 114f12b..cb39876 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -559,7 +559,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	}
+ 
+ out:
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	release_locality(chip);
+ 	return size;
+ }
+@@ -802,7 +802,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
+ 	if (power_mgt) {
+ 		gpio_set_value(pin_infos->io_lpcpd, 1);
+ 		ret = wait_for_serirq_timeout(chip,
+-					  (chip->vendor.status(chip) &
++					  (chip->ops->status(chip) &
+ 					  TPM_STS_VALID) == TPM_STS_VALID,
+ 					  chip->vendor.timeout_b);
+ 	} else {
 -- 
 1.8.1.2
 
