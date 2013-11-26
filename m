@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab3KZNul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:50:41 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:61045 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3KZNuk (ORCPT
+	id S1756873Ab3KZNuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:50:50 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:26606 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab3KZNul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:50:40 -0500
-X-AuditID: cbfec7f5-b7f706d0000017c2-8c-5294a72ef07b
+	Tue, 26 Nov 2013 08:50:41 -0500
+X-AuditID: cbfec7f5-b7f706d0000017c2-97-5294a72f4b58
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>,
@@ -17,49 +17,60 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 0/5] rtc: s5m: Bug fixes of the driver after tests
-Date: Tue, 26 Nov 2013 14:50:23 +0100
-Message-id: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 2/5] rtc: s5m: Fix unsuccesful IRQ request during probe
+Date: Tue, 26 Nov 2013 14:50:25 +0100
+Message-id: <1385473828-31078-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMJMWRmVeSWpSXmKPExsVy+t/xK7p6y6cEGVzfqGyx5OJVdotnt/Yy
-	Wbx+YWhxtukNu8X9r0cZLS7vmsNmsfbIXXaL/Z0djBanu1ktLq74wuTA5bFn4kk2jzvX9rB5
-	HDrcwegx72SgR9+WVYwe0+f9ZPL4vEkugD2KyyYlNSezLLVI3y6BK2Pe11VMBQvYK55d+MPe
-	wHiTtYuRg0NCwERi99HMLkZOIFNM4sK99WxdjFwcQgJLGSU2LD3LCpIQEuhjkuiaYQViswkY
-	S2xevgSsSETgKqPExCWL2UEcZoFdjBJvf+5iBKkSFnCSWLFtF1g3i4CqxJ/m++wgNq+Au8Te
-	4/PYIDYrSMyZZDOBkXsBI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCA+rqDcekxq0OM
-	AhyMSjy8Ep2Tg4RYE8uKK3MPMUpwMCuJ8MZOnxIkxJuSWFmVWpQfX1Sak1p8iJGJg1OqgVGX
-	KV9/2csnKcFezzW8C6K+3bt2k3lnXjhDrYCPQ7fDauM7a5SKohYy7q+a7bix1cYy0HF5ltY/
-	/pdzl/ap78r/tCRePOv1Kq7g1Yk5xa+3RM295RtyNfdbwNTwuqkGb4x9Xx7W3vsg07R/vkNB
-	BUcHi2b+pFs1deKmr/f4TTJbeuPwa7X5FkosxRmJhlrMRcWJAMYstGAGAgAA
+In-reply-to: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
+References: <1385473828-31078-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4FV395VOCDI4dVrRYcvEqu8WzW3uZ
+	LF6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF/s4ORovT3awWF1d8YXLg8tgz8SSbx51re9g8
+	Dh3uYPSYdzLQo2/LKkaP6fN+Mnl83iQXwB7FZZOSmpNZllqkb5fAlXHy2zW2gpUcFVfbv7M2
+	ML5n62Lk5JAQMJG4MfEfE4QtJnHh3nqgOBeHkMBSRonN5zcyQTh9TBL/Jr4Fq2ITMJbYvHwJ
+	WJWIwFVGiYlLFrODOMwCuxgl3v7cxdjFyMEhLOAu8bKpHKSBRUBVYs+bfywgYV6g8OaDISCm
+	hICCxJxJNiAVnAIeEjN7lrGA2EJAFecO7mKawMi7gJFhFaNoamlyQXFSeq6RXnFibnFpXrpe
+	cn7uJkZIAH7dwbj0mNUhRgEORiUeXonOyUFCrIllxZW5hxglOJiVRHhjp08JEuJNSaysSi3K
+	jy8qzUktPsTIxMEp1cBYwFBz/kpSx7HFxbzJUxpn1C7KW9gSprbh5TKr38t4JxnvKROt+bx9
+	7Zas05/+lCqtNFH9tGvWr2v3jSbHzLWf8Eb86NmaqkNG3Y91f7d+TLe4Mf/69bcHeWYmpK/Z
+	Z5GxrOJYJlfBgsPmvasy9H7tu5JjeKDCpjR/gcdb61iRjRtPR8mvfsw8RYmlOCPRUIu5qDgR
+	AFxiXtQeAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Probe failed for rtc-s5m:
+	s5m-rtc s5m-rtc: Failed to request alarm IRQ: 12: -22
+	s5m-rtc: probe of s5m-rtc failed with error -22
 
-This is a patchset of small but important fixes for rtc-s5m driver. Last
-patches also add waking up on RTC alarm interrupts.
+Fix rtc-s5m interrupt request by using regmap_irq_get_virq() for mapping
+the IRQ.
 
-The patchset is based on v3.13-rc1-95-gb975dc3 and depends on patch from 
-Geert Uytterhoeven:
- - rtc: s5m-rtc: Fix info->rtc assignment
-   http://article.gmane.org/gmane.linux.kernel/1595905
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/rtc/rtc-s5m.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Best regards,
-Krzysztof
-
-Krzysztof Kozlowski (5):
-  rtc: s5m: Fix register updating by adding regmap for RTC
-  rtc: s5m: Fix unsuccesful IRQ request during probe
-  rtc: s5m: Limit endless loop waiting for register update
-  mfd: sec: Add PM ops and make it a wake up source
-  rtc: s5m: Enable IRQ wake during suspend
-
- drivers/mfd/sec-core.c           |   54 +++++++++++++++++++++++++++++
- drivers/rtc/rtc-s5m.c            |   70 +++++++++++++++++++++++++++++++++-----
- include/linux/mfd/samsung/core.h |    1 +
- 3 files changed, 116 insertions(+), 9 deletions(-)
-
+diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+index 088cf3a..66686d9 100644
+--- a/drivers/rtc/rtc-s5m.c
++++ b/drivers/rtc/rtc-s5m.c
+@@ -548,11 +548,13 @@ static int s5m_rtc_probe(struct platform_device *pdev)
+ 
+ 	switch (pdata->device_type) {
+ 	case S5M8763X:
+-		info->irq = s5m87xx->irq_base + S5M8763_IRQ_ALARM0;
++		info->irq = regmap_irq_get_virq(s5m87xx->irq_data,
++				S5M8763_IRQ_ALARM0);
+ 		break;
+ 
+ 	case S5M8767X:
+-		info->irq = s5m87xx->irq_base + S5M8767_IRQ_RTCA1;
++		info->irq = regmap_irq_get_virq(s5m87xx->irq_data,
++				S5M8767_IRQ_RTCA1);
+ 		break;
+ 
+ 	default:
 -- 
 1.7.9.5
 
