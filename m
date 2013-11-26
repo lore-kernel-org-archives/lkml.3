@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3KZEV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:21:57 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:54657 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3KZEVy (ORCPT
+	id S1753142Ab3KZEZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:25:06 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:56321 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab3KZEZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:21:54 -0500
-X-AuditID: cbfee691-b7f666d0000048b0-35-529421c9a173
+	Mon, 25 Nov 2013 23:25:03 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-38-5294229cc124
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-i2c@vger.kernel.org
 Cc: sjg@chromium.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, wsa@the-dreams.de,
         ben-linux@fluff.org, grant.likely@secretlab.ca, broonie@kernel.org,
         dianders@chromium.org, cpgs@samsung.com, t.figa@samsung.com
-Subject: [PATCH v4] i2c: s3c2410: dont need CPU_FREQ transitions for exynos
- series
-Date: Tue, 26 Nov 2013 09:52:46 +0530
-Message-id: <1385439767-18586-1-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 1/2 v2] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+Date: Tue, 26 Nov 2013 09:56:17 +0530
+Message-id: <1385439977-19077-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-References: <1381490814-20890-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkTvek4pQgg5vPzCwmrTvAZDH14RM2
-	i5eHNC3OLjvIZvHqzEY2i46/XxgtLu+aw2Yx4/w+JotvW7YxWqyf8ZrFYuWJWcwO3B6zGy6y
-	ePxd9YLZY9OqTjaPvi2rGD1+vtTxOHnqCYvH501yAexRXDYpqTmZZalF+nYJXBkTDmxgKrjN
-	WzH1xQemBsY93F2MHBwSAiYSPQcruhg5gUwxiQv31rN1MXJxCAksZZTon7mTDSJhInHt4nEm
-	iMR0RolVnSdYIJweJokTy9awglSxCZhJHFy0mh3EFhGQlWh9sIYZpIhZ4D2jxL3b3WAJYYEQ
-	iYPT5jOB2CwCqhJnDt4Bi/MKuEqc/3OXHWKdokT3swlgqzkF3CTedx1kBDlVCKim+7oayEwJ
-	gVPsEgcaX7FBzBGQ+Db5EAvEO7ISmw4wQ4yRlDi44gbLBEbhBYwMqxhFUwuSC4qT0otM9YoT
-	c4tL89L1kvNzNzEC4+P0v2cTdzDeP2B9iDEZaNxEZinR5HxgfOWVxBsamxlZmJqYGhuZW5qR
-	Jqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+PRKfX1v8RtFTZL7T244u/0V/Xv
-	prybW/DAV60v4/Wnju7ZG64a1W/fmvGDYentXMFP7W82mKx0uBdWU9qflZbUzpUjklrv/X+X
-	aEP389VzNaR4rfLyrRYHbZz0xfFKauCjhbcFty5NSPpRbpf91nl2i/Ja75W2wRsPn7J1WJT3
-	Zu4Ww0khV78rsRRnJBpqMRcVJwIAKV1zWaUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jQd2TilOCDBru6lhMWneAyWLqwyds
+In-reply-to: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkSneO0pQgg65eNYtJ6w4wWUx9+ITN
+	4uUhTYuzyw6yWbw6s5HNouPvF0aLy7vmsFnMOL+PyeLblm2MFutnvGaxWHliFrMDt8fshoss
+	Hn9XvWD22LSqk82jb8sqRo+fL3U8Tp56wuLxeZNcAHsUl01Kak5mWWqRvl0CV8aav/sYC2aI
+	VUxeepG9gXGaUBcjJ4eEgInEpKnnmCFsMYkL99azdTFycQgJLGWUOPpuNitM0YIHk1ggEtMZ
+	JTpP32cESQgJ9DBJ/P7HD2KzCZhJHFy0mh3EFhGQlWh9sIYZpIFZ4D2jxL3b3UAJDg5hAV+J
+	HauKQGpYBFQlWtf8BVvAK+Aq8WvPGUaIZYoS3c8msIHYnAJuElcvTmOH2OUq0bL6DBPITAmB
+	U+wSbx7dYYIYJCDxbfIhFpD5EkCLNx2A+kZS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLVK07M
+	LS7NS9dLzs/dxAiMj9P/nk3cwXj/gPUhxmSgcROZpUST84HxlVcSb2hsZmRhamJqbGRuaUaa
+	sJI4b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjPUe75+fMeAtk+N8ffouy3LrMHYr
+	5tR5960Kj/OYWi+3//8n0uCmjMamGEPTi4rCFpuDa5d0h/yUT0qY7rhgvYP/4tSXamp77+ce
+	YtzKN0vRa22g17Xt8nyLbssZJH62Ez9s7xvjtv97V2h3yA27s+cniK9r2Hm7/YHp5Duzl9l8
+	zW3hy9J2UmIpzkg01GIuKk4EAKWoVP+lAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd05SlOCDBY1yFlMWneAyWLqwyds
 	Fi8PaVqcXXaQzeLVmY1sFh1/vzBaXN41h81ixvl9TBbftmxjtFg/4zWLxcoTs5gduD1mN1xk
 	8fi76gWzx6ZVnWwefVtWMXr8fKnjcfLUExaPz5vkAtijGhhtMlITU1KLFFLzkvNTMvPSbZW8
 	g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4BuVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
-	GKHrGxIE12NkgAYS1jBmTDiwgangNm/F1BcfmBoY93B3MXJySAiYSFy7eJwJwhaTuHBvPVsX
-	IxeHkMB0RolVnSdYIJweJokTy9awglSxCZhJHFy0mh3EFhGQlWh9sIYZpIhZ4D2jxL3b3WAJ
-	YYEQiYPT5oONZRFQlThz8A5YnFfAVeL8n7vsEOsUJbqfTWADsTkF3CTedx1k7GLkANrmKtF9
-	XW0CI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHx90xqB+PKBotDjAIcjEo8vBKd
-	k4OEWBPLiitzDzFKcDArifC63gcK8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4wNeSVxBsa
-	m5ibGptamliYmFmSJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+PsFOapG9ibLmzqOmc+
-	64yctf3DSTM/fY3cGpHg73Pq3I+ZMYs2vj1/dffqqymzo9+9esxR9WiymMcyaTkPdh6X91s0
-	pTgYVFzio+p7GmZeeFPAt/KJpb5c+s19iX1LD0hx/d6t+y51qnjcqld6Gw7WsnneenlKikWm
-	jLWu+ZNLuPjn4tkLDPYosRRnJBpqMRcVJwIAfmBHqQMDAAA=
+	GKHrGxIE12NkgAYS1jBmrPm7j7FghljF5KUX2RsYpwl1MXJySAiYSCx4MIkFwhaTuHBvPVsX
+	IxeHkMB0RonO0/cZQRJCAj1MEr//8YPYbAJmEgcXrWYHsUUEZCVaH6xhBmlgFnjPKHHvdjdQ
+	goNDWMBXYseqIpAaFgFVidY1f1lBbF4BV4lfe84wQixTlOh+NoENxOYUcJO4enEaO8QuV4mW
+	1WeYJjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHH3PpHcwrmqwOMQowMGoxMMr
+	0Tk5SIg1say4MvcQowQHs5IIr+t9oBBvSmJlVWpRfnxRaU5q8SHGZKCrJjJLiSbnAxNDXkm8
+	obGJuamxqaWJhYmZJWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw2n3dHNvobLjf+p9z
+	RzeHO8dT99R1uXoKJSvkl6xLL1E7/FLuXLqnxtHlCTqbVpl90vDo7U5M/bzFzD5CZ4ecT/gv
+	5SolVSlhv8xFkhWPlh/veB1o6hPBOfvtM3MNHYlvy+psleMOO87LPWCavty2tCqfe8qfjz9t
+	b0VKJ89bsTvBbPnau5JKLMUZiYZazEXFiQBKVgJ8AgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,54 +52,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Exynos4 and Exynos5 SoCs from Samsung the i2c clock is based
-on a fixed 66 MHz peripheral clock, and therefore is completely
-independent of the cpu frequency.
-Thus, registering for a CPU freq notifier is very wasteful.
-
-This patch modifes the code such that, i2c bus registers to
-cpu_freq_transition only if CONFIG_CPU_FREQ_S3C24XX is enabled.
-
-This change should save a bunch of cpufreq transitions calls
-which does not apply to exynos SoCs.
+This patch adds new compatible to support HSI2C module on Exynos5260
+HSI2C module on Exynos5260 needs to be reset during during initialization.
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
 ---
-Changes since v3:
-As per discussion at https://patchwork.kernel.org/patch/3235091/
-Post f023f8dd59 commit we should be using
-ARM_S3C24XX_CPUFREQ instead of CPU_FREQ_S3C24XX
+Changes since v1:
+Rebasing on linux-i2c for-next
 
-upstrea linux kernel and linuxsamsung already has the commit
-f023f8dd59. Hence, rebasing the patch.
+ .../devicetree/bindings/i2c/i2c-exynos5.txt        |    6 +++-
+ drivers/i2c/busses/i2c-exynos5.c                   |   31 ++++++++++++++++++--
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
- drivers/i2c/busses/i2c-s3c2410.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index bf8fb94..a77ce13 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -123,7 +123,7 @@ struct s3c24xx_i2c {
- 	struct s3c2410_platform_i2c	*pdata;
- 	int			gpios[2];
- 	struct pinctrl          *pctrl;
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_ARM_S3C24XX_CPUFREQ)
- 	struct notifier_block	freq_transition;
- #endif
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+index 056732c..704ab92 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+@@ -5,7 +5,11 @@ at various speeds ranging from 100khz to 3.4Mhz.
+ 
+ Required properties:
+   - compatible: value should be.
+-      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
++	-> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
++				Exynos5250/5420 SoCs.
++	-> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
++				on Exynos5260 SoCs.
++
+   - reg: physical base address of the controller and length of memory mapped
+     region.
+   - interrupts: interrupt number to the cpu.
+diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+index da39ff0..497ff91 100644
+--- a/drivers/i2c/busses/i2c-exynos5.c
++++ b/drivers/i2c/busses/i2c-exynos5.c
+@@ -184,14 +184,35 @@ struct exynos5_i2c {
+ 	 * 2. Fast speed upto 1Mbps
+ 	 */
+ 	int			speed_mode;
++
++	/* Version of HS-I2C Hardware */
++	unsigned int		version;
++};
++
++enum hsi2c_version {
++	EXYNOS_5,
++	EXYNOS_5260
  };
-@@ -843,7 +843,7 @@ static int s3c24xx_i2c_clockrate(struct s3c24xx_i2c *i2c, unsigned int *got)
- 	return 0;
- }
  
--#ifdef CONFIG_CPU_FREQ
-+#if defined(CONFIG_ARM_S3C24XX_CPUFREQ)
+ static const struct of_device_id exynos5_i2c_match[] = {
+-	{ .compatible = "samsung,exynos5-hsi2c" },
++	{
++		.compatible = "samsung,exynos5-hsi2c",
++		.data = (void *)EXYNOS_5 },
++	{
++		.compatible = "samsung,exynos5260-hsi2c",
++		.data = (void *)EXYNOS_5260 },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, exynos5_i2c_match);
  
- #define freq_to_i2c(_n) container_of(_n, struct s3c24xx_i2c, freq_transition)
++static inline unsigned int exynos5_i2c_get_version(struct platform_device *pdev)
++{
++	const struct of_device_id *match;
++
++	match = of_match_node(exynos5_i2c_match, pdev->dev.of_node);
++	return (unsigned int)match->data;
++}
++
+ static void exynos5_i2c_clr_pend_irq(struct exynos5_i2c *i2c)
+ {
+ 	writel(readl(i2c->regs + HSI2C_INT_STATUS),
+@@ -692,7 +713,13 @@ static int exynos5_i2c_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_clk;
  
+-	exynos5_i2c_init(i2c);
++	i2c->version = exynos5_i2c_get_version(pdev);
++
++	/* The HS-I2C core on Exynos5260 needs a reset to start with */
++	if (i2c->version == EXYNOS_5260)
++		exynos5_i2c_reset(i2c);
++	else
++		exynos5_i2c_init(i2c);
+ 
+ 	ret = i2c_add_adapter(&i2c->adap);
+ 	if (ret < 0) {
 -- 
 1.7.10.4
 
