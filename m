@@ -1,125 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab3KZCxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 21:53:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58208 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab3KZCxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 21:53:48 -0500
-Date: Mon, 25 Nov 2013 18:54:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: channing <chao.bi@intel.com>
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH V2] n_gsm: race between ld close and gsmtty open
-Message-ID: <20131126025432.GA3379@kroah.com>
-References: <1385435645.7741.28.camel@bichao>
+	id S1752576Ab3KZDCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:02:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49257 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119Ab3KZDCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 22:02:37 -0500
+Message-ID: <52940F32.3000006@ti.com>
+Date: Mon, 25 Nov 2013 21:02:10 -0600
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385435645.7741.28.camel@bichao>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Tony Lindgren <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
+        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>,
+        <balbi@ti.com>, Suman Anna <s-anna@ti.com>
+Subject: Re: [PATCH 1/8] ARM: OMAP: Move public portion of dmtimer.h to include/linux/omap-timer.h
+References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-2-git-send-email-joelf@ti.com> <20131122153334.GE10023@atomide.com>
+In-Reply-To: <20131122153334.GE10023@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 11:14:05AM +0800, channing wrote:
-> 
-> ttyA has ld associated to n_gsm, when ttyA is closing, it triggers
-> to release gsmttyB's ld data dlci[B], then race would happen if gsmttyB
-> is opening in parallel.
-> 
-> Here are race cases we found recently in test:
-> 
-> CASE #1
-> ====================================================================
-> releasing dlci[B] race with gsmtty_install(gsmttyB), then panic
-> in gsmtty_open(gsmttyB), as below:
-> 
->  tty_release(ttyA)                  tty_open(gsmttyB)
->      |                                   |
->    -----                           gsmtty_install(gsmttyB)
->      |                                   |
->    -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
->  tty_ldisc_release(ttyA)               -----
->      |                                   |
->  gsm_dlci_release(dlci[B])             -----
->      |                                   |
->  gsm_dlci_free(dlci[B])                -----
->      |                                   |
->    -----                           gsmtty_open(gsmttyB)
-> 
->  gsmtty_open()
->  {
->      struct gsm_dlci *dlci = tty->driver_data; => here it uses dlci[B]
->      ...
->  }
-> 
->  In gsmtty_open(gsmttyA), it uses dlci[B] which was release, so hit a panic.
-> =====================================================================
-> 
-> CASE #2
-> =====================================================================
-> releasing dlci[0] race with gsmtty_install(gsmttyB), then panic
-> in gsmtty_open(), as below:
-> 
->  tty_release(ttyA)                  tty_open(gsmttyB)
->      |                                   |
->    -----                           gsmtty_install(gsmttyB)
->      |                                   |
->    -----                    gsm_dlci_alloc(gsmttyB) => alloc dlci[B]
->      |                                   |
->    -----                         gsmtty_open(gsmttyB) fail
->      |                                   |
->    -----                           tty_release(gsmttyB)
->      |                                   |
->    -----                           gsmtty_close(gsmttyB)
->      |                                   |
->    -----                        gsmtty_detach_dlci(dlci[B])
->      |                                   |
->    -----                             dlci_put(dlci[B])
->      |                                   |
->  tty_ldisc_release(ttyA)               -----
->      |                                   |
->  gsm_dlci_release(dlci[0])             -----
->      |                                   |
->  gsm_dlci_free(dlci[0])                -----
->      |                                   |
->    -----                             dlci_put(dlci[0])
-> 
->  In gsmtty_detach_dlci(dlci[B]), it tries to use dlci[0] which was released,
->  then hit panic.
-> =====================================================================
-> 
-> IMHO, n_gsm tty operations would refer released ldisc,  as long as
-> gsm_dlci_release() has chance to release ldisc data when some gsmtty operations
-> are ongoing..
-> 
-> This patch is try to avoid it by:
-> 
-> 1) in n_gsm driver, use a global gsm mutex lock to avoid gsm_dlci_release() run in
-> parallel with gsmtty_install();
-> 
-> 2) Increase dlci's ref count in gsmtty_install() instead of in gsmtty_open(), the
-> purpose is to prevent gsm_dlci_release() releasing dlci after gsmtty_install()
-> allocats dlci but before gsmtty_open increases dlci's ref count;
-> 
-> 3) Decrease dlci's ref count in gsmtty_remove(), a tty framework API, this is the
-> opposite process of step 2).
-> 
-> Signed-off-by: Chao Bi <chao.bi@intel.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hi Tony,
 
-I have not signed off on this additional patch.
+Few replies inline below. Adding Suman as well who is planning to use dmtimer
+directly for his work with DSP.
 
-What is different from the previous version?  That information needs to
-be somewhere, otherwise I'm just going to guess and say this is the same
-as your last one, which was incorrect.
+On 11/22/2013 09:33 AM, Tony Lindgren wrote:
+> Hi,
+> 
+> * Joel Fernandes <joelf@ti.com> [131121 18:00]:
+>> Multiplatform support has made arch/arm/plat-omap/include/plat/ inaccessible to
+>> drivers outside the plat-omap directory [1]. Due to this the following drivers
+>> are disabled with !CONFIG_ARCH_MULTIPLATFORM:
+>> CONFIG_IR_RX51 (drivers/media/rc/ir-rx51.c)
+>> CONFIG_TIDSPBRIDGE (drivers/staging/tidspbridge/core/dsp-clock.c)
+>>
+>> We move the portion of the dmtimer "API" that should be accessible to the
+>> drivers, into include/linux/omap-timer.h
+> 
+> As we chatted earlier, we don't have to expose all these hardware specific
+> functions and use existing Linux generic frameworks instead.
 
-Also, please fix your "From:" line in your email client to match your
-Signed-off-by: line, or else add the proper "From:" line to your patch,
-as the Documentation/SubmittingPatches file says.
+I thought over this, and strongly feel that in this case moving to a generic
+framework is not the right approach. I mentioned reasons in last post, but
+summarizing all of them below:
 
-Care to try again?
+1. It is not immediately intuitive or obvious unlike GPIO that a timer can be an
+irqchip.
 
-greg k-h
+2. There are only 1-2 users of the dmtimer directly so moving to linux generic
+framework is bit overkill I feel. Further there is already a framework-
+clockevents/hrtimer which everyone should be using. For the 1-2 direct dmtimer
+users, they should just use the dmtimer public API.
+
+More reasons below...
+
+> 
+> We can implement an irqchip and a clocksource in the dmtimer code for the
+> client drivers to use, and after that we only have a couple of dmtimer
+> specific functions left to export.
+> 
+> I'm thinkging some thing like this for the public API:
+> 
+> omap_dm_timer_request			request_irq
+> omap_dm_timer_request_specific		request_irq
+> omap_dm_timer_get_irq			request_irq
+> omap_dm_timer_set_source		clk_set_rate
+
+For clk_set_rate, how would one directly access the timer node if we've hidden
+it behind an irq chip abstraction?
+
+per your suggestion, one would have something like:
+
+dsp {
+    interrupt-parent = <&timer1>;
+}
+
+so how do you clk_set_rate rate something like this given the dsp node?
+
+If the suggestion is to get the timer1 node from the interrupt-parent property,
+if I may say- that's a bit ugly because now you're breaking the irq chip
+abstraction just to access the timer node..
+
+> omap_dm_timer_stop			disable_irq
+> omap_dm_timer_start			enable_irq
+> omap_dm_timer_disable			disable_irq
+> omap_dm_timer_free			free_irq
+> omap_dm_timer_set_int_enable		enable_irq
+> 
+> After that, what's left to export are some functions to configure
+> the hardware timer:
+> 
+> omap_dm_timer_write_counter
+> omap_dm_timer_set_match
+> omap_dm_timer_read_counter
+> omap_dm_timer_read_status
+> omap_dm_timer_write_status
+
+Same comment for clk_set_rate applies here, we've to access interrupt-parent
+property to get timer node and call dmtimer API which breaks the abstraction.
+
+Usually I've seen frameworks come up because there is code duplication etc. In
+this case there is no duplication as such, and the number of users of the API is
+also few. What is the problem with exposing a small set of API to timer users in
+drivers/ specially when they are prefixed by a unique name (omap_dm_timer)?
+
+thanks,
+
+-Joel
+
+
+
