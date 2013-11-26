@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3KZR4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:56:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22849 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200Ab3KZR4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:56:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,776,1378882800"; 
-   d="scan'208";a="442464423"
-From: Ashutosh Dixit <ashutosh.dixit@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Krishna Kumar Reddy Yerramreddy 
-	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>
-Subject: [PATCH char-misc-linus 0/5] misc: mic: Fixes for 3.13-rc2
-Date: Tue, 26 Nov 2013 10:04:38 -0800
-Message-Id: <cover.1385487752.git.ashutosh.dixit@intel.com>
-X-Mailer: git-send-email 1.8.2.3
+	id S1755268Ab3KZR4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 12:56:53 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:52079 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab3KZR4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 12:56:51 -0500
+Date: Tue, 26 Nov 2013 18:56:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo <acme@ghostprotocols.net>, patches@linaro.org
+Subject: Re: [PATCH 1/2] perf: add per-feature check flags
+Message-ID: <20131126175647.GA9958@gmail.com>
+References: <1385045539-24537-1-git-send-email-jean.pihet@linaro.org>
+ <1385045539-24537-2-git-send-email-jean.pihet@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385045539-24537-2-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix various issues which were reported or found with the
-MIC driver.
 
-Ashutosh Dixit (3):
-  misc: mic: Bug fix for sysfs poll usage.
-  misc: mic: Fix sparse warnings and other endianness issues.
-  misc: mic: Fix user space namespace pollution from mic_common.h.
+* Jean Pihet <jean.pihet@linaro.org> wrote:
 
-Sudeep Dutt (2):
-  misc: mic: Change mic_notify(...) to return true.
-  misc: mic: Minor bug fix in 'retry' loops.
+> Add CFLAGS and LDFLAGS for each feature to be checked. This allows
+> to pass flags and parameters to the feature checks compilation.
+> Also simplifies the feature check makefile, to come in a subsequent patch.
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> ---
+>  tools/perf/config/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index f7d11a8..c551495 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -102,7 +102,7 @@ endif
+>  
+>  feature_check = $(eval $(feature_check_code))
+>  define feature_check_code
+> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+>  endef
 
- Documentation/mic/mpssd/mpssd.c    | 18 +++++++++++------
- drivers/misc/mic/card/mic_virtio.c | 33 +++++++++++++++++--------------
- drivers/misc/mic/card/mic_virtio.h |  7 +++----
- drivers/misc/mic/host/mic_boot.c   |  2 +-
- drivers/misc/mic/host/mic_virtio.c | 30 ++++++++++++++--------------
- drivers/misc/mic/host/mic_x100.c   |  4 ++--
- include/uapi/linux/mic_common.h    | 40 +++++++++++++++-----------------------
- 7 files changed, 67 insertions(+), 67 deletions(-)
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
--- 
-1.8.2.3
+Thanks,
 
+	Ingo
