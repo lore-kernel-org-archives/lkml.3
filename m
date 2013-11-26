@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab3KZJfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 04:35:17 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36558 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3KZJfM (ORCPT
+	id S1754877Ab3KZJgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:36:45 -0500
+Received: from atl4mhob01.myregisteredsite.com ([209.17.115.39]:47796 "EHLO
+	atl4mhob01.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754592Ab3KZJgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 04:35:12 -0500
-Message-ID: <52946B42.40603@hitachi.com>
-Date: Tue, 26 Nov 2013 18:34:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 26 Nov 2013 04:36:42 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+Message-ID: <52946BA6.3080308@topic.nl>
+Date: Tue, 26 Nov 2013 10:36:38 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] tracing: Teach FETCH_MTD_{symbol,deref} to handle
- per-cpu data
-References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com>
-In-Reply-To: <20131125172206.GD14516@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
+References: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl> <20131126090639.GA2568@katana>
+In-Reply-To: <20131126090639.GA2568@katana>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/26 2:22), Oleg Nesterov wrote:
-> @symbol can't be used to dump the per-cpu variables. The same is
-> true for +offset(something) if "something" results in __percpu
-> pointer.
+On 11/26/2013 10:06 AM, Wolfram Sang wrote:
+> On Tue, Nov 26, 2013 at 07:32:00AM +0100, Mike Looijmans wrote:
+>> Leaving the mux enabled causes needless I2C traffic on the downstream
+>> bus. De-selecting after every request causes excess I2C traffic and
+>> switching.
+>>
+>> This patch implements a hybrid solution: After 200ms of inactivity,
+>> the mux is disabled.
+>>
+>> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 >
-> With this patch parse_probe_offset() treats "~" before the numeric
-> offset as "per cpu" mark and stores it in the lowest bit,
-> calc_probe_offset() simply adds per_cpu_offset(smp_processor_id())
-> if this bit is set.
+> You still haven't answered my initial question. Also, please don't
+> resend without saying what changed since the last version.
 
-IMHO, if the symbol is a per-cpu symbol, it is meaningless to
-access the symbol itself. For the symbol(static) percpu, maybe
-we can use is_kernel_percpu_address() to check. If the symbol is
-percpu, it should be automatically translated to something like
-FETCH_percpu, instead of such additional expression.
+Sorry, I never received the patch mail nor any replies into my own mailbox, so 
+I assumed the message was never actually sent (probably our mail server 
+considered it spam). I found it online though, so I'll try to answer your 
+questions now.
 
-For the dynamic allocated per-cpu things, it is also good to give
-a straight operation, like +10(percpu(%rdi)).
+Michael Lawnick:
+ > Have you checked against behavior on cascaded muxes?
 
-> We could turn {dprm,sc}->offset into the "struct probe_offset" which
-> holds offset + is_percpu, but this hack looks simple enough and I hope
-> that LONG_MAX/2 is enough for the numeric offset.
+No, I didn't even realize it was at all possible to cascade muxes. And you're 
+right, this patch will break those.
 
-Also, please do not be afraid to add fetch operation, such kind of
-is_percpu flag is not dynamically changed. Then we can use another
-fetch function.
-
-Thank you,
+Would it be acceptable if I made the timeout optional, by making the 
+"deselect_on_exit" boolean into a three-state value (off, on, timeout)? Or, 
+alternatively, implement "deselect_on_exit" using the timeout scheme (probably 
+with a very short timeout)?
 
 
+Wolfram Sang:
+ > This is a bus. Why is this bad?
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+My customer has two reasons for wanting this change:
+
+The extra I2C traffic consumes extra power. If the bus is terminated using 2k 
+resistors, approximately 1mA of current (assuming ~2V signals) is flowing when 
+the bus is pulled low. On low power designs, this extra power consumption is 
+noticable. There is no way to turn the mux "off" from either user or kernel 
+space. The signals going through the mux to a place where no I2C device is 
+actually listening are only wasting power.
+
+The I2C signals are used to control sensitive codecs. When looking at the 
+sampled data, the I2C traffic is visible in the captured analog signal. To 
+prevent this from happening, the mux can be disabled whenever not 
+communicating with the codec. This could be accomplished with the 
+"deselect_on_exit" boolean, but because audio driver sends the codec 
+parameters in dozens of small transactions, this will result in a lot more 
+needless I2C traffic, constantly switching the mux for each codec setting.
 
 
+Kind regards,
+
+Mike.
