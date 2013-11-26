@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab3KZXtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 18:49:19 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46546 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757347Ab3KZXtS (ORCPT
+	id S1752037Ab3KZXuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 18:50:09 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:15799 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab3KZXuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 18:49:18 -0500
+	Tue, 26 Nov 2013 18:50:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Nov 2013 15:43:48 -0800
+Message-ID: <529533AD.2050406@nvidia.com>
+Date: Tue, 26 Nov 2013 15:50:05 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgSnW9e4M63RVWyAtqTbhj4_+Kmw_Rm71aCUUhiav25Vw@mail.gmail.com>
-References: <1385492161-27624-1-git-send-email-olof@lixom.net>
-	<1385493242.20100.71.camel@joe-AO722>
-	<CAOesGMgSnW9e4M63RVWyAtqTbhj4_+Kmw_Rm71aCUUhiav25Vw@mail.gmail.com>
-Date: Wed, 27 Nov 2013 00:49:17 +0100
-Message-ID: <CACRpkdaK3Lvw+DjWTjkU-AUyHY98YWQD58Lw10COG44WvOJSgQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: pl061: print resource_size_t as %pa
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Joe Perches <joe@perches.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] cpufreq: cpufreq-cpu0: clk_round_rate() can return a
+ zero upon error
+References: <alpine.DEB.2.02.1311251559460.23090@tamien> <52942B87.1040203@linaro.org>
+In-Reply-To: <52942B87.1040203@linaro.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 8:17 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Tue, Nov 26, 2013 at 11:14 AM, Joe Perches <joe@perches.com> wrote:
->> On Tue, 2013-11-26 at 10:56 -0800, Olof Johansson wrote:
-
->>>       amba_set_drvdata(adev, chip);
->>> -     dev_err(&adev->dev, "PL061 GPIO chip @%08x registered\n",
->>> -             adev->res.start);
->>> +     dev_err(&adev->dev, "PL061 GPIO chip @%pa registered\n",
->>> +             &adev->res.start);
+On 11/25/2013 09:03 PM, viresh kumar wrote:
+> On Tuesday 26 November 2013 07:31 AM, Paul Walmsley wrote:
+>> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+>> index d4585ce2346c..0faf756f6197 100644
+>> --- a/drivers/cpufreq/cpufreq-cpu0.c
+>> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+>> @@ -44,7 +44,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+>> unsigned int index)
+>>       int ret;
 >>
->> This looks as if this should not use dev_err, but maybe dev_info
->> and maybe it should use %pR, &adev->res
+>>       freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
+>> -    if (freq_Hz < 0)
+>> +    if (freq_Hz <= 0)
+>>           freq_Hz = freq_table[index].frequency * 1000;
+>>
+>>       freq_exact = freq_Hz;
+> So, we will see another patch where you will do: s/<=/== ??
+
+Probably so for this driver - along with converting the type of freq_Hz 
+to be u64 or unsigned long.  Not sure yet about all of the other 
+drivers, since many of them are unlikely to see rates above (2^31)-1 Hz.
+
+> I am wondering if there is any other way we can get this solved, i.e. in a
+> single patchset.
+
+I'm trying to avoid sending up a large series that touches drivers all 
+over the tree :-(
+
+> Otherwise, for both SPEAr and cpu0 patches:
 >
-> Yep, I have as a somewhat long-standing todo to scrub for needlessly
-> elevated printk levels (err and warn) on various drivers during boot,
-> thanks for shortcutting that. :)
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Bah copy/paste bug from my side ...
+Thanks!  But I was instead hoping you might queue them up for merging 
+for v3.14?  That should greatly reduce the risk of merge conflicts.
 
-> I'll let Linus decide on pR vs pa.
+- Paul
 
-I go with the thing you tested, fixed up the commit and also
-switched to dev_info().
-
-But now I have worse PL061 problems than this.
-
-Yours,
-Linus Walleij
