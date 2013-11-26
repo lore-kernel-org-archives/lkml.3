@@ -1,82 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab3KZP5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 10:57:41 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52684 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932249Ab3KZP5h (ORCPT
+	id S932293Ab3KZP54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 10:57:56 -0500
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:55331 "HELO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932249Ab3KZP5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 10:57:37 -0500
-Date: Tue, 26 Nov 2013 15:57:31 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v4 05/12] efi: export more efi table variable to sysfs
-Message-ID: <20131126155731.GM11521@console-pimps.org>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-6-git-send-email-dyoung@redhat.com>
+	Tue, 26 Nov 2013 10:57:54 -0500
+X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Nov 2013 10:57:53 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385445477-9665-6-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL_JsqJqKzg7DDihn+MhPv7TKA1ehv0io0WmMZRg72FVjS8uWQ@mail.gmail.com>
+References: <1384897358-22940-1-git-send-email-fkan@apm.com>
+	<528C95D2.5090200@arm.com>
+	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
+	<CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
+	<CAAhSdy2d8p_3RsB1vGF2xdovOkwu1=rHHLRLcdOrduC3aj6NYQ@mail.gmail.com>
+	<CAL_JsqJqKzg7DDihn+MhPv7TKA1ehv0io0WmMZRg72FVjS8uWQ@mail.gmail.com>
+Date: Tue, 26 Nov 2013 21:22:11 +0530
+Message-ID: <CAMwBHsYwuJ+Hm4bY791Z_Fctvj3d0JYpTwfeuJa3xxgiK1i77g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
+From: Anup Patel <apatel@apm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Anup Patel <anup@brainfault.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Feng Kan <fkan@apm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinayak Kale <vinayak.kale@gmail.com>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Loc Ho <lho@apm.com>, Kumar Sankaran <ksankaran@apm.com>,
+        patches <patches@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Nov, at 01:57:50PM, Dave Young wrote:
-> Export fw_vendor, runtime and config tables physical
-> addresses to /sys/firmware/efi/systab becaue kexec
-> kernel will need them.
- 
-This commit log needs updating.
+On Tue, Nov 26, 2013 at 9:05 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Mon, Nov 25, 2013 at 10:00 AM, Anup Patel <anup@brainfault.org> wrote:
+>> On Mon, Nov 25, 2013 at 9:13 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On Sat, Nov 23, 2013 at 2:41 AM, Anup Patel <anup@brainfault.org> wrote:
+>>>> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>>>> [dropping <patches@apm.com> from the CC list, as someone seems to have
+>>>>>  tripped on the config file, and I'm tired of getting bounces]
+>>>>>
+>>>>> Feng,
+>>>>>
+>>>>> On 19/11/13 21:42, Feng Kan wrote:
+>>>>>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
+>>>>>> X-Gene implementation, the FIQ bypass must be enabled at all time.
+>>>>>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
+>>>>>
+>>>>> How comes? Are only PPIs affected? When you say "some PPIs", can you be
+>>>>> more specific?
+>>>>>
+>>>>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>>>>> ---
+>>>>>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
+>>>>>>  include/linux/irqchip/arm-gic.h |    4 ++--
+>>>>>>  2 files changed, 13 insertions(+), 6 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>>>>> index d0e9480..aa7342e 100644
+>>>>>> --- a/drivers/irqchip/irq-gic.c
+>>>>>> +++ b/drivers/irqchip/irq-gic.c
+>>>>>> @@ -65,6 +65,7 @@ struct gic_chip_data {
+>>>>>>  #endif
+>>>>>>       struct irq_domain *domain;
+>>>>>>       unsigned int gic_irqs;
+>>>>>> +     unsigned int bypass_flag;
+>>>>>>  #ifdef CONFIG_GIC_NON_BANKED
+>>>>>>       void __iomem *(*get_base)(union gic_base *);
+>>>>>>  #endif
+>>>>>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>>>>
+>>>>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>>>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
+>>>>>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
+>>>>>>  }
+>>>>>>
+>>>>>>  void gic_cpu_if_down(void)
+>>>>>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>>>>>>
+>>>>>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+>>>>>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+>>>>>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
+>>>>>>  }
+>>>>>>
+>>>>>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
+>>>>>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
+>>>>>>
+>>>>>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>>>                          void __iomem *dist_base, void __iomem *cpu_base,
+>>>>>> -                        u32 percpu_offset, struct device_node *node)
+>>>>>> +                        u32 percpu_offset, u32 bypass_val,
+>>>>>> +                        struct device_node *node)
+>>>>>>  {
+>>>>>>       irq_hw_number_t hwirq_base;
+>>>>>>       struct gic_chip_data *gic;
+>>>>>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>>>
+>>>>>>       set_handle_irq(gic_handle_irq);
+>>>>>>
+>>>>>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
+>>>>>
+>>>>> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
+>>>>>
+>>>>>>       gic_chip.flags |= gic_arch_extn.flags;
+>>>>>>       gic_dist_init(gic);
+>>>>>>       gic_cpu_init(gic);
+>>>>>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>>>       void __iomem *cpu_base;
+>>>>>>       void __iomem *dist_base;
+>>>>>>       u32 percpu_offset;
+>>>>>> +     u32 bypass_val;
+>>>>>>       int irq;
+>>>>>>
+>>>>>>       if (WARN_ON(!node))
+>>>>>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+>>>>>>               percpu_offset = 0;
+>>>>>>
+>>>>>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
+>>>>>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
+>>>>>> +             bypass_val = 0;
+>>>>>
+>>>>> [adding Mark on Cc, so he can comment on the DT parts]
+>>>>>
+>>>>> Where's the DT documentation update? Also, as this is an
+>>>>> implementation-specific quirk, you should consider using a separate
+>>>>> compatible string and move the handling of this issue into some X-Gene
+>>>>> specific code.
+>>>>
+>>>> Adding separate compatible string for X-Gene specific GIC will break
+>>>> VGIC code for X-Gene because VGIC code looks for DT node compatible
+>>>> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
+>>>> code for X-Gene.
+>>>>
+>>>> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
+>>>> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
+>>>> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
+>>>> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>>>> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
+>>>> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
+>>>> PPI28 (Legacy-FIQ).
+>>>>
+>>>> We should have more cleaner and optional device tree binding for GIC
+>>>> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>>>> and FIQBypDisGrp1 bits for X-Gene.
+>>>
+>>> IIRC, all these bits are secure mode only (or only a subset are
+>>> banked). Whether an SoC supports secure mode or not, the current
+>>> policy for the kernel is to do any secure mode setup in firmware or
+>>> bootloader.
+>>
+>> Group0 are secure interrupts and Group1 are non-secure interrupts.
+>
+> Right, but the non-secure view of the GIC has no concept of groups.
+> They are only visible in secure mode.
+>
+>> Does this mean we should only touch IRQBypDisGrp1 and FIQBypDisGrp1
+>> bits from kernel ??
+>
+> No, the kernel should only touch bits defined (by the GIC arch spec)
+> to be available in non-secure mode. Specifically this is bit 0 only. I
+> guess you will have to change accesses to cpu ctrl reg to a
+> read-mod-write to preserve any bits you need set.
 
-> From EFI spec these 3 variables will be updated to
-> virtual address after entering virtual mode. But
-> kernel startup code will need the physical address.
-> 
-> changelog:
-> Greg: add standalone sysfs files instead of add lines to systab
-> Document them as testing ABI
-> Greg: use group attrs and is_visible
-> Boris: align comments lines
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  Documentation/ABI/testing/sysfs-firmware-efi | 26 ++++++++++++++++
->  arch/x86/platform/efi/efi.c                  |  4 +++
->  drivers/firmware/efi/efi.c                   | 44 ++++++++++++++++++++++++++++
->  include/linux/efi.h                          |  3 ++
->  4 files changed, 77 insertions(+)
->  create mode 100644 Documentation/ABI/testing/sysfs-firmware-efi
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-firmware-efi b/Documentation/ABI/testing/sysfs-firmware-efi
-> new file mode 100644
-> index 0000000..9252a24
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-firmware-efi
-> @@ -0,0 +1,26 @@
-> +What:		/sys/firmware/efi/fw_vendor
-> +Date:		Nov 2013
-> +Contact:	Dave Young <dyoung@redhat.org>
+Thats wrong.
 
-redhat.org eh? Typo or legit?
+If you refer page 124 & 125 of GICv2 architecture reference manual (more
+specifically IHI0048B_gic_architecture_specification.pdf) then you will
+find Figure 4-23 and Table 4-30 which clearly shows that IRQBypDisGrp1
+and FIQBypDisGrp1 bits are part of the Non-secure copy of GICC_CTRL
+register hence we can access this bits from kernel.
 
-> +Description:
-> +		Shows the physical address of firmware vendor in the EFI
-> +		system table.
+--
+Anup
 
-It shows the physical address of the firmware vendor "entry" or "field"
-in the EFI system table.
-
-> +Users:
-> +		Kexec Mailing List <kexec@lists.infradead.org>
-
-The "Kexec mailing list" isn't a user, kexec is.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+> Rob
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
