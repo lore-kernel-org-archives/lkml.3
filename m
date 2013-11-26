@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab3KZKFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:05:45 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:27182
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751828Ab3KZKFl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:05:41 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz9371I103dK542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275bh8275dh1de097h186068ha509lz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
-From: Shaohui Xie <Shaohui.Xie@freescale.com>
-To: Ruchika Gupta <ruchika.gupta@freescale.com>,
-        "shh.xie@gmail.com" <shh.xie@gmail.com>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH] crypto/caam/jr.c: include linux/of_address.h
-Thread-Topic: [PATCH] crypto/caam/jr.c: include linux/of_address.h
-Thread-Index: AQHO6nwawWndADUzUE6qvxTN3NtBaJo3QteAgAAFwwA=
-Date: Tue, 26 Nov 2013 10:05:23 +0000
-Message-ID: <ED492CCEAF882048BC2237DE806547C91516D92F@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1385447405-7784-1-git-send-email-shh.xie@gmail.com>
- <B2B5EF0D8FDD10429C8DE6C4C2B382820947AA44@039-SN2MPN1-023.039d.mgd.msft.net>
-In-Reply-To: <B2B5EF0D8FDD10429C8DE6C4C2B382820947AA44@039-SN2MPN1-023.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1755307Ab3KZKGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:06:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50778 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755122Ab3KZKF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:05:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,773,1378882800"; 
+   d="scan'208";a="440032059"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/6] gpio / ACPI: convert users to gpiod_* and drop acpi_gpio.h
+Date: Tue, 26 Nov 2013 12:05:44 +0200
+Message-Id: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!
-I'm not in the list, did not see the patch.
-So just ignore this patch.
+Hi all,
 
-Best Regards, 
-Shaohui Xie
+Now that the mainline kernel has full ACPI support for the GPIO descriptor
+interface we can get rid of ACPI specific GPIO functions in favor of GPIO
+descriptor (gpiod_*) interfaces.
 
+This series first converts the existing two users to this interface and
+then modifies gpiolib and gpiolib-acpi so that the ACPI functions are only
+called internally in drivers/gpio. We then remove the acpi_gpio.h and
+require all users to use gpiod_* interfaces.
 
-> -----Original Message-----
-> From: Gupta Ruchika-R66431
-> Sent: Tuesday, November 26, 2013 5:43 PM
-> To: shh.xie@gmail.com; linux-crypto@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: herbert@gondor.hengli.com.au; davem@davemloft.net; Xie Shaohui-B21989
-> Subject: RE: [PATCH] crypto/caam/jr.c: include linux/of_address.h
-> 
-> A Patch for this has already been submitted.
-> 
-> Regards,
-> Ruchika
-> 
-> > -----Original Message-----
-> > From: linux-crypto-owner@vger.kernel.org [mailto:linux-crypto-
-> > owner@vger.kernel.org] On Behalf Of shh.xie@gmail.com
-> > Sent: Tuesday, November 26, 2013 12:00 PM
-> > To: linux-crypto@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Cc: herbert@gondor.hengli.com.au; davem@davemloft.net; Xie
-> > Shaohui-B21989
-> > Subject: [PATCH] crypto/caam/jr.c: include linux/of_address.h
-> >
-> > From: Shaohui Xie <Shaohui.Xie@freescale.com>
-> >
-> > to avoid a compile error:
-> >
-> > drivers/crypto/caam/jr.c: In function 'caam_jr_probe':
-> > drivers/crypto/caam/jr.c:468:2: error: implicit declaration of
-> > function 'of_iomap' [-Werror=implicit-function-declaration]
-> > drivers/crypto/caam/jr.c:468:7: warning: assignment makes pointer from
-> > integer without a cast [enabled by default]
-> >
-> > Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-> > ---
-> >  drivers/crypto/caam/jr.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/crypto/caam/jr.c b/drivers/crypto/caam/jr.c index
-> > d23356d2..1d80bd3 100644
-> > --- a/drivers/crypto/caam/jr.c
-> > +++ b/drivers/crypto/caam/jr.c
-> > @@ -6,6 +6,7 @@
-> >   */
-> >
-> >  #include <linux/of_irq.h>
-> > +#include <linux/of_address.h>
-> >
-> >  #include "compat.h"
-> >  #include "regs.h"
-> > --
-> > 1.8.4.1
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-crypto" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This is third version of the series. Changes to the previous version [1]:
 
+ * Instead of adding temporary conversion from GPIO descriptors to numbers
+   in rfkill-gpio.c we now first introduce a lookup table for paz00 and
+   in the next patch convert the driver to use only GPIO descriptors.
+
+ * Corrected a typo in subject of patch [3/6] "covert" -> "convert".
+
+ * Corrected a typo in changelog of patch [5/6] "user" -> "use".
+
+ * Dropped EXPORT_SYMBOL_GPL(acpi_get_gpiod_by_index) from patch [5/6] that
+   was left there accidentally.
+
+Since the patches in the series depend on each other I would propose this
+to be merged via GPIO tree.
+
+[1] http://www.spinics.net/lists/linux-acpi/msg47472.html (v2 of the series)
+
+Heikki Krogerus (2):
+  ARM: tegra: add gpiod_lookup table for paz00
+  net: rfkill: gpio: convert to descriptor-based GPIO interface
+
+Mika Westerberg (4):
+  mmc: sdhci-acpi: convert to use GPIO descriptor API
+  gpio / ACPI: register to ACPI events automatically
+  gpio / ACPI: get rid of acpi_gpio.h
+  Documentation / ACPI: update to GPIO descriptor API
+
+ Documentation/acpi/enumeration.txt | 36 ++++--------------
+ arch/arm/mach-tegra/board-paz00.c  |  7 ++++
+ drivers/gpio/gpiolib-acpi.c        | 21 ++++++++---
+ drivers/gpio/gpiolib.c             |  5 ++-
+ drivers/gpio/gpiolib.h             | 46 +++++++++++++++++++++++
+ drivers/mmc/host/sdhci-acpi.c      | 26 ++++++-------
+ drivers/pinctrl/pinctrl-baytrail.c |  4 --
+ include/linux/acpi_gpio.h          | 51 -------------------------
+ net/rfkill/rfkill-gpio.c           | 77 +++++++++++++++++---------------------
+ 9 files changed, 125 insertions(+), 148 deletions(-)
+ create mode 100644 drivers/gpio/gpiolib.h
+ delete mode 100644 include/linux/acpi_gpio.h
+
+-- 
+1.8.4.3
 
