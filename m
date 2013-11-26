@@ -1,118 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab3KZDCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:02:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49257 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab3KZDCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:02:37 -0500
-Message-ID: <52940F32.3000006@ti.com>
-Date: Mon, 25 Nov 2013 21:02:10 -0600
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752904Ab3KZDC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:02:59 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38732 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab3KZDCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 22:02:50 -0500
+Message-ID: <52940F4A.4040701@linux.vnet.ibm.com>
+Date: Tue, 26 Nov 2013 11:02:34 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <benoit.cousson@linaro.org>,
-        <santosh.shilimkar@ti.com>, <jgchunter@gmail.com>, <rnayak@ti.com>,
-        <balbi@ti.com>, Suman Anna <s-anna@ti.com>
-Subject: Re: [PATCH 1/8] ARM: OMAP: Move public portion of dmtimer.h to include/linux/omap-timer.h
-References: <1385085414-9034-1-git-send-email-joelf@ti.com> <1385085414-9034-2-git-send-email-joelf@ti.com> <20131122153334.GE10023@atomide.com>
-In-Reply-To: <20131122153334.GE10023@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+References: <1382534973-13197-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1382534973-13197-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <20131125140803.GA1489@amt.cnet>
+In-Reply-To: <20131125140803.GA1489@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13112603-7014-0000-0000-000003F89EEE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
-
-Few replies inline below. Adding Suman as well who is planning to use dmtimer
-directly for his work with DSP.
-
-On 11/22/2013 09:33 AM, Tony Lindgren wrote:
-> Hi,
-> 
-> * Joel Fernandes <joelf@ti.com> [131121 18:00]:
->> Multiplatform support has made arch/arm/plat-omap/include/plat/ inaccessible to
->> drivers outside the plat-omap directory [1]. Due to this the following drivers
->> are disabled with !CONFIG_ARCH_MULTIPLATFORM:
->> CONFIG_IR_RX51 (drivers/media/rc/ir-rx51.c)
->> CONFIG_TIDSPBRIDGE (drivers/staging/tidspbridge/core/dsp-clock.c)
+On 11/25/2013 10:08 PM, Marcelo Tosatti wrote:
+> On Mon, Nov 25, 2013 at 02:11:31PM +0800, Xiao Guangrong wrote:
 >>
->> We move the portion of the dmtimer "API" that should be accessible to the
->> drivers, into include/linux/omap-timer.h
+>> On Nov 23, 2013, at 3:14 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>>
+>>> On Wed, Oct 23, 2013 at 09:29:25PM +0800, Xiao Guangrong wrote:
+>>>> It likes nulls list and we use the pte-list as the nulls which can help us to
+>>>> detect whether the "desc" is moved to anther rmap then we can re-walk the rmap
+>>>> if that happened
+>>>>
+>>>> kvm->slots_lock is held when we do lockless walking that prevents rmap
+>>>> is reused (free rmap need to hold that lock) so that we can not see the same
+>>>> nulls used on different rmaps
+>>>>
+>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>
+>>> How about simplified lockless walk on the slot while rmapp entry
+>>> contains a single spte? (which should be the case with two-dimensional
+>>> paging).
+>>>
+>>> That is, grab the lock when finding a rmap with more than one spte in
+>>> it (and then keep it locked until the end).
+>>
+>> Hmm… that isn't straightforward and more complex than the approach
+>> in this patchset. Also it can drop the improvement for shadow mmu that
+>> gets great improvement by this patchset.
 > 
-> As we chatted earlier, we don't have to expose all these hardware specific
-> functions and use existing Linux generic frameworks instead.
-
-I thought over this, and strongly feel that in this case moving to a generic
-framework is not the right approach. I mentioned reasons in last post, but
-summarizing all of them below:
-
-1. It is not immediately intuitive or obvious unlike GPIO that a timer can be an
-irqchip.
-
-2. There are only 1-2 users of the dmtimer directly so moving to linux generic
-framework is bit overkill I feel. Further there is already a framework-
-clockevents/hrtimer which everyone should be using. For the 1-2 direct dmtimer
-users, they should just use the dmtimer public API.
-
-More reasons below...
-
+> It is not more complex, since it would remove list lockless walk. Only
+> the spte pointer at rmap[spte] is accessed without a lock. Its much much
+> simpler.
 > 
-> We can implement an irqchip and a clocksource in the dmtimer code for the
-> client drivers to use, and after that we only have a couple of dmtimer
-> specific functions left to export.
+>>> For example, nothing prevents lockless walker to move into some
+>>> parent_ptes chain, right?
+>>
+>> No.
+>>
+>> The nulls can help us to detect this case, for parent_ptes, the nulls points
+>> to "shadow page" but for rmaps, the nulls points to slot.arch.rmap. There
+>> is no chance that the “rmap" is used as shadow page when slot-lock is held.
 > 
-> I'm thinkging some thing like this for the public API:
+> The SLAB cache is the same, so entries can be reused. What prevents
+> a desc entry living in slot.arch.rmap to be freed and reused by a
+> parent_ptes desc?
 > 
-> omap_dm_timer_request			request_irq
-> omap_dm_timer_request_specific		request_irq
-> omap_dm_timer_get_irq			request_irq
-> omap_dm_timer_set_source		clk_set_rate
 
-For clk_set_rate, how would one directly access the timer node if we've hidden
-it behind an irq chip abstraction?
-
-per your suggestion, one would have something like:
-
-dsp {
-    interrupt-parent = <&timer1>;
-}
-
-so how do you clk_set_rate rate something like this given the dsp node?
-
-If the suggestion is to get the timer1 node from the interrupt-parent property,
-if I may say- that's a bit ugly because now you're breaking the irq chip
-abstraction just to access the timer node..
-
-> omap_dm_timer_stop			disable_irq
-> omap_dm_timer_start			enable_irq
-> omap_dm_timer_disable			disable_irq
-> omap_dm_timer_free			free_irq
-> omap_dm_timer_set_int_enable		enable_irq
-> 
-> After that, what's left to export are some functions to configure
-> the hardware timer:
-> 
-> omap_dm_timer_write_counter
-> omap_dm_timer_set_match
-> omap_dm_timer_read_counter
-> omap_dm_timer_read_status
-> omap_dm_timer_write_status
-
-Same comment for clk_set_rate applies here, we've to access interrupt-parent
-property to get timer node and call dmtimer API which breaks the abstraction.
-
-Usually I've seen frameworks come up because there is code duplication etc. In
-this case there is no duplication as such, and the number of users of the API is
-also few. What is the problem with exposing a small set of API to timer users in
-drivers/ specially when they are prefixed by a unique name (omap_dm_timer)?
-
-thanks,
-
--Joel
-
-
+We will check is_last_spte(), all the sptes on parent_ptes should be failed.
+And Gleb suggested to use a separate slab for rmap, that should be excellent.
 
