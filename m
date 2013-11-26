@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab3KZIWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:22:17 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:54661 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab3KZIWO (ORCPT
+	id S1753515Ab3KZI0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:26:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40520 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3KZI0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:22:14 -0500
-Message-ID: <52945A2D.3060609@monstr.eu>
-Date: Tue, 26 Nov 2013 09:22:05 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
+	Tue, 26 Nov 2013 03:26:39 -0500
+Date: Tue, 26 Nov 2013 09:26:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ma, Xindong" <xindong.ma@intel.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "stable-commits@vger.kernel.org" <stable-commits@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "ccross@google.com" <ccross@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v3] video: add OpenCores VGA/LCD framebuffer driver
-References: <1385094870-6962-1-git-send-email-stefan.kristiansson@saunalahti.fi> <52944976.4060003@monstr.eu> <CAMuHMdVx_jkUMB=gS0CtguBPB4f3fNRx0z4hB4zRz9OC09SvsQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdVx_jkUMB=gS0CtguBPB4f3fNRx0z4hB4zRz9OC09SvsQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="90eg0j04mle2pLMcM9CcV4Vm1qT8wPlCQ"
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Subject: Re: Add memory barrier when waiting on futex
+Message-ID: <20131126082626.GB789@laptop.programming.kicks-ass.net>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0252FAEA@SHSMSX103.ccr.corp.intel.com>
+ <20131125143952.GB10022@twins.programming.kicks-ass.net>
+ <3917C05D9F83184EAA45CE249FF1B1DD0252FBF3@SHSMSX103.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0252FBF3@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---90eg0j04mle2pLMcM9CcV4Vm1qT8wPlCQ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 26, 2013 at 01:07:25AM +0000, Ma, Xindong wrote:
+> I've already aware that they've protected by spinlock, this is why I adding a memory barrier to fix it.
 
-On 11/26/2013 09:19 AM, Geert Uytterhoeven wrote:
-> On Tue, Nov 26, 2013 at 8:10 AM, Michal Simek <monstr@monstr.eu> wrote:=
+That doesn't make sense.. the spinlocks should provide the required
+serialization, there's nothing to fix.
 
->> On 11/22/2013 05:34 AM, Stefan Kristiansson wrote:
->> This construction seems to me too complicated and can be simpler.
->>
->> What about this?
->>         res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->=20
-> Don't forget to check for res being non-NULL here.
+> I reproduced this issue several times on android which running on IA dual core.
 
-yes. you are right - you have to do it.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+I think you need to be more specific, in particular, if spinlocks do not
+provide serialization on your IA32 device, I'd call that thing broken.
+Adding random memory barriers is _WRONG_.
 
 
-
---90eg0j04mle2pLMcM9CcV4Vm1qT8wPlCQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKUWi0ACgkQykllyylKDCHtjgCeLRDFAkz6taISawsAzgFWRrp1
-a8QAmwaYWpLHZcf2iR0sC9kg0CO+k1eI
-=zqTk
------END PGP SIGNATURE-----
-
---90eg0j04mle2pLMcM9CcV4Vm1qT8wPlCQ--
