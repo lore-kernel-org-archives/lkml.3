@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab3KZOcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 09:32:46 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:35797 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab3KZOco (ORCPT
+	id S1757164Ab3KZOdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 09:33:25 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:33037 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756897Ab3KZOdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 09:32:44 -0500
+	Tue, 26 Nov 2013 09:33:22 -0500
+Date: Tue, 26 Nov 2013 11:33:13 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 21/25] perf evsel: Skip ignored symbols while printing
+ callchain
+Message-ID: <20131126143313.GD14838@ghostprotocols.net>
+References: <1385389075-7989-1-git-send-email-acme@infradead.org>
+ <1385389075-7989-22-git-send-email-acme@infradead.org>
+ <52947D65.4050405@intel.com>
+ <20131126142002.GC14838@ghostprotocols.net>
+ <5294B06A.60104@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131126075859.2060f6fd@gandalf.local.home>
-References: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com>
-	<20131126075859.2060f6fd@gandalf.local.home>
-Date: Tue, 26 Nov 2013 07:32:43 -0700
-Message-ID: <CAKocOOOMEsUCux27f7S1k7ecanfzXoNnP5319zgnGWMhqOimiQ@mail.gmail.com>
-Subject: Re: [BUG] 3.13-rc1 kernel crash when enable all tracepoints
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5294B06A.60104@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent in a patch to fix it. You can try the patch out if you like,
+Em Tue, Nov 26, 2013 at 07:30:02AM -0700, David Ahern escreveu:
+> On 11/26/13, 7:20 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Tue, Nov 26, 2013 at 12:52:21PM +0200, Adrian Hunter escreveu:
+> >>On 25/11/13 16:17, Arnaldo Carvalho de Melo wrote:
+> >>>From: David Ahern <dsahern@gmail.com>
+> >>>  	} else {
+> >>>+		if (al.sym->ignore)
 
-https://lkml.org/lkml/2013/11/22/337
+> >>Seems to segfault here because sym is null
 
-thanks,
--- Shuah
+> >>>+			return;
 
-On Tue, Nov 26, 2013 at 5:58 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 26 Nov 2013 12:38:53 +0800
-> Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
->
->> Hi,
->>
->> I'm not sure this issue already be fixed or not, it can be reproduced
->> permanently.
->>
->> (I didn't use git-bisect yet, you guys might can understand it quickly)
->>
->> #echo 1 > /sys/kernel/debug/tracing/events/enable
->>
->> [  160.472176] BUG: unable to handle kernel NULL pointer dereference
->> at           (null)
->> [  160.472176] IP: [<ffffffff8132ae40>] strlen+0x0/0x30
->
-> I hit this bug last night when testing a fix for another bug. I have a
-> patch for this too, and will send it out after I put it through my
-> tests.
->
-> You can try it out.
->
-> -- Steve
->
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index 52594b2..bdac88c 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -372,7 +372,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)   \
->         __data_size += (len) * sizeof(type);
->
->  #undef __string
-> -#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
-> +#define __string(item, src) __dynamic_array(char, item,                        \
-> +                                   strlen((src) ? (src) : "(null)") + 1)
->
->  #undef DECLARE_EVENT_CLASS
->  #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print) \
-> @@ -501,7 +502,7 @@ static inline notrace int ftrace_get_offsets_##call(                        \
->
->  #undef __assign_str
->  #define __assign_str(dst, src)                                         \
-> -       strcpy(__get_str(dst), src);
-> +       strcpy(__get_str(dst), (src) ? (src) : "(null)");
->
->  #undef TP_fast_assign
->  #define TP_fast_assign(args...) args
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> >Changed it to look at (al.sym && al.sym->ignore), the rest of the code
+> >already checkfs if al.sym is NULL (printing [unknown], etc), can you
+> >please take a look at:
+
+> >https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=c0dd57452349779e0e5d436db8f9448dfffcc512
+
+> >In an updated acme/perf/core branch?
+ 
+> Looks good to me. That's what I was going to send you. Sorry for the noise.
+
+No problem, I'll regenerate a +perf-core-for-mingo signed tag and send
+it with this new version with a [PATCH N/M v2] together with a new set
+of patches that I've put there today, not resending the unmodified
+patches from last pull req.
+
+Is that ok with you Ingo?
+
+- Arnaldo
