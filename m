@@ -1,172 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab3KZKkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:40:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40351 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab3KZKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:40:37 -0500
-Date: Tue, 26 Nov 2013 11:40:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, smfrench@gmail.com, jlayton@redhat.com,
-        mcao@us.ibm.com, aneesh.kumar@linux.vnet.ibm.com,
-        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        sjayaraman@suse.de, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3] Extended file stat functions [ver #2]
-Message-ID: <20131126104034.GA4854@quack.suse.cz>
-References: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk>
+	id S1756116Ab3KZKku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 05:40:50 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:24995 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab3KZKkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 05:40:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,7270"; a="55793472"
+X-IronPort-AV: E=McAfee;i="5400,1158,7270"; a="553052890"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Jason Liu <r64343@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ath6kl-devel@qca.qualcomm.com>
+Subject: Re: [PATCH] ath6kl: sdio: fix system panic when doing wifi stress test
+References: <1384221185-8645-1-git-send-email-r64343@freescale.com>
+Date: Tue, 26 Nov 2013 12:40:19 +0200
+In-Reply-To: <1384221185-8645-1-git-send-email-r64343@freescale.com> (Jason
+	Liu's message of "Tue, 12 Nov 2013 09:53:05 +0800")
+Message-ID: <87k3fvjvjg.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100630011656.18960.4255.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Hi Jason,
 
-On Wed 30-06-10 02:16:56, David Howells wrote:
-> Implement a pair of new system calls to provide extended and further extensible
-> stat functions.
-> 
-> The third of the associated patches provides these new system calls:
-> 
-> 	struct xstat_dev {
-> 		unsigned int	major;
-> 		unsigned int	minor;
-> 	};
-> 
-> 	struct xstat_time {
-> 		unsigned long long	tv_sec;
-> 		unsigned long long	tv_nsec;
-> 	};
-> 
-> 	struct xstat {
-> 		unsigned int		struct_version;
-> 	#define XSTAT_STRUCT_VERSION	0
-> 		unsigned int		st_mode;
-> 		unsigned int		st_nlink;
-> 		unsigned int		st_uid;
-> 		unsigned int		st_gid;
-> 		unsigned int		st_blksize;
-> 		struct xstat_dev	st_rdev;
-> 		struct xstat_dev	st_dev;
-> 		unsigned long long	st_ino;
-> 		unsigned long long	st_size;
-> 		struct xstat_time	st_atime;
-> 		struct xstat_time	st_mtime;
-> 		struct xstat_time	st_ctime;
-> 		struct xstat_time	st_btime;
-> 		unsigned long long	st_blocks;
-  When we are doing this, can we please also change 'st_blocks' to
-'st_bytes'? We track space usage in kernel in bytes for a long time so it
-would be nice to propagate it to userspace via stat instead of a special
-ioctl (at least quotacheck(8) needs to know the exact value).
+Jason Liu <r64343@freescale.com> writes:
 
-								Honza
-  
-> 		unsigned long long	st_gen;
-> 		unsigned long long	st_data_version;
-> 		unsigned long long	query_flags;
-> 	#define XSTAT_QUERY_SIZE		0x00000001ULL
-> 	#define XSTAT_QUERY_NLINK		0x00000002ULL
-> 	#define XSTAT_QUERY_AMC_TIMES		0x00000004ULL
-> 	#define XSTAT_QUERY_CREATION_TIME	0x00000008ULL
-> 	#define XSTAT_QUERY_BLOCKS		0x00000010ULL
-> 	#define XSTAT_QUERY_INODE_GENERATION	0x00000020ULL
-> 	#define XSTAT_QUERY_DATA_VERSION	0x00000040ULL
-> 	#define XSTAT_QUERY__ORDINARY_SET	0x00000017ULL
-> 	#define XSTAT_QUERY__GET_ANYWAY		0x0000007fULL
-> 	#define XSTAT_QUERY__DEFINED_SET	0x0000007fULL
-> 		unsigned long long	extra_results[0];
-> 	};
-> 
-> 	ssize_t ret = xstat(int dfd,
-> 			    const char *filename,
-> 			    unsigned atflag,
-> 			    struct xstat *buffer,
-> 			    size_t buflen);
-> 
-> 	ssize_t ret = fxstat(int fd,
-> 			     struct xstat *buffer,
-> 			     size_t buflen);
-> 
-> which are more fully documented in that patch's description.
-> 
-> The bonuses of these new stat functions are:
-> 
->  (1) The fields in the xstat struct are cleaned up.  There are no split or
->      duplicated fields.
-> 
->  (2) Some extra information is made available (file creation time, inode
->      generation number and data version number) where provided by the
->      underlying filesystem.
-> 
->      These are implemented here for Ext4 and AFS, but could also be provided
->      for CIFS, NTFS and BtrFS and probably others.
-> 
->  (3) The structure is versioned and extensible, meaning that further new system
->      calls shouldn't be required.
-> 
-> Note that no lstat() equivalent is required as that can be implemented through
-> xstat() with atflag == 0.
-> 
-> 
-> The first patch makes const a bunch of system call userspace string/buffer
-> arguments.  I can then make sys_xstat()'s filename pointer const too (though
-> the entire first patch is not required for that).
-> 
-> The second patch makes the AFS filesystem use i_generation for the vnode ID
-> uniquifier rather than i_version, and assigns i_version to hold the AFS data
-> version number, making them more logical for when I want to get at them from
-> afs_getattr().
-> 
-> There's a test program attached to the description for patch 3.  It can be run
-> as follows:
-> 
-> 	[root@andromeda ~]# /tmp/xstat /afs/archive/linuxdev/fedora9/i386/repodata/
-> 	xstat(/afs/archive/linuxdev/fedora9/i386/repodata/) = 152
-> 	sv=0 qf=77 cr=0.0 iv=7a5 dv=5
-> 	  Size: 2048            Blocks: 0          IO Block: 4096    directory
-> 	Device: 00:15           Inode: 83          Links: 2
-> 	Access: (0755/drwxr-xr-x)  Uid: 75338   Gid: 0
-> 	Access: 2008-11-05 20:00:12.000000000+0000
-> 	Modify: 2008-11-05 20:00:12.000000000+0000
-> 	Change: 2008-11-05 20:00:12.000000000+0000
-> 	Inode version: 7a5h
-> 	Data version: 5h
-> 
-> 
-> Things that need consideration:
-> 
->  (1) Is it worth retaining the ability to arbitrarily add extra bits onto the
->      end of the stat buffer?  And what's the best way to do this?
-> 
->      I've defined a way that from userspace involves assigning bits in
->      query_flags to extra results that you might want.  But this could instead
->      be done, say, by just upping the struct version number any time we want to
->      pass back more information.  Alternatively, we could go for a tagged data
->      method, perhaps using the same format as the recvmsg() control message
->      field.
-> 
->      If we use tagged data then rather than being selective, we could just
->      return as many tagged data items as we feel the user might want and we can
->      cram into the buffer.  That could be rather slow, though.
-> 
->  (2) What extra bits of information might we like to see available through the
->      stat interface?  Security labels?  NFS file IDs?  Xattrs?
-> 
->      If we went for a tagged data method, xstat() could be modified to take a
->      list of tags as an argument, and could then return arbitrarily-sized
->      tagged results, including fs-specific stuff.
-> 
->  (3) Does st_blksize really need to be 64 bits on a 64-bit system?  Or can it
->      be 32-bits?  Are we really likely to see something with a 4Gb+ blocksize?
-> 
->  (4) Should the inode number and data version number fields be 128-bit?
+> When did the wifi iperf test, meet one following kernel panic:
+> command: iperf -c $TARGET_IP -i 5 -t 50 -w 1M
+>
+> Unable to handle kernel paging request at virtual address 1a480000
+> pgd = 80004000
+> [1a480000] *pgd=00000000
+> Internal error: Oops: 805 [#1] SMP ARM
+
+[...]
+
+> The kernel panic is caused by the sg_buf is not set correctly with the
+> following code when compiled with Yocto GCC 4.8.1:
+>
+> drivers/net/wireless/ath/ath6kl/hif.h:
+> struct hif_scatter_req {
+>         struct list_head list;
+>         /* address for the read/write operation */
+>         u32 addr;
+> 	...
+>
+>         /* bounce buffer for upper layers to copy to/from */
+>         u8 *virt_dma_buf;
+>
+>         struct hif_scatter_item scat_list[1];
+>
+>         u32 scat_q_depth;
+> };
+>
+> (Note: the scat_req.scat_list[] will dynamiclly grow with run-time)
+
+There's actually a major bug right there, scat_list can corrupt scat_q_depth.
+
+> The GCC 4.8.1 compiler will not do the for-loop till scat_entries, instead,
+> it only run one round loop. This may be caused by that the GCC 4.8.1 thought
+> that the scat_list only have one item and then no need to do full iteration,
+> but this is simply wrong by looking at the assebly code. This will cause the
+> sg buffer not get set when scat_entries > 1 and thus lead to kernel panic.
+>
+> This patch is a workaround to the GCC 4.8.1 complier issue by passing the
+> entry address of the scat_req->scat_list to the for-loop and interate it,
+> then, GCC 4.8.1 will do the full for-loop correctly.
+> (Note: This issue not observed with GCC 4.7.2, only found on the GCC 4.8.1)
+>
+> This patch does not change any function logic and no any performance downgrade.
+
+[...]
+
+> +	scat_list = &scat_req->scat_list[0];
+> +
+>  	/* assemble SG list */
+> -	for (i = 0; i < scat_req->scat_entries; i++, sg++) {
+> +	for (i = 0; i < scat_req->scat_entries; i++, sg++, scat_list++) {
+>  		ath6kl_dbg(ATH6KL_DBG_SCATTER, "%d: addr:0x%p, len:%d\n",
+> -			   i, scat_req->scat_list[i].buf,
+> -			   scat_req->scat_list[i].len);
+> +			   i, scat_list->buf, scat_list->len);
+>  
+> -		sg_set_buf(sg, scat_req->scat_list[i].buf,
+> -			   scat_req->scat_list[i].len);
+> +		sg_set_buf(sg, scat_list->buf, scat_list->len);
+>  	}
+
+Working around the problem by adding a temporary variable makes me a bit
+worried, I would rather fix the root cause. Is the root cause by that we
+define the field with scat_list[1]?
+
+Does the patch below help? It would also fix the corruption with
+scat_q_depth. Please note that I have only compile tested it. And I
+might have also missed something important, so please review it
+carefully.
+
+--- a/drivers/net/wireless/ath/ath6kl/hif.h
++++ b/drivers/net/wireless/ath/ath6kl/hif.h
+@@ -197,9 +197,9 @@ struct hif_scatter_req {
+ 	/* bounce buffer for upper layers to copy to/from */
+ 	u8 *virt_dma_buf;
+ 
+-	struct hif_scatter_item scat_list[1];
+-
+ 	u32 scat_q_depth;
++
++	struct hif_scatter_item scat_list[0];
+ };
+ 
+ struct ath6kl_irq_proc_registers {
+diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
+index 7126bdd..6bf15a3 100644
+--- a/drivers/net/wireless/ath/ath6kl/sdio.c
++++ b/drivers/net/wireless/ath/ath6kl/sdio.c
+@@ -348,7 +348,7 @@ static int ath6kl_sdio_alloc_prep_scat_req(struct ath6kl_sdio *ar_sdio,
+ 	int i, scat_req_sz, scat_list_sz, size;
+ 	u8 *virt_buf;
+ 
+-	scat_list_sz = (n_scat_entry - 1) * sizeof(struct hif_scatter_item);
++	scat_list_sz = n_scat_entry * sizeof(struct hif_scatter_item);
+ 	scat_req_sz = sizeof(*s_req) + scat_list_sz;
+ 
+ 	if (!virt_scat)
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Kalle Valo
