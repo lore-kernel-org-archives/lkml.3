@@ -1,103 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab3KZSDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:03:46 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:58604 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756610Ab3KZSDh (ORCPT
+	id S1757020Ab3KZSEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:04:00 -0500
+Received: from 2.mo6.mail-out.ovh.net ([46.105.76.65]:47271 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756610Ab3KZSD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:03:37 -0500
-Date: Tue, 26 Nov 2013 19:03:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH] perf: Move fs.* to generic lib/lk/
-Message-ID: <20131126180333.GC9958@gmail.com>
-References: <20131121114224.GA27704@gmail.com>
- <20131121120605.GC26009@pd.tnic>
- <20131121150524.GA24806@ghostprotocols.net>
- <20131121152804.GI26009@pd.tnic>
- <20131121173714.GD24806@ghostprotocols.net>
- <20131122122701.GA1480@gmail.com>
- <20131122135034.GA20146@nazgul.tnic>
- <20131122153910.GA15636@gmail.com>
- <20131122155425.GA15836@gmail.com>
- <20131123131243.GB24148@pd.tnic>
+	Tue, 26 Nov 2013 13:03:56 -0500
+Message-ID: <5294E0A8.20303@overkiz.com>
+Date: Tue, 26 Nov 2013 18:55:52 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131123131243.GB24148@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/9] ARM: at91/dt: add mmc0 slot0 support to at91rm9200ek
+ board
+References: <1377687640-10529-1-git-send-email-b.brezillon@overkiz.com>	<1377687995-10758-1-git-send-email-b.brezillon@overkiz.com>	<20131120145926.GE14627@ns203013.ovh.net>	<528CDFFB.1020601@overkiz.com>	<CACRpkdboBg4YOnMNiar0DDBVnoky=zNky+Pzyp1=P_POtH15qQ@mail.gmail.com>	<528DE1C4.6060900@overkiz.com> <CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>
+In-Reply-To: <CACRpkdZdweyWJefttiuiYAJ9qhahLbnj7eHUiLV_83UA41X_uQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 16276290529107015901
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrjeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Linus,
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Sorry for the noise, my mail was filtered by several ML because of some 
+HTML contents.
 
-> On Fri, Nov 22, 2013 at 04:54:25PM +0100, Ingo Molnar wrote:
-> > comet:~/tip/tools/perf> ls util/*.h
-> > util/annotate.h   util/data.h       util/fs.h           util/parse-events-bison.h  util/probe-event.h   util/sort.h       util/thread.h       util/values.h
-> > util/build-id.h   util/debug.h      util/header.h       util/parse-events-flex.h   util/probe-finder.h  util/stat.h       util/thread_map.h   util/vdso.h
-> > util/cache.h      util/dso.h        util/help.h         util/parse-events.h        util/pstack.h        util/strbuf.h     util/tool.h         util/xyarray.h
-> > util/callchain.h  util/dwarf-aux.h  util/hist.h         util/parse-options.h       util/quote.h         util/strfilter.h  util/top.h
-> > util/cgroup.h     util/event.h      util/intlist.h      util/perf_regs.h           util/rblist.h        util/strlist.h    util/trace-event.h
-> > util/color.h      util/evlist.h     util/levenshtein.h  util/pmu-bison.h           util/run-command.h   util/svghelper.h  util/types.h
-> > util/comm.h       util/evsel.h      util/machine.h      util/pmu-flex.h            util/session.h       util/symbol.h     util/unwind.h
-> > util/cpumap.h     util/exec_cmd.h   util/map.h          util/pmu.h                 util/sigchain.h      util/target.h     util/util.h
-> > 
-> > That is pretty healty granularity IMO.
-> > 
-> > Do we want a separate directory for each one?
-> 
-> For each single one of them? This would be insane.
+Le 26/11/2013 14:46, Linus Walleij a écrit :
+> On Thu, Nov 21, 2013 at 11:34 AM, boris brezillon
+> <b.brezillon@overkiz.com>  wrote:
+>> On 21/11/2013 10:48, Linus Walleij wrote:
+>>> No matter whether it's a switch or a GPIO regulator it seems we
+>>> are in violent agreement that it should not be controlled by the
+>>> pin control states at least.
+>>>
+>>> Start with making it a GPIO then you can figure out whether
+>>> a GPIO regulator or drivers/extcon/extcon-gpio.c should be
+>>> used.
+>> Thanks for pointing this out. I wasn't aware of the extcon subsystem.
+>>
+>> Actually, I think it's a little bit more tricky.
+> Hm, yeah extcon is for things like audio jacks on phones that
+> userspace need to detect.
+>
+> drivers/input/keyboard/gpio_keys* is for things that actually
+> input characters to userspace stuff.
+>
+> None of it is applicable here it seems ...
+>
+>> The switch connected to gpio PB22 is used to enable one device or the other:
+>>   - PB22 set to high level enables slot0 of mmc0 (connect mmc signals to the
+>> mmc
+>>     connector)
+>>   - PB22 set to low level enables the dataflash (connect to the SPI0 signals
+>> to the
+>>     dataflash device)
+> So this is something like a "jumper" of the old type, configuring
+> the entire system?
+>
+> Something like that:
+> http://www.mignonette-game.com/images/v2/21-arduino-com-jumper.jpg
+>
+> But in this case it is a mechanical switch rather than a jumper?
+Not exactly.
+The functionnaly selection (spi device or mmc slot) is done by the 
+software using to the
+PB22 pin:
+  - set PB22 pin to 1 if you want to enable the mmc slot
+  - set PB22 pin to 0 if you want to enable the spi device
 
-Not necessarily, if the number goes up - obviously then we'd also want 
-to add some second directory structure to organize them into broad 
-categories or so.
+This is the rm9200ek board datasheet 
+http://www.alliedelec.com/images/products/datasheets/bm/ATMEL/70123901.pdf, 
+and you'll find the switch schematic at page 26.
+Here is the switch datasheet : 
+http://pdf1.alldatasheet.fr/datasheet-pdf/view/90971/PERICOM/PI5A100Q.html
 
-> > I don't see a big problem with doing that, but it could be kept in 
-> > tools/lib/util/ or tools/lib/core/ as well,
-> 
-> That's much better :)
-> 
-> > _as long as they are not lumped together
-> 
-> Why not a single .a?
+If I understand correctly, you're suggesting to retrieve the PB22 pin 
+value to decide
+wether the mmc slot or the spi device is enabled. Is that right ?
 
-Unnecessarily longer build time.
+In this case the bootstrap and/or bootloader would have to properly 
+configure the P22 pin
+before executing the linux kernel, and I'm pretty sure this is not the case.
 
-> > That also means that these bits shouldn't really be librarized in 
-> > the classical sense into a single .a and linked into whatever tool 
-> > uses it, but should be used individually as singular targets with 
-> > clean .h interfaces to utilize them topically.
-> 
-> Yeah, but why?
+> This is not much different from the GPIOs people use to e.g. encode
+> the board type, just that it can change.
+>
+> Do people switch this thing at runtime?
 
-If a tool uses just a handful of these (hopefully quickly increasing 
-number of) facilities then it should not be burdened by building it 
-all.
+In the board version this was configured in the init_machine function 
+(or board init
+function) depending on the MTD_AT91_DATAFLASH_CARD
+( 
+http://lxr.free-electrons.com/source/arch/arm/mach-at91/board-rm9200ek.c#L173).
+As a result it was not reconfigurable at runtime.
 
-> > That also means that utilities won't run into any dependency 
-> > problems, and the build will be faster as well as it all will be a 
-> > single dependency graph within a single make session.
-> 
-> That's maybe the only half-reason for not lumping them together I've 
-> read so far. I say half-reason because the preprocessor already will 
-> include only stuff it needs. And if that were a problem, glibc 
-> would've been multiple libs too.
+But Jean-Christophe suggested to make it configurable at runtime (using 
+dt fragments).
 
-The preprocessor does nothing with the .a - eliminating extra stuff 
-from the .a is a link time step, and that means the whole .a will be 
-built first ... just to throw away bits of it.
+>> The pinctrl approach has the benefit of providing a transparent way (no
+>> existing
+>> drivers modifications) to enable one device or the other.
+>>
+>> But if you think this is better done (or cleaner) with an extcon or a
+>> regulator device,
+>> I'll try to find a way to do it this way.
+> I'm uncertain. If this is something that changes at runtime, the
+> input from the switch should be read through GPIO and used
+> to select the "default" state of one device and something like
+> "sleep" on the other (I suspect more things than pin control
+> may be affected by that!)
+>
+> If this is a switch that you want to take the simple shortcut
+> of just reading at boot, the approach would still be similar, just
+> less code.
+>
+> So use gpio_get() to read the value, and then select which
+> *entire device* goes active depending on the setting would
+> be the right approach I guess?
 
-( Also, arguably, from a sw design POV glibc should probably have been
-  multiple libs, but that's water down the bridge. No need to 
-  repeat/clone such mistakes though. )
+I'm not sure these suggestions apply according to my previous answers,
+but tell me if I'm wrong.
 
-Thanks,
+Thanks for your time and suggestions.
 
-	Ingo
+Best Regards,
+
+Boris
+
+> Yours,
+> Linus Walleij
+
