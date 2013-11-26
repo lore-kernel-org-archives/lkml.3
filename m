@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab3KZB2e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:28:34 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25967 "EHLO
+	id S1753895Ab3KZB2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:28:50 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26029 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3KZB2a (ORCPT
+	with ESMTP id S1753815Ab3KZB2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:28:30 -0500
+	Mon, 25 Nov 2013 20:28:45 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 02/10] PCI: Move back pci_proc_attach_devices calling
-Date: Mon, 25 Nov 2013 17:28:02 -0800
-Message-Id: <1385429290-25397-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 04/10] PCI: Destroy pci dev only once
+Date: Mon, 25 Nov 2013 17:28:04 -0800
+Message-Id: <1385429290-25397-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
@@ -24,40 +24,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We stop detach proc when pci_stop_device.
-So should attach that during pci_bus_add_device.
+Mutliple removing via /sys will call pci_destroy_dev two times.
+
+| When concurent removing pci devices which are in the same pci subtree
+| via sysfs, such as:
+| echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+| /sys/bus/pci/devices/0000\:1a\:01.0/remove
+| (1a:01.0 device is downstream from the 10:00.0 bridge)
+|
+| the following warning will show:
+| [ 1799.280918] ------------[ cut here ]------------
+| [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+| [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
+| [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
+| [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
+| [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
+| [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
+| [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
+| [ 1800.842282] Call Trace:
+| [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
+| [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
+| [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
+| [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
+| [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
+| [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
+| [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
+| [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
+| [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
+| [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
+| [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
+| [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
+| [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
+| [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
+| [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+| [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
+| [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+| [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
+|
+| This issue is related to the bug 54411:
+| https://bugzilla.kernel.org/show_bug.cgi?id=54411
+
+Add is_removed to record if pci_destroy_dev is called already.
+
+During second calling, still have extra dev ref hold via
+device_schedule_call, so we are safe to check dev->is_removed.
+
+It fixs the problem In Gu's test.
+
+-v2: add partial changelog from Gu Zheng <guz.fnst@cn.fujitsu.com>
+     refresh after patch of moving device_del from Rafael.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/bus.c   | 1 +
- drivers/pci/probe.c | 2 --
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ drivers/pci/remove.c | 8 +++++---
+ include/linux/pci.h  | 1 +
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index fc1b740..1ffd95b 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -175,6 +175,7 @@ int pci_bus_add_device(struct pci_dev *dev)
- 	 * are not assigned yet for some devices.
- 	 */
- 	pci_fixup_device(pci_fixup_final, dev);
-+	pci_proc_attach_device(dev);
- 	pci_create_sysfs_dev_files(dev);
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index f452148..b090cec 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -20,9 +20,11 @@ static void pci_stop_dev(struct pci_dev *dev)
  
- 	dev->match_driver = true;
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 38e403d..173a9cf 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1381,8 +1381,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	dev->match_driver = false;
- 	ret = device_add(&dev->dev);
- 	WARN_ON(ret < 0);
+ static void pci_destroy_dev(struct pci_dev *dev)
+ {
+-	device_del(&dev->dev);
 -
--	pci_proc_attach_device(dev);
+-	put_device(&dev->dev);
++	if (!dev->is_removed) {
++		device_del(&dev->dev);
++		dev->is_removed = 1;
++		put_device(&dev->dev);
++	}
  }
  
- struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
+ void pci_remove_bus(struct pci_bus *bus)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 1084a15..ccb316d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -321,6 +321,7 @@ struct pci_dev {
+ 	unsigned int	multifunction:1;/* Part of multi-function device */
+ 	/* keep track of device state */
+ 	unsigned int	is_added:1;
++	unsigned int	is_removed:1;	/* pci_destroy_dev is called */
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
 -- 
 1.8.1.4
 
