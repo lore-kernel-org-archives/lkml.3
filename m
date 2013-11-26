@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab3KZTMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:12:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38925 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757631Ab3KZTMR (ORCPT
+	id S1757973Ab3KZTOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:14:09 -0500
+Received: from smtprelay0253.hostedemail.com ([216.40.44.253]:55115 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753650Ab3KZTOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:12:17 -0500
-Message-ID: <5294F27D.4000108@oracle.com>
-Date: Tue, 26 Nov 2013 14:11:57 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>
-CC: netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: netfilter: active obj WARN when cleaning up
-References: <522B25B5.6000808@oracle.com>
-In-Reply-To: <522B25B5.6000808@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 26 Nov 2013 14:14:06 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2689:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:12740:13069:13311:13357:13870:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: frame45_2372cc92e7d62
+X-Filterd-Recvd-Size: 1857
+Message-ID: <1385493242.20100.71.camel@joe-AO722>
+Subject: Re: [PATCH] gpio: pl061: print resource_size_t as %pa
+From: Joe Perches <joe@perches.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 26 Nov 2013 11:14:02 -0800
+In-Reply-To: <1385492161-27624-1-git-send-email-olof@lixom.net>
+References: <1385492161-27624-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? I still see this warning.
+On Tue, 2013-11-26 at 10:56 -0800, Olof Johansson wrote:
+> commit 73675c8aa07 ('gpio: pl061: proper error messages') added a printout
+> of a resource_size_t using %x, which produces an error for builds with
+> 64-bit resources:
 
-On 09/07/2013 09:10 AM, Sasha Levin wrote:
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
-> stumbled on the following:
->
-> [  418.311956] ------------[ cut here ]------------
-> [  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
-> [  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint:
-> delayed_work_timer_fn+0x0/0x20
-> [  418.314038] Modules linked in:
-> [  418.314038] CPU: 6 PID: 4178 Comm: kworker/u16:2 Tainted: G        W 3.11.0-next-20130906-sasha
-> #3984
-> [  418.314038] Workqueue: netns cleanup_net
-> [  418.314038]  0000000000000104 ffff880410371a58 ffffffff841b7815 0000000000000104
-> [  418.314038]  ffff880410371aa8 ffff880410371a98 ffffffff8112540c ffff880410371a78
-> [  418.314038]  ffffffff853ea0ab ffff8800bdc68b80 ffffffff85a65c00 ffffffff87676658
-> [  418.314038] Call Trace:
-> [  418.314038]  [<ffffffff841b7815>] dump_stack+0x52/0x87
-> [  418.320315]  [<ffffffff8112540c>] warn_slowpath_common+0x8c/0xc0
-> [  418.321040]  [<ffffffff811254f6>] warn_slowpath_fmt+0x46/0x50
-> [  418.321101]  [<ffffffff81a60ded>] debug_print_object+0x8d/0xb0
-> [  418.321101]  [<ffffffff811444e0>] ? __queue_work+0x390/0x390
-> [  418.321101]  [<ffffffff81a61605>] __debug_check_no_obj_freed+0xa5/0x220
-> [  418.321101]  [<ffffffff81249e76>] ? kmem_cache_destroy+0x86/0xe0
-> [  418.321101]  [<ffffffff81a61795>] debug_check_no_obj_freed+0x15/0x20
-> [  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
-> [  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
-> [  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
-> [  418.321101]  [<ffffffff83d5ec5d>] nf_conntrack_pernet_exit+0x5d/0x70
-> [  418.321101]  [<ffffffff83cda1ce>] ops_exit_list+0x5e/0x70
-> [  418.321101]  [<ffffffff83cda80b>] cleanup_net+0xfb/0x1c0
-> [  418.321101]  [<ffffffff81145c28>] process_one_work+0x338/0x550
-> [  418.321101]  [<ffffffff81145b50>] ? process_one_work+0x260/0x550
-> [  418.321883]  [<ffffffff81147605>] worker_thread+0x215/0x350
-> [  418.321883]  [<ffffffff811473f0>] ? manage_workers+0x180/0x180
-> [  418.321883]  [<ffffffff81150887>] kthread+0xe7/0xf0
-> [  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
-> [  418.321883]  [<ffffffff841c7a2c>] ret_from_fork+0x7c/0xb0
-> [  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
-> [  418.321883] ---[ end trace c974221542b61d0d ]---
->
->
-> Thanks,
-> Sasha
+What tree is this?
+
+> drivers/gpio/gpio-pl061.c:345:3: warning: format '%x' expects argument of
+>     type 'unsigned int', but argument 3 has type 'resource_size_t'
+> 
+> Switch to %pa (and pass in a pointer to the resource instead).
+> 
+> Fixes: 73675c8aa07 ('gpio: pl061: proper error messages')
+[]
+> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+[]
+> @@ -341,8 +341,8 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+>  	}
+>  
+>  	amba_set_drvdata(adev, chip);
+> -	dev_err(&adev->dev, "PL061 GPIO chip @%08x registered\n",
+> -		adev->res.start);
+> +	dev_err(&adev->dev, "PL061 GPIO chip @%pa registered\n",
+> +		&adev->res.start);
+
+This looks as if this should not use dev_err, but maybe dev_info
+and maybe it should use %pR, &adev->res
+
 
