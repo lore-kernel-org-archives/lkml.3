@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab3KZSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:49:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34934 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756943Ab3KZStz (ORCPT
+	id S1757395Ab3KZS6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:58:14 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:58489 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab3KZS6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:49:55 -0500
-Date: Tue, 26 Nov 2013 18:49:51 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Message-ID: <20131126184951.GL31504@decadent.org.uk>
-References: <lsq.1385387069.559528559@decadent.org.uk>
- <5294CEB8.7080203@roeck-us.net>
+	Tue, 26 Nov 2013 13:58:11 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5294EF42.3090001@roeck-us.net>
+Date: Tue, 26 Nov 2013 10:58:10 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5294CEB8.7080203@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 3.2 00/87] 3.2.53-rc1 review
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
+CC: Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] watchdog: core: Fix watchdog_init_timeout() when
+ invalid param / valid dt
+References: <1385490173-7511-1-git-send-email-dianders@chromium.org> <1385490173-7511-2-git-send-email-dianders@chromium.org>
+In-Reply-To: <1385490173-7511-2-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 08:39:20AM -0800, Guenter Roeck wrote:
-> On 11/25/2013 05:44 AM, Ben Hutchings wrote:
-> >This is the start of the stable review cycle for the 3.2.53 release.
-> >There are 87 patches in this series, which will be posted as responses
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Wed Nov 27 13:44:29 UTC 2013.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build test results:
-> 	total: 100 pass: 78 skipped: 14 fail: 8
-> 
-> Qemu tests all pass.
-> 
-> This matches the previous results, so everything is as expected.
+On 11/26/2013 10:22 AM, Doug Anderson wrote:
+> There was a minor bug in watchdog_init_timeout() where it would return
+> an error code if someone specified an invalid parameter on the
+> command line but then there was a valid parameter in the device tree
+> as "timeout-sec".
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Thanks a lot.
+I thought that was on purpose.
 
-Ben.
+Problem as I see it is that users would expect the timeout to be set to
+the provided parameter, which would be silently ignored and replaced
+by timeout-sec if the parameter is wrong and timeout-sec is specified.
+Seems to me that the user should be informed about the problem,
+and not be permitted to provide invalid parameters.
 
--- 
-Ben Hutchings
-Everything should be made as simple as possible, but not simpler.
-                                                           - Albert Einstein
+Thanks,
+Guenter
+
+> ---
+>   drivers/watchdog/watchdog_core.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+> index cec9b55..8d27753 100644
+> --- a/drivers/watchdog/watchdog_core.c
+> +++ b/drivers/watchdog/watchdog_core.c
+> @@ -82,12 +82,12 @@ int watchdog_init_timeout(struct watchdog_device *wdd,
+>   		wdd->timeout = timeout_parm;
+>   		return ret;
+>   	}
+> -	if (timeout_parm)
+> -		ret = -EINVAL;
+>
+> -	/* try to get the timeout_sec property */
+> +	/* if no device tree then we're done */
+>   	if (dev == NULL || dev->of_node == NULL)
+> -		return ret;
+> +		return (timeout_parm) ? -EINVAL : ret;
+
+( ) is unnecessary.
+
+> +
+> +	/* try to get the timeout_sec property */
+>   	of_property_read_u32(dev->of_node, "timeout-sec", &t);
+>   	if (!watchdog_timeout_invalid(wdd, t) && t)
+>   		wdd->timeout = t;
+>
+
