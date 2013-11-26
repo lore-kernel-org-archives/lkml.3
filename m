@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3KZTTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 14:19:30 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:56042 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3KZTT2 (ORCPT
+	id S1757938Ab3KZTXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 14:23:18 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:54843 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab3KZTXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 14:19:28 -0500
-Date: Tue, 26 Nov 2013 11:19:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>
-Subject: Re: input question: ambient light sensor button
-Message-ID: <20131126191924.GD22242@core.coreip.homeip.net>
-References: <201309151553.34000@pali>
- <201311201550.05800@pali>
- <CAN+gG=HwuES-H4y5=_VcEQg4OiE2NYmra2+MzsbPusiOEq7Qsw@mail.gmail.com>
- <201311221213.49580@pali>
+	Tue, 26 Nov 2013 14:23:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201311221213.49580@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5294EF42.3090001@roeck-us.net>
+References: <1385490173-7511-1-git-send-email-dianders@chromium.org>
+	<1385490173-7511-2-git-send-email-dianders@chromium.org>
+	<5294EF42.3090001@roeck-us.net>
+Date: Tue, 26 Nov 2013 11:23:13 -0800
+X-Google-Sender-Auth: bjQdj7HGDPziMXCKHF8Q2Hnp_Ls
+Message-ID: <CAD=FV=W0Op73P2f5KSWhOG+34N8OyeKUzS17ot3BTtzULApv8A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] watchdog: core: Fix watchdog_init_timeout() when
+ invalid param / valid dt
+From: Doug Anderson <dianders@chromium.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-watchdog@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 22, 2013 at 12:13:49PM +0100, Pali Rohár wrote:
-> On Wednesday 20 November 2013 16:59:42 Benjamin Tissoires wrote:
-> > Hi,
-> > 
-> > On Wed, Nov 20, 2013 at 9:50 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> > >> > > I guess we need patch adding
-> > >> > > 
-> > >> > >   #define KEY_ALS_TOGGLE  0x230
-> > >> > > 
-> > >> > > Thanks.
-> > >> > 
-> > >> > So there is no good key for als yet?
-> > >> 
-> > >> No, but if you send me a patch adding it I will gladly
-> > >> apply it.
-> > >> 
-> > >> Thanks.
-> > > 
-> > > Ok, here is patch:
-> > > 
-> > > Add key code for ambient light sensor button
-> > > 
-> > > More notebooks have special button for enabling/disabling
-> > > ambient light sensor. This patch adding new als code to
-> > > input.h header file.
-> > > 
-> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > 
-> > > diff --git a/include/uapi/linux/input.h
-> > > b/include/uapi/linux/input.h index a372627..1562f10 100644
-> > > --- a/include/uapi/linux/input.h
-> > > +++ b/include/uapi/linux/input.h
-> > > @@ -719,6 +719,8 @@ struct input_keymap_entry {
-> > > 
-> > >  #define BTN_DPAD_LEFT          0x222
-> > >  #define BTN_DPAD_RIGHT         0x223
-> > > 
-> > > +#define KEY_ALS_TOGGLE         0x230
-> > 
-> > Could you just add a comment explaining that ALS is ambiant
-> > light sensor? Otherwise, I'm sure someone else will use this
-> > event code for an other thing... :)
-> > 
-> > Cheers,
-> > Benjamin
-> 
-> Ok, here is new diff with comment:
+Guenter,
 
-Applied, thank you.
+Thanks for your reviews!
 
-> 
-> diff --git a/include/uapi/linux/input.h b/include/uapi/linux/input.h
-> index a372627..7bacdb5 100644
-> --- a/include/uapi/linux/input.h
-> +++ b/include/uapi/linux/input.h
-> @@ -719,6 +719,8 @@ struct input_keymap_entry {
->  #define BTN_DPAD_LEFT		0x222
->  #define BTN_DPAD_RIGHT		0x223
->  
-> +#define KEY_ALS_TOGGLE		0x230	/* Ambient light sensor */
-> +
->  #define BTN_TRIGGER_HAPPY		0x2c0
->  #define BTN_TRIGGER_HAPPY1		0x2c0
->  #define BTN_TRIGGER_HAPPY2		0x2c1
-> 
-> 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
+On Tue, Nov 26, 2013 at 10:58 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 11/26/2013 10:22 AM, Doug Anderson wrote:
+>>
+>> There was a minor bug in watchdog_init_timeout() where it would return
+>> an error code if someone specified an invalid parameter on the
+>> command line but then there was a valid parameter in the device tree
+>> as "timeout-sec".
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>
+>
+> I thought that was on purpose.
+>
+> Problem as I see it is that users would expect the timeout to be set to
+> the provided parameter, which would be silently ignored and replaced
+> by timeout-sec if the parameter is wrong and timeout-sec is specified.
+> Seems to me that the user should be informed about the problem,
+> and not be permitted to provide invalid parameters.
+
+Wow, really?  ...so it's on purpose that the function will properly
+read the device tree entry and fill it in but still return an error?
+
+I guess that can make some sense (treating device tree as an extension
+of the "default"), though it's non-obvious enough to me that it feels
+like it deserves some documentation.  I'd also question the value of
+the return code from this function anyway.  I'd vote for:
+
+1. If param is non-zero and invalid, dev_warn() in this function.
+
+2. If "timeout-sec" is specified in device tree and invalid,
+dev_warn() in this function.
+
+Function doesn't need to return an error code.  ...or if we keep it
+then nobody should be looking at it.  They should be putting their
+default in "timeout" before calling the function and trusting that the
+function will do the right thing and update it as needed.
 
 
+In practice only one caller ever checks this result in the code I'm
+looking at (at91sam9_wdt) and it's a little confusing what that's
+trying to do.  It does look like it would be broken by my suggestions
+above.  I guess it's trying to do:
+1. device tree first (always passes 0 as the "param")
+2. a value based on the patting heartbeat second.
+3. the value WDT_HEARTBEAT third (starts in ->timeout)
 
--- 
-Dmitry
+
+In any case I'm OK with just dropping this patch.  The code looked
+wrong and so I thought I'd fix it up, but I have no real need to see
+it land (we don't use kernel parameters for things like this) in
+Chrome OS.  I'm also happy to spin it if there is some interest.
+
+
+-Doug
