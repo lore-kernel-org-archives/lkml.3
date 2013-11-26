@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab3KZSKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:10:15 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:63933 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565Ab3KZSKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:10:12 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: balbi@ti.com
+	id S1757624Ab3KZSLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:11:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46714 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757223Ab3KZSLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:11:14 -0500
+Date: Tue, 26 Nov 2013 12:10:24 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, <freemangordon@abv.bg>
 Subject: Re: BUG: usb: obex in g_nokia.ko causing kernel panic
-Date: Tue, 26 Nov 2013 19:10:08 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-14-generic; KDE/4.11.3; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        freemangordon@abv.bg, Sebastian Reichel <sre@ring0.de>
-References: <201311191151.17153@pali> <201311261828.05990@pali> <20131126173953.GQ24310@saruman.home>
-In-Reply-To: <20131126173953.GQ24310@saruman.home>
+Message-ID: <20131126181024.GA24310@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <201311191151.17153@pali>
+ <201311261810.22885@pali>
+ <20131126171748.GA26429@earth.universe>
+ <20131126180643.GA32057@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1961162.PLKbNHumOs";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201311261910.08537@pali>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZCk4OG7a+AFlaik7"
+Content-Disposition: inline
+In-Reply-To: <20131126180643.GA32057@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1961162.PLKbNHumOs
-Content-Type: Text/Plain;
-  charset="utf-8"
+--ZCk4OG7a+AFlaik7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tuesday 26 November 2013 18:39:54 Felipe Balbi wrote:
-> Hi,
->=20
-> On Tue, Nov 26, 2013 at 06:28:05PM +0100, Pali Roh=C3=A1r wrote:
->=20
-> [ snip ]
->=20
-> > > > (above dump is from 3.12-rc5 kernel)
+Hi,
+
+On Tue, Nov 26, 2013 at 07:06:43PM +0100, Pavel Machek wrote:
+> > > > For a long time (since 3.5 or 3.8? - I do not remember) obex
+> > > > subdriver in g_nokia usb gadget module causing kernel panic
+> > > > after module is loaded on Nokia N900. I do not know where is
+> > > > problem and due to immediatelly kernel crash when loading
+> > > > driver I was not able to see any dmesg output. Now I was able
+> > > > to store something into mtd log and here is crash backtrace:
+> > > > [...]
 > > >=20
-> > > looks like it's trying to do i2c transfers from atomic.
-> > > But why only when obex is enabled ? Makes no sense. What
-> > > do you have on userland ? Is there anything trying to
-> > > access the obex interface ? Was the USB cable attached at
-> > > that time ?
+> > > Hi! can you look at this problem?
 > >=20
-> > Yes, only when initliaizing obex. Other is ok. Problem is
-> > there with Maemo userland and also with clean userland
-> > (rescueOS) where is only busybox and some simple init
-> > scripts. On Maemo maybe something is trying to access obex,
-> > but on rescueOS for sure nothing. Problem happends when
-> > cable is attached and also when not =3D always.
+> > So it worked at some time?
+> > Have you tried to git bisect the problem?
 >=20
-> As a debug effort, can you apply hack below and see if it
-> "helps" ?
->=20
-> diff --git a/drivers/usb/gadget/f_obex.c
-> b/drivers/usb/gadget/f_obex.c index ad39f1d..4af2f06 100644
-> --- a/drivers/usb/gadget/f_obex.c
-> +++ b/drivers/usb/gadget/f_obex.c
-> @@ -267,10 +267,12 @@ static void obex_connect(struct gserial
-> *g) if (!obex->can_activate)
->  		return;
->=20
-> +#if 0
->  	status =3D usb_function_activate(&g->func);
->  	if (status)
->  		DBG(cdev, "obex ttyGS%d function activate --> %d\n",
->  			obex->port_num, status);
-> +#endif
->  }
->=20
->  static void obex_disconnect(struct gserial *g)
-> @@ -282,10 +284,12 @@ static void obex_disconnect(struct
-> gserial *g) if (!obex->can_activate)
->  		return;
->=20
-> +#if 0
->  	status =3D usb_function_deactivate(&g->func);
->  	if (status)
->  		DBG(cdev, "obex ttyGS%d function deactivate --> %d\n",
->  			obex->port_num, status);
-> +#endif
->  }
->=20
->  /*-----------------------------------------------------------
-> --------------*/ @@ -372,6 +376,7 @@ static int
-> obex_bind(struct usb_configuration *c, struct usb_function
-> *f) if (status)
->  		goto fail;
->=20
-> +#if 0
->  	/* Avoid letting this gadget enumerate until the userspace
->  	 * OBEX server is active.
->  	 */
-> @@ -381,6 +386,7 @@ static int obex_bind(struct
-> usb_configuration *c, struct usb_function *f) obex->port_num,
-> status);
->  	else
->  		obex->can_activate =3D true;
-> +#endif
->=20
->=20
->  	DBG(cdev, "obex ttyGS%d: %s speed IN/%s OUT/%s\n",
+> You are a cruel person :-). N900 historically boots about half of the
+> time, trying to do git bisect there is a nice weekend project... for
+> about next century or so.
 
-Hi, with above patch g_nokia.ko working and not crashing.
+heh, I'll agree to that :-)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+--=20
+balbi
 
---nextPart1961162.PLKbNHumOs
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+--ZCk4OG7a+AFlaik7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iEYEABECAAYFAlKU5AAACgkQi/DJPQPkQ1LzYQCcD124GO/TUNTU7NxRav2SCbEm
-wmgAniugNnJob81ciHGWiK3kY6XIR5Fq
-=Ar8n
+iQIcBAEBAgAGBQJSlOQQAAoJEIaOsuA1yqREUdQQAI6fmxnsiNPEoqofgCCQ/mhi
+gpNlOCymY1tevYoN4O7s+2m4F1UCDwFnEBAyd/k8OA13AOo9u/gg760C9wNBXwAc
+s8thog4iDYDlel65VfhIvN30Biu+6A/g1u/d5cIl6QH8xvrBUDbfaGhNwd16p9Bo
+2/0+4Ef3XpzrCu/R7exwhakHyh/uIAn6ooIUS5z0MG8RME2cAQee0VYoJiOwpBgQ
+xriJuCwDBhVDbrH/I5NUAM2U5Zq5ixRH1SLiR2iiQLarR9CP1QmCSlQtzcOMODzZ
++GCM+UykhY7eLHudQMHdcAFFT7bdZXAoCKBt6I82CjNrtuvXZ9ElFYu1fk6tdfgQ
+DXzrvcYdW9G21crGXQ9Yz7vjkJaN7BwHmRjEMSHvDMUMDtcS2zjJWPYwwYVcGyeX
+JG72t+DeYjZ3PAjofJLNoAnS1J9OiT0eRlwAczbLIDpBWfsQdvDoHS1ZhXDfFK0v
+cl5rDPIv2e6I7bT0BaDkdp2LQKNLvylOG/WVLahiNorrpvxB3Oiucd0oQj0JXI1w
+cWHx4fuArVZdTGiT6jK97j0PB32/hMNxgU197El7X+qp/qbb9A4ejrv4sXQnuhRg
+K5vV+8bFbkQ3SuHxBRrmCY0bc0R/DFhC3m36pqT8R0lVp3uaZ3XV8cRpAyhvDoj0
+1XhsXNiynSyfrAVpwPir
+=7B7j
 -----END PGP SIGNATURE-----
 
---nextPart1961162.PLKbNHumOs--
+--ZCk4OG7a+AFlaik7--
