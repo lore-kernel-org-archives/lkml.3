@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab3KZSdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:33:11 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:59802 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab3KZSdF (ORCPT
+	id S1757661Ab3KZSf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:35:57 -0500
+Received: from mail-pb0-f73.google.com ([209.85.160.73]:51718 "EHLO
+	mail-pb0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756697Ab3KZSf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 13:33:05 -0500
-Message-ID: <5294E95C.7050902@linux.com>
-Date: Tue, 26 Nov 2013 19:33:00 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peng Tao <bergwolf@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Mikhail Pershin <mike.pershin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH v2 02/12] staging/lustre/llog: MGC to use OSD API for
- backup logs
-References: <1385478286-5525-1-git-send-email-bergwolf@gmail.com> <1385478286-5525-3-git-send-email-bergwolf@gmail.com>
-In-Reply-To: <1385478286-5525-3-git-send-email-bergwolf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 13:35:56 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
+Cc: Leela Krishna Amudala <l.krishna@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] watchdog: s3c2410_wdt: Handle rounding a little better for timeout
+Date: Tue, 26 Nov 2013 10:30:37 -0800
+Message-Id: <1385490637-10306-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The existing watchdog timeout worked OK but didn't deal with
+rounding in an ideal way when dividing out all of its clocks.
 
-just a few comments, mostly code style.
+Specifically if you had a timeout of 32 seconds and an input clock of
+66666666, you'd end up setting a timeout of 31.9998 seconds and
+reporting a timeout of 31 seconds.
 
-2013-11-26 16:04, Peng Tao:
-> @@ -1011,23 +1083,17 @@ int mgc_set_info_async(const struct lu_env *env, struct obd_export *exp,
->  	}
->  	if (KEY_IS(KEY_SET_FS)) {
->  		struct super_block *sb = (struct super_block *)val;
-> -		struct lustre_sb_info *lsi;
-> +
->  		if (vallen != sizeof(struct super_block))
->  			return -EINVAL;
-> -		lsi = s2lsi(sb);
-> -		rc = mgc_fs_setup(exp->exp_obd, sb, lsi->lsi_srv_mnt);
-> -		if (rc) {
-> -			CERROR("set_fs got %d\n", rc);
-> -		}
-> +
-> +		rc = mgc_fs_setup(exp->exp_obd, sb);
->  		return rc;
+Specifically DBG printouts showed:
+  s3c2410wdt_set_heartbeat: count=16666656, timeout=32, freq=520833
+  s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666656 (0000ff4f)
+and the final timeout reported to the user was:
+  ((count / divisor) * divisor) / freq
+  (0xff4f * 255) / 520833 = 31 (truncated from 31.9998)
+the technically "correct" value is:
+  (0xff4f * 255) / (66666666.0 / 128) = 31.9998
 
-Why set rc when you return it on the next statement?
-Wouldn't 'return mgc_fs_setup(exp->exp_obd, sb);' be better?
+By using "DIV_ROUND_UP" we can be a little more correct.
+  s3c2410wdt_set_heartbeat: count=16666688, timeout=32, freq=520834
+  s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666688 (0000ff50)
+and the final timeout reported to the user:
+  (0xff50 * 255) / 520834 = 32
+the technically "correct" value is:
+  (0xff50 * 255) / (66666666.0 / 128) = 32.0003
 
->  	}
->  	if (KEY_IS(KEY_CLEAR_FS)) {
->  		if (vallen != 0)
->  			return -EINVAL;
->  		rc = mgc_fs_cleanup(exp->exp_obd);
-> -		if (rc) {
-> -			CERROR("clear_fs got %d\n", rc);
-> -		}
->  		return rc;
+We'll use a DIV_ROUND_UP to solve this, generally erroring on the side
+of reporting shorter values to the user and setting the watchdog to
+slightly longer than requested:
+* Round input frequency up to assume watchdog is counting faster.
+* Round divisions by divisor up to give us extra time.
 
-Same here possibly.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/watchdog/s3c2410_wdt.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-> +	/* Copy the setup log locally if we can. Don't mess around if we're
-> +	 * running an MGS though (logs are already local). */
-> +	if (lctxt && lsi && IS_SERVER(lsi) && !IS_MGS(lsi) &&
-> +	    cli->cl_mgc_configs_dir != NULL &&
-> +	    lu2dt_dev(cli->cl_mgc_configs_dir->do_lu.lo_dev) ==
-> +	    lsi->lsi_dt_dev) {
-
-I think that is *really* ugly!
-(The last comparison is separated into two lines)
-
+diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
+index 7d8fd04..fe2322b 100644
+--- a/drivers/watchdog/s3c2410_wdt.c
++++ b/drivers/watchdog/s3c2410_wdt.c
+@@ -188,7 +188,7 @@ static int s3c2410wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeou
+ 	if (timeout < 1)
+ 		return -EINVAL;
+ 
+-	freq /= 128;
++	freq = DIV_ROUND_UP(freq, 128);
+ 	count = timeout * freq;
+ 
+ 	DBG("%s: count=%d, timeout=%d, freq=%lu\n",
+@@ -201,20 +201,20 @@ static int s3c2410wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeou
+ 
+ 	if (count >= 0x10000) {
+ 		for (divisor = 1; divisor <= 0x100; divisor++) {
+-			if ((count / divisor) < 0x10000)
++			if (DIV_ROUND_UP(count, divisor) < 0x10000)
+ 				break;
+ 		}
+ 
+-		if ((count / divisor) >= 0x10000) {
++		if (divisor > 0x100) {
+ 			dev_err(wdt->dev, "timeout %d too big\n", timeout);
+ 			return -EINVAL;
+ 		}
+ 	}
+ 
+ 	DBG("%s: timeout=%d, divisor=%d, count=%d (%08x)\n",
+-	    __func__, timeout, divisor, count, count/divisor);
++	    __func__, timeout, divisor, count, DIV_ROUND_UP(count, divisor));
+ 
+-	count /= divisor;
++	count = DIV_ROUND_UP(count, divisor);
+ 	wdt->count = count;
+ 
+ 	/* update the pre-scaler */
 -- 
-Regards,
-Levente Kurusa
+1.8.4.1
+
