@@ -1,146 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3KZKEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 05:04:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42960 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab3KZKEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 05:04:10 -0500
-Date: Tue, 26 Nov 2013 11:03:24 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 3/3] perf inject: Handle output file via perf_data_file
- object
-Message-ID: <20131126100324.GB1267@krava.brq.redhat.com>
-References: <1385130268-10664-1-git-send-email-jolsa@redhat.com>
- <1385130268-10664-4-git-send-email-jolsa@redhat.com>
- <20131125194032.GC27323@ghostprotocols.net>
+	id S1755001Ab3KZJp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:45:59 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:50132 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab3KZJpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 04:45:51 -0500
+Date: Tue, 26 Nov 2013 10:45:06 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linaro Patches List <patches@linaro.org>
+Subject: Re: [PATCH 2/5] pwm: kona: Introduce Kona PWM controller support
+Message-ID: <20131126094505.GC27752@ulmo.nvidia.com>
+References: <1384800901-21711-1-git-send-email-tim.kryger@linaro.org>
+ <1384800901-21711-3-git-send-email-tim.kryger@linaro.org>
+ <20131125110854.GI22043@ulmo.nvidia.com>
+ <CAAYSxhr7=Pa8RdnEsD2MGTR4hvfHCcHQCP77GRjx1Fqb-=kRrA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RIYY1s2vRbPFwWeW"
 Content-Disposition: inline
-In-Reply-To: <20131125194032.GC27323@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAYSxhr7=Pa8RdnEsD2MGTR4hvfHCcHQCP77GRjx1Fqb-=kRrA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 04:40:32PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Nov 22, 2013 at 03:24:28PM +0100, Jiri Olsa escreveu:
-> > Using the perf_data_file object to handle output
 
-SNIP
+--RIYY1s2vRbPFwWeW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +	if (!perf_data_file__is_pipe(&inject->output))
-> >  		return 0;
-> >  
-> >  	return perf_event__repipe_synth(tool, event);
-> > @@ -351,10 +343,12 @@ static int __cmd_inject(struct perf_inject *inject)
-> >  {
-> >  	struct perf_session *session;
-> >  	int ret = -EINVAL;
-> > -	struct perf_data_file file = {
-> > +	struct perf_data_file file_in = {
-> 
-> Why don't leave it as 'file', and on a follow up patch _then_ rename it
-> to file_in? This way patch review gets easier, i.e. try avoiding doing
-> multiple things per patch.
+On Mon, Nov 25, 2013 at 05:38:44PM -0800, Tim Kryger wrote:
+> On Mon, Nov 25, 2013 at 3:08 AM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > On Mon, Nov 18, 2013 at 10:54:58AM -0800, Tim Kryger wrote:
+> > [...]
+> >> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+[...]
+> >> +#define PWM_CONTROL_INITIAL          (0x3f3f3f00)
+> >
+> > Can this not be expressed as a bitmask of values for the individual
+> > fields.
+> >
+> >> +#define PWMOUT_POLARITY(chan)                (0x1 << (8 + chan))
+> >
+> > This seems to only account for bits 8-13, what about the others?
+> >
+> >> +#define PWMOUT_ENABLE(chan)          (0x1 << chan)
+> >
+> > Well, this accounts for bits 0-5, that still leaves 16-21 and 24-29.
+>=20
+> 29:24 - Configures each PWM channel for smooth transitions or glitches
+> 21:16 - Configures each PWM channel for push/pull or open drain output
 
-the input file needed to be renamed, because new 'output' file was added
+Excellent, now if you can turn that into bit definitions and define
+PWM_CONTROL_INITIAL in terms of those, then I'll be very happy.
 
-> 
-> >  		.path = inject->input_name,
-> >  		.mode = PERF_DATA_MODE_READ,
-> >  	};
-> > +	struct perf_data_file *file_out = &inject->output;
-> > +	int out_fd = perf_data_file__fd(file_out);
-> >  
-> >  	signal(SIGINT, sig_handler);
-> >  
-> > @@ -365,7 +359,7 @@ static int __cmd_inject(struct perf_inject *inject)
-> >  		inject->tool.tracing_data = perf_event__repipe_tracing_data;
-> >  	}
-> >  
-> > -	session = perf_session__new(&file, true, &inject->tool);
-> > +	session = perf_session__new(&file_in, true, &inject->tool);
-> 
-> This hunk, for example, wouldn't be here, the this patch would be
-> shorter, easier to review.
-> 
-> >  	if (session == NULL)
-> >  		return -ENOMEM;
-> >  
-> > @@ -391,14 +385,15 @@ static int __cmd_inject(struct perf_inject *inject)
-> >  		}
-> >  	}
-> >  
-> > -	if (!inject->pipe_output)
-> > -		lseek(inject->output, session->header.data_offset, SEEK_SET);
-> > +	if (!perf_data_file__is_pipe(file_out))
-> > +		lseek(out_fd, session->header.data_offset, SEEK_SET);
-> 
-> Couldn't this be left as:
-> 
-> -	if (!inject->pipe_output)
-> -		lseek(inject->output, session->header.data_offset, SEEK_SET);
-> +	if (!perf_data_file__is_pipe(file_out))
-> +		lseek(inject->output->fd, session->header.data_offset, SEEK_SET);
-> 
-> I.e. why wrap access to the fd like that?
+One other thing I didn't pay attention to before: while it's quite
+unlikely ever to happen, you might want to spend an extra pair of
+parentheses around "chan", just in case.
 
-well, inject->output->fd is used on 2 places within the function,
-so it seems logical to put it into variable and use it like that
+> >> +#define PRESCALE_OFFSET                      (0x00000004)
+> >> +#define PRESCALE_SHIFT(chan)         (chan << 2)
+> >
+> > I'm confused. This allocates 2 bits for each channel...
+> >
+> >> +#define PRESCALE_MASK(chan)          (~(0x7 << (chan << 2)))
+> >> +#define PRESCALE_MIN                 (0x00000000)
+> >> +#define PRESCALE_MAX                 (0x00000007)
+> >
+> > ... but 0x7 requires at least 3 bits.
+>=20
+> Actually this is allocating 2^2 bits for each channel.
 
-> 
-> >  
-> >  	ret = perf_session__process_events(session, &inject->tool);
-> >  
-> > -	if (!inject->pipe_output) {
-> > +	if (!perf_data_file__is_pipe(file_out)) {
-> >  		session->header.data_size = inject->bytes_written;
-> > -		perf_session__write_header(session, session->evlist, inject->output, true);
-> > +		perf_session__write_header(session, session->evlist, out_fd,
-> > +					   true);
-> 
-> Why a line for 'true' all by itself?
+Doh! Indeed. Perhaps writing it as (~(0x7 << (chan * 4))) would make it
+easier to digest for slow-witted people like myself.
 
-line was crossing 80 chars limit
+> >> +#define PERIOD_COUNT_OFFSET(chan)    (0x00000008 + (chan << 3))
+> >> +#define PERIOD_COUNT_MIN             (0x00000002)
+> >> +#define PERIOD_COUNT_MAX             (0x00ffffff)
+> >
+> > Why PERIOD_COUNT? PERIOD is descriptive enough. Or is this the name as
+> > found in the manual?
+>=20
+> I agree but as you suspected this name comes from the hardware docs.
 
-> 
-> >  	}
-> >  
-> >  	perf_session__delete(session);
-> > @@ -427,14 +422,17 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  		},
-> >  		.input_name  = "-",
-> >  		.samples = LIST_HEAD_INIT(inject.samples),
-> > +		.output = {
-> > +			.path = "-",
-> > +			.mode = PERF_DATA_MODE_WRITE,
-> > +		},
-> >  	};
-> > -	const char *output_name = "-";
-> >  	const struct option options[] = {
-> >  		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
-> >  			    "Inject build-ids into the output stream"),
-> >  		OPT_STRING('i', "input", &inject.input_name, "file",
-> >  			   "input file name"),
-> > -		OPT_STRING('o', "output", &output_name, "file",
-> > +		OPT_STRING('o', "output", &inject.output.path, "file",
-> 
-> see, here you directly access a perf_data_file member instead of having
-> another wrapper :-)
+Okay, that's fine then. Do you have a pointer to that documentation?
 
-yes
+> >> +static int kona_pwmc_enable(struct pwm_chip *chip, struct pwm_device =
+*pwm)
+> >> +{
+> >> +     return kona_pwmc_config(chip, pwm, pwm->duty_cycle, pwm->period);
+> >> +}
+> >
+> > Why can't this just enable the channel? Why go through all the trouble
+> > of running the whole computations again?
+>=20
+> The hardware is always enabled and at best can be be configured to
+> operate at zero duty.
 
-I dont have strong opinions about wrappers, sometimes it seems
-appropriate, sometimes it does not.. tell me the guidance here
-and I'll kick the patch to fit ;-)
+What good are the PWMOUT_ENABLE bits then? Is that really only used for
+triggering updates? That's what another comment suggests, but if so, can
+the comment in kona_pwmc_apply_settings() be extended to mention that?
 
-thanks,
-jirka
+> The settings in HW may have already been triggered and might not be
+> what you want.
+>=20
+> For example:
+>=20
+> /sys/class/pwm/pwmchip0/pwm1# echo 1 > enable
+> /sys/class/pwm/pwmchip0/pwm1# echo 5000 > period
+> /sys/class/pwm/pwmchip0/pwm1# echo 2000 > duty_cycle
+> /sys/class/pwm/pwmchip0/pwm1# echo 0 > enable
+> /sys/class/pwm/pwmchip0/pwm1# echo 1 > enable
+
+I'm not exactly sure what this is supposed to demonstrate.
+
+> >> +
+> >> +     writel(0, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+> >> +     kona_pwmc_apply_settings(kp, chan);
+> >> +}
+> >> +
+> >> +static const struct pwm_ops kona_pwm_ops =3D {
+> >> +     .config =3D kona_pwmc_config,
+> >> +     .owner =3D THIS_MODULE,
+> >> +     .enable =3D kona_pwmc_enable,
+> >> +     .disable =3D kona_pwmc_disable,
+> >> +};
+> >
+> > Please move the .owner field to be the last field. Also you did define
+> > the PWMOUT_POLARITY field, which indicates that the hardware supports
+> > changing the signal's polarity, yet you don't implement the polarity
+> > feature. Why not?
+>=20
+> I wanted to keep this driver simple for now.
+
+Fair enough.
+
+> > Do you really want the clock enabled all the time? Why not just
+> > clk_enable() whenever a PWM is enabled? If you need the clock for
+> > register access, you can also bracket register accesses with
+> > clk_enable() and clk_disable(). Perhaps the power savings aren't worth
+> > the added effort, so if you'd rather not do that, I'm fine with it, too.
+>=20
+> I intend to follow up with a patch to do exactly that but I want to
+> establish the baseline functionality first.
+
+Okay, that's fine.
+
+> >> +MODULE_AUTHOR("Broadcom");
+> >
+> > I don't think Broadcom qualifies as author. This should be the name of
+> > whoever wrote the code. There are a few drivers that contain the company
+> > name in the MODULE_AUTHOR, but I don't think those are correct either.
+>=20
+> Would you be fine with two lines here?  Something like:
+>=20
+> MODULE_AUTHOR("Broadcom Corporation <bcm-kernel-feedback-list@broadcom.co=
+m>");
+> MODULE_AUTHOR("Tim Kryger <tkryger@broadcom.com>");
+
+Not sure. That email address certainly doesn't look like it belongs to
+the driver author. Neither did Broadcom actually write the driver, you
+did, right? If you're concerned about your employer not being credited
+you're listed with an @broadcom.com email address and there's the
+copyright statement.
+
+All of that said, I wasn't able to dig up a normative policy and either
+of your proposed alternatives do exist in the kernel, so I withdraw any
+objections regarding MODULE_AUTHOR. Take your pick.
+
+Thierry
+
+--RIYY1s2vRbPFwWeW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSlG2hAAoJEN0jrNd/PrOh6ogP/jjxSKLBGXycQEuVd8QRh6B6
+tit2cjmsOvYjOkTFgfAXbQNaeH6XfUEYmbQ/wKcZ+Yo9hiMpEdYm7JGVdywG7k4F
+ND1DxJ8uzYeBI3wRyKz+0Qpc8RujJdRBHR0/ft3m2aWfZBqFsTdhhiP7F54PVsZz
+uDQT6tnNB1kvCzVEYWq15JriE+dehncnWaTzB41jDdQFoNpTfHlL2mxdP4LeUVLJ
+H/tN1HI1T7UIKkGxcv3H4HXwX2PjvLRpp/W4e39/WAtOy4cvdRni62MJZFZXc5Af
+7/4+4qF7Qh81JMF+vxCEbZWmup6icmIPo9xewK5ZwyWGIqH0JJVxeD6IWhZ6I+S6
+INLhGURCd+omuXGuG8kDpsX4gn+rLcP6HhnN54ItPntiOhP+c+zKuDxuPGv8hpnU
+NnIQGBYlyZlcgJTUcJ1817i2zl6hO6xb/E6hiY7ADszbsjNWZXSzx0/MPs0lIsrG
+1BJ5K2yXPbKwlv50xSYTUO4RnRYWuQQDNfhmrnAMQENUKR8P8q1lwTC5TBFhnyG8
+uQyVbntGmUIBJrpWvyijxk+0n0rq3G5q2sdqpgRWsxjcuhXOk0clFeBkZsYGOUJN
+W397HbusUy+K553ZVZDREpAx4bfWBZVc6IbkIwyguBQIQlMRBSjI19eD3DWZe/Lv
+enZv/zDz4k3F+9M/hnlh
+=cDGi
+-----END PGP SIGNATURE-----
+
+--RIYY1s2vRbPFwWeW--
