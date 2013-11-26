@@ -1,113 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3KZAwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 19:52:08 -0500
-Received: from smtprelay0242.hostedemail.com ([216.40.44.242]:45932 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751691Ab3KZAwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 19:52:04 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:16:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1605:1711:1730:1747:1777:1792:2110:2393:2559:2562:2691:2828:2893:2897:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4037:4321:4362:5007:6691:7652:7903:9040:10004:10400:10463:10464:10848:11232:11658:11914:12517:12519:12663:12740:13095:13160:13229:13618:13869:14037:14039,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: peace56_1150238a9b557
-X-Filterd-Recvd-Size: 4158
-Message-ID: <1385427119.20100.47.camel@joe-AO722>
-Subject: Re: [PATCH] x86: boot: Fix mixed indentation in a20.c
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Johannes =?ISO-8859-1?Q?L=F6thberg?= <johannes@kyriasis.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 25 Nov 2013 16:51:59 -0800
-In-Reply-To: <20131125101807.GA13385@gmail.com>
-References: <1384797009-4096-1-git-send-email-johannes@kyriasis.com>
-	 <528ACB6A.1040809@zytor.com> <20131119072241.GB32478@gmail.com>
-	 <20131119103408.GA3640@pd.tnic> <1384883323.17783.35.camel@joe-AO722>
-	 <20131119182306.GD3515@pd.tnic> <528BACCB.1090604@zytor.com>
-	 <1384885733.17783.37.camel@joe-AO722> <20131125101807.GA13385@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753095Ab3KZAxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 19:53:05 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3187 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752752Ab3KZAxC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 19:53:02 -0500
+From: =?iso-8859-1?Q?=22Andersson=2C_Bj=F6rn=22?= 
+	<Bjorn.Andersson@sonymobile.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 26 Nov 2013 01:52:59 +0100
+Subject: Re: [PATCH 3/3] pinctrl: Add documentation for pinctrl-msm8x74
+Thread-Topic: [PATCH 3/3] pinctrl: Add documentation for pinctrl-msm8x74
+Thread-Index: Ac7qQdoFuBY5LjeKQkOzPn4vITHYpw==
+Message-ID: <CEB92A62.3A401%bjorn.andersson@sonymobile.com>
+In-Reply-To: <5293E7FB.6040300@wwwdotorg.org>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.0.121105
+acceptlanguage: en-US, sv-SE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-25 at 11:18 +0100, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2013-11-19 at 10:24 -0800, H. Peter Anvin wrote:
-> > > I'll take a proper cleanup,
-> > > but just whitespace... just pointless churn.
-> > What in your view would be "a proper cleanup" for a20.c?
-> 
-> If a newbie does a meaningful, complete, well done cleanup patch then 
-> congratulations and any such help is welcome.
-> 
-> If you as a more experienced kernel developer do a cleanup as part of 
-> some real work then sure, all such cleanups are welcome and they are a 
-> natural part of development work.
-> 
-> So a standalone cleanup patch to a20.c from _you_ would probably not 
-> qualify, almost by definition: your first patch was applied 7 years 
-> ago,
 
-More than 10, but I only note that by looking in a mirror.
 
-> you are by far not a newbie anymore, yet you seem to be mostly 
-> stuck on the 'cleanups and trivialities' level! Sheesh!
-> 
-> My message to the buerocrat Joe Perches is: please leave trivial and 
-> printk patches to newbies, you need to raise to the next level of 
-> kernel development already.
+On 11/25/13 4:14 PM, "Stephen Warren" <swarren@wwwdotorg.org> wrote:
 
-Were I employed to improve the kernel, I'd probably subsume
-my neatening tendencies to the needs of the employer.
+>On 11/23/2013 04:38 PM, Bjorn Andersson wrote:
+>> This adds initial documentation for the pinctrl-msm8x74 driver.
+>
+>> diff --git 
+>>a/Documentation/devicetree/bindings/pinctrl/qcom,msm8x74-pinctrl.txt
+>>b/Documentation/devicetree/bindings/pinctrl/qcom,msm8x74-pinctrl.txt
+>
+>> +Qualcomm MSM8x74 TLMM block
+>> +
+>> +Required properties:
+>> +- compatible: "qcom,msm8x74-pinctrl"
+>> +- reg: Should be the base address of the TLMM block.
+>
+>base address *and length*?
 
-Thankfully, I'm not employed to improve Linux and I can
-choose what I want to do without need to fix bugs that cause
-entities to lose money, customers or profit.  Nor do I have
-to add hardware support for whatever new gadget comes along.
+Of course
 
-> FYI, Linux is a meritocracy, not a bureaucracy:
+>
+>> +- interrupts: Should be the irq of the TLMM summary interrupt.
+>
+>s/irq/IRQ/
 
-I don't believe that Linux is a meritocracy at all.
+OK
 
-It has become a business entity all to itself and is nearly
-completely supported and maintained by profit-seeking
-ventures such as the one that employs you.
+>
+>> +- interrupt-controller: Marks the device node as an interrupt
+>>controller.
+>> +- #interrupt-cells: Should be two.
+>> +- gpio-controller: Marks the device node as a GPIO controller.
+>> +- #gpio-cells : Should be two.
+>> +                The first cell is the gpio pin number and the
+>> +                second cell is used for optional parameters.
+>> +
+>> +Please refer to ../gpio/gpio.txt for a general description of GPIO
+>>bindings.
+>
+>It's probably worth linking to ../interrupt-controller/interrupts.txt too.
 
-Is any major maintainer an unpaid, unremunerated volunteer?
+Will do.
 
-> creating self-serving 
-> churn and attention-seeking
+>
+>> +Please refer to pinctrl-bindings.txt in this directory for details of
+>>the
+>> +common pinctrl bindings used by client devices, including the meaning
+>>of the
+>> +phrase "pin configuration node".
+>> +
+>> +Each subnode describes properties for the given pins.
+>
+>Which subnodes? It's probably worth describing what subnodes can exist.
+>Perhaps try cribbing e.g. the 3 paragraphs in the Tegra binding that
+>appear right after the "Please refer to pinctrl-bindings.txt..." that's
+>there.
 
-I think you've a odd view of what I submit.
+I see that most other documents have a variation of those paragraphs, so
+I better follow that then.
 
-I've a hard time believing I'm either self-serving or
-attention-seeking.  I'll advance my belief that I'm rather
-unassuming and not prone to spotlights.
+>
+>> +Required subnode-properties:
+>> +- qcom,pins: An array of strings, each matching a pin or group to be
+>> +             configured. Possible values are listed below.
+>
+>It isn't clear from this that these properties exist in a sub-sub-node,
+>not just a sub-node, of the main pinctrl node.
+>
+>> +Optional subnode-properties:
+>> +- qcom,function: A name of the function to be muxed to the specified
+>> +                 pins. Possible values are listed below.
+>
+>Are "pins" and "functions" generic enough now that they don't need a
+>vendor prefix? Both those property names are certainly mentioned in
+>pinctrl-bindings.txt.
 
-If I see what I believe a defect in either logic or style,
-I either comment on it if it's a patch, or submit a patch
-myself.  I provide comments a fair amount.
+I've missed that these where in pinconf-generic. I based
+msm_dt_subnode_to_map
+on the tegra implementation and made changes to support pinconf-generic,
+which
+now seems identical with pinconf_generic_dt_subnode_to_map.
+I'll use that directly instead.
 
-> but unimportant patches is not the way to 
-> gain kernel development credibility long term, and eventually people 
-> start protecting against your increasing abuse of the development 
-> process.
+>
+>> +- drive-strength: Configure the drive strength of the specified pins.
+>
+>What units? I assume the definition matches that in
+>pinctrl-bindings.txt? Perhaps it'd be simpler to say "The following
+>generic properties as defined in pinctrl-bindings.txt: pins, function,
+>bias-disable, ...".
 
-Do please reread of this thread as what I did was comment
-on a particular patch by Johannes and suggested that it was
-not likely a necessary thing to change.  What I tried to help
-him with was understanding what, if anything, actually needed
-to be or could be changed in the file.
+Sounds much better than duplicating that information here.
 
->  IMHO.
+>
+>> +Valid values for qcom,function are:
+>> +  blsp_i2c2, blsp_i2c6, blsp_i2c11, blsp_spi1, blsp_uart2, blsp_uart8,
+>>slimbus
+>> +
+>> +  (Note that this is not yet the complete list of functions)
+>
+>It'd be best if the complete list were defined from the start. That
+>said, I suppose adding new values into the list would be
+>backwards-compatible (if not forwards-compatible i.e. new DTs usable
+>with old kernels).
 
-<smile>
-Perhaps you could dial down your humility a bit.
-Perhaps you'll reread and see if it seems humble to you.
+This list is enough for the currently supported (and published on
+linux-arm-msm)
+drivers for the 8x74 based DragonBoard. I wanted to get some feedback
+before adding
+more of the functions in the msm8x74 tables.
 
-cheers, Joe
+>
+>> +Example:
+>> +
+>> +	msmgpio: pinctrl@fd510000 {
+>...
+>> +		pinctrl-names = "default";
+>> +		pinctrl-0 = <&uart2_default>;
+>> +
+>> +		uart2 {
+>
+>What does that node represent? Other pinctrl bindings  only have 1 or 2
+>levels of subnodes, not 3.
+
+I liked the concept of grouping related states/muxes together and then I
+saw Linus'
+ux500 series that did the same thing. But as it's just a matter of taste I
+should
+probably remove it from the example and just make sure it's clear above
+that such
+structure is okay.
+
+>
+>> +			uart2_default: uart2_default {
+>> +				mux {
+>> +					qcom,pins = "gpio4", "gpio5";
+>> +					qcom,function = "blsp_uart2";
+>> +				};
+
+Thanks for your comments!
+
+Regards,
+Bjorn
 
