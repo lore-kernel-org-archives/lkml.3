@@ -1,145 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3KZPew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 10:34:52 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42823 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756983Ab3KZPes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 10:34:48 -0500
-Date: Tue, 26 Nov 2013 09:34:15 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Chao Xu <Chao.Xu@rice.edu>
-CC: <linux-omap@vger.kernel.org>, <santosh.shilimkar@ti.com>,
-        <khilman@deeprootsystems.com>, <linus.walleij@linaro.org>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, <balbi@ti.com>
-Subject: Re: [PATCH RFC] gpio: omap: =?utf-8?Q?refr?=
- =?utf-8?Q?esh_the_patch_=E2=80=9Cgpio=3A_omap=3A_be_more_aggressive_with_?=
- =?utf-8?B?cG1fcnVudGltZeKAnQ==?= against v3.12-rc5
-Message-ID: <20131126153415.GB24310@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <CAKZq+rdGooV0SV1RH6Hrms_Z-p6_FqcNmpGTAcn3dPU0u478vQ@mail.gmail.com>
+	id S932241Ab3KZPgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 10:36:00 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:51529 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab3KZPf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 10:35:58 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
-Content-Disposition: inline
-In-Reply-To: <CAKZq+rdGooV0SV1RH6Hrms_Z-p6_FqcNmpGTAcn3dPU0u478vQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAhSdy2d8p_3RsB1vGF2xdovOkwu1=rHHLRLcdOrduC3aj6NYQ@mail.gmail.com>
+References: <1384897358-22940-1-git-send-email-fkan@apm.com>
+	<528C95D2.5090200@arm.com>
+	<CAAhSdy2e_zmVEBsKLOC0DjHLL=dxDn9g4vV7sfs0jfSmPvEOow@mail.gmail.com>
+	<CAL_JsqJNY8te3Y7xCd6=Zkb6A5fWC3Lz1YBW6a2nFcTK97p3Ug@mail.gmail.com>
+	<CAAhSdy2d8p_3RsB1vGF2xdovOkwu1=rHHLRLcdOrduC3aj6NYQ@mail.gmail.com>
+Date: Tue, 26 Nov 2013 09:35:57 -0600
+Message-ID: <CAL_JsqJqKzg7DDihn+MhPv7TKA1ehv0io0WmMZRg72FVjS8uWQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] irq-gic: add capability to set bypass flag in GIC
+From: Rob Herring <robherring2@gmail.com>
+To: Anup Patel <anup@brainfault.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Feng Kan <fkan@apm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinayak Kale <vinayak.kale@gmail.com>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Loc Ho <lho@apm.com>, Kumar Sankaran <ksankaran@apm.com>,
+        patches@apm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---KFztAG8eRSV9hGtP
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 25, 2013 at 10:00 AM, Anup Patel <anup@brainfault.org> wrote:
+> On Mon, Nov 25, 2013 at 9:13 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Sat, Nov 23, 2013 at 2:41 AM, Anup Patel <anup@brainfault.org> wrote:
+>>> On Wed, Nov 20, 2013 at 4:28 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>>> [dropping <patches@apm.com> from the CC list, as someone seems to have
+>>>>  tripped on the config file, and I'm tired of getting bounces]
+>>>>
+>>>> Feng,
+>>>>
+>>>> On 19/11/13 21:42, Feng Kan wrote:
+>>>>> The GIC-400 implementation allows for FIQ and IRQ bypass. In the
+>>>>> X-Gene implementation, the FIQ bypass must be enabled at all time.
+>>>>> Otherwise, some PPI will appear as FIQ and cause kernel problem.
+>>>>
+>>>> How comes? Are only PPIs affected? When you say "some PPIs", can you be
+>>>> more specific?
+>>>>
+>>>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>>>> ---
+>>>>>  drivers/irqchip/irq-gic.c       |   15 +++++++++++----
+>>>>>  include/linux/irqchip/arm-gic.h |    4 ++--
+>>>>>  2 files changed, 13 insertions(+), 6 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>>>> index d0e9480..aa7342e 100644
+>>>>> --- a/drivers/irqchip/irq-gic.c
+>>>>> +++ b/drivers/irqchip/irq-gic.c
+>>>>> @@ -65,6 +65,7 @@ struct gic_chip_data {
+>>>>>  #endif
+>>>>>       struct irq_domain *domain;
+>>>>>       unsigned int gic_irqs;
+>>>>> +     unsigned int bypass_flag;
+>>>>>  #ifdef CONFIG_GIC_NON_BANKED
+>>>>>       void __iomem *(*get_base)(union gic_base *);
+>>>>>  #endif
+>>>>> @@ -450,7 +451,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>>>
+>>>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
+>>>>> +     writel_relaxed(gic->bypass_flag | 1, base + GIC_CPU_CTRL);
+>>>>>  }
+>>>>>
+>>>>>  void gic_cpu_if_down(void)
+>>>>> @@ -591,7 +592,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>>>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>>>>>
+>>>>>       writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+>>>>> -     writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+>>>>> +     writel_relaxed(gic_data[gic_nr].bypass_flag | 1, cpu_base + GIC_CPU_CTRL);
+>>>>>  }
+>>>>>
+>>>>>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,      void *v)
+>>>>> @@ -733,7 +734,8 @@ const struct irq_domain_ops gic_irq_domain_ops = {
+>>>>>
+>>>>>  void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>>                          void __iomem *dist_base, void __iomem *cpu_base,
+>>>>> -                        u32 percpu_offset, struct device_node *node)
+>>>>> +                        u32 percpu_offset, u32 bypass_val,
+>>>>> +                        struct device_node *node)
+>>>>>  {
+>>>>>       irq_hw_number_t hwirq_base;
+>>>>>       struct gic_chip_data *gic;
+>>>>> @@ -821,6 +823,7 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+>>>>>
+>>>>>       set_handle_irq(gic_handle_irq);
+>>>>>
+>>>>> +     gic->bypass_flag = (bypass_val & 0xf) << 4;
+>>>>
+>>>> Beware, the top 2 bits are reserved on GICv1, and shouldn't be messed with.
+>>>>
+>>>>>       gic_chip.flags |= gic_arch_extn.flags;
+>>>>>       gic_dist_init(gic);
+>>>>>       gic_cpu_init(gic);
+>>>>> @@ -835,6 +838,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>>       void __iomem *cpu_base;
+>>>>>       void __iomem *dist_base;
+>>>>>       u32 percpu_offset;
+>>>>> +     u32 bypass_val;
+>>>>>       int irq;
+>>>>>
+>>>>>       if (WARN_ON(!node))
+>>>>> @@ -849,7 +853,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>>       if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+>>>>>               percpu_offset = 0;
+>>>>>
+>>>>> -     gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
+>>>>> +     if (of_property_read_u32(node, "bypass-flags", &bypass_val))
+>>>>> +             bypass_val = 0;
+>>>>
+>>>> [adding Mark on Cc, so he can comment on the DT parts]
+>>>>
+>>>> Where's the DT documentation update? Also, as this is an
+>>>> implementation-specific quirk, you should consider using a separate
+>>>> compatible string and move the handling of this issue into some X-Gene
+>>>> specific code.
+>>>
+>>> Adding separate compatible string for X-Gene specific GIC will break
+>>> VGIC code for X-Gene because VGIC code looks for DT node compatible
+>>> to "arm,cortex-a15-gic". We don't want to break currently working VGIC
+>>> code for X-Gene.
+>>>
+>>> The Legacy-IRQ bypass disable and Legacy-FIQ bypass disable is a
+>>> feature of GIC-400 and its not X-Gene specific. The only difference in X-Gene
+>>> is that we use PPI31 (Legacy-IRQ) for timer and PPI28 (Legacy-FIQ) for perf
+>>> event. The issue is that IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>>> and FIQBypDisGrp1 bits are 0 by default and for X-Gene we need to set
+>>> these bits to 1 so that GIC-400 does not bypass PPI31 (Legacy-IRQ) and
+>>> PPI28 (Legacy-FIQ).
+>>>
+>>> We should have more cleaner and optional device tree binding for GIC
+>>> which can help us set IRQBypDisGrp0, FIQBypDisGrp0, IRQBypDisGrp1
+>>> and FIQBypDisGrp1 bits for X-Gene.
+>>
+>> IIRC, all these bits are secure mode only (or only a subset are
+>> banked). Whether an SoC supports secure mode or not, the current
+>> policy for the kernel is to do any secure mode setup in firmware or
+>> bootloader.
+>
+> Group0 are secure interrupts and Group1 are non-secure interrupts.
 
-Hi Chao,
+Right, but the non-secure view of the GIC has no concept of groups.
+They are only visible in secure mode.
 
-On Mon, Nov 25, 2013 at 09:30:46PM -0600, Chao Xu wrote:
-> Refresh the patch =E2=80=9Cgpio: omap: be more aggressive with pm_runtime=
-=E2=80=9D by
-> Felipe Balbi against v3.12-rc5. Add version checking so that the
-> aggressive pm_runtime only applies to omap4 devices. Tested with
-> pandaboard rev a2 through sysfs.
-> Signed-off-by: Chao Xu <chao.xu@rice.edu>
+> Does this mean we should only touch IRQBypDisGrp1 and FIQBypDisGrp1
+> bits from kernel ??
 
-Here, you need to keep authorship and mention that you refreshed the
-patch, it should look something like:
+No, the kernel should only touch bits defined (by the GIC arch spec)
+to be available in non-secure mode. Specifically this is bit 0 only. I
+guess you will have to change accesses to cpu ctrl reg to a
+read-mod-write to preserve any bits you need set.
 
-=46rom: Felipe Balbi <balbi@ti.com>
-
-try to keep gpio block suspended as much as possible.
-
-Tested with pandaboard and a sysfs exported gpio.
-
-Signed-off-by: Felipe Balbi <balbi at ti.com>
-
-[ chao.xu@rice.edu : refreshed against v3.12-rc5, and added revision
-	check to enable aggressive pm_runtime on OMAP4-only ]
-
-Signed-off-by: Chao Xu <chao.xu@rice.edu>
-
-> ---
-> According to Mr. Felipe Balbi, the original patch was not accepted
-> because interrupts would be missed when GPIO was used as IRQ source.
-> But in my tests with pandaboard, interrupts were not missed. This is
-> because _idle_sysc() sets the idlemode of gpio module to
-> smart-idle-wakeup, and according to OMAP4430 TRM, under this idlemode,
-> the gpio can generate an asynchronous wakeup request to the PRCM. And
-> after GPIO is awake, the wake-up request is reflected into the
-> interrupt status registers.
->=20
-> A change I made against the original patch is only using the
-> aggressive runtime pm scheme on OMAP4 by adding a flag in pdata,
-> because I don=E2=80=99t have HW to test OMAP3 or am33xx devices. Accordin=
-g to
-> the respective TRMs, their GPIO modules also can generate wake-up
-> request if the idlemode is set to smart-idle or smart-idle-wakeup. So
-> the patch should work for them, too. But I suspect a potential SW bug
-> may cause missed interrupts: the am33xx_gpio_sysc.idlemodes is marked
-> as capable of SIDLE_SMART_WKUP in omap_hwmod_33xx.c. But according to
-> AM335x TRM, _only_ gpio0 is capable of this mode. This may make GPIO
-> stuck in force-idle mode and unable to generate wakeup request. And
-> thus interrupt will be missed. Again, I don=E2=80=99t have the HW to veri=
-fy
-> whether this is a bug or not :(
-
-Some of this information would be very nice to have in the commit log.
-
->  drivers/gpio/gpio-omap.c                |  103 +++++++++++++++++++++++++=
-+-----
->  include/linux/platform_data/gpio-omap.h |    1 +
->  2 files changed, 87 insertions(+), 17 deletions(-)
->=20
-> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-> index 89675f8..90661f2 100644
-> --- a/drivers/gpio/gpio-omap.c
-> +++ b/drivers/gpio/gpio-omap.c
-> @@ -76,6 +76,7 @@ struct gpio_bank {
->   int context_loss_count;
->   int power_mode;
->   bool workaround_enabled;
-> + bool is_aggressive_pm;
->=20
->   void (*set_dataout)(struct gpio_bank *bank, int gpio, int enable);
->   int (*get_context_loss_count)(struct device *dev);
-> @@ -473,8 +474,15 @@ static void _disable_gpio_module(struct gpio_bank
-> *bank, unsigned offset)
->  static int gpio_is_input(struct gpio_bank *bank, int mask)
->  {
->   void __iomem *reg =3D bank->base + bank->regs->direction;
-> + u32 val;
-
-you see, your email it converting tabs into spaces and loosing all
-formatting from the patch. There are lots of tips on how to configure
-different emails clients under Documentation/email-clients.txt. You
-might also want to use git send-email, which will make patch submission
-a lot easier :-)
-
---=20
-balbi
-
---KFztAG8eRSV9hGtP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlL93AAoJEIaOsuA1yqRE9PYP/312VcQovJ1uHclVPi3J6IkD
-p4d3dj7bNdqm8Eq+KxBzEsCBpb2mtLxXXYWNYf1AxUdUJduRpIw4eO8ShhfImi+T
-TtOOT/QCSomS+fnA4vswahkeViYDB/N+zSuXm8ZTx0gvZShEZb9CTSYAfggVwB5+
-7n+RYQESxZDy+C7K+2UiKrYqPO8fOinsAiG084/F0TOeGUTbtptzutHGcfS1lHir
-gb/6SenP2ocfi2cvokK/aWtSUWU9s0Oz0SyInJq6zH4HNghS2LUSK1iUpIqRuhve
-YvIXORGsCQNu4nlBKIU2Vzj9wcdrObGlDFncALOmcKGrDKxzV0DpQhFvFMXLb84r
-W5Xf2Pg/IkkRvGQLLZZlw//MJJ5BI+lYUFHzbUkkSouT0tQYM+B/FBrVcudt6wf5
-/bRZOmoTuRnkoKLkxUM7ILhF+qx8mxTgv3ziac0luVA5un+Tynj4mS8oxpWFIJCq
-O4fLg4Xnl/ti8rnsl7bGdICNcMwnxXfjq8XL1TtbVSKIwO1Izf0CcgDuZ7kSY13w
-1vhBbWnlqIzBr3G/VtEv0ucutYu4hmZHPfqyp3Od41lgQ18/aRsJ4FGNxKVYzjB4
-k3nPtpbzm6wWooOkOGRp/OeNnWmgZjF+SrXYIZplfGe9YNoL20AlMbgETFBbgrMw
-8ORossz/SV4SpeICmgQK
-=052l
------END PGP SIGNATURE-----
-
---KFztAG8eRSV9hGtP--
+Rob
