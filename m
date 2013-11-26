@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3KZIus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:50:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47609 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab3KZIul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:50:41 -0500
-Date: Tue, 26 Nov 2013 09:50:35 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v4 05/12] efi: export more efi table variable to sysfs
-Message-ID: <20131126085035.GC20917@pd.tnic>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-6-git-send-email-dyoung@redhat.com>
+	id S1754386Ab3KZIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:50:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:33076 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab3KZIuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 03:50:51 -0500
+X-IronPort-AV: E=Sophos;i="4.93,773,1378828800"; 
+   d="scan'208";a="9128249"
+Message-ID: <52945F60.4070005@cn.fujitsu.com>
+Date: Tue, 26 Nov 2013 16:44:16 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1385445477-9665-6-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [f2fs-dev][PATCH] f2fs: fix a potential out of range issue
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/26 16:48:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/26 16:48:44,
+	Serialize complete at 2013/11/26 16:48:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 01:57:50PM +0800, Dave Young wrote:
-> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-> index 2e2fbde..5d85956 100644
-> --- a/drivers/firmware/efi/efi.c
-> +++ b/drivers/firmware/efi/efi.c
-> @@ -32,6 +32,9 @@ struct efi __read_mostly efi = {
->  	.hcdp       = EFI_INVALID_TABLE_ADDR,
->  	.uga        = EFI_INVALID_TABLE_ADDR,
->  	.uv_systab  = EFI_INVALID_TABLE_ADDR,
-> +	.fw_vendor  = EFI_INVALID_TABLE_ADDR,
-> +	.runtime    = EFI_INVALID_TABLE_ADDR,
-> +	.config_table  = EFI_INVALID_TABLE_ADDR,
+Fix a potential out of range issue introduced by commit:
+22fb72225a
+f2fs: simplify write_orphan_inodes for better readable
 
-See what I mean with alignment?
 
-Now this config_table thing sticks out and completely destroys the
-balance in the universe.
 
-:-)
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/checkpoint.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
->  };
->  EXPORT_SYMBOL(efi);
->  
-> @@ -71,13 +74,54 @@ static ssize_t systab_show(struct kobject *kobj,
->  static struct kobj_attribute efi_attr_systab =
->  			__ATTR(systab, 0400, systab_show, NULL);
->  
-> +static ssize_t fw_vendor_show(struct kobject *kobj,
-> +				struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "0x%lx\n", efi.fw_vendor);
-> +}
-> +
-> +static ssize_t runtime_show(struct kobject *kobj,
-> +				struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "0x%lx\n", efi.runtime);
-> +}
-> +
-> +static ssize_t config_table_show(struct kobject *kobj,
-> +				struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "0x%lx\n", efi.config_table);
-> +}
-
-Those are sooo similar, it's like the macro SHOW writes itself.
-
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 7fe69ff..3e62987 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -323,9 +323,9 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t start_blk)
+ 			memset(orphan_blk, 0, sizeof(*orphan_blk));
+ 		}
+ 
+-		orphan_blk->ino[nentries] = cpu_to_le32(orphan->ino);
++		orphan_blk->ino[nentries++] = cpu_to_le32(orphan->ino);
+ 
+-		if (nentries++ == F2FS_ORPHANS_PER_BLOCK) {
++		if (nentries == F2FS_ORPHANS_PER_BLOCK) {
+ 			/*
+ 			 * an orphan block is full of 1020 entries,
+ 			 * then we need to flush current orphan blocks
 -- 
-Regards/Gruss,
-    Boris.
+1.7.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
