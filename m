@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab3KZM2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:28:24 -0500
-Received: from sauhun.de ([89.238.76.85]:40362 "EHLO pokefinder.org"
+	id S1756678Ab3KZMeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:34:44 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:35693 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab3KZM2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:28:22 -0500
-Date: Tue, 26 Nov 2013 13:28:18 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
-Message-ID: <20131126122818.GA7427@katana>
-References: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
- <20131126090639.GA2568@katana>
- <52946BA6.3080308@topic.nl>
+	id S1755814Ab3KZMel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:34:41 -0500
+Message-ID: <52949463.3060609@ti.com>
+Date: Tue, 26 Nov 2013 14:30:27 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <52946BA6.3080308@topic.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
+        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 1/6] watchdog: davinci: change driver to use WDT core
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com> <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com> <52948184.50604@ti.com> <52948FA8.7000609@roeck-us.net>
+In-Reply-To: <52948FA8.7000609@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/26/2013 02:10 PM, Guenter Roeck wrote:
+> On 11/26/2013 03:09 AM, Grygorii Strashko wrote:
+>> On 11/25/2013 04:04 PM, Ivan Khoronzhuk wrote:
+>>> To reduce code duplicate and increase code readability use WDT core
+>>> code to handle WDT interface.
+>>>
+>>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+>>> Remove wdt_state as the WDT core tracks state with its own variable.
+>>>
+>>> The watchdog_init_timeout() can read timeout value from timeout-sec
+>>> property if the passed value is out of bounds. The heartbeat is
+>>> initialized in next way. If heartbeat is not set thought module
+>>> parameter, try to read it's value from WDT node timeout-sec property.
+>>> If node has no one, use default value.
+>>>
+>>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+>>> order to set timeout period.
+>>>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+>>> ---
+>>>   arch/arm/mach-davinci/da8xx-dt.c      |    2 +-
+>>>   arch/arm/mach-davinci/devices-da8xx.c |    4 +-
+>>>   arch/arm/mach-davinci/devices.c       |    2 +-
+>>>   drivers/watchdog/Kconfig              |    2 +
+>>>   drivers/watchdog/davinci_wdt.c        |  151
+>>> ++++++++-------------------------
+>>>   5 files changed, 43 insertions(+), 118 deletions(-)
+>>
+>> Pls note, that this patch contains both changes in platform and driver
+>> code to fix regression reported by Sekhar Nori on v2 of this series
+>> and caused by driver name changing.
+>>
+>> Is it ok?
+>>
+>> It can be splitted, but then both patches will introduce regression by
+>> itself and thing will work only if both of them will be applied together.
+>>
+> Splitting it would break bisect, even if applied together, so I don't
+> think this would be a good idea.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks
 
-
-CCing linux-pm, maybe they know more...
-
-> The extra I2C traffic consumes extra power. If the bus is terminated
-> using 2k resistors, approximately 1mA of current (assuming ~2V
-> signals) is flowing when the bus is pulled low. On low power
-> designs, this extra power consumption is noticable. There is no way
-> to turn the mux "off" from either user or kernel space. The signals
-> going through the mux to a place where no I2C device is actually
-> listening are only wasting power.
-
-I only have an overview of current linux pm mechanisms. I wonder if
-those can't be used somehow. Like if devices on the multiplexed bus are
-idle (well, only regarding transfers), then we can switch off the muxer.
-
-> The I2C signals are used to control sensitive codecs. When looking
-> at the sampled data, the I2C traffic is visible in the captured
-> analog signal. To prevent this from happening, the mux can be
-
-I wonder: Is this really a feature of sensitive codecs or an issue of
-the board design?
-
-> disabled whenever not communicating with the codec. This could be
-> accomplished with the "deselect_on_exit" boolean, but because audio
-> driver sends the codec parameters in dozens of small transactions,
-> this will result in a lot more needless I2C traffic, constantly
-> switching the mux for each codec setting.
-
-Has this been looked at? ASoC supports grouping of tranfers IIRC. Maybe
-your I2C driver is only missing I2C_M_NOSTART?.
-
-> Would it be acceptable if I made the timeout optional, by making the
-> "deselect_on_exit" boolean into a three-state value (off, on,
-> timeout)? Or, alternatively, implement "deselect_on_exit" using the
-> timeout scheme (probably with a very short timeout)?
-
-I have a number of concerns designwise. First, if we do something like
-shutting-down-a-bus-if-there-are-no-transfers-expected, it definately
-should be in the core, not the driver. As said before, I have the
-assumption it should even be connected to the runtime pm core via some
-callback. And if we have that for I2C, we surely want that for other
-buses as well, at least SPI. Also, the timeout thing sounds too
-heuristic to me. Later, people might want to change the timeout value
-depending on workloads or so, and then a governor, etc... No, thanks.
-
-BTW is it feasible to shut down the whole I2C bus at controller level
-after transfers? No needless transfers and maybe even more power
-savings.
-
-Anyway, thanks for letting me know about your requirements (they should
-have been in the original commit message, though ;))
-
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlJPiAAoJEBQN5MwUoCm2WaAP/jEQxpzpkCRv30ek392aaFSH
-oR+BKUv02Kt/pcbjlGfAX6e0gN1cCVgPMKXU0nf0nb2s+gNQBJWQvWxwLLvhtwu4
-fGbrrfgt2hIxXbdjy+/cTN5r/KkmmJp9bYJyEnDy/bx+H2RVLGB2gyNDlWXRmWIP
-+GVs4NO5GgDz5KaBVKhNxfK4K98+2NFY70xZZqCTZEbgTJhCwU+8dbFz9kMkPSrG
-PyHJ13DhLkM6Rwc60PCPcLpFny2lb27kPa1vbnrEphEWvV5uzi3LI7LArD7j6mPk
-iBwU0kayze/wGUgPCAsA1qTeT9SSC7siB2e7RfeglG2xeB0f/z9dT8mbeJPKBDRO
-HxVC6A9nMQelX2V/WsGFcuiKb7Xd7t9+qisvRkqtvB+XF8xIgZWKrXmSXl1pMs/+
-SAyNVbTQK2lLOHdGNVBeFVaZkeqwAQIfK5fqyQmbRbhF5UQHj6CNUHf3ILjmxg55
-Ud0Z0R4ow2ZbOToi5bn96wuYQbFbQyPisb+V9rXnDzAFyHIxzjRFP+5C9NER4gYi
-fAQrTkS1g0fr9erX+58wzDAUZcO8Ue12mmXZnwXpJlEfSwnu/8Zq26sHqsBMeqfE
-sH6ua1yCNAJx/zubQaUtkd/Ot8MGs/3bZvdrGPx14Er9t1lka6fGQQaNZNxMVLFk
-5z0Rv2w6q/iMK9LCvbno
-=8bpp
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+Regards,
+-grygorii
