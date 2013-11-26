@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab3KZMKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:10:23 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:57269 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3KZMKV (ORCPT
+	id S1756733Ab3KZMKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:10:37 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:54494 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab3KZMKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:10:21 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52948FA8.7000609@roeck-us.net>
-Date: Tue, 26 Nov 2013 04:10:16 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 26 Nov 2013 07:10:32 -0500
+Date: Tue, 26 Nov 2013 09:10:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf timechart: remove lock_depth from trace_entry
+Message-ID: <20131126121026.GD27323@ghostprotocols.net>
+References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
+ <20131022103223.GA29489@stfomichev-desktop>
+ <20131125182139.GD20168@ghostprotocols.net>
+ <20131126110536.GC3388@stfomichev-desktop>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com, wim@iguana.be,
-        nsekhar@ti.com, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, Pawel Moll <Pawel.Moll@arm.com>,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        galak@kernel.crashing.org, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org
-Subject: Re: [PATCH v3 1/6] watchdog: davinci: change driver to use WDT core
-References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com> <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com> <52948184.50604@ti.com>
-In-Reply-To: <52948184.50604@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131126110536.GC3388@stfomichev-desktop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 03:09 AM, Grygorii Strashko wrote:
-> On 11/25/2013 04:04 PM, Ivan Khoronzhuk wrote:
->> To reduce code duplicate and increase code readability use WDT core
->> code to handle WDT interface.
->>
->> Remove io_lock as the WDT core uses mutex to lock each wdt device.
->> Remove wdt_state as the WDT core tracks state with its own variable.
->>
->> The watchdog_init_timeout() can read timeout value from timeout-sec
->> property if the passed value is out of bounds. The heartbeat is
->> initialized in next way. If heartbeat is not set thought module
->> parameter, try to read it's value from WDT node timeout-sec property.
->> If node has no one, use default value.
->>
->> The heartbeat is hold in wdd->timeout by WDT core, so use it in
->> order to set timeout period.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   arch/arm/mach-davinci/da8xx-dt.c      |    2 +-
->>   arch/arm/mach-davinci/devices-da8xx.c |    4 +-
->>   arch/arm/mach-davinci/devices.c       |    2 +-
->>   drivers/watchdog/Kconfig              |    2 +
->>   drivers/watchdog/davinci_wdt.c        |  151 ++++++++-------------------------
->>   5 files changed, 43 insertions(+), 118 deletions(-)
->
-> Pls note, that this patch contains both changes in platform and driver code to fix regression reported by Sekhar Nori on v2 of this series and caused by driver name changing.
->
-> Is it ok?
->
-> It can be splitted, but then both patches will introduce regression by itself and thing will work only if both of them will be applied together.
->
-Splitting it would break bisect, even if applied together, so I don't think this would be a good idea.
+Em Tue, Nov 26, 2013 at 03:05:36PM +0400, Stanislav Fomichev escreveu:
+> > This makes the new tool stop processing old files, can you try the patch
+> > attached instead?
 
-Guenter
+> I see two downsides to your approach:
 
+Huh?
+
+> 1) with your patch I'm now required to run 'perf timechart record' and
+> 'perf timechart' on the same machine (otherwise, on the 'perf timechart'
+
+No, it should not be required to do that, when processing perf.data
+files the tracepoint info should come from perf.data, recorded there at
+the 'perf record' time, right? I'm assuming this, will check.
+
+> machine we may have wrong fields definitions that don't match perf.data).
+> Currently, it's possible to use 'perf timechart record' on the target and do
+> 'perf timechart' on the host (at least I do it this way).
+
+If it is, my assumption is correct, as the evlist must be populated from
+perf.data, or is it this way and _only_ when it goes to look at fields
+is that it looks at the local machine? Doesn't make sense.
+
+> 2) only root can run 'perf timechart' now (because of permissions on
+> /sys/kernel/debug).
+
+Se above, if before this patch the format_field info was obtained from
+the perf.data file, why should it now get it from the local machine?
+ 
+> Maybe we can we make some simple version check against the perf.data file and
+> just refuse to process the old one (not sure if it's possible)?
+> 
+> > Its only compile tested tho.
+> Ok, I'll test it if we are fine with the new limitations.
+
+Please try. There should be no limitations.
+
+- Arnaldo
