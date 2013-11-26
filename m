@@ -1,54 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3KZNAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 08:00:43 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57742 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751083Ab3KZNAk (ORCPT
+	id S1756546Ab3KZNBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 08:01:54 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:35537 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab3KZNBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 08:00:40 -0500
-Message-ID: <52949B73.3000206@hurleysoftware.com>
-Date: Tue, 26 Nov 2013 08:00:35 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 26 Nov 2013 08:01:49 -0500
+Message-ID: <52949BC1.8090001@linaro.org>
+Date: Tue, 26 Nov 2013 14:01:53 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 7/7] n_tty: trace input/read flow control
-References: <1385135965-4235-1-git-send-email-peter@hurleysoftware.com>	<1385135965-4235-8-git-send-email-peter@hurleysoftware.com> <20131124002513.0a806665@alan.etchedpixels.co.uk> <529166C0.8040001@hurleysoftware.com>
-In-Reply-To: <529166C0.8040001@hurleysoftware.com>
+To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
+        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
+CC: james.hogan@imgtec.com, jason.low2@hp.com, gregkh@linuxfoundation.org,
+        hanjun.guo@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
+References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org> <528F4A78.1080505@linaro.org> <52918ECC.6080707@linaro.org> <529495AF.4020600@linaro.org> <52949972.6090101@linaro.org>
+In-Reply-To: <52949972.6090101@linaro.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2013 09:38 PM, Peter Hurley wrote:
-> On 11/23/2013 07:25 PM, One Thousand Gnomes wrote:
->> On Fri, 22 Nov 2013 10:59:25 -0500
->> Peter Hurley <peter@hurleysoftware.com> wrote:
+On 11/26/2013 01:52 PM, Alex Shi wrote:
+> On 11/26/2013 08:35 PM, Daniel Lezcano wrote:
 >>
->>> Instrument .receive_buf() and read() paths with trace_printk's
->>> to aid in debugging flow control changes.
 >>
->> tty devices have a device, we have a dev_dbg() layer. The old tty trace
->> predates this but there isn't really any excuse for not using it now that
->> I can see ?
+>> Here the new results with your patchset + patch #5
+>>
+>> I have some issues with perf for the moment, so I will fix it up and
+>> send the result after.
 >
-> I was using the ftrace facility because it has significantly less performance
-> impact than printk (which was an important factor while debugging flow control
-> problems).
+> Thanks a lot, Daniel!
+> The result is pretty good!, thread/pipe performance has a slight little
+> drop, but processes performance increase about 25%!
 >
-> That said, I could further macro-ize n_tty_trace() with selectable facility
-> (which would be useful when debugging problems that end in cpu death).
+>
+>>
+>>
+>> 527d1511310a          / + patchset + #5
+>>
+>> hackbench -T -s 4096 -l 1000 -g 10 -f 40
+>> 26.677                  30.308
+>> 27.914             28.497
+>> 28.390             30.360
+>> 28.048             28.587
+>> 26.344             29.513
+>> 27.848             28.706
+>> 28.315             30.152
+>> 28.232             29.721
+>> 26.549             28.766
+>> 30.340             38.801
+>> hackbench -p -s 4096 -l 1000 -g 10 -f 40
+>> 34.522                  35.469
+>> 34.545             34.966
+>> 34.469             35.342
+>> 34.115             35.286
+>> 34.457             35.592
+>> 34.561             35.314
+>> 34.459             35.316
+>> 34.054             35.629
+>> 34.532             35.149
+>> 34.459             34.876
+>> hackbench -P -s 4096 -l 1000 -g 10 -f 40
+>> 38.938                  30.308
+>> 39.363             28.497
+>> 39.340             30.360
+>> 38.909             28.587
+>> 39.095             29.513
+>> 38.869             28.706
+>> 39.041             30.152
+>> 38.939             29.721
+>> 38.992             28.766
+>> 38.947             38.801
 
-Greg,
+Ok, bad copy-paste, the third test run results with the patchset is wrong.
 
-I don't really mind if you don't want to take this patch; it is useful but
-it does clutter up the code.
+hackbench -P -s 4096 -l 1000 -g 10 -f 40
+38.938	     	     39.585	     	      	     	
+39.363		     39.008
+39.340		     38.954
+38.909		     39.273
+39.095		     38.755
+38.869		     39.003
+39.041		     38.945
+38.939		     38.005
+38.992		     38.994
+38.947		     38.855
 
-Regards,
-Peter Hurley
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
