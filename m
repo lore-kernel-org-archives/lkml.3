@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab3KZSRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 13:17:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35390 "EHLO
+	id S932545Ab3KZSRD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:17:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757630Ab3KZSNG (ORCPT
+	with ESMTP id S1757738Ab3KZSNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 13:13:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qingshuai Tian <qingshuai.tian@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.11 24/36] ACPI / video: Quirk initial backlight level 0
-Date: Tue, 26 Nov 2013 10:12:34 -0800
-Message-Id: <20131126181030.091648835@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH 3.11 25/36] ACPI / hotplug: Fix handle_root_bridge_removal()
+Date: Tue, 26 Nov 2013 10:12:35 -0800
+Message-Id: <20131126181030.327220280@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131126181025.029404973@linuxfoundation.org>
 References: <20131126181025.029404973@linuxfoundation.org>
@@ -28,44 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 2c62333a408f5badd2d2ffd7177f95deeccc5ca4 upstream.
+commit 2441191a19039002b2c454a261fb45986df15184 upstream.
 
-Some firmware doesn't initialize initial backlight level to a proper
-value and _BQC will return 0 on first time evaluation. We used to be
-able to detect such incorrect value with our code logic, as value 0
-normally isn't a valid value in _BCL. But with the introduction of Win8,
-firmware begins to fill _BCL with values from 0 to 100, now 0 becomes
-a valid value but that value will make user's screen black. This patch
-test initial _BQC for value 0, if such a value is returned, do not use
-it.
+It is required to do get_device() on the struct acpi_device in
+question before passing it to acpi_bus_hot_remove_device() through
+acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
+calls acpi_scan_hot_remove() that does put_device() on that
+object.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=64031
-References: https://bugzilla.kernel.org/show_bug.cgi?id=61231
-References: https://bugzilla.kernel.org/show_bug.cgi?id=63111
-Reported-by: Qingshuai Tian <qingshuai.tian@intel.com>
-Tested-by: Aaron Lu <aaron.lu@intel.com> # on "Idealpad u330p"
-Reported-and-tested-by: <erno@iki.fi> # on "Acer Aspire V5-573G"
-Reported-and-tested-by: Kirill Tkhai <tkhai@yandex.ru> # on "HP 250 G1"
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+The ACPI PCI root removal routine, handle_root_bridge_removal(),
+doesn't do that, which may lead to premature freeing of the
+device object or to executing put_device() on an object that
+has been freed already.
+
+Fix this problem by making handle_root_bridge_removal() use
+get_device() as appropriate.
+
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/pci_root.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -848,7 +848,7 @@ acpi_video_init_brightness(struct acpi_v
- 		for (i = 2; i < br->count; i++)
- 			if (level_old == br->levels[i])
- 				break;
--		if (i == br->count)
-+		if (i == br->count || !level)
- 			level = max_level;
- 	}
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -611,9 +611,12 @@ static void handle_root_bridge_removal(s
+ 	ej_event->device = device;
+ 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
  
++	get_device(&device->dev);
+ 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+-	if (ACPI_FAILURE(status))
++	if (ACPI_FAILURE(status)) {
++		put_device(&device->dev);
+ 		kfree(ej_event);
++	}
+ }
+ 
+ static void _handle_hotplug_event_root(struct work_struct *work)
 
 
