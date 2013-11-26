@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3KZDbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 22:31:38 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46795 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3KZDbf (ORCPT
+	id S1753951Ab3KZDdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 22:33:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58489 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3KZDdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 22:31:35 -0500
-Message-ID: <52941611.8070509@wwwdotorg.org>
-Date: Mon, 25 Nov 2013 20:31:29 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 25 Nov 2013 22:33:21 -0500
+Date: Mon, 25 Nov 2013 19:34:06 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mikhail Pershin <mike.pershin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 02/16] staging/lustre/llog: MGC to use OSD API for backup
+ logs
+Message-ID: <20131126033406.GA8814@kroah.com>
+References: <1385431510-18988-1-git-send-email-bergwolf@gmail.com>
+ <1385431510-18988-3-git-send-email-bergwolf@gmail.com>
+ <20131126031408.GA3666@kroah.com>
+ <CA+a=Yy4KuGugnCGcofNbKsWV6DsCYt_GVMPyjo9nsyasm9cp7w@mail.gmail.com>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Florian Meier <florian.meier@koalo.de>, linux-kernel@vger.kernel.org,
-        linux-rpi-kernel@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] I2C: BCM2835: Linking platform nodes to adapter nodes
-References: <527CB3A1.7050808@koalo.de> <527D1870.8080302@wwwdotorg.org>
-In-Reply-To: <527D1870.8080302@wwwdotorg.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+a=Yy4KuGugnCGcofNbKsWV6DsCYt_GVMPyjo9nsyasm9cp7w@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2013 09:59 AM, Stephen Warren wrote:
-> On 11/08/2013 02:49 AM, Florian Meier wrote:
->> In order to find I2C devices in the device tree, the platform nodes
->> have to be known by the I2C core. Analogous to the i2c-omap driver
->> this requires setting the dev.of_node parameter of the adapter.
+On Tue, Nov 26, 2013 at 11:25:24AM +0800, Peng Tao wrote:
+> On Tue, Nov 26, 2013 at 11:14 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Nov 26, 2013 at 10:04:56AM +0800, Peng Tao wrote:
+> >> From: Mikhail Pershin <mike.pershin@intel.com>
+> >>
+> >> MGC uses lvfs API to access local llogs blocking removal of old code
+> >>
+> >> - MGS is converted to use OSD API for local llogs
+> >> - llog_is_empty() and llog_backup() are introduced
+> >> - initial OSD start initialize run ctxt so llog can use it too
+> >> - shrink dcache after initial scrub in osd-ldiskfs to avoid holding
+> >>   data of unlinked objects until umount.
+> >
+> > It is not checkpatch clean :(
+> >
+> > Come on, it's not hard to do this yourself, why do you make me find
+> > these errors for you?  It does nothing but make me not want to look at
+> > lustre patches for a long time...
 > 
-> (CCing the I2C maintainers...)
+> Strange. I did run checkpatch before sending the patchset out.
 > 
->> diff --git a/drivers/i2c/busses/i2c-bcm2835.c b/drivers/i2c/busses/i2c-bcm2835.c
+> Just tried again. Still pass.
 > 
->> @@ -299,6 +299,7 @@ static int bcm2835_i2c_probe(struct platform_device *pdev)
->>  	strlcpy(adap->name, "bcm2835 I2C adapter", sizeof(adap->name));
->>  	adap->algo = &bcm2835_i2c_algo;
->>  	adap->dev.parent = &pdev->dev;
->> +	adap->dev.of_node = pdev->dev.of_node;
+> [X61@linux-lustre]$./scripts/checkpatch.pl
+> 0002-staging-lustre-llog-MGC-to-use-OSD-API-for-backup-lo.patch total:
+> 0 errors, 0 warnings, 883 lines checked
 > 
-> Ah, that makes sense. Thinking about it now, I'd only ever used i2cget
-> etc. to access I2C devices, rather than instantiating drivers from DT.
+> 0002-staging-lustre-llog-MGC-to-use-OSD-API-for-backup-lo.patch has no
+> obvious style problems and is ready for submission.
 > 
-> That all said, I wonder if the I2C core shouldn't do something like the
-> following inside i2c_add_adapter():
-> 
-> if (!adap->dev.of_node && adap->dev.parent)
-> 	adap->dev.of_node = adap->dev.parent->of_node;
-> 
-> That would save every single I2C driver from having to set up this field
-> manually.
+> What message did you see?
 
-BTW, this should probably be:
-Cc: stable@vger.kernel.org
+One about return();
+
+greg k-h
