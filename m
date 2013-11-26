@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab3KZL06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 06:26:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49580 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3KZL0y (ORCPT
+	id S1756621Ab3KZL3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 06:29:45 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53616 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab3KZL3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 06:26:54 -0500
-Date: Tue, 26 Nov 2013 12:26:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] EFI runtime mapping work for v3.14
-Message-ID: <20131126112650.GD2410@gmail.com>
-References: <20131125162854.GK11521@console-pimps.org>
+	Tue, 26 Nov 2013 06:29:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131125162854.GK11521@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1385439977-19077-1-git-send-email-ch.naveen@samsung.com>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+	<1385439977-19077-1-git-send-email-ch.naveen@samsung.com>
+Date: Tue, 26 Nov 2013 16:59:42 +0530
+Message-ID: <CAK9yfHz1HL65megQ9vDZovZr9oBo8UsrgGS+umWiT9FmHrnK3Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-i2c@vger.kernel.org, sjg@chromium.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        cpgs@samsung.com, Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 November 2013 09:56, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> This patch adds new compatible to support HSI2C module on Exynos5260
+> HSI2C module on Exynos5260 needs to be reset during during initialization.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+[snip]
+>
+>  Required properties:
+>    - compatible: value should be.
+> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+> +       -> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
+> +                               Exynos5250/5420 SoCs.
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+This string could be made more specific ("samsung,exynos5250-hsi2c")
+now that we have variants for this.
 
-> Folks, could you queue up the following for the v3.14 merge window? It
-> would be good to get these patches into linux-next for a full release
-> cycle of testing. They pass all of my tests.
-> 
-> The following changes since commit 72548e836b0c4abbb652e791dee9c91203a9a4c6:
-> 
->   x86/efi: Add EFI framebuffer earlyprintk support (2013-10-28 18:09:58 +0000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
-> 
-> for you to fetch changes up to ee41143027706d9f342dfe05487a00b20887fde7:
-> 
->   x86/efi: Check krealloc return value (2013-11-02 11:09:36 +0000)
-> 
-> ----------------------------------------------------------------
->  * New static EFI runtime services virtual mapping layout which is
->    groundwork for kexec support on EFI - Borislav Petkov
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (11):
->       x86/efi: Simplify EFI_DEBUG
->       x86/mm/pageattr: Lookup address in an arbitrary PGD
->       x86/mm/pageattr: Add a PGD pagetable populating function
->       x86/mm/pageattr: Add a PUD pagetable populating function
->       x86/mm/pageattr: Add a PMD pagetable populating function
->       x86/mm/pageattr: Add a PTE pagetable populating function
->       x86/mm/pageattr: Add a PUD error unwinding path
->       x86/mm/pageattr: Add last levels of error path
->       x86/mm/cpa: Map in an arbitrary pgd
->       x86/efi: Runtime services virtual mapping
->       x86/efi: Check krealloc return value
-> 
->  Documentation/kernel-parameters.txt  |   6 +
->  Documentation/x86/x86_64/mm.txt      |   7 +
->  arch/x86/include/asm/efi.h           |  64 +++--
->  arch/x86/include/asm/pgtable_types.h |   3 +-
->  arch/x86/mm/pageattr.c               | 461 +++++++++++++++++++++++++++++++++--
->  arch/x86/platform/efi/efi.c          | 111 ++++++---
->  arch/x86/platform/efi/efi_32.c       |   9 +-
->  arch/x86/platform/efi/efi_64.c       | 109 +++++++++
->  arch/x86/platform/efi/efi_stub_64.S  |  54 ++++
->  include/linux/efi.h                  |   1 +
->  10 files changed, 755 insertions(+), 70 deletions(-)
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
+> +       -> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
+> +                               on Exynos5260 SoCs.
+> +
+>    - reg: physical base address of the controller and length of memory mapped
+>      region.
+>    - interrupts: interrupt number to the cpu.
+> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+> index da39ff0..497ff91 100644
+> --- a/drivers/i2c/busses/i2c-exynos5.c
+> +++ b/drivers/i2c/busses/i2c-exynos5.c
+> @@ -184,14 +184,35 @@ struct exynos5_i2c {
+>          * 2. Fast speed upto 1Mbps
+>          */
+>         int                     speed_mode;
+> +
+> +       /* Version of HS-I2C Hardware */
+> +       unsigned int            version;
+> +};
+> +
+> +enum hsi2c_version {
+> +       EXYNOS_5,
 
-Pulled into tip:x86/efi, thanks a lot guys!
+ditto.
 
-Just a side note, for future reference, this title lacks a verb and is 
-thus not self-describing:
+> +       EXYNOS_5260
+>  };
+>
 
-   x86/efi: Runtime services virtual mapping
-
-It should probably have been something like:
-
-   x86/efi: Implement and enable separate, stable virtual mapping for runtime services
-
-?
-
-Chances are that it will be a popular bisection target ;-)
-
-	Ingo
+-- 
+With warm regards,
+Sachin
