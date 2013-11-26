@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab3KZB07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:26:59 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:63354 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197Ab3KZB06 (ORCPT
+	id S1753657Ab3KZB20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:28:26 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26182 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab3KZB2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:26:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131125203755.GA14140@kroah.com>
-References: <1385044966-3572-1-git-send-email-bergwolf@gmail.com> <20131125203755.GA14140@kroah.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Tue, 26 Nov 2013 09:26:37 +0800
-Message-ID: <CA+a=Yy5RtqW1aaQcE2ehskbWo6XCTRKK9-e_83wC=e2H72rsRA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging/lustre/ptlrpc: fix ptlrpc_stop_pinger logic
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Nov 2013 20:28:21 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 01/10] PCI: Use device_release_driver in pci_stop_root_bus
+Date: Mon, 25 Nov 2013 17:28:01 -0800
+Message-Id: <1385429290-25397-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 4:37 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Nov 21, 2013 at 10:42:45PM +0800, Peng Tao wrote:
->> It was introduced due to a patch hunk when porting
->> commit 20802057 (staging/lustre/ptlrpc: race in pinger).
->
-> This patch was in 3.12, so this needs to go to the stable tree for 3.12,
-> right?  It also needs to get into 3.13-final, so please tell me that
-> next time so I know where to apply it to.
->
-Thank you for helping add the stable tag. I will remember to add it next time.
+To be consistent with change in
+| PCI: Move device_del() from pci_stop_dev() to pci_destroy_dev()
 
-Thanks,
-Tao
+Use device_release_driver for root bus/hostbridge.
+
+Also use device_unregister() in pci_remove_root_bus() instead of
+device_del/put_device, that will be corresponding device_register()
+for pci_create_root_bus for hostbridge.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/remove.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index cc9337a..692f4c3 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -128,7 +128,7 @@ void pci_stop_root_bus(struct pci_bus *bus)
+ 		pci_stop_bus_device(child);
+ 
+ 	/* stop the host bridge */
+-	device_del(&host_bridge->dev);
++	device_release_driver(&host_bridge->dev);
+ }
+ 
+ void pci_remove_root_bus(struct pci_bus *bus)
+@@ -147,5 +147,5 @@ void pci_remove_root_bus(struct pci_bus *bus)
+ 	host_bridge->bus = NULL;
+ 
+ 	/* remove the host bridge */
+-	put_device(&host_bridge->dev);
++	device_unregister(&host_bridge->dev);
+ }
+-- 
+1.8.1.4
+
