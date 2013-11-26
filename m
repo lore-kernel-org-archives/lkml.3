@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab3KZMmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 07:42:42 -0500
-Received: from sauhun.de ([89.238.76.85]:52345 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756862Ab3KZMmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 07:42:40 -0500
-Date: Tue, 26 Nov 2013 13:42:38 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: linux-omap@vger.kernel.org, linaro-networking@linaro.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, linux-i2c@vger.kernel.org,
+	id S1756816Ab3KZMrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 07:47:39 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52142 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3KZMrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 07:47:36 -0500
+Date: Tue, 26 Nov 2013 07:47:19 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Veaceslav Falico <vfalico@redhat.com>,
+        linux-pci@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, yinghai@kernel.org, Knut_Petersen@t-online.de,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC 05/23] i2c: omap: raw read and write endian fix
-Message-ID: <20131126124238.GC7427@katana>
-References: <1384560086-11994-1-git-send-email-taras.kondratiuk@linaro.org>
- <1384560086-11994-6-git-send-email-taras.kondratiuk@linaro.org>
+Subject: Re: [PATCH v3 1/3] msi: free msi_desc entry only after we've
+ released the kobject
+Message-ID: <20131126124719.GA11637@hmsreliant.think-freely.org>
+References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
+ <1383042632-7102-2-git-send-email-vfalico@redhat.com>
+ <20131125231248.GB4034@google.com>
+ <20131125232936.GA31746@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="69pVuxX8awAiJ7fD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1384560086-11994-6-git-send-email-taras.kondratiuk@linaro.org>
+In-Reply-To: <20131125232936.GA31746@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 25, 2013 at 03:29:36PM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Nov 25, 2013 at 04:12:48PM -0700, Bjorn Helgaas wrote:
+> > On Tue, Oct 29, 2013 at 11:30:30AM +0100, Veaceslav Falico wrote:
+> > > Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
+> > > however kobject_put() doesn't guarantee us that it was the last reference
+> > > and that the kobj isn't used currently by someone else, so after we
+> > > kfree(entry) with the struct kobject - other users will begin using the
+> > > freed memory, instead of the actual kobject.
+> > > 
+> > > Fix this by using the kobject->release callback, which is called last when
+> > > the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
+> > > which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
+> > > kobj itself after ->release() was called, so we're safe).
+> > > 
+> > > In case we've failed to create the sysfs directories - just kfree()
+> > > it - cause we don't have the kobjects attached.
+> > > 
+> > > Also, remove the same functionality from populate_msi_sysfs(), cause on
+> > > failure we anyway call free_msi_irqs(), which will take care of all the
+> > > kobjects properly.
+> > > 
+> > > And add the forgotten pci_dev_put(pdev) in case of failure to register the
+> > > kobject in populate_msi_sysfs().
+> > > 
+> > > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > > CC: Neil Horman <nhorman@tuxdriver.com>
+> > > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > CC: linux-pci@vger.kernel.org
+> > > CC: linux-kernel@vger.kernel.org
+> > > Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+> > 
+> > I'm still hoping that Greg (or somebody else; Greg already posted the bulk
+> > of the work) will finish up the conversion to attributes, and that Neil
+> > will confirm that works with no changes to irqbalance.  So I'm going to
+> > drop these patches for now.  Poke me if we need to revive them.
+> 
+> Ah, sorry about that.  I'll redo my series, dropping the existing format
+> and using the attribute-only code.  Give me a day or so, thanks for the
+> reminder.
+> 
+> greg k-h
+> 
+Thank you greg, I'll make sure Irqbalance doesn't choke on the new format as
+soon as you post them.
 
---69pVuxX8awAiJ7fD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Neil
 
-
-> @@ -1142,7 +1142,7 @@ omap_i2c_probe(struct platform_device *pdev)
->  	 * Also since the omap_i2c_read_reg uses reg_map_ip_* a
->  	 * raw_readw is done.
->  	 */
-> -	rev =3D __raw_readw(dev->base + 0x04);
-> +	rev =3D readw_relaxed(dev->base + 0x04);
-> =20
->  	dev->scheme =3D OMAP_I2C_SCHEME(rev);
->  	switch (dev->scheme) {
-
-Part of the comment above must be removed, too.
-
-
---69pVuxX8awAiJ7fD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlJc+AAoJEBQN5MwUoCm23bYP/jslg++Pu5Qt9TwM5gCUcwsq
-cuf8jPiddxnZoUAEX2v3e5bas4S/Bv4dRhFskG0UImG2Tj/xOhJXThv0fR0qasso
-ymmtO+egkCPHDIiGHXT9SAo5aHPgAT1x6wyKEWdm13s5rw9ywZVug8NIyyKtnnI/
-dK3327eD+vuBua1NIt9wrbsBVbQuvmsmM9F3roOR3XBtu+I7lB/S6wdWJuMAPGs5
-sUpK9vqffvyHcKyJor4jafHuqXKIGpN1j+vd7rHBonsgQcImXPPYMIeNNj/sJD+r
-IqAq9W87xYbaGAzcxR8beLZx6IVW42hrkRevdSLH4IBfYbKd8ersCThkdAd7jArG
-mSDzKPeWXSDlTToqY73sNCzZgvUJMDxv1ZB/eDbv6DsYVI2RGtUK9m0FStCVjevC
-c5Y3j9Zy2spmcpMjnm9KpfPf/cxN8vhnEBWt1SzO8bt5vgcPiJFA5ydnKkedm/Zr
-Z8Cpe4WeOPfef1wsJk9pOpOJ52g9MlkMM4TPzmetwGucwx2bmRJqJ0l5+LBrLSaH
-bt5q3gwm6vmtIZMsytNKEQpflfZap9QWc1i6Co8c/Mn5Y8Q1L2eyVHPpxZkjfAhA
-7cCcLnsQ4uZYze6iSNNnLZRFnAXcu6rK1iHoA7DSCOS8ZfsHSv/+7d7YTw9kTCQI
-o6+7Ller4jE1tiu7AZNT
-=oUTt
------END PGP SIGNATURE-----
-
---69pVuxX8awAiJ7fD--
