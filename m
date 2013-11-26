@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab3KZBgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 20:36:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab3KZBgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 20:36:19 -0500
-Date: Tue, 26 Nov 2013 09:35:20 +0800
-From: Dave Young <dyoung@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [patch 00/12 v4] kexec kernel efi runtime support v	v4]
- efi: export more efi table variable to sysfs
-Message-ID: <20131126013520.GA3706@dhcp-16-126.nay.redhat.com>
-References: <20131125085630.417850406@dhcp-16-126.nay.redhat.com>
- <5293BF8B.20203@zytor.com>
+	id S1753924Ab3KZBga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 20:36:30 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:46621 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3KZBg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Nov 2013 20:36:26 -0500
+Date: Mon, 25 Nov 2013 17:36:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Vladimir Murzin <murzin.v@gmail.com>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Joern Engel <joern@logfs.org>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: user defined OOM policies
+In-Reply-To: <20131121171307.GB16703@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1311251731430.27270@chino.kir.corp.google.com>
+References: <20131119131400.GC20655@dhcp22.suse.cz> <20131119134007.GD20655@dhcp22.suse.cz> <20131120172119.GA1848@hp530> <20131120173357.GC18809@dhcp22.suse.cz> <alpine.DEB.2.02.1311201937120.7167@chino.kir.corp.google.com>
+ <20131121171307.GB16703@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5293BF8B.20203@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/13 at 01:22pm, H. Peter Anvin wrote:
-> On 11/25/2013 12:56 AM, dyoung@redhat.com wrote:
-> > 
-> > For efi runtime mapping I add a new directory /sys/firmware/efi/
-> > runtime-map/ like below
-> > [dave@darkstar ~]$ tree /sys/firmware/efi/runtime-map/
-> > /sys/firmware/efi/runtime-map/
-> > â”œâ”€â”€ 0
-> > â”‚   â”œâ”€â”€ attribute
-> > â”‚   â”œâ”€â”€ num_pages
-> > â”‚   â”œâ”€â”€ phys_addr
-> > â”‚   â”œâ”€â”€ type
-> > â”‚   â””â”€â”€ virt_addr
-> > â”œâ”€â”€ 1
-> > â”‚   â”œâ”€â”€ attribute
-> > â”‚   â”œâ”€â”€ num_pages
-> > â”‚   â”œâ”€â”€ phys_addr
-> > â”‚   â”œâ”€â”€ type
-> > â”‚   â””â”€â”€ virt_addr
-> > [snip]
-> >  
+On Thu, 21 Nov 2013, Michal Hocko wrote:
+
+> > It's an interesting idea but unfortunately a non-starter for us because 
+> > our users don't have root,
 > 
-> These patches came through severely corrupted, the above is typical...
+> I wouldn't see this as a problem. You can still have a module which
+> exports the notification interface you need. Including timeout
+> fallback. That would be trivial to implement and maybe more appropriate
+> to very specific environments. Moreover the global OOM handling wouldn't
+> be memcg bound.
+> 
 
-Hi, Peter
+The memcg userspace oom handlers are effectively system userspace oom 
+handlers for everything at that memcg and its descendant memcgs, the 
+interface for the system oom handler and the memcg oom handlers would be 
+identical.  We could certainly make the hook into a module by defining 
+some sort of API that could be exported, but I believe the proposal 
+empowers userspace to handle the oom situations in all possible scenarios 
+(notification, memory reserve, timeout) that it would stand alone as the 
+only user in the kernel of such an API and that API itself makes the code 
+unnecessarily complex.
 
-Will resend them today again.
+> > we create their memcg tree and then chown it to the user.  They can
+> > freely register for oom notifications but cannot load their own kernel
+> > modules for their own specific policy.
+> 
+> yes I see but that requires just a notification interface. It doesn't
+> have to be memcg specific, right?
 
---
-Thanks
-Dave
+They also need the memory reserve to do anything useful when the oom 
+handler wakes up, so you'd need an API exported to modules that allows you 
+to define the set of processes allowed to access such a reserve.  So the 
+kernel code providing the needed functionality (notification, reserve, 
+timeout) remains constant for any possible userspace oom handler.  Unless 
+you're thinking of a possible implementation that can't be addressed in 
+this way?
