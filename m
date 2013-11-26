@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3KZI5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 03:57:04 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50138 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab3KZI5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 03:57:02 -0500
-Message-ID: <52946243.70903@ti.com>
-Date: Tue, 26 Nov 2013 10:56:35 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754553Ab3KZI5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 03:57:19 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:43476 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab3KZI5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 03:57:17 -0500
+Message-ID: <52946261.8020408@hitachi.com>
+Date: Tue, 26 Nov 2013 17:57:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
-        dt list <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: omap3-beagle: Fix USB host on beagle boards
- (for 3.13)
-References: <1385387745-7162-1-git-send-email-rogerq@ti.com> <CAGo_u6ryFJvBwd=S9A-nJw+eoGguPj0jMOtgMiZ7mXXAbh4i+w@mail.gmail.com>
-In-Reply-To: <CAGo_u6ryFJvBwd=S9A-nJw+eoGguPj0jMOtgMiZ7mXXAbh4i+w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [BUG] 3.13-rc1 kernel crash when enable all tracepoints
+References: <CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com> <5294409F.70508@hitachi.com> <CAGdX0WGVDX9FzBL2tJUTx3oHBPopK74OOrFzThR_7m3GxQUs3Q@mail.gmail.com>
+In-Reply-To: <CAGdX0WGVDX9FzBL2tJUTx3oHBPopK74OOrFzThR_7m3GxQUs3Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2013 05:50 PM, Nishanth Menon wrote:
-> On Mon, Nov 25, 2013 at 7:55 AM, Roger Quadros <rogerq@ti.com> wrote:
->> Beagle (rev. C4) and Beagle-XM (all revs) need VAUX2 1.8V supply
->> for the USB PHY.
->>
->> As the generic PHY driver can't handle more than one supply
->> at the moment, we configure this supply to be always on.
->> This will cause a very small power impact if the USB host subsystem
->> is not in use, about 76.86 micro-W + LDO power.
+(2013/11/26 16:20), Jovi Zhangwei wrote:
+> I'm not sure this relate with ftrace:function event, from the
+> crash log, it seems more like caused by lock events.
 > 
->>
->> Older Beagle boards (prior to C4) don't have VAUX2 connected anywhere,
->> so there won't be any functional impact on those boards other than
->> some additional LDO power consumption.
->>
->> Reported-by: Nishanth Menon <nm@ti.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> Tested-by: Nishanth Menon <nm@ti.com>
+> Now I only enable lock events (lockdep compiled in my box), below
+> two commands both can crash system.
 
-Thanks Nishant.
-> 
-> I might suggest though that the better alternative might be to get phy
-> driver to handle multiple regulators considering that DT is supposed
-> to represent the h/w topology.
-
-Noted. I will work on this for 3.14.
-
-cheers,
--roger
+That is not the lockdep, but the lockstat. :)
 
 > 
->> ---
->>  arch/arm/boot/dts/omap3-beagle-xm.dts | 8 ++++++++
->>  arch/arm/boot/dts/omap3-beagle.dts    | 8 ++++++++
->>  2 files changed, 16 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> index 31a632f..b39918e 100644
->> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> @@ -215,3 +215,11 @@
->>  &usbhsehci {
->>         phys = <0 &hsusb2_phy>;
->>  };
->> +
->> +&vaux2 {
->> +       regulator-name = "usb_1v8";
->> +       regulator-min-microvolt = <1800000>;
->> +       regulator-max-microvolt = <1800000>;
->> +       regulator-always-on;
->> +};
->> +
->> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
->> index fa532aa..9764556 100644
->> --- a/arch/arm/boot/dts/omap3-beagle.dts
->> +++ b/arch/arm/boot/dts/omap3-beagle.dts
->> @@ -178,3 +178,11 @@
->>         mode = <3>;
->>         power = <50>;
->>  };
->> +
->> +&vaux2 {
->> +       regulator-name = "vdd_ehci";
->> +       regulator-min-microvolt = <1800000>;
->> +       regulator-max-microvolt = <1800000>;
->> +       regulator-always-on;
->> +};
->> +
->> --
->> 1.8.3.2
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> #echo 1 > /sys/kernel/debug/tracing/events/lock/lock_acquire/enable
+> or.
+> #echo 1 > /sys/kernel/debug/tracing/events/lock/lock_release/enable
+> 
+> According to the log, it seems like a recursion tracing bug.
+> 
+> register lock event -> jump_label_update -> text_poke_bp ->
+> on_each_cpu -> local_apic_timer_interrupt -> ktime_get_update_offsets
+> -> lock_release
+
+OK, the problem is in the lock_acquire/release events.
+
+> (Perhaps the crash you reproduced is another crash? similar crash log?)
+
+Right, that was my mistake. Now I got same error log on kvm too.
+This should be fixed.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
