@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab3KZQP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 11:15:58 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:63989 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab3KZQP5 (ORCPT
+	id S932251Ab3KZQRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 11:17:12 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57882 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab3KZQRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 11:15:57 -0500
-Date: Tue, 26 Nov 2013 17:15:53 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf tools: Fix not finding kcore in buildid cache
-Message-ID: <20131126161553.GB7775@gmail.com>
-References: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com>
+	Tue, 26 Nov 2013 11:17:08 -0500
+Date: Tue, 26 Nov 2013 16:17:01 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] mfd: Single patch bound for v3.13-fixes
+Message-ID: <20131126161701.GA4601@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sam,
 
-* Adrian Hunter <adrian.hunter@intel.com> wrote:
+As requested.
 
-> The logic was not looking in the buildid cache for kcore
-> if the host kernel buildid did not match the recorded
-> kernel buildid.
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
-It would be nice to also include the specific failure mode in the 
-changelog: exactly how can users run into this. That will be more 
-useful to most people reading these changelogs than a more abstract 
-bug description.
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
 
-Thanks,
+are available in the git repository at:
 
-	Ingo
+  git://git.linaro.org/people/ljones/mfd.git tags/mfd-lee-3.13-fixes-1
+
+for you to fetch changes up to 72ac01274a8e03eb39756284edb4aa2804599d23:
+
+  mfd: Make MFD_AS3722 depend on I2C=y (2013-11-26 09:12:19 +0000)
+
+----------------------------------------------------------------
+A single patch due in for v3.13-rc2
+
+----------------------------------------------------------------
+Michal Marek (1):
+      mfd: Make MFD_AS3722 depend on I2C=y
+
+ drivers/mfd/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
