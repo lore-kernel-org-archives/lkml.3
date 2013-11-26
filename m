@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab3KZUbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 15:31:33 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:36644 "EHLO quartz.orcorp.ca"
+	id S1758139Ab3KZUcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 15:32:01 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:57602 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757929Ab3KZUbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 15:31:13 -0500
+	id S1757939Ab3KZUbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 15:31:07 -0500
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <adlai@linux.vnet.ibm.com>,
         tpmdd-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 RESEND 5/7] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
-Date: Tue, 26 Nov 2013 13:30:44 -0700
-Message-Id: <1385497846-29103-5-git-send-email-jgunthorpe@obsidianresearch.com>
+Subject: [PATCH v3 2/7] tpm: Move sysfs functions from tpm-interface to tpm-sysfs
+Date: Tue, 26 Nov 2013 13:30:41 -0700
+Message-Id: <1385497846-29103-2-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
 References: <1385497846-29103-1-git-send-email-jgunthorpe@obsidianresearch.com>
@@ -21,193 +21,719 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This builds on the last commit to use the ops structure in the core
-and reduce the size of tpm_vendor_specific.
+CLASS-sysfs.c is a common idiom for linux subsystems.
+
+This is the first step to pulling all the sysfs support code from
+the drivers into tpm-sysfs. This is a plain text copy from tpm-interface
+with support changes to make it compile.
+
+_tpm_pcr_read is made non-static and is called tpm_pcr_read_dev.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
-Reviewed-by: Ashley Lai <adlai@linux.vnet.ibm.com>
 ---
- drivers/char/tpm/tpm-interface.c    | 34 ++++++++++++----------------------
- drivers/char/tpm/tpm-sysfs.c        |  2 +-
- drivers/char/tpm/tpm.h              |  9 +--------
- drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
- 4 files changed, 16 insertions(+), 33 deletions(-)
+ drivers/char/tpm/Makefile        |   2 +-
+ drivers/char/tpm/tpm-interface.c | 275 +-------------------------------------
+ drivers/char/tpm/tpm-sysfs.c     | 281 +++++++++++++++++++++++++++++++++++++++
+ drivers/char/tpm/tpm.h           |  30 +++++
+ 4 files changed, 314 insertions(+), 274 deletions(-)
+ create mode 100644 drivers/char/tpm/tpm-sysfs.c
 
+v3 changes:
+- Split 'tpm: Pull everything related to sysfs into tpm-sysfs.c'
+  into two patches [peter]
+- This patch is just a textual copy from tpm-interface.c to tpm-sysfs.c
+  plus enough to make it compile
+
+diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+index d835e87..4d85dd6 100644
+--- a/drivers/char/tpm/Makefile
++++ b/drivers/char/tpm/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the kernel tpm device drivers.
+ #
+ obj-$(CONFIG_TCG_TPM) += tpm.o
+-tpm-y := tpm-interface.o tpm-dev.o
++tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o
+ tpm-$(CONFIG_ACPI) += tpm_ppi.o
+ 
+ ifdef CONFIG_ACPI
 diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 5a0a3dd..77a1052 100644
+index 9b9bb7b..9cf2f51 100644
 --- a/drivers/char/tpm/tpm-interface.c
 +++ b/drivers/char/tpm/tpm-interface.c
-@@ -353,7 +353,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+@@ -32,13 +32,6 @@
+ #include "tpm.h"
+ #include "tpm_eventlog.h"
  
- 	mutex_lock(&chip->tpm_mutex);
+-enum tpm_duration {
+-	TPM_SHORT = 0,
+-	TPM_MEDIUM = 1,
+-	TPM_LONG = 2,
+-	TPM_UNDEFINED,
+-};
+-
+ #define TPM_MAX_ORDINAL 243
+ #define TSC_MAX_ORDINAL 12
+ #define TPM_PROTECTED_COMMAND 0x00
+@@ -405,24 +398,6 @@ out:
+ #define TPM_DIGEST_SIZE 20
+ #define TPM_RET_CODE_IDX 6
  
--	rc = chip->vendor.send(chip, (u8 *) buf, count);
-+	rc = chip->ops->send(chip, (u8 *) buf, count);
- 	if (rc < 0) {
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_send: error %zd\n", rc);
-@@ -365,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+-enum tpm_capabilities {
+-	TPM_CAP_FLAG = cpu_to_be32(4),
+-	TPM_CAP_PROP = cpu_to_be32(5),
+-	CAP_VERSION_1_1 = cpu_to_be32(0x06),
+-	CAP_VERSION_1_2 = cpu_to_be32(0x1A)
+-};
+-
+-enum tpm_sub_capabilities {
+-	TPM_CAP_PROP_PCR = cpu_to_be32(0x101),
+-	TPM_CAP_PROP_MANUFACTURER = cpu_to_be32(0x103),
+-	TPM_CAP_FLAG_PERM = cpu_to_be32(0x108),
+-	TPM_CAP_FLAG_VOL = cpu_to_be32(0x109),
+-	TPM_CAP_PROP_OWNER = cpu_to_be32(0x111),
+-	TPM_CAP_PROP_TIS_TIMEOUT = cpu_to_be32(0x115),
+-	TPM_CAP_PROP_TIS_DURATION = cpu_to_be32(0x120),
+-
+-};
+-
+ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+ 			    int len, const char *desc)
+ {
+@@ -442,7 +417,6 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+ }
  
- 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
- 	do {
--		u8 status = chip->vendor.status(chip);
--		if ((status & chip->vendor.req_complete_mask) ==
--		    chip->vendor.req_complete_val)
-+		u8 status = chip->ops->status(chip);
-+		if ((status & chip->ops->req_complete_mask) ==
-+		    chip->ops->req_complete_val)
- 			goto out_recv;
+ #define TPM_INTERNAL_RESULT_SIZE 200
+-#define TPM_TAG_RQU_COMMAND cpu_to_be16(193)
+ #define TPM_ORD_GET_CAP cpu_to_be32(101)
+ #define TPM_ORD_GET_RANDOM cpu_to_be32(70)
  
--		if (chip->vendor.req_canceled(chip, status)) {
-+		if (chip->ops->req_canceled(chip, status)) {
- 			dev_err(chip->dev, "Operation Canceled\n");
- 			rc = -ECANCELED;
- 			goto out;
-@@ -380,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 		rmb();
- 	} while (time_before(jiffies, stop));
+@@ -642,70 +616,6 @@ static int tpm_continue_selftest(struct tpm_chip *chip)
+ 	return rc;
+ }
  
+-ssize_t tpm_show_enabled(struct device *dev, struct device_attribute *attr,
+-			char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_FLAG_PERM, &cap,
+-			 "attempting to determine the permanent enabled state");
+-	if (rc)
+-		return 0;
+-
+-	rc = sprintf(buf, "%d\n", !cap.perm_flags.disable);
+-	return rc;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_enabled);
+-
+-ssize_t tpm_show_active(struct device *dev, struct device_attribute *attr,
+-			char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_FLAG_PERM, &cap,
+-			 "attempting to determine the permanent active state");
+-	if (rc)
+-		return 0;
+-
+-	rc = sprintf(buf, "%d\n", !cap.perm_flags.deactivated);
+-	return rc;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_active);
+-
+-ssize_t tpm_show_owned(struct device *dev, struct device_attribute *attr,
+-			char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_PROP_OWNER, &cap,
+-			 "attempting to determine the owner state");
+-	if (rc)
+-		return 0;
+-
+-	rc = sprintf(buf, "%d\n", cap.owned);
+-	return rc;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_owned);
+-
+-ssize_t tpm_show_temp_deactivated(struct device *dev,
+-				struct device_attribute *attr, char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_FLAG_VOL, &cap,
+-			 "attempting to determine the temporary state");
+-	if (rc)
+-		return 0;
+-
+-	rc = sprintf(buf, "%d\n", cap.stclear_flags.deactivated);
+-	return rc;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_temp_deactivated);
+-
+ /*
+  * tpm_chip_find_get - return tpm_chip for given chip number
+  */
+@@ -735,7 +645,7 @@ static struct tpm_input_header pcrread_header = {
+ 	.ordinal = TPM_ORDINAL_PCRREAD
+ };
+ 
+-static int __tpm_pcr_read(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
++int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
+ {
+ 	int rc;
+ 	struct tpm_cmd_t cmd;
+@@ -770,7 +680,7 @@ int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf)
+ 	chip = tpm_chip_find_get(chip_num);
+ 	if (chip == NULL)
+ 		return -ENODEV;
+-	rc = __tpm_pcr_read(chip, pcr_idx, res_buf);
++	rc = tpm_pcr_read_dev(chip, pcr_idx, res_buf);
+ 	tpm_chip_put(chip);
+ 	return rc;
+ }
+@@ -894,187 +804,6 @@ int tpm_send(u32 chip_num, void *cmd, size_t buflen)
+ }
+ EXPORT_SYMBOL_GPL(tpm_send);
+ 
+-ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
+-		      char *buf)
+-{
+-	cap_t cap;
+-	u8 digest[TPM_DIGEST_SIZE];
+-	ssize_t rc;
+-	int i, j, num_pcrs;
+-	char *str = buf;
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-
+-	rc = tpm_getcap(dev, TPM_CAP_PROP_PCR, &cap,
+-			"attempting to determine the number of PCRS");
+-	if (rc)
+-		return 0;
+-
+-	num_pcrs = be32_to_cpu(cap.num_pcrs);
+-	for (i = 0; i < num_pcrs; i++) {
+-		rc = __tpm_pcr_read(chip, i, digest);
+-		if (rc)
+-			break;
+-		str += sprintf(str, "PCR-%02d: ", i);
+-		for (j = 0; j < TPM_DIGEST_SIZE; j++)
+-			str += sprintf(str, "%02X ", digest[j]);
+-		str += sprintf(str, "\n");
+-	}
+-	return str - buf;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_pcrs);
+-
+-#define  READ_PUBEK_RESULT_SIZE 314
+-#define TPM_ORD_READPUBEK cpu_to_be32(124)
+-static struct tpm_input_header tpm_readpubek_header = {
+-	.tag = TPM_TAG_RQU_COMMAND,
+-	.length = cpu_to_be32(30),
+-	.ordinal = TPM_ORD_READPUBEK
+-};
+-
+-ssize_t tpm_show_pubek(struct device *dev, struct device_attribute *attr,
+-		       char *buf)
+-{
+-	u8 *data;
+-	struct tpm_cmd_t tpm_cmd;
+-	ssize_t err;
+-	int i, rc;
+-	char *str = buf;
+-
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-
+-	tpm_cmd.header.in = tpm_readpubek_header;
+-	err = transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
+-			"attempting to read the PUBEK");
+-	if (err)
+-		goto out;
+-
+-	/*
+-	   ignore header 10 bytes
+-	   algorithm 32 bits (1 == RSA )
+-	   encscheme 16 bits
+-	   sigscheme 16 bits
+-	   parameters (RSA 12->bytes: keybit, #primes, expbit)
+-	   keylenbytes 32 bits
+-	   256 byte modulus
+-	   ignore checksum 20 bytes
+-	 */
+-	data = tpm_cmd.params.readpubek_out_buffer;
+-	str +=
+-	    sprintf(str,
+-		    "Algorithm: %02X %02X %02X %02X\n"
+-		    "Encscheme: %02X %02X\n"
+-		    "Sigscheme: %02X %02X\n"
+-		    "Parameters: %02X %02X %02X %02X "
+-		    "%02X %02X %02X %02X "
+-		    "%02X %02X %02X %02X\n"
+-		    "Modulus length: %d\n"
+-		    "Modulus:\n",
+-		    data[0], data[1], data[2], data[3],
+-		    data[4], data[5],
+-		    data[6], data[7],
+-		    data[12], data[13], data[14], data[15],
+-		    data[16], data[17], data[18], data[19],
+-		    data[20], data[21], data[22], data[23],
+-		    be32_to_cpu(*((__be32 *) (data + 24))));
+-
+-	for (i = 0; i < 256; i++) {
+-		str += sprintf(str, "%02X ", data[i + 28]);
+-		if ((i + 1) % 16 == 0)
+-			str += sprintf(str, "\n");
+-	}
+-out:
+-	rc = str - buf;
+-	return rc;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_pubek);
+-
+-
+-ssize_t tpm_show_caps(struct device *dev, struct device_attribute *attr,
+-		      char *buf)
+-{
+-	cap_t cap;
+-	ssize_t rc;
+-	char *str = buf;
+-
+-	rc = tpm_getcap(dev, TPM_CAP_PROP_MANUFACTURER, &cap,
+-			"attempting to determine the manufacturer");
+-	if (rc)
+-		return 0;
+-	str += sprintf(str, "Manufacturer: 0x%x\n",
+-		       be32_to_cpu(cap.manufacturer_id));
+-
+-	/* Try to get a TPM version 1.2 TPM_CAP_VERSION_INFO */
+-	rc = tpm_getcap(dev, CAP_VERSION_1_2, &cap,
+-			 "attempting to determine the 1.2 version");
+-	if (!rc) {
+-		str += sprintf(str,
+-			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
+-			       cap.tpm_version_1_2.Major,
+-			       cap.tpm_version_1_2.Minor,
+-			       cap.tpm_version_1_2.revMajor,
+-			       cap.tpm_version_1_2.revMinor);
+-	} else {
+-		/* Otherwise just use TPM_STRUCT_VER */
+-		rc = tpm_getcap(dev, CAP_VERSION_1_1, &cap,
+-				"attempting to determine the 1.1 version");
+-		if (rc)
+-			return 0;
+-		str += sprintf(str,
+-			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
+-			       cap.tpm_version.Major,
+-			       cap.tpm_version.Minor,
+-			       cap.tpm_version.revMajor,
+-			       cap.tpm_version.revMinor);
+-	}
+-
+-	return str - buf;
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_caps);
+-
+-ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
+-			  char *buf)
+-{
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-
+-	if (chip->vendor.duration[TPM_LONG] == 0)
+-		return 0;
+-
+-	return sprintf(buf, "%d %d %d [%s]\n",
+-		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
+-		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
+-		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
+-		       chip->vendor.duration_adjusted
+-		       ? "adjusted" : "original");
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_durations);
+-
+-ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
+-			  char *buf)
+-{
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-
+-	return sprintf(buf, "%d %d %d %d [%s]\n",
+-		       jiffies_to_usecs(chip->vendor.timeout_a),
+-		       jiffies_to_usecs(chip->vendor.timeout_b),
+-		       jiffies_to_usecs(chip->vendor.timeout_c),
+-		       jiffies_to_usecs(chip->vendor.timeout_d),
+-		       chip->vendor.timeout_adjusted
+-		       ? "adjusted" : "original");
+-}
+-EXPORT_SYMBOL_GPL(tpm_show_timeouts);
+-
+-ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
+-			const char *buf, size_t count)
+-{
+-	struct tpm_chip *chip = dev_get_drvdata(dev);
+-	if (chip == NULL)
+-		return 0;
+-
 -	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	dev_err(chip->dev, "Operation Timed out\n");
- 	rc = -ETIME;
- 	goto out;
- 
- out_recv:
--	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
-+	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
- 	if (rc < 0)
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_recv: error %zd\n", rc);
-@@ -807,12 +807,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
+-	return count;
+-}
+-EXPORT_SYMBOL_GPL(tpm_store_cancel);
+-
  static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask,
  					bool check_cancel, bool *canceled)
  {
--	u8 status = chip->vendor.status(chip);
-+	u8 status = chip->ops->status(chip);
- 
- 	*canceled = false;
- 	if ((status & mask) == mask)
- 		return true;
--	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
-+	if (check_cancel && chip->ops->req_canceled(chip, status)) {
- 		*canceled = true;
- 		return true;
- 	}
-@@ -828,7 +828,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
- 	bool canceled = false;
- 
- 	/* check current status */
--	status = chip->vendor.status(chip);
-+	status = chip->ops->status(chip);
- 	if ((status & mask) == mask)
- 		return 0;
- 
-@@ -855,7 +855,7 @@ again:
- 	} else {
- 		do {
- 			msleep(TPM_TIMEOUT);
--			status = chip->vendor.status(chip);
-+			status = chip->ops->status(chip);
- 			if ((status & mask) == mask)
- 				return 0;
- 		} while (time_before(jiffies, stop));
-@@ -1027,9 +1027,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
- 	if (!chip)
- 		return;
- 
--	if (chip->vendor.release)
--		chip->vendor.release(chip->dev);
--
- 	clear_bit(chip->dev_num, dev_mask);
- }
- EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
-@@ -1074,14 +1071,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
- 	mutex_init(&chip->tpm_mutex);
- 	INIT_LIST_HEAD(&chip->list);
- 
--	chip->vendor.req_complete_mask = ops->req_complete_mask;
--	chip->vendor.req_complete_val = ops->req_complete_val;
--	chip->vendor.req_canceled = ops->req_canceled;
--	chip->vendor.recv = ops->recv;
--	chip->vendor.send = ops->send;
--	chip->vendor.cancel = ops->cancel;
--	chip->vendor.status = ops->status;
--
-+	chip->ops = ops;
- 	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
- 
- 	if (chip->dev_num >= TPM_NUM_DEVICES) {
 diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 506a07b..c3503cb 100644
---- a/drivers/char/tpm/tpm-sysfs.c
+new file mode 100644
+index 0000000..310d960
+--- /dev/null
 +++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
- 	if (chip == NULL)
- 		return 0;
- 
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	return count;
- }
- static DEVICE_ATTR_WO(cancel);
+@@ -0,0 +1,281 @@
++/*
++ * Copyright (C) 2004 IBM Corporation
++ * Authors:
++ * Leendert van Doorn <leendert@watson.ibm.com>
++ * Dave Safford <safford@watson.ibm.com>
++ * Reiner Sailer <sailer@watson.ibm.com>
++ * Kylene Hall <kjhall@us.ibm.com>
++ *
++ * sysfs filesystem inspection interface to the TPM
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ *
++ */
++#include <linux/device.h>
++#include "tpm.h"
++
++/* XXX for now this helper is duplicated in tpm-interface.c */
++static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
++			    int len, const char *desc)
++{
++	int err;
++
++	len = tpm_transmit(chip, (u8 *) cmd, len);
++	if (len <  0)
++		return len;
++	else if (len < TPM_HEADER_SIZE)
++		return -EFAULT;
++
++	err = be32_to_cpu(cmd->header.out.return_code);
++	if (err != 0 && desc)
++		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
++
++	return err;
++}
++
++#define READ_PUBEK_RESULT_SIZE 314
++#define TPM_ORD_READPUBEK cpu_to_be32(124)
++static struct tpm_input_header tpm_readpubek_header = {
++	.tag = TPM_TAG_RQU_COMMAND,
++	.length = cpu_to_be32(30),
++	.ordinal = TPM_ORD_READPUBEK
++};
++
++ssize_t tpm_show_pubek(struct device *dev, struct device_attribute *attr,
++		       char *buf)
++{
++	u8 *data;
++	struct tpm_cmd_t tpm_cmd;
++	ssize_t err;
++	int i, rc;
++	char *str = buf;
++
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	tpm_cmd.header.in = tpm_readpubek_header;
++	err = transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
++			   "attempting to read the PUBEK");
++	if (err)
++		goto out;
++
++	/*
++	   ignore header 10 bytes
++	   algorithm 32 bits (1 == RSA )
++	   encscheme 16 bits
++	   sigscheme 16 bits
++	   parameters (RSA 12->bytes: keybit, #primes, expbit)
++	   keylenbytes 32 bits
++	   256 byte modulus
++	   ignore checksum 20 bytes
++	 */
++	data = tpm_cmd.params.readpubek_out_buffer;
++	str +=
++	    sprintf(str,
++		    "Algorithm: %02X %02X %02X %02X\n"
++		    "Encscheme: %02X %02X\n"
++		    "Sigscheme: %02X %02X\n"
++		    "Parameters: %02X %02X %02X %02X "
++		    "%02X %02X %02X %02X "
++		    "%02X %02X %02X %02X\n"
++		    "Modulus length: %d\n"
++		    "Modulus:\n",
++		    data[0], data[1], data[2], data[3],
++		    data[4], data[5],
++		    data[6], data[7],
++		    data[12], data[13], data[14], data[15],
++		    data[16], data[17], data[18], data[19],
++		    data[20], data[21], data[22], data[23],
++		    be32_to_cpu(*((__be32 *) (data + 24))));
++
++	for (i = 0; i < 256; i++) {
++		str += sprintf(str, "%02X ", data[i + 28]);
++		if ((i + 1) % 16 == 0)
++			str += sprintf(str, "\n");
++	}
++out:
++	rc = str - buf;
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_show_pubek);
++
++ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
++		      char *buf)
++{
++	cap_t cap;
++	u8 digest[TPM_DIGEST_SIZE];
++	ssize_t rc;
++	int i, j, num_pcrs;
++	char *str = buf;
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	rc = tpm_getcap(dev, TPM_CAP_PROP_PCR, &cap,
++			"attempting to determine the number of PCRS");
++	if (rc)
++		return 0;
++
++	num_pcrs = be32_to_cpu(cap.num_pcrs);
++	for (i = 0; i < num_pcrs; i++) {
++		rc = tpm_pcr_read_dev(chip, i, digest);
++		if (rc)
++			break;
++		str += sprintf(str, "PCR-%02d: ", i);
++		for (j = 0; j < TPM_DIGEST_SIZE; j++)
++			str += sprintf(str, "%02X ", digest[j]);
++		str += sprintf(str, "\n");
++	}
++	return str - buf;
++}
++EXPORT_SYMBOL_GPL(tpm_show_pcrs);
++
++ssize_t tpm_show_enabled(struct device *dev, struct device_attribute *attr,
++			char *buf)
++{
++	cap_t cap;
++	ssize_t rc;
++
++	rc = tpm_getcap(dev, TPM_CAP_FLAG_PERM, &cap,
++			 "attempting to determine the permanent enabled state");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", !cap.perm_flags.disable);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_show_enabled);
++
++ssize_t tpm_show_active(struct device *dev, struct device_attribute *attr,
++			char *buf)
++{
++	cap_t cap;
++	ssize_t rc;
++
++	rc = tpm_getcap(dev, TPM_CAP_FLAG_PERM, &cap,
++			 "attempting to determine the permanent active state");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", !cap.perm_flags.deactivated);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_show_active);
++
++ssize_t tpm_show_owned(struct device *dev, struct device_attribute *attr,
++			char *buf)
++{
++	cap_t cap;
++	ssize_t rc;
++
++	rc = tpm_getcap(dev, TPM_CAP_PROP_OWNER, &cap,
++			 "attempting to determine the owner state");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", cap.owned);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_show_owned);
++
++ssize_t tpm_show_temp_deactivated(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	cap_t cap;
++	ssize_t rc;
++
++	rc = tpm_getcap(dev, TPM_CAP_FLAG_VOL, &cap,
++			 "attempting to determine the temporary state");
++	if (rc)
++		return 0;
++
++	rc = sprintf(buf, "%d\n", cap.stclear_flags.deactivated);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_show_temp_deactivated);
++
++ssize_t tpm_show_caps(struct device *dev, struct device_attribute *attr,
++		      char *buf)
++{
++	cap_t cap;
++	ssize_t rc;
++	char *str = buf;
++
++	rc = tpm_getcap(dev, TPM_CAP_PROP_MANUFACTURER, &cap,
++			"attempting to determine the manufacturer");
++	if (rc)
++		return 0;
++	str += sprintf(str, "Manufacturer: 0x%x\n",
++		       be32_to_cpu(cap.manufacturer_id));
++
++	/* Try to get a TPM version 1.2 TPM_CAP_VERSION_INFO */
++	rc = tpm_getcap(dev, CAP_VERSION_1_2, &cap,
++			 "attempting to determine the 1.2 version");
++	if (!rc) {
++		str += sprintf(str,
++			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
++			       cap.tpm_version_1_2.Major,
++			       cap.tpm_version_1_2.Minor,
++			       cap.tpm_version_1_2.revMajor,
++			       cap.tpm_version_1_2.revMinor);
++	} else {
++		/* Otherwise just use TPM_STRUCT_VER */
++		rc = tpm_getcap(dev, CAP_VERSION_1_1, &cap,
++				"attempting to determine the 1.1 version");
++		if (rc)
++			return 0;
++		str += sprintf(str,
++			       "TCG version: %d.%d\nFirmware version: %d.%d\n",
++			       cap.tpm_version.Major,
++			       cap.tpm_version.Minor,
++			       cap.tpm_version.revMajor,
++			       cap.tpm_version.revMinor);
++	}
++
++	return str - buf;
++}
++EXPORT_SYMBOL_GPL(tpm_show_caps);
++
++ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++	if (chip == NULL)
++		return 0;
++
++	chip->vendor.cancel(chip);
++	return count;
++}
++EXPORT_SYMBOL_GPL(tpm_store_cancel);
++
++ssize_t tpm_show_durations(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	if (chip->vendor.duration[TPM_LONG] == 0)
++		return 0;
++
++	return sprintf(buf, "%d %d %d [%s]\n",
++		       jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
++		       jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
++		       jiffies_to_usecs(chip->vendor.duration[TPM_LONG]),
++		       chip->vendor.duration_adjusted
++		       ? "adjusted" : "original");
++}
++EXPORT_SYMBOL_GPL(tpm_show_durations);
++
++ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d %d %d %d [%s]\n",
++		       jiffies_to_usecs(chip->vendor.timeout_a),
++		       jiffies_to_usecs(chip->vendor.timeout_b),
++		       jiffies_to_usecs(chip->vendor.timeout_c),
++		       jiffies_to_usecs(chip->vendor.timeout_d),
++		       chip->vendor.timeout_adjusted
++		       ? "adjusted" : "original");
++}
++EXPORT_SYMBOL_GPL(tpm_show_timeouts);
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index a56af2c..7b0a46e 100644
+index 496228c..41b1480 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -64,9 +64,6 @@ enum tpm_duration {
- struct tpm_chip;
+@@ -46,6 +46,14 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
  
- struct tpm_vendor_specific {
--	u8 req_complete_mask;
--	u8 req_complete_val;
--	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
- 	void __iomem *iobase;		/* ioremapped address */
- 	unsigned long base;		/* TPM base address */
++/* Indexes the duration array */
++enum tpm_duration {
++	TPM_SHORT = 0,
++	TPM_MEDIUM = 1,
++	TPM_LONG = 2,
++	TPM_UNDEFINED,
++};
++
+ #define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+@@ -171,6 +179,8 @@ struct tpm_output_header {
+ 	__be32	return_code;
+ } __packed;
  
-@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
- 	int region_size;
- 	int have_region;
++#define TPM_TAG_RQU_COMMAND cpu_to_be16(193)
++
+ struct	stclear_flags_t {
+ 	__be16	tag;
+ 	u8	deactivated;
+@@ -244,6 +254,24 @@ typedef union {
+ 	struct duration_t duration;
+ } cap_t;
  
--	int (*recv) (struct tpm_chip *, u8 *, size_t);
--	int (*send) (struct tpm_chip *, u8 *, size_t);
--	void (*cancel) (struct tpm_chip *);
--	u8 (*status) (struct tpm_chip *);
--	void (*release) (struct device *);
- 	struct miscdevice miscdev;
- 	struct list_head list;
- 	int locality;
-@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
++enum tpm_capabilities {
++	TPM_CAP_FLAG = cpu_to_be32(4),
++	TPM_CAP_PROP = cpu_to_be32(5),
++	CAP_VERSION_1_1 = cpu_to_be32(0x06),
++	CAP_VERSION_1_2 = cpu_to_be32(0x1A)
++};
++
++enum tpm_sub_capabilities {
++	TPM_CAP_PROP_PCR = cpu_to_be32(0x101),
++	TPM_CAP_PROP_MANUFACTURER = cpu_to_be32(0x103),
++	TPM_CAP_FLAG_PERM = cpu_to_be32(0x108),
++	TPM_CAP_FLAG_VOL = cpu_to_be32(0x109),
++	TPM_CAP_PROP_OWNER = cpu_to_be32(0x111),
++	TPM_CAP_PROP_TIS_TIMEOUT = cpu_to_be32(0x115),
++	TPM_CAP_PROP_TIS_DURATION = cpu_to_be32(0x120),
++
++};
++
+ struct	tpm_getcap_params_in {
+ 	__be32	cap;
+ 	__be32	subcap_size;
+@@ -341,6 +369,8 @@ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
+ int tpm_dev_add_device(struct tpm_chip *chip);
+ void tpm_dev_del_device(struct tpm_chip *chip);
  
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
-+	const struct tpm_class_ops *ops;
- 
- 	int dev_num;		/* /dev/tpm# */
- 	char devname[7];
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 114f12b..cb39876 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -559,7 +559,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
- 	}
- 
- out:
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	release_locality(chip);
- 	return size;
- }
-@@ -802,7 +802,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
- 	if (power_mgt) {
- 		gpio_set_value(pin_infos->io_lpcpd, 1);
- 		ret = wait_for_serirq_timeout(chip,
--					  (chip->vendor.status(chip) &
-+					  (chip->ops->status(chip) &
- 					  TPM_STS_VALID) == TPM_STS_VALID,
- 					  chip->vendor.timeout_b);
- 	} else {
++int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
++
+ #ifdef CONFIG_ACPI
+ extern int tpm_add_ppi(struct kobject *);
+ extern void tpm_remove_ppi(struct kobject *);
 -- 
 1.8.1.2
 
