@@ -1,153 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3KZEUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Nov 2013 23:20:48 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:35122 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3KZEUn (ORCPT
+	id S1754032Ab3KZEVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Nov 2013 23:21:12 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58953 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab3KZEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Nov 2013 23:20:43 -0500
+	Mon, 25 Nov 2013 23:21:08 -0500
+Date: Mon, 25 Nov 2013 23:21:06 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olofj@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] use -fstack-protector-strong
+In-Reply-To: <CAGXu5j+QpAhifwjTdmsvk+i1Yq3Qk2CkzNgfFnttmfMh_B3buQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.10.1311252310080.9667@knanqh.ubzr>
+References: <20131125221400.GA11041@www.outflux.net> <5293DA66.6050902@zytor.com> <CAGXu5j+QpAhifwjTdmsvk+i1Yq3Qk2CkzNgfFnttmfMh_B3buQ@mail.gmail.com>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAMZVYU8-thd2Q2CuFVuhT35D7cmv46b600365j0Zo-bFaVvK2Q@mail.gmail.com>
-References: <1384285203-642-1-git-send-email-cl91tp@gmail.com>
- <CAErSpo5E4584zgTt4ySPSEFhtwdHDOyrrowirp=SmtmJjDyHgg@mail.gmail.com> <CAMZVYU8-thd2Q2CuFVuhT35D7cmv46b600365j0Zo-bFaVvK2Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 25 Nov 2013 21:20:23 -0700
-Message-ID: <CAErSpo4dwmpqC54wJ+qLPCyFS2zwJgzuOWNXT17hEg-tSE9VUw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: add a quirk for keeping Bus Master bit on shutdown
-To: Chang Liu <cl91tp@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, Jility <jility09@gmail.com>,
-        Florian Otti <f.otti@gmx.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 9:11 PM, Chang Liu <cl91tp@gmail.com> wrote:
-> If this turns out to be a problem specific to Acer V573G, we can simply
-> wrap the if (pdev->...) line in ata/ahci.c with if
-> (dmi_check_system(acer_v573g))
-> so that only acer v573g laptops will be affected by this patch. The remaining
-> part of the patch won't need to be changed.
+On Mon, 25 Nov 2013, Kees Cook wrote:
 
-Well, sure.  But that doesn't change the fact that until we know *why*
-it hangs, this is voodoo programming.  And I don't like voodoo
-programming.
+> On Mon, Nov 25, 2013 at 3:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 11/25/2013 02:14 PM, Kees Cook wrote:
+> >> Build the kernel with -fstack-protector-strong when it is available
+> >> (gcc 4.9 and later). This increases the coverage of the stack protector
+> >> without the heavy performance hit of -fstack-protector-all.
+> >
+> > What is the difference between the various options?
+> 
+> -fstack-protector-all:
+> Adds the stack-canary saving prefix and stack-canary checking suffix
+> to _all_ function entry and exit. Results in substantial use of stack
+> space for saving the canary for deep stack users (e.g. historically
+> xfs), and measurable (though shockingly still low) performance hit due
+> to all the saving/checking. Really not suitable for sane systems, and
+> was entirely removed as an option from the kernel many years ago.
+> 
+> -fstack-protector:
+> Adds the canary save/check to functions that define an 8
+> (--param=ssp-buffer-size=N, N=8 by default) or more byte local char
+> array. Traditionally, stack overflows happened with string-based
+> manipulations, so this was a way to find those functions. Very few
+> total functions actually get the canary; no measurable performance or
+> size overhead.
+> 
+> -fstack-protector-strong
+> Adds the canary for a wider set of functions, since it's not just
+> those with strings that have ultimately been vulnerable to
+> stack-busting. With this superset, more functions end up with a
+> canary, but it still remains small compared to all functions with no
+> measurable change in performance. Based on the original design
+> document, a function gets the canary when it contains any of:
+> - local variable's address used as part of the RHS of an assignment or
+> function argument
+> - local variable is an array (or union containing an array),
+> regardless of array type or length
+> - uses register local variables
+> https://docs.google.com/a/google.com/document/d/1xXBH6rRZue4f296vGt9YQcuLVQHeE516stHwt8M9xyU
+> 
+> Chrome OS has been using -fstack-protector-strong for its kernel
+> builds for the last 8 months with no problems.
 
-> 2013/11/26 Bjorn Helgaas <bhelgaas@google.com>:
->> [+cc Lan, Khalid, Konstantin, Alan, Takao, Jility, Florian, linux-kernel]
->>
->> On Tue, Nov 12, 2013 at 07:40:03PM +0000, Chang Liu wrote:
->>> This fixes https://bugzilla.kernel.org/show_bug.cgi?id=63861
->>>
->>> Commit b566a22c2 and 7897e60227 made pci_device_shutdown()
->>> unconditionally clear Bus Master bit for every pci devices.
->>> While this works for most hardware, certain devices are not
->>> compatible with this. Intel Lynx Point-LP SATA Controller,
->>> for example, will hang the system if its Bus Master bit is
->>> cleared during device shutdown. This patch adds a pci quirk
->>> so that device drivers can instruct pci_device_shutdown()
->>> to keep Bus Master from being cleared, and then implements
->>> this mechanism for the Intel Lynx Point-LP AHCI driver.
->>>
->>> Signed-off-by: Chang Liu <cl91tp@gmail.com>
->>
->> I'm not 100% comfortable with disabling bus mastering in general;
->> see [1] for more details.
->>
->> But given that we have been doing it for quite a while (b566a22c2 appeared
->> in v3.5 on Jul 21, 2012), and Lynx Point should be in lots of machines, I'm
->> surprised that we don't see more reports of this problem if it really
->> affects all Lynx Point parts.
->>
->> Jility reported the same problem [2], and I did find one other similar
->> report [3] from Florian.  All three reports (Chang, Jility, Florian) are on
->> the same exact machine (Acer V5-573G), which seems sort of suspicious.
->>
->> Lan, do you have access to any Lynx Point boxes?  Can you test and see
->> whether they hang on power-off also?  I suspect this might be something
->> specific to the Acer box, not a generic Lynx Point issue.
->>
->> Bjorn
->>
->> [1] http://lkml.kernel.org/r/20120427190033.GA17588@ldl.usa.hp.com
->> [2] https://bugzilla.kernel.org/show_bug.cgi?id=63861#c21
->> [3] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1249329
->>
->>> ---
->>> As per Takao's suggestion, add a new member into struct pci_dev
->>> and add a quirk in the ahci driver. I tested this on my
->>> machine (Acer V5-573G) and it works fine.
->>>
->>>  drivers/ata/ahci.c       |  8 ++++++++
->>>  drivers/pci/pci-driver.c | 11 ++++++++---
->>>  include/linux/pci.h      |  1 +
->>>  3 files changed, 17 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
->>> index 8e28f92..de6efcb 100644
->>> --- a/drivers/ata/ahci.c
->>> +++ b/drivers/ata/ahci.c
->>> @@ -1385,6 +1385,14 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->>>
->>>   pci_set_master(pdev);
->>>
->>> + /* We normally clear Bus Master on pci device shutdown. However,
->>> + * doing so for Intel Lynx Point-LP SATA Controller [AHCI mode]
->>> + * hangs the system. Therefore keep it.
->>> + * See bug report: https://bugzilla.kernel.org/show_bug.cgi?id=63861
->>> + */
->>> + if (pdev->vendor == PCI_VENDOR_ID_INTEL && pdev->device == 0x9c03)
->>> + pdev->keep_busmaster_on_shutdown = 1;
->>> +
->>>   if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
->>>   return ahci_host_activate(host, pdev->irq, n_msis);
->>>
->>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
->>> index 38f3c01..ff15b0c 100644
->>> --- a/drivers/pci/pci-driver.c
->>> +++ b/drivers/pci/pci-driver.c
->>> @@ -392,10 +392,15 @@ static void pci_device_shutdown(struct device *dev)
->>>   pci_msix_shutdown(pci_dev);
->>>
->>>   /*
->>> - * Turn off Bus Master bit on the device to tell it to not
->>> - * continue to do DMA. Don't touch devices in D3cold or unknown states.
->>> + * If the hardware is okay with it, turn off Bus Master bit
->>> + * on the device to tell it not to continue doing DMA.
->>> + * Don't touch devices in D3cold or unknown states.
->>> + * On certain hardware clearing Bus Master bit on shutdown
->>> + * may hang the entire system. In these cases the driver of
->>> + * these devices should set keep_busmaster_on_shutdown to 1.
->>>   */
->>> - if (pci_dev->current_state <= PCI_D3hot)
->>> + if (!pci_dev->keep_busmaster_on_shutdown
->>> +    && pci_dev->current_state <= PCI_D3hot)
->>>   pci_clear_master(pci_dev);
->>>  }
->>>
->>> diff --git a/include/linux/pci.h b/include/linux/pci.h
->>> index da172f9..63db735 100644
->>> --- a/include/linux/pci.h
->>> +++ b/include/linux/pci.h
->>> @@ -322,6 +322,7 @@ struct pci_dev {
->>>   /* keep track of device state */
->>>   unsigned int is_added:1;
->>>   unsigned int is_busmaster:1; /* device is busmaster */
->>> + unsigned int keep_busmaster_on_shutdown:1; /* do not clear busmaster on shutdown */
->>>   unsigned int no_msi:1; /* device may not use msi */
->>>   unsigned int block_cfg_access:1; /* config space access is blocked */
->>>   unsigned int broken_parity_status:1; /* Device generates false positive parity */
->>> --
->>> 1.8.4.2
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Could you get this information inside the commit log for your patch 
+please?  This is very valuable info to have right next to the change in 
+the repository without having to dig into the gcc manual or finding the 
+relevant email thread.
+
+
+Nicolas
