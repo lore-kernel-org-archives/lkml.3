@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab3KZR60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 12:58:26 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:63407 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab3KZR6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 12:58:23 -0500
-Date: Tue, 26 Nov 2013 18:58:19 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo <acme@ghostprotocols.net>, patches@linaro.org
-Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
-Message-ID: <20131126175819.GB9958@gmail.com>
-References: <1385045539-24537-1-git-send-email-jean.pihet@linaro.org>
- <1385045539-24537-3-git-send-email-jean.pihet@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385045539-24537-3-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754775Ab3KZSA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 13:00:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46709 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752046Ab3KZSA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 13:00:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,776,1378882800"; 
+   d="scan'208";a="442467488"
+From: Ashutosh Dixit <ashutosh.dixit@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Krishna Kumar Reddy Yerramreddy 
+	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH char-misc-linus 1/5] misc: mic: Change mic_notify(...) to return true.
+Date: Tue, 26 Nov 2013 10:08:29 -0800
+Message-Id: <100078a1f4e7f56ef9dc1c4a51c8165a2e090de9.1385487752.git.ashutosh.dixit@intel.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1385487752.git.ashutosh.dixit@intel.com>
+References: <cover.1385487752.git.ashutosh.dixit@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sudeep Dutt <sudeep.dutt@intel.com>
 
-* Jean Pihet <jean.pihet@linaro.org> wrote:
+virtqueue_{kick()/notify()} methods are required to return bool due to
+API changes introduced in commit 5b1bf7cb673a.
 
-> Use the per-feature check flags for the unwinding feature in order
-> to correctly compile the libunwind and libunwind-debug-frame feature
-> checks.
-> 
-> Tested on ARMv7 and ARMv8 with 'make DEBUG=1 LIBUNWIND_DIR=/usr/local
-> -C tools/perf'
-> 
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> ---
->  tools/perf/config/Makefile                | 38 +++++++++++++++++--------------
->  tools/perf/config/feature-checks/Makefile |  6 ++---
->  2 files changed, 24 insertions(+), 20 deletions(-)
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+---
+ drivers/misc/mic/card/mic_virtio.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Does the x86 build work fine as well, as before? If yes then:
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
+diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
+index 8aa42e7..1ebc51c 100644
+--- a/drivers/misc/mic/card/mic_virtio.c
++++ b/drivers/misc/mic/card/mic_virtio.c
+@@ -187,11 +187,12 @@ static void mic_reset(struct virtio_device *vdev)
+ /*
+  * The virtio_ring code calls this API when it wants to notify the Host.
+  */
+-static void mic_notify(struct virtqueue *vq)
++static bool mic_notify(struct virtqueue *vq)
+ {
+ 	struct mic_vdev *mvdev = vq->priv;
  
-Thanks,
+ 	mic_send_intr(mvdev->mdev, mvdev->c2h_vdev_db);
++	return true;
+ }
+ 
+ static void mic_del_vq(struct virtqueue *vq, int n)
+-- 
+1.8.2.3
 
-	Ingo
