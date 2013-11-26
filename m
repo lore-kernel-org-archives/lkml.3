@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3KZJGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 04:06:51 -0500
-Received: from sauhun.de ([89.238.76.85]:47118 "EHLO pokefinder.org"
+	id S1753402Ab3KZJN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 04:13:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab3KZJGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 04:06:44 -0500
-Date: Tue, 26 Nov 2013 10:06:39 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-mux-pca954x: Disable mux after 200ms timeout
-Message-ID: <20131126090639.GA2568@katana>
-References: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+	id S1750803Ab3KZJNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 04:13:55 -0500
+Date: Tue, 26 Nov 2013 17:13:01 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v4 05/12] efi: export more efi table variable to sysfs
+Message-ID: <20131126091301.GB10899@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-6-git-send-email-dyoung@redhat.com>
+ <20131126085035.GC20917@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385447520-3306-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <20131126085035.GC20917@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/26/13 at 09:50am, Borislav Petkov wrote:
+> On Tue, Nov 26, 2013 at 01:57:50PM +0800, Dave Young wrote:
+> > diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+> > index 2e2fbde..5d85956 100644
+> > --- a/drivers/firmware/efi/efi.c
+> > +++ b/drivers/firmware/efi/efi.c
+> > @@ -32,6 +32,9 @@ struct efi __read_mostly efi = {
+> >  	.hcdp       = EFI_INVALID_TABLE_ADDR,
+> >  	.uga        = EFI_INVALID_TABLE_ADDR,
+> >  	.uv_systab  = EFI_INVALID_TABLE_ADDR,
+> > +	.fw_vendor  = EFI_INVALID_TABLE_ADDR,
+> > +	.runtime    = EFI_INVALID_TABLE_ADDR,
+> > +	.config_table  = EFI_INVALID_TABLE_ADDR,
+> 
+> See what I mean with alignment?
 
---1yeeQ81UyVL57Vl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I see. As for this segment I would not like change the previous code
+just because of this reason
 
-On Tue, Nov 26, 2013 at 07:32:00AM +0100, Mike Looijmans wrote:
-> Leaving the mux enabled causes needless I2C traffic on the downstream
-> bus. De-selecting after every request causes excess I2C traffic and
-> switching.
->=20
-> This patch implements a hybrid solution: After 200ms of inactivity,
-> the mux is disabled.
->=20
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> 
+> Now this config_table thing sticks out and completely destroys the
+> balance in the universe.
+> 
+> :-)
+> 
+> >  };
+> >  EXPORT_SYMBOL(efi);
+> >  
+> > @@ -71,13 +74,54 @@ static ssize_t systab_show(struct kobject *kobj,
+> >  static struct kobj_attribute efi_attr_systab =
+> >  			__ATTR(systab, 0400, systab_show, NULL);
+> >  
+> > +static ssize_t fw_vendor_show(struct kobject *kobj,
+> > +				struct kobj_attribute *attr, char *buf)
+> > +{
+> > +	return sprintf(buf, "0x%lx\n", efi.fw_vendor);
+> > +}
+> > +
+> > +static ssize_t runtime_show(struct kobject *kobj,
+> > +				struct kobj_attribute *attr, char *buf)
+> > +{
+> > +	return sprintf(buf, "0x%lx\n", efi.runtime);
+> > +}
+> > +
+> > +static ssize_t config_table_show(struct kobject *kobj,
+> > +				struct kobj_attribute *attr, char *buf)
+> > +{
+> > +	return sprintf(buf, "0x%lx\n", efi.config_table);
+> > +}
+> 
+> Those are sooo similar, it's like the macro SHOW writes itself.
 
-You still haven't answered my initial question. Also, please don't
-resend without saying what changed since the last version.
+Ok, will add a macro for the above functions..
 
-
---1yeeQ81UyVL57Vl7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSlGSeAAoJEBQN5MwUoCm2+FsP/Ay72uYokHZl9LlYzQsua0fi
-amxhg0hHx9aVV0JnK3mURp+T9725y/zYOXkijPiT/rMEvDpd5jYUPsWvdB/gbSL9
-CyGyeYUr6G0gUFE/pjP7VFpEMfDo/6lsDWSWFc0grsiN8nJS1pMqGxp75J5i7d3U
-53k4brLxkDKgq2LzeIJ4YaJ+6zlkC2Cuk6sC8LDAtABCjERPfxn8WZ5V5/Uq1Avh
-7SDpKyDkoMygJF9hzHcWg5qa4pfRmIyqWIBqdmtZIpCQrExF1gSvqCZw1Bm4Vmab
-vBPkD4tF5aTiiymj71mXQFFTCJqAP5pYgIAV2n8Hp1mSj04+vG8ruBbQtNqsKocJ
-/3wSPQrRDP1diuPbf2RPSroMXDb/fUQ86cd0XMynJO7qeJIpwKwGeEkJ0bqY8A0h
-91ytsulEhodkOyhNhKEdMJeoU7SUhVn6llN0n8xAVMCRRrO2eEIUmdu1TMErRPlI
-fy+u05AS4IH8R+aBEWG8kUWEvx3YHDijtlB6qEvFVEMbR/9qrJF0jWc8y9HVR2OF
-kJG2f9vdtfyDfqcY/ks+H7RVa79MdU5lEYJ69QQyyYVoxNZjUGO9mGWwv02n641T
-1qB4Iw9Rzws2ub5XdVFSkGrU0GXyk+sCNBy95dw4x4koOArCQyVA8MFdpEB4N7LG
-CC+yzaP4AyuTJoNkTgqT
-=pQ6r
------END PGP SIGNATURE-----
-
---1yeeQ81UyVL57Vl7--
+Thanks for review
+Dave
