@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3K0BTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:19:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39524 "EHLO
+	id S1759512Ab3K0BTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:19:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39529 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab3K0A7W (ORCPT
+	with ESMTP id S1753312Ab3K0A7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:22 -0500
+	Tue, 26 Nov 2013 19:59:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Greg Edwards <gedwards@ddn.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH 3.12 078/116] KVM: IOMMU: hva align mapping page size
-Date: Tue, 26 Nov 2013 16:57:31 -0800
-Message-Id: <20131127005742.312745359@linuxfoundation.org>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [PATCH 3.12 079/116] arm/arm64: KVM: Fix hyp mappings of vmalloc regions
+Date: Tue, 26 Nov 2013 16:57:32 -0800
+Message-Id: <20131127005742.379668264@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,49 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Edwards <gedwards@ddn.com>
+From: Christoffer Dall <christoffer.dall@linaro.org>
 
-commit 27ef63c7e97d1e5dddd85051c03f8d44cc887f34 upstream.
+commit 40c2729bab48e2832b17c1fa8af9db60e776131b upstream.
 
-When determining the page size we could use to map with the IOMMU, the
-page size should also be aligned with the hva, not just the gfn.  The
-gfn may not reflect the real alignment within the hugetlbfs file.
+Using virt_to_phys on percpu mappings is horribly wrong as it may be
+backed by vmalloc.  Introduce kvm_kaddr_to_phys which translates both
+types of valid kernel addresses to the corresponding physical address.
 
-Most of the time, this works fine.  However, if the hugetlbfs file is
-backed by non-contiguous huge pages, a multi-huge page memslot starts at
-an unaligned offset within the hugetlbfs file, and the gfn is aligned
-with respect to the huge page size, kvm_host_page_size() will return the
-huge page size and we will use that to map with the IOMMU.
+At the same time resolves a typing issue where we were storing the
+physical address as a 32 bit unsigned long (on arm), truncating the
+physical address for addresses above the 4GB limit.  This caused
+breakage on Keystone.
 
-When we later unpin that same memslot, the IOMMU returns the unmap size
-as the huge page size, and we happily unpin that many pfns in
-monotonically increasing order, not realizing we are spanning
-non-contiguous huge pages and partially unpin the wrong huge page.
-
-Ensure the IOMMU mapping page size is aligned with the hva corresponding
-to the gfn, which does reflect the alignment within the hugetlbfs file.
-
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Greg Edwards <gedwards@ddn.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/iommu.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/kvm/mmu.c |   34 ++++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
 
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -103,6 +103,10 @@ int kvm_iommu_map_pages(struct kvm *kvm,
- 		while ((gfn << PAGE_SHIFT) & (page_size - 1))
- 			page_size >>= 1;
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -307,6 +307,17 @@ out:
+ 	return err;
+ }
  
-+		/* Make sure hva is aligned to the page size we want to map */
-+		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
-+			page_size >>= 1;
++static phys_addr_t kvm_kaddr_to_phys(void *kaddr)
++{
++	if (!is_vmalloc_addr(kaddr)) {
++		BUG_ON(!virt_addr_valid(kaddr));
++		return __pa(kaddr);
++	} else {
++		return page_to_phys(vmalloc_to_page(kaddr)) +
++		       offset_in_page(kaddr);
++	}
++}
 +
- 		/*
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
+ /**
+  * create_hyp_mappings - duplicate a kernel virtual address range in Hyp mode
+  * @from:	The virtual kernel start address of the range
+@@ -318,16 +329,27 @@ out:
+  */
+ int create_hyp_mappings(void *from, void *to)
+ {
+-	unsigned long phys_addr = virt_to_phys(from);
++	phys_addr_t phys_addr;
++	unsigned long virt_addr;
+ 	unsigned long start = KERN_TO_HYP((unsigned long)from);
+ 	unsigned long end = KERN_TO_HYP((unsigned long)to);
+ 
+-	/* Check for a valid kernel memory mapping */
+-	if (!virt_addr_valid(from) || !virt_addr_valid(to - 1))
+-		return -EINVAL;
++	start = start & PAGE_MASK;
++	end = PAGE_ALIGN(end);
++
++	for (virt_addr = start; virt_addr < end; virt_addr += PAGE_SIZE) {
++		int err;
++
++		phys_addr = kvm_kaddr_to_phys(from + virt_addr - start);
++		err = __create_hyp_mappings(hyp_pgd, virt_addr,
++					    virt_addr + PAGE_SIZE,
++					    __phys_to_pfn(phys_addr),
++					    PAGE_HYP);
++		if (err)
++			return err;
++	}
+ 
+-	return __create_hyp_mappings(hyp_pgd, start, end,
+-				     __phys_to_pfn(phys_addr), PAGE_HYP);
++	return 0;
+ }
+ 
+ /**
 
 
