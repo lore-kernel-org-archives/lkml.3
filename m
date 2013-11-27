@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760819Ab3K0CEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:04:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38852 "EHLO
+	id S1760834Ab3K0CEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:04:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756981Ab3K0A4w (ORCPT
+	with ESMTP id S1756872Ab3K0A4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:52 -0500
+	Tue, 26 Nov 2013 19:56:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.4 19/39] perf/ftrace: Fix paranoid level for enabling function tracer
-Date: Tue, 26 Nov 2013 16:56:43 -0800
-Message-Id: <20131127005620.371688102@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>
+Subject: [PATCH 3.4 17/39] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
+Date: Tue, 26 Nov 2013 16:56:41 -0800
+Message-Id: <20131127005620.235386186@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -29,46 +30,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 12ae030d54ef250706da5642fc7697cc60ad0df7 upstream.
+commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
 
-The current default perf paranoid level is "1" which has
-"perf_paranoid_kernel()" return false, and giving any operations that
-use it, access to normal users. Unfortunately, this includes function
-tracing and normal users should not be allowed to enable function
-tracing by default.
+threadgroup_lock() takes signal->cred_guard_mutex to ensure that
+thread_group_leader() is stable.  This doesn't look nice, the scope of
+this lock in do_execve() is huge.
 
-The proper level is defined at "-1" (full perf access), which
-"perf_paranoid_tracepoint_raw()" will only give access to. Use that
-check instead for enabling function tracing.
+And as Dave pointed out this can lead to deadlock, we have the
+following dependencies:
+
+	do_execve:		cred_guard_mutex -> i_mutex
+	cgroup_mount:		i_mutex -> cgroup_mutex
+	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
+
+Change de_thread() to take threadgroup_change_begin() around the
+switch-the-leader code and change threadgroup_lock() to avoid
+->cred_guard_mutex.
+
+Note that de_thread() can't sleep with ->group_rwsem held, this can
+obviously deadlock with the exiting leader if the writer is active, so it
+does threadgroup_change_end() before schedule().
 
 Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-CVE: CVE-2013-2930
-Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ zhj: adjust context ]
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/trace/trace_event_perf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/exec.c             |    3 +++
+ include/linux/sched.h |   18 ++++--------------
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -909,11 +909,13 @@ static int de_thread(struct task_struct
  
- 	/* No tracing, just counting, so no obvious leak */
+ 		sig->notify_count = -1;	/* for exit_notify() */
+ 		for (;;) {
++			threadgroup_change_begin(tsk);
+ 			write_lock_irq(&tasklist_lock);
+ 			if (likely(leader->exit_state))
+ 				break;
+ 			__set_current_state(TASK_UNINTERRUPTIBLE);
+ 			write_unlock_irq(&tasklist_lock);
++			threadgroup_change_end(tsk);
+ 			schedule();
+ 		}
+ 
+@@ -969,6 +971,7 @@ static int de_thread(struct task_struct
+ 		if (unlikely(leader->ptrace))
+ 			__wake_up_parent(leader, leader->parent);
+ 		write_unlock_irq(&tasklist_lock);
++		threadgroup_change_end(tsk);
+ 
+ 		release_task(leader);
+ 	}
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2466,27 +2466,18 @@ static inline void threadgroup_change_en
+  *
+  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
+  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
+- * perform exec.  This is useful for cases where the threadgroup needs to
+- * stay stable across blockable operations.
++ * change ->group_leader/pid.  This is useful for cases where the threadgroup
++ * needs to stay stable across blockable operations.
+  *
+  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
+  * synchronization.  While held, no new task will be added to threadgroup
+  * and no existing live task will have its PF_EXITING set.
+  *
+- * During exec, a task goes and puts its thread group through unusual
+- * changes.  After de-threading, exclusive access is assumed to resources
+- * which are usually shared by tasks in the same group - e.g. sighand may
+- * be replaced with a new one.  Also, the exec'ing task takes over group
+- * leader role including its pid.  Exclude these changes while locked by
+- * grabbing cred_guard_mutex which is used to synchronize exec path.
++ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
++ * sub-thread becomes a new leader.
+  */
+ static inline void threadgroup_lock(struct task_struct *tsk)
+ {
+-	/*
+-	 * exec uses exit for de-threading nesting group_rwsem inside
+-	 * cred_guard_mutex. Grab cred_guard_mutex first.
+-	 */
+-	mutex_lock(&tsk->signal->cred_guard_mutex);
+ 	down_write(&tsk->signal->group_rwsem);
+ }
+ 
+@@ -2499,7 +2490,6 @@ static inline void threadgroup_lock(stru
+ static inline void threadgroup_unlock(struct task_struct *tsk)
+ {
+ 	up_write(&tsk->signal->group_rwsem);
+-	mutex_unlock(&tsk->signal->cred_guard_mutex);
+ }
+ #else
+ static inline void threadgroup_change_begin(struct task_struct *tsk) {}
 
 
