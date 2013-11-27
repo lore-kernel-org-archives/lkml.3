@@ -1,68 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab3K0XPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:15:24 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55987 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611Ab3K0XPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:15:22 -0500
+	id S1758417Ab3K0XRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:17:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39586 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757549Ab3K0XRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:17:16 -0500
+Date: Wed, 27 Nov 2013 17:15:41 -0600
+From: Nishanth Menon <nm@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>, <rjw@rjwysocki.net>
+CC: Daniel Mack <zonque@gmail.com>, <linux-omap@vger.kernel.org>,
+        <joelf@ti.com>, <gururaja.hebbar@ti.com>, <balajitk@ti.com>,
+        <s.neumann@raumfeld.com>, <Russ.Dill@ti.com>,
+        <vaibhav.bedia@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>, <Julia.Lawall@lip6.fr>,
+        <Gilles.Muller@lip6.fr>, <nicolas.palix@imag.fr>, <mmarek@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <cocci@systeme.lip6.fr>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-pm@vger.kernel.org>
+Subject: pm_runtime functions and IS_ERR_VALUE (was Re: [PATCH v6] ARM: omap:
+ edma: add suspend suspend/resume hooks)
+Message-ID: <20131127231541.GA8418@kahuna>
+References: <1384726754-27875-1-git-send-email-zonque@gmail.com>
+ <5295F53C.8040101@ti.com>
+ <5295F806.9030900@gmail.com>
+ <5295F99F.6010203@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <529677D7.9080203@zytor.com>
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
-	<5294F10C.8060901@amacapital.net>
-	<CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com>
-	<52964EC7.9000504@zytor.com>
-	<52966C0A.7070201@zytor.com>
-	<CA+55aFzr9ZKcGfT_Q31T9_vuCcmWxGCh0wixuZqt7VhjxxYU9g@mail.gmail.com>
-	<529677D7.9080203@zytor.com>
-Date: Wed, 27 Nov 2013 15:15:21 -0800
-X-Google-Sender-Auth: CJRimdsR_mm8oOslQkUkO_KUfMU
-Message-ID: <CA+55aFx9mXy3VASfek5052GTbiUVSgBVsRwnF4cse1dc=z70HQ@mail.gmail.com>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5295F99F.6010203@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 2:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> If we are going to go down that route, I would like to see a list of
-> patch sites, not just one with a "timeout" that won't get used.
+Change in subject line + wider forum
 
-Oh, I agree. The interface of the original patch was just inane/insane.
+On 19:24-20131127, Sekhar Nori wrote:
+> On Wednesday 27 November 2013 07:17 PM, Daniel Mack wrote:
+> > On 11/27/2013 02:35 PM, Sekhar Nori wrote:
+> >> On Monday 18 November 2013 03:49 AM, Daniel Mack wrote:
+> >>> +static int edma_pm_suspend(struct device *dev)
+> >>> +{
+> >>> +	int j, r;
+> >>> +
+> >>> +	r = pm_runtime_get_sync(dev);
+> >>> +	if (IS_ERR_VALUE(r)) {
+> >>
+> >> So IS_ERR_VALUE() is only for functions which may return a negative
+> >> number outside of MAX_ERRNO as a success indication.
+> >> pm_runtime_get_sync() does not appear to be one of them so just use"
+> >>
+> >> if (r < 0) { .. }
+> > 
+> > That's true. Thanks for catching this, I'll fix it. However, grepping
+> > through the tree, there are quite a lot places where the same mistake is
+> > made.
+> 
+> Yes, this is a common fallacy. Russell cleaned up a bunch of these a
+> while back.
 
-The timeout and the callback is pointless. The only thing the system
-call should get as an argument is the address and the replacement
-instruction.  So
+Thinking a little more on this front, to prevent recurrence and fixing
+the ones we already have, how about something like the following
+patch?
 
-  int text_poke(void *addr, const void *opcode, size_t len)
+For example, on 3.13-rc1, with omap2plus_defconfig, I see the following:
+http://pastebin.mozilla.org/3681911
 
-sounds fine to me. And it would do:
- - take some (possibly per-mm) mutex
- - write the one-byte int3
- - do the IPI
- - write the other bytes
- - do the IPI
- - do the first byte
- - release the (possibly per-mm) mutex
+-->8--
+>From b7946d214fab72b2e18cd67eec01c377f1cddee8 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Wed, 27 Nov 2013 17:01:20 -0600
+Subject: [RFC PATCH] scripts: Coccinelle script for pm_runtime_* return checks
+ with IS_ERR_VALUE
 
-and then in the BP handler we'd just take the mutex, see if the first
-byte of the exception is still int3, if it's not, just return silently
-(because that means that we hit the race).
+As indicated by Sekhar in [1], there seems to be a tendency to use
+IS_ERR_VALUE to check the error result for pm_runtime_* functions which
+make no sense considering commit c48cd65 (ARM: OMAP: use consistent
+error checking) - the error values can either be < 0 for error OR
+0, 1 in cases where we have success.
 
-And I would seriously suggest just open-coding the above simple
-sequence instead of trying to force-reuse the text_poke_bp() function
-we already have. Because I think doing this on kernel code is
-*very*different* (for irq reasons _and_ for IPI mask reasons).
+So, setup a coccinelle script to help identify the same.
 
-Hmm? It doesn't sound too bad. And I really don't see the point of
-some timeout handling or anything like that.
+[1] http://marc.info/?t=138472678100003&r=1&w=2
 
-           Linus
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ scripts/coccinelle/api/pm_runtime.cocci |  109 +++++++++++++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
+ create mode 100644 scripts/coccinelle/api/pm_runtime.cocci
+
+diff --git a/scripts/coccinelle/api/pm_runtime.cocci b/scripts/coccinelle/api/pm_runtime.cocci
+new file mode 100644
+index 0000000..f01789e
+--- /dev/null
++++ b/scripts/coccinelle/api/pm_runtime.cocci
+@@ -0,0 +1,109 @@
++/// Make sure pm_runtime_* calls does not use unnecessary IS_ERR_VALUE
++//
++// Keywords: pm_runtime
++// Confidence: Medium
++// Copyright (C) 2013 Texas Instruments Incorporated - GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Options: --include-headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++//----------------------------------------------------------
++//  Detection
++//----------------------------------------------------------
++
++@runtime_bad_err_handle exists@
++expression ret;
++@@
++(
++ret = \(pm_runtime_idle\|
++	pm_runtime_suspend\|
++	pm_runtime_autosuspend\|
++	pm_runtime_resume\|
++	pm_request_idle\|
++	pm_request_resume\|
++	pm_request_autosuspend\|
++	pm_runtime_get\|
++	pm_runtime_get_sync\|
++	pm_runtime_put\|
++	pm_runtime_put_autosuspend\|
++	pm_runtime_put_sync\|
++	pm_runtime_put_sync_suspend\|
++	pm_runtime_put_sync_autosuspend\|
++	pm_runtime_set_active\|
++	pm_schedule_suspend\|
++	pm_runtime_barrier\|
++	pm_generic_runtime_suspend\|
++	pm_generic_runtime_resume\)(...);
++...
++IS_ERR_VALUE(ret)
++...
++)
++
++//----------------------------------------------------------
++//  For context mode
++//----------------------------------------------------------
++
++@depends on runtime_bad_err_handle && context@
++identifier pm_runtime_api;
++expression ret;
++@@
++(
++ret = pm_runtime_api(...);
++...
++* IS_ERR_VALUE(ret)
++...
++)
++
++//----------------------------------------------------------
++//  For patch mode
++//----------------------------------------------------------
++
++@depends on runtime_bad_err_handle && patch@
++identifier pm_runtime_api;
++expression ret;
++@@
++(
++ret = pm_runtime_api(...);
++...
++- IS_ERR_VALUE(ret)
+++ ret < 0
++...
++)
++
++//----------------------------------------------------------
++//  For org and report mode
++//----------------------------------------------------------
++
++@r depends on runtime_bad_err_handle exists@
++position p1, p2;
++identifier pm_runtime_api;
++expression ret;
++@@
++(
++ret = pm_runtime_api@p1(...);
++...
++IS_ERR_VALUE@p2(ret)
++...
++)
++
++@script:python depends on org@
++p1 << r.p1;
++p2 << r.p2;
++pm_runtime_api << r.pm_runtime_api;
++@@
++
++cocci.print_main(pm_runtime_api,p1)
++cocci.print_secs("IS_ERR_VALUE",p2)
++
++@script:python depends on report@
++p1 << r.p1;
++p2 << r.p2;
++pm_runtime_api << r.pm_runtime_api;
++@@
++
++msg = "%s returns < 0 as error. Unecessary IS_ERR_VALUE at line %s" % (pm_runtime_api, p2[0].line)
++coccilib.report.print_report(p1[0],msg)
+-- 
+1.7.9.5
+
+-- 
+Regards,
+Nishanth Menon
