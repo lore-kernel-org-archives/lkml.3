@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3K0LM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:12:27 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:38293 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab3K0LMX (ORCPT
+	id S1754825Ab3K0LMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:12:32 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:52082 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab3K0LM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:12:23 -0500
+	Wed, 27 Nov 2013 06:12:28 -0500
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH v3 1/4] perf diff: color the Delta column
-Date: Wed, 27 Nov 2013 16:32:31 +0530
-Message-Id: <1385550154-11385-2-git-send-email-artagnon@gmail.com>
+Subject: [PATCH v3 3/4] perf diff: color the Ratio column
+Date: Wed, 27 Nov 2013 16:32:33 +0530
+Message-Id: <1385550154-11385-4-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.5.rc0.5.g70ebc73.dirty
 In-Reply-To: <1385550154-11385-1-git-send-email-artagnon@gmail.com>
 References: <1385550154-11385-1-git-send-email-artagnon@gmail.com>
@@ -21,73 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Color the numbers in the Delta column either green or red depending on
-whether the number is positive or negative.
+In
+
+  $ perf diff -c ratio
+
+color the Ratio column using percent_color_snprintf().
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- tools/perf/builtin-diff.c | 37 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 36 insertions(+), 1 deletion(-)
+ tools/perf/builtin-diff.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 3b67ea2..fe6e200 100644
+index 20284c3..26f6517 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -769,6 +769,33 @@ static int hpp__entry_baseline(struct hist_entry *he, char *buf, size_t size)
- 	return ret;
+@@ -795,6 +795,17 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 		return color_snprintf(hpp->buf, hpp->size,
+ 				diff > 0 ? PERF_COLOR_GREEN : PERF_COLOR_RED,
+ 				pfmt, diff);
++	case COMPUTE_RATIO:
++		if (he->dummy)
++			goto dummy_print;
++		if (pair->diff.computed)
++			diff = pair->diff.period_ratio;
++		else
++			diff = compute_ratio(he, pair);
++
++		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
++		return percent_color_snprintf(hpp->buf, hpp->size,
++					pfmt, diff);
+ 	default:
+ 		BUG_ON(1);
+ 	}
+@@ -809,6 +820,12 @@ static int hpp__color_delta(struct perf_hpp_fmt *fmt,
+ 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_DELTA);
  }
  
-+static int hpp__color_delta(struct perf_hpp_fmt *fmt,
++static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
 +			struct perf_hpp *hpp, struct hist_entry *he)
 +{
-+	struct diff_hpp_fmt *dfmt =
-+		container_of(fmt, struct diff_hpp_fmt, fmt);
-+	struct hist_entry *pair = get_pair_fmt(he, dfmt);
-+	double percent;
-+	char pfmt[20] = " ";
-+
-+	if (!pair)
-+		goto dummy_print;
-+	if (pair->diff.computed)
-+		percent = pair->diff.period_ratio_delta;
-+	else
-+		percent = compute_delta(he, pair);
-+
-+	if (fabs(percent) >= 0.01) {
-+		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
-+		return color_snprintf(hpp->buf, hpp->size,
-+				percent > 0 ? PERF_COLOR_GREEN : PERF_COLOR_RED,
-+				pfmt, percent);
-+	} else
-+dummy_print:
-+		return scnprintf(hpp->buf, hpp->size, "%*s",
-+				dfmt->header_width, pfmt);
++	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
 +}
 +
  static void
  hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
  {
-@@ -940,8 +967,16 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	fmt->entry  = hpp__entry_global;
- 
- 	/* TODO more colors */
--	if (idx == PERF_HPP_DIFF__BASELINE)
-+	switch (idx) {
-+	case PERF_HPP_DIFF__BASELINE:
- 		fmt->color = hpp__color_baseline;
+@@ -987,6 +1004,9 @@ static void data__hpp_register(struct data__file *d, int idx)
+ 	case PERF_HPP_DIFF__DELTA:
+ 		fmt->color = hpp__color_delta;
+ 		break;
++	case PERF_HPP_DIFF__RATIO:
++		fmt->color = hpp__color_ratio;
 +		break;
-+	case PERF_HPP_DIFF__DELTA:
-+		fmt->color = hpp__color_delta;
-+		break;
-+	default:
-+		break;
-+	}
- 
- 	init_header(d, dfmt);
- 	perf_hpp__column_register(fmt);
+ 	default:
+ 		break;
+ 	}
 -- 
 1.8.5.rc0.5.g70ebc73.dirty
 
