@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3K0PrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:47:05 -0500
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:19607 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757264Ab3K0PrD (ORCPT
+	id S1756113Ab3K0PtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:49:04 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:55643 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3K0PtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:47:03 -0500
-Message-ID: <529613F5.7080503@akamai.com>
-Date: Wed, 27 Nov 2013 10:47:01 -0500
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 27 Nov 2013 10:49:00 -0500
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Levente Kurusa <levex@linux.com>
-Subject: Re: [PATCH v4 1/2] panic: setup panic_timeout early
-References: <1385533070-7604-1-git-send-email-felipe.contreras@gmail.com> <1385533070-7604-2-git-send-email-felipe.contreras@gmail.com>
-In-Reply-To: <1385533070-7604-2-git-send-email-felipe.contreras@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Date: Wed, 27 Nov 2013 16:52:39 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
+        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
+In-Reply-To: <20131127153019.GR3296@lee--X1>
+References: <cover.1385508112.git.stefan@agner.ch>
+ <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
+ <20131127130954.GF3296@lee--X1> <cd69295e946b48451f449eacc02efa4a@agner.ch>
+ <20131127135547.GK3296@lee--X1> <cfb203a896eda67c106794d89e668d56@agner.ch>
+ <20131127143429.GN3296@lee--X1> <20131127143641.GO3296@lee--X1>
+ <c26ecd550e9940ead950f3874d27a5b0@agner.ch> <20131127153019.GR3296@lee--X1>
+Message-ID: <89dbf704d8617c77259e04753e4380c9@agner.ch>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 01:17 AM, Felipe Contreras wrote:
-> Otherwise we might not reboot when the user needs it the most (early
-> on).
->
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  kernel/panic.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index b6c482c..3456652 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -468,9 +468,14 @@ EXPORT_SYMBOL(__stack_chk_fail);
->  
->  #endif
->  
-> -core_param(panic, panic_timeout, int, 0644);
->  core_param(pause_on_oops, pause_on_oops, int, 0644);
->  
-> +static int __init set_panic_timeout(char *val)
-> +{
-> +	return kstrtoint(val, 0, &panic_timeout);
-> +}
-> +early_param("panic_timeout", set_panic_timeout);
-> +
->  static int __init oops_setup(char *s)
->  {
->  	if (!s)
+Am 2013-11-27 16:30, schrieb Lee Jones:
+> On Wed, 27 Nov 2013, Stefan Agner wrote:
+> 
+>> Am 2013-11-27 15:36, schrieb Lee Jones:
+>> <snip>
+>> >> Perhaps I should suggest to make TPS6586X_ANY a positive number then,
+>> >> as a negative value to me indicates more of an error than a generic
+>> >> parameter.
+>> I see, its especially confusing since the version is filled using the
+>> i2c_smbus_read_byte_data functions return value. The version field is a
+>> 8-Bit value according to the data sheet, I could use 0x100 as
+>> TPS6586X_ANY identifier.
+> 
+> How far are we away from using 0xFF?
+> 
+> I'd be happy to use that and change it _if_ we ever get close.
+> 
+> If it's likely that it'll be used, then sure 0x100 sounds okay too.
 
-hmm....so this changes the comand-line parameter panic=x  to:
-panic_timeout=x. The naming might not be the best, but we are
-really stuck with it at this point.
-
-Thanks,
-
--Jason
- 
+Yes, I thought about 0xFF too. The latest device we support is TPS658643
+(according to data sheet release dates), which has the smallest version
+number (03). Since it seems to be a CRC (hence VERSIONCRC) the number is
+quite random. Also, 0xFF sounds like a bitmask which can mask all
+versions, but the versions can't be used bitwise... So I would prefer to
+go with 0x100.
