@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759148Ab3K0BQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:16:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39576 "EHLO
+	id S1758772Ab3K0A7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab3K0A7e (ORCPT
+	with ESMTP id S1758699Ab3K0A7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:34 -0500
+	Tue, 26 Nov 2013 19:59:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 055/116] ALSA: hda - Fix unbalanced runtime PM notification at resume
-Date: Tue, 26 Nov 2013 16:57:08 -0800
-Message-Id: <20131127005740.753027982@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.12 059/116] NFSv4.2: Fix a mismatch between Linux labeled NFS and the NFSv4.2 spec
+Date: Tue, 26 Nov 2013 16:57:12 -0800
+Message-Id: <20131127005741.024514497@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,42 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0fc28fc030a85aa3d6d14e9e9fca0c8237c9ffb5 upstream.
+commit f3f5a0f8cc40b942f4c0ae117df82eeb65f07d4d upstream.
 
-When a codec is resumed, it keeps the power on while the resuming
-phase via hda_keep_power_on(), then turns down via
-snd_hda_power_down().  At that point, snd_hda_power_down() notifies
-the power down to the controller, and this may confuse the refcount if
-the codec was already powered up before the resume.
+In the spec, the security label attribute id is '80', which means that
+it should be bit number 80-64 == 16 in the 3rd word of the bitmap.
 
-In the end result, the controller goes to runtime suspend even before
-the codec is kicked off to the power save, and the communication
-stalls happens.
-
-The fix is to add the power-up notification together with
-hda_keep_power_on(), and clears the flag appropriately.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 4488cc96c581: NFS: Add NFSv4.2 protocol constants
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Cc: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/nfs4.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -3988,6 +3988,10 @@ static void hda_call_codec_resume(struct
- 	 * in the resume / power-save sequence
- 	 */
- 	hda_keep_power_on(codec);
-+	if (codec->pm_down_notified) {
-+		codec->pm_down_notified = 0;
-+		hda_call_pm_notify(codec->bus, true);
-+	}
- 	hda_set_power_state(codec, AC_PWRST_D0);
- 	restore_shutup_pins(codec);
- 	hda_exec_init_verbs(codec);
+--- a/include/linux/nfs4.h
++++ b/include/linux/nfs4.h
+@@ -395,7 +395,7 @@ enum lock_type4 {
+ #define FATTR4_WORD1_FS_LAYOUT_TYPES    (1UL << 30)
+ #define FATTR4_WORD2_LAYOUT_BLKSIZE     (1UL << 1)
+ #define FATTR4_WORD2_MDSTHRESHOLD       (1UL << 4)
+-#define FATTR4_WORD2_SECURITY_LABEL     (1UL << 17)
++#define FATTR4_WORD2_SECURITY_LABEL     (1UL << 16)
+ 
+ /* MDS threshold bitmap bits */
+ #define THRESHOLD_RD                    (1UL << 0)
 
 
