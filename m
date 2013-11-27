@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447Ab3K0BSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:18:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39549 "EHLO
+	id S932502Ab3K0BTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:19:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab3K0A71 (ORCPT
+	with ESMTP id S932453Ab3K0A70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:27 -0500
+	Tue, 26 Nov 2013 19:59:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, Hannes Reinecke <hare@suse.de>,
         Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.12 083/116] block: fix a probe argument to blk_register_region
-Date: Tue, 26 Nov 2013 16:57:36 -0800
-Message-Id: <20131127005742.655299896@linuxfoundation.org>
+Subject: [PATCH 3.12 082/116] block: fix race between request completion and timeout handling
+Date: Tue, 26 Nov 2013 16:57:35 -0800
+Message-Id: <20131127005742.586913764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,101 +27,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit a207f5937630dd35bd2550620bef416937a1365e upstream.
+commit 4912aa6c11e6a5d910264deedbec2075c6f1bb73 upstream.
 
-The probe function is supposed to return NULL on failure (as we can see in
-kobj_lookup: kobj = probe(dev, index, data); ... if (kobj) return kobj;
+crocode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
 
-However, in loop and brd, it returns negative error from ERR_PTR.
-
-This causes a crash if we simulate disk allocation failure and run
-less -f /dev/loop0 because the negative number is interpreted as a pointer:
-
-BUG: unable to handle kernel NULL pointer dereference at 00000000000002b4
-IP: [<ffffffff8118b188>] __blkdev_get+0x28/0x450
-PGD 23c677067 PUD 23d6d1067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop hpfs nvidia(PO) ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_stats cpufreq_ondemand cpufreq_userspace cpufreq_powersave cpufreq_conservative hid_generic spadfs usbhid hid fuse raid0 snd_usb_audio snd_pcm_oss snd_mixer_oss md_mod snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib dmi_sysfs snd_rawmidi nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd soundcore lm85 hwmon_vid ohci_hcd ehci_pci ehci_hcd serverworks sata_svw libata acpi_cpufreq freq_table mperf ide_core usbcore kvm_amd kvm tg3 i2c_piix4 libphy microcode e100 usb_common ptp skge i2c_core pcspkr k10temp evdev floppy hwmon pps_core mii rtc_cmos button processor unix [last unloaded: nvidia]
-CPU: 1 PID: 6831 Comm: less Tainted: P        W  O 3.10.15-devel #18
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff880203cc6bc0 ti: ffff88023e47c000 task.ti: ffff88023e47c000
-RIP: 0010:[<ffffffff8118b188>]  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
-RSP: 0018:ffff88023e47dbd8  EFLAGS: 00010286
-RAX: ffffffffffffff74 RBX: ffffffffffffff74 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
-RBP: ffff88023e47dc18 R08: 0000000000000002 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88023f519658
-R13: ffffffff8118c300 R14: 0000000000000000 R15: ffff88023f519640
-FS:  00007f2070bf7700(0000) GS:ffff880247400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000000000002b4 CR3: 000000023da1d000 CR4: 00000000000007e0
+Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
 DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
 DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
 Stack:
- 0000000000000002 0000001d00000000 000000003e47dc50 ffff88023f519640
- ffff88043d5bb668 ffffffff8118c300 ffff88023d683550 ffff88023e47de60
- ffff88023e47dc98 ffffffff8118c10d 0000001d81605698 0000000000000292
+ 0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+<0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+<0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
 Call Trace:
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff8118c10d>] blkdev_get+0x1dd/0x370
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff8118c365>] blkdev_open+0x65/0x80
- [<ffffffff8114d12e>] do_dentry_open.isra.18+0x23e/0x2f0
- [<ffffffff8114d214>] finish_open+0x34/0x50
- [<ffffffff8115e122>] do_last.isra.62+0x2d2/0xc50
- [<ffffffff8115eb58>] path_openat.isra.63+0xb8/0x4d0
- [<ffffffff81115a8e>] ? might_fault+0x4e/0xa0
- [<ffffffff8115f4f0>] do_filp_open+0x40/0x90
- [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
- [<ffffffff8116db85>] ? __alloc_fd+0xa5/0x1f0
- [<ffffffff8114e45f>] do_sys_open+0xef/0x1d0
- [<ffffffff8114e559>] SyS_open+0x19/0x20
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: 44 00 00 55 48 89 e5 41 57 49 89 ff 41 56 41 89 d6 41 55 41 54 4c 8d 67 18 53 48 83 ec 18 89 75 cc e9 f2 00 00 00 0f 1f 44 00 00 <48> 8b 80 40 03 00 00 48 89 df 4c 8b 68 58 e8 d5
-a4 07 00 44 89
-RIP  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
- RSP <ffff88023e47dbd8>
-CR2: 00000000000002b4
----[ end trace bb7f32dbf02398dc ]---
+ [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+ [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+ [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+ [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+ [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+ [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+ [<ffffffff810908c6>] kthread+0x96/0xa0
+ [<ffffffff8100c14a>] child_rip+0xa/0x20
+ [<ffffffff81090830>] ? kthread+0x0/0xa0
+ [<ffffffff8100c140>] ? child_rip+0x0/0x20
+Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+ RSP <ffff881057eefd60>
 
-The brd change should be backported to stable kernels starting with 2.6.25.
-The loop change should be backported to stable kernels starting with 2.6.22.
+The RIP is this line:
+        BUG_ON(blk_queued_rq(rq));
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+After digging through the code, I think there may be a race between the
+request completion and the timer handler running.
+
+A timer is started for each request put on the device's queue (see
+blk_start_request->blk_add_timer).  If the request does not complete
+before the timer expires, the timer handler (blk_rq_timed_out_timer)
+will mark the request complete atomically:
+
+static inline int blk_mark_rq_complete(struct request *rq)
+{
+        return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+}
+
+and then call blk_rq_timed_out.  The latter function will call
+scsi_times_out, which will return one of BLK_EH_HANDLED,
+BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+returned, blk_clear_rq_complete is called, and blk_add_timer is again
+called to simply wait longer for the request to complete.
+
+Now, if the request happens to complete while this is going on, what
+happens?  Given that we know the completion handler will bail if it
+finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+handler running after that bit is cleared.  So, from the above
+paragraph, after the call to blk_clear_rq_complete.  If the completion
+sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+there (I haven't seen this in the cores).  Next, if we get the
+completion before the call to list_add_tail, then the timer will
+eventually fire for an old req, which may either be freed or reallocated
+(there is evidence that this might be the case).  Finally, if the
+completion comes in *after* the addition to the timeout list, I think
+it's harmless.  The request will be removed from the timeout list,
+req_atom_complete will be set, and all will be well.
+
+This will only actually explain the coredumps *IF* the request
+structure was freed, reallocated *and* queued before the error handler
+thread had a chance to process it.  That is possible, but it may make
+sense to keep digging for another race.  I think that if this is what
+was happening, we would see other instances of this problem showing up
+as null pointer or garbage pointer dereferences, for example when the
+request structure was not re-used.  It looks like we actually do run
+into that situation in other reports.
+
+This patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+&req->atomic_flags)); from blk_add_timer to the only caller that could
+trip over it (blk_start_request).  It then inverts the calls to
+blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+the race.  I've boot tested this patch, but nothing more.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/brd.c  |    2 +-
- drivers/block/loop.c |    2 +-
+ block/blk-core.c    |    1 +
+ block/blk-timeout.c |    3 +--
  2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -545,7 +545,7 @@ static struct kobject *brd_probe(dev_t d
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2227,6 +2227,7 @@ void blk_start_request(struct request *r
+ 	if (unlikely(blk_bidi_rq(req)))
+ 		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
  
- 	mutex_lock(&brd_devices_mutex);
- 	brd = brd_init_one(MINOR(dev) >> part_shift);
--	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
-+	kobj = brd ? get_disk(brd->brd_disk) : NULL;
- 	mutex_unlock(&brd_devices_mutex);
++	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 	blk_add_timer(req);
+ }
+ EXPORT_SYMBOL(blk_start_request);
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -91,8 +91,8 @@ static void blk_rq_timed_out(struct requ
+ 		__blk_complete_request(req);
+ 		break;
+ 	case BLK_EH_RESET_TIMER:
+-		blk_clear_rq_complete(req);
+ 		blk_add_timer(req);
++		blk_clear_rq_complete(req);
+ 		break;
+ 	case BLK_EH_NOT_HANDLED:
+ 		/*
+@@ -174,7 +174,6 @@ void blk_add_timer(struct request *req)
+ 		return;
  
- 	*part = 0;
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1741,7 +1741,7 @@ static struct kobject *loop_probe(dev_t
- 	if (err < 0)
- 		err = loop_add(&lo, MINOR(dev) >> part_shift);
- 	if (err < 0)
--		kobj = ERR_PTR(err);
-+		kobj = NULL;
- 	else
- 		kobj = get_disk(lo->lo_disk);
- 	mutex_unlock(&loop_index_mutex);
+ 	BUG_ON(!list_empty(&req->timeout_list));
+-	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 
+ 	/*
+ 	 * Some LLDs, like scsi, peek at the timeout to prevent a
 
 
