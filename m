@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab3K0BhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:37:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
+	id S1759996Ab3K0Bhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:37:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab3K0A6T (ORCPT
+	with ESMTP id S1758509Ab3K0A6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:19 -0500
+	Tue, 26 Nov 2013 19:58:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.12 002/116] libertas: potential oops in debugfs
-Date: Tue, 26 Nov 2013 16:56:15 -0800
-Message-Id: <20131127005737.088380136@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Michael Marineau <michael.marineau@coreos.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH 3.12 001/116] prepend_path() needs to reinitialize dentry/vfsmount/mnt on restarts
+Date: Tue, 26 Nov 2013 16:56:14 -0800
+Message-Id: <20131127005737.019716878@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -30,49 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88 upstream.
+commit ede4cebce16f5643c61aedd6d88d9070a1d23a68 upstream.
 
-If we do a zero size allocation then it will oops.  Also we can't be
-sure the user passes us a NUL terminated string so I've added a
-terminator.
+... and equivalent is needed in 3.12; it's broken there as well
 
-This code can only be triggered by root.
-
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Reported-by: Michael Marineau <michael.marineau@coreos.com>
+Tested-by: Waiman Long <Waiman.Long@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/libertas/debugfs.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/dcache.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/libertas/debugfs.c
-+++ b/drivers/net/wireless/libertas/debugfs.c
-@@ -913,7 +913,10 @@ static ssize_t lbs_debugfs_write(struct
- 	char *p2;
- 	struct debug_data *d = f->private_data;
- 
--	pdata = kmalloc(cnt, GFP_KERNEL);
-+	if (cnt == 0)
-+		return 0;
-+
-+	pdata = kmalloc(cnt + 1, GFP_KERNEL);
- 	if (pdata == NULL)
- 		return 0;
- 
-@@ -922,6 +925,7 @@ static ssize_t lbs_debugfs_write(struct
- 		kfree(pdata);
- 		return 0;
- 	}
-+	pdata[cnt] = '\0';
- 
- 	p0 = pdata;
- 	for (i = 0; i < num_of_items; i++) {
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2881,9 +2881,9 @@ static int prepend_path(const struct pat
+ 			const struct path *root,
+ 			char **buffer, int *buflen)
+ {
+-	struct dentry *dentry = path->dentry;
+-	struct vfsmount *vfsmnt = path->mnt;
+-	struct mount *mnt = real_mount(vfsmnt);
++	struct dentry *dentry;
++	struct vfsmount *vfsmnt;
++	struct mount *mnt;
+ 	int error = 0;
+ 	unsigned seq = 0;
+ 	char *bptr;
+@@ -2893,6 +2893,9 @@ static int prepend_path(const struct pat
+ restart:
+ 	bptr = *buffer;
+ 	blen = *buflen;
++	dentry = path->dentry;
++	vfsmnt = path->mnt;
++	mnt = real_mount(vfsmnt);
+ 	read_seqbegin_or_lock(&rename_lock, &seq);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
 
 
