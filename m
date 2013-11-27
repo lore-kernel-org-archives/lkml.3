@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759616Ab3K0BXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:23:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39483 "EHLO
+	id S1753011Ab3K0BXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:23:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab3K0A7L (ORCPT
+	with ESMTP id S1758725Ab3K0A7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:11 -0500
+	Tue, 26 Nov 2013 19:59:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 049/116] ALSA: hda - Add support for CX20952
-Date: Tue, 26 Nov 2013 16:57:02 -0800
-Message-Id: <20131127005740.339526462@linuxfoundation.org>
+        Chao Ye <cye@redhat.com>, David Quigley <dpquigl@davequigley.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.12 066/116] nfs: fix oops when trying to set SELinux label
+Date: Tue, 26 Nov 2013 16:57:19 -0800
+Message-Id: <20131127005741.507087809@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,38 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
+commit 12207f69b3ef4d6eea6a5568281e49f671977ab1 upstream.
 
-It's a superset of the existing CX2075x codecs, so we can reuse the
-existing parser code.
+Chao reported the following oops when testing labeled NFS:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffffa0568703>] nfs4_xdr_enc_setattr+0x43/0x110 [nfsv4]
+PGD 277bbd067 PUD 2777ea067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache sg coretemp kvm_intel kvm crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul iTCO_wdt glue_helper ablk_helper cryptd iTCO_vendor_support bnx2 pcspkr serio_raw i7core_edac cdc_ether microcode usbnet edac_core mii lpc_ich i2c_i801 mfd_core shpchp ioatdma dca acpi_cpufreq mperf nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod sd_mod cdrom crc_t10dif mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ata_generic ttm pata_acpi drm ata_piix libata megaraid_sas i2c_core dm_mirror dm_region_hash dm_log dm_mod
+CPU: 4 PID: 25657 Comm: chcon Not tainted 3.10.0-33.el7.x86_64 #1
+Hardware name: IBM System x3550 M3 -[7944OEJ]-/90Y4784     , BIOS -[D6E150CUS-1.11]- 02/08/2011
+task: ffff880178397220 ti: ffff8801595d2000 task.ti: ffff8801595d2000
+RIP: 0010:[<ffffffffa0568703>]  [<ffffffffa0568703>] nfs4_xdr_enc_setattr+0x43/0x110 [nfsv4]
+RSP: 0018:ffff8801595d3888  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffff8801595d3b30 RCX: 0000000000000b4c
+RDX: ffff8801595d3b30 RSI: ffff8801595d38e0 RDI: ffff880278b6ec00
+RBP: ffff8801595d38c8 R08: ffff8801595d3b30 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801595d38e0
+R13: ffff880277a4a780 R14: ffffffffa05686c0 R15: ffff8802765f206c
+FS:  00007f2c68486800(0000) GS:ffff88027fc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 000000027651a000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+ 0000000000000000 ffff880277865800 ffff880278b6ec00 ffff880277a4a780
+ ffff8801595d3948 ffffffffa02ad926 ffff8801595d3b30 ffff8802765f206c
+Call Trace:
+ [<ffffffffa02ad926>] rpcauth_wrap_req+0x86/0xd0 [sunrpc]
+ [<ffffffffa02a1d40>] ? call_connect+0xb0/0xb0 [sunrpc]
+ [<ffffffffa02a1d40>] ? call_connect+0xb0/0xb0 [sunrpc]
+ [<ffffffffa02a1ecb>] call_transmit+0x18b/0x290 [sunrpc]
+ [<ffffffffa02a1d40>] ? call_connect+0xb0/0xb0 [sunrpc]
+ [<ffffffffa02aae14>] __rpc_execute+0x84/0x400 [sunrpc]
+ [<ffffffffa02ac40e>] rpc_execute+0x5e/0xa0 [sunrpc]
+ [<ffffffffa02a2ea0>] rpc_run_task+0x70/0x90 [sunrpc]
+ [<ffffffffa02a2f03>] rpc_call_sync+0x43/0xa0 [sunrpc]
+ [<ffffffffa055284d>] _nfs4_do_set_security_label+0x11d/0x170 [nfsv4]
+ [<ffffffffa0558861>] nfs4_set_security_label.isra.69+0xf1/0x1d0 [nfsv4]
+ [<ffffffff815fca8b>] ? avc_alloc_node+0x24/0x125
+ [<ffffffff815fcd2f>] ? avc_compute_av+0x1a3/0x1b5
+ [<ffffffffa055897b>] nfs4_xattr_set_nfs4_label+0x3b/0x50 [nfsv4]
+ [<ffffffff811bc772>] generic_setxattr+0x62/0x80
+ [<ffffffff811bcfc3>] __vfs_setxattr_noperm+0x63/0x1b0
+ [<ffffffff811bd1c5>] vfs_setxattr+0xb5/0xc0
+ [<ffffffff811bd2fe>] setxattr+0x12e/0x1c0
+ [<ffffffff811a4d22>] ? final_putname+0x22/0x50
+ [<ffffffff811a4f2b>] ? putname+0x2b/0x40
+ [<ffffffff811aa1cf>] ? user_path_at_empty+0x5f/0x90
+ [<ffffffff8119bc29>] ? __sb_start_write+0x49/0x100
+ [<ffffffff811bd66f>] SyS_lsetxattr+0x8f/0xd0
+ [<ffffffff8160cf99>] system_call_fastpath+0x16/0x1b
+Code: 48 8b 02 48 c7 45 c0 00 00 00 00 48 c7 45 c8 00 00 00 00 48 c7 45 d0 00 00 00 00 48 c7 45 d8 00 00 00 00 48 c7 45 e0 00 00 00 00 <48> 8b 00 48 8b 00 48 85 c0 0f 84 ae 00 00 00 48 8b 80 b8 03 00
+RIP  [<ffffffffa0568703>] nfs4_xdr_enc_setattr+0x43/0x110 [nfsv4]
+ RSP <ffff8801595d3888>
+CR2: 0000000000000000
+
+The problem is that _nfs4_do_set_security_label calls rpc_call_sync()
+directly which fails to do any setup of the SEQUENCE call. Have it use
+nfs4_call_sync() instead which does the right thing. While we're at it
+change the name of "args" to "arg" to better match the pattern in
+_nfs4_do_setattr.
+
+Reported-by: Chao Ye <cye@redhat.com>
+Cc: David Quigley <dpquigl@davequigley.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4proc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3568,6 +3568,8 @@ static const struct hda_codec_preset snd
- 	  .patch = patch_conexant_auto },
- 	{ .id = 0x14f15115, .name = "CX20757",
- 	  .patch = patch_conexant_auto },
-+	{ .id = 0x14f151d7, .name = "CX20952",
-+	  .patch = patch_conexant_auto },
- 	{} /* terminator */
- };
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4625,7 +4625,7 @@ static int _nfs4_do_set_security_label(s
+ 	struct iattr sattr = {0};
+ 	struct nfs_server *server = NFS_SERVER(inode);
+ 	const u32 bitmask[3] = { 0, 0, FATTR4_WORD2_SECURITY_LABEL };
+-	struct nfs_setattrargs args = {
++	struct nfs_setattrargs arg = {
+ 		.fh             = NFS_FH(inode),
+ 		.iap            = &sattr,
+ 		.server		= server,
+@@ -4639,14 +4639,14 @@ static int _nfs4_do_set_security_label(s
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_proc       = &nfs4_procedures[NFSPROC4_CLNT_SETATTR],
+-		.rpc_argp       = &args,
++		.rpc_argp       = &arg,
+ 		.rpc_resp       = &res,
+ 	};
+ 	int status;
  
-@@ -3594,6 +3596,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111"
- MODULE_ALIAS("snd-hda-codec-id:14f15113");
- MODULE_ALIAS("snd-hda-codec-id:14f15114");
- MODULE_ALIAS("snd-hda-codec-id:14f15115");
-+MODULE_ALIAS("snd-hda-codec-id:14f151d7");
+-	nfs4_stateid_copy(&args.stateid, &zero_stateid);
++	nfs4_stateid_copy(&arg.stateid, &zero_stateid);
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Conexant HD-audio codec");
+-	status = rpc_call_sync(server->client, &msg, 0);
++	status = nfs4_call_sync(server->client, server, &msg, &arg.seq_args, &res.seq_res, 1);
+ 	if (status)
+ 		dprintk("%s failed: %d\n", __func__, status);
+ 
 
 
