@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3K0AvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:51:17 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:64729 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab3K0AqB (ORCPT
+	id S1754083Ab3K0AvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:51:11 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46872 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab3K0AqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:46:01 -0500
+	Tue, 26 Nov 2013 19:46:03 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
 Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Neil Brown <neilb@suse.de>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 11/25] block: Kill bio_segments()/bi_vcnt usage
-Date: Tue, 26 Nov 2013 16:45:14 -0800
-Message-Id: <1385513128-5035-11-git-send-email-kmo@daterainc.com>
+        "Ed L. Cashin" <ecashin@coraid.com>
+Subject: [PATCH 13/25] aoe: Convert to immutable biovecs
+Date: Tue, 26 Nov 2013 16:45:16 -0800
+Message-Id: <1385513128-5035-13-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -26,424 +23,312 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we start sharing biovecs, keeping bi_vcnt accurate for splits is
-going to be error prone - and unnecessary, if we refactor some code.
+Now that we've got a mechanism for immutable biovecs -
+bi_iter.bi_bvec_done - we need to convert drivers to use primitives that
+respect it instead of using the bvec array directly.
 
-So bio_segments() has to go - but most of the existing users just needed
-to know if the bio had multiple segments, which is easier - add a
-bio_multiple_segments() for them.
+The aoe code no longer has to manually iterate over partial bvecs, so
+some struct members go away - other struct members are effectively
+renamed:
 
-(Two of the current uses of bio_segments() are going to go away in a
-couple patches, but the current implementation of bio_segments() is
-unsafe as soon as we start doing driver conversions for immutable
-biovecs - so implement a dumb version for bisectability, it'll go away
-in a couple patches)
+buf->resid	-> buf->iter.bi_size
+buf->sector	-> buf->iter.bi_sector
+
+f->bcnt		-> f->iter.bi_size
+f->lba		-> f->iter.bi_sector
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: "Ed L. Cashin" <ecashin@coraid.com>
 ---
- drivers/block/ps3disk.c                  |  7 ++-
- drivers/md/bcache/io.c                   | 53 +++++++++------------
- drivers/md/raid0.c                       |  2 +-
- drivers/md/raid10.c                      |  2 +-
- drivers/message/fusion/mptsas.c          |  8 ++--
- drivers/scsi/libsas/sas_expander.c       |  8 ++--
- drivers/scsi/mpt2sas/mpt2sas_transport.c | 10 ++--
- drivers/scsi/mpt3sas/mpt3sas_transport.c |  8 ++--
- fs/bio.c                                 |  2 +-
- include/linux/bio.h                      | 81 +++++++++++++++++++-------------
- 10 files changed, 94 insertions(+), 87 deletions(-)
+ drivers/block/aoe/aoe.h    |  10 +---
+ drivers/block/aoe/aoecmd.c | 135 +++++++++++++++++----------------------------
+ 2 files changed, 53 insertions(+), 92 deletions(-)
 
-diff --git a/drivers/block/ps3disk.c b/drivers/block/ps3disk.c
-index 1c6edb9..c120d70 100644
---- a/drivers/block/ps3disk.c
-+++ b/drivers/block/ps3disk.c
-@@ -101,10 +101,9 @@ static void ps3disk_scatter_gather(struct ps3_storage_device *dev,
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index 14a9d19..9220f8e 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -100,11 +100,8 @@ enum {
  
- 	rq_for_each_segment(bvec, req, iter) {
- 		unsigned long flags;
--		dev_dbg(&dev->sbd.core,
--			"%s:%u: bio %u: %u segs %u sectors from %lu\n",
--			__func__, __LINE__, i, bio_segments(iter.bio),
--			bio_sectors(iter.bio), iter.bio->bi_iter.bi_sector);
-+		dev_dbg(&dev->sbd.core, "%s:%u: bio %u: %u sectors from %lu\n",
-+			__func__, __LINE__, i, bio_sectors(iter.bio),
-+			iter.bio->bi_iter.bi_sector);
- 
- 		size = bvec.bv_len;
- 		buf = bvec_kmap_irq(&bvec, &flags);
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index 9b5b6a4..6e04f3b 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -24,7 +24,8 @@ static void bch_generic_make_request_hack(struct bio *bio)
- 	if (bio->bi_iter.bi_idx) {
- 		struct bio_vec bv;
- 		struct bvec_iter iter;
--		struct bio *clone = bio_alloc(GFP_NOIO, bio_segments(bio));
-+		unsigned segs = bio_segments(bio);
-+		struct bio *clone = bio_alloc(GFP_NOIO, segs);
- 
- 		bio_for_each_segment(bv, bio, iter)
- 			clone->bi_io_vec[clone->bi_vcnt++] = bv;
-@@ -32,7 +33,7 @@ static void bch_generic_make_request_hack(struct bio *bio)
- 		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
- 		clone->bi_bdev		= bio->bi_bdev;
- 		clone->bi_rw		= bio->bi_rw;
--		clone->bi_vcnt		= bio_segments(bio);
-+		clone->bi_vcnt		= segs;
- 		clone->bi_iter.bi_size	= bio->bi_iter.bi_size;
- 
- 		clone->bi_private	= bio;
-@@ -133,40 +134,32 @@ out:
- 
- static unsigned bch_bio_max_sectors(struct bio *bio)
- {
--	unsigned ret = bio_sectors(bio);
- 	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
--	unsigned max_segments = min_t(unsigned, BIO_MAX_PAGES,
--				      queue_max_segments(q));
-+	struct bio_vec bv;
+ struct buf {
+ 	ulong nframesout;
+-	ulong resid;
+-	ulong bv_resid;
+-	sector_t sector;
+ 	struct bio *bio;
+-	struct bio_vec *bv;
 +	struct bvec_iter iter;
-+	unsigned ret = 0, seg = 0;
+ 	struct request *rq;
+ };
  
- 	if (bio->bi_rw & REQ_DISCARD)
--		return min(ret, q->limits.max_discard_sectors);
--
--	if (bio_segments(bio) > max_segments ||
--	    q->merge_bvec_fn) {
--		struct bio_vec bv;
--		struct bvec_iter iter;
--		unsigned seg = 0;
--
--		ret = 0;
-+		return min(bio_sectors(bio), q->limits.max_discard_sectors);
+@@ -120,13 +117,10 @@ struct frame {
+ 	ulong waited;
+ 	ulong waited_total;
+ 	struct aoetgt *t;		/* parent target I belong to */
+-	sector_t lba;
+ 	struct sk_buff *skb;		/* command skb freed on module exit */
+ 	struct sk_buff *r_skb;		/* response skb for async processing */
+ 	struct buf *buf;
+-	struct bio_vec *bv;
+-	ulong bcnt;
+-	ulong bv_off;
++	struct bvec_iter iter;
+ 	char flags;
+ };
  
--		bio_for_each_segment(bv, bio, iter) {
--			struct bvec_merge_data bvm = {
--				.bi_bdev	= bio->bi_bdev,
--				.bi_sector	= bio->bi_iter.bi_sector,
--				.bi_size	= ret << 9,
--				.bi_rw		= bio->bi_rw,
--			};
--
--			if (seg == max_segments)
--				break;
-+	bio_for_each_segment(bv, bio, iter) {
-+		struct bvec_merge_data bvm = {
-+			.bi_bdev	= bio->bi_bdev,
-+			.bi_sector	= bio->bi_iter.bi_sector,
-+			.bi_size	= ret << 9,
-+			.bi_rw		= bio->bi_rw,
-+		};
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 7a06aec..8184451 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -196,8 +196,7 @@ aoe_freetframe(struct frame *f)
+ 
+ 	t = f->t;
+ 	f->buf = NULL;
+-	f->lba = 0;
+-	f->bv = NULL;
++	memset(&f->iter, 0, sizeof(f->iter));
+ 	f->r_skb = NULL;
+ 	f->flags = 0;
+ 	list_add(&f->head, &t->ffree);
+@@ -295,21 +294,14 @@ newframe(struct aoedev *d)
+ }
+ 
+ static void
+-skb_fillup(struct sk_buff *skb, struct bio_vec *bv, ulong off, ulong cnt)
++skb_fillup(struct sk_buff *skb, struct bio *bio, struct bvec_iter iter)
+ {
+ 	int frag = 0;
+-	ulong fcnt;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	skb_fill_page_desc(skb, frag++, bv->bv_page, off, fcnt);
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
++	struct bio_vec bv;
 +
-+		if (seg == min_t(unsigned, BIO_MAX_PAGES,
-+				 queue_max_segments(q)))
-+			break;
++	__bio_for_each_segment(bv, bio, iter, iter)
++		skb_fill_page_desc(skb, frag++, bv.bv_page,
++				   bv.bv_offset, bv.bv_len);
+ }
  
--			if (q->merge_bvec_fn &&
--			    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
--				break;
-+		if (q->merge_bvec_fn &&
-+		    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
-+			break;
+ static void
+@@ -346,12 +338,10 @@ ata_rw_frameinit(struct frame *f)
+ 	t->nout++;
+ 	f->waited = 0;
+ 	f->waited_total = 0;
+-	if (f->buf)
+-		f->lba = f->buf->sector;
  
--			seg++;
--			ret += bv.bv_len >> 9;
+ 	/* set up ata header */
+-	ah->scnt = f->bcnt >> 9;
+-	put_lba(ah, f->lba);
++	ah->scnt = f->iter.bi_size >> 9;
++	put_lba(ah, f->iter.bi_sector);
+ 	if (t->d->flags & DEVFL_EXT) {
+ 		ah->aflags |= AOEAFL_EXT;
+ 	} else {
+@@ -360,11 +350,11 @@ ata_rw_frameinit(struct frame *f)
+ 		ah->lba3 |= 0xe0;	/* LBA bit + obsolete 0xa0 */
+ 	}
+ 	if (f->buf && bio_data_dir(f->buf->bio) == WRITE) {
+-		skb_fillup(skb, f->bv, f->bv_off, f->bcnt);
++		skb_fillup(skb, f->buf->bio, f->iter);
+ 		ah->aflags |= AOEAFL_WRITE;
+-		skb->len += f->bcnt;
+-		skb->data_len = f->bcnt;
+-		skb->truesize += f->bcnt;
++		skb->len += f->iter.bi_size;
++		skb->data_len = f->iter.bi_size;
++		skb->truesize += f->iter.bi_size;
+ 		t->wpkts++;
+ 	} else {
+ 		t->rpkts++;
+@@ -382,7 +372,6 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	struct buf *buf;
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+-	ulong bcnt, fbcnt;
+ 
+ 	buf = nextbuf(d);
+ 	if (buf == NULL)
+@@ -390,39 +379,22 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	f = newframe(d);
+ 	if (f == NULL)
+ 		return 0;
+-	bcnt = d->maxbcnt;
+-	if (bcnt == 0)
+-		bcnt = DEFAULTBCNT;
+-	if (bcnt > buf->resid)
+-		bcnt = buf->resid;
+-	fbcnt = bcnt;
+-	f->bv = buf->bv;
+-	f->bv_off = f->bv->bv_offset + (f->bv->bv_len - buf->bv_resid);
+-	do {
+-		if (fbcnt < buf->bv_resid) {
+-			buf->bv_resid -= fbcnt;
+-			buf->resid -= fbcnt;
+-			break;
 -		}
-+		seg++;
-+		ret += bv.bv_len >> 9;
+-		fbcnt -= buf->bv_resid;
+-		buf->resid -= buf->bv_resid;
+-		if (buf->resid == 0) {
+-			d->ip.buf = NULL;
+-			break;
+-		}
+-		buf->bv++;
+-		buf->bv_resid = buf->bv->bv_len;
+-		WARN_ON(buf->bv_resid == 0);
+-	} while (fbcnt);
+ 
+ 	/* initialize the headers & frame */
+ 	f->buf = buf;
+-	f->bcnt = bcnt;
+-	ata_rw_frameinit(f);
++	f->iter = buf->iter;
++	f->iter.bi_size = min_t(unsigned long,
++				d->maxbcnt ?: DEFAULTBCNT,
++				f->iter.bi_size);
++	bio_advance_iter(buf->bio, &buf->iter, f->iter.bi_size);
++
++	if (!buf->iter.bi_size)
++		d->ip.buf = NULL;
+ 
+ 	/* mark all tracking fields and load out */
+ 	buf->nframesout += 1;
+-	buf->sector += bcnt >> 9;
++
++	ata_rw_frameinit(f);
+ 
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -613,10 +585,7 @@ reassign_frame(struct frame *f)
+ 	skb = nf->skb;
+ 	nf->skb = f->skb;
+ 	nf->buf = f->buf;
+-	nf->bcnt = f->bcnt;
+-	nf->lba = f->lba;
+-	nf->bv = f->bv;
+-	nf->bv_off = f->bv_off;
++	nf->iter = f->iter;
+ 	nf->waited = 0;
+ 	nf->waited_total = f->waited_total;
+ 	nf->sent = f->sent;
+@@ -648,19 +617,19 @@ probe(struct aoetgt *t)
  	}
- 
- 	ret = min(ret, queue_max_sectors(q));
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index e38d1d3..8ee1a6c 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -528,7 +528,7 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		sector_t sector = bio->bi_iter.bi_sector;
- 		struct bio_pair *bp;
- 		/* Sanity check -- queue functions should prevent this happening */
--		if (bio_segments(bio) > 1)
-+		if (bio_multiple_segments(bio))
- 			goto bad_map;
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index dbf3b63..ac4bfa438c 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1188,7 +1188,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 			 || conf->prev.near_copies < conf->prev.raid_disks))) {
- 		struct bio_pair *bp;
- 		/* Sanity check -- queue functions should prevent this happening */
--		if (bio_segments(bio) > 1)
-+		if (bio_multiple_segments(bio))
- 			goto bad_map;
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index dd239bd..00d339c 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -2235,10 +2235,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
+ 	f->flags |= FFL_PROBE;
+ 	ifrotate(t);
+-	f->bcnt = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
++	f->iter.bi_size = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
+ 	ata_rw_frameinit(f);
+ 	skb = f->skb;
+-	for (frag = 0, n = f->bcnt; n > 0; ++frag, n -= m) {
++	for (frag = 0, n = f->iter.bi_size; n > 0; ++frag, n -= m) {
+ 		if (n < PAGE_SIZE)
+ 			m = n;
+ 		else
+ 			m = PAGE_SIZE;
+ 		skb_fill_page_desc(skb, frag, empty_page, 0, m);
  	}
+-	skb->len += f->bcnt;
+-	skb->data_len = f->bcnt;
+-	skb->truesize += f->bcnt;
++	skb->len += f->iter.bi_size;
++	skb->data_len = f->iter.bi_size;
++	skb->truesize += f->iter.bi_size;
  
- 	/* do we need to support multiple segments? */
--	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
--		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u %u, rsp %u %u\n",
--		    ioc->name, __func__, bio_segments(req->bio), blk_rq_bytes(req),
--		    bio_segments(rsp->bio), blk_rq_bytes(rsp));
-+	if (bio_multiple_segments(req->bio) ||
-+	    bio_multiple_segments(rsp->bio)) {
-+		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u, rsp %u\n",
-+		    ioc->name, __func__, blk_rq_bytes(req), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -929,12 +898,8 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
+ 	memset(buf, 0, sizeof(*buf));
+ 	buf->rq = rq;
+ 	buf->bio = bio;
+-	buf->resid = bio->bi_iter.bi_size;
+-	buf->sector = bio->bi_iter.bi_sector;
++	buf->iter = bio->bi_iter;
+ 	bio_pageinc(bio);
+-	buf->bv = __bio_iovec(bio);
+-	buf->bv_resid = buf->bv->bv_len;
+-	WARN_ON(buf->bv_resid == 0);
+ }
  
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 446b851..0cac7d8 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -2163,10 +2163,10 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	}
+ static struct buf *
+@@ -1119,24 +1084,18 @@ gettgt(struct aoedev *d, char *addr)
+ }
  
- 	/* do we need to support multiple segments? */
--	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
--		printk("%s: multiple segments req %u %u, rsp %u %u\n",
--		       __func__, bio_segments(req->bio), blk_rq_bytes(req),
--		       bio_segments(rsp->bio), blk_rq_bytes(rsp));
-+	if (bio_multiple_segments(req->bio) ||
-+	    bio_multiple_segments(rsp->bio)) {
-+		printk("%s: multiple segments req %u, rsp %u\n",
-+		       __func__, blk_rq_bytes(req), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index 7143e86..410f4a3 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1943,7 +1943,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	ioc->transport_cmds.status = MPT2_CMD_PENDING;
- 
- 	/* Check if the request is split across multiple segments */
--	if (bio_segments(req->bio) > 1) {
-+	if (bio_multiple_segments(req->bio)) {
- 		u32 offset = 0;
- 
- 		/* Allocate memory and copy the request */
-@@ -1975,7 +1975,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 	/* Check if the response needs to be populated across
- 	 * multiple segments */
--	if (bio_segments(rsp->bio) > 1) {
-+	if (bio_multiple_segments(rsp->bio)) {
- 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
- 		    &pci_dma_in);
- 		if (!pci_addr_in) {
-@@ -2042,7 +2042,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	sgl_flags = (MPI2_SGE_FLAGS_SIMPLE_ELEMENT |
- 	    MPI2_SGE_FLAGS_END_OF_BUFFER | MPI2_SGE_FLAGS_HOST_TO_IOC);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (bio_segments(req->bio) > 1) {
-+	if (bio_multiple_segments(req->bio)) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(req) - 4), pci_dma_out);
- 	} else {
-@@ -2058,7 +2058,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	    MPI2_SGE_FLAGS_LAST_ELEMENT | MPI2_SGE_FLAGS_END_OF_BUFFER |
- 	    MPI2_SGE_FLAGS_END_OF_LIST);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (bio_segments(rsp->bio) > 1) {
-+	if (bio_multiple_segments(rsp->bio)) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(rsp) + 4), pci_dma_in);
- 	} else {
-@@ -2103,7 +2103,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		    le16_to_cpu(mpi_reply->ResponseDataLength);
- 		/* check if the resp needs to be copied from the allocated
- 		 * pci mem */
--		if (bio_segments(rsp->bio) > 1) {
-+		if (bio_multiple_segments(rsp->bio)) {
- 			u32 offset = 0;
- 			u32 bytes_to_copy =
- 			    le16_to_cpu(mpi_reply->ResponseDataLength);
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-index 196a67f..65170cb 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -1926,7 +1926,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	ioc->transport_cmds.status = MPT3_CMD_PENDING;
- 
- 	/* Check if the request is split across multiple segments */
--	if (req->bio->bi_vcnt > 1) {
-+	if (bio_multiple_segments(req->bio)) {
- 		u32 offset = 0;
- 
- 		/* Allocate memory and copy the request */
-@@ -1958,7 +1958,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 	/* Check if the response needs to be populated across
- 	 * multiple segments */
--	if (rsp->bio->bi_vcnt > 1) {
-+	if (bio_multiple_segments(rsp->bio)) {
- 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
- 		    &pci_dma_in);
- 		if (!pci_addr_in) {
-@@ -2019,7 +2019,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	mpi_request->RequestDataLength = cpu_to_le16(blk_rq_bytes(req) - 4);
- 	psge = &mpi_request->SGL;
- 
--	if (req->bio->bi_vcnt > 1)
-+	if (bio_multiple_segments(req->bio))
- 		ioc->build_sg(ioc, psge, pci_dma_out, (blk_rq_bytes(req) - 4),
- 		    pci_dma_in, (blk_rq_bytes(rsp) + 4));
- 	else
-@@ -2064,7 +2064,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 		/* check if the resp needs to be copied from the allocated
- 		 * pci mem */
--		if (rsp->bio->bi_vcnt > 1) {
-+		if (bio_multiple_segments(rsp->bio)) {
- 			u32 offset = 0;
- 			u32 bytes_to_copy =
- 			    le16_to_cpu(mpi_reply->ResponseDataLength);
-diff --git a/fs/bio.c b/fs/bio.c
-index f61e59b..e32f2ff 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1733,7 +1733,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
- 				bi->bi_iter.bi_sector + first_sectors);
- 
--	BUG_ON(bio_segments(bi) > 1);
-+	BUG_ON(bio_multiple_segments(bi));
- 	atomic_set(&bp->cnt, 3);
- 	bp->error = 0;
- 	bp->bio1 = *bi;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 930cb73..aea9896 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -97,13 +97,46 @@
- #define bio_offset(bio)		bio_iter_offset((bio), (bio)->bi_iter)
- #define bio_iovec(bio)		bio_iter_iovec((bio), (bio)->bi_iter)
- 
--#define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
-+#define bio_multiple_segments(bio)				\
-+	((bio)->bi_iter.bi_size != bio_iovec(bio).bv_len)
- #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
- #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
- 
-+/*
-+ * Check whether this bio carries any data or not. A NULL bio is allowed.
-+ */
-+static inline bool bio_has_data(struct bio *bio)
-+{
-+	if (bio &&
-+	    bio->bi_iter.bi_size &&
-+	    !(bio->bi_rw & REQ_DISCARD))
-+		return true;
-+
-+	return false;
-+}
-+
-+static inline bool bio_is_rw(struct bio *bio)
-+{
-+	if (!bio_has_data(bio))
-+		return false;
-+
-+	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
-+		return false;
-+
-+	return true;
-+}
-+
-+static inline bool bio_mergeable(struct bio *bio)
-+{
-+	if (bio->bi_rw & REQ_NOMERGE_FLAGS)
-+		return false;
-+
-+	return true;
-+}
-+
- static inline unsigned int bio_cur_bytes(struct bio *bio)
+ static void
+-bvcpy(struct bio_vec *bv, ulong off, struct sk_buff *skb, long cnt)
++bvcpy(struct sk_buff *skb, struct bio *bio, struct bvec_iter iter, long cnt)
  {
--	if (bio->bi_vcnt)
-+	if (bio_has_data(bio))
- 		return bio_iovec(bio).bv_len;
- 	else /* dataless requests such as discard */
- 		return bio->bi_iter.bi_size;
-@@ -111,7 +144,7 @@ static inline unsigned int bio_cur_bytes(struct bio *bio)
- 
- static inline void *bio_data(struct bio *bio)
- {
--	if (bio->bi_vcnt)
-+	if (bio_has_data(bio))
- 		return page_address(bio_page(bio)) + bio_offset(bio);
- 
- 	return NULL;
-@@ -221,6 +254,18 @@ static inline void bio_advance_iter(struct bio *bio, struct bvec_iter *iter,
- 
- #define bio_iter_last(bvec, iter) ((iter).bi_size == (bvec).bv_len)
- 
-+static inline unsigned bio_segments(struct bio *bio)
-+{
-+	unsigned segs = 0;
+-	ulong fcnt;
+-	char *p;
+ 	int soff = 0;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	p = page_address(bv->bv_page) + off;
+-	skb_copy_bits(skb, soff, p, fcnt);
+-	soff += fcnt;
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
 +	struct bio_vec bv;
-+	struct bvec_iter iter;
 +
-+	bio_for_each_segment(bv, bio, iter)
-+		segs++;
++	iter.bi_size = cnt;
 +
-+	return segs;
-+}
-+
- /*
-  * get a reference to a bio, so it won't disappear. the intended use is
-  * something like:
-@@ -435,36 +480,6 @@ static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
- #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
++	__bio_for_each_segment(bv, bio, iter, iter) {
++		char *p = page_address(bv.bv_page) + bv.bv_offset;
++		skb_copy_bits(skb, soff, p, bv.bv_len);
++		soff += bv.bv_len;
++	}
+ }
  
- /*
-- * Check whether this bio carries any data or not. A NULL bio is allowed.
-- */
--static inline bool bio_has_data(struct bio *bio)
--{
--	if (bio && bio->bi_vcnt)
--		return true;
--
--	return false;
--}
--
--static inline bool bio_is_rw(struct bio *bio)
--{
--	if (!bio_has_data(bio))
--		return false;
--
--	if (bio->bi_rw & REQ_WRITE_SAME)
--		return false;
--
--	return true;
--}
--
--static inline bool bio_mergeable(struct bio *bio)
--{
--	if (bio->bi_rw & REQ_NOMERGE_FLAGS)
--		return false;
--
--	return true;
--}
--
--/*
-  * BIO list management for use by remapping drivers (e.g. DM or MD) and loop.
-  *
-  * A bio_list anchors a singly-linked list of bios chained through the bi_next
+ void
+@@ -1229,7 +1188,15 @@ noskb:		if (buf)
+ 			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 			break;
+ 		}
+-		bvcpy(f->bv, f->bv_off, skb, n);
++		if (n > f->iter.bi_size) {
++			pr_err_ratelimited("%s e%ld.%d.  bytes=%ld need=%u\n",
++				"aoe: too-large data size in read from",
++				(long) d->aoemajor, d->aoeminor,
++				n, f->iter.bi_size);
++			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
++			break;
++		}
++		bvcpy(skb, f->buf->bio, f->iter, n);
+ 	case ATA_CMD_PIO_WRITE:
+ 	case ATA_CMD_PIO_WRITE_EXT:
+ 		spin_lock_irq(&d->lock);
+@@ -1272,7 +1239,7 @@ out:
+ 
+ 	aoe_freetframe(f);
+ 
+-	if (buf && --buf->nframesout == 0 && buf->resid == 0)
++	if (buf && --buf->nframesout == 0 && buf->iter.bi_size == 0)
+ 		aoe_end_buf(d, buf);
+ 
+ 	spin_unlock_irq(&d->lock);
+@@ -1727,7 +1694,7 @@ aoe_failbuf(struct aoedev *d, struct buf *buf)
+ {
+ 	if (buf == NULL)
+ 		return;
+-	buf->resid = 0;
++	buf->iter.bi_size = 0;
+ 	clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 	if (buf->nframesout == 0)
+ 		aoe_end_buf(d, buf);
 -- 
 1.8.4.4
 
