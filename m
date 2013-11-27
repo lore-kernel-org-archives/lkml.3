@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3K0Mvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:51:54 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52384 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab3K0Mvv (ORCPT
+	id S1756350Ab3K0MyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:54:12 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:44078 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab3K0MyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:51:51 -0500
-Date: Wed, 27 Nov 2013 13:51:50 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: hci_h4p from linux-n900 branch: fix with new bluetooth for 3.13-rc1
-Message-ID: <20131127125149.GA9389@amd.pavel.ucw.cz>
+	Wed, 27 Nov 2013 07:54:06 -0500
+Date: Wed, 27 Nov 2013 04:54:05 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        axboe@kernel.dk
+Subject: Re: [PATCH 4/5] blk-lib.c: generic_make_request() handles large bios
+ now
+Message-ID: <20131127125405.GA21086@infradead.org>
+References: <1385418633-9753-1-git-send-email-kmo@daterainc.com>
+ <1385418633-9753-5-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1385418633-9753-5-git-send-email-kmo@daterainc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit d18adf907651766c97eedae993f14c6e042914a6
-Author: Pavel <pavel@ucw.cz>
-Date:   Wed Nov 27 13:43:40 2013 +0100
+>  int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+>  		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
+>  {
+> -	DECLARE_COMPLETION_ONSTACK(wait);
+>  	struct request_queue *q = bdev_get_queue(bdev);
+>  	int type = REQ_WRITE | REQ_DISCARD;
+> -	unsigned int max_discard_sectors, granularity;
+> -	int alignment;
+> -	struct bio_batch bb;
+>  	struct bio *bio;
+>  	int ret = 0;
+> -	struct blk_plug plug;
+>  
+>  	if (!q)
+>  		return -ENXIO;
+> @@ -56,78 +34,28 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+>  	if (!blk_queue_discard(q))
+>  		return -EOPNOTSUPP;
+>  
+> -	/* Zero-sector (unknown) and one-sector granularities are the same.  */
+> -	granularity = max(q->limits.discard_granularity >> 9, 1U);
+> -	alignment = (bdev_discard_alignment(bdev) >> 9) % granularity;
+> -
+> -	/*
+> -	 * Ensure that max_discard_sectors is of the proper
+> -	 * granularity, so that requests stay aligned after a split.
+> -	 */
+> -	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+> -	max_discard_sectors -= max_discard_sectors % granularity;
 
-Fix compilation of hci_h4p after bluetooth core changes. Only compile tested.
-    
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Seems like this is also missing the code to trim down the request to
+be properly aligned to the device limit.  I don't think our low-level
+drivers are ready to handle this, and even if they were it should be a
+separate change.
 
---
-
-When you update to 3.13-rc1, you'll likely need this one.
-
-(And good news is that it boots with that kernel, and video seems to work.)
-
-index 7ed9d4e..dac3875 100644
---- a/drivers/bluetooth/hci_h4p/core.c
-+++ b/drivers/bluetooth/hci_h4p/core.c
-@@ -405,7 +405,7 @@ static inline void hci_h4p_recv_frame(struct hci_h4p_info *info,
- 		}
- 		hci_h4p_parse_fw_event(info, skb);
- 	} else {
--		hci_recv_frame(skb);
-+		hci_recv_frame(info->hdev, skb);
- 		NBT_DBG("Frame sent to upper layer\n");
- 	}
- }
-@@ -789,10 +789,9 @@ static int hci_h4p_hci_close(struct hci_dev *hdev)
- 	return 0;
- }
- 
--static int hci_h4p_hci_send_frame(struct sk_buff *skb)
-+static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
- {
- 	struct hci_h4p_info *info;
--	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
- 	int err = 0;
- 	unsigned long flags;
- 
-@@ -841,12 +840,6 @@ static int hci_h4p_hci_send_frame(struct sk_buff *skb)
- 	return 0;
- }
- 
--static int hci_h4p_hci_ioctl(struct hci_dev *hdev, unsigned int cmd,
--			     unsigned long arg)
--{
--	return -ENOIOCTLCMD;
--}
--
- static int hci_h4p_register_hdev(struct hci_h4p_info *info)
- {
- 	struct hci_dev *hdev;
-@@ -867,7 +860,6 @@ static int hci_h4p_register_hdev(struct hci_h4p_info *info)
- 	hdev->close = hci_h4p_hci_close;
- 	hdev->flush = hci_h4p_hci_flush;
- 	hdev->send = hci_h4p_hci_send_frame;
--	hdev->ioctl = hci_h4p_hci_ioctl;
- 	set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
- 
- 	SET_HCIDEV_DEV(hdev, info->dev);
-diff --git a/drivers/bluetooth/hci_h4p/fw-csr.c b/drivers/bluetooth/hci_h4p/fw-csr.c
-index af880d9..020fa52 100644
---- a/drivers/bluetooth/hci_h4p/fw-csr.c
-+++ b/drivers/bluetooth/hci_h4p/fw-csr.c
-@@ -31,7 +31,7 @@ void hci_h4p_bc4_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
- {
- 	/* Check if this is fw packet */
- 	if (skb->data[0] != 0xff) {
--		hci_recv_frame(skb);
-+		hci_recv_frame(info->hdev, skb);
- 		return;
- 	}
- 
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
