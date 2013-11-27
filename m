@@ -1,190 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3K0MMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:12:39 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:58838 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3K0MMg (ORCPT
+	id S1755094Ab3K0MNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:13:53 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46667 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754647Ab3K0MNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:12:36 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] firmware/dmi_scan: generalize for use by other archs
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "x86@kernel.org" <x86@kernel.org>, linux-ia64@vger.kernel.org,
-        "mingo@redhat.com" <mingo@redhat.com>, tony.luck@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, Al Stone <al.stone@linaro.org>,
-        Yi Li <yi.li@linaro.org>
-In-Reply-To: <CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com>
-References: <1385034003-32160-1-git-send-email-ard.biesheuvel@linaro.org> < CAKv+Gu9VbSLDOYnuGkuajSHmp2PMKE-hLS4X0Gu-KO=uhU9skg@mail.gmail.com>
-Date: Wed, 27 Nov 2013 12:12:31 +0000
-Message-Id: <20131127121231.968E6C404EC@trevor.secretlab.ca>
+	Wed, 27 Nov 2013 07:13:52 -0500
+Message-ID: <5295E1FB.8090607@hurleysoftware.com>
+Date: Wed, 27 Nov 2013 07:13:47 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: tty/serial eating \n regression in 3.13-rc1
+References: <20131126215349.GA4818@obsidianresearch.com>
+In-Reply-To: <20131126215349.GA4818@obsidianresearch.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Nov 2013 13:07:23 +0100, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> Hello all,
-> 
-> Resending this patch to a slightly wider audience.
-> 
-> The point of this patch is reworking the dmi_scan code slightly so it
-> can be reused on ARM and arm64.
-> There are no functional changes for x86 or IA-64, just one open
-> question, i.e., whether the non-EFI fallback probe should be performed
-> on IA-64 in the first place.
-> 
-> If I could get acks for this patch please (if there are no
-> objections), I will propose it to be merged through the ARM and/or
-> arm64 trees as part of the complete series to enable SMBIOS.
+On 11/26/2013 04:53 PM, Jason Gunthorpe wrote:
+> Hello Peter,
 >
-> On 21 November 2013 12:40, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
-> > This patch makes a couple of changes to the SMBIOS/DMI scanning
-> > code so it can be used on other archs (such as ARM and arm64):
-> > (a) wrap the calls to ioremap()/iounmap(), this allows the use of a
-> >     flavor of ioremap() more suitable for random unaligned access;
-> > (b) allow the non-EFI fallback probe into hardcoded physical address
-> >     0xF0000 to be disabled.
-> >
-> > Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> I have been testing 3.13-rc1 and I noticed a change in behavior in the
+> tty/serial layer. Specifically I have a login running on serial that
+> presents the usual login:/password: prompt.
+>
+> 3.10.12 does this:
+>
+> login: admin
+> password:
+> prompt>
+>
+> While 3.13-rc1 does this:
+>
+> login: admin
+> password: prompt>
+>
+> That is to say, a \n got lost. I have also noticed while using the
+> serial console that '\n's are occasionally lost, and the lossage is
+> highly repeatable and seemingly based on number of chars being output
+> in a burst, eg entering 'foo bar' at a shell prompt might loose the \n,
+> while entering 'foo bar ' will not.
+>
+> I ran a full git bisect search and determined that the attached patch
+> introduced the problem.
+>
+> This seems like a bug - at least the commit comment seems like it
+> should not cause any change in behaviour. I can reproduce it and help
+> debug, if you can give some guidance, I am not a tty layer expert :)
 
-Looks good.
+Hi Jason,
 
-Reviewed-by: Grant Likely <grant.likely@linaro.org>
+Thanks for the bisect: this is definitely a bug and not designed behavior.
+But just to be clear here, the error you're seeing is strictly wrt.
+echo output; normal output remains uncorrupted?
 
-> > ---
-> >
-> > @Tony: does the fallback probe make any sense at all on IA-64? It was enabled
-> > before, so I added the #define for IA-64 as well, but perhaps we could remove it
-> > altogether?
-> >
-> >  arch/ia64/include/asm/dmi.h | 10 +++++++---
-> >  arch/x86/include/asm/dmi.h  |  8 ++++++--
-> >  drivers/firmware/dmi_scan.c | 20 +++++++++++---------
-> >  3 files changed, 24 insertions(+), 14 deletions(-)
-> >
-> > diff --git a/arch/ia64/include/asm/dmi.h b/arch/ia64/include/asm/dmi.h
-> > index 185d3d1..61e3b56 100644
-> > --- a/arch/ia64/include/asm/dmi.h
-> > +++ b/arch/ia64/include/asm/dmi.h
-> > @@ -5,8 +5,12 @@
-> >  #include <asm/io.h>
-> >
-> >  /* Use normal IO mappings for DMI */
-> > -#define dmi_ioremap ioremap
-> > -#define dmi_iounmap(x,l) iounmap(x)
-> > -#define dmi_alloc(l) kzalloc(l, GFP_ATOMIC)
-> > +#define dmi_early_remap                ioremap
-> > +#define dmi_early_unmap(x,l)   iounmap(x)
-> > +#define dmi_remap              ioremap
-> > +#define dmi_unmap              iounmap
-> > +#define dmi_alloc(l)           kzalloc(l, GFP_ATOMIC)
-> > +
-> > +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
-> >
-> >  #endif
-> > diff --git a/arch/x86/include/asm/dmi.h b/arch/x86/include/asm/dmi.h
-> > index fd8f9e2..bb2b572 100644
-> > --- a/arch/x86/include/asm/dmi.h
-> > +++ b/arch/x86/include/asm/dmi.h
-> > @@ -13,7 +13,11 @@ static __always_inline __init void *dmi_alloc(unsigned len)
-> >  }
-> >
-> >  /* Use early IO mappings for DMI because it's initialized early */
-> > -#define dmi_ioremap early_ioremap
-> > -#define dmi_iounmap early_iounmap
-> > +#define dmi_early_remap                early_ioremap
-> > +#define dmi_early_unmap                early_iounmap
-> > +#define dmi_remap              ioremap
-> > +#define dmi_unmap              iounmap
-> > +
-> > +#define DMI_SCAN_MACHINE_NON_EFI_FALLBACK      1
-> >
-> >  #endif /* _ASM_X86_DMI_H */
-> > diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> > index fa0affb..2c7c793 100644
-> > --- a/drivers/firmware/dmi_scan.c
-> > +++ b/drivers/firmware/dmi_scan.c
-> > @@ -108,7 +108,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
-> >  {
-> >         u8 *buf;
-> >
-> > -       buf = dmi_ioremap(dmi_base, dmi_len);
-> > +       buf = dmi_early_remap(dmi_base, dmi_len);
-> >         if (buf == NULL)
-> >                 return -1;
-> >
-> > @@ -116,7 +116,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
-> >
-> >         add_device_randomness(buf, dmi_len);
-> >
-> > -       dmi_iounmap(buf, dmi_len);
-> > +       dmi_early_unmap(buf, dmi_len);
-> >         return 0;
-> >  }
-> >
-> > @@ -483,18 +483,19 @@ void __init dmi_scan_machine(void)
-> >                  * needed during early boot.  This also means we can
-> >                  * iounmap the space when we're done with it.
-> >                  */
-> > -               p = dmi_ioremap(efi.smbios, 32);
-> > +               p = dmi_early_remap(efi.smbios, 32);
-> >                 if (p == NULL)
-> >                         goto error;
-> >                 memcpy_fromio(buf, p, 32);
-> > -               dmi_iounmap(p, 32);
-> > +               dmi_early_unmap(p, 32);
-> >
-> >                 if (!dmi_present(buf)) {
-> >                         dmi_available = 1;
-> >                         goto out;
-> >                 }
-> >         } else {
-> > -               p = dmi_ioremap(0xF0000, 0x10000);
-> > +#ifdef DMI_SCAN_MACHINE_NON_EFI_FALLBACK
-> > +               p = dmi_early_remap(0xF0000, 0x10000);
-> >                 if (p == NULL)
-> >                         goto error;
-> >
-> > @@ -510,12 +511,13 @@ void __init dmi_scan_machine(void)
-> >                         memcpy_fromio(buf + 16, q, 16);
-> >                         if (!dmi_present(buf)) {
-> >                                 dmi_available = 1;
-> > -                               dmi_iounmap(p, 0x10000);
-> > +                               dmi_early_unmap(p, 0x10000);
-> >                                 goto out;
-> >                         }
-> >                         memcpy(buf, buf + 16, 16);
-> >                 }
-> > -               dmi_iounmap(p, 0x10000);
-> > +               dmi_early_unmap(p, 0x10000);
-> > +#endif
-> >         }
-> >   error:
-> >         pr_info("DMI not present or invalid.\n");
-> > @@ -787,13 +789,13 @@ int dmi_walk(void (*decode)(const struct dmi_header *, void *),
-> >         if (!dmi_available)
-> >                 return -1;
-> >
-> > -       buf = ioremap(dmi_base, dmi_len);
-> > +       buf = dmi_remap(dmi_base, dmi_len);
-> >         if (buf == NULL)
-> >                 return -1;
-> >
-> >         dmi_table(buf, dmi_len, dmi_num, decode, private_data);
-> >
-> > -       iounmap(buf);
-> > +       dmi_unmap(buf);
-> >         return 0;
-> >  }
-> >  EXPORT_SYMBOL_GPL(dmi_walk);
-> > --
-> > 1.8.3.2
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Also, you're not seeing other echo drop-outs?
+
+Although there are some fixes due for 3.13-rc2 concerning echoes, I
+think this may be a smp weak memory ordering problem.
+
+> I have seen this bug on ppc with an out-of-tree serial driver, and on
+> ARM kirkwood with the serial8250 driver. I did the bisection search on
+> PPC.
+
+Ah, the games processors play. I assume the ppc is the host machine; the
+serial terminal remained unchanged, yes?
+
+Would you please test with the patch below which uses ftrace to
+capture the output? [The trace only tracks the echo buffer indices, not
+any of the data.]
+
+When you see the lost '\n', copy /sys/kernel/debug/tracing/trace
+to a file and send it to me (compressed if too big for the lists). Or
+you can send it off-list, if you'd prefer.
+
+[Apologies if the patch is white-space mangled; my mailer [Thunderbird]
+is dain-bramaged. I think git am will still do the right thing.]
+
+--- >% ----
+Subject: [PATCH] n_tty: Add trace support for echo output
+
+Debug patch.
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+  drivers/tty/n_tty.c | 24 ++++++++++++++++++++++++
+  1 file changed, 24 insertions(+)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 7cdd1eb..b055838 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -79,6 +79,12 @@
+  #define ECHO_BLOCK		256
+  #define ECHO_DISCARD_WATERMARK	N_TTY_BUF_SIZE - (ECHO_BLOCK + 32)
+
++#define trace_facility trace_printk
++#define _n_tty_trace(tty, f, args...)					\
++	do {								\
++		char buf[64];						\
++		trace_facility("[%s] " f, tty_name(tty, buf), ##args);	\
++	} while (0)
+
+  #undef N_TTY_TRACE
+  #ifdef N_TTY_TRACE
+@@ -87,6 +93,15 @@
+  # define n_tty_trace(f, args...)
+  #endif
+
++#undef N_TTY_TRACE_ECHOES
++#define N_TTY_TRACE_ECHOES 1
++#ifdef N_TTY_TRACE_ECHOES
++# define n_tty_trace_echoes(tty, f, args...)	_n_tty_trace(tty, f, args)
++#else
++# define n_tty_trace_echoes(tty, f, args...)	do { } while (0)
++#endif
++
++
+  struct n_tty_data {
+  	/* producer-published */
+  	size_t read_head;
+@@ -763,10 +778,19 @@ static size_t __process_echoes(struct tty_struct *tty)
+  		}
+  	}
+
++	n_tty_trace_echoes(tty, "echoes:%zu,%zu commit:%zu head:%zu\n",
++			   ldata->echo_tail, tail, ldata->echo_commit,
++			   ldata->echo_head);
++
+  	/* If the echo buffer is nearly full (so that the possibility exists
+  	 * of echo overrun before the next commit), then discard enough
+  	 * data at the tail to prevent a subsequent overrun */
+  	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
++
++		n_tty_trace_echoes(tty, "discard echoes (%zu - %zu > %d)\n",
++				   ldata->echo_commit, tail,
++				   ECHO_DISCARD_WATERMARK);
++
+  		if (echo_buf(ldata, tail) == ECHO_OP_START) {
+  			if (echo_buf(ldata, tail) == ECHO_OP_ERASE_TAB)
+  				tail += 3;
+-- 
+1.8.1.2
+
+
 
