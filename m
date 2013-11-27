@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758907Ab3K0BAH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:00:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
+	id S1758623Ab3K0BDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:03:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758770Ab3K0A7c (ORCPT
+	with ESMTP id S1758893Ab3K0BAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:32 -0500
+	Tue, 26 Nov 2013 20:00:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 053/116] ALSA: hda - Dont turn off EAPD for headphone on Lenovo N100
-Date: Tue, 26 Nov 2013 16:57:06 -0800
-Message-Id: <20131127005740.613142069@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, ben@decadent.org.uk
+Subject: [PATCH 3.12 087/116] powerpc/vio: use strcpy in modalias_show
+Date: Tue, 26 Nov 2013 16:57:40 -0800
+Message-Id: <20131127005742.925532104@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,36 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit 7a3e6107f94344e65c35bfe62de6c096a7b48965 upstream.
+commit 411cabf79e684171669ad29a0628c400b4431e95 upstream.
 
-The only EAPD on AD1986A is on NID 0x1b where usually the speaker.
-But this doesn't control only the speaker amp but may influence on all
-outputs, e.g. Lenovo N100 laptop seems to have this issue.
+Commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 used strcat instead of
+strcpy which can result in an overflow of newlines on the buffer.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Prarit Bhargava
+Cc: benh@kernel.crashing.org
+Cc: ben@decadent.org.uk
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_analog.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/vio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -219,8 +219,12 @@ static int alloc_ad_spec(struct hda_code
- static void ad_fixup_inv_jack_detect(struct hda_codec *codec,
- 				     const struct hda_fixup *fix, int action)
- {
--	if (action == HDA_FIXUP_ACT_PRE_PROBE)
-+	struct ad198x_spec *spec = codec->spec;
-+
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
- 		codec->inv_jack_detect = 1;
-+		spec->gen.keep_eapd_on = 1;
-+	}
- }
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1531,12 +1531,12 @@ static ssize_t modalias_show(struct devi
  
- enum {
+ 	dn = dev->of_node;
+ 	if (!dn) {
+-		strcat(buf, "\n");
++		strcpy(buf, "\n");
+ 		return strlen(buf);
+ 	}
+ 	cp = of_get_property(dn, "compatible", NULL);
+ 	if (!cp) {
+-		strcat(buf, "\n");
++		strcpy(buf, "\n");
+ 		return strlen(buf);
+ 	}
+ 
 
 
