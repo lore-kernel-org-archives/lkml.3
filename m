@@ -1,169 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760519Ab3K0Bwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:52:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39039 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757803Ab3K0A5c (ORCPT
+	id S1760536Ab3K0Bwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:52:46 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:48914 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759706Ab3K0Bwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 32/80] ALSA: compress: fix drain calls blocking other compress functions
-Date: Tue, 26 Nov 2013 16:57:01 -0800
-Message-Id: <20131127005643.159090132@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
-References: <20131127005640.934155527@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 26 Nov 2013 20:52:42 -0500
+X-AuditID: cbfee691-b7f666d0000048b0-31-529550693208
+Date: Wed, 27 Nov 2013 01:52:41 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: [PATCH] mn10300 : Kill CONFIG_MTD_PARTITIONS
+To: dhowells@redhat.com, yasutake.koichi@jp.panasonic.com
+Cc: linux-am33-list@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20131127015121423@eunb.song
+Msgkey: 20131127015121423@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131127015121423@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <6336985.82081385517159553.JavaMail.weblogic@epml11>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Zpm5mwNQgg72fBCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGkRedTAWHeCs+Pc1sYJzA28XIySEkoCLR8v87I4gtIWAisXHu
+	ZihbTOLCvfVsXYxcQDXLGCVa3m5ggyk69OEiC0RiPqPEnPnvmEESLAKqEvMOTGACsdkEtCV+
+	HLgKFhcWMJX4dPsvC4gtIuAq8fXeA6A4BwezQIrEtxeSEEfIS0w+fZkdxOYVEJQ4OfMJC0iJ
+	hICSxJfJ7hBhZYmWU51QJ0hIzJp+gRXC5pWY0f6UBcKWk5j2dQ0zhC0tcX7WBrhfFn9/DBXn
+	lzh2ewcTxHheiSf3g2HG7N78BWq8gMTUMwcZIUrUJX79hprCJ7Fm4VsWmCm7Ti1nhmm9v2Uu
+	2N/MAooSU7ofskPYWhJffuxjQ/UUiO0gsWp1K/sERuVZSFKzkLTPQtKOrGYBI8sqRtHUguSC
+	4qT0IlO94sTc4tK8dL3k/NxNjJCEMHEH4/0D1ocYk4HxMZFZSjQ5H5hQ8kriDY3NjCxMTUyN
+	jcwtzUgTVhLnTX+UFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBsalqy+P2l83TurKcc9JU
+	qg5Ey+vvyzP9mF7HLnnYI2vBlflu7LMyRIRPxqW/PcO3T23bdMeFKnG3eM1qpjr8nlf6dt/T
+	pSvrCy2k6m5ItPRY5C/XPJYxN63ry9xpz9v1q9ckp6s17tBcY/pS+numQOdBgXV7GX6EzOfS
+	f9zIsrY+cpZiq3awEktxRqKhFnNRcSIAci2qpR4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/tGbqZAVODDHa85LW4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GUdedDIVHOKt+PQ0s4FxAm8XIyeHkICKRMv/74wgtoSAicShDxdZIGwxiQv31rN1MXIB1cxn
+	lJgz/x0zSIJFQFVi3oEJTCA2m4C2xI8DV8HiwgKmEp9u/wVrFhFwlfh67wFQnIODWSBF4tsL
+	SYhd8hKTT19mB7F5BQQlTs58wgJSIiGgJPFlsjtEWFmi5VQnG8QJEhKzpl9ghbB5JWa0P4U6
+	TU5i2tc1zBC2tMT5WRsYYU5e/P0xVJxf4tjtHUwQ43klntwPhhmze/MXqPECElPPHGSEKFGX
+	+PUbagqfxJqFb1lgpuw6tZwZpvX+lrlgfzMLKEpM6X7IDmFrSXz5sY8N1VMgtoPEqtWt7BMY
+	5WYhSc1C0j4LSTuymgWMLKsYRVMLkguKk9IrjPSKE3OLS/PS9ZLzczcxglPTs0U7GP+dtz7E
+	KMDBqMTDO+HylCAh1sSy4srcQ4wSHMxKIrwvHKYGCfGmJFZWpRblxxeV5qQWH2JMBsbeRGYp
+	0eR8YNrMK4k3NDYwNjS0NDcwNTSyIE1YSZxX/lZSkJBAemJJanZqakFqEcwWJg5OqQbGWSmy
+	V8LeKWv+b+44+/jipDB12QMd7X8XR6Wl2Ifvs+Jg2roq2zeEy2Gfa4aL5t/KSF470S8T1s1R
+	VAx3vtB476vgThkul/fnz+26brkuYNM+o0fFV+/evZe4WTGyONzK/132ut5Jc8IrHqV2H2L8
+	oHhMkEFF5HjHNJFOfkdT2blPJ/YaOdxQYinOSDTUYi4qTgQAb+CFmpEDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR1qoPB017636
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+This patch removes CONFIG_MTD_PARTITIONS in config files for mn10300.
+Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
 
-From: Vinod Koul <vinod.koul@intel.com>
-
-commit 917f4b5cba78980a527098a910d94139d3e82c8d upstream.
-
-The drain and drain_notify callback were blocked by low level driver untill the
-draining was complete. Due to this being invoked with big fat mutex held, others
-ops like reading timestamp, calling pause, drop were blocked.
-
-So to fix this we add a new snd_compr_drain_notify() API. This would be required
-to be invoked by low level driver when drain or partial drain has been completed
-by the DSP. Thus we make the drain and partial_drain callback as non blocking
-and driver returns immediately after notifying DSP.
-The waiting is done while relasing the lock so that other ops can go ahead.
-
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Eunbong Song <eunb.song@samsung.com>
 ---
- include/sound/compress_driver.h |   12 +++++++++++
- sound/core/compress_offload.c   |   41 +++++++++++++++++++++++++++++++++++++---
- 2 files changed, 50 insertions(+), 3 deletions(-)
+ arch/mn10300/configs/asb2303_defconfig |    1 -
+ arch/mn10300/configs/asb2364_defconfig |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
---- a/include/sound/compress_driver.h
-+++ b/include/sound/compress_driver.h
-@@ -48,6 +48,8 @@ struct snd_compr_ops;
-  *	the ring buffer
-  * @total_bytes_transferred: cumulative bytes transferred by offload DSP
-  * @sleep: poll sleep
-+ * @wait: drain wait queue
-+ * @drain_wake: condition for drain wake
-  */
- struct snd_compr_runtime {
- 	snd_pcm_state_t state;
-@@ -59,6 +61,8 @@ struct snd_compr_runtime {
- 	u64 total_bytes_available;
- 	u64 total_bytes_transferred;
- 	wait_queue_head_t sleep;
-+	wait_queue_head_t wait;
-+	unsigned int drain_wake;
- 	void *private_data;
- };
- 
-@@ -171,4 +175,12 @@ static inline void snd_compr_fragment_el
- 	wake_up(&stream->runtime->sleep);
- }
- 
-+static inline void snd_compr_drain_notify(struct snd_compr_stream *stream)
-+{
-+	snd_BUG_ON(!stream);
-+
-+	stream->runtime->drain_wake = 1;
-+	wake_up(&stream->runtime->wait);
-+}
-+
- #endif
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -123,6 +123,7 @@ static int snd_compr_open(struct inode *
- 	}
- 	runtime->state = SNDRV_PCM_STATE_OPEN;
- 	init_waitqueue_head(&runtime->sleep);
-+	init_waitqueue_head(&runtime->wait);
- 	data->stream.runtime = runtime;
- 	f->private_data = (void *)data;
- 	mutex_lock(&compr->lock);
-@@ -670,12 +671,34 @@ static int snd_compr_stop(struct snd_com
- 	if (!retval) {
- 		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 		wake_up(&stream->runtime->sleep);
-+		snd_compr_drain_notify(stream);
- 		stream->runtime->total_bytes_available = 0;
- 		stream->runtime->total_bytes_transferred = 0;
- 	}
- 	return retval;
- }
- 
-+static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
-+{
-+	/*
-+	 * We are called with lock held. So drop the lock while we wait for
-+	 * drain complete notfication from the driver
-+	 *
-+	 * It is expected that driver will notify the drain completion and then
-+	 * stream will be moved to SETUP state, even if draining resulted in an
-+	 * error. We can trigger next track after this.
-+	 */
-+	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	mutex_unlock(&stream->device->lock);
-+
-+	wait_event(stream->runtime->wait, stream->runtime->drain_wake);
-+
-+	wake_up(&stream->runtime->sleep);
-+	mutex_lock(&stream->device->lock);
-+
-+	return 0;
-+}
-+
- static int snd_compr_drain(struct snd_compr_stream *stream)
- {
- 	int retval;
-@@ -683,11 +706,17 @@ static int snd_compr_drain(struct snd_co
- 	if (stream->runtime->state == SNDRV_PCM_STATE_PREPARED ||
- 			stream->runtime->state == SNDRV_PCM_STATE_SETUP)
- 		return -EPERM;
-+
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
--	if (!retval) {
--		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	if (retval) {
-+		pr_err("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
- 		wake_up(&stream->runtime->sleep);
-+		return retval;
- 	}
-+
-+	retval = snd_compress_wait_for_drain(stream);
-+	stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 	return retval;
- }
- 
-@@ -723,10 +752,16 @@ static int snd_compr_partial_drain(struc
- 	if (stream->next_track == false)
- 		return -EPERM;
- 
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
-+	if (retval) {
-+		pr_err("Partial drain returned failure\n");
-+		wake_up(&stream->runtime->sleep);
-+		return retval;
-+	}
- 
- 	stream->next_track = false;
--	return retval;
-+	return snd_compress_wait_for_drain(stream);
- }
- 
- static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-
-
+diff --git a/arch/mn10300/configs/asb2303_defconfig b/arch/mn10300/configs/asb2303_defconfig
+index 1fd41ec..591ab65 100644
+--- a/arch/mn10300/configs/asb2303_defconfig
++++ b/arch/mn10300/configs/asb2303_defconfig
+@@ -34,7 +34,6 @@ CONFIG_IP_PNP_BOOTP=y
+ # CONFIG_WIRELESS is not set
+ CONFIG_MTD=y
+ CONFIG_MTD_DEBUG=y
+-CONFIG_MTD_PARTITIONS=y
+ CONFIG_MTD_REDBOOT_PARTS=y
+ CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED=y
+ CONFIG_MTD_CHAR=y
+diff --git a/arch/mn10300/configs/asb2364_defconfig b/arch/mn10300/configs/asb2364_defconfig
+index fbb96ae..fbaac16 100644
+--- a/arch/mn10300/configs/asb2364_defconfig
++++ b/arch/mn10300/configs/asb2364_defconfig
+@@ -51,7 +51,6 @@ CONFIG_IPV6=y
+ CONFIG_CONNECTOR=y
+ CONFIG_MTD=y
+ CONFIG_MTD_DEBUG=y
+-CONFIG_MTD_PARTITIONS=y
+ CONFIG_MTD_REDBOOT_PARTS=y
+ CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED=y
+ CONFIG_MTD_CHAR=y
+-- 
+1.7.0.4
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
