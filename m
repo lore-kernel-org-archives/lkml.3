@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab3K0BUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:20:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39517 "EHLO
+	id S1759542Ab3K0BT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:19:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448Ab3K0A7U (ORCPT
+	with ESMTP id S1756572Ab3K0A7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:20 -0500
+	Tue, 26 Nov 2013 19:59:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 077/116] ftrace/x86: skip over the breakpoint for ftrace caller
-Date: Tue, 26 Nov 2013 16:57:30 -0800
-Message-Id: <20131127005742.244444991@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 050/116] ALSA: hda - Add pincfg fixup for ASUS W5A
+Date: Tue, 26 Nov 2013 16:57:03 -0800
+Message-Id: <20131127005740.408032451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,55 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ab4ead02ec235d706d0611d8741964628291237e upstream.
+commit 487a588d09db0d6508261867df208d8bdc718251 upstream.
 
-In commit 8a4d0a687a59 "ftrace: Use breakpoint method to update ftrace
-caller", we choose to use breakpoint method to update the ftrace
-caller. But we also need to skip over the breakpoint in function
-ftrace_int3_handler() for them. Otherwise weird things would happen.
+BIOS on ASUS W5A laptop with ALC880 codec doesn't provide any pin
+configurations, so we have to set up all pins manually.
 
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-and-tested-by: nb <nb@dagami.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ftrace.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -248,6 +248,15 @@ int ftrace_update_ftrace_func(ftrace_fun
- 	return ret;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1043,6 +1043,7 @@ enum {
+ 	ALC880_FIXUP_UNIWILL,
+ 	ALC880_FIXUP_UNIWILL_DIG,
+ 	ALC880_FIXUP_Z71V,
++	ALC880_FIXUP_ASUS_W5A,
+ 	ALC880_FIXUP_3ST_BASE,
+ 	ALC880_FIXUP_3ST,
+ 	ALC880_FIXUP_3ST_DIG,
+@@ -1213,6 +1214,26 @@ static const struct hda_fixup alc880_fix
+ 			{ }
+ 		}
+ 	},
++	[ALC880_FIXUP_ASUS_W5A] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			/* set up the whole pins as BIOS is utterly broken */
++			{ 0x14, 0x0121411f }, /* HP */
++			{ 0x15, 0x411111f0 }, /* N/A */
++			{ 0x16, 0x411111f0 }, /* N/A */
++			{ 0x17, 0x411111f0 }, /* N/A */
++			{ 0x18, 0x90a60160 }, /* mic */
++			{ 0x19, 0x411111f0 }, /* N/A */
++			{ 0x1a, 0x411111f0 }, /* N/A */
++			{ 0x1b, 0x411111f0 }, /* N/A */
++			{ 0x1c, 0x411111f0 }, /* N/A */
++			{ 0x1d, 0x411111f0 }, /* N/A */
++			{ 0x1e, 0xb743111e }, /* SPDIF out */
++			{ }
++		},
++		.chained = true,
++		.chain_id = ALC880_FIXUP_GPIO1,
++	},
+ 	[ALC880_FIXUP_3ST_BASE] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = (const struct hda_pintbl[]) {
+@@ -1334,6 +1355,7 @@ static const struct hda_fixup alc880_fix
  
-+static int is_ftrace_caller(unsigned long ip)
-+{
-+	if (ip == (unsigned long)(&ftrace_call) ||
-+		ip == (unsigned long)(&ftrace_regs_call))
-+		return 1;
-+
-+	return 0;
-+}
-+
- /*
-  * A breakpoint was added to the code address we are about to
-  * modify, and this is the handle that will just skip over it.
-@@ -257,10 +266,13 @@ int ftrace_update_ftrace_func(ftrace_fun
-  */
- int ftrace_int3_handler(struct pt_regs *regs)
- {
-+	unsigned long ip;
-+
- 	if (WARN_ON_ONCE(!regs))
- 		return 0;
- 
--	if (!ftrace_location(regs->ip - 1))
-+	ip = regs->ip - 1;
-+	if (!ftrace_location(ip) && !is_ftrace_caller(ip))
- 		return 0;
- 
- 	regs->ip += MCOUNT_INSN_SIZE - 1;
+ static const struct snd_pci_quirk alc880_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1019, 0x0f69, "Coeus G610P", ALC880_FIXUP_W810),
++	SND_PCI_QUIRK(0x1043, 0x10c3, "ASUS W5A", ALC880_FIXUP_ASUS_W5A),
+ 	SND_PCI_QUIRK(0x1043, 0x1964, "ASUS Z71V", ALC880_FIXUP_Z71V),
+ 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS", ALC880_FIXUP_GPIO1),
+ 	SND_PCI_QUIRK(0x1558, 0x5401, "Clevo GPIO2", ALC880_FIXUP_GPIO2),
 
 
