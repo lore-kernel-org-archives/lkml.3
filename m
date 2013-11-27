@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab3K0Biy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:38:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39226 "EHLO
+	id S1760078Ab3K0Bjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:39:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab3K0A6O (ORCPT
+	with ESMTP id S932169Ab3K0A6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:14 -0500
+	Tue, 26 Nov 2013 19:58:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 74/80] rt2800usb: slow down TX status polling
-Date: Tue, 26 Nov 2013 16:57:43 -0800
-Message-Id: <20131127005646.054199486@linuxfoundation.org>
+        Haren Myneni <haren@linux.vnet.ibm.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 69/80] powerpc/signals: Mark VSX not saved with small contexts
+Date: Tue, 26 Nov 2013 16:57:38 -0800
+Message-Id: <20131127005645.717933681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,71 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
+commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
 
-Polling TX statuses too frequently has two negative effects. First is
-randomly peek CPU usage, causing overall system functioning delays.
-Second bad effect is that device is not able to fill TX statuses in
-H/W register on some workloads and we get lot of timeouts like below:
+The VSX MSR bit in the user context indicates if the context contains VSX
+state.  Currently we set this when the process has touched VSX at any stage.
 
-ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
-ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
-ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
+Unfortunately, if the user has not provided enough space to save the VSX state,
+we can't save it but we currently still set the MSR VSX bit.
 
-This not only cause flood of messages in dmesg, but also bad throughput,
-since rate scaling algorithm can not work optimally.
+This patch changes this to clear the MSR VSX bit when the user doesn't provide
+enough space.  This indicates that there is no valid VSX state in the user
+context.
 
-In the future, we should probably make polling interval be adjusted
-automatically, but for now just increase values, this make mentioned
-problems gone.
+This is needed to support get/set/make/swapcontext for applications that use
+VSX but only provide a small context.  For example, getcontext in glibc
+provides a smaller context since the VSX registers don't need to be saved over
+the glibc function call.  But since the program calling getcontext may have
+used VSX, the kernel currently says the VSX state is valid when it's not.  If
+the returned context is then used in setcontext (ie. a small context without
+VSX but with MSR VSX set), the kernel will refuse the context.  This situation
+has been reported by the glibc community.
 
-Resolve:
-https://bugzilla.kernel.org/show_bug.cgi?id=62781
+Based on patch from Carlos O'Donell.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/signal_32.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -148,6 +148,8 @@ static bool rt2800usb_txstatus_timeout(s
- 	return false;
- }
- 
-+#define TXSTATUS_READ_INTERVAL 1000000
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -454,7 +454,15 @@ static int save_user_regs(struct pt_regs
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	}
++	} else if (!ctx_has_vsx_region)
++		/*
++		 * With a small context structure we can't hold the VSX
++		 * registers, hence clear the MSR value to indicate the state
++		 * was not saved.
++		 */
++		msr &= ~MSR_VSX;
 +
- static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
- 						 int urb_status, u32 tx_status)
- {
-@@ -176,8 +178,9 @@ static bool rt2800usb_tx_sta_fifo_read_c
- 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
- 
- 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
--		/* Read register after 250 us */
--		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
-+		/* Read register after 1 ms */
-+		hrtimer_start(&rt2x00dev->txstatus_timer,
-+			      ktime_set(0, TXSTATUS_READ_INTERVAL),
- 			      HRTIMER_MODE_REL);
- 		return false;
- 	}
-@@ -202,8 +205,9 @@ static void rt2800usb_async_read_tx_stat
- 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
- 		return;
- 
--	/* Read TX_STA_FIFO register after 500 us */
--	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
-+	/* Read TX_STA_FIFO register after 2 ms */
-+	hrtimer_start(&rt2x00dev->txstatus_timer,
-+		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
- 		      HRTIMER_MODE_REL);
- }
- 
++
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
 
 
