@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab3K0Ata (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:49:30 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:44941 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab3K0AqG (ORCPT
+	id S1756600Ab3K0At1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:49:27 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:34488 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab3K0AqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:46:06 -0500
+	Tue, 26 Nov 2013 19:46:08 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
 Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 15/25] block: Kill bio_iovec_idx(), __bio_iovec()
-Date: Tue, 26 Nov 2013 16:45:18 -0800
-Message-Id: <1385513128-5035-15-git-send-email-kmo@daterainc.com>
+Subject: [PATCH 16/25] block: Refactor bio_clone_bioset() for immutable biovecs
+Date: Tue, 26 Nov 2013 16:45:19 -0800
+Message-Id: <1385513128-5035-16-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -22,135 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_iovec_idx() and __bio_iovec() don't have any valid uses anymore -
-previous users have been converted to bio_iovec_iter() or other methods.
-
-__BVEC_END() has to go too - the bvec array can't be used directly for
-the last biovec because we might only be using the first portion of it,
-we have to iterate over the bvec array with bio_for_each_segment() which
-checks against the current value of bi_iter.bi_size.
+bio_clone() needs to produce a bio that's suitable for the caller to
+munge with the biovec. Part of the immutable biovec patch series is
+fixing stuff up so that submitting partially completed bios is safe and
+works: thus, we now need bio_clone() on a partially completed bio to
+produce a bio for which bi_idx and bi_bvec done are 0 - like they would
+be if the caller had just allocated a new bio.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-merge.c   | 13 +++++++++++--
- include/linux/bio.h | 26 ++++++++------------------
- 2 files changed, 19 insertions(+), 20 deletions(-)
+ fs/bio.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 47 insertions(+), 13 deletions(-)
 
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index a1ead90..05c17be 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -86,6 +86,9 @@ EXPORT_SYMBOL(blk_recount_segments);
- static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 				   struct bio *nxt)
+diff --git a/fs/bio.c b/fs/bio.c
+index a082ce2..1628917 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -549,36 +549,70 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+ EXPORT_SYMBOL(__bio_clone);
+ 
+ /**
+- *	bio_clone_bioset -	clone a bio
+- *	@bio: bio to clone
++ * 	bio_clone_bioset - clone a bio
++ * 	@bio_src: bio to clone
+  *	@gfp_mask: allocation priority
+  *	@bs: bio_set to allocate from
+  *
+- * 	Like __bio_clone, only also allocates the returned bio
++ *	Clone bio. Caller will own the returned bio, but not the actual data it
++ *	points to. Reference count of returned bio will be one.
+  */
+-struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
++struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
+ 			     struct bio_set *bs)
  {
-+	struct bio_vec end_bv, nxt_bv;
+-	struct bio *b;
++	unsigned nr_iovecs = 0;
 +	struct bvec_iter iter;
++	struct bio_vec bv;
++	struct bio *bio;
 +
- 	if (!blk_queue_cluster(q))
- 		return 0;
- 
-@@ -96,14 +99,20 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 	if (!bio_has_data(bio))
- 		return 1;
- 
--	if (!BIOVEC_PHYS_MERGEABLE(__BVEC_END(bio), __BVEC_START(nxt)))
-+	bio_for_each_segment(end_bv, bio, iter)
-+		if (end_bv.bv_len == iter.bi_size)
-+			break;
++	/*
++	 * Pre immutable biovecs, __bio_clone() used to just do a memcpy from
++	 * bio_src->bi_io_vec to bio->bi_io_vec.
++	 *
++	 * We can't do that anymore, because:
++	 *
++	 *  - The point of cloning the biovec is to produce a bio with a biovec
++	 *    the caller can modify: bi_idx and bi_bvec_done should be 0.
++	 *
++	 *  - The original bio could've had more than BIO_MAX_PAGES biovecs; if
++	 *    we tried to clone the whole thing bio_alloc_bioset() would fail.
++	 *    But the clone should succeed as long as the number of biovecs we
++	 *    actually need to allocate is fewer than BIO_MAX_PAGES.
++	 *
++	 *  - Lastly, bi_vcnt should not be looked at or relied upon by code
++	 *    that does not own the bio - reason being drivers don't use it for
++	 *    iterating over the biovec anymore, so expecting it to be kept up
++	 *    to date (i.e. for clones that share the parent biovec) is just
++	 *    asking for trouble and would force extra work on
++	 *    __bio_clone_fast() anyways.
++	 */
 +
-+	nxt_bv = bio_iovec(nxt);
-+
-+	if (!BIOVEC_PHYS_MERGEABLE(&end_bv, &nxt_bv))
- 		return 0;
++	bio_for_each_segment(bv, bio_src, iter)
++		nr_iovecs++;
  
- 	/*
- 	 * bio and nxt are contiguous in memory; check if the queue allows
- 	 * these two to be merged into one
- 	 */
--	if (BIO_SEG_BOUNDARY(q, bio, nxt))
-+	if (BIOVEC_SEG_BOUNDARY(q, &end_bv, &nxt_bv))
- 		return 1;
+-	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+-	if (!b)
++	bio = bio_alloc_bioset(gfp_mask, nr_iovecs, bs);
++	if (!bio)
+ 		return NULL;
  
- 	return 0;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index aea9896..1a31f9d 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -61,9 +61,6 @@
-  * various member access, note that bio_data should of course not be used
-  * on highmem page vectors
-  */
--#define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
--#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--
- #define __bvec_iter_bvec(bvec, iter)	(&(bvec)[(iter).bi_idx])
+-	__bio_clone(b, bio);
++	bio->bi_bdev		= bio_src->bi_bdev;
++	bio->bi_rw		= bio_src->bi_rw;
++	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
++	bio->bi_iter.bi_size	= bio_src->bi_iter.bi_size;
  
- #define bvec_iter_page(bvec, iter)				\
-@@ -162,19 +159,16 @@ static inline void *bio_data(struct bio *bio)
-  * permanent PIO fall back, user is probably better off disabling highmem
-  * I/O completely on that queue (see ide-dma for example)
-  */
--#define __bio_kmap_atomic(bio, idx)				\
--	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
--		bio_iovec_idx((bio), (idx))->bv_offset)
-+#define __bio_kmap_atomic(bio, iter)				\
-+	(kmap_atomic(bio_iter_iovec((bio), (iter)).bv_page) +	\
-+		bio_iter_iovec((bio), (iter)).bv_offset)
+-	if (bio_integrity(bio)) {
+-		int ret;
++	bio_for_each_segment(bv, bio_src, iter)
++		bio->bi_io_vec[bio->bi_vcnt++] = bv;
  
--#define __bio_kunmap_atomic(addr) kunmap_atomic(addr)
-+#define __bio_kunmap_atomic(addr)	kunmap_atomic(addr)
+-		ret = bio_integrity_clone(b, bio, gfp_mask);
++	if (bio_integrity(bio_src)) {
++		int ret;
  
- /*
-  * merge helpers etc
-  */
++		ret = bio_integrity_clone(bio, bio_src, gfp_mask);
+ 		if (ret < 0) {
+-			bio_put(b);
++			bio_put(bio);
+ 			return NULL;
+ 		}
+ 	}
  
--#define __BVEC_END(bio)		bio_iovec_idx((bio), (bio)->bi_vcnt - 1)
--#define __BVEC_START(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--
- /* Default implementation of BIOVEC_PHYS_MERGEABLE */
- #define __BIOVEC_PHYS_MERGEABLE(vec1, vec2)	\
- 	((bvec_to_phys((vec1)) + (vec1)->bv_len) == bvec_to_phys((vec2)))
-@@ -191,8 +185,6 @@ static inline void *bio_data(struct bio *bio)
- 	(((addr1) | (mask)) == (((addr2) - 1) | (mask)))
- #define BIOVEC_SEG_BOUNDARY(q, b1, b2) \
- 	__BIO_SEG_BOUNDARY(bvec_to_phys((b1)), bvec_to_phys((b2)) + (b2)->bv_len, queue_segment_boundary((q)))
--#define BIO_SEG_BOUNDARY(q, b1, b2) \
--	BIOVEC_SEG_BOUNDARY((q), __BVEC_END((b1)), __BVEC_START((b2)))
- 
- #define bio_io_error(bio) bio_endio((bio), -EIO)
- 
-@@ -201,9 +193,7 @@ static inline void *bio_data(struct bio *bio)
-  * before it got to the driver and the driver won't own all of it
-  */
- #define bio_for_each_segment_all(bvl, bio, i)				\
--	for (i = 0;							\
--	     bvl = bio_iovec_idx((bio), (i)), i < (bio)->bi_vcnt;	\
--	     i++)
-+	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
- 
- static inline void bvec_iter_advance(struct bio_vec *bv, struct bvec_iter *iter,
- 				     unsigned bytes)
-@@ -468,15 +458,15 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+-	return b;
++	return bio;
  }
- #endif
+ EXPORT_SYMBOL(bio_clone_bioset);
  
--static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
-+static inline char *__bio_kmap_irq(struct bio *bio, struct bvec_iter iter,
- 				   unsigned long *flags)
- {
--	return bvec_kmap_irq(bio_iovec_idx(bio, idx), flags);
-+	return bvec_kmap_irq(&bio_iter_iovec(bio, iter), flags);
- }
- #define __bio_kunmap_irq(buf, flags)	bvec_kunmap_irq(buf, flags)
- 
- #define bio_kmap_irq(bio, flags) \
--	__bio_kmap_irq((bio), (bio)->bi_iter.bi_idx, (flags))
-+	__bio_kmap_irq((bio), (bio)->bi_iter, (flags))
- #define bio_kunmap_irq(buf,flags)	__bio_kunmap_irq(buf, flags)
- 
- /*
 -- 
 1.8.4.4
 
