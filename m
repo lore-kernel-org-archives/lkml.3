@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab3K0QGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:06:42 -0500
-Received: from forward5m.mail.yandex.net ([37.140.138.5]:58705 "EHLO
-	forward5m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab3K0QGk (ORCPT
+	id S1757316Ab3K0QHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:07:33 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57114 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab3K0QHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:06:40 -0500
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Nov 2013 11:06:39 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
-Subject: [PATCH] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
+	Wed, 27 Nov 2013 11:07:32 -0500
+Date: Wed, 27 Nov 2013 16:07:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131127160707.GC14725@sirena.org.uk>
+References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131127132442.GJ3296@lee--X1>
+ <20131127151639.GX14725@sirena.org.uk>
+ <20131127152701.GQ3296@lee--X1>
 MIME-Version: 1.0
-Message-Id: <49231385567953@web4m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 27 Nov 2013 19:59:13 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LpveMUvXs97SUkgl"
+Content-Disposition: inline
+In-Reply-To: <20131127152701.GQ3296@lee--X1>
+X-Cookie: Your supervisor is thinking about you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
+ as readable
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch touches RT group scheduling case.
 
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's priority,
-while rt_rq passed to them may be not the top-level rt_rq. This is wrong, because
-changing of priority on a child level does not guarantee that the priority is
-the highest all over the rq. So, this leak makes RT balancing unusable.
+--LpveMUvXs97SUkgl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The short example: the task having the highest priority among all rq's RT tasks
-(no one other task has the same priority) are waking on a throttle rt_rq.
-The rq's cpupri is set to the task's priority equivalent, but real
-rq->rt.highest_prio.curr is less.
+On Wed, Nov 27, 2013 at 03:27:01PM +0000, Lee Jones wrote:
+> On Wed, 27 Nov 2013, Mark Brown wrote:
 
-The patch below fixes the problem.
+> > That seems excessive and it probably ought to go in as a bug fix
+> > afterwards.  Given that it's just an addition of data to the table I'd
+> > expect we could cope, we've routinely done that with similar updates in
+> > the past without incident.
 
-It looks like all version have this bug, so I CC'ed stable mailing list.
+> Ah, is the depends patch in Mainline already? I assumed it was due to
+> go in during the v3.14 merge window? If it's already in Mainline, then
+> sure I don't mind if it goes in -fixes via ASoC, no problem.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: stable@vger.kernel.org
----
- kernel/sched/rt.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 7d57275..1c40655 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -901,6 +901,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
- }
-@@ -910,6 +917,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
- }
+No, it's for v3.14 - it just seemed like for the size/impact of the
+change we should be able to handle the situation more smoothly.
+
+--LpveMUvXs97SUkgl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSlhioAAoJELSic+t+oim9/wEQAJNLkZxAKP/j3gURcyYOVkvB
+WEcyJe2a+18o1sp/JEBB1+vASNtMpXO6NQzQNYgNn/30J5rtFkzf0IspL5hiwic1
+smeo9nuFMWlPebLKymRwTROYt/nHJz2NXh0E4hEHL/vK/X0KrKMPYcuBwcqYrJUd
++QrijHxxlZEalHU4wBYwDuNH8aIf3VQXwLjJDMzCudaF5sdEd3DUFvX5+IF6Kgtj
+sX35MVukpOr29Y19QCxbxPC8Aj2k5cef3BM/ZKZ4x87cts0h5/ZlUNIvprrIQqGV
+iIUtKb/QtOlpWwgy2xckkXzcHqFSgfJ5DzC/60hfxlcjtXQdgtSPEwQJMS/qcwtr
+eftNHbdwDHD7e4qoogeHIsT73EsR57kx1xDLodwTlqXEfTfX8/tmG3S9n/Xxy33P
+23K682WRaFi1PEUUwvar5+0JkV5gFpAA0fTRjl5tUy9XqOd+OHBiMF4es5+hj49S
+6MRwgOhRiCBVh3jMhMNzNzClFxfI5jEaVLfdlKEvA0R2yL8rDuOx3hM9lNCeuGiL
++PhVrx/CYPGYuqh4nGxnOy/JBmfbopunWJiv7vG8KRr0ba9if4GO2GJE+nLh4b5O
+K/pKRB7Ka0d+X0KQLhp5elMW04RFYb2Oo8fWOO9Agifo2OKsEw23LJMOcQvQKdEu
+sSLMEtyuTJQsSk0ndIwQ
+=2sq7
+-----END PGP SIGNATURE-----
+
+--LpveMUvXs97SUkgl--
