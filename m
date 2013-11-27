@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757348Ab3K0QOW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:14:22 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:47875 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab3K0QOU (ORCPT
+	id S1756777Ab3K0QV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:21:26 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54392 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab3K0QVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:14:20 -0500
-Date: Wed, 27 Nov 2013 16:14:15 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
-        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
-Message-ID: <20131127161415.GT3296@lee--X1>
-References: <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
- <20131127130954.GF3296@lee--X1>
- <cd69295e946b48451f449eacc02efa4a@agner.ch>
- <20131127135547.GK3296@lee--X1>
- <cfb203a896eda67c106794d89e668d56@agner.ch>
- <20131127143429.GN3296@lee--X1>
- <20131127143641.GO3296@lee--X1>
- <c26ecd550e9940ead950f3874d27a5b0@agner.ch>
- <20131127153019.GR3296@lee--X1>
- <89dbf704d8617c77259e04753e4380c9@agner.ch>
+	Wed, 27 Nov 2013 11:21:24 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        linus.walleij@linaro.org, wsa@the-dreams.de, horms@verge.net.au
+Subject: Re: [PATCH 01/03] pinctrl: sh-pfc: r7s72100 SCIF2 port3 support
+Date: Wed, 27 Nov 2013 11:56:54 +0100
+Message-ID: <1956759.4Z7la2uQeC@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131127080621.18384.85008.sendpatchset@w520>
+References: <20131127080606.18384.45103.sendpatchset@w520> <20131127080621.18384.85008.sendpatchset@w520>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <89dbf704d8617c77259e04753e4380c9@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Stefan Agner wrote:
+Hi Magnus,
 
-> Am 2013-11-27 16:30, schrieb Lee Jones:
-> > On Wed, 27 Nov 2013, Stefan Agner wrote:
-> > 
-> >> Am 2013-11-27 15:36, schrieb Lee Jones:
-> >> <snip>
-> >> >> Perhaps I should suggest to make TPS6586X_ANY a positive number then,
-> >> >> as a negative value to me indicates more of an error than a generic
-> >> >> parameter.
-> >> I see, its especially confusing since the version is filled using the
-> >> i2c_smbus_read_byte_data functions return value. The version field is a
-> >> 8-Bit value according to the data sheet, I could use 0x100 as
-> >> TPS6586X_ANY identifier.
-> > 
-> > How far are we away from using 0xFF?
-> > 
-> > I'd be happy to use that and change it _if_ we ever get close.
-> > 
-> > If it's likely that it'll be used, then sure 0x100 sounds okay too.
+Thank you for the patch.
+
+On Wednesday 27 November 2013 17:06:21 Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
 > 
-> Yes, I thought about 0xFF too. The latest device we support is TPS658643
-> (according to data sheet release dates), which has the smallest version
-> number (03). Since it seems to be a CRC (hence VERSIONCRC) the number is
-> quite random. Also, 0xFF sounds like a bitmask which can mask all
-> versions, but the versions can't be used bitwise... So I would prefer to
-> go with 0x100.
+> Add support for SCIF2 port3 pin functions SCK, TXD and RXD to the
+> r7s72100 PINCTRL code. There are two possible pins that can be used
+> for TXD (Port 3 Pin 0 Function 6 and Port 3 Pin 1 Function 4) and
+> because of that are the data pins broken out in separate TXD and RXD.
+> 
+> This format is similar to other sh-pfc code, but a following patch
+> converts this to less verbose and less readable code.
 
-Deal!
+You hopefully mean more readable :-)
 
+It would help me reviewing this patch if I could get access to the SoC 
+datasheet.
+
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+> 
+>  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |   41 ++++++++++++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+> 
+> --- 0002/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
+> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-11-27 
+15:22:16.000000000
+> +0900 @@ -103,10 +103,51 @@ static struct sh_pfc_pin pinmux_pins[] =
+>  	_P_ALL(_P_GPIO),
+>  };
+> 
+> +/* - SCIF2 ------------------------------------------------------------- */
+> +static const unsigned int scif2_txd_p3_0_pins[] = {
+> +	/* TX */
+> +	RZ_PORT_PIN(3, 0),
+> +};
+> +static const unsigned int scif2_txd_p3_0_mux[] = {
+> +	P_3_0_MARK_FN6,
+> +};
+> +static const unsigned int scif2_txd_p3_1_pins[] = {
+> +	/* TX */
+> +	RZ_PORT_PIN(3, 1),
+> +};
+> +static const unsigned int scif2_txd_p3_1_mux[] = {
+> +	P_3_1_MARK_FN4,
+> +};
+> +static const unsigned int scif2_rxd_p3_2_pins[] = {
+> +	/* RX */
+> +	RZ_PORT_PIN(3, 2),
+> +};
+> +static const unsigned int scif2_rxd_p3_2_mux[] = {
+> +	P_3_2_MARK_FN4,
+> +};
+> +static const unsigned int scif2_clk_p3_0_pins[] = {
+> +	/* SCK */
+> +	RZ_PORT_PIN(3, 0),
+> +};
+> +static const unsigned int scif2_clk_p3_0_mux[] = {
+> +	P_3_0_MARK_FN4,
+> +};
+> +
+>  static const struct sh_pfc_pin_group pinmux_groups[] = {
+> +	SH_PFC_PIN_GROUP(scif2_txd_p3_0),
+> +	SH_PFC_PIN_GROUP(scif2_txd_p3_1),
+> +	SH_PFC_PIN_GROUP(scif2_rxd_p3_2),
+> +	SH_PFC_PIN_GROUP(scif2_clk_p3_0),
+>  };
+> 
+> +static const char * const scif2_groups[] = {
+> +	"scif2_txd_p3_0",
+> +	"scif2_txd_p3_1",
+> +	"scif2_rxd_p3_2",
+> +	"scif2_clk_p3_0",
+> +};
+>  static const struct sh_pfc_function pinmux_functions[] = {
+> +	SH_PFC_FUNCTION(scif2),
+>  };
+> 
+>  #define PFC_REG(idx, name, reg)						\
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+
+Laurent Pinchart
+
