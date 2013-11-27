@@ -1,179 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3K0Pg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:36:56 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:34376 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab3K0PfX (ORCPT
+	id S1757296Ab3K0PhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:37:22 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:36090 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756908Ab3K0PhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:35:23 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 1/5] PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
-Date: Wed, 27 Nov 2013 16:34:56 +0100
-Message-Id: <1385566500-7666-2-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
-References: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
+	Wed, 27 Nov 2013 10:37:19 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] firmware/dmi_scan: generalize for use by other archs
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>, x86@kernel.org,
+        linux-ia64@vger.kernel.org, mingo@redhat.com, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: leif.lindholm@linaro.org, al.stone@linaro.org, yi.li@linaro.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+In-Reply-To: <1385561327-8020-1-git-send-email-ard.biesheuvel@linaro.org>
+References: <1385561327-8020-1-git-send-email-ard.biesheuvel@linaro.org>
+Date: Wed, 27 Nov 2013 15:37:14 +0000
+Message-Id: <20131127153714.C85C7C404EC@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To put devices into low power state during sleep, it sometimes makes
-sense at subsystem-level to re-use the runtime PM callbacks.
+On Wed, 27 Nov 2013 15:08:47 +0100, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> This patch makes a couple of changes to the SMBIOS/DMI scanning
+> code so it can be used on other archs (such as ARM and arm64):
+> (a) wrap the calls to ioremap()/iounmap(), this allows the use of a
+>     flavor of ioremap() more suitable for random unaligned access;
+> (b) allow the non-EFI fallback probe into hardcoded physical address
+>     0xF0000 to be disabled.
+> 
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-The PM core will at device_suspend_late disable runtime PM, after that
-we can safely operate on these callbacks. At suspend_late the device
-will be put into low power state by invoking the runtime_suspend
-callbacks, unless the runtime status is already suspended. At
-resume_early the state is restored by invoking the runtime_resume
-callbacks. Soon after the PM core will re-enable runtime PM before
-returning from device_resume_early.
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-The new pm_generic functions are named pm_generic_suspend_late_runtime
-and pm_generic_resume_early_runtime, they are supposed to be used in
-pairs.
-
-Do note that these new generic callbacks will work smothly even with
-and without CONFIG_PM_RUNTIME, as long as the runtime PM callbacks are
-implemented inside CONFIG_PM instead of CONFIG_PM_RUNTIME.
-
-A special thanks to Alan Stern who came up with this idea.
-
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/base/power/generic_ops.c |   86 ++++++++++++++++++++++++++++++++++++++
- include/linux/pm.h               |    2 +
- 2 files changed, 88 insertions(+)
-
-diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
-index 5ee030a..8e78ad1 100644
---- a/drivers/base/power/generic_ops.c
-+++ b/drivers/base/power/generic_ops.c
-@@ -93,6 +93,49 @@ int pm_generic_suspend_late(struct device *dev)
- EXPORT_SYMBOL_GPL(pm_generic_suspend_late);
- 
- /**
-+ * pm_generic_suspend_late_runtime - Generic suspend_late callback for drivers
-+ * @dev: Device to suspend.
-+ * Use to invoke runtime_suspend callbacks at suspend_late.
-+ */
-+int pm_generic_suspend_late_runtime(struct device *dev)
-+{
-+	int (*callback)(struct device *);
-+	int ret = 0;
-+
-+	/*
-+	 * PM core has disabled runtime PM in device_suspend_late, thus we can
-+	 * safely check the device's runtime status and decide whether
-+	 * additional actions are needed to put the device into low power state.
-+	 * If so, we invoke the runtime_suspend callbacks.
-+	 * For the !CONFIG_PM_RUNTIME case, pm_runtime_status_suspended() always
-+	 * returns false and therefore the runtime_suspend callback will be
-+	 * invoked.
-+	 */
-+	if (pm_runtime_status_suspended(dev))
-+		return 0;
-+
-+	if (dev->pm_domain)
-+		callback = dev->pm_domain->ops.runtime_suspend;
-+	else if (dev->type && dev->type->pm)
-+		callback = dev->type->pm->runtime_suspend;
-+	else if (dev->class && dev->class->pm)
-+		callback = dev->class->pm->runtime_suspend;
-+	else if (dev->bus && dev->bus->pm)
-+		callback = dev->bus->pm->runtime_suspend;
-+	else
-+		callback = NULL;
-+
-+	if (!callback && dev->driver && dev->driver->pm)
-+		callback = dev->driver->pm->runtime_suspend;
-+
-+	if (callback)
-+		ret = callback(dev);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_suspend_late_runtime);
-+
-+/**
-  * pm_generic_suspend - Generic suspend callback for subsystems.
-  * @dev: Device to suspend.
-  */
-@@ -237,6 +280,49 @@ int pm_generic_resume_early(struct device *dev)
- EXPORT_SYMBOL_GPL(pm_generic_resume_early);
- 
- /**
-+ * pm_generic_resume_early_runtime - Generic resume_early callback for drivers
-+ * @dev: Device to resume.
-+ * Use to invoke runtime_resume callbacks at resume_early.
-+ */
-+int pm_generic_resume_early_runtime(struct device *dev)
-+{
-+	int (*callback)(struct device *);
-+	int ret = 0;
-+
-+	/*
-+	 * PM core has not yet enabled runtime PM in device_resume_early,
-+	 * thus we can safely check the device's runtime status and restore the
-+	 * previous state we had in device_suspend_late. If restore is needed
-+	 * we invoke the runtime_resume callbacks.
-+	 * For the !CONFIG_PM_RUNTIME case, pm_runtime_status_suspended() always
-+	 * returns false and therefore the runtime_resume callback will be
-+	 * invoked.
-+	 */
-+	if (pm_runtime_status_suspended(dev))
-+		return 0;
-+
-+	if (dev->pm_domain)
-+		callback = dev->pm_domain->ops.runtime_resume;
-+	else if (dev->type && dev->type->pm)
-+		callback = dev->type->pm->runtime_resume;
-+	else if (dev->class && dev->class->pm)
-+		callback = dev->class->pm->runtime_resume;
-+	else if (dev->bus && dev->bus->pm)
-+		callback = dev->bus->pm->runtime_resume;
-+	else
-+		callback = NULL;
-+
-+	if (!callback && dev->driver && dev->driver->pm)
-+		callback = dev->driver->pm->runtime_resume;
-+
-+	if (callback)
-+		ret = callback(dev);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pm_generic_resume_early_runtime);
-+
-+/**
-  * pm_generic_resume - Generic resume callback for subsystems.
-  * @dev: Device to resume.
-  */
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index a224c7f..5bce0d4 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -656,9 +656,11 @@ extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
- 
- extern int pm_generic_prepare(struct device *dev);
- extern int pm_generic_suspend_late(struct device *dev);
-+extern int pm_generic_suspend_late_runtime(struct device *dev);
- extern int pm_generic_suspend_noirq(struct device *dev);
- extern int pm_generic_suspend(struct device *dev);
- extern int pm_generic_resume_early(struct device *dev);
-+extern int pm_generic_resume_early_runtime(struct device *dev);
- extern int pm_generic_resume_noirq(struct device *dev);
- extern int pm_generic_resume(struct device *dev);
- extern int pm_generic_freeze_noirq(struct device *dev);
--- 
-1.7.9.5
+> ---
+> 
+> Changes since v1:
+> - followed Grant's suggestion to use a Kconfig symbol in conjunction with
+>   IS_ENABLED() rather than a plain #ifdef to en-/disable the dmi scan fallback
+> 
+>  arch/ia64/Kconfig           |  1 +
+>  arch/ia64/include/asm/dmi.h |  8 +++++---
+>  arch/x86/Kconfig            |  1 +
+>  arch/x86/include/asm/dmi.h  |  6 ++++--
+>  drivers/firmware/Kconfig    |  3 +++
+>  drivers/firmware/dmi_scan.c | 20 ++++++++++----------
+>  6 files changed, 24 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+> index 4e4119b..bdb4aed 100644
+> --- a/arch/ia64/Kconfig
+> +++ b/arch/ia64/Kconfig
+> @@ -104,6 +104,7 @@ config HAVE_SETUP_PER_CPU_AREA
+>  config DMI
+>  	bool
+>  	default y
+> +	select DMI_SCAN_MACHINE_NON_EFI_FALLBACK
+>  
+>  config EFI
+>  	bool
+> diff --git a/arch/ia64/include/asm/dmi.h b/arch/ia64/include/asm/dmi.h
+> index 185d3d1..f365a61 100644
+> --- a/arch/ia64/include/asm/dmi.h
+> +++ b/arch/ia64/include/asm/dmi.h
+> @@ -5,8 +5,10 @@
+>  #include <asm/io.h>
+>  
+>  /* Use normal IO mappings for DMI */
+> -#define dmi_ioremap ioremap
+> -#define dmi_iounmap(x,l) iounmap(x)
+> -#define dmi_alloc(l) kzalloc(l, GFP_ATOMIC)
+> +#define dmi_early_remap		ioremap
+> +#define dmi_early_unmap(x, l)	iounmap(x)
+> +#define dmi_remap		ioremap
+> +#define dmi_unmap		iounmap
+> +#define dmi_alloc(l)		kzalloc(l, GFP_ATOMIC)
+>  
+>  #endif
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index e903c71..6350ab4 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -745,6 +745,7 @@ config APB_TIMER
+>  # The code disables itself when not needed.
+>  config DMI
+>  	default y
+> +	select DMI_SCAN_MACHINE_NON_EFI_FALLBACK
+>  	bool "Enable DMI scanning" if EXPERT
+>  	---help---
+>  	  Enabled scanning of DMI to identify machine quirks. Say Y
+> diff --git a/arch/x86/include/asm/dmi.h b/arch/x86/include/asm/dmi.h
+> index fd8f9e2..535192f 100644
+> --- a/arch/x86/include/asm/dmi.h
+> +++ b/arch/x86/include/asm/dmi.h
+> @@ -13,7 +13,9 @@ static __always_inline __init void *dmi_alloc(unsigned len)
+>  }
+>  
+>  /* Use early IO mappings for DMI because it's initialized early */
+> -#define dmi_ioremap early_ioremap
+> -#define dmi_iounmap early_iounmap
+> +#define dmi_early_remap		early_ioremap
+> +#define dmi_early_unmap		early_iounmap
+> +#define dmi_remap		ioremap
+> +#define dmi_unmap		iounmap
+>  
+>  #endif /* _ASM_X86_DMI_H */
+> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+> index 0747872..5a29fac 100644
+> --- a/drivers/firmware/Kconfig
+> +++ b/drivers/firmware/Kconfig
+> @@ -108,6 +108,9 @@ config DMI_SYSFS
+>  	  under /sys/firmware/dmi when this option is enabled and
+>  	  loaded.
+>  
+> +config DMI_SCAN_MACHINE_NON_EFI_FALLBACK
+> +	bool
+> +
+>  config ISCSI_IBFT_FIND
+>  	bool "iSCSI Boot Firmware Table Attributes"
+>  	depends on X86
+> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> index c7e81ff..17afc51 100644
+> --- a/drivers/firmware/dmi_scan.c
+> +++ b/drivers/firmware/dmi_scan.c
+> @@ -116,7 +116,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+>  {
+>  	u8 *buf;
+>  
+> -	buf = dmi_ioremap(dmi_base, dmi_len);
+> +	buf = dmi_early_remap(dmi_base, dmi_len);
+>  	if (buf == NULL)
+>  		return -1;
+>  
+> @@ -124,7 +124,7 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+>  
+>  	add_device_randomness(buf, dmi_len);
+>  
+> -	dmi_iounmap(buf, dmi_len);
+> +	dmi_early_unmap(buf, dmi_len);
+>  	return 0;
+>  }
+>  
+> @@ -527,18 +527,18 @@ void __init dmi_scan_machine(void)
+>  		 * needed during early boot.  This also means we can
+>  		 * iounmap the space when we're done with it.
+>  		 */
+> -		p = dmi_ioremap(efi.smbios, 32);
+> +		p = dmi_early_remap(efi.smbios, 32);
+>  		if (p == NULL)
+>  			goto error;
+>  		memcpy_fromio(buf, p, 32);
+> -		dmi_iounmap(p, 32);
+> +		dmi_early_unmap(p, 32);
+>  
+>  		if (!dmi_present(buf)) {
+>  			dmi_available = 1;
+>  			goto out;
+>  		}
+> -	} else {
+> -		p = dmi_ioremap(0xF0000, 0x10000);
+> +	} else if (IS_ENABLED(CONFIG_DMI_SCAN_MACHINE_NON_EFI_FALLBACK)) {
+> +		p = dmi_early_remap(0xF0000, 0x10000);
+>  		if (p == NULL)
+>  			goto error;
+>  
+> @@ -554,12 +554,12 @@ void __init dmi_scan_machine(void)
+>  			memcpy_fromio(buf + 16, q, 16);
+>  			if (!dmi_present(buf)) {
+>  				dmi_available = 1;
+> -				dmi_iounmap(p, 0x10000);
+> +				dmi_early_unmap(p, 0x10000);
+>  				goto out;
+>  			}
+>  			memcpy(buf, buf + 16, 16);
+>  		}
+> -		dmi_iounmap(p, 0x10000);
+> +		dmi_early_unmap(p, 0x10000);
+>  	}
+>   error:
+>  	pr_info("DMI not present or invalid.\n");
+> @@ -831,13 +831,13 @@ int dmi_walk(void (*decode)(const struct dmi_header *, void *),
+>  	if (!dmi_available)
+>  		return -1;
+>  
+> -	buf = ioremap(dmi_base, dmi_len);
+> +	buf = dmi_remap(dmi_base, dmi_len);
+>  	if (buf == NULL)
+>  		return -1;
+>  
+>  	dmi_table(buf, dmi_len, dmi_num, decode, private_data);
+>  
+> -	iounmap(buf);
+> +	dmi_unmap(buf);
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(dmi_walk);
+> -- 
+> 1.8.3.2
+> 
 
