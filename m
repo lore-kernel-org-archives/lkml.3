@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab3K0BgU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:36:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39258 "EHLO
+	id S1759959Ab3K0Bgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:36:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363Ab3K0A6X (ORCPT
+	with ESMTP id S932346Ab3K0A6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:23 -0500
+	Tue, 26 Nov 2013 19:58:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Glauber Costa <glommer@openvz.org>,
-        YongQin Liu <yongqin.liu@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: [PATCH 3.12 015/116] staging: ashmem: Fix ASHMEM_PURGE_ALL_CACHES return value
-Date: Tue, 26 Nov 2013 16:56:28 -0800
-Message-Id: <20131127005737.991090042@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.12 014/116] drm: shmobile: Add dependency on BACKLIGHT_CLASS_DEVICE
+Date: Tue, 26 Nov 2013 16:56:27 -0800
+Message-Id: <20131127005737.910193589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -31,44 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 5957324045ba2c127c9401fa3ac61ac52e043ca8 upstream.
+commit 0a5a5499ad886dde4a032203d01e324cfe593f99 upstream.
 
-Hopefully this isn't too late for 3.12.
+The driver registers a backlight device and thus requires
+BACKLIGHT_CLASS_DEVICE to be selected to avoid compilation breakages.
 
-In commit 7dc19d5aff (convert shrinkers to new count/scan API)
-the return value to PURGE_ALL_CACHES was dropped, causing -EPERM
-to always be returned.
-
-This patch re-adds the ret assignment, setting it to the the
-ashmem_shrink_count(), which is the lru_count.
-
-(Sorry this was missed in the review!)
-
-Fixes: 7dc19d5affd7 ("convert shrinkers to new count/scan API")
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Reported-by: YongQin Liu <yongqin.liu@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Acked-by: Dave Chinner <dchinner@redhat.com>
+Reported-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/android/ashmem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/shmobile/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -706,7 +706,7 @@ static long ashmem_ioctl(struct file *fi
- 				.gfp_mask = GFP_KERNEL,
- 				.nr_to_scan = LONG_MAX,
- 			};
--
-+			ret = ashmem_shrink_count(&ashmem_shrinker, &sc);
- 			nodes_setall(sc.nodes_to_scan);
- 			ashmem_shrink_scan(&ashmem_shrinker, &sc);
- 		}
+--- a/drivers/gpu/drm/shmobile/Kconfig
++++ b/drivers/gpu/drm/shmobile/Kconfig
+@@ -1,6 +1,7 @@
+ config DRM_SHMOBILE
+ 	tristate "DRM Support for SH Mobile"
+ 	depends on DRM && (ARM || SUPERH)
++	select BACKLIGHT_CLASS_DEVICE
+ 	select DRM_KMS_HELPER
+ 	select DRM_KMS_CMA_HELPER
+ 	select DRM_GEM_CMA_HELPER
 
 
