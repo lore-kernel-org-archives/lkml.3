@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3K0Ncc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:32:32 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:34315 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab3K0Nc2 (ORCPT
+	id S1754319Ab3K0NdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:33:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43563 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab3K0Nc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:32:28 -0500
-Date: Wed, 27 Nov 2013 14:32:24 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org,
-        Chris Wright <chrisw@sous-sol.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
-        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Alok Kataria <akataria@vmware.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v3 02/23] kprobes: Introduce NOKPROBE_SYMBOL() macro
- for blacklist
-Message-ID: <20131127133224.GD18422@gmail.com>
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
- <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal>
+	Wed, 27 Nov 2013 08:32:59 -0500
+Date: Wed, 27 Nov 2013 13:32:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>, Greg KH <greg@kroah.com>
+Subject: Re: netfilter: active obj WARN when cleaning up
+Message-ID: <20131127133231.GO16735@n2100.arm.linux.org.uk>
+References: <522B25B5.6000808@oracle.com> <5294F27D.4000108@oracle.com> <20131126230709.GA10948@localhost> <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de> <20131127113939.GL16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 27, 2013 at 02:29:41PM +0100, Thomas Gleixner wrote:
+> Though the kobject is the only thing which has a delayed work embedded
+> inside struct kmem_cache. And the debug object splat points at the
+> kmem_cache_free() of the struct kmem_cache itself. That's why I
+> assumed the wreckage around that place. And indeed:
+> 
+> kmem_cache_destroy(s)
+>     __kmem_cache_shutdown(s)
+>       sysfs_slab_remove(s)
+>         ....
+> 	kobject_put(&s->kobj)
+>            kref_put(&kobj->kref, kobject_release);
+> 	     kobject_release(kref)
+>     	       #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+> 	         schedule_delayed_work(&kobj->release)
+> 	       #else
+> 	        kobject_cleanup(kobj)
+> 	       #endif
+> 
+> So in the CONFIG_DEBUG_KOBJECT_RELEASE=y case, schedule_delayed_work()
+> _IS_ called which arms the timer. debugobjects catches the attempt to
+> free struct kmem_cache which contains the armed timer.
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> +#ifdef CONFIG_KPROBES
-> +/*
-> + * Blacklist ganerating macro. Specify functions which is not probed
-> + * by using this macro.
-> + */
-> +#define __NOKPROBE_SYMBOL(fname)				\
-> +static struct kprobe_blackpoint __used			\
-> +	_kprobe_bp_##fname = {				\
-> +		.name = #fname,				\
-> +		.start_addr = (unsigned long)fname,	\
-> +	};						\
-> +static struct kprobe_blackpoint __used			\
-> +	__attribute__((section("_kprobe_blacklist")))	\
-> +	*_p_kprobe_bp_##fname = &_kprobe_bp_##fname;
-
-'kprobe_blackpoint' sounds a bit weird - how about 
-'kprobe_blacklist_entry' ?
-
-also, _kprobe_blacklist probably wants to be _kprobes_blacklist, 
-right?
-
-Thanks,
-
-	Ingo
+You fail to show where the free is in the above path.
