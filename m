@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab3K0Q6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:58:55 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57955 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336Ab3K0Q6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:58:53 -0500
-Message-ID: <529624CA.6030604@wwwdotorg.org>
-Date: Wed, 27 Nov 2013 09:58:50 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757637Ab3K0Q7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:59:20 -0500
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:53897
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751980Ab3K0Q7S convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:59:18 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        Dave Jones <davej@redhat.com>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: staging: comedi: Fix boolean/logical and mix-up.
+Thread-Topic: staging: comedi: Fix boolean/logical and mix-up.
+Thread-Index: AQHO6xxsmRSIhYRkSkOlyQZyHNtwUJo5R03AgAAFwdA=
+Date: Wed, 27 Nov 2013 16:59:17 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817E0CCFC@P3PWEX4MB008.ex4.secureserver.net>
+References: <20131107062754.93B2D660F4A@gitolite.kernel.org>
+ <20131108200659.GA2101@redhat.com>
+ <DC148C5AA1CEBA4E87973D432B1C2D8817E08AC5@P3PWEX4MB008.ex4.secureserver.net>
+ <20131127025724.GA18860@redhat.com>
+ <DC148C5AA1CEBA4E87973D432B1C2D8817E0BBCA@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8817E0BBCA@P3PWEX4MB008.ex4.secureserver.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, thierry.reding@gmail.com,
-        sameo@linux.intel.com, dev@lynxeye.de
-CC: mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
-References: <cover.1385508112.git.stefan@agner.ch> <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
-In-Reply-To: <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 04:45 PM, Stefan Agner wrote:
-> Use the VERSIONCRC to determine the exact device version. According to
-> the datasheet this register can be used as device identifier. The
-> identification is needed since some tps6586x regulators use a different
-> voltage table.
+On Wednesday, November 27, 2013 9:39 AM, Hartley Sweeten wrote:
+> On Tuesday, November 26, 2013 7:57 PM, Dave Jones wrote:
+>> Introduced in commit b3ff824a81e8.
+>>
+>> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+>>
+>> diff --git a/drivers/staging/comedi/drivers/pcl730.c b/drivers/staging/comedi/drivers/pcl730.c
+>> index d041b714db29..2baaf1db6fbf 100644
+>> --- a/drivers/staging/comedi/drivers/pcl730.c
+>> +++ b/drivers/staging/comedi/drivers/pcl730.c
+>> @@ -173,11 +173,11 @@ static int pcl730_do_insn_bits(struct comedi_device *dev,
+>>  	if (mask) {
+>>  		if (mask & 0x00ff)
+>>  			outb(s->state & 0xff, dev->iobase + reg);
+>> -		if ((mask & 0xff00) & (s->n_chan > 8))
+>> +		if ((mask & 0xff00) && (s->n_chan > 8))
+>>  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
+>> -		if ((mask & 0xff0000) & (s->n_chan > 16))
+>> +		if ((mask & 0xff0000) && (s->n_chan > 16))
+>>  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
+>> -		if ((mask & 0xff000000) & (s->n_chan > 24))
+>> +		if ((mask & 0xff000000) && (s->n_chan > 24))
+>>  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
+>>  	}
+>
+> My bad...
+>
+> Added Greg KH and the staging devel list to the CCs.
+>
+> Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+ Dave,
 
-> @@ -477,6 +486,7 @@ static int tps6586x_i2c_probe(struct i2c_client *client,
->  {
->  	struct tps6586x_platform_data *pdata = dev_get_platdata(&client->dev);
->  	struct tps6586x *tps6586x;
-> +	const char *name = "";
+I just noticed that Dan Carpenter already submitted a patch that fixed this.
+It was merged as commit 9382c06e2d192adec090fb09ff0b699e951f88e1.
 
-There's no need to assign any value here; the switch below always
-assigns something over the top of the variable, so it doesn't need to be
-pre-initialized.
-
-> +	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-> +	if (tps6586x == NULL) {
-> +		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
-> +		return -ENOMEM;
-> +	}
-
-> +	tps6586x->version = (enum tps6586x_version)ret;
-
-Why not make the version variable an integer of some kind. Then, the
-cast wouldn't be required. The values like TPS658621A can be #defines or
-const u32.
-
-> +	switch (ret) {
-
-That should switch on tps6586x->version since that's been assigned;
-it'll make the purpose a bit clearer.
-
-> +	default:
-> +		name = "TPS6586X";
-> +		break;
->  	}
-
-I hope the rest of the code deals with unknown values of
-tps6586x->version OK.
+Hartley
+_______________________________________________
+devel mailing list
+devel@linuxdriverproject.org
+http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
