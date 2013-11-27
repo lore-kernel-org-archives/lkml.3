@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab3K0A6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39290 "EHLO
+	id S1759023Ab3K0Bbb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:31:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39365 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab3K0A62 (ORCPT
+	with ESMTP id S1758592Ab3K0A6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:28 -0500
+	Tue, 26 Nov 2013 19:58:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Puneet Kumar <puneetster@chromium.org>,
-        Aaron Durbin <adurbin@chromium.org>, Olof Johansson <olof@lixom.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 021/116] ACPI / EC: Ensure lock is acquired before accessing ec struct members
-Date: Tue, 26 Nov 2013 16:56:34 -0800
-Message-Id: <20131127005738.412195780@linuxfoundation.org>
+        Vasily Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 036/116] exec/ptrace: fix get_dumpable() incorrect tests
+Date: Tue, 26 Nov 2013 16:56:49 -0800
+Message-Id: <20131127005739.456530093@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -28,43 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Puneet Kumar <puneetster@chromium.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit 36b15875a7819a2ec4cb5748ff7096ad7bd86cbb upstream.
+commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
 
-A bug was introduced by commit b76b51ba0cef ('ACPI / EC: Add more debug
-info and trivial code cleanup') that erroneously caused the struct member
-to be accessed before acquiring the required lock.  This change fixes
-it by ensuring the lock acquisition is done first.
+The get_dumpable() return value is not boolean.  Most users of the
+function actually want to be testing for non-SUID_DUMP_USER(1) rather than
+SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
+protected state.  Almost all places did this correctly, excepting the two
+places fixed in this patch.
 
-Found by Aaron Durbin <adurbin@chromium.org>
+Wrong logic:
+    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
+        or
+    if (dumpable == 0) { /* be protective */ }
+        or
+    if (!dumpable) { /* be protective */ }
 
-Fixes: b76b51ba0cef ('ACPI / EC: Add more debug info and trivial code cleanup')
-References: http://crbug.com/319019
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Reviewed-by: Aaron Durbin <adurbin@chromium.org>
-[olof: Commit message reworded a bit]
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Correct logic:
+    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
+        or
+    if (dumpable != 1) { /* be protective */ }
+
+Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
+user was able to ptrace attach to processes that had dropped privileges to
+that user.  (This may have been partially mitigated if Yama was enabled.)
+
+The macros have been moved into the file that declares get/set_dumpable(),
+which means things like the ia64 code can see them too.
+
+CVE-2013-2929
+
+Reported-by: Vasily Kulikov <segoon@openwall.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/ia64/include/asm/processor.h |    2 +-
+ fs/exec.c                         |    6 ++++++
+ include/linux/binfmts.h           |    3 ---
+ include/linux/sched.h             |    4 ++++
+ kernel/ptrace.c                   |    3 ++-
+ 5 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -175,9 +175,10 @@ static void start_transaction(struct acp
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
--	struct transaction *t = ec->curr;
-+	struct transaction *t;
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -319,7 +319,7 @@ struct thread_struct {
+ 	regs->loadrs = 0;									\
+ 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
+ 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
+-	if (unlikely(!get_dumpable(current->mm))) {							\
++	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
+ 		/*										\
+ 		 * Zap scratch regs to avoid leaking bits between processes with different	\
+ 		 * uid/privileges.								\
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1668,6 +1668,12 @@ int __get_dumpable(unsigned long mm_flag
+ 	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
+ }
  
- 	spin_lock_irqsave(&ec->lock, flags);
-+	t = ec->curr;
- 	if (!t)
- 		goto unlock;
- 	if (t->wlen > t->wi) {
++/*
++ * This returns the actual value of the suid_dumpable flag. For things
++ * that are using this for checking for privilege transitions, it must
++ * test against SUID_DUMP_USER rather than treating it as a boolean
++ * value.
++ */
+ int get_dumpable(struct mm_struct *mm)
+ {
+ 	return __get_dumpable(mm->flags);
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -99,9 +99,6 @@ extern void setup_new_exec(struct linux_
+ extern void would_dump(struct linux_binprm *, struct file *);
+ 
+ extern int suid_dumpable;
+-#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
+-#define SUID_DUMP_USER		1	/* Dump as user of process */
+-#define SUID_DUMP_ROOT		2	/* Dump as root */
+ 
+ /* Stack area protections */
+ #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -322,6 +322,10 @@ static inline void arch_pick_mmap_layout
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
++#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
++#define SUID_DUMP_USER		1	/* Dump as user of process */
++#define SUID_DUMP_ROOT		2	/* Dump as root */
++
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -257,7 +257,8 @@ ok:
+ 	if (task->mm)
+ 		dumpable = get_dumpable(task->mm);
+ 	rcu_read_lock();
+-	if (!dumpable && !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
++	if (dumpable != SUID_DUMP_USER &&
++	    !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
+ 		rcu_read_unlock();
+ 		return -EPERM;
+ 	}
 
 
