@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3K0LBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:01:30 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:48624 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab3K0LB2 (ORCPT
+	id S1754076Ab3K0LDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:03:00 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48770 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3K0LC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:01:28 -0500
+	Wed, 27 Nov 2013 06:02:59 -0500
 MIME-Version: 1.0
+In-Reply-To: <CALkWK0k2VEJiYGoE0qn9SBQH9b_+N=N4ADhs6WJQh_JF7kDK5g@mail.gmail.com>
+References: <1385274025-30282-1-git-send-email-artagnon@gmail.com>
+ <1385274025-30282-4-git-send-email-artagnon@gmail.com> <20131126120123.GH1267@krava.brq.redhat.com>
+ <CALkWK0k2VEJiYGoE0qn9SBQH9b_+N=N4ADhs6WJQh_JF7kDK5g@mail.gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Wed, 27 Nov 2013 16:32:17 +0530
+Message-ID: <CALkWK0m4XbJ8FpYEQ8UVtAcgX4mQwsKN9pt1MpX3nZL+A62NQQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] perf diff: generalize hpp__color_delta for -c
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Wed, 27 Nov 2013 12:05:03 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
-        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] ARM: tegra: set SM2 voltage correct
-In-Reply-To: <1385546387.4270.11.camel@weser.hi.pengutronix.de>
-References: <cover.1385508112.git.stefan@agner.ch>
- <c9ceead9e3df77b5a33ad654db23c241cd624096.1385508112.git.stefan@agner.ch>
- <1385546387.4270.11.camel@weser.hi.pengutronix.de>
-Message-ID: <6311b14be5af09d82e6781160e2aac3a@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lucas,
+Ramkumar Ramachandra wrote:
+> Jiri Olsa wrote:
+>>>       if (!pair)
+>>>               goto dummy_print;
+>>>       if (pair->diff.computed)
+>>> -             percent = pair->diff.period_ratio_delta;
+>>> +             switch (comparison_method) {
+>>> +             case COMPUTE_DELTA:
+>>> +                     delta = pair->diff.period_ratio_delta;
+>>> +                     break;
+>>> +             default:
+>>> +                     BUG_ON(1);
+>>> +             }
+>>>       else
+>>> -             percent = compute_delta(he, pair);
+>>> +             switch (comparison_method) {
+>>> +             case COMPUTE_DELTA:
+>>> +                     delta = compute_delta(he, pair);
+>>> +                     break;
+>>> +             default:
+>>> +                     BUG_ON(1);
+>>> +             }
+>>>
+>>> -     if (!he->dummy && fabs(percent) >= 0.01) {
+>>> -             scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
+>>> -             return color_snprintf(hpp->buf, hpp->size,
+>>> -                             percent > 0 ? PERF_COLOR_GREEN : PERF_COLOR_RED,
+>>> -                             pfmt, percent);
+>>> +     if (!he->dummy) {
+>>
+>> isn't this check superfluous because of the above (!pair) check?
+>
+> From builtin-diff.c:get_pair_data(), we see that `pair' is one of the
+> pairs in he->pairs. he->dummy is set in
+> util/hist.c:hists__add_dummy_entry() which is called only when he
+> doesn't have pairs (util/hist.c:942).
 
-Am 2013-11-27 10:59, schrieb Lucas Stach:
-> This isn't a global Tegra change, but very specific to the Colibri, so
-> please reword your commit headline to reflect that.
-Agree, will do that.
+Sorry about the major thinko: hists__add_dummy_entry() returns a new
+`he' with he->dummy set; it has nothing to do with pair->pairs of the
+`pair' that it is passed.
 
-> Also there are other issues with the regulator setup on Colibri, I sent
-> a patch for this a good while ago, but didn't come around to revise it
-> until now. So if you are going to touch things here, please look up that
-> patch and fold it into this one.
-I guess you refer to this patchset:
-http://thread.gmane.org/gmane.linux.ports.tegra/11984
-
-Ok, I will fold patch 4 into my patchset. Not sure whether I should add
-patch 3 (ULPI phy on Colibri T20) as well, since this one is somewhat
-unrelated...
-
-> I'll take a look at the other patches later today.
-Thanks
-
---
-Stefan
+I think I understand what's going on: I'll submit a new iteration soon.
