@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab3K0TtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 14:49:17 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:43353 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3K0TtO (ORCPT
+	id S1757716Ab3K0Ttd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 14:49:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22145 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab3K0Tta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 14:49:14 -0500
+	Wed, 27 Nov 2013 14:49:30 -0500
+Message-ID: <52964C9A.6040305@oracle.com>
+Date: Wed, 27 Nov 2013 12:48:42 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMhOWgZO7k=Xd-Qafp8Q+Z-zw4x=j=1Tk+EGBSTXjzTD_A@mail.gmail.com>
-References: <1385528004-19423-1-git-send-email-olof@lixom.net>
-	<CAPcyv4js+Hq+b8g1i65NE8iK-BnXjG9Bi3PuPpWXRss19-Z9Jg@mail.gmail.com>
-	<CAOesGMhOWgZO7k=Xd-Qafp8Q+Z-zw4x=j=1Tk+EGBSTXjzTD_A@mail.gmail.com>
-Date: Wed, 27 Nov 2013 11:49:13 -0800
-Message-ID: <CAPcyv4gsBZnttgbOHdaAY1h5Tw=Zkgr2r3dSKx+C6H3jurjcvg@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: pl08x: fix conversioin for generic unmap data
-From: Dan Williams <dan.j.williams@intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: bhelgaas@google.com, cl91tp@gmail.com, tianyu.lan@intel.com,
+        khlebnikov@openvz.org, gnomes@lxorguk.ukuu.org.uk,
+        indou.takao@jp.fujitsu.com, jility09@gmail.com, f.otti@gmx.at,
+        ebiederm@xmission.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] PCI: Clear Bus Master bit only on kexec reboot
+References: <1385579908-24608-1-git-send-email-khalid.aziz@oracle.com> <20131127192420.GC11829@srcf.ucam.org>
+In-Reply-To: <20131127192420.GC11829@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 11:44 AM, Olof Johansson <olof@lixom.net> wrote:
-> On Wed, Nov 27, 2013 at 11:38 AM, Dan Williams <dan.j.williams@intel.com> wrote:
->> Thanks, Olof I'll push this shortly.  I'll add your acked-by to this
->> one from Russell.
->>
->> https://patchwork.kernel.org/patch/3241941/
+On 11/27/2013 12:24 PM, Matthew Garrett wrote:
+> On Wed, Nov 27, 2013 at 12:18:28PM -0700, Khalid Aziz wrote:
 >
-> Sure, sounds good. I've posted a couple more as well (the at_hdmac one
-> I posted yesterday) and "[PATCH] dma: mv_xor: remove
-> mv_desc_get_dest_addr()" from Jason Cooper.
+>> +/* flag to track if kexec reboot is in progress */
+>> +extern unsigned long kexec_in_progress;
+>
+> Adding this to pci.h seems a little odd. We may want to use it somewhere
+> else at some point. Add it to kexec.h instead?
 >
 
-Yup, those are in the patchwork queue, just waiting on my test build
-to tell me there aren't any others.
+I debated between pci.h and kexec.h but pci-driver.c does not include 
+kexec.h and I didn't want to include a whole new file. Now I see another 
+problem with adding that extern declaration to pci.h - if CONFIG_KEXEC 
+is not set, build will fail. I should add #ifdef CONFIG_KEXEC to the 
+code in pci-driver.c as well. Time for v2.
+
+--
+Khalid
