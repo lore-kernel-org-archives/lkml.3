@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760221Ab3K0BpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:45:21 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:20907 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759604Ab3K0BpP (ORCPT
+	id S1760187Ab3K0Box (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:44:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39135 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932233Ab3K0A5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:45:15 -0500
-Message-ID: <1385516428.1791.198.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
-Date: Tue, 26 Nov 2013 18:40:28 -0700
-In-Reply-To: <6140633.otq91cJcVd@vostro.rjw.lan>
-References: <2610478.KxPMyuOMok@vostro.rjw.lan>
-	 <8065346.ZtkoVh8DW8@vostro.rjw.lan>
-	 <1385514717.1791.197.camel@misato.fc.hp.com>
-	 <6140633.otq91cJcVd@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 19:57:55 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cyrus Lien <cyrus.lien@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 40/80] ALSA: hda - Fix Line Out automute on Realtek multifunction jacks
+Date: Tue, 26 Nov 2013 16:57:09 -0800
+Message-Id: <20131127005643.715387986@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
+References: <20131127005640.934155527@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-27 at 02:32 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, November 26, 2013 06:11:57 PM Toshi Kani wrote:
-> > On Wed, 2013-11-27 at 02:02 +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, November 26, 2013 05:33:28 PM Toshi Kani wrote:
-> > > > On Wed, 2013-11-27 at 01:27 +0100, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, November 26, 2013 05:00:42 PM Toshi Kani wrote:
-> > > > > > On Mon, 2013-11-25 at 01:09 +0100, Rafael J. Wysocki wrote:
-> > > > > > > Hi,
-> > > > > > > 
-> > > > > > > The following series of four patches (on top of current linux-pm.git/bleeding-edge)
-> > > > > > > rework child device lookup in drivers/acpi/glue.c and related things:
-> > > > > > > 
-> > > > > > > [1/4] ACPI / bind: Simplify child device lookup
-> > > > > > > [2/4] PCI/ ACPI: Use acpi_find_child_device() for child device lookup
-> > > > > > > [3/4] ACPI / bind: Redefine acpi_get_child()
-> > > > > > > [4/4] ACPI / bind: Redefine acpi_preset_companion()
-> > > > > > 
-> > > > > > This patchset caused the attached panic during boot on a system.
-> > > > > > acpi_pci_find_device() called acpi_find_child_device() with
-> > > > > > ACPI_COMPANION(dev->parent) being a NULL pointer when scanning bus 0xf.
-> > > > > > 
-> > > > > > This bus 0xf seems to be a chipset internal bus, which is not intended
-> > > > > > for the OS to use.  Therefore, ACPI does not list its PCI bridge device.
-> > > > > > 
-> > > > > > # lspci -tv
-> > > > > >    :
-> > > > > >  +-[0000:0f]-+-08.0  Intel Corporation Ivytown QPI Link 0
-> > > > > >  |           +-08.2  Intel Corporation Ivytown QPI Link 0
-> > > > > >    :
-> > > > > > 
-> > > > > > However, pcibios_fixup_peer_bridges(), called from pci_subsys_init(),
-> > > > > > finds this bus as it scans all the buses from 0 to pcibios_last_bus.
-> > > > > > Hence, this dev->parent does not have an associated ACPI device object. 
-> > > > > 
-> > > > > Thanks for the report!
-> > > > > 
-> > > > > I've dropped the patches from bleeding-edge for now.
-> > > > > 
-> > > > > Does "[1/4] ACPI / bind: Simplify child device lookup" alone work on that
-> > > > > system?
-> > > > 
-> > > > Yes, the system boots fine with 1/4 alone.
-> > > 
-> > > Thanks!
-> > > 
-> > > Can you please check if the following modified [2/4] also works on top of it?
-> > 
-> > Yes, it works fine.
-> > 
-> > Thanks for the quick fix!
-> 
-> No problem. :-)
-> 
-> [3/4] and [4/4] on top of this one should work too.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, the system booted fine with 3/4 & 4/4. :-)
+------------------
 
-Thanks,
--Toshi
+From: David Henningsson <david.henningsson@canonical.com>
+
+commit 5959a6bc1124211a359525d209005abc07b0197b upstream.
+
+In case there is both a multifunction headset jack and a Line Out
+jack, automuting was not working properly from the Line Out jack.
+This patch fixes that issue.
+
+BugLink: https://bugs.launchpad.net/bugs/1250377
+Tested-by: Cyrus Lien <cyrus.lien@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3093,8 +3093,10 @@ static void alc_update_headset_mode(stru
+ 	else
+ 		new_headset_mode = ALC_HEADSET_MODE_HEADPHONE;
+ 
+-	if (new_headset_mode == spec->current_headset_mode)
++	if (new_headset_mode == spec->current_headset_mode) {
++		snd_hda_gen_update_outputs(codec);
+ 		return;
++	}
+ 
+ 	switch (new_headset_mode) {
+ 	case ALC_HEADSET_MODE_UNPLUGGED:
+
 
