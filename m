@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760831Ab3K0CEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:04:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38842 "EHLO
+	id S1760819Ab3K0CEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:04:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950Ab3K0A4v (ORCPT
+	with ESMTP id S1756981Ab3K0A4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:51 -0500
+	Tue, 26 Nov 2013 19:56:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: [PATCH 3.4 18/39] include/linux/fs.h: disable preempt when acquire i_size_seqcount write lock
-Date: Tue, 26 Nov 2013 16:56:42 -0800
-Message-Id: <20131127005620.303584957@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.4 19/39] perf/ftrace: Fix paranoid level for enabling function tracer
+Date: Tue, 26 Nov 2013 16:56:43 -0800
+Message-Id: <20131127005620.371688102@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -29,47 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fan Du <fan.du@windriver.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 74e3d1e17b2e11d175970b85acd44f5927000ba2 upstream.
+commit 12ae030d54ef250706da5642fc7697cc60ad0df7 upstream.
 
-Two rt tasks bind to one CPU core.
+The current default perf paranoid level is "1" which has
+"perf_paranoid_kernel()" return false, and giving any operations that
+use it, access to normal users. Unfortunately, this includes function
+tracing and normal users should not be allowed to enable function
+tracing by default.
 
-The higher priority rt task A preempts a lower priority rt task B which
-has already taken the write seq lock, and then the higher priority rt
-task A try to acquire read seq lock, it's doomed to lockup.
+The proper level is defined at "-1" (full perf access), which
+"perf_paranoid_tracepoint_raw()" will only give access to. Use that
+check instead for enabling function tracing.
 
-rt task A with lower priority: call write
-i_size_write                                        rt task B with higher priority: call sync, and preempt task A
-  write_seqcount_begin(&inode->i_size_seqcount);    i_size_read
-  inode->i_size = i_size;                             read_seqcount_begin <-- lockup here...
-
-So disable preempt when acquiring every i_size_seqcount *write* lock will
-cure the problem.
-
-Signed-off-by: Fan Du <fan.du@windriver.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+CVE: CVE-2013-2930
+Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/fs.h |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace_event_perf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -915,9 +915,11 @@ static inline loff_t i_size_read(const s
- static inline void i_size_write(struct inode *inode, loff_t i_size)
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct
  {
- #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
-+	preempt_disable();
- 	write_seqcount_begin(&inode->i_size_seqcount);
- 	inode->i_size = i_size;
- 	write_seqcount_end(&inode->i_size_seqcount);
-+	preempt_enable();
- #elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
- 	preempt_disable();
- 	inode->i_size = i_size;
+ 	/* The ftrace function trace is allowed only for root. */
+ 	if (ftrace_event_is_function(tp_event) &&
+-	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	/* No tracing, just counting, so no obvious leak */
 
 
