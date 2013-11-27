@@ -1,72 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab3K0WBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 17:01:19 -0500
-Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:60468 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753959Ab3K0WBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 17:01:16 -0500
-Date: Wed, 27 Nov 2013 17:03:35 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Stephane Eranian <eranian@google.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH v7 3/4] perf,x86: add Intel RAPL PMU support
-In-Reply-To: <CABPqkBScotKO03hTA6YNcD4sDVj_Gx1fjicmWOJh_MBYTF+rfQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311271653280.24499@pianoman.cluster.toy>
-References: <1384275531-10892-1-git-send-email-eranian@google.com> <1384275531-10892-4-git-send-email-eranian@google.com> <alpine.DEB.2.02.1311271328590.22932@pianoman.cluster.toy> <CABPqkBScotKO03hTA6YNcD4sDVj_Gx1fjicmWOJh_MBYTF+rfQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758056Ab3K0WDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 17:03:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53031 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757299Ab3K0WDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 17:03:31 -0500
+Message-ID: <52966C0A.7070201@zytor.com>
+Date: Wed, 27 Nov 2013 14:02:50 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020208.52966BAC.0059,ss=1,re=0.000,fgs=0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>	<5294F10C.8060901@amacapital.net> <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com> <52964EC7.9000504@zytor.com>
+In-Reply-To: <52964EC7.9000504@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/mixed;
+ boundary="------------060806090303080802050708"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Stephane Eranian wrote:
+This is a multi-part message in MIME format.
+--------------060806090303080802050708
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-> On Wed, Nov 27, 2013 at 7:35 PM, Vince Weaver <vince@deater.net> wrote:
+For the record, this is the entire patch necessary to do the
+sync_cores() system call -- and no potential interactions with security
+frameworks or whatnot, simply because no security-sensitive operations
+are performed of any kind.
 
-> > So I notice PP1 (which is the GPU power on non-server chips)
-> > is not supported.
-> >
-> > Is that just for simplicity?
-> >
-> Does it work on specific models only? I bet so. How to detect those?
+Comments/opinions appreciated.
 
-In general it is on the machines that don't support the DRAM measurements 
-(so the non-EP machines) but I don't know if there's a nice list anywhere.
+	-hpa
 
-Intel manuals say:
-   For a client platform, PP1 domain refers to the power plane of a 
-   specific device in the uncore. For server platforms, PP1 domain is not
-   supported,
 
-usually PP1 I think maps to the embedded GPU.
+--------------060806090303080802050708
+Content-Type: text/x-patch;
+ name="0001-x86-Add-a-sync_cores-system-call-for-user-space-code.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-x86-Add-a-sync_cores-system-call-for-user-space-code.pa";
+ filename*1="tch"
 
-> > Sorry if these are annoying questions, I am glad to see this driver make
-> > progress, as I've had the misfortune of maintaining various user-space-MSR
-> > hacks designed to get this info because of lack of kernel support.
-> >
-> You don't really need a driver, you can also just use modprobe msr + the
-> turbostat utility now part of the kernel source tree. It taps into the same
-> counters.
+>From c0246c43c30453e4f88a314e437d4504e6a36c08 Mon Sep 17 00:00:00 2001
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Wed, 27 Nov 2013 13:57:29 -0800
+Subject: [PATCH] x86: Add a sync_cores() system call for user space code
+ patching
 
-yes, the code I maintain doesn't have a custom driver, it just uses the 
-raw msr interface.  That's how PAPI currently works.  Though I guess I'll 
-have to maintain both that and the new interface for a while as not 
-everyone's going to run out and instlal 3.14.
+Add a system call to synchronize all processors (guarantee execution
+of a serializing instruction on all processors before execution
+resumes) so that user space can do INT3-style patching, or any other
+kind of patching that it wants to do.
 
-It's a shame that it took so long for proper RAPL support to get merged.  
-Because of the delay there are lots of people poking the MSRs themselves 
-and various vendors who are shipping custom out-of-tree RAPL drivers, etc.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/alternative.c    | 15 +++++++++++++++
+ arch/x86/syscalls/syscall_32.tbl |  1 +
+ arch/x86/syscalls/syscall_64.tbl |  1 +
+ 3 files changed, 17 insertions(+)
 
-Vince
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index df94598ad05a..8227eee42114 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -12,6 +12,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/slab.h>
+ #include <linux/kdebug.h>
++#include <linux/syscalls.h>
+ #include <asm/alternative.h>
+ #include <asm/sections.h>
+ #include <asm/pgtable.h>
+@@ -676,3 +677,17 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	return addr;
+ }
+ 
++/**
++ * sys_sync_cores() -- synchronize cores for userspace patching
++ *
++ * This function provides the core synchronization operation
++ * so that userspace can do int3 breakpoint patching.
++ *
++ * Everything else can be handled in userspace.
++ */
++SYSCALL_DEFINE0(sync_cores)
++{
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	return 0;
++}
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index aabfb8380a1c..acfdfe2b95e7 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -357,3 +357,4 @@
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+ 349	i386	kcmp			sys_kcmp
+ 350	i386	finit_module		sys_finit_module
++351	i386	sync_cores		sys_sync_cores
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65dfd14f..6556f1e6e920 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -320,6 +320,7 @@
+ 311	64	process_vm_writev	sys_process_vm_writev
+ 312	common	kcmp			sys_kcmp
+ 313	common	finit_module		sys_finit_module
++314	common	sync_cores		sys_sync_cores
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+-- 
+1.8.3.1
+
+
+--------------060806090303080802050708--
