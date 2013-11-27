@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab3K0A7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39498 "EHLO
+	id S932768Ab3K0BMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:12:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758746Ab3K0A7P (ORCPT
+	with ESMTP id S1758829Ab3K0A7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:15 -0500
+	Tue, 26 Nov 2013 19:59:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.12 071/116] nfsd: split up nfsd_setattr
-Date: Tue, 26 Nov 2013 16:57:24 -0800
-Message-Id: <20131127005741.842279236@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.12 108/116] usb: musb: dsps: move try_idle to start hook
+Date: Tue, 26 Nov 2013 16:58:01 -0800
+Message-Id: <20131127005744.372284336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,197 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 818e5a22e907fbae75e9c1fd78233baec9fa64b6 upstream.
+commit 8b9fcce2d88586b9a120ff3e039d8f42413f0bb0 upstream.
 
-Split out two helpers to make the code more readable and easier to verify
-for correctness.
+The timer is initialized right after musb is probed. There is actually
+no need to have this timer running because _nothing_ will happen until
+we have the gadget loaded. Also we need this timer only if we run in OTG
+mode _and_ we need it also after the gadget has been replaced with
+another one.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+I've been looking at am35x.c, da8xx.c, omap2430.c, tusb6010.c. da8xx
+seem to have the same problem as dsps and doing mostly the same thing.
+tusb6010 seem to do something different and do some actual "idle / power
+saving" work so I am not too comfortable to remove
+musb_platform_try_idle() from musb_gadget_setup().
+
+Therefore this patch does not start the timer if there is no gadget
+active (which is at musb_gadget_setup() at time). In order to have the
+timer active after the gadget is loaded it will be triggered from
+dsps_musb_enable().
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/vfs.c |  144 +++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 84 insertions(+), 60 deletions(-)
+ drivers/usb/musb/musb_dsps.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -298,41 +298,12 @@ commit_metadata(struct svc_fh *fhp)
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -121,6 +121,7 @@ struct dsps_glue {
+ 	unsigned long last_timer;    /* last timer data for each instance */
+ };
+ 
++static void dsps_musb_try_idle(struct musb *musb, unsigned long timeout);
+ /**
+  * dsps_musb_enable - enable interrupts
+  */
+@@ -143,6 +144,7 @@ static void dsps_musb_enable(struct musb
+ 	/* Force the DRVVBUS IRQ so we can start polling for ID change. */
+ 	dsps_writel(reg_base, wrp->coreintr_set,
+ 		    (1 << wrp->drvvbus) << wrp->usb_shift);
++	dsps_musb_try_idle(musb, 0);
  }
  
- /*
-- * Set various file attributes.
-- * N.B. After this call fhp needs an fh_put
-+ * Go over the attributes and take care of the small differences between
-+ * NFS semantics and what Linux expects.
-  */
--__be32
--nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
--	     int check_guard, time_t guardtime)
-+static void
-+nfsd_sanitize_attrs(struct inode *inode, struct iattr *iap)
- {
--	struct dentry	*dentry;
--	struct inode	*inode;
--	int		accmode = NFSD_MAY_SATTR;
--	umode_t		ftype = 0;
--	__be32		err;
--	int		host_err;
--	int		size_change = 0;
--
--	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
--		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
--	if (iap->ia_valid & ATTR_SIZE)
--		ftype = S_IFREG;
--
--	/* Get inode */
--	err = fh_verify(rqstp, fhp, ftype, accmode);
--	if (err)
--		goto out;
--
--	dentry = fhp->fh_dentry;
--	inode = dentry->d_inode;
--
--	/* Ignore any mode updates on symlinks */
--	if (S_ISLNK(inode->i_mode))
--		iap->ia_valid &= ~ATTR_MODE;
--
--	if (!iap->ia_valid)
--		goto out;
--
- 	/*
- 	 * NFSv2 does not differentiate between "set-[ac]time-to-now"
- 	 * which only requires access, and "set-[ac]time-to-X" which
-@@ -342,8 +313,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 	 * convert to "set to now" instead of "set to explicit time"
- 	 *
- 	 * We only call inode_change_ok as the last test as technically
--	 * it is not an interface that we should be using.  It is only
--	 * valid if the filesystem does not define it's own i_op->setattr.
-+	 * it is not an interface that we should be using.
- 	 */
- #define BOTH_TIME_SET (ATTR_ATIME_SET | ATTR_MTIME_SET)
- #define	MAX_TOUCH_TIME_ERROR (30*60)
-@@ -369,30 +339,6 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 			iap->ia_valid &= ~BOTH_TIME_SET;
- 		}
- 	}
--	    
--	/*
--	 * The size case is special.
--	 * It changes the file as well as the attributes.
--	 */
--	if (iap->ia_valid & ATTR_SIZE) {
--		if (iap->ia_size < inode->i_size) {
--			err = nfsd_permission(rqstp, fhp->fh_export, dentry,
--					NFSD_MAY_TRUNC|NFSD_MAY_OWNER_OVERRIDE);
--			if (err)
--				goto out;
--		}
--
--		host_err = get_write_access(inode);
--		if (host_err)
--			goto out_nfserr;
--
--		size_change = 1;
--		host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
--		if (host_err) {
--			put_write_access(inode);
--			goto out_nfserr;
--		}
--	}
+ /**
+@@ -234,6 +236,9 @@ static void dsps_musb_try_idle(struct mu
+ 	if (musb->port_mode == MUSB_PORT_MODE_HOST)
+ 		return;
  
- 	/* sanitize the mode change */
- 	if (iap->ia_valid & ATTR_MODE) {
-@@ -415,8 +361,86 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 			iap->ia_valid |= (ATTR_KILL_SUID | ATTR_KILL_SGID);
- 		}
- 	}
-+}
++	if (!musb->g.dev.driver)
++		return;
 +
-+static __be32
-+nfsd_get_write_access(struct svc_rqst *rqstp, struct svc_fh *fhp,
-+		struct iattr *iap)
-+{
-+	struct inode *inode = fhp->fh_dentry->d_inode;
-+	int host_err;
-+
-+	if (iap->ia_size < inode->i_size) {
-+		__be32 err;
-+
-+		err = nfsd_permission(rqstp, fhp->fh_export, fhp->fh_dentry,
-+				NFSD_MAY_TRUNC | NFSD_MAY_OWNER_OVERRIDE);
-+		if (err)
-+			return err;
-+	}
-+
-+	host_err = get_write_access(inode);
-+	if (host_err)
-+		goto out_nfserrno;
-+
-+	host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
-+	if (host_err)
-+		goto out_put_write_access;
-+	return 0;
-+
-+out_put_write_access:
-+	put_write_access(inode);
-+out_nfserrno:
-+	return nfserrno(host_err);
-+}
-+
-+/*
-+ * Set various file attributes.  After this call fhp needs an fh_put.
-+ */
-+__be32
-+nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
-+	     int check_guard, time_t guardtime)
-+{
-+	struct dentry	*dentry;
-+	struct inode	*inode;
-+	int		accmode = NFSD_MAY_SATTR;
-+	umode_t		ftype = 0;
-+	__be32		err;
-+	int		host_err;
-+	int		size_change = 0;
-+
-+	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
-+		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
-+	if (iap->ia_valid & ATTR_SIZE)
-+		ftype = S_IFREG;
-+
-+	/* Get inode */
-+	err = fh_verify(rqstp, fhp, ftype, accmode);
-+	if (err)
-+		goto out;
-+
-+	dentry = fhp->fh_dentry;
-+	inode = dentry->d_inode;
-+
-+	/* Ignore any mode updates on symlinks */
-+	if (S_ISLNK(inode->i_mode))
-+		iap->ia_valid &= ~ATTR_MODE;
-+
-+	if (!iap->ia_valid)
-+		goto out;
-+
-+	nfsd_sanitize_attrs(inode, iap);
- 
--	/* Change the attributes. */
-+	/*
-+	 * The size case is special, it changes the file in addition to the
-+	 * attributes.
-+	 */
-+	if (iap->ia_valid & ATTR_SIZE) {
-+		err = nfsd_get_write_access(rqstp, fhp, iap);
-+		if (err)
-+			goto out;
-+		size_change = 1;
-+	}
- 
- 	iap->ia_valid |= ATTR_CTIME;
- 
+ 	if (time_after(glue->last_timer, timeout) &&
+ 				timer_pending(&glue->timer)) {
+ 		dev_dbg(musb->controller,
 
 
