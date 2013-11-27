@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758999Ab3K0CAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:00:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38842 "EHLO
+	id S1760731Ab3K0CAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:00:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757320Ab3K0A5D (ORCPT
+	with ESMTP id S1755376Ab3K0A5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:03 -0500
+	Tue, 26 Nov 2013 19:57:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 10/80] can: c_can: Fix RX message handling, handle lost message before EOB
-Date: Tue, 26 Nov 2013 16:56:39 -0800
-Message-Id: <20131127005641.655937908@linuxfoundation.org>
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 11/80] ipc,shm: correct error return value in shmctl (SHM_UNLOCK)
+Date: Tue, 26 Nov 2013 16:56:40 -0800
+Message-Id: <20131127005641.723618121@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,47 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Jesper Nilsson <jesper.nilsson@axis.com>
 
-commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
+commit 3a72660b07d86d60457ca32080b1ce8c2b628ee2 upstream.
 
-If we handle end of block messages with higher priority than a lost message,
-we can run into an endless interrupt loop.
+Commit 2caacaa82a51 ("ipc,shm: shorten critical region for shmctl")
+restructured the ipc shm to shorten critical region, but introduced a
+path where the return value could be -EPERM, even if the operation
+actually was performed.
 
-This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
-As soon as we loose a packet we can't escape from an interrupt loop.
+Before the commit, the err return value was reset by the return value
+from security_shm_shmctl() after the if (!ns_capable(...)) statement.
 
-This patch fixes the problem by handling lost packets before EOB packets.
+Now, we still exit the if statement with err set to -EPERM, and in the
+case of SHM_UNLOCK, it is not reset at all, and used as the return value
+from shmctl.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+To fix this, we only set err when errors occur, leaving the fallthrough
+case alone.
+
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ ipc/shm.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -814,9 +814,6 @@ static int c_can_do_rx_poll(struct net_d
- 			msg_ctrl_save = priv->read_reg(priv,
- 					C_CAN_IFACE(MSGCTRL_REG, 0));
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -974,12 +974,15 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
+ 		ipc_lock_object(&shp->shm_perm);
+ 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+ 			kuid_t euid = current_euid();
+-			err = -EPERM;
+ 			if (!uid_eq(euid, shp->shm_perm.uid) &&
+-			    !uid_eq(euid, shp->shm_perm.cuid))
++			    !uid_eq(euid, shp->shm_perm.cuid)) {
++				err = -EPERM;
+ 				goto out_unlock0;
+-			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
++			}
++			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK)) {
++				err = -EPERM;
+ 				goto out_unlock0;
++			}
+ 		}
  
--			if (msg_ctrl_save & IF_MCONT_EOB)
--				return num_rx_pkts;
--
- 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
- 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
- 				num_rx_pkts++;
-@@ -824,6 +821,9 @@ static int c_can_do_rx_poll(struct net_d
- 				continue;
- 			}
- 
-+			if (msg_ctrl_save & IF_MCONT_EOB)
-+				return num_rx_pkts;
-+
- 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
- 				continue;
- 
+ 		shm_file = shp->shm_file;
 
 
