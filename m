@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3K0IUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:20:49 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:65318 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3K0IUs (ORCPT
+	id S1756104Ab3K0IWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:22:25 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52984 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab3K0IWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:20:48 -0500
-X-AuditID: 9c93017d-b7b24ae000002834-03-5295ab5fc29e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+	Wed, 27 Nov 2013 03:22:24 -0500
+Message-ID: <5295ABB9.7040207@hitachi.com>
+Date: Wed, 27 Nov 2013 17:22:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt\@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: modules, add_kallsyms() && DEFINE_PER_CPU
-References: <20131123201543.GA22148@redhat.com>
-	<20131125172106.GA14516@redhat.com>
-	<20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com>
-	<20131126174355.GB14028@redhat.com>
-	<20131126174446.GD14028@redhat.com>
-	<20131126175037.GE14028@redhat.com> <529557AF.8040501@hitachi.com>
-Date: Wed, 27 Nov 2013 17:20:47 +0900
-In-Reply-To: <529557AF.8040501@hitachi.com> (Masami Hiramatsu's message of
-	"Wed, 27 Nov 2013 11:23:43 +0900")
-Message-ID: <87r4a2qmqo.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing: Add $cpu and $current probe-vars
+References: <20131123201543.GA22148@redhat.com> <20131125192926.GA9737@redhat.com> <20131125192952.GB9737@redhat.com> <529405AC.6090401@hitachi.com> <20131126172313.GA14028@redhat.com>
+In-Reply-To: <20131126172313.GA14028@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+(2013/11/27 2:23), Oleg Nesterov wrote:
+> On 11/26, Masami Hiramatsu wrote:
+>>
+>> (2013/11/26 4:29), Oleg Nesterov wrote:
+>>> +#define PSEUDO_REG_OFFSET	4096	/* arbitrary value > MAX_REG_OFFSET */
+>>> +
+>>> +static unsigned long probe_get_register(struct pt_regs *regs, unsigned long offset)
+>>> +{
+>>> +	if (offset < PSEUDO_REG_OFFSET)
+>>> +		return regs_get_register(regs, offset);
+>>> +
+>>> +	return pseudo_reg_table[offset - PSEUDO_REG_OFFSET].fetch();
+>>> +}
+>>
+>>
+>> Hmm, I don't like this, since fetch_reg is the most frequently
+>> used fetch method, and it actually uses the offset in different
+>> way.
+> 
+> Sure, this overloads the usage of FETCH_MTD_reg/offset.
+> 
+> And btw, yes, the naming is ugly (I mean pseudo_*). But why this
+> is bad? This is cheap and simple.
 
-On Wed, 27 Nov 2013 11:23:43 +0900, Masami Hiramatsu wrote:
-> (2013/11/27 2:50), Oleg Nesterov wrote:
->> On 11/26, Oleg Nesterov wrote:
->>>
->>> Note: this doesn't work for modules, but module's per-cpu data is
->>> not visible for kallsyms_lookup_name() anyway.
->> 
->> Rusty, I am just curious if it makes sense to change this or not...
->> 
->> But DEFINE_PER_CPU'ed symbols are ignored by add_kallsyms(). I guess
->> this is because is_core_symbol() requires "sh_flags & SHF_ALLOC".
->> And probably because of INIT_OFFSET_MASK.
->
-> Oleg, I think you can do it by using is_module_percpu_address(). :)
+I think it's not simple. The code looks short, but not well
+self-described. It is "hidden" in the structure, and double-meaning.
 
-It seems the function only works for a translated address like
-is_kernel_percpu_address() does.  But we want to check a not-yet-
-translated symbol address, right?
+> And,
+> 
+>> Why don't you make another fetch function for vars?
+> 
+> This is what I tried to avoid ;) I do not want to add another
+> FETCH_MTD_. To me, this looks like unnecessary complication and
+> bloat (but see below).
 
-Thanks,
-Namhyung
+I see, perhaps, it is a time to introduce independent fetch
+method implementation. Current one is not sophisticated
+nor generic. We need a kind of "bytecode" implementation
+for more complex expression, especially for the combination
+of several registers/variables on stacks. This feature will
+also be useful for some other scriptable tracers like ktap,
+systemtap etc.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
