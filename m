@@ -1,43 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab3K0Q3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:29:33 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50306 "EHLO
+	id S1757475Ab3K0Q3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:29:48 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50322 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab3K0Q3a (ORCPT
+	with ESMTP id S1757441Ab3K0Q3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:29:30 -0500
-Date: Wed, 27 Nov 2013 16:28:59 +0000
+	Wed, 27 Nov 2013 11:29:45 -0500
+Date: Wed, 27 Nov 2013 16:29:22 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-ID: <20131127162859.GD14725@sirena.org.uk>
-References: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
- <20131127152042.GY14725@sirena.org.uk>
- <20131127152358.GP3296@lee--X1>
- <20131127154221.GZ14725@sirena.org.uk>
- <20131127161323.GS3296@lee--X1>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131127162922.GE14725@sirena.org.uk>
+References: <1385521101.29941.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGdfKiBebYi9ts3p"
+	protocol="application/pgp-signature"; boundary="3qTVFk/EjXyDmsv5"
 Content-Disposition: inline
-In-Reply-To: <20131127161323.GS3296@lee--X1>
+In-Reply-To: <1385521101.29941.1.camel@phoenix>
 X-Cookie: Your supervisor is thinking about you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 1/2] regulator: max14577: Add regulator driver for
- Maxim 14577
+Subject: Re: [PATCH RESEND] regulator: lp3971: Convert to
+ devm_regulator_register
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -45,46 +32,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---MGdfKiBebYi9ts3p
+--3qTVFk/EjXyDmsv5
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Nov 27, 2013 at 04:13:23PM +0000, Lee Jones wrote:
-> On Wed, 27 Nov 2013, Mark Brown wrote:
+On Wed, Nov 27, 2013 at 10:58:21AM +0800, Axel Lin wrote:
 
-> > The usual thing to do is of_get_child_by_name() on the parent to get the
-> > container to search in.
+> This patch was sent on https://lkml.org/lkml/2013/11/13/34 .
+> Although you replied applied, it still not in your tree.
+> So here is a resend.
 
-> What do you mean when you say 'usual thing'? Only the max8998 does
-> this currently. IMHO the better way to do it for MFD devices is
-> provide a compatible string and let the framework does the rest for
-> you.
+It's there.
 
-No, as3722, Palmas and three of the TPS chips do the same thing.  If it
-were a purely Linux-internal thing I'd probably agree with you but as it
-is we'd just be adding compatible strings in everyone's DTs to save one
-line of code in the kernel.
-
---MGdfKiBebYi9ts3p
+--3qTVFk/EjXyDmsv5
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSlh3IAAoJELSic+t+oim9jCgP/Rbo7ANSJJWvI2oXkvZ1vibK
-t+WmTuBchJFKeRWCfQOQEUesSCAffhBNaqEAutiY2ibrK6Zbht5J3R7JpEMTi1jP
-l+F5a/brULQ/LLRZm8CVCVixujRbYqpG/7VvjXR4M16sdc+XiVEYdzvAU8fU3tmU
-gYv8qL0Ke1PCSLVYZf6GM7G+tSJTkhbRi96jQ0i6u+YBw3rTimlzWMkgOCZdtUQd
-DrI/I0lpIx2Hn0KcDp0n5A0jy9f2jJpsg9cQJi+mNlOtoWJE7oDFp57EtN5k5pJp
-QD0mQbnR9cTzYzraCoFm4hIb1dSDaQa2pUfuIhGKyopqMOz5eWmeHci1NsBMKJBe
-gp0yBse9tZH5LmYXCHAkFy9TNKL5rwcdArHosQ6VvUaUCa0WLNH82LQDD6c0cKtz
-bFO3Sv6Oe/cyD4FbsJz/qS7adVMZb/YqW5TRZ8JNKL+YKLgF6yQw7bMQ4/uup1k8
-YDhhKTvxGCojLL9ooe9e+LZrsuSdC6OXVREFqvI+FY8HHj4ZlD6oULicrLXgqeN5
-mq3x07cPjn63miZyo/GmpORofZ3T4zbgxhwOA6ZK77SQZyBrVACwUWJjtmlag9s7
-4bi59yTWMm+sUpGQdL/6XT3uwHQB3/DyF74Yu3GFqfkhwOY/7+tOCmxeJv5nafQz
-Qx/bcnL3Q9zU9k9pbunp
-=EIXQ
+iQIcBAEBAgAGBQJSlh3fAAoJELSic+t+oim9k2kP/jymQIhcMWcSrduAdFTUnmj2
+1mZPGEykAQ3UFJKHYnsc0nlGsc1RAl5BPowCtaswJ501ADZrwW4Wnu41sNdHWdzw
+jQrukiaImGZMN1AwRe99GQdKQxByC9m3+QFP3hGCIYLSFoad33Dhf7WfcW1dancg
+4F5pS/s5gfxgs0KFvp70kbJOsC41toqrWL4IQ+TNquPJxOrTyVg5fQELLlCGEq1g
+hkBdCnCuQKGAHnvTk7gOb6NSQTz2TPnCIbFIbaSdBVcnFXFJitVa7DvMyturmfvh
+JHjCCRCglFiz4JV6hEHg+amyHi0RE79n/7Igb97Q8SkqnUK5sQda7D1E5GGbaP28
++oRWkrRy9y3kbHsCNYGtbGKcfMqig/MItpyTOmbqJeo63I2lgxMAtk3/XWSoogRi
+0BkSmtzaeY+44RI62iY/16mwpLvzcu61YNXIh/xygn6NUkHUCLvG76pSHM6+C7f0
+Q0TYdBiYGuljTcFF7TlqEt+RBszA4qsPRLRL3aJ2go0S65Ag0azlAl1SpOHOcOce
+YlcIHq1WCL7/wNhntTZVhu7Kgbf5QqzMhRZ5WzX823QvkQ8D6Rrsn8gFkIl+Q+8e
+/+s1UWxUOYHplMh1a6SQJJptPuVWT+rWAQScW/aUK4+Xr4sArQecJskITT5qlNcA
+ArOdpEpRjTdjOtcexDyO
+=X9yK
 -----END PGP SIGNATURE-----
 
---MGdfKiBebYi9ts3p--
+--3qTVFk/EjXyDmsv5--
