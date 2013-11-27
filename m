@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab3K0Oz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:55:28 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:55025 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3K0OzY (ORCPT
+	id S1756505Ab3K0Ozy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:55:54 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:62203 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab3K0Ozx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:55:24 -0500
-Message-ID: <1385564119.5459.1.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH] ima: store address of template_fmt_copy in a pointer
- before calling strsep
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: jmorris@namei.org, sebott@linux.vnet.ibm.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 27 Nov 2013 09:55:19 -0500
-In-Reply-To: <1385559644-9217-1-git-send-email-roberto.sassu@polito.it>
-References: <5295E9B3.202@polito.it>
-	 <1385559644-9217-1-git-send-email-roberto.sassu@polito.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13112714-3532-0000-0000-0000035E5931
+	Wed, 27 Nov 2013 09:55:53 -0500
+Date: Wed, 27 Nov 2013 11:55:46 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf timechart: dynamically determine event data offset
+Message-ID: <20131127145546.GD11498@ghostprotocols.net>
+References: <20131126110536.GC3388@stfomichev-desktop>
+ <20131126121026.GD27323@ghostprotocols.net>
+ <20131126134755.GD3388@stfomichev-desktop>
+ <20131126135709.GB14838@ghostprotocols.net>
+ <20131126145437.GE3388@stfomichev-desktop>
+ <87mwkqqlfl.fsf@sejong.aot.lge.com>
+ <20131127134434.GA11498@ghostprotocols.net>
+ <1385561863.1685.30.camel@leonhard>
+ <20131127144144.GB11498@ghostprotocols.net>
+ <1385563885.1685.40.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1385563885.1685.40.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-27 at 14:40 +0100, Roberto Sassu wrote:
-> This patch stores the address of the 'template_fmt_copy' variable in a new
-> variable, called 'template_fmt_ptr', so that the latter is passed as an
-> argument of strsep() instead of the former. This modification is needed
-> in order to correctly free the memory area referenced by
-> 'template_fmt_copy' (strsep() modifies the pointer of the passed string).
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Em Wed, Nov 27, 2013 at 11:51:25PM +0900, Namhyung Kim escreveu:
+> 2013-11-27 (수), 11:41 -0300, Arnaldo Carvalho de Melo:
+> > Em Wed, Nov 27, 2013 at 11:17:43PM +0900, Namhyung Kim escreveu:
+> > > 2013-11-27 (수), 10:44 -0300, Arnaldo Carvalho de Melo:
+> > > > Same signature, 32-bit, 64-bit userland, so whoever wrote timechart, Arjan, I
+> > > > think, made no mistakes at using the kernel exported interface, choosing the
+> > > > most efficient way to extract the data, casting to a struct.
 
-> ---
->  security/integrity/ima/ima_template.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-> index 913e192..635695f 100644
-> --- a/security/integrity/ima/ima_template.c
-> +++ b/security/integrity/ima/ima_template.c
-> @@ -110,7 +110,7 @@ static int template_desc_init_fields(const char *template_fmt,
->  				     struct ima_template_field ***fields,
->  				     int *num_fields)
->  {
-> -	char *c, *template_fmt_copy;
-> +	char *c, *template_fmt_copy, *template_fmt_ptr;
->  	int template_num_fields = template_fmt_size(template_fmt);
->  	int i, result = 0;
-> 
-> @@ -127,7 +127,9 @@ static int template_desc_init_fields(const char *template_fmt,
->  		result = -ENOMEM;
->  		goto out;
->  	}
-> -	for (i = 0; (c = strsep(&template_fmt_copy, "|")) != NULL &&
-> +
-> +	template_fmt_ptr = template_fmt_copy;
-> +	for (i = 0; (c = strsep(&template_fmt_ptr, "|")) != NULL &&
->  	     i < template_num_fields; i++) {
->  		struct ima_template_field *f = lookup_template_field(c);
-> 
+> > > > Yeah, using the interface that searches for a field name to get the offset and
+> > > > then add it to a pointer to then cast to the type will allow maximum flexibility,
+> > > > but is not really efficient.
 
+> > > > Doing that for something that is not performance critical (probably) as
+> > > > timechart probably is not a problem, but so is not a problem using the patch
+> > > > that does the cast after finding the offset of the first non-common field.
 
+> > > I'm not sure how it affects the performance really.
+
+> > Hey, everytime we need to get the value of a field when processing each
+> > tracepoint sample we need to do it via:
+
+> > struct format_field *pevent_find_field(struct event_format *event, const char *name)
+> > {
+> >         struct format_field *format;
+> > 
+> >         for (format = event->format.fields; format; format = format->next) {
+> >                 if (strcmp(format->name, name) == 0)
+> >                         break;
+> >         }
+> > 
+> >         return format;
+> > }
+> > 
+> > I don't think this is optimal, no.
+> > 
+> > But yeah, for things that don't have performance needs, don't process that many
+> > samples and hey, machines are fast and cheap these days ;-)
+> 
+> Right.  What I wanted to say actually was like s/how/how much/. :)
+
+We would have to use perf for that 8-)
+
+Its just that doing a string search on a doubly linked list for each
+field on each sample doesn't _look_ optimal to me, so I didn't bother
+using a profiler for that :-)
+
+Anyway, lets move on, will apply the patch after lunch and send Ingo's
+way.
+
+- Arnaldo
