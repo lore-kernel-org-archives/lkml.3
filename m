@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761005Ab3K0CJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:09:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38762 "EHLO
+	id S1760988Ab3K0CJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:09:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab3K0A4d (ORCPT
+	with ESMTP id S1754112Ab3K0A4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:33 -0500
+	Tue, 26 Nov 2013 19:56:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 20/39] rt2x00: check if device is still available on rt2x00mac_flush()
-Date: Tue, 26 Nov 2013 16:56:44 -0800
-Message-Id: <20131127005620.439766257@linuxfoundation.org>
+        Vasily Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 22/39] exec/ptrace: fix get_dumpable() incorrect tests
+Date: Tue, 26 Nov 2013 16:56:46 -0800
+Message-Id: <20131127005620.575724915@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -28,104 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Kees Cook <keescook@chromium.org>
 
-commit 5671ab05cf2a579218985ef56595387932d78ee4 upstream.
+commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
 
-Fix random kernel panic with below messages when remove dongle.
+The get_dumpable() return value is not boolean.  Most users of the
+function actually want to be testing for non-SUID_DUMP_USER(1) rather than
+SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
+protected state.  Almost all places did this correctly, excepting the two
+places fixed in this patch.
 
-[ 2212.355447] BUG: unable to handle kernel NULL pointer dereference at 0000000000000250
-[ 2212.355527] IP: [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.355599] PGD 0
-[ 2212.355626] Oops: 0000 [#1] SMP
-[ 2212.355664] Modules linked in: rt2800usb rt2x00usb rt2800lib crc_ccitt rt2x00lib mac80211 cfg80211 tun arc4 fuse rfcomm bnep snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb uvcvideo bluetooth snd_hwdep x86_pkg_temp_thermal snd_seq coretemp aesni_intel aes_x86_64 snd_seq_device glue_helper snd_pcm ablk_helper videobuf2_vmalloc sdhci_pci videobuf2_memops videobuf2_core sdhci videodev mmc_core serio_raw snd_page_alloc microcode i2c_i801 snd_timer hid_multitouch thinkpad_acpi lpc_ich mfd_core snd tpm_tis wmi tpm tpm_bios soundcore acpi_cpufreq i915 i2c_algo_bit drm_kms_helper drm i2c_core video [last unloaded: cfg80211]
-[ 2212.356224] CPU: 0 PID: 34 Comm: khubd Not tainted 3.12.0-rc3-wl+ #3
-[ 2212.356268] Hardware name: LENOVO 3444CUU/3444CUU, BIOS G6ET93WW (2.53 ) 02/04/2013
-[ 2212.356319] task: ffff880212f687c0 ti: ffff880212f66000 task.ti: ffff880212f66000
-[ 2212.356392] RIP: 0010:[<ffffffffa02667f2>]  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.356481] RSP: 0018:ffff880212f67750  EFLAGS: 00010202
-[ 2212.356519] RAX: 000000000000000c RBX: 000000000000000c RCX: 0000000000000293
-[ 2212.356568] RDX: ffff8801f4dc219a RSI: 0000000000000000 RDI: 0000000000000240
-[ 2212.356617] RBP: ffff880212f67778 R08: ffffffffa02667e0 R09: 0000000000000002
-[ 2212.356665] R10: 0001f95254ab4b40 R11: ffff880212f675be R12: ffff8801f4dc2150
-[ 2212.356712] R13: 0000000000000000 R14: ffffffffa02667e0 R15: 000000000000000d
-[ 2212.356761] FS:  0000000000000000(0000) GS:ffff88021e200000(0000) knlGS:0000000000000000
-[ 2212.356813] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2212.356852] CR2: 0000000000000250 CR3: 0000000001a0c000 CR4: 00000000001407f0
-[ 2212.356899] Stack:
-[ 2212.356917]  000000000000000c ffff8801f4dc2150 0000000000000000 ffffffffa02667e0
-[ 2212.356980]  000000000000000d ffff880212f677b8 ffffffffa03a31ad ffff8801f4dc219a
-[ 2212.357038]  ffff8801f4dc2150 0000000000000000 ffff8800b93217a0 ffff8801f49bc800
-[ 2212.357099] Call Trace:
-[ 2212.357122]  [<ffffffffa02667e0>] ? rt2x00usb_interrupt_txdone+0x90/0x90 [rt2x00usb]
-[ 2212.357174]  [<ffffffffa03a31ad>] rt2x00queue_for_each_entry+0xed/0x170 [rt2x00lib]
-[ 2212.357244]  [<ffffffffa026701c>] rt2x00usb_kick_queue+0x5c/0x60 [rt2x00usb]
-[ 2212.357314]  [<ffffffffa03a3682>] rt2x00queue_flush_queue+0x62/0xa0 [rt2x00lib]
-[ 2212.357386]  [<ffffffffa03a2930>] rt2x00mac_flush+0x30/0x70 [rt2x00lib]
-[ 2212.357470]  [<ffffffffa04edded>] ieee80211_flush_queues+0xbd/0x140 [mac80211]
-[ 2212.357555]  [<ffffffffa0502e52>] ieee80211_set_disassoc+0x2d2/0x3d0 [mac80211]
-[ 2212.357645]  [<ffffffffa0506da3>] ieee80211_mgd_deauth+0x1d3/0x240 [mac80211]
-[ 2212.357718]  [<ffffffff8108b17c>] ? try_to_wake_up+0xec/0x290
-[ 2212.357788]  [<ffffffffa04dbd18>] ieee80211_deauth+0x18/0x20 [mac80211]
-[ 2212.357872]  [<ffffffffa0418ddc>] cfg80211_mlme_deauth+0x9c/0x140 [cfg80211]
-[ 2212.357913]  [<ffffffffa041907c>] cfg80211_mlme_down+0x5c/0x60 [cfg80211]
-[ 2212.357962]  [<ffffffffa041cd18>] cfg80211_disconnect+0x188/0x1a0 [cfg80211]
-[ 2212.358014]  [<ffffffffa04013bc>] ? __cfg80211_stop_sched_scan+0x1c/0x130 [cfg80211]
-[ 2212.358067]  [<ffffffffa03f8954>] cfg80211_leave+0xc4/0xe0 [cfg80211]
-[ 2212.358124]  [<ffffffffa03f8d1b>] cfg80211_netdev_notifier_call+0x3ab/0x5e0 [cfg80211]
-[ 2212.358177]  [<ffffffff815140f8>] ? inetdev_event+0x38/0x510
-[ 2212.358217]  [<ffffffff81085a94>] ? __wake_up+0x44/0x50
-[ 2212.358254]  [<ffffffff8155995c>] notifier_call_chain+0x4c/0x70
-[ 2212.358293]  [<ffffffff81081156>] raw_notifier_call_chain+0x16/0x20
-[ 2212.358361]  [<ffffffff814b6dd5>] call_netdevice_notifiers_info+0x35/0x60
-[ 2212.358429]  [<ffffffff814b6ec9>] __dev_close_many+0x49/0xd0
-[ 2212.358487]  [<ffffffff814b7028>] dev_close_many+0x88/0x100
-[ 2212.358546]  [<ffffffff814b8150>] rollback_registered_many+0xb0/0x220
-[ 2212.358612]  [<ffffffff814b8319>] unregister_netdevice_many+0x19/0x60
-[ 2212.358694]  [<ffffffffa04d8eb2>] ieee80211_remove_interfaces+0x112/0x190 [mac80211]
-[ 2212.358791]  [<ffffffffa04c585f>] ieee80211_unregister_hw+0x4f/0x100 [mac80211]
-[ 2212.361994]  [<ffffffffa03a1221>] rt2x00lib_remove_dev+0x161/0x1a0 [rt2x00lib]
-[ 2212.365240]  [<ffffffffa0266e2e>] rt2x00usb_disconnect+0x2e/0x70 [rt2x00usb]
-[ 2212.368470]  [<ffffffff81419ce4>] usb_unbind_interface+0x64/0x1c0
-[ 2212.371734]  [<ffffffff813b446f>] __device_release_driver+0x7f/0xf0
-[ 2212.374999]  [<ffffffff813b4503>] device_release_driver+0x23/0x30
-[ 2212.378131]  [<ffffffff813b3c98>] bus_remove_device+0x108/0x180
-[ 2212.381358]  [<ffffffff813b0565>] device_del+0x135/0x1d0
-[ 2212.384454]  [<ffffffff81417760>] usb_disable_device+0xb0/0x270
-[ 2212.387451]  [<ffffffff8140d9cd>] usb_disconnect+0xad/0x1d0
-[ 2212.390294]  [<ffffffff8140f6cd>] hub_thread+0x63d/0x1660
-[ 2212.393034]  [<ffffffff8107c860>] ? wake_up_atomic_t+0x30/0x30
-[ 2212.395728]  [<ffffffff8140f090>] ? hub_port_debounce+0x130/0x130
-[ 2212.398412]  [<ffffffff8107baa0>] kthread+0xc0/0xd0
-[ 2212.401058]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.403639]  [<ffffffff8155de3c>] ret_from_fork+0x7c/0xb0
-[ 2212.406193]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.408732] Code: 24 58 08 00 00 bf 80 00 00 00 e8 3a c3 e0 e0 5b 41 5c 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 41 55 41 54 53 <48> 8b 47 10 48 89 fb 4c 8b 6f 28 4c 8b 20 49 8b 04 24 4c 8b 30
-[ 2212.414671] RIP  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.417646]  RSP <ffff880212f67750>
-[ 2212.420547] CR2: 0000000000000250
-[ 2212.441024] ---[ end trace 5442918f33832bce ]---
+Wrong logic:
+    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
+        or
+    if (dumpable == 0) { /* be protective */ }
+        or
+    if (!dumpable) { /* be protective */ }
 
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Correct logic:
+    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
+        or
+    if (dumpable != 1) { /* be protective */ }
+
+Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
+user was able to ptrace attach to processes that had dropped privileges to
+that user.  (This may have been partially mitigated if Yama was enabled.)
+
+The macros have been moved into the file that declares get/set_dumpable(),
+which means things like the ia64 code can see them too.
+
+CVE-2013-2929
+
+Reported-by: Vasily Kulikov <segoon@openwall.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/ia64/include/asm/processor.h |    2 +-
+ fs/exec.c                         |    6 ++++++
+ include/linux/binfmts.h           |    3 ---
+ include/linux/sched.h             |    4 ++++
+ kernel/ptrace.c                   |    3 ++-
+ 5 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -771,6 +771,9 @@ void rt2x00mac_flush(struct ieee80211_hw
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
- 	struct data_queue *queue;
- 
-+	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags))
-+		return;
-+
- 	tx_queue_for_each(rt2x00dev, queue)
- 		rt2x00queue_flush_queue(queue, drop);
+--- a/arch/ia64/include/asm/processor.h
++++ b/arch/ia64/include/asm/processor.h
+@@ -322,7 +322,7 @@ struct thread_struct {
+ 	regs->loadrs = 0;									\
+ 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
+ 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
+-	if (unlikely(!get_dumpable(current->mm))) {							\
++	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
+ 		/*										\
+ 		 * Zap scratch regs to avoid leaking bits between processes with different	\
+ 		 * uid/privileges.								\
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2027,6 +2027,12 @@ static int __get_dumpable(unsigned long
+ 	return (ret >= 2) ? 2 : ret;
  }
+ 
++/*
++ * This returns the actual value of the suid_dumpable flag. For things
++ * that are using this for checking for privilege transitions, it must
++ * test against SUID_DUMP_USER rather than treating it as a boolean
++ * value.
++ */
+ int get_dumpable(struct mm_struct *mm)
+ {
+ 	return __get_dumpable(mm->flags);
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -113,9 +113,6 @@ extern void setup_new_exec(struct linux_
+ extern void would_dump(struct linux_binprm *, struct file *);
+ 
+ extern int suid_dumpable;
+-#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
+-#define SUID_DUMP_USER		1	/* Dump as user of process */
+-#define SUID_DUMP_ROOT		2	/* Dump as root */
+ 
+ /* Stack area protections */
+ #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -404,6 +404,10 @@ static inline void arch_pick_mmap_layout
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
++#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
++#define SUID_DUMP_USER		1	/* Dump as user of process */
++#define SUID_DUMP_ROOT		2	/* Dump as root */
++
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -254,7 +254,8 @@ ok:
+ 	smp_rmb();
+ 	if (task->mm)
+ 		dumpable = get_dumpable(task->mm);
+-	if (!dumpable  && !ptrace_has_cap(task_user_ns(task), mode))
++	if (dumpable != SUID_DUMP_USER &&
++	    !ptrace_has_cap(task_user_ns(task), mode))
+ 		return -EPERM;
+ 
+ 	return security_ptrace_access_check(task, mode);
 
 
