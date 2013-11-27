@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3K0OCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:02:23 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41668 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502Ab3K0OCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:02:20 -0500
-Message-ID: <5295FB0E.4070406@ti.com>
-Date: Wed, 27 Nov 2013 19:30:46 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754526Ab3K0ODn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:03:43 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:39910 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3K0ODk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 09:03:40 -0500
+Date: Wed, 27 Nov 2013 15:03:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, arjan@linux.intel.com,
+        linux@roeck-us.net, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] x86: override __compiletime_object_size()
+Message-ID: <20131127140332.GC24403@gmail.com>
+References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
+ <20131026103109.GC14949@gmail.com>
+ <526F914A02000078000FD806@nat28.tlf.novell.com>
+ <20131029095408.GB25306@gmail.com>
+ <526F971F02000078000FD841@nat28.tlf.novell.com>
+ <20131029101257.GA25953@gmail.com>
+ <529385AF0200007800106C84@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>
-Subject: Re: [PATCH] watchdog: davinci: rename platform driver to davinci-wdt
-References: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529385AF0200007800106C84@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 November 2013 07:01 PM, Ivan Khoronzhuk wrote:
-> As we switch to use the watchdog core which permits more than one
-> active watchdog in the system, rename platform driver to
-> "davinci-wdt" to be identifiable.
-> 
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 
-Looks good to me. Since bulk of this patch touches mach-davinci, I would
-like to take this through my tree to avoid conflicts with other
-mach-davinci patches I accept.
+* Jan Beulich <JBeulich@suse.com> wrote:
+
+> As discussed in the context of commits 3df7b41a ("x86: Unify
+> copy_from_user() size checking") and 7a3d9b0f ("x86: Unify
+> copy_to_user() and add size checking to it"), we want to leverage
+> __builtin_object_size() also on newer gcc versions, but with other
+> architectures still using another model of copy_*_user() verification
+> we can't replace the global definition. Do it in the (only) header
+> needing the construct for now.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  arch/x86/include/asm/uaccess.h |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> --- 3.13-rc1/arch/x86/include/asm/uaccess.h
+> +++ 3.13-rc1-x86-compiletime-object-size/arch/x86/include/asm/uaccess.h
+> @@ -584,6 +584,12 @@ __copy_from_user_overflow(int size, unsi
+>  
+>  #endif
+>  
+> +/* linux/compiler-gcc4.h restricts this to gcc < 4.6, which doesn't suit us. */
+> +#if defined(__GNUC__) && GCC_VERSION >= 40100
+> +# undef __compiletime_object_size
+> +# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+> +#endif
+> +
+
+Would be nice to have a more verbose changelog that explains what 
+benefits this brings us.
 
 Thanks,
-Sekhar
 
+	Ingo
