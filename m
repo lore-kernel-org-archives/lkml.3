@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab3K0A5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
+	id S1757607Ab3K0A5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab3K0A46 (ORCPT
+	with ESMTP id S1756482Ab3K0A44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:58 -0500
+	Tue, 26 Nov 2013 19:56:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.4 36/39] SUNRPC: Fix a data corruption issue when retransmitting RPC calls
-Date: Tue, 26 Nov 2013 16:57:00 -0800
-Message-Id: <20131127005621.583296712@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 34/39] powerpc/powernv: Add PE to its own PELTV
+Date: Tue, 26 Nov 2013 16:56:58 -0800
+Message-Id: <20131127005621.432072676@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -26,152 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit a6b31d18b02ff9d7915c5898c9b5ca41a798cd73 upstream.
+commit 631ad691b5818291d89af9be607d2fe40be0886e upstream.
 
-The following scenario can cause silent data corruption when doing
-NFS writes. It has mainly been observed when doing database writes
-using O_DIRECT.
+We need add PE to its own PELTV. Otherwise, the errors originated
+from the PE might contribute to other PEs. In the result, we can't
+clear up the error successfully even we're checking and clearing
+errors during access to PCI config space.
 
-1) The RPC client uses sendpage() to do zero-copy of the page data.
-2) Due to networking issues, the reply from the server is delayed,
-   and so the RPC client times out.
-
-3) The client issues a second sendpage of the page data as part of
-   an RPC call retransmission.
-
-4) The reply to the first transmission arrives from the server
-   _before_ the client hardware has emptied the TCP socket send
-   buffer.
-5) After processing the reply, the RPC state machine rules that
-   the call to be done, and triggers the completion callbacks.
-6) The application notices the RPC call is done, and reuses the
-   pages to store something else (e.g. a new write).
-
-7) The client NIC drains the TCP socket send buffer. Since the
-   page data has now changed, it reads a corrupted version of the
-   initial RPC call, and puts it on the wire.
-
-This patch fixes the problem in the following manner:
-
-The ordering guarantees of TCP ensure that when the server sends a
-reply, then we know that the _first_ transmission has completed. Using
-zero-copy in that situation is therefore safe.
-If a time out occurs, we then send the retransmission using sendmsg()
-(i.e. no zero-copy), We then know that the socket contains a full copy of
-the data, and so it will retransmit a faithful reproduction even if the
-RPC call completes, and the application reuses the O_DIRECT buffer in
-the meantime.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: kalshett@in.ibm.com
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |   28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ arch/powerpc/platforms/powernv/pci-ioda.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -390,8 +390,10 @@ static int xs_send_kvec(struct socket *s
- 	return kernel_sendmsg(sock, &msg, NULL, 0, 0);
- }
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -613,13 +613,23 @@ static int __devinit pnv_ioda_configure_
+ 		rid_end = pe->rid + 1;
+ 	}
  
--static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more)
-+static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more, bool zerocopy)
- {
-+	ssize_t (*do_sendpage)(struct socket *sock, struct page *page,
-+			int offset, size_t size, int flags);
- 	struct page **ppage;
- 	unsigned int remainder;
- 	int err, sent = 0;
-@@ -400,6 +402,9 @@ static int xs_send_pagedata(struct socke
- 	base += xdr->page_base;
- 	ppage = xdr->pages + (base >> PAGE_SHIFT);
- 	base &= ~PAGE_MASK;
-+	do_sendpage = sock->ops->sendpage;
-+	if (!zerocopy)
-+		do_sendpage = sock_no_sendpage;
- 	for(;;) {
- 		unsigned int len = min_t(unsigned int, PAGE_SIZE - base, remainder);
- 		int flags = XS_SENDMSG_FLAGS;
-@@ -407,7 +412,7 @@ static int xs_send_pagedata(struct socke
- 		remainder -= len;
- 		if (remainder != 0 || more)
- 			flags |= MSG_MORE;
--		err = sock->ops->sendpage(sock, *ppage, base, len, flags);
-+		err = do_sendpage(sock, *ppage, base, len, flags);
- 		if (remainder == 0 || err != len)
- 			break;
- 		sent += err;
-@@ -428,9 +433,10 @@ static int xs_send_pagedata(struct socke
-  * @addrlen: UDP only -- length of destination address
-  * @xdr: buffer containing this request
-  * @base: starting position in the buffer
-+ * @zerocopy: true if it is safe to use sendpage()
-  *
-  */
--static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base)
-+static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base, bool zerocopy)
- {
- 	unsigned int remainder = xdr->len - base;
- 	int err, sent = 0;
-@@ -458,7 +464,7 @@ static int xs_sendpages(struct socket *s
- 	if (base < xdr->page_len) {
- 		unsigned int len = xdr->page_len - base;
- 		remainder -= len;
--		err = xs_send_pagedata(sock, xdr, base, remainder != 0);
-+		err = xs_send_pagedata(sock, xdr, base, remainder != 0, zerocopy);
- 		if (remainder == 0 || err != len)
- 			goto out;
- 		sent += err;
-@@ -561,7 +567,7 @@ static int xs_local_send_request(struct
- 			req->rq_svec->iov_base, req->rq_svec->iov_len);
- 
- 	status = xs_sendpages(transport->sock, NULL, 0,
--						xdr, req->rq_bytes_sent);
-+						xdr, req->rq_bytes_sent, true);
- 	dprintk("RPC:       %s(%u) = %d\n",
- 			__func__, xdr->len - req->rq_bytes_sent, status);
- 	if (likely(status >= 0)) {
-@@ -617,7 +623,7 @@ static int xs_udp_send_request(struct rp
- 	status = xs_sendpages(transport->sock,
- 			      xs_addr(xprt),
- 			      xprt->addrlen, xdr,
--			      req->rq_bytes_sent);
-+			      req->rq_bytes_sent, true);
- 
- 	dprintk("RPC:       xs_udp_send_request(%u) = %d\n",
- 			xdr->len - req->rq_bytes_sent, status);
-@@ -688,6 +694,7 @@ static int xs_tcp_send_request(struct rp
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
- 	struct xdr_buf *xdr = &req->rq_snd_buf;
-+	bool zerocopy = true;
- 	int status;
- 
- 	xs_encode_stream_record_marker(&req->rq_snd_buf);
-@@ -695,13 +702,20 @@ static int xs_tcp_send_request(struct rp
- 	xs_pktdump("packet data:",
- 				req->rq_svec->iov_base,
- 				req->rq_svec->iov_len);
-+	/* Don't use zero copy if this is a resend. If the RPC call
-+	 * completes while the socket holds a reference to the pages,
-+	 * then we may end up resending corrupted data.
+-	/* Associate PE in PELT */
++	/*
++	 * Associate PE in PELT. We need add the PE into the
++	 * corresponding PELT-V as well. Otherwise, the error
++	 * originated from the PE might contribute to other
++	 * PEs.
 +	 */
-+	if (task->tk_flags & RPC_TASK_SENT)
-+		zerocopy = false;
+ 	rc = opal_pci_set_pe(phb->opal_id, pe->pe_number, pe->rid,
+ 			     bcomp, dcomp, fcomp, OPAL_MAP_PE);
+ 	if (rc) {
+ 		pe_err(pe, "OPAL error %ld trying to setup PELT table\n", rc);
+ 		return -ENXIO;
+ 	}
++
++	rc = opal_pci_set_peltv(phb->opal_id, pe->pe_number,
++				pe->pe_number, OPAL_ADD_PE_TO_DOMAIN);
++	if (rc)
++		pe_warn(pe, "OPAL error %d adding self to PELTV\n", rc);
+ 	opal_pci_eeh_freeze_clear(phb->opal_id, pe->pe_number,
+ 				  OPAL_EEH_ACTION_CLEAR_FREEZE_ALL);
  
- 	/* Continue transmitting the packet/record. We must be careful
- 	 * to cope with writespace callbacks arriving _after_ we have
- 	 * called sendmsg(). */
- 	while (1) {
- 		status = xs_sendpages(transport->sock,
--					NULL, 0, xdr, req->rq_bytes_sent);
-+					NULL, 0, xdr, req->rq_bytes_sent,
-+					zerocopy);
- 
- 		dprintk("RPC:       xs_tcp_send_request(%u) = %d\n",
- 				xdr->len - req->rq_bytes_sent, status);
 
 
