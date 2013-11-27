@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab3K0GXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 01:23:46 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43557 "EHLO
+	id S1756940Ab3K0GXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 01:23:52 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56223 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab3K0GUJ (ORCPT
+	with ESMTP id S1752810Ab3K0GUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Nov 2013 01:20:09 -0500
-X-AuditID: 9c930197-b7caaae000001cef-ac-52958f161f3a
+X-AuditID: 9c930197-b7caaae000001cef-ab-52958f160b2e
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,9 +18,9 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 06/17] tracing/probes: Integrate duplicate set_print_fmt()
-Date: Wed, 27 Nov 2013 15:19:52 +0900
-Message-Id: <1385533203-10014-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/17] tracing/kprobes: Move common functions to trace_probe.h
+Date: Wed, 27 Nov 2013 15:19:51 +0900
+Message-Id: <1385533203-10014-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
 References: <1385533203-10014-1-git-send-email-namhyung@kernel.org>
@@ -31,8 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The set_print_fmt() functions are implemented almost same for
-[ku]probes.  Move it to a common place and get rid of the duplication.
+The __get_data_size() and store_trace_args() will be used by uprobes
+too.  Move them to a common location.
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -41,246 +41,125 @@ Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 63 +--------------------------------------------
- kernel/trace/trace_probe.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.h  |  2 ++
- kernel/trace/trace_uprobe.c | 55 +--------------------------------------
- 4 files changed, 66 insertions(+), 116 deletions(-)
+ kernel/trace/trace_kprobe.c | 48 ---------------------------------------------
+ kernel/trace/trace_probe.h  | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 48 deletions(-)
 
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index bc85240a8e43..a8129dfa36bb 100644
+index 72b76e1f2d34..bc85240a8e43 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -964,67 +964,6 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
+@@ -740,54 +740,6 @@ static const struct file_operations kprobe_profile_ops = {
+ 	.release        = seq_release,
+ };
  
--static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
+-/* Sum up total data length for dynamic arraies (strings) */
+-static __kprobes int __get_data_size(struct trace_probe *tp,
+-				     struct pt_regs *regs)
+-{
+-	int i, ret = 0;
+-	u32 len;
+-
+-	for (i = 0; i < tp->nr_args; i++)
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			call_fetch(&tp->args[i].fetch_size, regs, &len);
+-			ret += len;
+-		}
+-
+-	return ret;
+-}
+-
+-/* Store the value of each argument */
+-static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
+-				       struct pt_regs *regs,
+-				       u8 *data, int maxlen)
 -{
 -	int i;
--	int pos = 0;
+-	u32 end = tp->size;
+-	u32 *dl;	/* Data (relative) location */
 -
--	const char *fmt, *arg;
--
--	if (!trace_kprobe_is_return(tp)) {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	} else {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
+-	for (i = 0; i < tp->nr_args; i++) {
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			/*
+-			 * First, we set the relative location and
+-			 * maximum data length to *dl
+-			 */
+-			dl = (u32 *)(data + tp->args[i].offset);
+-			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
+-			/* Then try to fetch string or dynamic array data */
+-			call_fetch(&tp->args[i].fetch, regs, dl);
+-			/* Reduce maximum length */
+-			end += get_rloc_len(*dl);
+-			maxlen -= get_rloc_len(*dl);
+-			/* Trick here, convert data_rloc to data_loc */
+-			*dl = convert_rloc_to_loc(*dl,
+-				 ent_size + tp->args[i].offset);
+-		} else
+-			/* Just fetching data normally */
+-			call_fetch(&tp->args[i].fetch, regs,
+-				   data + tp->args[i].offset);
 -	}
--
--	/* When len=0, we just calculate the needed length */
--#define LEN_OR_ZERO (len ? len - pos : 0)
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tp->p.args[i].name, tp->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		if (strcmp(tp->p.args[i].type->name, "string") == 0)
--			pos += snprintf(buf + pos, LEN_OR_ZERO,
--					", __get_str(%s)",
--					tp->p.args[i].name);
--		else
--			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--					tp->p.args[i].name);
--	}
--
--#undef LEN_OR_ZERO
--
--	/* return the length of print_fmt */
--	return pos;
 -}
 -
--static int set_print_fmt(struct trace_kprobe *tp)
--{
--	int len;
--	char *print_fmt;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tp, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tp, print_fmt, len + 1);
--	tp->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- 
- /* Kprobe profile handler */
-@@ -1175,7 +1114,7 @@ static int register_kprobe_event(struct trace_kprobe *tp)
- 		call->event.funcs = &kprobe_funcs;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
--	if (set_print_fmt(tp) < 0)
-+	if (set_print_fmt(&tp->p, trace_kprobe_is_return(tp)) < 0)
- 		return -ENOMEM;
- 	ret = register_ftrace_event(&call->event);
- 	if (!ret) {
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index e1b975fb5d7c..7de2f58d2acb 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -837,3 +837,65 @@ out:
- 
- 	return ret;
- }
-+
-+static int __set_print_fmt(struct trace_probe *tp, char *buf, int len,
-+			   bool is_return)
-+{
-+	int i;
-+	int pos = 0;
-+
-+	const char *fmt, *arg;
-+
-+	if (!is_return) {
-+		fmt = "(%lx)";
-+		arg = "REC->" FIELD_STRING_IP;
-+	} else {
-+		fmt = "(%lx <- %lx)";
-+		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
-+	}
-+
-+	/* When len=0, we just calculate the needed length */
-+#define LEN_OR_ZERO (len ? len - pos : 0)
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
-+				tp->args[i].name, tp->args[i].type->fmt);
-+	}
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		if (strcmp(tp->args[i].type->name, "string") == 0)
-+			pos += snprintf(buf + pos, LEN_OR_ZERO,
-+					", __get_str(%s)",
-+					tp->args[i].name);
-+		else
-+			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
-+					tp->args[i].name);
-+	}
-+
-+#undef LEN_OR_ZERO
-+
-+	/* return the length of print_fmt */
-+	return pos;
-+}
-+
-+int set_print_fmt(struct trace_probe *tp, bool is_return)
-+{
-+	int len;
-+	char *print_fmt;
-+
-+	/* First: called with 0 length to calculate the needed length */
-+	len = __set_print_fmt(tp, NULL, 0, is_return);
-+	print_fmt = kmalloc(len + 1, GFP_KERNEL);
-+	if (!print_fmt)
-+		return -ENOMEM;
-+
-+	/* Second: actually write the @print_fmt */
-+	__set_print_fmt(tp, print_fmt, len + 1, is_return);
-+	tp->call.print_fmt = print_fmt;
-+
-+	return 0;
-+}
+ /* Kprobe handler */
+ static __kprobes void
+ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
 diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index d384fbd4025c..2c979cb66367 100644
+index 984e91ed8a44..d384fbd4025c 100644
 --- a/kernel/trace/trace_probe.h
 +++ b/kernel/trace/trace_probe.h
-@@ -226,3 +226,5 @@ store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
- 				   data + tp->args[i].offset);
- 	}
- }
+@@ -178,3 +178,51 @@ extern ssize_t traceprobe_probes_write(struct file *file,
+ 		int (*createfn)(int, char**));
+ 
+ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
 +
-+extern int set_print_fmt(struct trace_probe *tp, bool is_return);
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 3b2885ef47c9..0711f7b2dae5 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -682,59 +682,6 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--#define LEN_OR_ZERO		(len ? len - pos : 0)
--static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
--{
--	const char *fmt, *arg;
--	int i;
--	int pos = 0;
--
--	if (is_ret_probe(tu)) {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	} else {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tu->p.args[i].name, tu->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--				tu->p.args[i].name);
--	}
--
--	return pos;	/* return the length of print_fmt */
--}
--#undef LEN_OR_ZERO
--
--static int set_print_fmt(struct trace_uprobe *tu)
--{
--	char *print_fmt;
--	int len;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tu, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tu, print_fmt, len + 1);
--	tu->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- static bool
- __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
-@@ -966,7 +913,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
- 	call->event.funcs = &uprobe_funcs;
- 	call->class->define_fields = uprobe_event_define_fields;
- 
--	if (set_print_fmt(tu) < 0)
-+	if (set_print_fmt(&tu->p, is_ret_probe(tu)) < 0)
- 		return -ENOMEM;
- 
- 	ret = register_ftrace_event(&call->event);
++/* Sum up total data length for dynamic arraies (strings) */
++static inline __kprobes int
++__get_data_size(struct trace_probe *tp, struct pt_regs *regs)
++{
++	int i, ret = 0;
++	u32 len;
++
++	for (i = 0; i < tp->nr_args; i++)
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			call_fetch(&tp->args[i].fetch_size, regs, &len);
++			ret += len;
++		}
++
++	return ret;
++}
++
++/* Store the value of each argument */
++static inline __kprobes void
++store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
++		 u8 *data, int maxlen)
++{
++	int i;
++	u32 end = tp->size;
++	u32 *dl;	/* Data (relative) location */
++
++	for (i = 0; i < tp->nr_args; i++) {
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			/*
++			 * First, we set the relative location and
++			 * maximum data length to *dl
++			 */
++			dl = (u32 *)(data + tp->args[i].offset);
++			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
++			/* Then try to fetch string or dynamic array data */
++			call_fetch(&tp->args[i].fetch, regs, dl);
++			/* Reduce maximum length */
++			end += get_rloc_len(*dl);
++			maxlen -= get_rloc_len(*dl);
++			/* Trick here, convert data_rloc to data_loc */
++			*dl = convert_rloc_to_loc(*dl,
++				 ent_size + tp->args[i].offset);
++		} else
++			/* Just fetching data normally */
++			call_fetch(&tp->args[i].fetch, regs,
++				   data + tp->args[i].offset);
++	}
++}
 -- 
 1.7.11.7
 
