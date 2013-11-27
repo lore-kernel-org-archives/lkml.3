@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab3K0A72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39424 "EHLO
+	id S1758818Ab3K0A7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39486 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758680Ab3K0A7A (ORCPT
+	with ESMTP id S1755062Ab3K0A7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:00 -0500
+	Tue, 26 Nov 2013 19:59:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 012/116] ipc,shm: correct error return value in shmctl (SHM_UNLOCK)
-Date: Tue, 26 Nov 2013 16:56:25 -0800
-Message-Id: <20131127005737.770459456@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Yin.JianHong" <jiyin@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.12 068/116] nfsd: return better errors to exportfs
+Date: Tue, 26 Nov 2013 16:57:21 -0800
+Message-Id: <20131127005741.640897306@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -31,58 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesper Nilsson <jesper.nilsson@axis.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 3a72660b07d86d60457ca32080b1ce8c2b628ee2 upstream.
+commit 427d6c6646d868fbd3094e7e2e1644d480cd9204 upstream.
 
-Commit 2caacaa82a51 ("ipc,shm: shorten critical region for shmctl")
-restructured the ipc shm to shorten critical region, but introduced a
-path where the return value could be -EPERM, even if the operation
-actually was performed.
+Someone noticed exportfs happily accepted exports that would later be
+rejected when mountd tried to give them to the kernel.  Fix this.
 
-Before the commit, the err return value was reset by the return value
-from security_shm_shmctl() after the if (!ns_capable(...)) statement.
+This is a regression from 4c1e1b34d5c800ad3ac9a7e2805b0bea70ad2278
+"nfsd: Store ex_anon_uid and ex_anon_gid as kuids and kgids".
 
-Now, we still exit the if statement with err set to -EPERM, and in the
-case of SHM_UNLOCK, it is not reset at all, and used as the return value
-from shmctl.
-
-To fix this, we only set err when errors occur, leaving the fallthrough
-case alone.
-
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Reported-by: Yin.JianHong <jiyin@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/nfsd/export.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -974,12 +974,15 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		ipc_lock_object(&shp->shm_perm);
- 		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			kuid_t euid = current_euid();
--			err = -EPERM;
- 			if (!uid_eq(euid, shp->shm_perm.uid) &&
--			    !uid_eq(euid, shp->shm_perm.cuid))
-+			    !uid_eq(euid, shp->shm_perm.cuid)) {
-+				err = -EPERM;
- 				goto out_unlock0;
--			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK))
-+			}
-+			if (cmd == SHM_LOCK && !rlimit(RLIMIT_MEMLOCK)) {
-+				err = -EPERM;
- 				goto out_unlock0;
-+			}
- 		}
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -536,16 +536,12 @@ static int svc_export_parse(struct cache
+ 		if (err)
+ 			goto out3;
+ 		exp.ex_anon_uid= make_kuid(&init_user_ns, an_int);
+-		if (!uid_valid(exp.ex_anon_uid))
+-			goto out3;
  
- 		shm_file = shp->shm_file;
+ 		/* anon gid */
+ 		err = get_int(&mesg, &an_int);
+ 		if (err)
+ 			goto out3;
+ 		exp.ex_anon_gid= make_kgid(&init_user_ns, an_int);
+-		if (!gid_valid(exp.ex_anon_gid))
+-			goto out3;
+ 
+ 		/* fsid */
+ 		err = get_int(&mesg, &an_int);
+@@ -583,6 +579,17 @@ static int svc_export_parse(struct cache
+ 				   exp.ex_uuid);
+ 		if (err)
+ 			goto out4;
++		/*
++		 * For some reason exportfs has been passing down an
++		 * invalid (-1) uid & gid on the "dummy" export which it
++		 * uses to test export support.  To make sure exportfs
++		 * sees errors from check_export we therefore need to
++		 * delay these checks till after check_export:
++		 */
++		if (!uid_valid(exp.ex_anon_uid))
++			goto out4;
++		if (!gid_valid(exp.ex_anon_gid))
++			goto out4;
+ 	}
+ 
+ 	expp = svc_export_lookup(&exp);
 
 
