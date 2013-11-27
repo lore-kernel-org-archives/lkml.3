@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab3K0BKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:10:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39658 "EHLO
+	id S1759272Ab3K0BJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:09:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758856Ab3K0A7y (ORCPT
+	with ESMTP id S1758861Ab3K0A74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:54 -0500
+	Tue, 26 Nov 2013 19:59:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3.12 114/116] GFS2: d_splice_alias() cant return error
-Date: Tue, 26 Nov 2013 16:58:07 -0800
-Message-Id: <20131127005744.823854010@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 116/116] cris: media platform drivers: fix build
+Date: Tue, 26 Nov 2013 16:58:09 -0800
+Message-Id: <20131127005744.961438448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,42 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 0d0d110720d7960b77c03c9f2597faaff4b484ae upstream.
+commit 72a0c5571351f5184195754d23db3e14495b2080 upstream.
 
-unless it was given an IS_ERR(inode), which isn't the case here.  So clean
-up the unnecessary error handling in gfs2_create_inode().
+On cris arch, the functions below aren't defined:
 
-This paves the way for real fixes (hence the stable Cc).
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_read':
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+  drivers/media/platform/sh_veu.c:228:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_write':
+
+  drivers/media/platform/sh_veu.c:234:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_setup':
+  drivers/media/platform/soc_camera/rcar_vin.c:284:3: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_request_capture_stop':
+  drivers/media/platform/soc_camera/rcar_vin.c:353:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+
+Yet, they're available, as CONFIG_GENERIC_IOMAP is defined.  What happens
+is that asm/io.h was not including asm-generic/iomap.h.
+
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/inode.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/cris/include/asm/io.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -584,7 +584,7 @@ static int gfs2_create_inode(struct inod
- 	if (!IS_ERR(inode)) {
- 		d = d_splice_alias(inode, dentry);
- 		error = 0;
--		if (file && !IS_ERR(d)) {
-+		if (file) {
- 			if (d == NULL)
- 				d = dentry;
- 			if (S_ISREG(inode->i_mode))
-@@ -593,8 +593,6 @@ static int gfs2_create_inode(struct inod
- 				error = finish_no_open(file, d);
- 		}
- 		gfs2_glock_dq_uninit(ghs);
--		if (IS_ERR(d))
--			return PTR_ERR(d);
- 		return error;
- 	} else if (error != -ENOENT) {
- 		goto fail_gunlock;
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -3,6 +3,7 @@
+ 
+ #include <asm/page.h>   /* for __va, __pa */
+ #include <arch/io.h>
++#include <asm-generic/iomap.h>
+ #include <linux/kernel.h>
+ 
+ struct cris_io_operations
 
 
