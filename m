@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab3K0Apt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:45:49 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33663 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab3K0Apm (ORCPT
+	id S1754421Ab3K0AqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:46:14 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:39141 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3K0Apv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:45:42 -0500
+	Tue, 26 Nov 2013 19:45:51 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
-Cc: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 03/25] bcache: Kill unaligned bvec hack
-Date: Tue, 26 Nov 2013 16:45:06 -0800
-Message-Id: <1385513128-5035-3-git-send-email-kmo@daterainc.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        "Ed L. Cashin" <ecashin@coraid.com>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 06/25] block: Convert bio_iovec() to bvec_iter
+Date: Tue, 26 Nov 2013 16:45:09 -0800
+Message-Id: <1385513128-5035-6-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -22,160 +24,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bcache has a hack to avoid cloning the biovec if it's all full pages -
-but with immutable biovecs coming this won't be necessary anymore.
+For immutable biovecs, we'll be introducing a new bio_iovec() that uses
+our new bvec iterator to construct a biovec, taking into account
+bvec_iter->bi_bvec_done - this patch updates existing users for the new
+usage.
 
-For now, we remove the special case and always clone the bvec array so
-that the immutable biovec patches are simpler.
+Some of the existing users really do need a pointer into the bvec array
+- those uses are all going to be removed, but we'll need the
+functionality from immutable to remove them - so for now rename the
+existing bio_iovec() -> __bio_iovec(), and it'll be removed in a couple
+patches.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Ed L. Cashin" <ecashin@coraid.com>
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 ---
- drivers/md/bcache/bcache.h  |  1 -
- drivers/md/bcache/request.c | 37 +++++++------------------------------
- drivers/md/bcache/super.c   |  4 ----
- 3 files changed, 7 insertions(+), 35 deletions(-)
+ drivers/block/aoe/aoecmd.c |  2 +-
+ drivers/md/bcache/io.c     | 13 +++++++------
+ drivers/md/dm-verity.c     |  2 +-
+ drivers/scsi/sd.c          |  2 +-
+ fs/bio.c                   | 20 ++++++++++----------
+ include/linux/bio.h        | 10 ++++++----
+ 6 files changed, 26 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 4beb55a..6b6fe93 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -279,7 +279,6 @@ struct bcache_device {
- 	unsigned long		sectors_dirty_last;
- 	long			sectors_dirty_derivative;
- 
--	mempool_t		*unaligned_bvec;
- 	struct bio_set		*bio_split;
- 
- 	unsigned		data_csum:1;
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index fbcc851..78bab41 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -606,7 +606,6 @@ struct search {
- 	unsigned		insert_bio_sectors;
- 
- 	unsigned		recoverable:1;
--	unsigned		unaligned_bvec:1;
- 	unsigned		write:1;
- 	unsigned		read_dirty_data:1;
- 
-@@ -614,6 +613,7 @@ struct search {
- 
- 	struct btree_op		op;
- 	struct data_insert_op	iop;
-+	struct bio_vec		bv[BIO_MAX_PAGES];
- };
- 
- static void bch_cache_read_endio(struct bio *bio, int error)
-@@ -759,10 +759,14 @@ static void bio_complete(struct search *s)
- static void do_bio_hook(struct search *s)
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 877ba11..77c24ab 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -932,7 +932,7 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
+ 	buf->resid = bio->bi_iter.bi_size;
+ 	buf->sector = bio->bi_iter.bi_sector;
+ 	bio_pageinc(bio);
+-	buf->bv = bio_iovec(bio);
++	buf->bv = __bio_iovec(bio);
+ 	buf->bv_resid = buf->bv->bv_len;
+ 	WARN_ON(buf->bv_resid == 0);
+ }
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index cc4ba2d..dc44f06 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -22,11 +22,12 @@ static void bch_bi_idx_hack_endio(struct bio *bio, int error)
+ static void bch_generic_make_request_hack(struct bio *bio)
  {
- 	struct bio *bio = &s->bio.bio;
--	memcpy(bio, s->orig_bio, sizeof(struct bio));
+ 	if (bio->bi_iter.bi_idx) {
++		int i;
++		struct bio_vec *bv;
+ 		struct bio *clone = bio_alloc(GFP_NOIO, bio_segments(bio));
  
-+	bio_init(bio);
-+	bio->bi_io_vec		= s->bv;
-+	bio->bi_max_vecs	= BIO_MAX_PAGES;
-+	__bio_clone(bio, s->orig_bio);
- 	bio->bi_end_io		= request_endio;
- 	bio->bi_private		= &s->cl;
+-		memcpy(clone->bi_io_vec,
+-		       bio_iovec(bio),
+-		       bio_segments(bio) * sizeof(struct bio_vec));
++		bio_for_each_segment(bv, bio, i)
++			clone->bi_io_vec[clone->bi_vcnt++] = *bv;
+ 
+ 		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
+ 		clone->bi_bdev		= bio->bi_bdev;
+@@ -97,7 +98,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
+ 			if (!ret)
+ 				return NULL;
+ 
+-			memcpy(ret->bi_io_vec, bio_iovec(bio),
++			memcpy(ret->bi_io_vec, __bio_iovec(bio),
+ 			       sizeof(struct bio_vec) * vcnt);
+ 
+ 			break;
+@@ -106,7 +107,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
+ 			if (!ret)
+ 				return NULL;
+ 
+-			memcpy(ret->bi_io_vec, bio_iovec(bio),
++			memcpy(ret->bi_io_vec, __bio_iovec(bio),
+ 			       sizeof(struct bio_vec) * vcnt);
+ 
+ 			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
+@@ -182,7 +183,7 @@ static unsigned bch_bio_max_sectors(struct bio *bio)
+ 	ret = min(ret, queue_max_sectors(q));
+ 
+ 	WARN_ON(!ret);
+-	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
++	ret = max_t(int, ret, bio_iovec(bio).bv_len >> 9);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index 132b315..5392135 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -524,7 +524,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
+ 		io->io_vec = io->io_vec_inline;
+ 	else
+ 		io->io_vec = mempool_alloc(v->vec_mempool, GFP_NOIO);
+-	memcpy(io->io_vec, bio_iovec(bio),
++	memcpy(io->io_vec, __bio_iovec(bio),
+ 	       io->io_vec_size * sizeof(struct bio_vec));
+ 
+ 	verity_submit_prefetch(v, io);
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index e6c4bff..200d6bc 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -801,7 +801,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
+ 	if (sdkp->device->no_write_same)
+ 		return BLKPREP_KILL;
+ 
+-	BUG_ON(bio_offset(bio) || bio_iovec(bio)->bv_len != sdp->sector_size);
++	BUG_ON(bio_offset(bio) || bio_iovec(bio).bv_len != sdp->sector_size);
+ 
+ 	sector >>= ilog2(sdp->sector_size) - 9;
+ 	nr_sectors >>= ilog2(sdp->sector_size) - 9;
+diff --git a/fs/bio.c b/fs/bio.c
+index a402ad6..7bb281f 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -821,12 +821,12 @@ void bio_advance(struct bio *bio, unsigned bytes)
+ 			break;
+ 		}
+ 
+-		if (bytes >= bio_iovec(bio)->bv_len) {
+-			bytes -= bio_iovec(bio)->bv_len;
++		if (bytes >= bio_iovec(bio).bv_len) {
++			bytes -= bio_iovec(bio).bv_len;
+ 			bio->bi_iter.bi_idx++;
+ 		} else {
+-			bio_iovec(bio)->bv_len -= bytes;
+-			bio_iovec(bio)->bv_offset += bytes;
++			bio_iovec(bio).bv_len -= bytes;
++			bio_iovec(bio).bv_offset += bytes;
+ 			bytes = 0;
+ 		}
+ 	}
+@@ -879,8 +879,8 @@ void bio_copy_data(struct bio *dst, struct bio *src)
+ 	unsigned src_offset, dst_offset, bytes;
+ 	void *src_p, *dst_p;
+ 
+-	src_bv = bio_iovec(src);
+-	dst_bv = bio_iovec(dst);
++	src_bv = __bio_iovec(src);
++	dst_bv = __bio_iovec(dst);
+ 
+ 	src_offset = src_bv->bv_offset;
+ 	dst_offset = dst_bv->bv_offset;
+@@ -893,7 +893,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
+ 				if (!src)
+ 					break;
+ 
+-				src_bv = bio_iovec(src);
++				src_bv = __bio_iovec(src);
+ 			}
+ 
+ 			src_offset = src_bv->bv_offset;
+@@ -906,7 +906,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
+ 				if (!dst)
+ 					break;
+ 
+-				dst_bv = bio_iovec(dst);
++				dst_bv = __bio_iovec(dst);
+ 			}
+ 
+ 			dst_offset = dst_bv->bv_offset;
+@@ -1776,8 +1776,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
+ 	bp->bio1.bi_iter.bi_size = first_sectors << 9;
+ 
+ 	if (bi->bi_vcnt != 0) {
+-		bp->bv1 = *bio_iovec(bi);
+-		bp->bv2 = *bio_iovec(bi);
++		bp->bv1 = bio_iovec(bi);
++		bp->bv2 = bio_iovec(bi);
+ 
+ 		if (bio_is_rw(bi)) {
+ 			bp->bv2.bv_offset += first_sectors << 9;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index e2e0bc6..9f182fc 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -62,9 +62,11 @@
+  * on highmem page vectors
+  */
+ #define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
+-#define bio_iovec(bio)		bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
+-#define bio_page(bio)		bio_iovec((bio))->bv_page
+-#define bio_offset(bio)		bio_iovec((bio))->bv_offset
++#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
++#define bio_iovec(bio)		(*__bio_iovec(bio))
 +
- 	atomic_set(&bio->bi_cnt, 3);
- }
- 
-@@ -774,9 +778,6 @@ static void search_free(struct closure *cl)
- 	if (s->iop.bio)
- 		bio_put(s->iop.bio);
- 
--	if (s->unaligned_bvec)
--		mempool_free(s->bio.bio.bi_io_vec, s->d->unaligned_bvec);
--
- 	closure_debug_destroy(cl);
- 	mempool_free(s, s->d->c->search);
- }
-@@ -784,7 +785,6 @@ static void search_free(struct closure *cl)
- static struct search *search_alloc(struct bio *bio, struct bcache_device *d)
++#define bio_page(bio)		(bio_iovec((bio)).bv_page)
++#define bio_offset(bio)		(bio_iovec((bio)).bv_offset)
+ #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
+ #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
+ #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
+@@ -72,7 +74,7 @@
+ static inline unsigned int bio_cur_bytes(struct bio *bio)
  {
- 	struct search *s;
--	struct bio_vec *bv;
- 
- 	s = mempool_alloc(d->c->search, GFP_NOIO);
- 	memset(s, 0, offsetof(struct search, iop.insert_keys));
-@@ -803,15 +803,6 @@ static struct search *search_alloc(struct bio *bio, struct bcache_device *d)
- 	s->start_time		= jiffies;
- 	do_bio_hook(s);
- 
--	if (bio->bi_size != bio_segments(bio) * PAGE_SIZE) {
--		bv = mempool_alloc(d->unaligned_bvec, GFP_NOIO);
--		memcpy(bv, bio_iovec(bio),
--		       sizeof(struct bio_vec) * bio_segments(bio));
--
--		s->bio.bio.bi_io_vec	= bv;
--		s->unaligned_bvec	= 1;
--	}
--
- 	return s;
+ 	if (bio->bi_vcnt)
+-		return bio_iovec(bio)->bv_len;
++		return bio_iovec(bio).bv_len;
+ 	else /* dataless requests such as discard */
+ 		return bio->bi_iter.bi_size;
  }
- 
-@@ -850,26 +841,13 @@ static void cached_dev_read_error(struct closure *cl)
- {
- 	struct search *s = container_of(cl, struct search, cl);
- 	struct bio *bio = &s->bio.bio;
--	struct bio_vec *bv;
--	int i;
- 
- 	if (s->recoverable) {
- 		/* Retry from the backing device: */
- 		trace_bcache_read_retry(s->orig_bio);
- 
- 		s->iop.error = 0;
--		bv = s->bio.bio.bi_io_vec;
- 		do_bio_hook(s);
--		s->bio.bio.bi_io_vec = bv;
--
--		if (!s->unaligned_bvec)
--			bio_for_each_segment(bv, s->orig_bio, i)
--				bv->bv_offset = 0, bv->bv_len = PAGE_SIZE;
--		else
--			memcpy(s->bio.bio.bi_io_vec,
--			       bio_iovec(s->orig_bio),
--			       sizeof(struct bio_vec) *
--			       bio_segments(s->orig_bio));
- 
- 		/* XXX: invalidate cache */
- 
-@@ -905,8 +883,7 @@ static void cached_dev_read_done(struct closure *cl)
- 		s->cache_miss = NULL;
- 	}
- 
--	if (verify(dc, &s->bio.bio) && s->recoverable &&
--	    !s->unaligned_bvec && !s->read_dirty_data)
-+	if (verify(dc, &s->bio.bio) && s->recoverable && !s->read_dirty_data)
- 		bch_data_verify(dc, s->orig_bio);
- 
- 	bio_complete(s);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index dec15cd..1d9ee67 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -739,8 +739,6 @@ static void bcache_device_free(struct bcache_device *d)
- 	}
- 
- 	bio_split_pool_free(&d->bio_split_hook);
--	if (d->unaligned_bvec)
--		mempool_destroy(d->unaligned_bvec);
- 	if (d->bio_split)
- 		bioset_free(d->bio_split);
- 	if (is_vmalloc_addr(d->full_dirty_stripes))
-@@ -793,8 +791,6 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
- 		return minor;
- 
- 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
--	    !(d->unaligned_bvec = mempool_create_kmalloc_pool(1,
--				sizeof(struct bio_vec) * BIO_MAX_PAGES)) ||
- 	    bio_split_pool_init(&d->bio_split_hook) ||
- 	    !(d->disk = alloc_disk(1))) {
- 		ida_simple_remove(&bcache_minor, minor);
 -- 
 1.8.4.4
 
