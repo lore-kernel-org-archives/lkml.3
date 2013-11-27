@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab3K0A75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39501 "EHLO
+	id S932708Ab3K0BIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:08:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39676 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758750Ab3K0A7Q (ORCPT
+	with ESMTP id S1758875Ab3K0A76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:16 -0500
+	Tue, 26 Nov 2013 19:59:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.12 072/116] nfsd: make sure to balance get/put_write_access
-Date: Tue, 26 Nov 2013 16:57:25 -0800
-Message-Id: <20131127005741.909427605@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 090/116] powerpc: Fix __get_user_pages_fast() irq handling
+Date: Tue, 26 Nov 2013 16:57:43 -0800
+Message-Id: <20131127005743.129687780@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,70 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
+commit 95f715b08fa4a953771398d20cbe35a6803ea41d upstream.
 
-Use a straight goto error label style in nfsd_setattr to make sure
-we always do the put_write_access call after we got it earlier.
+__get_user_pages_fast() may be called with interrupts disabled (see e.g.
+get_futex_key() in kernel/futex.c) and therefore should use local_irq_save()
+and local_irq_restore() instead of local_irq_disable()/enable().
 
-Note that the we have been failing to do that in the case
-nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
-6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
-setattr".
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/vfs.c |   29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ arch/powerpc/mm/gup.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -444,27 +444,28 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+--- a/arch/powerpc/mm/gup.c
++++ b/arch/powerpc/mm/gup.c
+@@ -123,6 +123,7 @@ int __get_user_pages_fast(unsigned long
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr, len, end;
+ 	unsigned long next;
++	unsigned long flags;
+ 	pgd_t *pgdp;
+ 	int nr = 0;
  
- 	iap->ia_valid |= ATTR_CTIME;
+@@ -156,7 +157,7 @@ int __get_user_pages_fast(unsigned long
+ 	 * So long as we atomically load page table pointers versus teardown,
+ 	 * we can follow the address down to the the page and take a ref on it.
+ 	 */
+-	local_irq_disable();
++	local_irq_save(flags);
  
--	err = nfserr_notsync;
--	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
--		host_err = nfsd_break_lease(inode);
--		if (host_err)
--			goto out_nfserr;
--		fh_lock(fhp);
--
--		host_err = notify_change(dentry, iap);
--		err = nfserrno(host_err);
--		fh_unlock(fhp);
-+	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
-+		err = nfserr_notsync;
-+		goto out_put_write_access;
- 	}
-+
-+	host_err = nfsd_break_lease(inode);
-+	if (host_err)
-+		goto out_put_write_access_nfserror;
-+
-+	fh_lock(fhp);
-+	host_err = notify_change(dentry, iap);
-+	fh_unlock(fhp);
-+
-+out_put_write_access_nfserror:
-+	err = nfserrno(host_err);
-+out_put_write_access:
- 	if (size_change)
- 		put_write_access(inode);
- 	if (!err)
- 		commit_metadata(fhp);
- out:
- 	return err;
--
--out_nfserr:
--	err = nfserrno(host_err);
--	goto out;
+ 	pgdp = pgd_offset(mm, addr);
+ 	do {
+@@ -179,7 +180,7 @@ int __get_user_pages_fast(unsigned long
+ 			break;
+ 	} while (pgdp++, addr = next, addr != end);
+ 
+-	local_irq_enable();
++	local_irq_restore(flags);
+ 
+ 	return nr;
  }
- 
- #if defined(CONFIG_NFSD_V2_ACL) || \
 
 
