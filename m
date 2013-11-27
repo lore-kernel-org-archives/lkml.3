@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab3K0VlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 16:41:13 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:35028 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959Ab3K0VlJ (ORCPT
+	id S1757894Ab3K0Vsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 16:48:54 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:59606 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339Ab3K0Vst convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 16:41:09 -0500
+	Wed, 27 Nov 2013 16:48:49 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Wed, 27 Nov 2013 22:44:52 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: thierry.reding@gmail.com, sameo@linux.intel.com, dev@lynxeye.de,
-        mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
-In-Reply-To: <529624CA.6030604@wwwdotorg.org>
-References: <cover.1385508112.git.stefan@agner.ch>
- <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
- <529624CA.6030604@wwwdotorg.org>
-Message-ID: <ddd65b4d645cb99c3288960ea2dbe7a3@agner.ch>
-User-Agent: Roundcube Webmail/0.9.5
+Content-Transfer-Encoding: 8BIT
+To: Boris BREZILLON <b.brezillon@overkiz.com>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Rob Landley" <rob@landley.net>, "Andrew Victor" <linux@maxim.org.za>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        "Russell King" <linux@arm.linux.org.uk>, "Felipe Balbi" <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        "Josh Wu" <josh.wu@atmel.com>,
+        "Richard Genoud" <richard.genoud@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1384293439-4525-1-git-send-email-b.brezillon@overkiz.com>
+Cc: "Boris BREZILLON" <b.brezillon@overkiz.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org
+References: <1384289513-3068-1-git-send-email-b.brezillon@overkiz.com>
+ <1384293439-4525-1-git-send-email-b.brezillon@overkiz.com>
+Message-ID: <20131127214843.16819.59481@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v5 06/17] clk: at91: add PMC pll clocks
+Date: Wed, 27 Nov 2013 13:48:43 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2013-11-27 17:58, schrieb Stephen Warren:
-<snip>
->> +	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
->> +	if (tps6586x == NULL) {
->> +		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
->> +		return -ENOMEM;
->> +	}
-> 
->> +	tps6586x->version = (enum tps6586x_version)ret;
-> 
-> Why not make the version variable an integer of some kind. Then, the
-> cast wouldn't be required. The values like TPS658621A can be #defines or
-> const u32.
-> 
-Yep this would work too. Whatever is preferred, maybe define would be
-more consistent since SLEW_RATE are defines too (both, the VERSIONCRC
-and SLEW_RATE values are possible content of registers).
+Quoting Boris BREZILLON (2013-11-12 13:57:19)
+> +static const struct clk_ops pll_ops = {
+> +       .prepare = clk_pll_prepare,
+> +       .is_prepared = clk_pll_is_ready,
+> +       .disable = clk_pll_disable,
+> +       .is_enabled = clk_pll_is_ready,
+> +       .recalc_rate = clk_pll_recalc_rate,
+> +       .round_rate = clk_pll_round_rate,
+> +       .set_rate = clk_pll_set_rate,
+> +};
 
->> +	switch (ret) {
-> 
-> That should switch on tps6586x->version since that's been assigned;
-> it'll make the purpose a bit clearer.
-> 
->> +	default:
->> +		name = "TPS6586X";
->> +		break;
->>  	}
-> 
-> I hope the rest of the code deals with unknown values of
-> tps6586x->version OK.
->
-Well, the tps6586x->version is not completly unknown, its something
-valid which is returned by i2c_smbus_read_byte_data. According to the
-data sheet this should be a 8-Bit value.
+Hi Boris,
 
-However, the patch should handle every version, since I tried to make
-the change backward compatible: The driver now and then supports every
-device version, just the default voltage table are applied if there are
-no specific tables available.
+It is a bit strange to see only a .prepare and .disable callback
+populated. What happens if a driver calls clk_disable and then
+clk_enable? You clock will still be disabled in hardware.
+
+Regards,
+Mike
