@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760983Ab3K0CIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:08:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38782 "EHLO
+	id S1760968Ab3K0CIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:08:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab3K0A4h (ORCPT
+	with ESMTP id S1755540Ab3K0A4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:37 -0500
+	Tue, 26 Nov 2013 19:56:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 24/39] ALSA: msnd: Avoid duplicated driver name
-Date: Tue, 26 Nov 2013 16:56:48 -0800
-Message-Id: <20131127005620.720217983@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 23/39] ALSA: 6fire: Fix probe of multiple cards
+Date: Tue, 26 Nov 2013 16:56:47 -0800
+Message-Id: <20131127005620.650236165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -28,49 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
+commit 9b389a8a022110b4bc055a19b888283544d9eba6 upstream.
 
-msnd_pinnacle.c is used for both snd-msnd-pinnacle and
-snd-msnd-classic drivers, and both should have different driver
-names.  Using the same driver name results in the sysfs warning for
-duplicated entries like
- kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
- kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
- sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
- ......
+The probe code of snd-usb-6fire driver overrides the devices[] pointer
+wrongly without checking whether it's already occupied or not.  This
+would screw up the device disconnection later.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Spotted by coverity CID 141423.
+
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/isa/msnd/msnd_pinnacle.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/usb/6fire/chip.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/isa/msnd/msnd_pinnacle.c
-+++ b/sound/isa/msnd/msnd_pinnacle.c
-@@ -73,9 +73,11 @@
- #ifdef MSND_CLASSIC
- #  include "msnd_classic.h"
- #  define LOGNAME			"msnd_classic"
-+#  define DEV_NAME			"msnd-classic"
- #else
- #  include "msnd_pinnacle.h"
- #  define LOGNAME			"snd_msnd_pinnacle"
-+#  define DEV_NAME			"msnd-pinnacle"
- #endif
- 
- static void __devinit set_default_audio_parameters(struct snd_msnd *chip)
-@@ -1068,8 +1070,6 @@ static int __devexit snd_msnd_isa_remove
- 	return 0;
- }
- 
--#define DEV_NAME "msnd-pinnacle"
--
- static struct isa_driver snd_msnd_driver = {
- 	.match		= snd_msnd_isa_match,
- 	.probe		= snd_msnd_isa_probe,
+--- a/sound/usb/6fire/chip.c
++++ b/sound/usb/6fire/chip.c
+@@ -101,7 +101,7 @@ static int __devinit usb6fire_chip_probe
+ 			usb_set_intfdata(intf, chips[i]);
+ 			mutex_unlock(&register_mutex);
+ 			return 0;
+-		} else if (regidx < 0)
++		} else if (!devices[i] && regidx < 0)
+ 			regidx = i;
+ 	}
+ 	if (regidx < 0) {
 
 
