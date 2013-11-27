@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3K0L1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:27:37 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:55245 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab3K0L1g (ORCPT
+	id S1754232Ab3K0L1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:27:45 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43139 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab3K0L1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:27:36 -0500
-Date: Wed, 27 Nov 2013 12:27:32 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olofj@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] use -fstack-protector-strong
-Message-ID: <20131127112731.GA10435@gmail.com>
-References: <20131126203727.GA352@www.outflux.net>
+	Wed, 27 Nov 2013 06:27:37 -0500
+Date: Wed, 27 Nov 2013 11:27:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Li Xiubo <Li.Xiubo@freescale.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        Fabio Estevam <Fabio.Estevam@freescale.com>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "oskar@scara.com" <oskar@scara.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20131127112725.GT14725@sirena.org.uk>
+References: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
+ <20131126134411.GQ14725@sirena.org.uk>
+ <1DD289F6464F0949A2FCA5AA6DC23F828CE2A8@039-SN2MPN1-012.039d.mgd.msft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LXsBfGm2MIDJcXyT"
 Content-Disposition: inline
-In-Reply-To: <20131126203727.GA352@www.outflux.net>
+In-Reply-To: <1DD289F6464F0949A2FCA5AA6DC23F828CE2A8@039-SN2MPN1-012.039d.mgd.msft.net>
+X-Cookie: Your supervisor is thinking about you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
+ regulator consumers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Kees Cook <keescook@chromium.org> wrote:
+--LXsBfGm2MIDJcXyT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On a defconfig x86_64 build (with CONFIG_CC_STACKPROTECTOR enabled), the
-> delta in size is just under 9% larger:
-> 
->  -rwxrwxr-x 1 kees kees  22134340 Nov 26 10:28 vmlinux.gcc-4.8
->  -rwxrwxr-x 1 kees kees  22123870 Nov 26 10:40 vmlinux.gcc-4.9
->  -rwxrwxr-x 1 kees kees  24225118 Nov 26 10:42 vmlinux.gcc-4.9+strong
+On Wed, Nov 27, 2013 at 08:13:03AM +0000, Li Xiubo wrote:
 
-Please run it through 'size' so that we know the real text size 
-increases.
+Please fix your mailer to word wrap within paragraphs, it makes your
+mail much more legible.
 
-If the cost of -fstack-protector-strong is really +9% in kernel text 
-size then that's rather significant!
+> There is one dependency patch: "regulator: core: Provide a dummy regulato=
+r with full constraints".
 
-If this option blows up our performance critical codepaths as well 
-then this will likely cause a runtime slowdown as well, in addition to 
-the increase in I$ footprint. That needs to be measured.
+> From the dependency patch, we can see that using regulator_get_optional()=
+ instead can resovle the problem you descripted above.
 
-CONFIG_CC_STACKPROTECTOR=y is relatively cheap today. For example on 
-x86-64 defconfig:
+> When or will this dependency patch be merged into the -next tree ?
 
-      text    data    bss     dec       filename
-  11378972    1455056 1191936 14025964  vmlinux  # CONFIG_CC_STACKPROTECTOR is not set
-  11420243    1455056 1191936 14067235  vmlinux  CONFIG_CC_STACKPROTECTOR=y
+That patch is already in mainline.
 
-that's a +0.3% cost currently.
+> > I'd expect to see a commit description that describes how the driver
+> > currently tries to handle this, why it doesn't work and how the patch
+> > fixes it. =20
 
-Thanks,
+> The SGTL5000 requires 2 external power supplies: VDDA and VDDIO. An
+> optional third external power supply VDDD may be provided externally
 
-	Ingo
+You need to put your working through of this stuff in the commit
+message.
+
+--LXsBfGm2MIDJcXyT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSldcaAAoJELSic+t+oim9E2EQAI7AD+oeSU7Pn36guJfIdYx5
+hMe6zX/4xZBPjGBrypWJhHKE8fNVTJB2SgNG0/VuIecAZvzHgFNMFEm75WEROxuC
+DD6qhCZEKdVWq4/2k5kMLKvFfaAirVa8+WKsECGnGPPJpkjPsY63ebdE+Ew5WE6z
+Zewm3J+SiZlpOku3T19Bd/dnKfhWJ9Mxj4bwWDL/PBXnQTr2f10vIMBwJQ9TXnO3
+REAF5Te6x5owib2BOa0jwGySTooZfMK77unrgaKkZ7dJSWcHxVPp47XmiiafxS1v
+mS8Bpt+qIwYXH/iXoWCtRKAolaqCYJ+nDZmet4UNhN2h6HJp9bN/F4kNTBSH3lsc
+N68Prxxa0T1Xmg99cvPs+fUz2lkgXYxJxGnyG/gMWNTLJsc3NGP0oVbyhZsivNNP
+oAfVcoNmKcRb9qq+om5xROjUu/T5np676RnGk0fJ/NYNxscov/9MOzs8bpejjwAw
+m9F3sSYXzZT6DyAUo39GKVyuhV9autABfxx+1swjiUN/qTleRV2Ly4b+GiBBKa+t
+M4g5Upv0pPz9OoU+YfWGb22aYLSLt8vr1nbpC2AurI5lcpr+zkqT/n8ZtB2uVXWD
++X0e/Wu/qlLLUbCjMzCsC5MT+32O3mDDyjj9guVKImxVo1CxVSlEqyGtuApzb9QD
+JU3I1JzgLLE5ubDkbhLi
+=Tbuk
+-----END PGP SIGNATURE-----
+
+--LXsBfGm2MIDJcXyT--
