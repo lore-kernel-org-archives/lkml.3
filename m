@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3K0IN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:13:58 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:48059 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab3K0IN4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:13:56 -0500
-X-AuditID: 9c93017d-b7b24ae000002834-da-5295a9c383cb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 17/22] perf tools: Add build and install plugins targets
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
-	<1385031680-9014-18-git-send-email-jolsa@redhat.com>
-	<1385134068.1747.105.camel@leonhard>
-	<20131125145144.GG3161@krava.brq.redhat.com>
-Date: Wed, 27 Nov 2013 17:13:54 +0900
-In-Reply-To: <20131125145144.GG3161@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Mon, 25 Nov 2013 15:51:44 +0100")
-Message-ID: <87vbzeqn25.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754413Ab3K0IS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:18:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab3K0ISx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 03:18:53 -0500
+Date: Wed, 27 Nov 2013 16:17:53 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131127081753.GA19809@dhcp-16-126.nay.redhat.com>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-7-git-send-email-dyoung@redhat.com>
+ <20131126193016.GA18170@console-pimps.org>
+ <20131127030706.GB11852@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127030706.GB11852@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On 11/27/13 at 11:07am, Dave Young wrote:
+> > > It will not work for efi 32bit. Only x86_64 currently.
+> >  
+> > Actually, exporting the tables does work for 32-bit, right? It's just
+> > that kexec doesn't work for 32-bit EFI?
+> 
+> It does not make sense to export them for 32-bit because we do not
+> support kexec efi on 32-bit. Will change the description to below:
+> 
+> "kexec efi boot on 32-bit is not supported so I only export the tables
+> for 64-bit efi system."
 
-On Mon, 25 Nov 2013 15:51:44 +0100, Jiri Olsa wrote:
-> On Sat, Nov 23, 2013 at 12:27:48AM +0900, Namhyung Kim wrote:
->> 2013-11-21 (목), 12:01 +0100, Jiri Olsa:
->> > Adding 'plugins' target along with the libtraceevent.a,
->> > so plugins are built together with traceevent library.
->> > 
->> > Adding 'install-traceevent-plugins' Makefile install target,
->> > instructing perf to install plugins into:
->> >   $(HOME)/libexec/perf-core/traceevent/plugins
->> >     - if installed localy under $HOME
->> >   $(DESTDIR)/$(prefix)/$(perfexecdir)/traceevent/plugins
->> >     - if installed globally
->> 
->> [SNIP]
->> > --- a/tools/perf/config/Makefile
->> > +++ b/tools/perf/config/Makefile
->> > @@ -578,6 +578,7 @@ else
->> >  lib = lib
->> >  endif
->> >  libdir = $(prefix)/$(lib)
->> > +plugindir=$(perfexecdir)/traceevent/plugins
->> 
->> Hmm.. it puts traceevent plugins under the perf directory.  But I don't
->> think it's a good idea since libtraceevent can be used independently.
->> 
->> What about something like this?
->> 
->>   plugindir = $(perfexecdir)/../traceevent/plugins
->
-> this is where trace-cmd stores them:
->
->   $(HOME)/.trace-cmd/plugins
->   $(prefix)/$(libdir)/trace-cmd/plugins
->
-> but I guess we want global place to install plugins,
-> the traceevent by default uses:
->
->   $(HOME)/.traceevent/plugins
->   $(prefix)/lib/traceevent/plugins
->
-> How about that?
+I thought about only enabling it for x86_64 and efi is in .config.
+Rethinking about this, since exporting code will also work for 32-bit so I
+will remove the lines you mentioned.
 
-Looks good to me.
-
-Thanks,
-Namhyung
+Thanks
+Dave
