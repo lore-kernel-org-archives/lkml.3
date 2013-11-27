@@ -1,130 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab3K0N3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:29:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45983 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3K0N3t (ORCPT
+	id S1752389Ab3K0Nay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:30:54 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:48902 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab3K0Nau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:29:49 -0500
-Date: Wed, 27 Nov 2013 14:29:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Pablo Neira Ayuso <pablo@netfilter.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Greg KH <greg@kroah.com>
-Subject: Re: netfilter: active obj WARN when cleaning up
-In-Reply-To: <20131127113939.GL16735@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
-References: <522B25B5.6000808@oracle.com> <5294F27D.4000108@oracle.com> <20131126230709.GA10948@localhost> <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de> <20131127113939.GL16735@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 27 Nov 2013 08:30:50 -0500
+Date: Wed, 27 Nov 2013 14:30:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce
+ NOKPROBE_SYMBOL() and general cleaning of kprobe blacklist
+Message-ID: <20131127133045.GC18422@gmail.com>
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
+ <y0mvbznxi6k.fsf@fche.csb>
+ <20131120153801.GA9743@gmail.com>
+ <20131120173600.GK8993@redhat.com>
+ <528D6C9F.8050809@hitachi.com>
+ <20131121072938.GA16912@gmail.com>
+ <528EC2FF.30301@hitachi.com>
+ <528F4406.3090309@hitachi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <528F4406.3090309@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Russell King - ARM Linux wrote:
-> On Wed, Nov 27, 2013 at 11:45:17AM +0100, Thomas Gleixner wrote:
-> > On Wed, 27 Nov 2013, Pablo Neira Ayuso wrote:
-> > 
-> > > On Tue, Nov 26, 2013 at 02:11:57PM -0500, Sasha Levin wrote:
-> > > > Ping? I still see this warning.
-> > > 
-> > > Did your test include patch 0c3c6c00c6?
-> > 
-> > And how is that patch supposed to help?
-> >  
-> > > > >[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
-> > > > >[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint:
-> > > > >delayed_work_timer_fn+0x0/0x20
-> > 
-> > > > >[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
-> > > > >[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
-> > > > >[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
-> > 
-> > The debug code detects an active timer, which itself is part of a
-> > delayed work struct. The call comes from kmem_cache_destroy().
-> > 
-> >          kmem_cache_free(kmem_cache, s);
-> > 
-> > So debug object says: s contains an active timer. s is the kmem_cache
-> > which is destroyed from nf_conntrack_cleanup_net_list.
-> > 
-> > Now struct kmem_cache has in case of SLUB:
-> > 
-> >     struct kobject kobj;    /* For sysfs */
-> > 
-> > and struct kobject has:
-> > 
-> > #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-> >     struct delayed_work     release;
-> > #endif
-> > 
-> > So this is the thing you want to look at:
-> > 
-> > commit c817a67ec (kobject: delayed kobject release: help find buggy
-> > drivers) added that delayed work thing.
-> > 
-> > I fear that does not work for kobjects which are embedded into
-> > something else.
-> 
-> No, kobjects embedded into something else have their lifetime determined
-> by the embedded kobject.  That's rule #1 of kobjects - or rather reference
-> counted objects.
-> 
-> The point at which the kobject gets destructed is when the release function
-> is called.  If it is destructed before that time, that's a violation of
-> the reference counted nature of kobjects, and that's what the delay on
-> releasing is designed to catch.
-> 
-> It's designed to catch code which does this exact path:
-> 
-> 	put(obj)
-> 	free(obj)
-> 
-> rather than code which does it the right way:
-> 
-> 	put(obj)
-> 		-> refcount becomes 0
-> 			-> release function gets called
-> 				->free(obj)
-> 
-> The former is unsafe because obj may have other references.
 
-Though the kobject is the only thing which has a delayed work embedded
-inside struct kmem_cache. And the debug object splat points at the
-kmem_cache_free() of the struct kmem_cache itself. That's why I
-assumed the wreckage around that place. And indeed:
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-kmem_cache_destroy(s)
-    __kmem_cache_shutdown(s)
-      sysfs_slab_remove(s)
-        ....
-	kobject_put(&s->kobj)
-           kref_put(&kobj->kref, kobject_release);
-	     kobject_release(kref)
-    	       #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
-	         schedule_delayed_work(&kobj->release)
-	       #else
-	        kobject_cleanup(kobj)
-	       #endif
+> (2013/11/22 11:35), Masami Hiramatsu wrote:
+> > (2013/11/21 16:29), Ingo Molnar wrote:
+> >>
+> >> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> >>
+> >>> (2013/11/21 2:36), Frank Ch. Eigler wrote:
+> >>
+> >> [ ... ]
+> >>>> one needs to resort to something like:
+> >>>>
+> >>>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
+> >>>>    perf probe $symbol
+> >>>> done
+> >>>>
+> >>>> then wait for a few hours for that to finish. Then, or while the loop
+> >>>> is still running, run
+> >>>>
+> >>>> # perf record -e 'probe:*' -aR sleep 1
+> >>>>
+> >>>> to take a kernel down.
+> >>>
+> >>> Um, indeed, current blacklist is not perfect. [...]
+> >>
+> >> Then it needs to be fixed ASAP!
+> > 
+> > OK, I see. At least the two patches included this series
+> > should be fixed. :)
+> > 
+> > And more, I need to test all symbols and drills down.
+> 
+> OK, what I've found was;
+>  - The functions which can be ftraced look good.
+>    (see tracing/available_filter_functions)
+>  - following functions should not be able to be probed.
+>    - memcpy, memset
+>    - native_load_sp0 and some other native functions (need to be clear)
+>    - restore
+>    - trace_graph_return
+>    - trace_hardirqs_off_thunk, trace_hardirqs_on_thunk
+>    - This list still be not perfect. I just enabled/disabled kprobes
+>      one by one. There might be combined bugs (combination of several
+>      kprobes).
+>  - Some of them are hard to specify by NOKPROBE_SYMBOL because they are
+>    defined in assembly file.
+> 
+> Anyway, to fix all of them, I think we need file-based blacklist
+> especially for assembler symbols.
 
-So in the CONFIG_DEBUG_KOBJECT_RELEASE=y case, schedule_delayed_work()
-_IS_ called which arms the timer. debugobjects catches the attempt to
-free struct kmem_cache which contains the armed timer.
+assembler symbols shouldn't be particular hard either, just put them 
+into the noprobes section.
 
-So much for rule #1
+> For example, we can get all text symbols by below command;
+>  nm some-file.o | grep -i " t " | cut -f3 -d" "
+> so that we can make a blacklisted-symbol list for the file.
+> I need to look the Kbuild for how I can do that in Makefile.
+
+I think it's generally better to add explicit annotations to the code.
 
 Thanks,
 
-	tglx
-
+	Ingo
