@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab3K0DNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 22:13:15 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:39321 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab3K0DNL (ORCPT
+	id S1755570Ab3K0DPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 22:15:17 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55743 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab3K0DPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 22:13:11 -0500
+	Tue, 26 Nov 2013 22:15:12 -0500
+Message-ID: <52956442.50001@gmail.com>
+Date: Wed, 27 Nov 2013 11:17:22 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <4253729.doK7ubnxKx@vostro.rjw.lan>
-References: <cover.1385374819.git.viresh.kumar@linaro.org>
-	<40779593.MBXsTetiKz@vostro.rjw.lan>
-	<CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com>
-	<4253729.doK7ubnxKx@vostro.rjw.lan>
-Date: Wed, 27 Nov 2013 08:43:10 +0530
-Message-ID: <CAKohpomm_2iWVOt8MyWFr6=zrEfuBo1z-fPvkaFk-H873-74cw@mail.gmail.com>
-Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
+To: hans.verkuil@cisco.com, m.chehab@samsung.com
+CC: rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-media@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: [PATCH] drivers: staging: media: go7007: go7007-usb.c use pr_*()
+ instead of dev_*() before 'go' initialized in go7007_usb_probe()
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
+In-Reply-To: <5294255E.7040105@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 November 2013 01:53, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, November 26, 2013 07:56:19 AM Viresh Kumar wrote:
->> On 26 November 2013 04:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+dev_*() assumes 'go' is already initialized, so need use pr_*() instead
+of before 'go' initialized. Related warning (with allmodconfig under
+hexagon):
 
->> > This appears to be racy.  Is it really racy, or just seemingly?
->>
->> Why does it look racy to you? Userspace should be frozen by now,
->> policy_list should be stable as well as nobody would touch it.
->
-> You're stopping governors while they may be in use in principle.  Do we have
-> suitable synchronization in place for that?
+    CC [M]  drivers/staging/media/go7007/go7007-usb.o
+  drivers/staging/media/go7007/go7007-usb.c: In function 'go7007_usb_probe':
+  drivers/staging/media/go7007/go7007-usb.c:1060:2: warning: 'go' may be used uninitialized in this function [-Wuninitialized]
 
-At what point exactly in suspend cycle do we suspend timers and workqueues.
-I thought userspace would be frozen by now and so would be the governors..
+Also remove useless code after 'return' statement.
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/staging/media/go7007/go7007-usb.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
+index 58684da..30310e9 100644
+--- a/drivers/staging/media/go7007/go7007-usb.c
++++ b/drivers/staging/media/go7007/go7007-usb.c
+@@ -1057,7 +1057,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
+ 	char *name;
+ 	int video_pipe, i, v_urb_len;
+ 
+-	dev_dbg(go->dev, "probing new GO7007 USB board\n");
++	pr_devel("probing new GO7007 USB board\n");
+ 
+ 	switch (id->driver_info) {
+ 	case GO7007_BOARDID_MATRIX_II:
+@@ -1097,13 +1097,10 @@ static int go7007_usb_probe(struct usb_interface *intf,
+ 		board = &board_px_tv402u;
+ 		break;
+ 	case GO7007_BOARDID_LIFEVIEW_LR192:
+-		dev_err(go->dev, "The Lifeview TV Walker Ultra is not supported. Sorry!\n");
++		pr_err("The Lifeview TV Walker Ultra is not supported. Sorry!\n");
+ 		return -ENODEV;
+-		name = "Lifeview TV Walker Ultra";
+-		board = &board_lifeview_lr192;
+-		break;
+ 	case GO7007_BOARDID_SENSORAY_2250:
+-		dev_info(go->dev, "Sensoray 2250 found\n");
++		pr_info("Sensoray 2250 found\n");
+ 		name = "Sensoray 2250/2251";
+ 		board = &board_sensoray_2250;
+ 		break;
+@@ -1112,7 +1109,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
+ 		board = &board_ads_usbav_709;
+ 		break;
+ 	default:
+-		dev_err(go->dev, "unknown board ID %d!\n",
++		pr_err("unknown board ID %d!\n",
+ 				(unsigned int)id->driver_info);
+ 		return -ENODEV;
+ 	}
+-- 
+1.7.7.6
