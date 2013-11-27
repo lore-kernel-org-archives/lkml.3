@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab3K0CNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:13:36 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44057 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab3K0CNd (ORCPT
+	id S1759158Ab3K0CPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:15:35 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:43167 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758477Ab3K0CPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:13:33 -0500
-Message-ID: <529555C5.7030404@gmail.com>
-Date: Wed, 27 Nov 2013 10:15:33 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 26 Nov 2013 21:15:33 -0500
 MIME-Version: 1.0
-To: dmitry.torokhov@gmail.com, floe@butterbrot.org, rydberg@euromail.se,
-        David Herrmann <dh.herrmann@gmail.com>
-CC: rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-Subject: [PATCH] drivers: input: touchscreen: sur40: use static variable instead
- of stack varialbe for 'packet_id'
-References: <528AD6B3.1060507@gmail.com> <20131125011908.GA18921@codeaurora.org>
-In-Reply-To: <20131125011908.GA18921@codeaurora.org>
+In-Reply-To: <5956447.Fj3sMXmCsu@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+	<1385429290-25397-4-git-send-email-yinghai@kernel.org>
+	<5956447.Fj3sMXmCsu@vostro.rjw.lan>
+Date: Tue, 26 Nov 2013 18:15:32 -0800
+X-Google-Sender-Auth: 2o6skVnj_tlyXgtE3WhXNiqKwG0
+Message-ID: <CAE9FiQXjGPB4uurUA8wYL73UcBzSJYVKx90px-KuEYit1-c_GQ@mail.gmail.com>
+Subject: Re: [PATCH v2 03/10] PCI: Move resources and bus_list releasing to pci_release_dev
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'packet_id' is used for checking sequence whether in order, it need be
-static variable independent from sur40_poll().
+On Tue, Nov 26, 2013 at 5:15 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> @@ -36,11 +22,6 @@ static void pci_destroy_dev(struct pci_dev *dev)
+>>  {
+>>       device_del(&dev->dev);
+>>
+>> -     down_write(&pci_bus_sem);
+>> -     list_del(&dev->bus_list);
+>> -     up_write(&pci_bus_sem);
+>> -
+>> -     pci_free_resources(dev);
+>>       put_device(&dev->dev);
+>
+> And if the side effects are benign enough, why don't we do a device_unregister()
+> here?
 
-The related warning (with allmodconfig under hexagon):
+Yes, that is same, but we are using device_add in pci_device_add...
 
-  drivers/input/touchscreen/sur40.c: In function 'sur40_poll':
-  drivers/input/touchscreen/sur40.c:297:6: warning: 'packet_id' may be used uninitialized in this function [-Wuninitialized]
+Thanks
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/input/touchscreen/sur40.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/touchscreen/sur40.c b/drivers/input/touchscreen/sur40.c
-index cfd1b7e..5dfd01a 100644
---- a/drivers/input/touchscreen/sur40.c
-+++ b/drivers/input/touchscreen/sur40.c
-@@ -251,7 +251,7 @@ static void sur40_poll(struct input_polled_dev *polldev)
- 	struct sur40_state *sur40 = polldev->private;
- 	struct input_dev *input = polldev->input;
- 	int result, bulk_read, need_blobs, packet_blobs, i;
--	u32 packet_id;
-+	static u32 packet_id;
- 
- 	struct sur40_header *header = &sur40->bulk_in_buffer->header;
- 	struct sur40_blob *inblob = &sur40->bulk_in_buffer->blobs[0];
--- 
-1.7.7.6
+Yinghai
