@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab3K0OU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:20:57 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33828 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab3K0OUz convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Wed, 27 Nov 2013 09:20:55 -0500
-Message-Id: <52960DD202000078001079D8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 27 Nov 2013 14:20:50 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ingo Molnar" <mingo@kernel.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        <arjan@linux.intel.com>, <linux@roeck-us.net>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86: override __compiletime_object_size()
-References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
- <20131026103109.GC14949@gmail.com>
- <526F914A02000078000FD806@nat28.tlf.novell.com>
- <20131029095408.GB25306@gmail.com>
- <526F971F02000078000FD841@nat28.tlf.novell.com>
- <20131029101257.GA25953@gmail.com>
- <529385AF0200007800106C84@nat28.tlf.novell.com>
- <20131127140332.GC24403@gmail.com>
-In-Reply-To: <20131127140332.GC24403@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755740Ab3K0OWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:22:38 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50636 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752606Ab3K0OWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 09:22:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.13-rc2
+Date: Wed, 27 Nov 2013 15:35:22 +0100
+Message-ID: <1656039.n8p00yR1CA@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.11.13 at 15:03, Ingo Molnar <mingo@kernel.org> wrote:
+Hi Linus,
 
-> * Jan Beulich <JBeulich@suse.com> wrote:
-> 
->> As discussed in the context of commits 3df7b41a ("x86: Unify
->> copy_from_user() size checking") and 7a3d9b0f ("x86: Unify
->> copy_to_user() and add size checking to it"), we want to leverage
->> __builtin_object_size() also on newer gcc versions, but with other
->> architectures still using another model of copy_*_user() verification
->> we can't replace the global definition. Do it in the (only) header
->> needing the construct for now.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> Cc: Arjan van de Ven <arjan@linux.intel.com>
->> Cc: Guenter Roeck <linux@roeck-us.net>
->> ---
->>  arch/x86/include/asm/uaccess.h |    6 ++++++
->>  1 file changed, 6 insertions(+)
->> 
->> --- 3.13-rc1/arch/x86/include/asm/uaccess.h
->> +++ 3.13-rc1-x86-compiletime-object-size/arch/x86/include/asm/uaccess.h
->> @@ -584,6 +584,12 @@ __copy_from_user_overflow(int size, unsi
->>  
->>  #endif
->>  
->> +/* linux/compiler-gcc4.h restricts this to gcc < 4.6, which doesn't suit us. */
->> +#if defined(__GNUC__) && GCC_VERSION >= 40100
->> +# undef __compiletime_object_size
->> +# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
->> +#endif
->> +
-> 
-> Would be nice to have a more verbose changelog that explains what 
-> benefits this brings us.
+Please pull from the git repository at
 
-That makes no sense to me - the benefits of this construct should
-have been explained with its introduction; the change here just
-makes it being used under wider range of compilers (and the code
-comment already says exactly that).
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.13-rc2
 
-Jan
+to receive ACPI and power management fixes for v3.13-rc2 with
+top-most commit b90f7b8af985739facce48d64050a023e7df3858
+
+  Merge branch 'pm-tools'
+
+on top of commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae
+
+  Linux Linux 3.13-rc1
+
+These commits fix one cpufreq bug introduced recently and a few bugs all over
+(ACPI mostly) that have been around for quite some time.  They also clean up
+a couple of things.
+
+If you don't like the octopus merge, please let me know. :-)
+
+Specifics:
+
+ - Fix for a recent regression in the Tegra cpufreq driver causing
+   excess error messages to be printed from Stephen Warren.
+
+ - ACPI-based device hotplug fix to prevent conflicting notify handlers
+   from being installed for PCI host bridge objects.  From Toshi Kani.
+
+ - ACPICA update to upstream version 20131115.  This contains bug fixes
+   mostly (loop termination fix for the get AML length function, fixes
+   related to namespace node removal and debug output).  From Bob Moore,
+   Tomasz Nowicki and Lv Zheng.
+
+ - Removal of incorrect inclusions of internal ACPICA header files by
+   non-ACPICA code from Lv Zheng.
+
+ - Fixes for the ACPI sysfs interface exposing tables to user space
+   from Daisuke Hatayama and Jeremy Compostella.
+
+ - Assorted ACPI and cpufreq cleanups from Sachin Kamat and Al Stone.
+
+ - cpupower tool fix and man page from Thomas Renninger.
+
+Thanks!
+
+
+---------------
+
+Al Stone (1):
+      ACPI / sleep: clean up compiler warning about uninitialized field
+
+Bob Moore (3):
+      ACPICA: Debug output: Do not emit function nesting level for kernel build.
+      ACPICA: Add support to delete all objects attached to the root namespace node.
+      ACPICA: Update version to 20131115.
+
+Daisuke HATAYAMA (1):
+      ACPI / sysfs: Set file size for each exposed ACPI table
+
+Jeremy Compostella (1):
+      ACPI / sysfs: Fix incorrect ACPI tables walk in acpi_tables_sysfs_init()
+
+Lv Zheng (3):
+      ACPICA: Tests: Add CHECKSUM_ABORT protection for test utilities.
+      ACPICA: Resources: Fix loop termination for the get AML length function.
+      ACPI: Clean up incorrect inclusions of ACPICA headers
+
+Sachin Kamat (1):
+      cpufreq: exynos: Remove unwanted EXPORT_SYMBOL
+
+Stephen Warren (1):
+      cpufreq: tegra: don't error target() when suspended
+
+Thomas Renninger (2):
+      tools: cpupower: Add cpupower-idle-set(1) manpage
+      tools: cpupower: fix wrong err msg not supported vs not available
+
+Tomasz Nowicki (1):
+      ACPICA: Delete all attached data objects during namespace node deletion.
+
+Toshi Kani (1):
+      ACPI / hotplug: Fix conflicted PCI bridge notify handlers
+
+---------------
+
+ drivers/acpi/acpica/acresrc.h                 |    6 +--
+ drivers/acpi/acpica/nsalloc.c                 |   18 +++++--
+ drivers/acpi/acpica/nsutils.c                 |   18 ++++---
+ drivers/acpi/acpica/rscalc.c                  |    9 +++-
+ drivers/acpi/acpica/rscreate.c                |   36 ++++++-------
+ drivers/acpi/acpica/rsutils.c                 |    2 +-
+ drivers/acpi/acpica/utdebug.c                 |   31 ++++++++---
+ drivers/acpi/nvs.c                            |    1 -
+ drivers/acpi/pci_root.c                       |    3 ++
+ drivers/acpi/scan.c                           |    2 +-
+ drivers/acpi/sleep.c                          |    2 +-
+ drivers/acpi/sysfs.c                          |   54 ++++++++++---------
+ drivers/cpufreq/exynos4210-cpufreq.c          |    1 -
+ drivers/cpufreq/exynos4x12-cpufreq.c          |    1 -
+ drivers/cpufreq/exynos5250-cpufreq.c          |    1 -
+ drivers/cpufreq/tegra-cpufreq.c               |    4 +-
+ drivers/hwmon/asus_atk0110.c                  |    1 -
+ include/acpi/acconfig.h                       |    2 +
+ include/acpi/acpi_bus.h                       |    1 +
+ include/acpi/acpixf.h                         |    2 +-
+ tools/power/cpupower/man/cpupower-idle-info.1 |    3 +-
+ tools/power/cpupower/man/cpupower-idle-set.1  |   71 +++++++++++++++++++++++++
+ tools/power/cpupower/utils/helpers/sysfs.c    |    4 +-
+ 23 files changed, 189 insertions(+), 84 deletions(-)
 
