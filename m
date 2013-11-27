@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab3K0C1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:27:30 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60901 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab3K0C11 (ORCPT
+	id S1758300Ab3K0C3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:29:10 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8455 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757951Ab3K0C3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:27:27 -0500
-Message-ID: <52955913.3060809@gmail.com>
-Date: Wed, 27 Nov 2013 10:29:39 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 26 Nov 2013 21:29:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 26 Nov 2013 18:26:36 -0800
+Message-ID: <529558EA.9090206@nvidia.com>
+Date: Wed, 27 Nov 2013 11:28:58 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Bottomley@parallels.com, linux-scsi@vger.kernel.org
-CC: rkuo <rkuo@codeaurora.org>,
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: scsi: scsi_lib.c: add prefix "SCSILIB_" to macro
- "SP"
-References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
-In-Reply-To: <5294255E.7040105@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v3 1/6] ARM: tegra: add gpiod_lookup table for paz00
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com> <1385460350-17543-2-git-send-email-mika.westerberg@linux.intel.com> <52950585.2080802@wwwdotorg.org>
+In-Reply-To: <52950585.2080802@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the macro "SP" is too common to make conflict with some architectures,
-so recommend to add prefix for it.
+On 11/27/2013 05:33 AM, Stephen Warren wrote:
+> On 11/26/2013 03:05 AM, Mika Westerberg wrote:
+>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>>
+>> This makes it possible to request the gpio descriptors in
+>> rfkill_gpio driver regardless of the platform.
+>
+> V2 of the series did the following:
+>
+>   static struct rfkill_gpio_platform_data wifi_rfkill_platform_data = {
+>   	.name		= "wifi_rfkill",
+> -	.reset_gpio	= 25, /* PD1 */
+> -	.shutdown_gpio	= 85, /* PK5 */
+>   	.type	= RFKILL_TYPE_WLAN,
+>   };
+>
+> I assume that will happen sometime, along with removing those two fields
+> from the struct definition.
 
-The related warning (with allmodconfig for hexagon):
+This needs to happen after patch 2 of this series, but would be nice to 
+have indeed. Would suggest to do it in a separate patch if this series 
+needs no more revision.
 
-    CC [M]  drivers/scsi/scsi_lib.o
-  drivers/scsi/scsi_lib.c:46:0: warning: "SP" redefined [enabled by default]
-  arch/hexagon/include/uapi/asm/registers.h:9:0: note: this is the location of the previous definition
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/scsi_lib.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 7bd7f0d..f78e21b 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -43,28 +43,28 @@ struct scsi_host_sg_pool {
- 	mempool_t	*pool;
- };
- 
--#define SP(x) { x, "sgpool-" __stringify(x) }
-+#define SCSILIB_SP(x) { x, "sgpool-" __stringify(x) }
- #if (SCSI_MAX_SG_SEGMENTS < 32)
- #error SCSI_MAX_SG_SEGMENTS is too small (must be 32 or greater)
- #endif
- static struct scsi_host_sg_pool scsi_sg_pools[] = {
--	SP(8),
--	SP(16),
-+	SCSILIB_SP(8),
-+	SCSILIB_SP(16),
- #if (SCSI_MAX_SG_SEGMENTS > 32)
--	SP(32),
-+	SCSILIB_SP(32),
- #if (SCSI_MAX_SG_SEGMENTS > 64)
--	SP(64),
-+	SCSILIB_SP(64),
- #if (SCSI_MAX_SG_SEGMENTS > 128)
--	SP(128),
-+	SCSILIB_SP(128),
- #if (SCSI_MAX_SG_SEGMENTS > 256)
- #error SCSI_MAX_SG_SEGMENTS is too large (256 MAX)
- #endif
- #endif
- #endif
- #endif
--	SP(SCSI_MAX_SG_SEGMENTS)
-+	SCSILIB_SP(SCSI_MAX_SG_SEGMENTS)
- };
--#undef SP
-+#undef SCSILIB_SP
- 
- struct kmem_cache *scsi_sdb_cache;
- 
--- 
-1.7.7.6
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
