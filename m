@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab3K0Bi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:38:26 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:40848 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758996Ab3K0BiS (ORCPT
+	id S1760050Ab3K0Bi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:38:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39220 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab3K0A6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:38:18 -0500
-Message-ID: <52954D04.8090101@hitachi.com>
-Date: Wed, 27 Nov 2013 10:38:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH -tip v3 13/23] x86/trap: Use NOKPROBE_SYMBOL macro
- in trap.c
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal> <20131120042221.15296.85443.stgit@kbuild-fedora.novalocal> <20131122212119.GE19762@tassilo.jf.intel.com>
-In-Reply-To: <20131122212119.GE19762@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 19:58:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Julius Werner <jwerner@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 73/80] usb: hub: Clear Port Reset Change during init/resume
+Date: Tue, 26 Nov 2013 16:57:42 -0800
+Message-Id: <20131127005645.986827243@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
+References: <20131127005640.934155527@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/23 6:21), Andi Kleen wrote:
-> On Wed, Nov 20, 2013 at 04:22:21AM +0000, Masami Hiramatsu wrote:
->> Use NOKPROBE_SYMBOL macro to protect functions from kprobes
->> instead of __kprobes annotation in trap.c.
->> This also applies __always_inline annotation for some cases,
->> because NOKPROBE_SYMBOL() will inhibit inlining by referring
->> the symbol address.
-> 
-> NOKPROBE_SYMBOL seems to add a reference from some variable to the function?
-> 
-> With LTO we can optimize away unused functions, but not
-> when there are references to the symbol. So this would likely
-> prevent optimizations with LTO.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-After considering this problem deeper, I decide to say NO against
-to your opinion. IMHO, the LTO is just an optimization, on the other
-hand, NOKPROBE_SYMBOL is more important because it is for avoiding
-kernel crash. I mean, the safety and stability should be prior to
-the performance. Anyway, such side-effect of NOKPROBE_SYMBOL looks
-very limited. Perhaps, less than 1% of functions will be marked.
-How much does it affect for the optimization?
+------------------
 
-Thank you,
+From: Julius Werner <jwerner@chromium.org>
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+commit e92aee330837e4911553761490a8fb843f2053a6 upstream.
+
+This patch adds the Port Reset Change flag to the set of bits that are
+preemptively cleared on init/resume of a hub. In theory this bit should
+never be set unexpectedly... in practice it can still happen if BIOS,
+SMM or ACPI code plays around with USB devices without cleaning up
+correctly. This is especially dangerous for XHCI root hubs, which don't
+generate any more Port Status Change Events until all change bits are
+cleared, so this is a good precaution to have (similar to how it's
+already done for the Warm Port Reset Change flag).
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/core/hub.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1129,6 +1129,11 @@ static void hub_activate(struct usb_hub
+ 			usb_clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_ENABLE);
+ 		}
++		if (portchange & USB_PORT_STAT_C_RESET) {
++			need_debounce_delay = true;
++			usb_clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_RESET);
++		}
+ 		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
+ 				hub_is_superspeed(hub->hdev)) {
+ 			need_debounce_delay = true;
 
 
