@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab3K0CAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:00:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38860 "EHLO
+	id S1759752Ab3K0CA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:00:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756074Ab3K0A5F (ORCPT
+	with ESMTP id S1755986Ab3K0A5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:05 -0500
+	Tue, 26 Nov 2013 19:57:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH 3.10 13/80] drm/nv50-/disp: remove dcb_outp_match call, and related variables
-Date: Tue, 26 Nov 2013 16:56:42 -0800
-Message-Id: <20131127005641.866263356@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 39/39] cris: media platform drivers: fix build
+Date: Tue, 26 Nov 2013 16:57:03 -0800
+Message-Id: <20131127005621.785642075@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
-References: <20131127005640.934155527@linuxfoundation.org>
+In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
+References: <20131127005619.011763867@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Emil Velikov <emil.l.velikov@gmail.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 9a7046d55f319b2dde5d2536cc2adb01ebdbe09e upstream.
+commit 72a0c5571351f5184195754d23db3e14495b2080 upstream.
 
-Unused and irrelavant since the code move of DP training/linkcontrol interrupt
+On cris arch, the functions below aren't defined:
 
-Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_read':
+
+  drivers/media/platform/sh_veu.c:228:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_write':
+
+  drivers/media/platform/sh_veu.c:234:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
+  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
+  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_setup':
+  drivers/media/platform/soc_camera/rcar_vin.c:284:3: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
+
+  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_request_capture_stop':
+  drivers/media/platform/soc_camera/rcar_vin.c:353:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+
+Yet, they're available, as CONFIG_GENERIC_IOMAP is defined.  What happens
+is that asm/io.h was not including asm-generic/iomap.h.
+
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/sornv50.c |    8 --------
- 1 file changed, 8 deletions(-)
+ arch/cris/include/asm/io.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/sornv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/sornv50.c
-@@ -47,14 +47,8 @@ int
- nv50_sor_mthd(struct nouveau_object *object, u32 mthd, void *args, u32 size)
- {
- 	struct nv50_disp_priv *priv = (void *)object->engine;
--	struct nouveau_bios *bios = nouveau_bios(priv);
--	const u16 type = (mthd & NV50_DISP_SOR_MTHD_TYPE) >> 12;
- 	const u8  head = (mthd & NV50_DISP_SOR_MTHD_HEAD) >> 3;
--	const u8  link = (mthd & NV50_DISP_SOR_MTHD_LINK) >> 2;
- 	const u8    or = (mthd & NV50_DISP_SOR_MTHD_OR);
--	const u16 mask = (0x0100 << head) | (0x0040 << link) | (0x0001 << or);
--	struct dcb_output outp;
--	u8  ver, hdr;
- 	u32 data;
- 	int ret = -EINVAL;
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -3,6 +3,7 @@
  
-@@ -62,8 +56,6 @@ nv50_sor_mthd(struct nouveau_object *obj
- 		return -EINVAL;
- 	data = *(u32 *)args;
+ #include <asm/page.h>   /* for __va, __pa */
+ #include <arch/io.h>
++#include <asm-generic/iomap.h>
+ #include <linux/kernel.h>
  
--	if (type && !dcb_outp_match(bios, type, mask, &ver, &hdr, &outp))
--		return -ENODEV;
- 
- 	switch (mthd & ~0x3f) {
- 	case NV50_DISP_SOR_PWR:
+ struct cris_io_operations
 
 
