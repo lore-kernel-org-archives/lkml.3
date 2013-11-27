@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3K0SRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:17:21 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44660 "EHLO
+	id S1754383Ab3K0S2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:28:47 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45114 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3K0SRS (ORCPT
+	with ESMTP id S1752446Ab3K0S2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:17:18 -0500
-Date: Wed, 27 Nov 2013 18:17:11 +0000
+	Wed, 27 Nov 2013 13:28:46 -0500
+Date: Wed, 27 Nov 2013 18:28:41 +0000
 From: Mark Brown <broonie@kernel.org>
-To: wangbiao <biao.wang@intel.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>, di.zhang@intel.com,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20131127181711.GZ14725@sirena.org.uk>
-References: <1384996978.19494.7.camel@wangbiao>
- <1385088270.20782.12.camel@wangbiao>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131127182841.GF14725@sirena.org.uk>
+References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20131127132442.GJ3296@lee--X1>
+ <20131127151639.GX14725@sirena.org.uk>
+ <20131127152701.GQ3296@lee--X1>
+ <20131127160707.GC14725@sirena.org.uk>
+ <20131127164202.GX3296@lee--X1>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E27WtheCsaqubncA"
+	protocol="application/pgp-signature"; boundary="TvdOHkZ48FvYUU7J"
 Content-Disposition: inline
-In-Reply-To: <1385088270.20782.12.camel@wangbiao>
+In-Reply-To: <20131127164202.GX3296@lee--X1>
 X-Cookie: Your supervisor is thinking about you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2] wm8994: move dcs done irq request to the end of
- initialization of completion
+Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
+ as readable
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,38 +38,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---E27WtheCsaqubncA
+--TvdOHkZ48FvYUU7J
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Nov 22, 2013 at 10:44:30AM +0800, wangbiao wrote:
-> once code return from request_threaded_irq, irq was setup enabled by
-> default, but completion var dcs_done not got initialized yet, if then a
-> dcs done irq was raised, system will got hung as the sync mechanism is
-> invalid now.
+On Wed, Nov 27, 2013 at 04:42:02PM +0000, Lee Jones wrote:
 
-Applied, thnaks.
+> I see. Well I'm not sure how. If we apply it to either ASoC or MFD and
+> other patches pertaining to that file subsequently appear, then
+> conflict is likely. As you know, the commonly used mitigation
 
---E27WtheCsaqubncA
+It shouldn't be that likely, we're adding entries to the middle of big,
+ordered tables - conflicts would be caused by something like changing
+or adding adjacent entries and they're pretty trivial to resolve.  It's
+not like a restructring of the code or anything.
+
+> technique we usually employ is immutable branches, but this was not
+> employed in this case for one reason or another. So if we apply it now
+> to either one of the trees we will be hedging our bets.
+
+Hedging our bets would be applying it to both trees! =20
+
+--TvdOHkZ48FvYUU7J
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSljckAAoJELSic+t+oim9cloP/iddFYz6I809DH5Q1wXzA7WH
-2SgMlh4JFBGFx+GQ61qNURTB1jOGdHgNwCT2lYSWSya84b34M3keCxA6s9uW3LTG
-xdhHteJxaZUrtu8d1He7+1HeDDGEo3n+UGAyLb2OnjPN1OFLy6USmg3qA8q88a7D
-8yruakAF5cuafX4bk2ESnfrgIPJyBqbt14jQzS64QS5w5vm76ilGDZlCjjOZ1dIw
-U0AsywsuykhmL4CyNloz9qSgcQJ51wv0+QdNnwld7lSFkY7oVUnLYXOSr5PXffBd
-814wSvKiiy9U7/Hb+dX7iIaSILzqN/+LycY/RBA7fOv1qaVxEmgcibrEkSo1stst
-rZW1+Lkp/odMR/Hn2H0Mbn1VsSgG4lbDm1xgixq3urujxkUmwmTj5YVMf66cuEEf
-3xnVtpXL17dgnDqHVJD/kZHnC4J7d43y6bAgJY7wxxp2g+zTEQBJv4ZllAQvjkTi
-BtHMGwxhWOQgM5v7N9sujf/evv8ZNYMntrQcfp0hEPgbGZIMUABkDvHDSwMAtx0M
-1I3ZwLFsOFCu3AMh9fvFbOj19myUw6xIYt2P9x1m22xlFTKxdthaAS6+Fua1ETJ4
-7HGfh9qQvIdCUOgFHsmOicaeYz8Dc7LCf+qYegpUQS19WNm7qcIiSdel1B7TE3yZ
-k+GJ1iwLD1IN/ZKRoYzs
-=QOdN
+iQIcBAEBAgAGBQJSljnWAAoJELSic+t+oim9QuUP/jBi8W5HH9feoRpRSC+7gNUX
+rWHxGGmXXo2l0INUKOc5Nf865FbZoFXt2GuyAf0xoC6mCN0/YRgFUEpy+Xo07cUe
+5JYLgRm5bhVz3bBUXUfqM2ShIq6Dj8tuLCcBTHgjIFJr2wG7Zk/n5u6xvEwttVU4
+TMGG45fW1M60UXq5+KK2N0o9dkw+r3ISjzeAOCtD9zrDPt69cNZCGzSqY2FR5+wG
+s1vDRXqxMxeRPywJH5XFi4AcLqy2fdIhOfrQc4ISEU0kDszpvqIPzeg3Zo5Q74hF
+6RlOs4RHwIwTtUAsS+5VIEhMfYtFVgs2xXeJHlyFFpmGhTmUmMByeoGi9gZWPYBq
+KiFgTx2krMgyOVg9LiZrhyUNUTyI3ChIVQ5dccQx330NY/6NEDaHkoqp6jcuZ40I
+482b9oAjM7GNdek/k0M3uhJ/ZX9Po1iAW2KLavVtnh1HTTlv4EBFD1YSXpi12FYA
+TbjvqcTilxNI+jv/c5btMdYxiftl14Bb8O0XmHwwTbZcNCGCUjqMOxYKbowpoIZH
+XEkP9HfHZ96qEyDuY7f6URff26GiThOwIA8qACYK89BVDQ3oVkDgDfPXVCdncKf/
+x6pJlRwh3zAXTcWHeVXAkJnPBtlhRBYHgCkPce2U0Gn8C0wHLNtUKvydcmuYARW0
+lnfCncCSYPFvpaTtQ+AW
+=Yb3g
 -----END PGP SIGNATURE-----
 
---E27WtheCsaqubncA--
+--TvdOHkZ48FvYUU7J--
