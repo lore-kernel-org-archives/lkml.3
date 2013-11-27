@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab3K0A6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39157 "EHLO
+	id S932343Ab3K0A6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:58:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758330Ab3K0A6C (ORCPT
+	with ESMTP id S1758419Ab3K0A6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:02 -0500
+	Tue, 26 Nov 2013 19:58:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Markus <mmarkus@hearit.co>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 47/80] ALSA: hda - Provide missing pin configs for VAIO with ALC260
-Date: Tue, 26 Nov 2013 16:57:16 -0800
-Message-Id: <20131127005644.222712556@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jani Nikula <jani.nikula@intel.com>, annndddrr@gmail.com,
+        Cornel Panceac <cpanceac@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 79/80] drm/i915: quirk away phantom LVDS on Intels D510MO mainboard
+Date: Tue, 26 Nov 2013 16:57:48 -0800
+Message-Id: <20131127005646.390967293@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,65 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit d08c5ef2a039393eaf2ab2152db5f07790fa0f40 upstream.
+commit e5614f0c2d0f4d7f0b8ef745d34593baf2c5dbf8 upstream.
 
-Some models (or maybe depending on BIOS version) of Sony VAIO with
-ALC260 give no proper pin configurations as default, resulting in the
-non-working speaker, etc.  Just provide the whole pin configurations
-via a fixup.
+This replaceable mainboard only has a VGA-out, yet it claims to also have
+a connected LVDS header.
 
-Reported-by: Matthew Markus <mmarkus@hearit.co>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Addresses https://bugs.freedesktop.org/show_bug.cgi?id=63860
+
+[jani.nikula@intel.com: use DMI_EXACT_MATCH for board name.]
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reported-by: <annndddrr@gmail.com>
+Cc: Cornel Panceac <cpanceac@gmail.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1495,6 +1495,7 @@ enum {
- 	ALC260_FIXUP_KN1,
- 	ALC260_FIXUP_FSC_S7020,
- 	ALC260_FIXUP_FSC_S7020_JWSE,
-+	ALC260_FIXUP_VAIO_PINS,
- };
- 
- static void alc260_gpio1_automute(struct hda_codec *codec)
-@@ -1635,6 +1636,24 @@ static const struct hda_fixup alc260_fix
- 		.chained = true,
- 		.chain_id = ALC260_FIXUP_FSC_S7020,
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -869,6 +869,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
+ 		},
  	},
-+	[ALC260_FIXUP_VAIO_PINS] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			/* Pin configs are missing completely on some VAIOs */
-+			{ 0x0f, 0x01211020 },
-+			{ 0x10, 0x0001003f },
-+			{ 0x11, 0x411111f0 },
-+			{ 0x12, 0x01a15930 },
-+			{ 0x13, 0x411111f0 },
-+			{ 0x14, 0x411111f0 },
-+			{ 0x15, 0x411111f0 },
-+			{ 0x16, 0x411111f0 },
-+			{ 0x17, 0x411111f0 },
-+			{ 0x18, 0x411111f0 },
-+			{ 0x19, 0x411111f0 },
-+			{ }
-+		}
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Intel D510MO",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
++			DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
++		},
 +	},
- };
  
- static const struct snd_pci_quirk alc260_fixup_tbl[] = {
-@@ -1643,6 +1662,7 @@ static const struct snd_pci_quirk alc260
- 	SND_PCI_QUIRK(0x1025, 0x008f, "Acer", ALC260_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x103c, 0x280a, "HP dc5750", ALC260_FIXUP_HP_DC5750),
- 	SND_PCI_QUIRK(0x103c, 0x30ba, "HP Presario B1900", ALC260_FIXUP_HP_B1900),
-+	SND_PCI_QUIRK(0x104d, 0x81bb, "Sony VAIO", ALC260_FIXUP_VAIO_PINS),
- 	SND_PCI_QUIRK(0x104d, 0x81e2, "Sony VAIO TX", ALC260_FIXUP_HP_PIN_0F),
- 	SND_PCI_QUIRK(0x10cf, 0x1326, "FSC LifeBook S7020", ALC260_FIXUP_FSC_S7020),
- 	SND_PCI_QUIRK(0x1509, 0x4540, "Favorit 100XS", ALC260_FIXUP_GPIO1),
+ 	{ }	/* terminating entry */
+ };
 
 
