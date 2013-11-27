@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759415Ab3K0BRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:17:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39560 "EHLO
+	id S1759447Ab3K0BSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:18:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3K0A73 (ORCPT
+	with ESMTP id S932465Ab3K0A71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:29 -0500
+	Tue, 26 Nov 2013 19:59:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerhard Sittig <gsi@denx.de>, Anatolij Gustschin <agust@denx.de>
-Subject: [PATCH 3.12 086/116] powerpc/mpc512x: silence build warning upon disabled DIU
-Date: Tue, 26 Nov 2013 16:57:39 -0800
-Message-Id: <20131127005742.858109160@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.12 083/116] block: fix a probe argument to blk_register_region
+Date: Tue, 26 Nov 2013 16:57:36 -0800
+Message-Id: <20131127005742.655299896@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,55 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerhard Sittig <gsi@denx.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 45d20e8348969a165c53cfb91f445e7cc599a9f0 upstream.
+commit a207f5937630dd35bd2550620bef416937a1365e upstream.
 
-a disabled Kconfig option results in a reference to a not implemented
-routine when the IS_ENABLED() macro is used for both conditional
-implementation of the routine as well as a C language source code test
-at the call site -- the "if (0) func();" construct only gets eliminated
-later by the optimizer, while the compiler already has emitted its
-warning about "func()" being undeclared
+The probe function is supposed to return NULL on failure (as we can see in
+kobj_lookup: kobj = probe(dev, index, data); ... if (kobj) return kobj;
 
-provide an empty implementation for the mpc512x_setup_diu() and
-mpc512x_init_diu() routines in case of the disabled option, to avoid the
-compiler warning which is considered fatal and breaks compilation
+However, in loop and brd, it returns negative error from ERR_PTR.
 
-the bug appeared with commit 2abbbb63c90ab55ca3f054772c2e5ba7df810c48
-"powerpc/mpc512x: move common code to shared.c file", how to reproduce:
+This causes a crash if we simulate disk allocation failure and run
+less -f /dev/loop0 because the negative number is interpreted as a pointer:
 
-  make mpc512x_defconfig
-  echo CONFIG_FB_FSL_DIU=n >> .config && make olddefconfig
-  make
+BUG: unable to handle kernel NULL pointer dereference at 00000000000002b4
+IP: [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+PGD 23c677067 PUD 23d6d1067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop hpfs nvidia(PO) ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_stats cpufreq_ondemand cpufreq_userspace cpufreq_powersave cpufreq_conservative hid_generic spadfs usbhid hid fuse raid0 snd_usb_audio snd_pcm_oss snd_mixer_oss md_mod snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib dmi_sysfs snd_rawmidi nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd soundcore lm85 hwmon_vid ohci_hcd ehci_pci ehci_hcd serverworks sata_svw libata acpi_cpufreq freq_table mperf ide_core usbcore kvm_amd kvm tg3 i2c_piix4 libphy microcode e100 usb_common ptp skge i2c_core pcspkr k10temp evdev floppy hwmon pps_core mii rtc_cmos button processor unix [last unloaded: nvidia]
+CPU: 1 PID: 6831 Comm: less Tainted: P        W  O 3.10.15-devel #18
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff880203cc6bc0 ti: ffff88023e47c000 task.ti: ffff88023e47c000
+RIP: 0010:[<ffffffff8118b188>]  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+RSP: 0018:ffff88023e47dbd8  EFLAGS: 00010286
+RAX: ffffffffffffff74 RBX: ffffffffffffff74 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
+RBP: ffff88023e47dc18 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88023f519658
+R13: ffffffff8118c300 R14: 0000000000000000 R15: ffff88023f519640
+FS:  00007f2070bf7700(0000) GS:ffff880247400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000000000002b4 CR3: 000000023da1d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ 0000000000000002 0000001d00000000 000000003e47dc50 ffff88023f519640
+ ffff88043d5bb668 ffffffff8118c300 ffff88023d683550 ffff88023e47de60
+ ffff88023e47dc98 ffffffff8118c10d 0000001d81605698 0000000000000292
+Call Trace:
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c10d>] blkdev_get+0x1dd/0x370
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c365>] blkdev_open+0x65/0x80
+ [<ffffffff8114d12e>] do_dentry_open.isra.18+0x23e/0x2f0
+ [<ffffffff8114d214>] finish_open+0x34/0x50
+ [<ffffffff8115e122>] do_last.isra.62+0x2d2/0xc50
+ [<ffffffff8115eb58>] path_openat.isra.63+0xb8/0x4d0
+ [<ffffffff81115a8e>] ? might_fault+0x4e/0xa0
+ [<ffffffff8115f4f0>] do_filp_open+0x40/0x90
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8116db85>] ? __alloc_fd+0xa5/0x1f0
+ [<ffffffff8114e45f>] do_sys_open+0xef/0x1d0
+ [<ffffffff8114e559>] SyS_open+0x19/0x20
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: 44 00 00 55 48 89 e5 41 57 49 89 ff 41 56 41 89 d6 41 55 41 54 4c 8d 67 18 53 48 83 ec 18 89 75 cc e9 f2 00 00 00 0f 1f 44 00 00 <48> 8b 80 40 03 00 00 48 89 df 4c 8b 68 58 e8 d5
+a4 07 00 44 89
+RIP  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+ RSP <ffff88023e47dbd8>
+CR2: 00000000000002b4
+---[ end trace bb7f32dbf02398dc ]---
 
-    CC      arch/powerpc/platforms/512x/mpc512x_shared.o
-  .../arch/powerpc/platforms/512x/mpc512x_shared.c: In function 'mpc512x_init_early':
-  .../arch/powerpc/platforms/512x/mpc512x_shared.c:456:3: error: implicit declaration of function 'mpc512x_init_diu' [-Werror=implicit-function-declaration]
-  .../arch/powerpc/platforms/512x/mpc512x_shared.c: In function 'mpc512x_setup_arch':
-  .../arch/powerpc/platforms/512x/mpc512x_shared.c:469:3: error: implicit declaration of function 'mpc512x_setup_diu' [-Werror=implicit-function-declaration]
-  cc1: all warnings being treated as errors
-  make[4]: *** [arch/powerpc/platforms/512x/mpc512x_shared.o] Error 1
+The brd change should be backported to stable kernels starting with 2.6.25.
+The loop change should be backported to stable kernels starting with 2.6.22.
 
-Signed-off-by: Gerhard Sittig <gsi@denx.de>
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/512x/mpc512x_shared.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/block/brd.c  |    2 +-
+ drivers/block/loop.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/512x/mpc512x_shared.c
-+++ b/arch/powerpc/platforms/512x/mpc512x_shared.c
-@@ -303,6 +303,9 @@ void __init mpc512x_setup_diu(void)
- 	diu_ops.release_bootmem		= mpc512x_release_bootmem;
- }
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -545,7 +545,7 @@ static struct kobject *brd_probe(dev_t d
  
-+#else
-+void __init mpc512x_setup_diu(void) { /* EMPTY */ }
-+void __init mpc512x_init_diu(void) { /* EMPTY */ }
- #endif
+ 	mutex_lock(&brd_devices_mutex);
+ 	brd = brd_init_one(MINOR(dev) >> part_shift);
+-	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
++	kobj = brd ? get_disk(brd->brd_disk) : NULL;
+ 	mutex_unlock(&brd_devices_mutex);
  
- void __init mpc512x_init_IRQ(void)
+ 	*part = 0;
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1741,7 +1741,7 @@ static struct kobject *loop_probe(dev_t
+ 	if (err < 0)
+ 		err = loop_add(&lo, MINOR(dev) >> part_shift);
+ 	if (err < 0)
+-		kobj = ERR_PTR(err);
++		kobj = NULL;
+ 	else
+ 		kobj = get_disk(lo->lo_disk);
+ 	mutex_unlock(&loop_index_mutex);
 
 
