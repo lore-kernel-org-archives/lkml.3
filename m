@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab3K0QYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:24:44 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36456 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab3K0QYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:24:43 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Fabio Estevam <festevam@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: thierry.reding@gmail.com, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Date: Wed, 27 Nov 2013 16:24:16 +0000
-Message-Id: <1385569457-8650-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.4
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 1/2] regulator: core: Replace checks of have_full_constraints with a function
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757413Ab3K0Q2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:28:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13627 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752326Ab3K0Q2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:28:13 -0500
+Date: Wed, 27 Nov 2013 18:31:25 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Michael Dalton <mwdalton@google.com>,
+        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH 2/2] virtio-net: make all RX paths handle erors consistently
+Message-ID: <1385569684-26595-2-git-send-email-mst@redhat.com>
+References: <1385569684-26595-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385569684-26595-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+receive mergeable now handles errors internally.
+Do same for big and small packet paths, otherwise
+the logic is too hard to follow.
 
-Simple code reorganisation so we can change the logic for deciding what
-full constraints are more easily.
-
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/regulator/core.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 3fe13130baec..02fdf925bb56 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -119,6 +119,11 @@ static const char *rdev_get_name(struct regulator_dev *rdev)
- 		return "";
+While I can't point at a bug this fixes, I'm not sure
+there's no bug in the existing logic.
+So not exactly a bug fix bug I think it's justified for net.
+
+ drivers/net/virtio_net.c | 53 +++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 37 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 0e6ea69..97c6212 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -299,6 +299,35 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
+ 	return skb;
  }
  
-+static bool have_full_constraints(void)
++static struct sk_buff *receive_small(void *buf, unsigned int len)
 +{
-+	return has_full_constraints;
++	struct sk_buff * skb = buf;
++
++	len -= sizeof(struct virtio_net_hdr);
++	skb_trim(skb, len);
++
++	return skb;
 +}
 +
- /**
-  * of_get_regulator - get a regulator device node based on supply name
-  * @dev: Device pointer for the consumer (of regulator) device
-@@ -1340,7 +1345,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 	 * Assume that a regulator is physically present and enabled
- 	 * even if it isn't hooked up and just provide a dummy.
- 	 */
--	if (has_full_constraints && allow_dummy) {
-+	if (have_full_constraints() && allow_dummy) {
- 		pr_warn("%s supply %s not found, using dummy regulator\n",
- 			devname, id);
++static struct sk_buff *receive_big(struct net_device *dev,
++				   struct receive_queue *rq,
++				   void *buf,
++				   unsigned int len)
++{
++	struct page *page = buf;
++	struct sk_buff *skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
++
++	if (unlikely(!skb))
++		goto err;
++
++	return skb;
++
++err:
++	dev->stats.rx_dropped++;
++	give_pages(rq, page);
++	return NULL;
++}
++
+ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 					 struct receive_queue *rq,
+ 					 void *buf,
+@@ -407,23 +436,15 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+ 		return;
+ 	}
  
-@@ -3627,7 +3632,7 @@ int regulator_suspend_finish(void)
- 			if (error)
- 				ret = error;
- 		} else {
--			if (!has_full_constraints)
-+			if (!have_full_constraints())
- 				goto unlock;
- 			if (!ops->disable)
- 				goto unlock;
-@@ -3825,7 +3830,7 @@ static int __init regulator_init_complete(void)
- 		if (!enabled)
- 			goto unlock;
+-	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
+-		skb = buf;
+-		len -= sizeof(struct virtio_net_hdr);
+-		skb_trim(skb, len);
+-	} else if (vi->mergeable_rx_bufs) {
++	if (vi->mergeable_rx_bufs)
+ 		skb = receive_mergeable(dev, rq, buf, len);
+-		if (unlikely(!skb))
+-			return;
+-	} else {
+-		page = buf;
+-		skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
+-		if (unlikely(!skb)) {
+-			dev->stats.rx_dropped++;
+-			give_pages(rq, page);
+-			return;
+-		}
+-	}
++	else if (vi->big_packets)
++		skb = receive_big(dev, rq, buf, len);
++	else
++		skb = receive_small(buf, len);
++
++	if (unlikely(!skb))
++		return;
  
--		if (has_full_constraints) {
-+		if (have_full_constraints()) {
- 			/* We log since this may kill the system if it
- 			 * goes wrong. */
- 			rdev_info(rdev, "disabling\n");
+ 	hdr = skb_vnet_hdr(skb);
+ 
 -- 
-1.8.4.4
+MST
 
