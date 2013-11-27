@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab3K0BmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:42:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39171 "EHLO
+	id S1758328Ab3K0A6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:58:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39106 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758353Ab3K0A6E (ORCPT
+	with ESMTP id S932169Ab3K0A5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:04 -0500
+	Tue, 26 Nov 2013 19:57:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 77/80] cris: media platform drivers: fix build
-Date: Tue, 26 Nov 2013 16:57:46 -0800
-Message-Id: <20131127005646.256252726@linuxfoundation.org>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [PATCH 3.10 60/80] arm/arm64: KVM: Fix hyp mappings of vmalloc regions
+Date: Tue, 26 Nov 2013 16:57:29 -0800
+Message-Id: <20131127005645.110667240@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -31,56 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Christoffer Dall <christoffer.dall@linaro.org>
 
-commit 72a0c5571351f5184195754d23db3e14495b2080 upstream.
+commit 40c2729bab48e2832b17c1fa8af9db60e776131b upstream.
 
-On cris arch, the functions below aren't defined:
+Using virt_to_phys on percpu mappings is horribly wrong as it may be
+backed by vmalloc.  Introduce kvm_kaddr_to_phys which translates both
+types of valid kernel addresses to the corresponding physical address.
 
-  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_read':
+At the same time resolves a typing issue where we were storing the
+physical address as a 32 bit unsigned long (on arm), truncating the
+physical address for addresses above the 4GB limit.  This caused
+breakage on Keystone.
 
-  drivers/media/platform/sh_veu.c:228:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/sh_veu.c: In function 'sh_veu_reg_write':
-
-  drivers/media/platform/sh_veu.c:234:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
-  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
-  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_read':
-  drivers/media/platform/vsp1/vsp1.h:66:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/vsp1/vsp1.h: In function 'vsp1_write':
-  drivers/media/platform/vsp1/vsp1.h:71:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
-  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_setup':
-  drivers/media/platform/soc_camera/rcar_vin.c:284:3: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
-
-  drivers/media/platform/soc_camera/rcar_vin.c: In function 'rcar_vin_request_capture_stop':
-  drivers/media/platform/soc_camera/rcar_vin.c:353:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
-
-Yet, they're available, as CONFIG_GENERIC_IOMAP is defined.  What happens
-is that asm/io.h was not including asm-generic/iomap.h.
-
-Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/cris/include/asm/io.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/kvm/mmu.c |   34 ++++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
 
---- a/arch/cris/include/asm/io.h
-+++ b/arch/cris/include/asm/io.h
-@@ -3,6 +3,7 @@
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -313,6 +313,17 @@ out:
+ 	return err;
+ }
  
- #include <asm/page.h>   /* for __va, __pa */
- #include <arch/io.h>
-+#include <asm-generic/iomap.h>
- #include <linux/kernel.h>
++static phys_addr_t kvm_kaddr_to_phys(void *kaddr)
++{
++	if (!is_vmalloc_addr(kaddr)) {
++		BUG_ON(!virt_addr_valid(kaddr));
++		return __pa(kaddr);
++	} else {
++		return page_to_phys(vmalloc_to_page(kaddr)) +
++		       offset_in_page(kaddr);
++	}
++}
++
+ /**
+  * create_hyp_mappings - duplicate a kernel virtual address range in Hyp mode
+  * @from:	The virtual kernel start address of the range
+@@ -324,16 +335,27 @@ out:
+  */
+ int create_hyp_mappings(void *from, void *to)
+ {
+-	unsigned long phys_addr = virt_to_phys(from);
++	phys_addr_t phys_addr;
++	unsigned long virt_addr;
+ 	unsigned long start = KERN_TO_HYP((unsigned long)from);
+ 	unsigned long end = KERN_TO_HYP((unsigned long)to);
  
- struct cris_io_operations
+-	/* Check for a valid kernel memory mapping */
+-	if (!virt_addr_valid(from) || !virt_addr_valid(to - 1))
+-		return -EINVAL;
++	start = start & PAGE_MASK;
++	end = PAGE_ALIGN(end);
++
++	for (virt_addr = start; virt_addr < end; virt_addr += PAGE_SIZE) {
++		int err;
++
++		phys_addr = kvm_kaddr_to_phys(from + virt_addr - start);
++		err = __create_hyp_mappings(hyp_pgd, virt_addr,
++					    virt_addr + PAGE_SIZE,
++					    __phys_to_pfn(phys_addr),
++					    PAGE_HYP);
++		if (err)
++			return err;
++	}
+ 
+-	return __create_hyp_mappings(hyp_pgd, start, end,
+-				     __phys_to_pfn(phys_addr), PAGE_HYP);
++	return 0;
+ }
+ 
+ /**
 
 
