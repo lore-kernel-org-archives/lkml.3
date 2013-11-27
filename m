@@ -1,252 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3K0ItI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:49:08 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63095 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab3K0ItF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:49:05 -0500
-X-AuditID: 9c930197-b7caaae000001cef-2a-5295b1fe0d24
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl,
-        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf timechart: dynamically determine event data offset
-References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
-	<20131022103223.GA29489@stfomichev-desktop>
-	<20131125182139.GD20168@ghostprotocols.net>
-	<20131126110536.GC3388@stfomichev-desktop>
-	<20131126121026.GD27323@ghostprotocols.net>
-	<20131126134755.GD3388@stfomichev-desktop>
-	<20131126135709.GB14838@ghostprotocols.net>
-	<20131126145437.GE3388@stfomichev-desktop>
-Date: Wed, 27 Nov 2013 17:49:02 +0900
-In-Reply-To: <20131126145437.GE3388@stfomichev-desktop> (Stanislav Fomichev's
-	message of "Tue, 26 Nov 2013 18:54:37 +0400")
-Message-ID: <87mwkqqlfl.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754261Ab3K0Iwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:52:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60335 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab3K0Iwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 03:52:40 -0500
+Message-ID: <5295B2A8.80705@ti.com>
+Date: Wed, 27 Nov 2013 14:21:52 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Matt Porter <matt.porter@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v3 8/9] phy: add Broadcom Kona USB2 PHY driver
+References: <1385403367-18144-1-git-send-email-matt.porter@linaro.org> <1385403367-18144-9-git-send-email-matt.porter@linaro.org>
+In-Reply-To: <1385403367-18144-9-git-send-email-matt.porter@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
+Hi,
 
-On Tue, 26 Nov 2013 18:54:37 +0400, Stanislav Fomichev wrote:
-> Since b000c8065a92 "tracing: Remove the extra 4 bytes of padding in events"
-> removed padding bytes, perf timechart got out of sync with the kernel's
-> trace_entry structure.
-> We can't just align perf's trace_entry definition with the kernel because we
-> want timechart to continue working with old perf.data. Instead, we now
-> calculate event data offset dynamically using offset of first non-common
-> event field in the perf.data.
-
-[SNIP]
-> @@ -304,13 +322,11 @@ struct trace_entry {
->  	unsigned char		flags;
->  	unsigned char		preempt_count;
->  	int			pid;
-> -	int			lock_depth;
->  };
-
-I had no chance to look into the timechart code in detail, but this is
-not good.  The format of each trace event (so the struct trace_entry)
-was described in the format file under the event directory on debugfs.
-For cpu_frequency event, I get the following:
-
-  $ cat /sys/kernel/debug/tracing/events/power/cpu_frequency/format 
-  name: cpu_frequency
-  ID: 315
-  format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-
-	field:u32 state;	offset:8;	size:4;	signed:0;
-	field:u32 cpu_id;	offset:12;	size:4;	signed:0;
-
-  print fmt: "state=%lu cpu_id=%lu", (unsigned long)REC->state, (unsigned long)REC->cpu_id
-
-So it's not same as above struct trace_entry even with your change.
-
-And the thing is we should not access it as a binary format.  IOW we
-need to access those (common) fields by libtraceevent or something that
-honors the event format description.  This way we can access the data
-reliably even after the format change like this.
-
-This is why other perf commands wasn't affected by those change IMHO.
-The timechart command should be changed to follow the same rule.  I
-think perf_evsel__intval() and perf_evsel__strval() will do most of the
-job you want here.  So,
-
-Nacked-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks,
-Namhyung
-
+On Monday 25 November 2013 11:46 PM, Matt Porter wrote:
+> Add a driver for the internal Broadcom Kona USB 2.0 PHY found
+> on the BCM281xx family of SoCs.
+> 
+> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  drivers/phy/Kconfig             |   6 ++
+>  drivers/phy/Makefile            |   1 +
+>  drivers/phy/phy-bcm-kona-usb2.c | 158 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 165 insertions(+)
+>  create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index a344f3d..2e87fa8 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -51,4 +51,10 @@ config PHY_EXYNOS_DP_VIDEO
+>  	help
+>  	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
 >  
->  #ifdef SUPPORT_OLD_POWER_EVENTS
->  static int use_old_power_events;
->  struct power_entry_old {
-> -	struct trace_entry te;
->  	u64	type;
->  	u64	value;
->  	u64	cpu_id;
-> @@ -318,14 +334,12 @@ struct power_entry_old {
->  #endif
->  
->  struct power_processor_entry {
-> -	struct trace_entry te;
->  	u32	state;
->  	u32	cpu_id;
->  };
->  
->  #define TASK_COMM_LEN 16
->  struct wakeup_entry {
-> -	struct trace_entry te;
->  	char comm[TASK_COMM_LEN];
->  	int   pid;
->  	int   prio;
-> @@ -333,7 +347,6 @@ struct wakeup_entry {
->  };
->  
->  struct sched_switch {
-> -	struct trace_entry te;
->  	char prev_comm[TASK_COMM_LEN];
->  	int  prev_pid;
->  	int  prev_prio;
-> @@ -402,11 +415,13 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
->  			turbo_frequency = max_freq;
->  }
->  
-> -static void
-> -sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
-> +static void sched_wakeup(struct perf_sample *sample)
->  {
-> +	struct trace_entry *te = sample->raw_data;
-> +	struct wakeup_entry *wake = timechart__payload(sample);
-> +	u64 timestamp = sample->time;
-> +	int pid = sample->pid, cpu = sample->cpu;
->  	struct per_pid *p;
-> -	struct wakeup_entry *wake = (void *)te;
->  	struct wake_event *we = zalloc(sizeof(*we));
->  
->  	if (!we)
-> @@ -434,11 +449,9 @@ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te)
->  	}
->  }
->  
-> -static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
-> +static void sched_switch(int cpu, u64 timestamp, struct sched_switch *sw)
->  {
->  	struct per_pid *p = NULL, *prev_p;
-> -	struct sched_switch *sw = (void *)te;
-> -
->  
->  	prev_p = find_create_pid(sw->prev_pid);
->  
-> @@ -495,7 +508,7 @@ static int
->  process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
->  			struct perf_sample *sample)
->  {
-> -	struct power_processor_entry *ppe = sample->raw_data;
-> +	struct power_processor_entry *ppe = timechart__payload(sample);
->  
->  	if (ppe->state == (u32) PWR_EVENT_EXIT)
->  		c_state_end(ppe->cpu_id, sample->time);
-> @@ -508,7 +521,7 @@ static int
->  process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
->  			     struct perf_sample *sample)
->  {
-> -	struct power_processor_entry *ppe = sample->raw_data;
-> +	struct power_processor_entry *ppe = timechart__payload(sample);
->  
->  	p_state_change(ppe->cpu_id, sample->time, ppe->state);
->  	return 0;
-> @@ -518,9 +531,7 @@ static int
->  process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
->  			    struct perf_sample *sample)
->  {
-> -	struct trace_entry *te = sample->raw_data;
-> -
-> -	sched_wakeup(sample->cpu, sample->time, sample->pid, te);
-> +	sched_wakeup(sample);
->  	return 0;
->  }
->  
-> @@ -528,9 +539,9 @@ static int
->  process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
->  			    struct perf_sample *sample)
->  {
-> -	struct trace_entry *te = sample->raw_data;
-> +	struct sched_switch *sw = timechart__payload(sample);
->  
-> -	sched_switch(sample->cpu, sample->time, te);
-> +	sched_switch(sample->cpu, sample->time, sw);
->  	return 0;
->  }
->  
-> @@ -539,7 +550,7 @@ static int
->  process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
->  			   struct perf_sample *sample)
->  {
-> -	struct power_entry_old *peo = sample->raw_data;
-> +	struct power_entry_old *peo = timechart__payload(sample);
->  
->  	c_state_start(peo->cpu_id, sample->time, peo->value);
->  	return 0;
-> @@ -557,7 +568,7 @@ static int
->  process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
->  			       struct perf_sample *sample)
->  {
-> -	struct power_entry_old *peo = sample->raw_data;
-> +	struct power_entry_old *peo = timechart__payload(sample);
->  
->  	p_state_change(peo->cpu_id, sample->time, peo->value);
->  	return 0;
-> @@ -1012,6 +1023,11 @@ static int __cmd_timechart(const char *output_name)
->  		goto out_delete;
->  	}
->  
-> +	if (timechart__set_payload_offset(session->evlist)) {
-> +		pr_err("Field format not found, please try updating this tool\n");
-> +		goto out_delete;
-> +	}
+> +config BCM_KONA_USB2_PHY
+> +	tristate "Broadcom Kona USB2 PHY Driver"
+> +	depends on GENERIC_PHY
+> +	help
+> +	  Enable this to support the Broadcom Kona USB 2.0 PHY.
 > +
->  	ret = perf_session__process_events(session, &perf_timechart);
->  	if (ret)
->  		goto out_delete;
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index 46dd4c2a41ce..4847d373fe2a 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -1767,6 +1767,11 @@ struct format_field *perf_evsel__field(struct perf_evsel *evsel, const char *nam
->  	return pevent_find_field(evsel->tp_format, name);
->  }
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index d0caae9..c447f1a 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -3,6 +3,7 @@
+>  #
 >  
-> +struct format_field *perf_evsel__fields(struct perf_evsel *evsel)
+>  obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
+> +obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
+>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+>  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+> diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
+> new file mode 100644
+> index 0000000..2c54fb8
+> --- /dev/null
+> +++ b/drivers/phy/phy-bcm-kona-usb2.c
+> @@ -0,0 +1,158 @@
+> +/*
+> + * phy-bcm-kona-usb2.c - Broadcom Kona USB2 Phy Driver
+> + *
+> + * Copyright (C) 2013 Linaro Limited
+> + * Matt Porter <matt.porter@linaro.org>
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/delay.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/clk.h>
+> +#include <linux/phy/phy.h>
+
+arrange the headers in alphabetical order so that it's easy while adding new
+headers. Just my preference.
+> +
+> +#define OTGCTL			(0)
+> +#define OTGCTL_OTGSTAT2		(1 << 31)
+> +#define OTGCTL_OTGSTAT1		(1 << 30)
+> +#define OTGCTL_PRST_N_SW	(1 << 11)
+> +#define OTGCTL_HRESET_N		(1 << 10)
+> +#define OTGCTL_UTMI_LINE_STATE1	(1 << 9)
+> +#define OTGCTL_UTMI_LINE_STATE0	(1 << 8)
+> +
+> +#define P1CTL			(8)
+> +#define P1CTL_SOFT_RESET	(1 << 1)
+> +#define P1CTL_NON_DRIVING	(1 << 0)
+
+you can use BIT() instead.
+> +
+> +struct bcm_kona_usb {
+> +	void __iomem *regs;
+> +};
+> +
+> +static void bcm_kona_usb_phy_power(struct bcm_kona_usb *phy, int on)
 > +{
-> +	return evsel->tp_format->format.fields;
+> +	u32 val;
+> +
+> +	val = readl(phy->regs + OTGCTL);
+> +	if (on) {
+> +		/* Configure and power PHY */
+> +		val &= ~(OTGCTL_OTGSTAT2 | OTGCTL_OTGSTAT1 |
+> +			 OTGCTL_UTMI_LINE_STATE1 | OTGCTL_UTMI_LINE_STATE0);
+> +		val |= OTGCTL_PRST_N_SW | OTGCTL_HRESET_N;
+> +	} else {
+> +		val &= ~(OTGCTL_PRST_N_SW | OTGCTL_HRESET_N);
+> +	}
+> +	writel(val, phy->regs + OTGCTL);
 > +}
 > +
->  void *perf_evsel__rawptr(struct perf_evsel *evsel, struct perf_sample *sample,
->  			 const char *name)
->  {
-> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-> index 1ea7c92e6e33..3d50dc01bb1d 100644
-> --- a/tools/perf/util/evsel.h
-> +++ b/tools/perf/util/evsel.h
-> @@ -193,6 +193,7 @@ static inline char *perf_evsel__strval(struct perf_evsel *evsel,
->  struct format_field;
->  
->  struct format_field *perf_evsel__field(struct perf_evsel *evsel, const char *name);
-> +struct format_field *perf_evsel__fields(struct perf_evsel *evsel);
->  
->  #define perf_evsel__match(evsel, t, c)		\
->  	(evsel->attr.type == PERF_TYPE_##t &&	\
+> +static int bcm_kona_usb_phy_init(struct phy *gphy)
+> +{
+> +	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
+> +	u32 val;
+> +
+> +	/* Soft reset PHY */
+> +	val = readl(phy->regs + P1CTL);
+> +	val &= ~P1CTL_NON_DRIVING;
+> +	val |= P1CTL_SOFT_RESET;
+> +	writel(val, phy->regs + P1CTL);
+> +	writel(val & ~P1CTL_SOFT_RESET, phy->regs + P1CTL);
+> +	/* Reset needs to be asserted for 2ms */
+> +	mdelay(2);
+> +	writel(val | P1CTL_SOFT_RESET, phy->regs + P1CTL);
+> +
+> +	return 0;
+> +}
+> +
+> +static int bcm_kona_usb_phy_power_on(struct phy *gphy)
+> +{
+> +	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
+> +
+> +	bcm_kona_usb_phy_power(phy, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static int bcm_kona_usb_phy_power_off(struct phy *gphy)
+> +{
+> +	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
+> +
+> +	bcm_kona_usb_phy_power(phy, 0);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy_ops ops = {
+> +	.init		= bcm_kona_usb_phy_init,
+> +	.power_on	= bcm_kona_usb_phy_power_on,
+> +	.power_off	= bcm_kona_usb_phy_power_off,
+> +	.owner = THIS_MODULE,
+
+owner is aligned differently..
+> +};
+> +
+> +static int bcm_kona_usb2_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct bcm_kona_usb *phy;
+> +	struct resource *res;
+> +	struct phy *gphy;
+> +	struct phy_provider *phy_provider;
+> +
+> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
+> +	if (!phy)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	phy->regs = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(phy->regs))
+> +		return PTR_ERR(phy->regs);
+> +
+> +	platform_set_drvdata(pdev, phy);
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev,
+> +			of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	gphy = devm_phy_create(dev, &ops, NULL);
+> +	if (IS_ERR(gphy))
+> +		return PTR_ERR(gphy);
+> +
+> +	/* The Kona PHY supports an 8-bit wide UTMI interface */
+> +	phy_set_bus_width(gphy, 8);
+> +
+> +	phy_set_drvdata(gphy, phy);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id bcm_kona_usb2_dt_ids[] = {
+> +	{ .compatible = "brcm,kona-usb2-phy" },
+> +	{ /* sentinel */ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, bcm_kona_usb2_dt_ids);
+> +
+> +static struct platform_driver bcm_kona_usb2_driver = {
+> +	.probe		= bcm_kona_usb2_probe,
+> +	.driver		= {
+> +		.name	= "bcm-kona-usb2",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = bcm_kona_usb2_dt_ids,
+> +	},
+> +};
+> +
+> +module_platform_driver(bcm_kona_usb2_driver);
+> +
+> +MODULE_ALIAS("platform:bcm-kona-usb2");
+> +MODULE_AUTHOR("Matt Porter <matt.porter@linaro.org>");
+> +MODULE_DESCRIPTION("BCM Kona USB 2.0 PHY driver");
+> +MODULE_LICENSE("GPL v2");
+> 
+Apart from those comments, this patch looks good.
+
+Thanks
+Kishon
+
