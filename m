@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab3K0UWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:22:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60972 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab3K0URA (ORCPT
+	id S1758317Ab3K0UXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:23:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44498 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab3K0UWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:17:00 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/34] perf completion: Factor out call to __ltrim_colon_completions
-Date: Wed, 27 Nov 2013 17:16:06 -0300
-Message-Id: <1385583394-3703-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
-References: <1385583394-3703-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 27 Nov 2013 15:22:55 -0500
+Message-ID: <52965493.8060208@canonical.com>
+Date: Wed, 27 Nov 2013 15:22:43 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: yinghai@kernel.org
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [REGRESSION][v3.4-rc1] PCI: add a PCI resource reallocation config
+ option
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+Hi Yinghai,
 
-In our sole callsite, __ltrim_colon_completions is called after
-__perfcomp, to modify the COMPREPLY set by the invocation.
+A kernel bug was opened against Ubuntu [0].  After a kernel bisect, it
+was found that the following commit introduced the bug:
 
-This is problematic, because in the zsh equivalent (using compset/
-compadd), we'll have to generate completions in one-shot.
+commit b07f2ebc109b607789f648dedcff4b125f9afec6
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Thu Feb 23 19:23:32 2012 -0800
 
-So factor out this entire callsite into a special override'able
-__perfcomp_colon function; we will override it when introducing zsh
-support.
+    PCI: add a PCI resource reallocation config option
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-4-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/bash_completion | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 824312681601..573599b42be2 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -94,6 +94,12 @@ __perfcomp ()
- 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
- }
- 
-+__perfcomp_colon ()
-+{
-+	__perfcomp "$1" "$2"
-+	__ltrim_colon_completions $cur
-+}
-+
- __perf_main ()
- {
- 	local cmd
-@@ -114,8 +120,7 @@ __perf_main ()
- 	# List possible events for -e option
- 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
--		__perfcomp "$evts" "$cur"
--		__ltrim_colon_completions $cur
-+		__perfcomp_colon "$evts" "$cur"
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
- 		subcmd=${words[1]}
--- 
-1.8.1.4
+
+The regression was introduced as of v3.4-rc1 and also exists in current
+mainline.
+
+The bug seems platform specific since we have not had allot of other
+reports.  The bug is preventing ixgbe to probe Intel x520 NIC's.
+
+It would be easy enough to disable the PCI_REALLOC_ENABLE_AUTO config
+option, but I wanted to get your feedback since you are the author.  It
+looks like the bug reporter may also be able to work around the problem
+with the pci=realloc=.
+   
+
+Thanks,
+   
+Joe
+
+[0] pad.lv/1245938
 
