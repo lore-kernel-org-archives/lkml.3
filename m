@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab3K0BRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:17:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
+	id S1759409Ab3K0BRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:17:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758764Ab3K0A7b (ORCPT
+	with ESMTP id S1756919Ab3K0A7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:31 -0500
+	Tue, 26 Nov 2013 19:59:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Cyrus Lien <cyrus.lien@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 052/116] ALSA: hda - Check keep_eapd_on before inv_eapd
-Date: Tue, 26 Nov 2013 16:57:05 -0800
-Message-Id: <20131127005740.545217880@linuxfoundation.org>
+Subject: [PATCH 3.12 051/116] ALSA: hda - Fix Line Out automute on Realtek multifunction jacks
+Date: Tue, 26 Nov 2013 16:57:04 -0800
+Message-Id: <20131127005740.476864115@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,38 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
+commit 5959a6bc1124211a359525d209005abc07b0197b upstream.
 
-We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
-set by the codec driver and enable is false.  But, we also apply the
-flipping of enable value according to inv_eapd flag in the same
-function, and this confused the former check, handled as if it's
-turned ON.  The inverted EAPD check must be applied after keep_eapd_on
-check, instead.
+In case there is both a multifunction headset jack and a Line Out
+jack, automuting was not working properly from the Line Out jack.
+This patch fixes that issue.
 
+BugLink: https://bugs.launchpad.net/bugs/1250377
+Tested-by: Cyrus Lien <cyrus.lien@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -796,10 +796,10 @@ static void set_pin_eapd(struct hda_code
- 	if (spec->own_eapd_ctl ||
- 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3283,8 +3283,10 @@ static void alc_update_headset_mode(stru
+ 	else
+ 		new_headset_mode = ALC_HEADSET_MODE_HEADPHONE;
+ 
+-	if (new_headset_mode == spec->current_headset_mode)
++	if (new_headset_mode == spec->current_headset_mode) {
++		snd_hda_gen_update_outputs(codec);
  		return;
--	if (codec->inv_eapd)
--		enable = !enable;
- 	if (spec->keep_eapd_on && !enable)
- 		return;
-+	if (codec->inv_eapd)
-+		enable = !enable;
- 	snd_hda_codec_update_cache(codec, pin, 0,
- 				   AC_VERB_SET_EAPD_BTLENABLE,
- 				   enable ? 0x02 : 0x00);
++	}
+ 
+ 	switch (new_headset_mode) {
+ 	case ALC_HEADSET_MODE_UNPLUGGED:
 
 
