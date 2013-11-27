@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760561Ab3K0BxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:53:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39021 "EHLO
+	id S1760606Ab3K0Bx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:53:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757759Ab3K0A5b (ORCPT
+	with ESMTP id S1757211Ab3K0A52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:31 -0500
+	Tue, 26 Nov 2013 19:57:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 31/80] ALSA: 6fire: Fix probe of multiple cards
-Date: Tue, 26 Nov 2013 16:57:00 -0800
-Message-Id: <20131127005643.091332010@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 27/80] rt2x00: rt2800lib: fix VGC adjustment for RT5592
+Date: Tue, 26 Nov 2013 16:56:56 -0800
+Message-Id: <20131127005642.819919933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,33 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 9b389a8a022110b4bc055a19b888283544d9eba6 upstream.
+commit 0beb1bbf19c72f17809e42b8f33522a55c2cc18c upstream.
 
-The probe code of snd-usb-6fire driver overrides the devices[] pointer
-wrongly without checking whether it's already occupied or not.  This
-would screw up the device disconnection later.
+In commit 3d81535ea5940446510a8a5cee1c6ad23c90c753
+(rt2800: 5592: add chip specific vgc calculations)
+the rt2800_link_tuner function has been modified to
+adjust VGC level for the RT5592 chipset.
 
-Spotted by coverity CID 141423.
+On the RT5592 chipset, the VGC level must be adjusted
+only if rssi is greater than -65. However the current
+code adjusts the VGC value by 0x10 regardless of the
+actual chipset if the rssi value is between -80 and
+-65.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix the broken behaviour by reordering the if-else
+statements.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Acked-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/chip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/sound/usb/6fire/chip.c
-+++ b/sound/usb/6fire/chip.c
-@@ -101,7 +101,7 @@ static int usb6fire_chip_probe(struct us
- 			usb_set_intfdata(intf, chips[i]);
- 			mutex_unlock(&register_mutex);
- 			return 0;
--		} else if (regidx < 0)
-+		} else if (!devices[i] && regidx < 0)
- 			regidx = i;
- 	}
- 	if (regidx < 0) {
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -3400,10 +3400,13 @@ void rt2800_link_tuner(struct rt2x00_dev
+ 
+ 	vgc = rt2800_get_default_vgc(rt2x00dev);
+ 
+-	if (rt2x00_rt(rt2x00dev, RT5592) && qual->rssi > -65)
+-		vgc += 0x20;
+-	else if (qual->rssi > -80)
+-		vgc += 0x10;
++	if (rt2x00_rt(rt2x00dev, RT5592)) {
++		if (qual->rssi > -65)
++			vgc += 0x20;
++	} else {
++		if (qual->rssi > -80)
++			vgc += 0x10;
++	}
+ 
+ 	rt2800_set_vgc(rt2x00dev, qual, vgc);
+ }
 
 
