@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064Ab3K0Bjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:39:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39210 "EHLO
+	id S1759455Ab3K0Bjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:39:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab3K0A6L (ORCPT
+	with ESMTP id S932278Ab3K0A6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:11 -0500
+	Tue, 26 Nov 2013 19:58:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann@calxeda.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 3.10 70/80] slub: Handle NULL parameter in kmem_cache_flags
-Date: Tue, 26 Nov 2013 16:57:39 -0800
-Message-Id: <20131127005645.784969820@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.10 71/80] SUNRPC: Fix a data corruption issue when retransmitting RPC calls
+Date: Tue, 26 Nov 2013 16:57:40 -0800
+Message-Id: <20131127005645.851997493@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,92 +26,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Lameter <cl@linux.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit c6f58d9b362b45c52afebe4342c9137d0dabe47f upstream.
+commit a6b31d18b02ff9d7915c5898c9b5ca41a798cd73 upstream.
 
-Andreas Herrmann writes:
+The following scenario can cause silent data corruption when doing
+NFS writes. It has mainly been observed when doing database writes
+using O_DIRECT.
 
-  When I've used slub_debug kernel option (e.g.
-  "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
-  seen a panic like:
+1) The RPC client uses sendpage() to do zero-copy of the page data.
+2) Due to networking issues, the reply from the server is delayed,
+   and so the RPC client times out.
 
-    Highbank #setenv bootargs console=ttyAMA0 root=/dev/sda2 kgdboc.kgdboc=ttyAMA0,115200 slub_debug=,kmalloc-4096 earlyprintk=ttyAMA0
-    ...
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-    pgd = c0004000
-    [00000000] *pgd=00000000
-    Internal error: Oops: 5 [#1] SMP ARM
-    Modules linked in:
-    CPU: 0 PID: 0 Comm: swapper Tainted: G        W    3.12.0-00048-gbe408cd #314
-    task: c0898360 ti: c088a000 task.ti: c088a000
-    PC is at strncmp+0x1c/0x84
-    LR is at kmem_cache_flags.isra.46.part.47+0x44/0x60
-    pc : [<c02c6da0>]    lr : [<c0110a3c>]    psr: 200001d3
-    sp : c088bea8  ip : c088beb8  fp : c088beb4
-    r10: 00000000  r9 : 413fc090  r8 : 00000001
-    r7 : 00000000  r6 : c2984a08  r5 : c0966e78  r4 : 00000000
-    r3 : 0000006b  r2 : 0000000c  r1 : 00000000  r0 : c2984a08
-    Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-    Control: 10c5387d  Table: 0000404a  DAC: 00000015
-    Process swapper (pid: 0, stack limit = 0xc088a248)
-    Stack: (0xc088bea8 to 0xc088c000)
-    bea0:                   c088bed4 c088beb8 c0110a3c c02c6d90 c0966e78 00000040
-    bec0: ef001f00 00000040 c088bf14 c088bed8 c0112070 c0110a04 00000005 c010fac8
-    bee0: c088bf5c c088bef0 c010fac8 ef001f00 00000040 00000000 00000040 00000001
-    bf00: 413fc090 00000000 c088bf34 c088bf18 c0839190 c0112040 00000000 ef001f00
-    bf20: 00000000 00000000 c088bf54 c088bf38 c0839200 c083914c 00000006 c0961c4c
-    bf40: c0961c28 00000000 c088bf7c c088bf58 c08392ac c08391c0 c08a2ed8 c0966e78
-    bf60: c086b874 c08a3f50 c0961c28 00000001 c088bfb4 c088bf80 c083b258 c0839248
-    bf80: 2f800000 0f000000 c08935b4 ffffffff c08cd400 ffffffff c08cd400 c0868408
-    bfa0: c29849c0 00000000 c088bff4 c088bfb8 c0824974 c083b1e4 ffffffff ffffffff
-    bfc0: c08245c0 00000000 00000000 c0868408 00000000 10c5387d c0892bcc c0868404
-    bfe0: c0899440 0000406a 00000000 c088bff8 00008074 c0824824 00000000 00000000
-    [<c02c6da0>] (strncmp+0x1c/0x84) from [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60)
-    [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60) from [<c0112070>] (__kmem_cache_create+0x3c/0x410)
-    [<c0112070>] (__kmem_cache_create+0x3c/0x410) from [<c0839190>] (create_boot_cache+0x50/0x74)
-    [<c0839190>] (create_boot_cache+0x50/0x74) from [<c0839200>] (create_kmalloc_cache+0x4c/0x88)
-    [<c0839200>] (create_kmalloc_cache+0x4c/0x88) from [<c08392ac>] (create_kmalloc_caches+0x70/0x114)
-    [<c08392ac>] (create_kmalloc_caches+0x70/0x114) from [<c083b258>] (kmem_cache_init+0x80/0xe0)
-    [<c083b258>] (kmem_cache_init+0x80/0xe0) from [<c0824974>] (start_kernel+0x15c/0x318)
-    [<c0824974>] (start_kernel+0x15c/0x318) from [<00008074>] (0x8074)
-    Code: e3520000 01a00002 089da800 e5d03000 (e5d1c000)
-    ---[ end trace 1b75b31a2719ed1d ]---
-    Kernel panic - not syncing: Fatal exception
+3) The client issues a second sendpage of the page data as part of
+   an RPC call retransmission.
 
-  Problem is that slub_debug option is not parsed before
-  create_boot_cache is called. Solve this by changing slub_debug to
-  early_param.
+4) The reply to the first transmission arrives from the server
+   _before_ the client hardware has emptied the TCP socket send
+   buffer.
+5) After processing the reply, the RPC state machine rules that
+   the call to be done, and triggers the completion callbacks.
+6) The application notices the RPC call is done, and reuses the
+   pages to store something else (e.g. a new write).
 
-  Kernels 3.11, 3.10 are also affected.  I am not sure about older
-  kernels.
+7) The client NIC drains the TCP socket send buffer. Since the
+   page data has now changed, it reads a corrupted version of the
+   initial RPC call, and puts it on the wire.
 
-Christoph Lameter explains:
+This patch fixes the problem in the following manner:
 
-  kmem_cache_flags may be called with NULL parameter during early boot.
-  Skip the test in that case.
+The ordering guarantees of TCP ensure that when the server sends a
+reply, then we know that the _first_ transmission has completed. Using
+zero-copy in that situation is therefore safe.
+If a time out occurs, we then send the retransmission using sendmsg()
+(i.e. no zero-copy), We then know that the socket contains a full copy of
+the data, and so it will retransmit a faithful reproduction even if the
+RPC call completes, and the application reuses the O_DIRECT buffer in
+the meantime.
 
-Reported-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/sunrpc/xprtsock.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1201,8 +1201,8 @@ static unsigned long kmem_cache_flags(un
- 	/*
- 	 * Enable debugging if selected on the kernel commandline.
- 	 */
--	if (slub_debug && (!slub_debug_slabs ||
--		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
-+	if (slub_debug && (!slub_debug_slabs || (name &&
-+		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs)))))
- 		flags |= slub_debug;
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -391,8 +391,10 @@ static int xs_send_kvec(struct socket *s
+ 	return kernel_sendmsg(sock, &msg, NULL, 0, 0);
+ }
  
- 	return flags;
+-static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more)
++static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more, bool zerocopy)
+ {
++	ssize_t (*do_sendpage)(struct socket *sock, struct page *page,
++			int offset, size_t size, int flags);
+ 	struct page **ppage;
+ 	unsigned int remainder;
+ 	int err, sent = 0;
+@@ -401,6 +403,9 @@ static int xs_send_pagedata(struct socke
+ 	base += xdr->page_base;
+ 	ppage = xdr->pages + (base >> PAGE_SHIFT);
+ 	base &= ~PAGE_MASK;
++	do_sendpage = sock->ops->sendpage;
++	if (!zerocopy)
++		do_sendpage = sock_no_sendpage;
+ 	for(;;) {
+ 		unsigned int len = min_t(unsigned int, PAGE_SIZE - base, remainder);
+ 		int flags = XS_SENDMSG_FLAGS;
+@@ -408,7 +413,7 @@ static int xs_send_pagedata(struct socke
+ 		remainder -= len;
+ 		if (remainder != 0 || more)
+ 			flags |= MSG_MORE;
+-		err = sock->ops->sendpage(sock, *ppage, base, len, flags);
++		err = do_sendpage(sock, *ppage, base, len, flags);
+ 		if (remainder == 0 || err != len)
+ 			break;
+ 		sent += err;
+@@ -429,9 +434,10 @@ static int xs_send_pagedata(struct socke
+  * @addrlen: UDP only -- length of destination address
+  * @xdr: buffer containing this request
+  * @base: starting position in the buffer
++ * @zerocopy: true if it is safe to use sendpage()
+  *
+  */
+-static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base)
++static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base, bool zerocopy)
+ {
+ 	unsigned int remainder = xdr->len - base;
+ 	int err, sent = 0;
+@@ -459,7 +465,7 @@ static int xs_sendpages(struct socket *s
+ 	if (base < xdr->page_len) {
+ 		unsigned int len = xdr->page_len - base;
+ 		remainder -= len;
+-		err = xs_send_pagedata(sock, xdr, base, remainder != 0);
++		err = xs_send_pagedata(sock, xdr, base, remainder != 0, zerocopy);
+ 		if (remainder == 0 || err != len)
+ 			goto out;
+ 		sent += err;
+@@ -562,7 +568,7 @@ static int xs_local_send_request(struct
+ 			req->rq_svec->iov_base, req->rq_svec->iov_len);
+ 
+ 	status = xs_sendpages(transport->sock, NULL, 0,
+-						xdr, req->rq_bytes_sent);
++						xdr, req->rq_bytes_sent, true);
+ 	dprintk("RPC:       %s(%u) = %d\n",
+ 			__func__, xdr->len - req->rq_bytes_sent, status);
+ 	if (likely(status >= 0)) {
+@@ -618,7 +624,7 @@ static int xs_udp_send_request(struct rp
+ 	status = xs_sendpages(transport->sock,
+ 			      xs_addr(xprt),
+ 			      xprt->addrlen, xdr,
+-			      req->rq_bytes_sent);
++			      req->rq_bytes_sent, true);
+ 
+ 	dprintk("RPC:       xs_udp_send_request(%u) = %d\n",
+ 			xdr->len - req->rq_bytes_sent, status);
+@@ -689,6 +695,7 @@ static int xs_tcp_send_request(struct rp
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+ 	struct xdr_buf *xdr = &req->rq_snd_buf;
++	bool zerocopy = true;
+ 	int status;
+ 
+ 	xs_encode_stream_record_marker(&req->rq_snd_buf);
+@@ -696,13 +703,20 @@ static int xs_tcp_send_request(struct rp
+ 	xs_pktdump("packet data:",
+ 				req->rq_svec->iov_base,
+ 				req->rq_svec->iov_len);
++	/* Don't use zero copy if this is a resend. If the RPC call
++	 * completes while the socket holds a reference to the pages,
++	 * then we may end up resending corrupted data.
++	 */
++	if (task->tk_flags & RPC_TASK_SENT)
++		zerocopy = false;
+ 
+ 	/* Continue transmitting the packet/record. We must be careful
+ 	 * to cope with writespace callbacks arriving _after_ we have
+ 	 * called sendmsg(). */
+ 	while (1) {
+ 		status = xs_sendpages(transport->sock,
+-					NULL, 0, xdr, req->rq_bytes_sent);
++					NULL, 0, xdr, req->rq_bytes_sent,
++					zerocopy);
+ 
+ 		dprintk("RPC:       xs_tcp_send_request(%u) = %d\n",
+ 				xdr->len - req->rq_bytes_sent, status);
 
 
