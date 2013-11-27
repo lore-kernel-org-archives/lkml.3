@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3K0ASf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:18:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38214 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab3K0ASW (ORCPT
+	id S1752263Ab3K0AVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:21:22 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37462 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3K0AVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:18:22 -0500
-Date: Tue, 26 Nov 2013 16:19:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: add HSI subsystem
-Message-ID: <20131127001909.GB22610@kroah.com>
-References: <1385403450-18018-1-git-send-email-sre@debian.org>
- <CACRpkdYSXDAwS1mxLtUL7qpHkfD1efo1QF0OMKS-YHKM-689Kw@mail.gmail.com>
- <20131127001241.GA20111@earth.universe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127001241.GA20111@earth.universe>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 26 Nov 2013 19:21:18 -0500
+X-AuditID: cbfee68e-b7f7e6d00000477d-83-52953af74240
+Date: Wed, 27 Nov 2013 00:21:11 +0000 (GMT)
+From: Eunbong Song <eunb.song@samsung.com>
+Subject: Re: Re: [PATCH] ARM: Kill CONFIG_MTD_PARTITIONS
+To: Tony Lindgren <tony@atomide.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nsekhar@ti.com" <nsekhar@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20131127001715794@eunb.song
+Msgkey: 20131127001715794@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131127001715794@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <32246931.77291385511669645.JavaMail.weblogic@epml11>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Zpu53q6lBBpNmC1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MT3ebGAvWMFecPPuIuYFxDnMXIyeHkICKRMv/74wgtoSAicTm
+	STeZIWwxiQv31rNB1CxjlLhxPA+m5vuto1C98xklruzlBLFZBFQl9m+YwwpiswloS/w4cBWs
+	RljAQmLtk0VAcQ4OEQE1iZn39bsYuTiYBTqYJT58ns4IMUdeYvLpy+wgNq+AoMTJmU9YIHYp
+	SXy8d4ANIq4sMevWE6g7JSRmTb/ACmHzSsxofwpVLycx7esaqPulJc7P2sAI88vi74+h4vwS
+	x27vYAK5B6T3yf1gmDG7N39hg7AFJKaeOQjVqi5x9OkkKJtPYs3CtywwY3adWs4M03t/y1wm
+	EJtZQFFiSvdDdghbS+LLj31s6N7iFXCUeLfjOeMERuVZSFKzkLTPQtKOrGYBI8sqRtHUguSC
+	4qT0IiO94sTc4tK8dL3k/NxNjJCk0LeD8eYB60OMycAomcgsJZqcD0wqeSXxhsZmRhamJqbG
+	RuaWZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUeGFywSHlgtRvmau9tPa
+	dB/5Vy5nmiQSdHLO81UnOVN7jZ+x53ple6psDXadeWVVzqeqSTmLFk/1vrv2n4fG8WAJ0d4d
+	Mz4FZm3jvLhoneSHwx56J9acK9GveeV+MO3q7KtL87j+WNbJ7qj0r1T45KBwbrrBDL3wjfZZ
+	Ogfy34iscn+1RX+qoxJLcUaioRZzUXEiAP5RMt4gAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2TN3vVlODDB4eErC4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GZ/uNjEWrGGuOHn2EXMD4xzmLkZODiEBFYmW/98ZQWwJAROJ77eOMkPYYhIX7q1ng6iZzyhx
+	ZS8niM0ioCqxf8McVhCbTUBb4seBq2D1wgIWEmufLAKKc3CICKhJzLyv38XIxcEs0MEs8eHz
+	dEaIOfISk09fZgexeQUEJU7OfMICsUtJ4uO9A2wQcWWJWbeeQN0jITFr+gVWCJtXYkb7U6h6
+	OYlpX9dA3SktcX7WBkaYmxd/fwwV55c4dnsHE8g9IL1P7gfDjNm9+QsbhC0gMfXMQahWdYmj
+	TydB2XwSaxa+ZYEZs+vUcmaY3vtb5jKB2MwCihJTuh+yQ9haEl9+7GND9xavgKPEux3PGScw
+	ys1CkpqFpH0WknZkNQsYWVYxiqYWJBcUJ6VXmOgVJ+YWl+al6yXn525iBCeoZ0t2MDZcsD7E
+	KMDBqMTD++LqlCAh1sSy4srcQ4wSHMxKIrymClODhHhTEiurUovy44tKc1KLDzEmAyNwIrOU
+	aHI+MHnmlcQbGhsYGxpamhuYGhpZkCasJM674FZSkJBAemJJanZqakFqEcwWJg5OqQbGwDi+
+	3SleyXvPeU25HiL2LCO0Lnjh8g9fm9ReT54QPH1GydO4LSd+3fz416VH79fU//W37r86wtQS
+	6uOmcObCZoN5ZyqZI96dWNs/s2N1o4rl0xeG89c4VB+8axyz8K3DKs/C36bT9f/90Nm5Rv3b
+	o+tc2QeX9h2arBTDYBC16gqngNY0WZ1wUyWW4oxEQy3mouJEAIMMaXiUAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR0LSSJ015660
 
-On Wed, Nov 27, 2013 at 01:12:42AM +0100, Sebastian Reichel wrote:
-> On Wed, Nov 27, 2013 at 12:30:48AM +0100, Linus Walleij wrote:
-> > > +M:     Sebastian Reichel <sre@debian.org>
-> > > +S:     Maintained
-> > > +F:     Documentation/hsi/
-> > > +F:     drivers/hsi/
-> > > +F:     include/linux/hsi/
-> > > +F:     include/uapi/linux/hsi/
-> > 
-> > Don't add directories that do not exist (yet).
-> 
-> Sorry, that was not my intention. The documentation path was
-> supposed to be "Documentation/ABI/testing/sysfs-bus-hsi". The
-> other directories should exist. I will send an updated patch.
-> 
-> Am I right, that this should go through Greg?
+> Missing Signed-off-by?
+Sorry, I forgot signed-off. Please, add signed-off.
 
-Why me?
+>This patch is probably best sent to the arm-soc maintainers so
+>they can pick it up. For the omap changes:
+Thanks for your advice. linux-arm-kernel@lists.infradead.org is included in recipien list.
+> Acked-by: Tony Lindgren ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
