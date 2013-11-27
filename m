@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759452Ab3K0Bf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:35:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39265 "EHLO
+	id S1759403Ab3K0BgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:36:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39258 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab3K0A6Y (ORCPT
+	with ESMTP id S932363Ab3K0A6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:24 -0500
+	Tue, 26 Nov 2013 19:58:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>, Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH 3.12 016/116] drm/nvc0-/gr: fix a number of missing explicit array terminators...
-Date: Tue, 26 Nov 2013 16:56:29 -0800
-Message-Id: <20131127005738.068446774@linuxfoundation.org>
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Glauber Costa <glommer@openvz.org>,
+        YongQin Liu <yongqin.liu@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: [PATCH 3.12 015/116] staging: ashmem: Fix ASHMEM_PURGE_ALL_CACHES return value
+Date: Tue, 26 Nov 2013 16:56:28 -0800
+Message-Id: <20131127005737.991090042@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,73 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 13d2b35a065399fb447c84e80368927e5f8bf086 upstream.
+commit 5957324045ba2c127c9401fa3ac61ac52e043ca8 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>
+Hopefully this isn't too late for 3.12.
+
+In commit 7dc19d5aff (convert shrinkers to new count/scan API)
+the return value to PURGE_ALL_CACHES was dropped, causing -EPERM
+to always be returned.
+
+This patch re-adds the ret assignment, setting it to the the
+ashmem_shrink_count(), which is the lru_count.
+
+(Sorry this was missed in the review!)
+
+Fixes: 7dc19d5affd7 ("convert shrinkers to new count/scan API")
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Glauber Costa <glommer@openvz.org>
+Reported-by: YongQin Liu <yongqin.liu@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Acked-by: Dave Chinner <dchinner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c |    4 ++++
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c |    1 +
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c |    1 +
- 3 files changed, 6 insertions(+)
+ drivers/staging/android/ashmem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvc1.c
-@@ -587,6 +587,7 @@ nvc1_grctx_init_unk58xx[] = {
- 	{ 0x405870,   4, 0x04, 0x00000001 },
- 	{ 0x405a00,   2, 0x04, 0x00000000 },
- 	{ 0x405a18,   1, 0x04, 0x00000000 },
-+	{}
- };
- 
- static struct nvc0_graph_init
-@@ -598,6 +599,7 @@ nvc1_grctx_init_rop[] = {
- 	{ 0x408904,   1, 0x04, 0x62000001 },
- 	{ 0x408908,   1, 0x04, 0x00c80929 },
- 	{ 0x408980,   1, 0x04, 0x0000011d },
-+	{}
- };
- 
- static struct nvc0_graph_init
-@@ -671,6 +673,7 @@ nvc1_grctx_init_gpc_0[] = {
- 	{ 0x419000,   1, 0x04, 0x00000780 },
- 	{ 0x419004,   2, 0x04, 0x00000000 },
- 	{ 0x419014,   1, 0x04, 0x00000004 },
-+	{}
- };
- 
- static struct nvc0_graph_init
-@@ -717,6 +720,7 @@ nvc1_grctx_init_tpc[] = {
- 	{ 0x419e98,   1, 0x04, 0x00000000 },
- 	{ 0x419ee0,   1, 0x04, 0x00011110 },
- 	{ 0x419f30,  11, 0x04, 0x00000000 },
-+	{}
- };
- 
- void
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd7.c
-@@ -258,6 +258,7 @@ nvd7_grctx_init_hub[] = {
- 	nvc0_grctx_init_unk78xx,
- 	nvc0_grctx_init_unk80xx,
- 	nvd9_grctx_init_rop,
-+	NULL
- };
- 
- struct nvc0_graph_init *
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnvd9.c
-@@ -466,6 +466,7 @@ nvd9_grctx_init_hub[] = {
- 	nvc0_grctx_init_unk78xx,
- 	nvc0_grctx_init_unk80xx,
- 	nvd9_grctx_init_rop,
-+	NULL
- };
- 
- struct nvc0_graph_init *
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -706,7 +706,7 @@ static long ashmem_ioctl(struct file *fi
+ 				.gfp_mask = GFP_KERNEL,
+ 				.nr_to_scan = LONG_MAX,
+ 			};
+-
++			ret = ashmem_shrink_count(&ashmem_shrinker, &sc);
+ 			nodes_setall(sc.nodes_to_scan);
+ 			ashmem_shrink_scan(&ashmem_shrinker, &sc);
+ 		}
 
 
