@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab3K0A62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39199 "EHLO
+	id S932419Ab3K0A6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:58:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758498Ab3K0A6Q (ORCPT
+	with ESMTP id S932406Ab3K0A63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:16 -0500
+	Tue, 26 Nov 2013 19:58:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, ben@decadent.org.uk
-Subject: [PATCH 3.10 66/80] powerpc/vio: use strcpy in modalias_show
-Date: Tue, 26 Nov 2013 16:57:35 -0800
-Message-Id: <20131127005645.516932981@linuxfoundation.org>
+        Qingshuai Tian <qingshuai.tian@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 022/116] ACPI / video: Quirk initial backlight level 0
+Date: Tue, 26 Nov 2013 16:56:35 -0800
+Message-Id: <20131127005738.480750511@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
-References: <20131127005640.934155527@linuxfoundation.org>
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 411cabf79e684171669ad29a0628c400b4431e95 upstream.
+commit 2c62333a408f5badd2d2ffd7177f95deeccc5ca4 upstream.
 
-Commit e82b89a6f19bae73fb064d1b3dd91fcefbb478f4 used strcat instead of
-strcpy which can result in an overflow of newlines on the buffer.
+Some firmware doesn't initialize initial backlight level to a proper
+value and _BQC will return 0 on first time evaluation. We used to be
+able to detect such incorrect value with our code logic, as value 0
+normally isn't a valid value in _BCL. But with the introduction of Win8,
+firmware begins to fill _BCL with values from 0 to 100, now 0 becomes
+a valid value but that value will make user's screen black. This patch
+test initial _BQC for value 0, if such a value is returned, do not use
+it.
 
-Signed-off-by: Prarit Bhargava
-Cc: benh@kernel.crashing.org
-Cc: ben@decadent.org.uk
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=64031
+References: https://bugzilla.kernel.org/show_bug.cgi?id=61231
+References: https://bugzilla.kernel.org/show_bug.cgi?id=63111
+Reported-by: Qingshuai Tian <qingshuai.tian@intel.com>
+Tested-by: Aaron Lu <aaron.lu@intel.com> # on "Idealpad u330p"
+Reported-and-tested-by: <erno@iki.fi> # on "Acer Aspire V5-573G"
+Reported-and-tested-by: Kirill Tkhai <tkhai@yandex.ru> # on "HP 250 G1"
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/vio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/video.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -1530,12 +1530,12 @@ static ssize_t modalias_show(struct devi
- 
- 	dn = dev->of_node;
- 	if (!dn) {
--		strcat(buf, "\n");
-+		strcpy(buf, "\n");
- 		return strlen(buf);
- 	}
- 	cp = of_get_property(dn, "compatible", NULL);
- 	if (!cp) {
--		strcat(buf, "\n");
-+		strcpy(buf, "\n");
- 		return strlen(buf);
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -832,7 +832,7 @@ acpi_video_init_brightness(struct acpi_v
+ 		for (i = 2; i < br->count; i++)
+ 			if (level_old == br->levels[i])
+ 				break;
+-		if (i == br->count)
++		if (i == br->count || !level)
+ 			level = max_level;
  	}
  
 
