@@ -1,112 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3K0QV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:21:26 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54392 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab3K0QVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:21:24 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        linus.walleij@linaro.org, wsa@the-dreams.de, horms@verge.net.au
-Subject: Re: [PATCH 01/03] pinctrl: sh-pfc: r7s72100 SCIF2 port3 support
-Date: Wed, 27 Nov 2013 11:56:54 +0100
-Message-ID: <1956759.4Z7la2uQeC@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131127080621.18384.85008.sendpatchset@w520>
-References: <20131127080606.18384.45103.sendpatchset@w520> <20131127080621.18384.85008.sendpatchset@w520>
+	id S1756918Ab3K0QX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:23:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810Ab3K0QX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:23:57 -0500
+Date: Wed, 27 Nov 2013 17:24:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de,
+        mingo@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com
+Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
+Message-ID: <20131127162405.GB24773@redhat.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com> <1383831828-15501-9-git-send-email-juri.lelli@gmail.com> <20131120163318.10253e43@gandalf.local.home> <5295F711.5010708@gmail.com> <20131127091647.4e16ce53@gandalf.local.home> <20131127142649.GC13532@twins.programming.kicks-ass.net> <20131127143435.GD25043@gmail.com> <20131127145837.GE16796@laptop.programming.kicks-ass.net> <20131127153519.GA26095@gmail.com> <20131127154015.GG789@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127154015.GG789@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+On 11/27, Peter Zijlstra wrote:
+>
+> Anyway, yes GCC seems to behave as we 'expect' it to; I just can't find
+> the language spec actually guaranteeing this.
 
-Thank you for the patch.
+And the kernel already assumes that gcc should do this, for example
 
-On Wednesday 27 November 2013 17:06:21 Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> Add support for SCIF2 port3 pin functions SCK, TXD and RXD to the
-> r7s72100 PINCTRL code. There are two possible pins that can be used
-> for TXD (Port 3 Pin 0 Function 6 and Port 3 Pin 1 Function 4) and
-> because of that are the data pins broken out in separate TXD and RXD.
-> 
-> This format is similar to other sh-pfc code, but a following patch
-> converts this to less verbose and less readable code.
+	struct siginfo info = {};
 
-You hopefully mean more readable :-)
+in do_tkill().
 
-It would help me reviewing this patch if I could get access to the SoC 
-datasheet.
+(this initialization should prevent the leak of uninitialized members
+ to userspace).
 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
-> 
->  drivers/pinctrl/sh-pfc/pfc-r7s72100.c |   41 ++++++++++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
-> 
-> --- 0002/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
-> +++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-11-27 
-15:22:16.000000000
-> +0900 @@ -103,10 +103,51 @@ static struct sh_pfc_pin pinmux_pins[] =
->  	_P_ALL(_P_GPIO),
->  };
-> 
-> +/* - SCIF2 ------------------------------------------------------------- */
-> +static const unsigned int scif2_txd_p3_0_pins[] = {
-> +	/* TX */
-> +	RZ_PORT_PIN(3, 0),
-> +};
-> +static const unsigned int scif2_txd_p3_0_mux[] = {
-> +	P_3_0_MARK_FN6,
-> +};
-> +static const unsigned int scif2_txd_p3_1_pins[] = {
-> +	/* TX */
-> +	RZ_PORT_PIN(3, 1),
-> +};
-> +static const unsigned int scif2_txd_p3_1_mux[] = {
-> +	P_3_1_MARK_FN4,
-> +};
-> +static const unsigned int scif2_rxd_p3_2_pins[] = {
-> +	/* RX */
-> +	RZ_PORT_PIN(3, 2),
-> +};
-> +static const unsigned int scif2_rxd_p3_2_mux[] = {
-> +	P_3_2_MARK_FN4,
-> +};
-> +static const unsigned int scif2_clk_p3_0_pins[] = {
-> +	/* SCK */
-> +	RZ_PORT_PIN(3, 0),
-> +};
-> +static const unsigned int scif2_clk_p3_0_mux[] = {
-> +	P_3_0_MARK_FN4,
-> +};
-> +
->  static const struct sh_pfc_pin_group pinmux_groups[] = {
-> +	SH_PFC_PIN_GROUP(scif2_txd_p3_0),
-> +	SH_PFC_PIN_GROUP(scif2_txd_p3_1),
-> +	SH_PFC_PIN_GROUP(scif2_rxd_p3_2),
-> +	SH_PFC_PIN_GROUP(scif2_clk_p3_0),
->  };
-> 
-> +static const char * const scif2_groups[] = {
-> +	"scif2_txd_p3_0",
-> +	"scif2_txd_p3_1",
-> +	"scif2_rxd_p3_2",
-> +	"scif2_clk_p3_0",
-> +};
->  static const struct sh_pfc_function pinmux_functions[] = {
-> +	SH_PFC_FUNCTION(scif2),
->  };
-> 
->  #define PFC_REG(idx, name, reg)						\
--- 
-Regards,
-
-Laurent Pinchart
+Oleg.
 
