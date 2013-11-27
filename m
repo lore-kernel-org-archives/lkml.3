@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759738Ab3K0B2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:28:55 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:44782 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab3K0B2v (ORCPT
+	id S1757293Ab3K0B2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:28:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39399 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758643Ab3K0A6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:28:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131125180030.GA23396@cerebellum.variantweb.net>
-References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
- <20131122172916.GB6477@cerebellum.variantweb.net> <20131125180030.GA23396@cerebellum.variantweb.net>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Tue, 26 Nov 2013 20:28:29 -0500
-X-Google-Sender-Auth: Q5hCx7OPQZPTwlRnu2g1Dg6VSLA
-Message-ID: <CALZtONCW1Gxa-aT25Yf7PP6R=sW_6KBu5XPKoU75pJgvmAknbg@mail.gmail.com>
-Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: linux-mm@kvack.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Nov 2013 19:58:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 045/116] ALSA: hda - Introduce the bitmask for excluding output volume
+Date: Tue, 26 Nov 2013 16:56:58 -0800
+Message-Id: <20131127005740.067975349@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 25, 2013 at 1:00 PM, Seth Jennings <sjennings@variantweb.net> wrote:
-> On Fri, Nov 22, 2013 at 11:29:16AM -0600, Seth Jennings wrote:
->> On Wed, Nov 20, 2013 at 02:49:33PM -0500, Dan Streetman wrote:
->> > Currently, zswap is writeback cache; stored pages are not sent
->> > to swap disk, and when zswap wants to evict old pages it must
->> > first write them back to swap cache/disk manually.  This avoids
->> > swap out disk I/O up front, but only moves that disk I/O to
->> > the writeback case (for pages that are evicted), and adds the
->> > overhead of having to uncompress the evicted pages, and adds the
->> > need for an additional free page (to store the uncompressed page)
->> > at a time of likely high memory pressure.  Additionally, being
->> > writeback adds complexity to zswap by having to perform the
->> > writeback on page eviction.
->> >
->> > This changes zswap to writethrough cache by enabling
->> > frontswap_writethrough() before registering, so that any
->> > successful page store will also be written to swap disk.  All the
->> > writeback code is removed since it is no longer needed, and the
->> > only operation during a page eviction is now to remove the entry
->> > from the tree and free it.
->>
->> I like it.  It gets rid of a lot of nasty writeback code in zswap.
->>
->> I'll have to test before I ack, hopefully by the end of the day.
->>
->> Yes, this will increase writes to the swap device over the delayed
->> writeback approach.  I think it is a good thing though.  I think it
->> makes the difference between zswap and zram, both in operation and in
->> application, more apparent. Zram is the better choice for embedded where
->> write wear is a concern, and zswap being better if you need more
->> flexibility to dynamically manage the compressed pool.
->
-> One thing I realized while doing my testing was that making zswap
-> writethrough also impacts synchronous reclaim.  Zswap, as it is now,
-> makes the swapcache page clean during swap_writepage() which allows
-> shrink_page_list() to immediately reclaim it.  Making zswap writethrough
-> eliminates this advantage and swapcache pages must be scanned again
-> before they can be reclaimed, as is the case with normal swapping.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Yep, I thought about that as well, and it is true, but only while
-zswap is not full.  With writeback, once zswap fills up, page stores
-will frequently have to reclaim pages by writing compressed pages to
-disk.  With writethrough, the zbud reclaim should be quick, as it only
-has to evict the pages, not write them to disk.  So I think basically
-writeback should speed up (compared to no-zswap case) swap_writepage()
-while zswap is not full, but (theoretically) slow it down (compared to
-no-zswap case) while zswap is full, while writethrough should slow
-down swap_writepage() slightly (the time it takes to compress/store
-the page) but consistently, almost the same amount before it's full vs
-when it's full.  Theoretically :-)  Definitely something to think
-about and test for.
+------------------
 
-Another idea that I was going to bring up after/if writethrough was
-added, was to move the page compression out of the store, maybe using
-a mempool and worker thread (or something), so that the zswap store is
-very fast.  Testing would of course be needed to see if that really
-improved things or not...
+From: Takashi Iwai <tiwai@suse.de>
+
+commit a1114a8c681b0724d6ad905f53ff06aa756f5fb8 upstream.
+
+Add a bitmask to hda_gen_spec indicating NIDs to exclude from the
+possible volume controls.  That is, when the bit is set, the NID
+corresponding to the bit won't be picked as an output volume control
+any longer.
+
+Basically this is just a band-aid for working around the issue found
+with CS4208 codec, where only the headphone pin has a volume AMP with
+different dB steps.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60811
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/hda_generic.c  |    8 ++++++--
+ sound/pci/hda/hda_generic.h  |    3 +++
+ sound/pci/hda/patch_cirrus.c |    2 ++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -549,11 +549,15 @@ static hda_nid_t look_for_out_mute_nid(s
+ static hda_nid_t look_for_out_vol_nid(struct hda_codec *codec,
+ 				      struct nid_path *path)
+ {
++	struct hda_gen_spec *spec = codec->spec;
+ 	int i;
+ 
+ 	for (i = path->depth - 1; i >= 0; i--) {
+-		if (nid_has_volume(codec, path->path[i], HDA_OUTPUT))
+-			return path->path[i];
++		hda_nid_t nid = path->path[i];
++		if ((spec->out_vol_mask >> nid) & 1)
++			continue;
++		if (nid_has_volume(codec, nid, HDA_OUTPUT))
++			return nid;
+ 	}
+ 	return 0;
+ }
+--- a/sound/pci/hda/hda_generic.h
++++ b/sound/pci/hda/hda_generic.h
+@@ -242,6 +242,9 @@ struct hda_gen_spec {
+ 	/* additional mute flags (only effective with auto_mute_via_amp=1) */
+ 	u64 mute_bits;
+ 
++	/* bitmask for skipping volume controls */
++	u64 out_vol_mask;
++
+ 	/* badness tables for output path evaluations */
+ 	const struct badness_table *main_out_badness;
+ 	const struct badness_table *extra_out_badness;
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -684,6 +684,8 @@ static int patch_cs4208(struct hda_codec
+ 		return -ENOMEM;
+ 
+ 	spec->gen.automute_hook = cs_automute;
++	/* exclude NID 0x10 (HP) from output volumes due to different steps */
++	spec->gen.out_vol_mask = 1ULL << 0x10;
+ 
+ 	snd_hda_pick_fixup(codec, cs4208_models, cs4208_fixup_tbl,
+ 			   cs4208_fixups);
 
 
-
-
-
->
-> Just something I am thinking about.
->
-> Seth
