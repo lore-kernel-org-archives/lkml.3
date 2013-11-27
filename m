@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab3K0S2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:28:47 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45114 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab3K0S2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:28:46 -0500
-Date: Wed, 27 Nov 2013 18:28:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131127182841.GF14725@sirena.org.uk>
-References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131127132442.GJ3296@lee--X1>
- <20131127151639.GX14725@sirena.org.uk>
- <20131127152701.GQ3296@lee--X1>
- <20131127160707.GC14725@sirena.org.uk>
- <20131127164202.GX3296@lee--X1>
+	id S1756537Ab3K0S3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:29:13 -0500
+Received: from sauhun.de ([89.238.76.85]:60792 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754622Ab3K0S3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 13:29:10 -0500
+Date: Wed, 27 Nov 2013 19:29:02 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, patches@linaro.org,
+        linaro-networking@linaro.org, linaro-kernel@lists.linaro.org,
+        Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: davinci: raw read and write endian fix
+Message-ID: <20131127182902.GA16550@katana>
+References: <1384971824-7707-1-git-send-email-taras.kondratiuk@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TvdOHkZ48FvYUU7J"
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
 Content-Disposition: inline
-In-Reply-To: <20131127164202.GX3296@lee--X1>
-X-Cookie: Your supervisor is thinking about you.
+In-Reply-To: <1384971824-7707-1-git-send-email-taras.kondratiuk@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
- as readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---TvdOHkZ48FvYUU7J
+--HlL+5n6rz5pIUxbD
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 27, 2013 at 04:42:02PM +0000, Lee Jones wrote:
+On Wed, Nov 20, 2013 at 08:23:44PM +0200, Taras Kondratiuk wrote:
+> I2C IP block expect LE data, but CPU may operate in BE mode.
+> Need to use endian neutral functions to read/write h/w registers.
+> I.e instead of __raw_read[lw] and __raw_write[lw] functions code
+> need to use read[lw]_relaxed and write[lw]_relaxed functions.
+> If the first simply reads/writes register, the second will byteswap
+> it if host operates in BE mode.
+>=20
+> Changes are trivial sed like replacement of __raw_xxx functions
+> with xxx_relaxed variant.
+>=20
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-> I see. Well I'm not sure how. If we apply it to either ASoC or MFD and
-> other patches pertaining to that file subsequently appear, then
-> conflict is likely. As you know, the commonly used mitigation
+Applied to for-current, thanks!
 
-It shouldn't be that likely, we're adding entries to the middle of big,
-ordered tables - conflicts would be caused by something like changing
-or adding adjacent entries and they're pretty trivial to resolve.  It's
-not like a restructring of the code or anything.
 
-> technique we usually employ is immutable branches, but this was not
-> employed in this case for one reason or another. So if we apply it now
-> to either one of the trees we will be hedging our bets.
-
-Hedging our bets would be applying it to both trees! =20
-
---TvdOHkZ48FvYUU7J
+--HlL+5n6rz5pIUxbD
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSljnWAAoJELSic+t+oim9QuUP/jBi8W5HH9feoRpRSC+7gNUX
-rWHxGGmXXo2l0INUKOc5Nf865FbZoFXt2GuyAf0xoC6mCN0/YRgFUEpy+Xo07cUe
-5JYLgRm5bhVz3bBUXUfqM2ShIq6Dj8tuLCcBTHgjIFJr2wG7Zk/n5u6xvEwttVU4
-TMGG45fW1M60UXq5+KK2N0o9dkw+r3ISjzeAOCtD9zrDPt69cNZCGzSqY2FR5+wG
-s1vDRXqxMxeRPywJH5XFi4AcLqy2fdIhOfrQc4ISEU0kDszpvqIPzeg3Zo5Q74hF
-6RlOs4RHwIwTtUAsS+5VIEhMfYtFVgs2xXeJHlyFFpmGhTmUmMByeoGi9gZWPYBq
-KiFgTx2krMgyOVg9LiZrhyUNUTyI3ChIVQ5dccQx330NY/6NEDaHkoqp6jcuZ40I
-482b9oAjM7GNdek/k0M3uhJ/ZX9Po1iAW2KLavVtnh1HTTlv4EBFD1YSXpi12FYA
-TbjvqcTilxNI+jv/c5btMdYxiftl14Bb8O0XmHwwTbZcNCGCUjqMOxYKbowpoIZH
-XEkP9HfHZ96qEyDuY7f6URff26GiThOwIA8qACYK89BVDQ3oVkDgDfPXVCdncKf/
-x6pJlRwh3zAXTcWHeVXAkJnPBtlhRBYHgCkPce2U0Gn8C0wHLNtUKvydcmuYARW0
-lnfCncCSYPFvpaTtQ+AW
-=Yb3g
+iQIcBAEBAgAGBQJSljnuAAoJEBQN5MwUoCm2qXIP/2HMNusq/Z2UEkxgIdoIkF6N
+AkyojhSLI7OfvRFuSvQEsbO+g1HnMy/ok0e38pYjiqTfL9W2znHJhDu5FvYTzlWE
+VHsiTqStfpZFgjloIKsP2gqA7BpBZEPkU7Vwsv/wFIqAE6PMmqavpfCCFxZ1HLJx
+sFuTtRc41ZzWhx0CAgClN9D0QFl2QasqYWzpAljsQtgwfwtds1xLpYxkeUCJCWBQ
+vc7RgHF1SuXLSooYgAme7AXKC5T/+U2k2IN32SoCIFoX2uWqaQS5bACGSLZhCEWs
+74o7mq78nzTjoeFSHaaiJxcfdB/fXe8U9jILugbbPJvQUa1Vkkjv78dvxYoYufup
+veBO2r6t1QSiM7BHXRBq97YN6DSd9sxjJFOMTGnBGF+xCIEgkDA9vQOpFqHaxweB
+1z2QYjKL7PubHqxRP/NtvE2Tv2ZzdeKOgr59wqe9wzGZwhgrwvyjda53cezC+EJM
+tQw02BB+0/9MiIdEw/fhuhMCNClXo9Uiz/CRTToOCETvA7Skp1bY0M3bYvSlFkrp
+HkJ7B5c4RJRmfnoMjHRKhzZb9qz3t1wT6puiRYTR8sPEav0+kTQrN1yYvwKRUp7n
+J3RbCxqhsqd85F1+sFveNPvFS9agqTa5lCP4BwVZTCwU6zxAU3jvhBzHaNw4dI5Q
+tK4FdXQ2N66v1SZMMVdu
+=z6Gd
 -----END PGP SIGNATURE-----
 
---TvdOHkZ48FvYUU7J--
+--HlL+5n6rz5pIUxbD--
