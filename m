@@ -1,99 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3K0SAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:00:41 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:43971 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab3K0SAj (ORCPT
+	id S1753717Ab3K0SKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:10:53 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:51290 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab3K0SKu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:00:39 -0500
-Date: Wed, 27 Nov 2013 13:00:33 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>, tomasz.figa@gmail.com
-Subject: Re: [PATCH v4 4/4] ARM: EXYNOS: add Exynos Dual Cluster Support
-In-Reply-To: <1385456288-20398-5-git-send-email-v.tyrtov@samsung.com>
-Message-ID: <alpine.LFD.2.10.1311271246010.9667@knanqh.ubzr>
-References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com> <1385456288-20398-5-git-send-email-v.tyrtov@samsung.com>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+	Wed, 27 Nov 2013 13:10:50 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+To: boris brezillon <b.brezillon@overkiz.com>,
+        "Jason Cooper" <jason@lakedaemon.net>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <5296298C.9040300@overkiz.com>
+Cc: "Rob Landley" <rob@landley.net>, "Rob Herring" <rob.herring@calxeda.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1385556285-19180-1-git-send-email-b.brezillon@overkiz.com>
+ <1385556285-19180-3-git-send-email-b.brezillon@overkiz.com>
+ <20131127145620.GR2879@titan.lakedaemon.net> <5296298C.9040300@overkiz.com>
+Message-ID: <20131127181042.16819.36364@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2 2/2] clk: add accuracy support for fixed clock
+Date: Wed, 27 Nov 2013 10:10:42 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Nov 2013, Vyacheslav Tyrtov wrote:
-
-> From: Tarek Dakhran <t.dakhran@samsung.com>
+Quoting boris brezillon (2013-11-27 09:19:08)
+> Hi Jason,
 > 
-> Add EDCS(Exynos Dual Cluster Support) for Samsung Exynos5410 SoC.
-> This enables all 8 cores, 4 x A7 and 4 x A15 run at the same time.
+> On 27/11/2013 15:56, Jason Cooper wrote:
+> > Boris,
+> >
+> > Thanks for posting this series.  Bear with me as I'm attempting to give
+> > MikeT a hand.
+> Nice to hear.
+> Mike already took a look at this series, but I'm happy to get more 
+> feedbacks.
 > 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+> > Don't be afraid to tell me a question is stupid :-)
+> Your questions are far from stupid ;-).
+> 
+> >
+> > On Wed, Nov 27, 2013 at 01:44:45PM +0100, Boris BREZILLON wrote:
+> >> This patch adds support for accuracy retrieval on fixed clocks.
+> >> It also adds a new dt property called 'clock-accuracy' to define the clock
+> >> accuracy.
+> >>
+> >> This can be usefull for oscillator (RC, crystal, ...) definitions which are
+> >> always given an accuracy characteristic.
+> > I think we need to be more explicit in the binding and the API,
+> > especially when providing a method to recalculate the accuracy.  I
+> > presume this recalculated value would be relative against the root
+> > clock?
+> 
+> Yes, indirectly.
+> Actually the clk accuracy depends on the whole clock chain, and is 
+> calculated
+> either by comparing the real clk rate to the theorical clk rate
+> (accuracy = absolute_value((theorical_clk_rate - real_clk_rate)) / 
+> theorical_clk_rate),
+> or by adding all the accuracies (expressed in ppm, ppb or ppt) of the 
+> clk chain
+> (accuracy = current_clk_accuracy + parent_clk_accuracy).
+> 
+> Say you have a root clk with a +-10000 ppb accuracy, then a pll multiplying
+> this root clk by 40 and introducing a possible drift of +- 1000 ppb and
+> eventually a system clk based on this pll with a perfect div by 2 prescaler
+> (accuracy = 0 ppb).
+> 
+> If I understand correctly how accuracy propagates accross the clk tree,
+> you'll end up with a system clk with a +- 11000 ppb accuracy.
+> 
+> e.g.:
+>   root clk = 12MHz +- 10000 ppb => 12 MHz * (1 - (10000 / 10^9)) < root 
+> clk < 12 MHz * (1 + (10000 / 10^9))
+>                                                      => 11,99988 MHz < 
+> root clk < 12,00012 MHz
+>   pll clk = ((root clk) * 40) +- 1000 ppb =>  (11,99988 MHz * 40) * (1 - 
+> (1000 / 10^9)) < pll clk < (12,00012 MHz * 40) * (1 + (1000 / 10^9))
+>                                                             => 
+> 479,994720005 MHz < pll clk < 480,005280005 MHz
+> 
+>   system clk = ((pll clk) / 2) +- XXX ppb => 479,994720005 MHz / 2 < 
+> system clk < 480,005280005 MHz / 2
+>                                                                => 
+> 239,997360002 MHz < system clk < 240,002640002 MHz
+>                                                                => system 
+> clk accuracy = 0,002640002 / 240 = 11000 ppb
+> 
+> Please tell me if my assumptions are false.
+> >
+> > There really needs to be two attributes here:  the rated accuracy from
+> > the manufacturer, and the calculated accuracy wrt another clock in the
+> > system.  We only need a binding for the manufacturer rating since the
+> > calculated accuracy is determined at runtime.
+> 
+> Actually when I proposed this new functionnality I only had the theorical
+> (or manufacturer rated) accuracy in mind.
+> But providing an estimated accuracy (based on another clk) sounds
+> interresting if your reference clk is an extremly accurate one.
 
-Just some minor comments in addition to those Dave already provided.
+Is there a need to model clock accuracy across the clock chain? I'm OK
+modeling it in DT, and the code to do it in the clk framework isn't very
+much ... but I also wonder if we're just adding complexity for no
+reason.
 
-[...]
-> +/*
-> + * Enable cluster-level coherency, in preparation for turning on the MMU.
-> + */
-> +static void __naked edcs_power_up_setup(unsigned int affinity_level)
-> +{
-> +	asm volatile ("\n"
-> +	"b	cci_enable_port_for_self");
-> +}
+> 
+> >
+> > I would also prefer to see an unknown accuracy be -1.
+> I decided to keep 0 as a default value for unimplemented recalc_accuracy
+> (or unspecified fixed accuracy) to keep existing implementation coherent.
+> 
+> 0 means the clk is perfect, and I thought it would be easier to handle a
+> perfect clk (even if this is not really the case) than handling an error 
+> case.
+> 
+> Another aspect is the propagation of the clk accuracy accross the clk tree.
+> Returning -1 in the middle of the clk chain will drop the previous clk 
+> accuracy
+> calculation.
+> 
+> Anyway, I can change this if you think this is more appropriate.
 
-You should need to turn on the CCI port only for the first CPU to power 
-up a cluster.  This is indicated by the affinity level passed into r0.  
-See tc2_pm_power_up_setup for example.
+What about the absence of the property? Instead of requiring a -1 value
+can we simply detect that the property does not exist? This is nicer for
+backwards compatibility with existing DTS.
 
-> +static int __init edcs_init(void)
-> +{
-> +	int ret;
-> +	struct device_node *node;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "samsung,exynos5410");
-> +	if (!node)
-> +		return -ENODEV;
-> +
-> +	if (!cci_probed())
-> +		return -ENODEV;
-> +
-> +	/*
-> +	 * Future entries into the kernel can now go
-> +	 * through the cluster entry vectors.
-> +	 */
-> +	writel_relaxed(virt_to_phys(mcpm_entry_point), REG_ENTRY_ADDR);
-> +
-> +	edcs_data_init();
-> +	mcpm_smp_set_ops();
-> +
-> +	ret = mcpm_platform_register(&edcs_power_ops);
-> +	if (!ret) {
-> +		mcpm_sync_init(edcs_power_up_setup);
-> +		pr_info("EDCS power management initialized\n");
-> +	}
-> +	return ret;
-> +}
+Regards,
+Mike
 
-Here I'd suggest initializing EG_ENTRY_ADDR only after mcpm_sync_init() 
-is done.  If ever a secondary CPU, seeing that the address is no longer 
-zero, decides to enter the kernel while the state machine is not 
-initialized yet, might lead to all sorts of funny behaviors.
-
-
-Nicolas
+> 
+> > There are already
+> > clocks on the market (PPS reference clocks) with accuracies of
+> > 0.1ppb/day [1].  Obviously, these aren't system clocks.  So the limit on
+> > accuracy may be a non-issue.  However, it may be worth changing the
+> > binding property to express the units.
+> Wow, 0.1 ppb, this is impressive :-).
+> 
+> 
+> This needs more than changing the dt bindings: I currently store the
+> accuracy value in an unsigned long field, and expressing this in ppt
+> (parts per trillion) may implies storing this in an u64 field (or store a
+> unit field).
+> 
+> 
+> >
+> >> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> >> ---
+> >>   .../devicetree/bindings/clock/fixed-clock.txt      |    3 ++
+> >>   drivers/clk/clk-fixed-rate.c                       |   43 +++++++++++++++++---
+> >>   include/linux/clk-provider.h                       |    4 ++
+> >>   3 files changed, 44 insertions(+), 6 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/Documentation/devicetree/bindings/clock/fixed-clock.txt
+> >> index 0b1fe78..48ea0ad 100644
+> >> --- a/Documentation/devicetree/bindings/clock/fixed-clock.txt
+> >> +++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
+> >> @@ -10,6 +10,8 @@ Required properties:
+> >>   - clock-frequency : frequency of clock in Hz. Should be a single cell.
+> >>   
+> >>   Optional properties:
+> >> +- clock-accuracy : accuracy of clock in ppb (parts per billion).
+> >> +               Should be a single cell.
+> > I would prefer to call this property 'clock-rated-ppb'.
+> 
+> Depending on what we choose to do with the accuracy field, this might be 
+> an option.
+> 
+> >
+> >>   - gpios : From common gpio binding; gpio connection to clock enable pin.
+> >>   - clock-output-names : From common clock binding.
+> >>   
+> >> @@ -18,4 +20,5 @@ Example:
+> >>              compatible = "fixed-clock";
+> >>              #clock-cells = <0>;
+> >>              clock-frequency = <1000000000>;
+> >> +            clock-accuracy = <100>;
+> >>      };
+> > thx,
+> >
+> > Jason.
+> >
+> > [1] http://www.vectron.com/products/modules/md-010.htm
+> 
+> Thanks for your review, and don't hesitate to ask more questions, or to 
+> point out
+> incoherencies in my approach (I'm not an expert in clk and clk accuracy 
+> calculation,
+> and I might be wrong ;-)).
+> 
+> Best Regards,
+> 
+> Boris
