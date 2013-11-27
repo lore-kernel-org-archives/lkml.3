@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab3K0A6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39144 "EHLO
+	id S1756638Ab3K0Bl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:41:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39176 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758233Ab3K0A56 (ORCPT
+	with ESMTP id S1758395Ab3K0A6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:58 -0500
+	Tue, 26 Nov 2013 19:58:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 43/80] ALSA: hda - Dont clear the power state at snd_hda_codec_reset()
-Date: Tue, 26 Nov 2013 16:57:12 -0800
-Message-Id: <20131127005643.937338539@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>, annndddrr@gmail.com,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Cornel Panceac <cpanceac@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 78/80] dmi: add support for exact DMI matches in addition to substring matching
+Date: Tue, 26 Nov 2013 16:57:47 -0800
+Message-Id: <20131127005646.323538552@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,36 +31,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
+commit 5017b2851373ee15c7035151853bb1448800cae2 upstream.
 
-snd_hda_codec_reset() is called either in resetting the whole setup at
-error paths or hwdep clear/reconfig sysfs triggers.  But all of these
-don't assume that the power has to be off, rather they want to keep
-the power state unchanged (e.g. reconfig_codec() calls the power
-up/down by itself).  Thus, unconditionally clearing the power state in
-snd_hda_codec_reset() leads to the inconsistency, confuses the further
-operation.   This patch gets rid of the lines doing that bad thing.
+dmi_match() considers a substring match to be a successful match.  This is
+not always sufficient to distinguish between DMI data for different
+systems.  Add support for exact string matching using strcmp() in addition
+to the substring matching using strstr().
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The specific use case in the i915 driver is to allow us to use an exact
+match for D510MO, without also incorrectly matching D510MOV:
+
+  {
+	.ident = "Intel D510MO",
+	.matches = {
+		DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+		DMI_EXACT_MATCH(DMI_BOARD_NAME, "D510MO"),
+	},
+  }
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Cc: <annndddrr@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Cornel Panceac <cpanceac@gmail.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/firmware/dmi_scan.c     |   12 +++++++++---
+ include/linux/mod_devicetable.h |    6 ++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -2517,9 +2517,6 @@ int snd_hda_codec_reset(struct hda_codec
- 	cancel_delayed_work_sync(&codec->jackpoll_work);
- #ifdef CONFIG_PM
- 	cancel_delayed_work_sync(&codec->power_work);
--	codec->power_on = 0;
--	codec->power_transition = 0;
--	codec->power_jiffies = jiffies;
- 	flush_workqueue(bus->workq);
- #endif
- 	snd_hda_ctls_clear(codec);
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -551,9 +551,15 @@ static bool dmi_matches(const struct dmi
+ 		int s = dmi->matches[i].slot;
+ 		if (s == DMI_NONE)
+ 			break;
+-		if (dmi_ident[s]
+-		    && strstr(dmi_ident[s], dmi->matches[i].substr))
+-			continue;
++		if (dmi_ident[s]) {
++			if (!dmi->matches[i].exact_match &&
++			    strstr(dmi_ident[s], dmi->matches[i].substr))
++				continue;
++			else if (dmi->matches[i].exact_match &&
++				 !strcmp(dmi_ident[s], dmi->matches[i].substr))
++				continue;
++		}
++
+ 		/* No match */
+ 		return false;
+ 	}
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -456,7 +456,8 @@ enum dmi_field {
+ };
+ 
+ struct dmi_strmatch {
+-	unsigned char slot;
++	unsigned char slot:7;
++	unsigned char exact_match:1;
+ 	char substr[79];
+ };
+ 
+@@ -474,7 +475,8 @@ struct dmi_system_id {
+  */
+ #define dmi_device_id dmi_system_id
+ 
+-#define DMI_MATCH(a, b)	{ a, b }
++#define DMI_MATCH(a, b)	{ .slot = a, .substr = b }
++#define DMI_EXACT_MATCH(a, b)	{ .slot = a, .substr = b, .exact_match = 1 }
+ 
+ #define PLATFORM_NAME_SIZE	20
+ #define PLATFORM_MODULE_PREFIX	"platform:"
 
 
