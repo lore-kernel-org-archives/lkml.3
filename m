@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759715Ab3K0Byn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:54:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38998 "EHLO
+	id S1760625Ab3K0BzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:55:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757621Ab3K0A5Y (ORCPT
+	with ESMTP id S1753847Ab3K0A5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:24 -0500
+	Tue, 26 Nov 2013 19:57:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 3.10 23/80] ACPI / hotplug: Fix handle_root_bridge_removal()
-Date: Tue, 26 Nov 2013 16:56:52 -0800
-Message-Id: <20131127005642.547486624@linuxfoundation.org>
+        Puneet Kumar <puneetster@chromium.org>,
+        Aaron Durbin <adurbin@chromium.org>, Olof Johansson <olof@lixom.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 21/80] ACPI / EC: Ensure lock is acquired before accessing ec struct members
+Date: Tue, 26 Nov 2013 16:56:50 -0800
+Message-Id: <20131127005642.409638950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,47 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Puneet Kumar <puneetster@chromium.org>
 
-commit 2441191a19039002b2c454a261fb45986df15184 upstream.
+commit 36b15875a7819a2ec4cb5748ff7096ad7bd86cbb upstream.
 
-It is required to do get_device() on the struct acpi_device in
-question before passing it to acpi_bus_hot_remove_device() through
-acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
-calls acpi_scan_hot_remove() that does put_device() on that
-object.
+A bug was introduced by commit b76b51ba0cef ('ACPI / EC: Add more debug
+info and trivial code cleanup') that erroneously caused the struct member
+to be accessed before acquiring the required lock.  This change fixes
+it by ensuring the lock acquisition is done first.
 
-The ACPI PCI root removal routine, handle_root_bridge_removal(),
-doesn't do that, which may lead to premature freeing of the
-device object or to executing put_device() on an object that
-has been freed already.
+Found by Aaron Durbin <adurbin@chromium.org>
 
-Fix this problem by making handle_root_bridge_removal() use
-get_device() as appropriate.
-
+Fixes: b76b51ba0cef ('ACPI / EC: Add more debug info and trivial code cleanup')
+References: http://crbug.com/319019
+Signed-off-by: Puneet Kumar <puneetster@chromium.org>
+Reviewed-by: Aaron Durbin <adurbin@chromium.org>
+[olof: Commit message reworded a bit]
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/acpi/ec.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -614,9 +614,12 @@ static void handle_root_bridge_removal(s
- 	ej_event->device = device;
- 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -175,9 +175,10 @@ static void start_transaction(struct acp
+ static void advance_transaction(struct acpi_ec *ec, u8 status)
+ {
+ 	unsigned long flags;
+-	struct transaction *t = ec->curr;
++	struct transaction *t;
  
-+	get_device(&device->dev);
- 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status)) {
-+		put_device(&device->dev);
- 		kfree(ej_event);
-+	}
- }
- 
- static void _handle_hotplug_event_root(struct work_struct *work)
+ 	spin_lock_irqsave(&ec->lock, flags);
++	t = ec->curr;
+ 	if (!t)
+ 		goto unlock;
+ 	if (t->wlen > t->wi) {
 
 
