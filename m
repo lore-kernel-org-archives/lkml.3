@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3K0PQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:16:48 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36573 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3K0PQo (ORCPT
+	id S1756656Ab3K0PRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:17:37 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:36899 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab3K0PRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:16:44 -0500
-Date: Wed, 27 Nov 2013 15:16:39 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131127151639.GX14725@sirena.org.uk>
-References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131127132442.GJ3296@lee--X1>
+	Wed, 27 Nov 2013 10:17:33 -0500
+X-Auth-Info: fIRBDkqw0mHShebZ11YYWwdAjASK59Qyh5mvueuEIrc=
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: Evolution of Linux kernel sizes
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WiuFC6bSmcjanUfV"
-Content-Disposition: inline
-In-Reply-To: <20131127132442.GJ3296@lee--X1>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
- as readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+In-reply-to: <CAMuHMdUr2Vr9+STwcYf1PcB=PF+u3SJxU3LYnzqQ+vdbDsp71A@mail.gmail.com>
+References: <CAMuHMdUr2Vr9+STwcYf1PcB=PF+u3SJxU3LYnzqQ+vdbDsp71A@mail.gmail.com>
+Comments: In-reply-to Geert Uytterhoeven <geert@linux-m68k.org>
+   message dated "Wed, 27 Nov 2013 10:35:25 +0100."
+Date: Wed, 27 Nov 2013 16:17:26 +0100
+Message-Id: <20131127151726.DCE57380416@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Geert,
 
---WiuFC6bSmcjanUfV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In message <CAMuHMdUr2Vr9+STwcYf1PcB=PF+u3SJxU3LYnzqQ+vdbDsp71A@mail.gmail.com> you wrote:
+>
+> Below are the static kernel sizes (as reported by "size") for m68k
+> multi-platform kernels (m68k/multi_defconfig), for kernel versions
+> 2.6.28 to 3.12:
+> 
+>    text    data     bss     dec     hex filename
+...
+> 4010686  220476  190220 4421382  437706 vmlinux-v3.12
 
-On Wed, Nov 27, 2013 at 01:24:42PM +0000, Lee Jones wrote:
+It's even more dramatic if you look further back.  The U-Boot README
+still has examples of 2.4.4 kernels for PowerPC _including_ network
+support:
 
-> I'm not keen on this patch going through ASoC, as it might make things
-> equally as awkward later in the cycle. We should have created an
-> immutable branch for that really. I guess this will have to wait for
-> the next cycle now...
+        -> tools/mkimage -l examples/uImage.TQM850L
+        Image Name:   2.4.4 kernel for TQM850L
+        Created:      Wed Jul 19 02:34:59 2000
+        Image Type:   PowerPC Linux Kernel Image (gzip compressed)
+        Data Size:    335725 Bytes = 327.86 kB = 0.32 MB
+        Load Address: 0x00000000
+        Entry Point:  0x00000000
 
-That seems excessive and it probably ought to go in as a bug fix
-afterwards.  Given that it's just an addition of data to the table I'd
-expect we could cope, we've routinely done that with similar updates in
-the past without incident.
+resp. the same kernel using an uncompressed image:
 
---WiuFC6bSmcjanUfV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	Image Type:   PowerPC Linux Kernel Image (uncompressed)
+	Data Size:    792160 Bytes = 773.59 kB = 0.76 MB
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Those were the days then, 13 years ago...
 
-iQIcBAEBAgAGBQJSlgzUAAoJELSic+t+oim91+wP/i8uqsS+CBIKvtktagT4SkNp
-sRGYHQoqfzFBA0WQjWASSvTKcr/y48zwmhX34pacpuqHiaxaMB5hEFuAnyBh6gZN
-2y4ZOwtgJlvQ06tbF1YAcpUa2yfZmoJzZjjfATrrq0KjLx+wI4AUIme/AF8J+ncA
-rmJnHuTvCv3IOW6NKihrI2bGBPmwl3xGzO0pV0tMVysC4dKg+WK2AUm97Bov3knu
-y5AqXmMiZMgTMFYdnDpp5rPJLpsikISce8GrTZdSG1mG6pXPHbsJzd8P2M+ao/D1
-J2cbo/d6JLmtUwYMTyTZ6ddsJq6GUPWdJceGgXlWq3dwnW6CyzGPahEThvfsttGL
-fsi+Yqu0+bLyl86MalEC/lyQDFhAdBKh4D+5S7AxbnOY76f0Sep+wFwV55NGGSyf
-LMFLIb9US04zphyj7R3zAu/yykhRDGtfnYitb0qlpb6p9rNqcpP0eGs0hO0n88vg
-pFfQ9msBeayflxdKNRCwKxNtS99/gs4TQ98qhiB7WMixl9HSAFvuyHciNdNo4sUR
-uvkIyyUIg2hYMWF6bnG8lBdfTG0i40cqou5pKiukVvLPMtyephFwznPtjH1pxCZp
-2BXjY4tKKaQOYU7AFlroU/Hxi03nLjQ1iA1fEhXTFgWcNJpBMg/gRLnQwWmUQKI5
-gfRRd3XXr7OP1/WPKGdo
-=dkni
------END PGP SIGNATURE-----
+Today:
 
---WiuFC6bSmcjanUfV--
+	Image Name:   Linux-3.12.0-11101-gfe9baba
+	Created:      Wed Nov 27 15:05:33 2013
+	Image Type:   PowerPC Linux Kernel Image (gzip compressed)
+	Data Size:    1509145 Bytes = 1473.77 kB = 1.44 MB
+	Load Address: 00000000
+	Entry Point:  00000000
+
+	Image Type:   PowerPC Linux Kernel Image (uncompressed)
+	Data Size:    3172240 Bytes = 3097.89 kB = 3.03 MB
+
+Compressed:   1509145 / 335725 = 4.50
+Uncompressed: 3172240 / 792160 = 4.00
+
+
+
+[1] http://git.denx.de/?p=u-boot.git;a=blob;f=README#l5142
+
+Best regards,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+I think it's a new feature. Don't tell anyone it was an accident. :-)
+  -- Larry Wall on s/foo/bar/eieio in <10911@jpl-devvax.JPL.NASA.GOV>
