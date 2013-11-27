@@ -1,116 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab3K0F2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 00:28:21 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:53511 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab3K0F2O (ORCPT
+	id S1752634Ab3K0FbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 00:31:00 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:47034 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab3K0Fa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 00:28:14 -0500
-Message-ID: <529582E5.4010809@monstr.eu>
-Date: Wed, 27 Nov 2013 06:28:05 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Chris Ball <cjb@laptop.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH v2 1/2] mmc: arasan: Add driver for Arasan SDHCI
-References: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com> <87mwkqeojd.fsf@octavius.laptop.org> <9e92f3b2-5434-4fcf-b7f5-3f634175193c@CO1EHSMHS024.ehs.local>
-In-Reply-To: <9e92f3b2-5434-4fcf-b7f5-3f634175193c@CO1EHSMHS024.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="3tpKEjUrp25SrafhhopaWuCU0Crd3sVDs"
+	Wed, 27 Nov 2013 00:30:56 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f126d00000418c-f3-5295838ad346
+Content-transfer-encoding: 8BIT
+Message-id: <1385530195.2417.22.camel@kjgkr>
+Subject: Re: [f2fs-dev] [PATCH] f2fs: readahead contiguous pages for
+ restore_node_summary
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?UTF-8?Q?=E8=B0=AD=E5=A7=9D?= <shu.tan@samsung.com>
+Date: Wed, 27 Nov 2013 14:29:55 +0900
+In-reply-to: <000101cee757$6f3b4790$4db1d6b0$@samsung.com>
+References: <000101cee757$6f3b4790$4db1d6b0$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zfd2u5qlBBu83qlj8b/rIZnFpkbvF
+	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoErY9eDH4wF
+	XfIVR5+nNjC+E+9i5OSQEDCR2P7+PRuELSZx4d56IJuLQ0hgGaPEmtUrGWGKLvz6yAiRWMQo
+	8eDDO7AEr4CgxI/J91i6GDk4mAXkJY5cygYJMwuoS0yat4gZov4Vo0TLiy/MEPU6Eu+W/APb
+	JiwQLdG26ScTSC+bgLbE5v0GIGEhAUWJt/vvsoLYIgJKEr/mL2IFmcMssJBR4uCCm2C9LAKq
+	Es9bOsBsTgEriZ9d71ggmi0lVnasBdvFLyAqcXjhdmaIB5Qkdrd3soMMkhA4xy4xuacbapCA
+	xLfJh8AekBCQldh0AKpeUuLgihssExglZiF5cxbCm7OQvLmAkXkVo2hqQXJBcVJ6kYlecWJu
+	cWleul5yfu4mRkjkTdjBeO+A9SHGZKCNE5mlRJPzgZGbVxJvaGxmZGFqYmpsZG5pRpqwkjiv
+	2qOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M6fd1FTwkaldpB25jjXv0Mf18dN53HSm/
+	DMnn2t+PWEuYqwbXTWb2K06tv3lm96pv7EmOHgndegVJmce054ftN2PWNXY7UHdp4R2bM3GH
+	74R0NP24E160iT0ucV1GncnZ/X/cm7X/ramIcp5T5tek1SZ0527P4/tXeTme6IRH6hTEcL6S
+	TlBiKc5INNRiLipOBAAArYR60gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd2u5qlBBovvylr8b/rIZnFpkbvF
+	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMWPXgx+MBV3yFUefpzYwvhPvYuTkkBAwkbjw6yMjhC0mceHeerYu
+	Ri4OIYFFjBIPPrwDS/AKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmCHqXzFKtLz4wgxR
+	ryPxbsk/NhBbWCBaom3TTyaQXjYBbYnN+w1AwkICihJv999lBbFFBJQkfs1fxAoyh1lgIaPE
+	wQU3wXpZBFQlnrd0gNmcAlYSP7vesUA0W0qs7FgLtotfQFTi8MLtzBAPKEnsbu9kn8AoNAvJ
+	2bMQzp6F5OwFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLj+pn0DsZVDRaHGAU4GJV4
+	eCdcnhIkxJpYVlyZe4hRgoNZSYQ3vHJqkBBvSmJlVWpRfnxRaU5q8SHGZKDDJzJLiSbnA1NO
+	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwrp676Iahxs/X
+	y50OyBxk3Pimcf9LzdbdM1jO1k4Xji2YsKg37velynlnrLPf729drLr7ee3BAzlrvZh7lS9O
+	e/1F08G6wu6QzRnh0A75Ame5LE/NMlupy1vV2L9tPVy0+YjL800zT37e78a2IE1g7Z/QrXk7
+	WBpZsqdk+S62lfsvOW/mtLtLTZVYijMSDbWYi4oTAetoT7MvAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---3tpKEjUrp25SrafhhopaWuCU0Crd3sVDs
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Chao,
 
-Hi Chris,
+It seems that we already have a readahed function for node pages,
+ra_node_page().
+So, we don't make a page list for this, but can use the node_inode's
+page cache.
 
-On 11/27/2013 12:39 AM, S=C3=B6ren Brinkmann wrote:
-> Hi Chris,
->=20
-> On Tue, Nov 26, 2013 at 06:22:46PM -0500, Chris Ball wrote:
->> Hi Soren, sorry for the late review, just trivial changes:
-> No problem. Thanks for looking at it.
->=20
->>
->> On Wed, Oct 30 2013, Soren Brinkmann wrote:
->>> diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b=
-/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
->>> new file mode 100644
->>> index 000000000000..ef4c5ac753e8
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
->>> @@ -0,0 +1,27 @@
->>> +Device Tree Bindings for the Arasan SDCHI Controller
->>
->> SDHCI
-> Oops. Will be fixed.
->=20
->>
->>> +
->>> +  The bindings follow the mmc[1], clock[2] and interrupt[3] bindings=
-=2E Only
->>> +  deviations are documented here.
->>> +
->>> +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
->>> +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
->>> +  [3] Documentation/devicetree/bindings/interrupt-controller/interru=
-pts.txt
->>> +
->>> +Required Properties:
->>> +  - compatible: Compatibility string. Must be 'arasan,sdhci-8.9a'
->>> +  - reg: From mmc bindings: Register location and length.
->>
->> Actually, reg/interrupts are from the OF core.  There's no need to
->> mention them here.
-> Tomasz complained when I left those parts out so I added them in v2.
-> Since it's there now, I don't mind either way. Let's just agree on one
-> way or the other.
->=20
-
-Binding was Acked-by Rob and that's why I believe this should be fine.
+So how about writing ra_node_pages() which use the node_inode's page
+cache?
 
 Thanks,
-Michal
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+2013-11-22 (금), 15:48 +0800, Chao Yu:
+> If cp has no CP_UMOUNT_FLAG, we will read all pages in whole node segment 
+> one by one, it makes low performance. So let's merge contiguous pages and 
+> readahead for better performance.
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/node.c |   89 +++++++++++++++++++++++++++++++++++++++-----------------
+>  1 file changed, 63 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 4ac4150..81e704a 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1572,47 +1572,84 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * ra_sum_pages() merge contiguous pages into one bio and submit.
+> + * these pre-readed pages are linked in pages list.
+> + */
+> +static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+> +				int start, int nrpages)
+> +{
+> +	struct page *page;
+> +	int page_idx = start;
+> +
+> +	for (; page_idx < start + nrpages; page_idx++) {
+> +		/* alloc temporal page for read node summary info*/
+> +		page = alloc_page(GFP_NOFS | __GFP_ZERO);
+> +		if (!page) {
+> +			struct page *tmp;
+> +			list_for_each_entry_safe(page, tmp, pages, lru) {
+> +				list_del(&page->lru);
+> +				unlock_page(page);
+> +				__free_pages(page, 0);
+> +			}
+> +			return -ENOMEM;
+> +		}
+> +
+> +		lock_page(page);
+> +		page->index = page_idx;
+> +		list_add_tail(&page->lru, pages);
+> +	}
+> +
+> +	list_for_each_entry(page, pages, lru)
+> +		submit_read_page(sbi, page, page->index, READ_SYNC);
+> +
+> +	f2fs_submit_read_bio(sbi, READ_SYNC);
+> +	return 0;
+> +}
+> +
+>  int restore_node_summary(struct f2fs_sb_info *sbi,
+>  			unsigned int segno, struct f2fs_summary_block *sum)
+>  {
+>  	struct f2fs_node *rn;
+>  	struct f2fs_summary *sum_entry;
+> -	struct page *page;
+> +	struct page *page, *tmp;
+>  	block_t addr;
+> -	int i, last_offset;
+> -
+> -	/* alloc temporal page for read node */
+> -	page = alloc_page(GFP_NOFS | __GFP_ZERO);
+> -	if (!page)
+> -		return -ENOMEM;
+> -	lock_page(page);
+> +	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+> +	int i, last_offset, nrpages, err = 0;
+> +	LIST_HEAD(page_list);
+>  
+>  	/* scan the node segment */
+>  	last_offset = sbi->blocks_per_seg;
+>  	addr = START_BLOCK(sbi, segno);
+>  	sum_entry = &sum->entries[0];
+>  
+> -	for (i = 0; i < last_offset; i++, sum_entry++) {
+> -		/*
+> -		 * In order to read next node page,
+> -		 * we must clear PageUptodate flag.
+> -		 */
+> -		ClearPageUptodate(page);
+> +	for (i = 0; i < last_offset; i += nrpages, addr += nrpages) {
+>  
+> -		if (f2fs_readpage(sbi, page, addr, READ_SYNC))
+> -			goto out;
+> +		nrpages = min(last_offset - i, bio_blocks);
+> +		/* read ahead node pages */
+> +		err = ra_sum_pages(sbi, &page_list, addr, nrpages);
+> +		if (err)
+> +			return err;
+>  
+> -		lock_page(page);
+> -		rn = F2FS_NODE(page);
+> -		sum_entry->nid = rn->footer.nid;
+> -		sum_entry->version = 0;
+> -		sum_entry->ofs_in_node = 0;
+> -		addr++;
+> +		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> +
+> +			lock_page(page);
+> +			if(PageUptodate(page)) {
+> +				rn = F2FS_NODE(page);
+> +				sum_entry->nid = rn->footer.nid;
+> +				sum_entry->version = 0;
+> +				sum_entry->ofs_in_node = 0;
+> +				sum_entry++;
+> +			} else {
+> +				err = -EIO;
+> +			}
+> +
+> +			list_del(&page->lru);
+> +			unlock_page(page);
+> +			__free_pages(page, 0);
+> +		}
+>  	}
+> -	unlock_page(page);
+> -out:
+> -	__free_pages(page, 0);
+> -	return 0;
+> +	return err;
+>  }
+>  
+>  static bool flush_nats_in_journal(struct f2fs_sb_info *sbi)
 
+-- 
+Jaegeuk Kim
+Samsung
 
-
---3tpKEjUrp25SrafhhopaWuCU0Crd3sVDs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKVguUACgkQykllyylKDCGRCgCgjYNKIqoiaIvRGPuX91ipVBXZ
-edAAn0FmUq6S2dwEyOoxj28thwTjjRAT
-=phuA
------END PGP SIGNATURE-----
-
---3tpKEjUrp25SrafhhopaWuCU0Crd3sVDs--
