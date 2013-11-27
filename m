@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760846Ab3K0CEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:04:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38832 "EHLO
+	id S1760871Ab3K0CFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:05:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756844Ab3K0A4u (ORCPT
+	with ESMTP id S1756565Ab3K0A4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:50 -0500
+	Tue, 26 Nov 2013 19:56:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: [PATCH 3.4 16/39] Nest rename_lock inside vfsmount_lock
-Date: Tue, 26 Nov 2013 16:56:40 -0800
-Message-Id: <20131127005620.168457341@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.4 14/39] SUNRPC handle EKEYEXPIRED in call_refreshresult
+Date: Tue, 26 Nov 2013 16:56:38 -0800
+Message-Id: <20131127005620.032686297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -27,124 +28,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Andy Adamson <andros@netapp.com>
 
-commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a upstream.
+commit eb96d5c97b0825d542e9c4ba5e0a22b519355166 upstream.
 
-... lest we get livelocks between path_is_under() and d_path() and friends.
+Currently, when an RPCSEC_GSS context has expired or is non-existent
+and the users (Kerberos) credentials have also expired or are non-existent,
+the client receives the -EKEYEXPIRED error and tries to refresh the context
+forever.  If an application is performing I/O, or other work against the share,
+the application hangs, and the user is not prompted to refresh/establish their
+credentials. This can result in a denial of service for other users.
 
-The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
-it is possible to have thread B spin on attempt to take lock shared while thread
-A is already holding it shared, if B is on lower-numbered CPU than A and there's
-a thread C spinning on attempt to take the same lock exclusive.
+Users are expected to manage their Kerberos credential lifetimes to mitigate
+this issue.
 
-As the result, we need consistent ordering between vfsmount_lock (lglock) and
-rename_lock (seq_lock), even though everything that takes both is going to take
-vfsmount_lock only shared.
+Move the -EKEYEXPIRED handling into the RPC layer. Try tk_cred_retry number
+of times to refresh the gss_context, and then return -EACCES to the application.
 
-Spotted-by: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ zhj: backport to 3.4:
-  - Adjust context
-  - s/&vfsmount_lock/vfsmount_lock/]
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop change to nfs4_handle_reclaim_lease_error()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/nfs/nfs3proc.c       |    6 +++---
+ fs/nfs/nfs4filelayout.c |    1 -
+ fs/nfs/nfs4proc.c       |   18 ------------------
+ fs/nfs/nfs4state.c      |   21 ---------------------
+ fs/nfs/proc.c           |   43 -------------------------------------------
+ net/sunrpc/clnt.c       |    1 +
+ 6 files changed, 4 insertions(+), 86 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2513,7 +2513,6 @@ static int prepend_path(const struct pat
- 	bool slash = false;
- 	int error = 0;
+--- a/fs/nfs/nfs3proc.c
++++ b/fs/nfs/nfs3proc.c
+@@ -24,14 +24,14 @@
  
--	br_read_lock(vfsmount_lock);
- 	while (dentry != root->dentry || vfsmnt != root->mnt) {
- 		struct dentry * parent;
+ #define NFSDBG_FACILITY		NFSDBG_PROC
  
-@@ -2543,8 +2542,6 @@ static int prepend_path(const struct pat
- 	if (!error && !slash)
- 		error = prepend(buffer, buflen, "/", 1);
- 
--out:
--	br_read_unlock(vfsmount_lock);
- 	return error;
- 
- global_root:
-@@ -2561,7 +2558,7 @@ global_root:
- 		error = prepend(buffer, buflen, "/", 1);
- 	if (!error)
- 		error = real_mount(vfsmnt)->mnt_ns ? 1 : 2;
--	goto out;
-+	return error;
+-/* A wrapper to handle the EJUKEBOX and EKEYEXPIRED error messages */
++/* A wrapper to handle the EJUKEBOX error messages */
+ static int
+ nfs3_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+ {
+ 	int res;
+ 	do {
+ 		res = rpc_call_sync(clnt, msg, flags);
+-		if (res != -EJUKEBOX && res != -EKEYEXPIRED)
++		if (res != -EJUKEBOX)
+ 			break;
+ 		freezable_schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+ 		res = -ERESTARTSYS;
+@@ -44,7 +44,7 @@ nfs3_rpc_wrapper(struct rpc_clnt *clnt,
+ static int
+ nfs3_async_handle_jukebox(struct rpc_task *task, struct inode *inode)
+ {
+-	if (task->tk_status != -EJUKEBOX && task->tk_status != -EKEYEXPIRED)
++	if (task->tk_status != -EJUKEBOX)
+ 		return 0;
+ 	if (task->tk_status == -EJUKEBOX)
+ 		nfs_inc_stats(inode, NFSIOS_DELAY);
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -122,7 +122,6 @@ static int filelayout_async_handle_error
+ 		break;
+ 	case -NFS4ERR_DELAY:
+ 	case -NFS4ERR_GRACE:
+-	case -EKEYEXPIRED:
+ 		rpc_delay(task, FILELAYOUT_POLL_RETRY_MAX);
+ 		break;
+ 	case -NFS4ERR_RETRY_UNCACHED_REP:
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -319,7 +319,6 @@ static int nfs4_handle_exception(struct
+ 			}
+ 		case -NFS4ERR_GRACE:
+ 		case -NFS4ERR_DELAY:
+-		case -EKEYEXPIRED:
+ 			ret = nfs4_delay(server->client, &exception->timeout);
+ 			if (ret != 0)
+ 				break;
+@@ -1352,13 +1351,6 @@ int nfs4_open_delegation_recall(struct n
+ 				nfs_inode_find_state_and_recover(state->inode,
+ 						stateid);
+ 				nfs4_schedule_stateid_recovery(server, state);
+-			case -EKEYEXPIRED:
+-				/*
+-				 * User RPCSEC_GSS context has expired.
+-				 * We cannot recover this stateid now, so
+-				 * skip it and allow recovery thread to
+-				 * proceed.
+-				 */
+ 			case -ENOMEM:
+ 				err = 0;
+ 				goto out;
+@@ -3924,7 +3916,6 @@ nfs4_async_handle_error(struct rpc_task
+ 		case -NFS4ERR_DELAY:
+ 			nfs_inc_server_stats(server, NFSIOS_DELAY);
+ 		case -NFS4ERR_GRACE:
+-		case -EKEYEXPIRED:
+ 			rpc_delay(task, NFS4_POLL_RETRY_MAX);
+ 			task->tk_status = 0;
+ 			return -EAGAIN;
+@@ -4871,15 +4862,6 @@ int nfs4_lock_delegation_recall(struct n
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 				err = 0;
+ 				goto out;
+-			case -EKEYEXPIRED:
+-				/*
+-				 * User RPCSEC_GSS context has expired.
+-				 * We cannot recover this stateid now, so
+-				 * skip it and allow recovery thread to
+-				 * proceed.
+-				 */
+-				err = 0;
+-				goto out;
+ 			case -ENOMEM:
+ 			case -NFS4ERR_DENIED:
+ 				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1298,14 +1298,6 @@ restart:
+ 				/* Mark the file as being 'closed' */
+ 				state->state = 0;
+ 				break;
+-			case -EKEYEXPIRED:
+-				/*
+-				 * User RPCSEC_GSS context has expired.
+-				 * We cannot recover this stateid now, so
+-				 * skip it and allow recovery thread to
+-				 * proceed.
+-				 */
+-				break;
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_STALE_STATEID:
+ 			case -NFS4ERR_BAD_STATEID:
+@@ -1458,14 +1450,6 @@ static void nfs4_state_start_reclaim_nog
+ 	nfs4_state_mark_reclaim_helper(clp, nfs4_state_mark_reclaim_nograce);
  }
  
- /**
-@@ -2588,9 +2585,11 @@ char *__d_path(const struct path *path,
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(vfsmount_lock);
- 
- 	if (error < 0)
- 		return ERR_PTR(error);
-@@ -2607,9 +2606,11 @@ char *d_absolute_path(const struct path
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, &root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(vfsmount_lock);
- 
- 	if (error > 1)
- 		error = -EINVAL;
-@@ -2673,11 +2674,13 @@ char *d_path(const struct path *path, ch
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
- 
- 	get_fs_root(current->fs, &root);
-+	br_read_lock(vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = path_with_deleted(path, &root, &res, &buflen);
-+	write_sequnlock(&rename_lock);
-+	br_read_unlock(vfsmount_lock);
- 	if (error < 0)
- 		res = ERR_PTR(error);
--	write_sequnlock(&rename_lock);
- 	path_put(&root);
- 	return res;
- }
-@@ -2832,6 +2835,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 	get_fs_root_and_pwd(current->fs, &root, &pwd);
- 
- 	error = -ENOENT;
-+	br_read_lock(vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	if (!d_unlinked(pwd.dentry)) {
- 		unsigned long len;
-@@ -2841,6 +2845,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		prepend(&cwd, &buflen, "\0", 1);
- 		error = prepend_path(&pwd, &root, &cwd, &buflen);
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(vfsmount_lock);
- 
- 		if (error < 0)
- 			goto out;
-@@ -2861,6 +2866,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		}
- 	} else {
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(vfsmount_lock);
+-static void nfs4_warn_keyexpired(const char *s)
+-{
+-	printk_ratelimited(KERN_WARNING "Error: state manager"
+-			" encountered RPCSEC_GSS session"
+-			" expired against NFSv4 server %s.\n",
+-			s);
+-}
+-
+ static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+ {
+ 	switch (error) {
+@@ -1497,10 +1481,6 @@ static int nfs4_recovery_handle_error(st
+ 			set_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state);
+ 			/* Zero session reset errors */
+ 			break;
+-		case -EKEYEXPIRED:
+-			/* Nothing we can do */
+-			nfs4_warn_keyexpired(clp->cl_hostname);
+-			break;
+ 		default:
+ 			return error;
  	}
+@@ -1745,7 +1725,6 @@ static void nfs4_set_lease_expired(struc
+ 		break;
  
- out:
+ 	case -EKEYEXPIRED:
+-		nfs4_warn_keyexpired(clp->cl_hostname);
+ 	case -NFS4ERR_NOT_SAME: /* FixMe: implement recovery
+ 				 * in nfs4_exchange_id */
+ 	default:
+--- a/fs/nfs/proc.c
++++ b/fs/nfs/proc.c
+@@ -47,39 +47,6 @@
+ #define NFSDBG_FACILITY		NFSDBG_PROC
+ 
+ /*
+- * wrapper to handle the -EKEYEXPIRED error message. This should generally
+- * only happen if using krb5 auth and a user's TGT expires. NFSv2 doesn't
+- * support the NFSERR_JUKEBOX error code, but we handle this situation in the
+- * same way that we handle that error with NFSv3.
+- */
+-static int
+-nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+-{
+-	int res;
+-	do {
+-		res = rpc_call_sync(clnt, msg, flags);
+-		if (res != -EKEYEXPIRED)
+-			break;
+-		freezable_schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+-		res = -ERESTARTSYS;
+-	} while (!fatal_signal_pending(current));
+-	return res;
+-}
+-
+-#define rpc_call_sync(clnt, msg, flags)	nfs_rpc_wrapper(clnt, msg, flags)
+-
+-static int
+-nfs_async_handle_expired_key(struct rpc_task *task)
+-{
+-	if (task->tk_status != -EKEYEXPIRED)
+-		return 0;
+-	task->tk_status = 0;
+-	rpc_restart_call(task);
+-	rpc_delay(task, NFS_JUKEBOX_RETRY_TIME);
+-	return 1;
+-}
+-
+-/*
+  * Bare-bones access to getattr: this is for nfs_read_super.
+  */
+ static int
+@@ -365,8 +332,6 @@ static void nfs_proc_unlink_rpc_prepare(
+ 
+ static int nfs_proc_unlink_done(struct rpc_task *task, struct inode *dir)
+ {
+-	if (nfs_async_handle_expired_key(task))
+-		return 0;
+ 	nfs_mark_for_revalidate(dir);
+ 	return 1;
+ }
+@@ -386,8 +351,6 @@ static int
+ nfs_proc_rename_done(struct rpc_task *task, struct inode *old_dir,
+ 		     struct inode *new_dir)
+ {
+-	if (nfs_async_handle_expired_key(task))
+-		return 0;
+ 	nfs_mark_for_revalidate(old_dir);
+ 	nfs_mark_for_revalidate(new_dir);
+ 	return 1;
+@@ -641,9 +604,6 @@ nfs_proc_pathconf(struct nfs_server *ser
+ 
+ static int nfs_read_done(struct rpc_task *task, struct nfs_read_data *data)
+ {
+-	if (nfs_async_handle_expired_key(task))
+-		return -EAGAIN;
+-
+ 	nfs_invalidate_atime(data->inode);
+ 	if (task->tk_status >= 0) {
+ 		nfs_refresh_inode(data->inode, data->res.fattr);
+@@ -668,9 +628,6 @@ static void nfs_proc_read_rpc_prepare(st
+ 
+ static int nfs_write_done(struct rpc_task *task, struct nfs_write_data *data)
+ {
+-	if (nfs_async_handle_expired_key(task))
+-		return -EAGAIN;
+-
+ 	if (task->tk_status >= 0)
+ 		nfs_post_op_update_inode_force_wcc(data->inode, data->res.fattr);
+ 	return 0;
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1336,6 +1336,7 @@ call_refreshresult(struct rpc_task *task
+ 		return;
+ 	case -ETIMEDOUT:
+ 		rpc_delay(task, 3*HZ);
++	case -EKEYEXPIRED:
+ 	case -EAGAIN:
+ 		status = -EACCES;
+ 		if (!task->tk_cred_retry)
 
 
