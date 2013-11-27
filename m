@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab3K0Qig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:38:36 -0500
-Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:60727
-	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754778Ab3K0Qif convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:38:35 -0500
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Dave Jones <davej@redhat.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: RE: staging: comedi: Fix boolean/logical and mix-up.
-Thread-Topic: staging: comedi: Fix boolean/logical and mix-up.
-Thread-Index: AQHO6xxsmRSIhYRkSkOlyQZyHNtwUJo5R03A
-Date: Wed, 27 Nov 2013 16:38:34 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8817E0BBCA@P3PWEX4MB008.ex4.secureserver.net>
-References: <20131107062754.93B2D660F4A@gitolite.kernel.org>
- <20131108200659.GA2101@redhat.com>
- <DC148C5AA1CEBA4E87973D432B1C2D8817E08AC5@P3PWEX4MB008.ex4.secureserver.net>
- <20131127025724.GA18860@redhat.com>
-In-Reply-To: <20131127025724.GA18860@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757489Ab3K0QjX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:39:23 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42394 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753338Ab3K0QjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:39:21 -0500
+Date: Wed, 27 Nov 2013 11:39:16 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: do not declare OOM from __GFP_NOFAIL
+ allocations
+Message-ID: <20131127163916.GB3556@cmpxchg.org>
+References: <1385140676-5677-1-git-send-email-hannes@cmpxchg.org>
+ <alpine.DEB.2.02.1311261658170.21003@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311261931210.5973@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 26, 2013 7:57 PM, Dave Jones wrote:
-> Introduced in commit b3ff824a81e8.
->
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
->
-> diff --git a/drivers/staging/comedi/drivers/pcl730.c b/drivers/staging/comedi/drivers/pcl730.c
-> index d041b714db29..2baaf1db6fbf 100644
-> --- a/drivers/staging/comedi/drivers/pcl730.c
-> +++ b/drivers/staging/comedi/drivers/pcl730.c
-> @@ -173,11 +173,11 @@ static int pcl730_do_insn_bits(struct comedi_device *dev,
->  	if (mask) {
->  		if (mask & 0x00ff)
->  			outb(s->state & 0xff, dev->iobase + reg);
-> -		if ((mask & 0xff00) & (s->n_chan > 8))
-> +		if ((mask & 0xff00) && (s->n_chan > 8))
->  			outb((s->state >> 8) & 0xff, dev->iobase + reg + 1);
-> -		if ((mask & 0xff0000) & (s->n_chan > 16))
-> +		if ((mask & 0xff0000) && (s->n_chan > 16))
->  			outb((s->state >> 16) & 0xff, dev->iobase + reg + 2);
-> -		if ((mask & 0xff000000) & (s->n_chan > 24))
-> +		if ((mask & 0xff000000) && (s->n_chan > 24))
->  			outb((s->state >> 24) & 0xff, dev->iobase + reg + 3);
->  	}
+On Tue, Nov 26, 2013 at 07:33:12PM -0800, David Rientjes wrote:
+> On Tue, 26 Nov 2013, David Rientjes wrote:
+> 
+> > On Fri, 22 Nov 2013, Johannes Weiner wrote:
+> > 
+> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > index 13b9d0f..cc4f9cb 100644
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -2677,6 +2677,9 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> > >  	if (unlikely(task_in_memcg_oom(current)))
+> > >  		goto bypass;
+> > >  
+> > > +	if (gfp_mask & __GFP_NOFAIL)
+> > > +		oom = false;
+> > > +
+> > >  	/*
+> > >  	 * We always charge the cgroup the mm_struct belongs to.
+> > >  	 * The mm_struct's mem_cgroup changes on task migration if the
+> > 
+> > Sorry, I don't understand this.  What happens in the following scenario:
+> > 
+> >  - memory.usage_in_bytes == memory.limit_in_bytes,
+> > 
+> >  - memcg reclaim fails to reclaim memory, and
+> > 
+> >  - all processes (perhaps only one) attached to the memcg are doing one of
+> >    the over dozen __GFP_NOFAIL allocations in the kernel?
+> > 
+> > How do we make forward progress if you cannot oom kill something?
 
-My bad...
+Bypass the limit.
 
-Added Greg KH and the staging devel list to the CCs.
+> Ah, this is because of 3168ecbe1c04 ("mm: memcg: use proper memcg in limit 
+> bypass") which just bypasses all of these allocations and charges the root 
+> memcg.  So if allocations want to bypass memcg isolation they just have to 
+> be __GFP_NOFAIL?
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
- 
+I don't think we have another option.
