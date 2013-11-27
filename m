@@ -1,133 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab3K0SwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:52:23 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:39530 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab3K0SwU (ORCPT
+	id S1757546Ab3K0Sxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:53:53 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:35151 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab3K0Sxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:52:20 -0500
+	Wed, 27 Nov 2013 13:53:46 -0500
+Date: Wed, 27 Nov 2013 13:53:40 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Li Zefan <lizefan@huawei.com>, John Stultz <john.stultz@linaro.org>,
+        Mel Gorman <mgorman@suse.de>, Juri Lelli <juri.lelli@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] cpuset: Fix memory allocator deadlock
+Message-ID: <20131127185340.GC13098@mtj.dyndns.org>
+References: <20131126140341.GL10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1385459707-32467-1-git-send-email-shh.xie@gmail.com>
-References: <1385459707-32467-1-git-send-email-shh.xie@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 27 Nov 2013 10:51:40 -0800
-Message-ID: <CAGVrzcYYRGCLXw4CMswTKYT=TDj_arSAgNxxC8ssRaw0sB_toQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] phylib: Support attaching to generic 10g driver
-To: shh.xie@gmail.com
-Cc: David Miller <davem@davemloft.net>, jg1.han@samsung.com,
-        mugunthanvnm@ti.com, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Emilian.Medve@freescale.com, madalin.bucur@freescale.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131126140341.GL10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/26  <shh.xie@gmail.com>:
-> From: Andy Fleming <afleming@freescale.com>
->
-> phy_attach_direct() may now attach to a generic 10G driver. It can
-> also be used exactly as phy_connect_direct(), which will be useful
-> when using of_mdio, as phy_connect (and therefore of_phy_connect)
-> start the PHY state machine, which is currently irrelevant for 10G
-> PHYs.
->
-> Signed-off-by: Andy Fleming <afleming@freescale.com>
-> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+On Tue, Nov 26, 2013 at 03:03:41PM +0100, Peter Zijlstra wrote:
+> Juri hit the below lockdep report:
+> 
+> [    4.303391] ======================================================
+> [    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+> [    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+> [    4.303395] ------------------------------------------------------
+> [    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+> [    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+> [    4.303417]
+> [    4.303417] and this task is already holding:
+> [    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+> [    4.303431] which would create a new lock dependency:
+> [    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+> [    4.303436]
+> 
+> [    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+> [    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+> [    4.303922]    HARDIRQ-ON-W at:
+> [    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+> [    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303933]    SOFTIRQ-ON-W at:
+> [    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+> [    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303959]    INITIAL USE at:
+> [    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+> [    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303972]  }
+> 
+> Which reports that we take mems_allowed_seq with interrupts enabled. A
+> little digging found that this can only be from
+> cpuset_change_task_nodemask().
+> 
+> This is an actual deadlock because an interrupt doing an allocation will
+> hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+> forever waiting for the write side to complete.
+> 
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Reported-by: Juri Lelli <juri.lelli@gmail.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Applied to cgroup/for-3.13-fixes w/ stable cc'd.
 
-> ---
-> v2: align with the array genphy_driver.
->
->  drivers/net/phy/phy_device.c | 22 ++++++++++------------
->  include/linux/phy.h          |  2 ++
->  2 files changed, 12 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index 96a5e03..a6b4ce0 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -61,9 +61,6 @@ extern void mdio_bus_exit(void);
->  static LIST_HEAD(phy_fixup_list);
->  static DEFINE_MUTEX(phy_fixup_lock);
->
-> -static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-> -                            u32 flags, phy_interface_t interface);
-> -
->  /*
->   * Creates a new phy_fixup and adds it to the list
->   * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
-> @@ -521,12 +518,12 @@ int phy_init_hw(struct phy_device *phydev)
->   *
->   * Description: Called by drivers to attach to a particular PHY
->   *     device. The phy_device is found, and properly hooked up
-> - *     to the phy_driver.  If no driver is attached, then the
-> - *     genphy_driver is used.  The phy_device is given a ptr to
-> + *     to the phy_driver.  If no driver is attached, then a
-> + *     generic driver is used.  The phy_device is given a ptr to
->   *     the attaching device, and given a callback for link status
->   *     change.  The phy_device is returned to the attaching driver.
->   */
-> -static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-> +int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
->                              u32 flags, phy_interface_t interface)
->  {
->         struct device *d = &phydev->dev;
-> @@ -535,12 +532,10 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
->         /* Assume that if there is no driver, that it doesn't
->          * exist, and we should use the genphy driver. */
->         if (NULL == d->driver) {
-> -               if (phydev->is_c45) {
-> -                       pr_err("No driver for phy %x\n", phydev->phy_id);
-> -                       return -ENODEV;
-> -               }
-> -
-> -               d->driver = &genphy_driver[0].driver;
-> +               if (phydev->is_c45)
-> +                       d->driver = &genphy_driver[1].driver;
-> +               else
-> +                       d->driver = &genphy_driver[0].driver;
->
->                 err = d->driver->probe(d);
->                 if (err >= 0)
-> @@ -573,6 +568,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
->
->         return err;
->  }
-> +EXPORT_SYMBOL(phy_attach_direct);
->
->  /**
->   * phy_attach - attach a network device to a particular PHY device
-> @@ -623,6 +619,8 @@ void phy_detach(struct phy_device *phydev)
->          * real driver could be loaded */
->         if (phydev->dev.driver == &genphy_driver[0].driver)
->                 device_release_driver(&phydev->dev);
-> +       else if (phydev->dev.driver == &genphy_driver[1].driver)
-> +               device_release_driver(&phydev->dev);
->  }
->  EXPORT_SYMBOL(phy_detach);
->
-> diff --git a/include/linux/phy.h b/include/linux/phy.h
-> index 2606599..00abc35 100644
-> --- a/include/linux/phy.h
-> +++ b/include/linux/phy.h
-> @@ -575,6 +575,8 @@ int phy_init_hw(struct phy_device *phydev);
->  struct phy_device * phy_attach(struct net_device *dev,
->                 const char *bus_id, phy_interface_t interface);
->  struct phy_device *phy_find_first(struct mii_bus *bus);
-> +int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
-> +                            u32 flags, phy_interface_t interface);
->  int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
->                 void (*handler)(struct net_device *),
->                 phy_interface_t interface);
-> --
-> 1.8.4.1
->
->
-
-
+Thanks.
 
 -- 
-Florian
+tejun
