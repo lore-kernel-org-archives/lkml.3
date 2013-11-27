@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760123Ab3K0Bl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:41:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39199 "EHLO
+	id S1758410Ab3K0A6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:58:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab3K0A6J (ORCPT
+	with ESMTP id S1758233Ab3K0A56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:09 -0500
+	Tue, 26 Nov 2013 19:57:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Michel Lespinasse <walken@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 68/80] powerpc: ppc64 address space capped at 32TB, mmap randomisation disabled
-Date: Tue, 26 Nov 2013 16:57:37 -0800
-Message-Id: <20131127005645.650924141@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 43/80] ALSA: hda - Dont clear the power state at snd_hda_codec_reset()
+Date: Tue, 26 Nov 2013 16:57:12 -0800
+Message-Id: <20131127005643.937338539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,39 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5a049f14902982c26538250bdc8d54156d357252 upstream.
+commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
 
-Commit fba2369e6ceb (mm: use vm_unmapped_area() on powerpc architecture)
-has a bug in slice_scan_available() where we compare an unsigned long
-(high_slices) against a shifted int. As a result, comparisons against
-the top 32 bits of high_slices (representing the top 32TB) always
-returns 0 and the top of our mmap region is clamped at 32TB
+snd_hda_codec_reset() is called either in resetting the whole setup at
+error paths or hwdep clear/reconfig sysfs triggers.  But all of these
+don't assume that the power has to be off, rather they want to keep
+the power state unchanged (e.g. reconfig_codec() calls the power
+up/down by itself).  Thus, unconditionally clearing the power state in
+snd_hda_codec_reset() leads to the inconsistency, confuses the further
+operation.   This patch gets rid of the lines doing that bad thing.
 
-This also breaks mmap randomisation since the randomised address is
-always up near the top of the address space and it gets clamped down
-to 32TB.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/slice.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/arch/powerpc/mm/slice.c
-+++ b/arch/powerpc/mm/slice.c
-@@ -258,7 +258,7 @@ static bool slice_scan_available(unsigne
- 		slice = GET_HIGH_SLICE_INDEX(addr);
- 		*boundary_addr = (slice + end) ?
- 			((slice + end) << SLICE_HIGH_SHIFT) : SLICE_LOW_TOP;
--		return !!(available.high_slices & (1u << slice));
-+		return !!(available.high_slices & (1ul << slice));
- 	}
- }
- 
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2517,9 +2517,6 @@ int snd_hda_codec_reset(struct hda_codec
+ 	cancel_delayed_work_sync(&codec->jackpoll_work);
+ #ifdef CONFIG_PM
+ 	cancel_delayed_work_sync(&codec->power_work);
+-	codec->power_on = 0;
+-	codec->power_transition = 0;
+-	codec->power_jiffies = jiffies;
+ 	flush_workqueue(bus->workq);
+ #endif
+ 	snd_hda_ctls_clear(codec);
 
 
