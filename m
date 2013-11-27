@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab3K0KQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 05:16:32 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:43746 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab3K0KQa (ORCPT
+	id S1753447Ab3K0KR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 05:17:58 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37527 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751539Ab3K0KRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 05:16:30 -0500
-Message-ID: <5295C67A.3070308@hitachi.com>
-Date: Wed, 27 Nov 2013 19:16:26 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 27 Nov 2013 05:17:54 -0500
+Date: Wed, 27 Nov 2013 10:17:47 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v4 07/12] efi: passing kexec necessary efi data via
+ setup_data
+Message-ID: <20131127101747.GC18170@console-pimps.org>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-8-git-send-email-dyoung@redhat.com>
+ <20131126220448.GB18170@console-pimps.org>
+ <20131127045237.GC11852@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH v3 06/15] ARM: Disable jprobes test when built into
- thumb-mode kernel
-References: <1385520814-10663-1-git-send-email-dave.long@linaro.org> <1385520814-10663-7-git-send-email-dave.long@linaro.org>
-In-Reply-To: <1385520814-10663-7-git-send-email-dave.long@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127045237.GC11852@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/27 11:53), David Long wrote:
-> From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+On Wed, 27 Nov, at 12:52:37PM, Dave Young wrote:
+> To make it more readable, I will change them like below:
 > 
-> For now the jprobes tests fail on ARM for when built into a kernel compiled
-> in thumb mode. They work fine for ARM kernels, and when built as a loadable
-> module.
+> p = efi_runtime_map;
+> md = efi_setup->map;
+> for (i = 0; i < nr_efi_runtime_map; i++) {
+> 	[...]
+> 	md += 1;
+> }
+ 
+Actually, md++ is the canonical way to write this.
+
+> > 
+> > > +		efi_map_region_fixed(md);
+> > > +		size = md->num_pages << PAGE_SHIFT;
+> > > +		end = md->phys_addr + size;
+> > > +
+> > > +		systab = (u64) (unsigned long) efi_phys.systab;
+> > > +		if (md->phys_addr <= systab && systab < end) {
+> > > +			systab += md->virt_addr - md->phys_addr;
+> > > +			efi.systab =
+> > > +				(efi_system_table_t *) (unsigned long) systab;
+> > > +		}
+> > > +		if (efi_runtime_map) {
+> > > +			memcpy(p, md, memmap.desc_size);
+> > > +			p += memmap.desc_size;
+> > > +		}
+> > 
+> > Is this if () needed? Is it possible to enter the loop and have
+> > 'efi_runtime_map' be NULL?
 > 
-> Signed-off-by: David A. Long <dave.long@linaro.org>
-
-You'd better add Jon's signed-off-by here.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-> ---
->  arch/arm/kernel/kprobes-test.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-> index 0cd63d0..65230b2 100644
-> --- a/arch/arm/kernel/kprobes-test.c
-> +++ b/arch/arm/kernel/kprobes-test.c
-> @@ -221,6 +221,7 @@ static int pre_handler_called;
->  static int post_handler_called;
->  static int jprobe_func_called;
->  static int kretprobe_handler_called;
-> +static int tests_failed;
->  
->  #define FUNC_ARG1 0x12345678
->  #define FUNC_ARG2 0xabcdef
-> @@ -457,6 +458,13 @@ static int run_api_tests(long (*func)(long, long))
->  
->  	pr_info("    jprobe\n");
->  	ret = test_jprobe(func);
-> +#if defined(CONFIG_THUMB2_KERNEL) && !defined(MODULE)
-> +	if (ret == -EINVAL) {
-> +		pr_err("FAIL: Known longtime bug with jprobe on Thumb kernels");
-> +		tests_failed = ret;
-> +		ret = 0;
-> +	}
-> +#endif
->  	if (ret < 0)
->  		return ret;
->  
-> @@ -1667,6 +1675,8 @@ static int __init run_all_tests(void)
->  
->  out:
->  	if (ret == 0)
-> +		ret = tests_failed;
-> +	if (ret == 0)
->  		pr_info("Finished kprobe tests OK\n");
->  	else
->  		pr_err("kprobe tests failed\n");
-> 
-
+> Yes, it is needed. if efi_runtime_map kmalloc fails I only print error, do not
+> return so kernel can still boot, just kexec on efi will not work that has been
+> put in the error message.
+ 
+OK. On second thought, is there any way to turn the above code into a
+call to efi_save_runtime_map()? Because you've basically duplicated that
+code and I can definitely envisage the two code paths fragmenting over
+time, e.g. when someone makes changes to one but not the other.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Matt Fleming, Intel Open Source Technology Center
