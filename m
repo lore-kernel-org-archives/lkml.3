@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3K0NbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:31:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49229 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab3K0NbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:31:09 -0500
-Date: Wed, 27 Nov 2013 13:31:02 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Juri Lelli <juri.lelli@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] cpuset: Fix memory allocator deadlock
-Message-ID: <20131127133102.GB11295@suse.de>
-References: <20131126140341.GL10022@twins.programming.kicks-ass.net>
+	id S1754071Ab3K0Ncc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:32:32 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:34315 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3K0Nc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 08:32:28 -0500
+Date: Wed, 27 Nov 2013 14:32:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-arch@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        virtualization@lists.linux-foundation.org,
+        Chris Wright <chrisw@sous-sol.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
+        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Alok Kataria <akataria@vmware.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v3 02/23] kprobes: Introduce NOKPROBE_SYMBOL() macro
+ for blacklist
+Message-ID: <20131127133224.GD18422@gmail.com>
+References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
+ <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131126140341.GL10022@twins.programming.kicks-ass.net>
+In-Reply-To: <20131120042153.15296.82087.stgit@kbuild-fedora.novalocal>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 03:03:41PM +0100, Peter Zijlstra wrote:
-> Juri hit the below lockdep report:
-> 
-> [    4.303391] ======================================================
-> [    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-> [    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-> [    4.303395] ------------------------------------------------------
-> [    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> [    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-> [    4.303417]
-> [    4.303417] and this task is already holding:
-> [    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-> [    4.303431] which would create a new lock dependency:
-> [    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-> [    4.303436]
-> 
-> [    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-> [    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-> [    4.303922]    HARDIRQ-ON-W at:
-> [    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-> [    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303933]    SOFTIRQ-ON-W at:
-> [    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-> [    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303959]    INITIAL USE at:
-> [    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-> [    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-> [    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-> [    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-> [    4.303972]  }
-> 
-> Which reports that we take mems_allowed_seq with interrupts enabled. A
-> little digging found that this can only be from
-> cpuset_change_task_nodemask().
-> 
-> This is an actual deadlock because an interrupt doing an allocation will
-> hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-> forever waiting for the write side to complete.
-> 
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Reported-by: Juri Lelli <juri.lelli@gmail.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
--- 
-Mel Gorman
-SUSE Labs
+> +#ifdef CONFIG_KPROBES
+> +/*
+> + * Blacklist ganerating macro. Specify functions which is not probed
+> + * by using this macro.
+> + */
+> +#define __NOKPROBE_SYMBOL(fname)				\
+> +static struct kprobe_blackpoint __used			\
+> +	_kprobe_bp_##fname = {				\
+> +		.name = #fname,				\
+> +		.start_addr = (unsigned long)fname,	\
+> +	};						\
+> +static struct kprobe_blackpoint __used			\
+> +	__attribute__((section("_kprobe_blacklist")))	\
+> +	*_p_kprobe_bp_##fname = &_kprobe_bp_##fname;
+
+'kprobe_blackpoint' sounds a bit weird - how about 
+'kprobe_blacklist_entry' ?
+
+also, _kprobe_blacklist probably wants to be _kprobes_blacklist, 
+right?
+
+Thanks,
+
+	Ingo
