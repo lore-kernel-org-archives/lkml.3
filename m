@@ -1,80 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab3K0QHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:07:33 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57114 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3K0QHc (ORCPT
+	id S1756974Ab3K0QIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:08:55 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:1853 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754252Ab3K0QIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:07:32 -0500
-Date: Wed, 27 Nov 2013 16:07:07 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131127160707.GC14725@sirena.org.uk>
-References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131127132442.GJ3296@lee--X1>
- <20131127151639.GX14725@sirena.org.uk>
- <20131127152701.GQ3296@lee--X1>
+	Wed, 27 Nov 2013 11:08:53 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
+From: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Scott Wood <scottwood@freescale.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+Thread-Topic: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+Thread-Index: AQHO5OdyKeXB/EytyUeVGr+Ok97IOJoueBeAgAENqwCAAKUSgIAAARWAgAADyQCABUQ/0IAAu7eAgAMaEYA=
+Date: Wed, 27 Nov 2013 16:08:44 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D07233D0E@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+	 <1385066835.1403.489.camel@snotra.buserror.net>
+	 <1385067648.2879.421.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+ <1385397493.2879.557.camel@ul30vt.home>
+In-Reply-To: <1385397493.2879.557.camel@ul30vt.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.3]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LpveMUvXs97SUkgl"
-Content-Disposition: inline
-In-Reply-To: <20131127152701.GQ3296@lee--X1>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
- as readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rARG92wE022216
 
 
---LpveMUvXs97SUkgl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Wed, Nov 27, 2013 at 03:27:01PM +0000, Lee Jones wrote:
-> On Wed, 27 Nov 2013, Mark Brown wrote:
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Monday, November 25, 2013 10:08 PM
+> To: Bhushan Bharat-R65777
+> Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
+> B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> 
+> On Mon, 2013-11-25 at 05:33 +0000, Bharat Bhushan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > Sent: Friday, November 22, 2013 2:31 AM
+> > > To: Wood Scott-B07421
+> > > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de;
+> > > Yoder Stuart-B08248; iommu@lists.linux-foundation.org;
+> > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
+> > > linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > IOMMU (PAMU)
+> > >
+> > > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
+> > > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
+> > > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
+> > > > > >
+> > > > > > > -----Original Message-----
+> > > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > > > > Sent: Thursday, November 21, 2013 12:17 AM
+> > > > > > > To: Bhushan Bharat-R65777
+> > > > > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de;
+> > > > > > > Wood Scott-B07421; Yoder Stuart-B08248;
+> > > > > > > iommu@lists.linux-foundation.org; linux-
+> > > > > > > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> > > > > > > kernel@vger.kernel.org; Bhushan Bharat-R65777
+> > > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for
+> > > > > > > Freescale IOMMU (PAMU)
+> > > > > > >
+> > > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each
+> > > > > > > vfio user has $COUNT regions at their disposal exclusively)?
+> > > > > >
+> > > > > > Number of msi-bank count is system wide and not per aperture,
+> > > > > > But will be
+> > > setting windows for banks in the device aperture.
+> > > > > > So say if we are direct assigning 2 pci device (both have
+> > > > > > different iommu
+> > > group, so 2 aperture in iommu) to VM.
+> > > > > > Now qemu can make only one call to know how many msi-banks are
+> > > > > > there but
+> > > it must set sub-windows for all banks for both pci device in its
+> > > respective aperture.
+> > > > >
+> > > > > I'm still confused.  What I want to make sure of is that the
+> > > > > banks are independent per aperture.  For instance, if we have
+> > > > > two separate userspace processes operating independently and
+> > > > > they both chose to use msi bank zero for their device, that's
+> > > > > bank zero within each aperture and doesn't interfere.  Or
+> > > > > another way to ask is can a malicious user interfere with other users by
+> using the wrong bank.
+> > > > > Thanks,
+> > > >
+> > > > They can interfere.
+> >
+> > Want to be sure of how they can interfere?
+> 
+> What happens if more than one user selects the same MSI bank?
+> Minimally, wouldn't that result in the IOMMU blocking transactions from the
+> previous user once the new user activates their mapping?
 
-> > That seems excessive and it probably ought to go in as a bug fix
-> > afterwards.  Given that it's just an addition of data to the table I'd
-> > expect we could cope, we've routinely done that with similar updates in
-> > the past without incident.
+Yes and no; With current implementation yes but with a minor change no. Later in this response I will explain how.
 
-> Ah, is the depends patch in Mainline already? I assumed it was due to
-> go in during the v3.14 merge window? If it's already in Mainline, then
-> sure I don't mind if it goes in -fixes via ASoC, no problem.
+> 
+> > >>  With this hardware, the only way to prevent that
+> > > > is to make sure that a bank is not shared by multiple protection contexts.
+> > > > For some of our users, though, I believe preventing this is less
+> > > > important than the performance benefit.
+> >
+> > So should we let this patch series in without protection?
+> 
+> No.
+> 
+> > >
+> > > I think we need some sort of ownership model around the msi banks then.
+> > > Otherwise there's nothing preventing another userspace from
+> > > attempting an MSI based attack on other users, or perhaps even on
+> > > the host.  VFIO can't allow that.  Thanks,
+> >
+> > We have very few (3 MSI bank on most of chips), so we can not assign
+> > one to each userspace. What we can do is host and userspace does not
+> > share a MSI bank while userspace will share a MSI bank.
+> 
+> Then you probably need VFIO to "own" the MSI bank and program devices into it
+> rather than exposing the MSI banks to userspace to let them have direct access.
 
-No, it's for v3.14 - it just seemed like for the size/impact of the
-change we should be able to handle the situation more smoothly.
+Overall idea of exposing the details of msi regions to userspace are
+ 1) User space can define the aperture size to fit MSI mapping in IOMMU.
+ 2) setup iova for a MSI banks; which is just after guest memory. 
 
---LpveMUvXs97SUkgl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But currently we expose the "size" and "address" of MSI banks, passing address is of no use and can be problematic.
+If we just provide the size of MSI bank to userspace then userspace cannot do anything wrong.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+While it is still the responsibility of host (MSI+VFIO) to compose MSI-address and MSI-data; so I think this should look fine.
 
-iQIcBAEBAgAGBQJSlhioAAoJELSic+t+oim9/wEQAJNLkZxAKP/j3gURcyYOVkvB
-WEcyJe2a+18o1sp/JEBB1+vASNtMpXO6NQzQNYgNn/30J5rtFkzf0IspL5hiwic1
-smeo9nuFMWlPebLKymRwTROYt/nHJz2NXh0E4hEHL/vK/X0KrKMPYcuBwcqYrJUd
-+QrijHxxlZEalHU4wBYwDuNH8aIf3VQXwLjJDMzCudaF5sdEd3DUFvX5+IF6Kgtj
-sX35MVukpOr29Y19QCxbxPC8Aj2k5cef3BM/ZKZ4x87cts0h5/ZlUNIvprrIQqGV
-iIUtKb/QtOlpWwgy2xckkXzcHqFSgfJ5DzC/60hfxlcjtXQdgtSPEwQJMS/qcwtr
-eftNHbdwDHD7e4qoogeHIsT73EsR57kx1xDLodwTlqXEfTfX8/tmG3S9n/Xxy33P
-23K682WRaFi1PEUUwvar5+0JkV5gFpAA0fTRjl5tUy9XqOd+OHBiMF4es5+hj49S
-6MRwgOhRiCBVh3jMhMNzNzClFxfI5jEaVLfdlKEvA0R2yL8rDuOx3hM9lNCeuGiL
-+PhVrx/CYPGYuqh4nGxnOy/JBmfbopunWJiv7vG8KRr0ba9if4GO2GJE+nLh4b5O
-K/pKRB7Ka0d+X0KQLhp5elMW04RFYb2Oo8fWOO9Agifo2OKsEw23LJMOcQvQKdEu
-sSLMEtyuTJQsSk0ndIwQ
-=2sq7
------END PGP SIGNATURE-----
+> Thanks,
+> 
+> Alex
+> 
 
---LpveMUvXs97SUkgl--
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
