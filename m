@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab3K0NhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:37:00 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:48908 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3K0Ng7 (ORCPT
+	id S1752385Ab3K0Nkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:40:42 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43574 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3K0Nkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:36:59 -0500
-Date: Wed, 27 Nov 2013 14:36:55 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tony Luck <tony.luck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [patch 4/6] ia64: Use preempt_schedule_irq
-Message-ID: <20131127133655.GA24253@gmail.com>
-References: <20130917182350.449685712@linutronix.de>
- <20130917183628.857145384@linutronix.de>
- <CA+8MBbKq1idWt1OSpRM3mWMDAQaEoewrU=h=m_pFoidVy6OA-Q@mail.gmail.com>
- <alpine.DEB.2.02.1311202121340.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1311211230030.30673@ionos.tec.linutronix.de>
- <20131121130605.GE10022@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1311211428450.30673@ionos.tec.linutronix.de>
- <CA+8MBbL4sBZK26O_+VQizNy-5mWtieDBfAy5CDcNBFxvorEp3g@mail.gmail.com>
- <CA+8MBbL3oscq6GpgyTBb6hxdzuG+Gj_ahdu4rpvTTaPvrF+8_w@mail.gmail.com>
- <20131126185847.GE789@laptop.programming.kicks-ass.net>
+	Wed, 27 Nov 2013 08:40:39 -0500
+Date: Wed, 27 Nov 2013 13:40:16 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>, Greg KH <greg@kroah.com>
+Subject: Re: netfilter: active obj WARN when cleaning up
+Message-ID: <20131127134015.GA6011@n2100.arm.linux.org.uk>
+References: <522B25B5.6000808@oracle.com> <5294F27D.4000108@oracle.com> <20131126230709.GA10948@localhost> <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de> <20131127113939.GL16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de> <20131127133231.GO16735@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131126185847.GE789@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131127133231.GO16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Nov 26, 2013 at 10:37:59AM -0800, Tony Luck wrote:
-> > On Thu, Nov 21, 2013 at 10:57 AM, Tony Luck <tony.luck@gmail.com> wrote:
-> > > On Thu, Nov 21, 2013 at 5:30 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > >> On Thu, 21 Nov 2013, Peter Zijlstra wrote:
-> > >>> Anyway, I don't object to the patch per se, but it might bloat a few
-> > >>> !ia64 kernels for having to carry the extra text.
-> > >
-> > > I tried it out ... if does fix both build & boot for ia64 with
-> > > PREMPT=n and PREMPT=y
-> > >
-> > > Tested-by: Tony Luck <tony.luck@intel.com>
+On Wed, Nov 27, 2013 at 01:32:31PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Nov 27, 2013 at 02:29:41PM +0100, Thomas Gleixner wrote:
+> > Though the kobject is the only thing which has a delayed work embedded
+> > inside struct kmem_cache. And the debug object splat points at the
+> > kmem_cache_free() of the struct kmem_cache itself. That's why I
+> > assumed the wreckage around that place. And indeed:
 > > 
-> > So - are we going with this patch?  Or still thinking of something better?
+> > kmem_cache_destroy(s)
+> >     __kmem_cache_shutdown(s)
+> >       sysfs_slab_remove(s)
+> >         ....
+> > 	kobject_put(&s->kobj)
+> >            kref_put(&kobj->kref, kobject_release);
+> > 	     kobject_release(kref)
+> >     	       #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+> > 	         schedule_delayed_work(&kobj->release)
+> > 	       #else
+> > 	        kobject_cleanup(kobj)
+> > 	       #endif
+> > 
+> > So in the CONFIG_DEBUG_KOBJECT_RELEASE=y case, schedule_delayed_work()
+> > _IS_ called which arms the timer. debugobjects catches the attempt to
+> > free struct kmem_cache which contains the armed timer.
 > 
-> I queued it; let me prod Ingo (again) into actually merging it.
+> You fail to show where the free is in the above path.
 
-I merged it from you today, will try to get it to Linus later today 
-(hopefully).
+Right, there's a kmem_cache_free(kmem_cache, s); by the slob code
+after the above sequence, which is The Bug(tm).
 
-Thanks,
+As I said, a kobject has its own lifetime.  If you embed that into
+another structure, that structure inherits the lifetime of the kobject,
+which is from the point at which it's created to the point at which the
+kobject's release function is called.
 
-	Ingo
+So no, the code here is buggy.  The kobject debugging has yet again
+found a violation of the kobject lifetime rules.  slub needs fixing.
