@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3K0P2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:28:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755227Ab3K0P2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:28:23 -0500
-Date: Wed, 27 Nov 2013 16:27:56 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 21/22] perf tools: Add trace-event global object for
- tracepoint interface
-Message-ID: <20131127152756.GF1208@krava.brq.redhat.com>
-References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
- <1385031680-9014-22-git-send-email-jolsa@redhat.com>
- <1385135234.1747.122.camel@leonhard>
- <20131125160345.GJ3161@krava.brq.redhat.com>
- <1385559960.1685.2.camel@leonhard>
- <20131127151045.GE1208@krava.brq.redhat.com>
+	id S1754869Ab3K0Pa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:30:29 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:33252 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3K0Pa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 10:30:28 -0500
+Date: Wed, 27 Nov 2013 15:30:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
+        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
+Message-ID: <20131127153019.GR3296@lee--X1>
+References: <cover.1385508112.git.stefan@agner.ch>
+ <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
+ <20131127130954.GF3296@lee--X1>
+ <cd69295e946b48451f449eacc02efa4a@agner.ch>
+ <20131127135547.GK3296@lee--X1>
+ <cfb203a896eda67c106794d89e668d56@agner.ch>
+ <20131127143429.GN3296@lee--X1>
+ <20131127143641.GO3296@lee--X1>
+ <c26ecd550e9940ead950f3874d27a5b0@agner.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131127151045.GE1208@krava.brq.redhat.com>
+In-Reply-To: <c26ecd550e9940ead950f3874d27a5b0@agner.ch>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 04:10:45PM +0100, Jiri Olsa wrote:
-> On Wed, Nov 27, 2013 at 10:46:00PM +0900, Namhyung Kim wrote:
-> > Hi Jiri,
-> > 
-> > 2013-11-25 (월), 17:03 +0100, Jiri Olsa:
-> > > On Sat, Nov 23, 2013 at 12:47:14AM +0900, Namhyung Kim wrote:
-> > > > 2013-11-21 (목), 12:01 +0100, Jiri Olsa:
-> > > > > In order to get the proper plugins processing we need to
-> > > > > use full trace-event interface when creating tracepoint
-> > > > > events. So far we were using shortcut to get the parsed
-> > > > > format.
-> > > > > 
-> > > > > Moving current 'event_format__new' function into trace-event
-> > > > > object as 'trace_event__tp_format'.
-> > > > > 
-> > > > > This function uses properly initialized global trace-event
-> > > > > object, ensuring proper plugins processing.
-> > > > 
-> > > > I see this when I compile it on my old ubuntu 10.04 box (with gcc 4.4.3)
-> > > > 
-> > > >   CC       util/trace-event.o
-> > > > cc1: warnings being treated as errors
-> > > > util/trace-event.c: In function 'trace_event__tp_format':
-> > > > util/trace-event.c:63: error: not protecting function: no buffer at
-> > > > least 8 bytes long
-> > > > make[1]: *** [util/trace-event.o] Error 1
-> > > 
-> > > hum, what was the stackprotector status?
-> > > 
-> > > ...                stackprotector: [ on  ]
-> > > ...            stackprotector-all: [ on  ]
-> > 
-> > Right. Both of them were turned on.
-> > 
-> > Auto-detecting system features:
-> > ...                     backtrace: [ on  ]
-> > ...                         dwarf: [ on  ]
-> > ...                fortify-source: [ on  ]
-> > ...                         glibc: [ on  ]
-> > ...                          gtk2: [ on  ]
-> > ...                  gtk2-infobar: [ on  ]
-> > ...                      libaudit: [ on  ]
-> > ...                        libbfd: [ on  ]
-> > ...                        libelf: [ on  ]
-> > ...             libelf-getphdrnum: [ OFF ]
-> > ...                   libelf-mmap: [ on  ]
-> > ...                       libnuma: [ OFF ]
-> > ...                       libperl: [ on  ]
-> > ...                     libpython: [ on  ]
-> > ...             libpython-version: [ on  ]
-> > ...                      libslang: [ on  ]
-> > ...                     libunwind: [ OFF ]
-> > ...                       on-exit: [ on  ]
-> > ...                stackprotector: [ on  ]
-> > ...            stackprotector-all: [ on  ]
-> > ...                       timerfd: [ on  ]
-> 
-> I found that -fstack-protector might not always work:
-> https://bugs.launchpad.net/ubuntu/+source/gcc-4.5/+bug/691722
-> 
-> they say it was fixed in gcc 4.5.0 which I was not
-> able to prove in gcc release notes..
-> 
-> we could disable the warning like in the below
-> for gcc < 4.5.0, could you please test?
-> 
-> any other idea? ;-)
+On Wed, 27 Nov 2013, Stefan Agner wrote:
 
-or remove -Wstack-protector option completely, as it's just informative
-seems there's nothing you could do about the warning anyway
+> Am 2013-11-27 15:36, schrieb Lee Jones:
+> <snip>
+> >> Perhaps I should suggest to make TPS6586X_ANY a positive number then,
+> >> as a negative value to me indicates more of an error than a generic
+> >> parameter.
+> I see, its especially confusing since the version is filled using the
+> i2c_smbus_read_byte_data functions return value. The version field is a
+> 8-Bit value according to the data sheet, I could use 0x100 as
+> TPS6586X_ANY identifier.
 
-jirka
+How far are we away from using 0xFF?
+
+I'd be happy to use that and change it _if_ we ever get close.
+
+If it's likely that it'll be used, then sure 0x100 sounds okay too.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
