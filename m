@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab3K0ON2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:13:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50949 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756489Ab3K0OJN (ORCPT
+	id S1754322Ab3K0ONr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:13:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47662 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3K0OJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:09:13 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Carlos Hernandez <ceh@ti.com>
-Subject: Re: [PATCH V2] cpufreq: Make sure CPU is running on a freq from freq-table
-Date: Wed, 27 Nov 2013 15:22:01 +0100
-Message-ID: <4759452.7dXrrSTGCc@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpokjAuUA-o4cJi=N7mO93kTwrmfVqtL-zOHAs6awKoXn1A@mail.gmail.com>
-References: <046513da96dfec919a1a41d270c167147d4a9c8d.1385353358.git.viresh.kumar@linaro.org> <2309056.KUZA1Fnj0Y@vostro.rjw.lan> <CAKohpokjAuUA-o4cJi=N7mO93kTwrmfVqtL-zOHAs6awKoXn1A@mail.gmail.com>
+	Wed, 27 Nov 2013 09:09:02 -0500
+Date: Wed, 27 Nov 2013 06:08:28 -0800
+From: tip-bot for Sasha Levin <tipbot@zytor.com>
+Message-ID: <tip-8dce7a9a6f4ca7163161a80a4603b66c88c5de8e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
+References: <1352753446-24109-1-git-send-email-sasha.levin@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] lockdep: Be nice about building from userspace
+Git-Commit-ID: 8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 27 Nov 2013 06:08:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 27, 2013 08:31:02 AM Viresh Kumar wrote:
-> On 27 November 2013 01:51, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > I was talking about the case when your
-> >
-> > __cpufreq_driver_target(policy, policy->cur - 1, CPUFREQ_RELATION_L);
-> >
-> > fails.  The other case is not really interesting.
-> 
-> Okay.. I actually thought the context of this chat is about "not fixing the
-> frequency silently". That's what Dirk pointed out, if I am not wrong.
+Commit-ID:  8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
+Gitweb:     http://git.kernel.org/tip/8dce7a9a6f4ca7163161a80a4603b66c88c5de8e
+Author:     Sasha Levin <sasha.levin@oracle.com>
+AuthorDate: Thu, 13 Jun 2013 18:41:16 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 27 Nov 2013 11:55:20 +0100
 
-In that case you can simply print a message bashing the boot loader. :-)
+lockdep: Be nice about building from userspace
 
-> And hence I also support the new pr_warn I have added in those cases.
+Lockdep is an awesome piece of code which detects locking issues
+which are relevant both to userspace and kernelspace. We can
+easily make lockdep work in userspace since there is really no
+kernel spacific magic going on in the code.
 
-Sure.
+All we need is to wrap two functions which are used by lockdep
+and are very kernel specific.
 
-> But yes a WARN_ON() can be printed out in case
-> __cpufreq_driver_target() fails.
+Doing that will allow tools located in tools/ to easily utilize
+lockdep's code for their own use.
 
-And here my question was: Is it safe to continue at all in that case?
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: penberg@kernel.org
+Cc: torvalds@linux-foundation.org
+Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/locking/lockdep.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Rafael
-
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index 576ba75..eb8a547 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -590,6 +590,7 @@ static int very_verbose(struct lock_class *class)
+ /*
+  * Is this the address of a static object:
+  */
++#ifdef __KERNEL__
+ static int static_obj(void *obj)
+ {
+ 	unsigned long start = (unsigned long) &_stext,
+@@ -616,6 +617,7 @@ static int static_obj(void *obj)
+ 	 */
+ 	return is_module_address(addr) || is_module_percpu_address(addr);
+ }
++#endif
+ 
+ /*
+  * To make lock name printouts unique, we calculate a unique
+@@ -4115,6 +4117,7 @@ void debug_check_no_locks_held(void)
+ }
+ EXPORT_SYMBOL_GPL(debug_check_no_locks_held);
+ 
++#ifdef __KERNEL__
+ void debug_show_all_locks(void)
+ {
+ 	struct task_struct *g, *p;
+@@ -4172,6 +4175,7 @@ retry:
+ 		read_unlock(&tasklist_lock);
+ }
+ EXPORT_SYMBOL_GPL(debug_show_all_locks);
++#endif
+ 
+ /*
+  * Careful: only use this function if you are sure that
