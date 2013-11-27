@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760429Ab3K0BvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:51:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39061 "EHLO
+	id S1760453Ab3K0BvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:51:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3K0A5i (ORCPT
+	with ESMTP id S1757901Ab3K0A5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:38 -0500
+	Tue, 26 Nov 2013 19:57:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>, Jorge Mora <mora@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.10 48/80] NFSv4: Fix a use-after-free situation in _nfs4_proc_getlk()
-Date: Tue, 26 Nov 2013 16:57:17 -0800
-Message-Id: <20131127005644.290542744@linuxfoundation.org>
+        Franz Hsieh <franz.hsieh@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 37/80] ALSA: hda - Make sure mute LEDs stay on during runtime suspend (Realtek)
+Date: Tue, 26 Nov 2013 16:57:06 -0800
+Message-Id: <20131127005643.504406669@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,47 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
+commit d5b6b65e75ce607c2734227524e11574317a1c1a upstream.
 
-In nfs4_proc_getlk(), when some error causes a retry of the call to
-_nfs4_proc_getlk(), we can end up with Oopses of the form
+Some HP machines with Realtek codecs have mute LEDs connected to VREF pins.
+However when these go into runtime suspend, the pin powers down and its
+pin control is disabled, thus disabling the LED too.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
- IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
-<snip>
- Call Trace:
-  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
-  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
-  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
-  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
-  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
+This patch fixes that issue by making sure that the pin stays in D0 with
+correct pin control.
 
-The problem is that we don't clear the request->fl_ops after the first
-try and so when we retry, nfs4_set_lock_state() exits early without
-setting the lock stateid.
-Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
-(locks: make ->lock release private data before returning in GETLK case)
-
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Jorge Mora <mora@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+BugLink: https://bugs.launchpad.net/bugs/1248465
+Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4572,6 +4572,7 @@ static int _nfs4_proc_getlk(struct nfs4_
- 			status = 0;
- 	}
- 	request->fl_ops->fl_release_private(request);
-+	request->fl_ops = NULL;
- out:
- 	return status;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2765,6 +2765,23 @@ static void alc269_fixup_mic_mute_hook(v
+ 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
  }
+ 
++/* Make sure the led works even in runtime suspend */
++static unsigned int led_power_filter(struct hda_codec *codec,
++						  hda_nid_t nid,
++						  unsigned int power_state)
++{
++	struct alc_spec *spec = codec->spec;
++
++	if (power_state != AC_PWRST_D3 || nid != spec->mute_led_nid)
++		return power_state;
++
++	/* Set pin ctl again, it might have just been set to 0 */
++	snd_hda_set_pin_ctl(codec, nid,
++			    snd_hda_codec_get_pin_target(codec, nid));
++
++	return AC_PWRST_D0;
++}
++
+ static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
+ 				     const struct hda_fixup *fix, int action)
+ {
+@@ -2784,6 +2801,7 @@ static void alc269_fixup_hp_mute_led(str
+ 		spec->mute_led_nid = pin - 0x0a + 0x18;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 		snd_printd("Detected mute LED for %x:%d\n", spec->mute_led_nid,
+ 			   spec->mute_led_polarity);
+ 		break;
+@@ -2799,6 +2817,7 @@ static void alc269_fixup_hp_mute_led_mic
+ 		spec->mute_led_nid = 0x18;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 	}
+ }
+ 
+@@ -2811,6 +2830,7 @@ static void alc269_fixup_hp_mute_led_mic
+ 		spec->mute_led_nid = 0x19;
+ 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+ 		spec->gen.vmaster_mute_enum = 1;
++		codec->power_filter = led_power_filter;
+ 	}
+ }
+ 
 
 
