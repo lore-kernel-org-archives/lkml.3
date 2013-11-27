@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759876Ab3K0Bdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:33:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39307 "EHLO
+	id S1759903Ab3K0Bdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:33:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39299 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab3K0A6c (ORCPT
+	with ESMTP id S932407Ab3K0A6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:32 -0500
+	Tue, 26 Nov 2013 19:58:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 024/116] ACPI / hotplug: Do not execute "insert in progress" _OST
-Date: Tue, 26 Nov 2013 16:56:37 -0800
-Message-Id: <20131127005738.617600527@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>
+Subject: [PATCH 3.12 004/116] xfs: be more forgiving of a v4 secondary sb w/ junk in v5 fields
+Date: Tue, 26 Nov 2013 16:56:17 -0800
+Message-Id: <20131127005737.224729044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,39 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Eric Sandeen <sandeen@sandeen.net>
 
-commit 176a88d79d6b5aebabaff16734e8b3107efcaaad upstream.
+commit 10e6e65dfcedff63275c3d649d329c044caa8e26 upstream.
 
-According to the ACPI spec (5.0, Section 6.3.5), the "Device
-insertion in progress (pending)" (0x80) _OST status code is
-reserved for the "Insertion Processing" (0x200) source event
-which is "a result of an OSPM action".  Specifically, it is not
-a notification, so that status code should not be used during
-notification processing, which unfortunately is done by
-acpi_scan_bus_device_check().
+Today, if xfs_sb_read_verify encounters a v4 superblock
+with junk past v4 fields which includes data in sb_crc,
+it will be treated as a failing checksum and a significant
+corruption.
 
-For this reason, drop the ACPI_OST_SC_INSERT_IN_PROGRESS _OST
-status evaluation from there (it was a mistake to put it in there
-in the first place).
+There are known prior bugs which leave junk at the end
+of the V4 superblock; we don't need to actually fail the
+verification in this case if other checks pan out ok.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+So if this is a secondary superblock, and the primary
+superblock doesn't indicate that this is a V5 filesystem,
+don't treat this as an actual checksum failure.
+
+We should probably check the garbage condition as
+we do in xfs_repair, and possibly warn about it
+or self-heal, but that's a different scope of work.
+
+Stable folks: This can go back to v3.10, which is what
+introduced the sb CRC checking that is tripped up by old,
+stale, incorrect V4 superblocks w/ unzeroed bits.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Acked-by: Dave Chinner <david@fromorbit.com>
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/xfs/xfs_sb.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -331,8 +331,6 @@ static void acpi_scan_bus_device_check(a
- 			goto out;
+--- a/fs/xfs/xfs_sb.c
++++ b/fs/xfs/xfs_sb.c
+@@ -596,6 +596,11 @@ xfs_sb_verify(
+  * single bit error could clear the feature bit and unused parts of the
+  * superblock are supposed to be zero. Hence a non-null crc field indicates that
+  * we've potentially lost a feature bit and we should check it anyway.
++ *
++ * However, past bugs (i.e. in growfs) left non-zeroed regions beyond the
++ * last field in V4 secondary superblocks.  So for secondary superblocks,
++ * we are more forgiving, and ignore CRC failures if the primary doesn't
++ * indicate that the fs version is V5.
+  */
+ static void
+ xfs_sb_read_verify(
+@@ -616,8 +621,12 @@ xfs_sb_read_verify(
+ 
+ 		if (!xfs_verify_cksum(bp->b_addr, be16_to_cpu(dsb->sb_sectsize),
+ 				      offsetof(struct xfs_sb, sb_crc))) {
+-			error = EFSCORRUPTED;
+-			goto out_error;
++			/* Only fail bad secondaries on a known V5 filesystem */
++			if (bp->b_bn != XFS_SB_DADDR &&
++			    xfs_sb_version_hascrc(&mp->m_sb)) {
++				error = EFSCORRUPTED;
++				goto out_error;
++			}
  		}
  	}
--	acpi_evaluate_hotplug_ost(handle, ost_source,
--				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
- 	error = acpi_bus_scan(handle);
- 	if (error) {
- 		acpi_handle_warn(handle, "Namespace scan failure\n");
+ 	error = xfs_sb_verify(bp, true);
 
 
