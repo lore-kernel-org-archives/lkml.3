@@ -1,98 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3K0I7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:59:12 -0500
-Received: from fallback4.mail.ru ([94.100.176.42]:47108 "EHLO
-	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab3K0I7H (ORCPT
+	id S1753128Ab3K0JBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 04:01:45 -0500
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:57722 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831Ab3K0JBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:59:07 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        devicetree@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH v2] rtc: rtc-ds1742: Add devicetree support
-Date: Wed, 27 Nov 2013 12:55:20 +0400
-Message-Id: <1385542520-20887-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Spam: Not detected
-X-Mras: Ok
+	Wed, 27 Nov 2013 04:01:42 -0500
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Wed, 27 Nov 2013 13:01:30 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Chia-I Wu <olvaffe@gmail.com>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf timechart: dynamically determine event data offset
+Message-ID: <20131127090124.GA3309@stfomichev-desktop>
+References: <1381128514-16279-1-git-send-email-olvaffe@gmail.com>
+ <20131022103223.GA29489@stfomichev-desktop>
+ <20131125182139.GD20168@ghostprotocols.net>
+ <20131126110536.GC3388@stfomichev-desktop>
+ <20131126121026.GD27323@ghostprotocols.net>
+ <20131126134755.GD3388@stfomichev-desktop>
+ <20131126135709.GB14838@ghostprotocols.net>
+ <20131126145437.GE3388@stfomichev-desktop>
+ <87mwkqqlfl.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwkqqlfl.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows the driver to be enabled with devicetree.
-
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
----
- Documentation/devicetree/bindings/rtc/maxim,ds1742.txt | 12 ++++++++++++
- drivers/rtc/rtc-ds1742.c                               | 10 +++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
-
-diff --git a/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
-new file mode 100644
-index 0000000..d0f937c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/maxim,ds1742.txt
-@@ -0,0 +1,12 @@
-+* Maxim (Dallas) DS1742/DS1743 Real Time Clock
-+
-+Required properties:
-+- compatible: Should contain "maxim,ds1742".
-+- reg: Physical base address of the RTC and length of memory
-+  mapped region.
-+
-+Example:
-+	rtc: rtc@10000000 {
-+		compatible = "maxim,ds1742";
-+		reg = <0x10000000 0x800>;
-+	};
-diff --git a/drivers/rtc/rtc-ds1742.c b/drivers/rtc/rtc-ds1742.c
-index 17b73fd..d7f74f5 100644
---- a/drivers/rtc/rtc-ds1742.c
-+++ b/drivers/rtc/rtc-ds1742.c
-@@ -13,12 +13,13 @@
-  */
- 
- #include <linux/bcd.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/gfp.h>
- #include <linux/delay.h>
- #include <linux/jiffies.h>
- #include <linux/rtc.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/module.h>
-@@ -215,12 +216,19 @@ static int ds1742_rtc_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static struct of_device_id __maybe_unused ds1742_rtc_of_match[] = {
-+	{ .compatible = "maxim,ds1742", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, ds1742_rtc_of_match);
-+
- static struct platform_driver ds1742_rtc_driver = {
- 	.probe		= ds1742_rtc_probe,
- 	.remove		= ds1742_rtc_remove,
- 	.driver		= {
- 		.name	= "rtc-ds1742",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(ds1742_rtc_of_match),
- 	},
- };
- 
--- 
-1.8.3.2
-
+> Nacked-by: Namhyung Kim <namhyung@kernel.org>
+Thanks for a review. I'll try to convert all binary structures
+to perf_evsel__intval() and perf_evsel__strval() and will rebase on
+Arnaldo's perf/core branch.
