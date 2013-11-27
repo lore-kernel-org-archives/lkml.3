@@ -1,172 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3K0Ibf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:31:35 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24677 "EHLO mga02.intel.com"
+	id S1754666Ab3K0Iij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:38:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33818 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3K0Ibe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:31:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,780,1378882800"; 
-   d="scan'208";a="415801666"
-Message-ID: <5295AFA3.6060007@intel.com>
-Date: Wed, 27 Nov 2013 10:38:59 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752640Ab3K0Iig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 03:38:36 -0500
+Message-ID: <5295AECB.7040503@ti.com>
+Date: Wed, 27 Nov 2013 14:05:23 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] tools/perf/util: Document and clean up readn() a bit
-References: <1385130268-10664-1-git-send-email-jolsa@redhat.com> <1385130268-10664-2-git-send-email-jolsa@redhat.com> <20131125192909.GA27323@ghostprotocols.net> <20131126175335.GA9300@gmail.com>
-In-Reply-To: <20131126175335.GA9300@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
+        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] ARM: davinci: aemif: get rid of davinci-nand driver dependency
+ on aemif
+References: <5291CB01.1010506@ti.com> <1385409654-19006-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1385409654-19006-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/11/13 19:53, Ingo Molnar wrote:
-> 
-> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> 
->> Em Fri, Nov 22, 2013 at 03:24:26PM +0100, Jiri Olsa escreveu:
->>>  }
->>> +
->>> +ssize_t perf_data_file__write(struct perf_data_file *file,
->>> +			      void *buf, size_t size)
->>> +{
->>> +	ssize_t total = size;
->>> +
->>> +	while (size) {
->>> +		ssize_t ret = write(file->fd, buf, size);
->>> +
->>> +		if (ret < 0) {
->>> +			pr_err("failed to write perf data, error: %m\n");
->>> +			return -1;
->>> +		}
->>> +
->>> +		size -= ret;
->>> +		buf  += ret;
->>> +	}
->>> +
->>> +	return total;
->>
->> So this is the functional equivalent of "readn", so please move it to
->> just after "readn" and make this just a simple wrapper.
-> 
-> Btw., would be nice to add a small comment to readn() that describes 
-> its semantics, it looks like a useful helper.
-> 
-> I also added a check for the input parameter 'n', plus I added a 
-> 'left' variable to make the flow clearer, and added a debug check for 
-> the return value - I think returning 'n' is more obvious.
++ MTD maintainers
 
-It would be nicer to match what 'read' does.
+On Tuesday 26 November 2013 01:30 AM, Ivan Khoronzhuk wrote:
+> The problem that the set timings code contains the call of Davinci
+> platform function davinci_aemif_setup_timing() which is not
+> accessible if kernel is built for another platform like Keystone.
+> 
+> The Keysone platform is going to use TI AEMIF driver.
+> If TI AEMIF is used we don't need to set timings and bus width.
+> It is done by AEMIF driver.
+> 
+> To get rid of davinci-nand driver dependency on aemif platform code
+> we moved aemif code to davinci platform.
+> 
+> The platform AEMIF code (aemif.c) has to be removed once Davinci
+> will be converted to DT and use ti-aemif.c driver.
+> 
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>  arch/arm/mach-davinci/aemif.c                   |   73 ++++++++++++++++++++++-
+>  arch/arm/mach-davinci/board-da830-evm.c         |    3 +
+>  arch/arm/mach-davinci/board-da850-evm.c         |    3 +
+>  arch/arm/mach-davinci/board-dm355-evm.c         |    5 ++
+>  arch/arm/mach-davinci/board-dm355-leopard.c     |    5 ++
+>  arch/arm/mach-davinci/board-dm365-evm.c         |    4 ++
+>  arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
+>  arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
+>  arch/arm/mach-davinci/board-mityomapl138.c      |    3 +
+>  arch/arm/mach-davinci/board-neuros-osd2.c       |    9 ++-
+>  arch/arm/mach-davinci/devices-tnetv107x.c       |    3 +
+>  drivers/mtd/nand/davinci_nand.c                 |   23 -------
+>  include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
+>  13 files changed, 116 insertions(+), 28 deletions(-)
 
-> 
-> Totally untested though.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> 
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index 28a0a89..4789081 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -6,6 +6,7 @@
->  #endif
->  #include <stdio.h>
->  #include <stdlib.h>
-> +#include <linux/kernel.h>
->  
->  /*
->   * XXX We need to find a better place for these things...
-> @@ -151,21 +152,29 @@ unsigned long convert_unit(unsigned long value, char *unit)
->  	return value;
->  }
->  
-> -int readn(int fd, void *buf, size_t n)
-> +/*
-> + * Read exactly 'n' bytes or return an error:
+[...]
+
+> +
+> +/**
+> + * davinci_aemif_setup - setup AEMIF interface by davinci_nand_pdata
+> + * @pdev - link to platform device to setup settings for
+> + *
+> + * This function does not use any locking while programming the AEMIF
+> + * because it is expected that there is only one user of a given
+> + * chip-select.
+> + *
+> + * Returns 0 on success, else negative errno.
 > + */
-> +int readn(int fd, void *buf, ssize_t n)
-
-Should really be the same prototype as 'read' i.e.
-
-	ssize_t readn(int fd, void *buf, size_t n)
-
-Need to change callers that are using 'int' too.
-
->  {
->  	void *buf_start = buf;
-> +	size_t left = n;
+> +int davinci_aemif_setup(struct platform_device *pdev)
+> +{
+> +	struct davinci_nand_pdata *pdata = dev_get_platdata(&pdev->dev);
+> +	uint32_t val;
+> +	struct resource	*res;
+> +	void __iomem *base;
+> +	int ret = 0;
 > +
-> +	BUG_ON(n <= 0);
-
-	BUG_ON(n == 0 || n > SSIZE_MAX);
-
->  
-> -	while (n) {
-> -		int ret = read(fd, buf, n);
-> +	while (left) {
-> +		int ret = read(fd, buf, left);
-
-Should use the correct return type:
-
-		ssize_t ret = read(fd, buf, left);
-
->  
->  		if (ret <= 0)
->  			return ret;
-
-Don't return 0 if not all the bytes were read:
-
-		if (ret < 0)
-			return ret;
-		if (!ret)
-			break;
-
->  
-> -		n -= ret;
-> +		left -= ret;
->  		buf += ret;
->  	}
->  
-> -	return buf - buf_start;
-> +	BUG_ON(buf-buf_start != n);
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +	if (!res) {
+> +		dev_err(&pdev->dev, "cannot get IORESOURCE_MEM\n");
+> +		return -ENOMEM;
+> +	}
 > +
-> +	return n;
+> +	base = ioremap(res->start, resource_size(res));
+> +	if (!base) {
+> +		dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res);
+> +		ret = -ENOMEM;
+> +		goto err;
+> +	}
+> +
+> +	/*
+> +	 * Setup Async configuration register in case we did not boot
+> +	 * from NAND and so bootloader did not bother to set it up.
+> +	 */
+> +	val = davinci_aemif_readl(base, A1CR_OFFSET + pdev->id * 4);
 
-Should return the same value as 'read' i.e the original
+The AEMIF clock has to be enabled before this. The NAND driver might
+load much later.
 
-	return buf - buf_start;
+> +	/*
+> +	 * Extended Wait is not valid and Select Strobe mode is not
+> +	 * used
+> +	 */
+> +	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
+> +	if (pdata->options & NAND_BUSWIDTH_16)
+> +		val |= 0x1;
+> +
+> +	davinci_aemif_writel(base, A1CR_OFFSET + pdev->id * 4, val);
+> +
+> +	if (pdata->timing)
+> +		ret = davinci_aemif_setup_timing(pdata->timing, base, pdev->id);
+> +
+> +	if (ret < 0)
+> +		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
+> +
+> +err:
+> +	iounmap(base);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(davinci_aemif_setup);
 
->  }
+No need to export this symbol as nothing apart from platform code uses it.
+
+>  static const short mityomap_mii_pins[] = {
+> diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
+> index bb680af..a7d6668 100644
+> --- a/arch/arm/mach-davinci/board-neuros-osd2.c
+> +++ b/arch/arm/mach-davinci/board-neuros-osd2.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/platform_data/mmc-davinci.h>
+>  #include <linux/platform_data/mtd-davinci.h>
+>  #include <linux/platform_data/usb-davinci.h>
+> +#include <linux/platform_data/mtd-davinci-aemif.h>
 >  
->  size_t hex_width(u64 v)
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index c8f362d..bb0a336 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -253,7 +253,7 @@ bool strlazymatch(const char *str, const char *pat);
->  int strtailcmp(const char *s1, const char *s2);
->  char *strxfrchar(char *s, char from, char to);
->  unsigned long convert_unit(unsigned long value, char *unit);
-> -int readn(int fd, void *buf, size_t size);
-> +int readn(int fd, void *buf, ssize_t size);
+>  #include <asm/mach-types.h>
+>  #include <asm/mach/arch.h>
+> @@ -192,9 +193,15 @@ static __init void davinci_ntosd2_init(void)
+>  		davinci_cfg_reg(DM644X_ATAEN_DISABLE);
 >  
->  struct perf_event_attr;
->  
-> 
-> 
+>  		/* only one device will be jumpered and detected */
+> -		if (HAS_NAND)
+> +		if (HAS_NAND) {
+>  			platform_device_register(
+>  					&davinci_ntosd2_nandflash_device);
+> +
+> +			if (davinci_aemif_setup(
+> +				&davinci_ntosd2_nandflash_device))
+> +				pr_warn("%s: Cannot configure AEMIF.\n",
+> +					__func__);
 
+This is looking really ugly. Can you shorten
+davinci_ntosd2_nandflash_device to just "ntosd2_nandflash" or similar?
+
+I am yet to test this. Will test once the next version is posted.
+
+Overall, I cannot say I am fan of this approach (mostly because we are
+ending up having two drivers for the same hardware in kernel). But given
+that the other option of adding platform device support to AEMIF driver
+is not acceptable to you, I guess I will live with this.
+
+Thanks,
+Sekhar
