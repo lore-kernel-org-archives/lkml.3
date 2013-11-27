@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab3K0Qve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:51:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1377 "EHLO mga09.intel.com"
+	id S1757691Ab3K0Qvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:51:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1373 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757625Ab3K0QvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757627Ab3K0QvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Nov 2013 11:51:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,783,1378882800"; 
-   d="scan'208";a="443137814"
+   d="scan'208";a="443137829"
 From: Ashutosh Dixit <ashutosh.dixit@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
@@ -20,48 +20,50 @@ Cc: Dasaratharaman Chandramouli
         Siva Krishna Kumar Reddy Yerramreddy 
 	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
         Caz Yokoyama <Caz.Yokoyama@intel.com>
-Subject: [PATCH char-misc-linus v3 0/6] misc: mic: Fixes for 3.13-final
-Date: Wed, 27 Nov 2013 08:58:37 -0800
-Message-Id: <cover.1385527468.git.ashutosh.dixit@intel.com>
+Subject: [PATCH char-misc-linus v3 3/6] misc: mic: Bug fix for sysfs poll usage.
+Date: Wed, 27 Nov 2013 08:58:40 -0800
+Message-Id: <110d7ea2d60d47682da4208a07646a97b0f00585.1385569514.git.ashutosh.dixit@intel.com>
 X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <cover.1385527468.git.ashutosh.dixit@intel.com>
+References: <cover.1385527468.git.ashutosh.dixit@intel.com>
+In-Reply-To: <cover.1385569514.git.ashutosh.dixit@intel.com>
+References: <cover.1385569514.git.ashutosh.dixit@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix various issues which were reported or found with the
-MIC driver.
+MIC user space daemon poll's on sysfs changes. The documentation for
+sysfs_poll(...) in fs/sysfs/file.c states that "Once poll/select
+indicates that the value has changed, you need to close and re-open the
+file, or seek to 0 and read again". This step was missed out earlier and
+resulted in the daemon spinning continuously rather than getting blocked
+in 'poll'. This bug was exposed by commit aea585ef8fa65163 introduced as
+part of sysfs changes in 3.13-rc1. A seek to 0 has been introduced to
+fix it.
 
-Changelog
-=========
-v2 => v3:
-* Reorder patch 5 in v2 to patch 4 in v3.
-* Split patch 4 in v2 into patches 5 and 6 in v3.
+Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+---
+ Documentation/mic/mpssd/mpssd.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-v1 => v2: @ https://lkml.org/lkml/2013/11/26/376
-* Address review comments @ https://lkml.org/lkml/2013/11/26/443
-  in patch 5.
-
-v1: Initial post @ https://lkml.org/lkml/2013/11/26/321
-
-Ashutosh Dixit (4):
-  misc: mic: Bug fix for sysfs poll usage.
-  misc: mic: Fix user space namespace pollution from mic_common.h.
-  misc: mic: Fix endianness issues.
-  misc: mic: Suppress memory space sparse warnings
-
-Sudeep Dutt (2):
-  misc: mic: Change mic_notify(...) to return true.
-  misc: mic: Minor bug fix in 'retry' loops.
-
- Documentation/mic/mpssd/mpssd.c    | 18 +++++++++++------
- drivers/misc/mic/card/mic_virtio.c | 33 +++++++++++++++++--------------
- drivers/misc/mic/card/mic_virtio.h |  7 +++----
- drivers/misc/mic/host/mic_boot.c   |  2 +-
- drivers/misc/mic/host/mic_virtio.c | 30 ++++++++++++++--------------
- drivers/misc/mic/host/mic_x100.c   |  4 ++--
- include/uapi/linux/mic_common.h    | 40 +++++++++++++++-----------------------
- 7 files changed, 67 insertions(+), 67 deletions(-)
-
+diff --git a/Documentation/mic/mpssd/mpssd.c b/Documentation/mic/mpssd/mpssd.c
+index 0c980ad..5c7fdda 100644
+--- a/Documentation/mic/mpssd/mpssd.c
++++ b/Documentation/mic/mpssd/mpssd.c
+@@ -1412,6 +1412,12 @@ mic_config(void *arg)
+ 	}
+ 
+ 	do {
++		ret = lseek(fd, 0, SEEK_SET);
++		if (ret < 0) {
++			mpsslog("%s: Failed to seek to file start '%s': %s\n",
++				mic->name, pathname, strerror(errno));
++			goto close_error1;
++		}
+ 		ret = read(fd, value, sizeof(value));
+ 		if (ret < 0) {
+ 			mpsslog("%s: Failed to read sysfs entry '%s': %s\n",
 -- 
 1.8.2.3
 
