@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab3K0Nz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:55:58 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:59048 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3K0Nzz (ORCPT
+	id S1753312Ab3K0OAD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:00:03 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:38931 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab3K0N7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:55:55 -0500
-Date: Wed, 27 Nov 2013 13:55:47 +0000
+	Wed, 27 Nov 2013 08:59:55 -0500
+Date: Wed, 27 Nov 2013 13:59:47 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
-        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
-Message-ID: <20131127135547.GK3296@lee--X1>
-References: <cover.1385508112.git.stefan@agner.ch>
- <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
- <20131127130954.GF3296@lee--X1>
- <cd69295e946b48451f449eacc02efa4a@agner.ch>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v5 1/2] regulator: max14577: Add regulator driver for
+ Maxim 14577
+Message-ID: <20131127135947.GL3296@lee--X1>
+References: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <cd69295e946b48451f449eacc02efa4a@agner.ch>
+In-Reply-To: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>  	if (ret < 0) {
-> >>  		dev_err(&client->dev, "Chip ID read failed: %d\n", ret);
-> >>  		return -EIO;
-> > 
-> > Why are you returning an error here when you have a valid enum of:
-> >   TPS6586X_ANY	= -1,
-> > 
-> Hm, when the device is not answering on that request, the probe method
-> should fail I would say. This means that the device is missing most
-> likely. However, I should set the device version to TPS6586X_ANY if I
-> happen to end up in the default case.
+On Wed, 27 Nov 2013, Krzysztof Kozlowski wrote:
 
-I would say that returning an error is the sound thing to do, but I'm
-missing the point of TPS6586X_ANY, as it doesn't appear to be used in
-this context.
-
-> >>  	}
-> >>
-> >> -	dev_info(&client->dev, "VERSIONCRC is %02x\n", ret);
-> >> -
-> >> -	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-> >> -	if (tps6586x == NULL) {
-> >> -		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
-> >> -		return -ENOMEM;
-> >> +	tps6586x->version = (enum tps6586x_version)ret;
-> >> +	switch (ret) {
-> >> +	case TPS658621A:
-> >> +		name = "TPS658621A";
-> >> +		break;
-> >> +	case TPS658621CD:
-> >> +		name = "TPS658621C/D";
-> >> +		break;
-> >> +	case TPS658623:
-> >> +		name = "TPS658623";
-> >> +		break;
-> >> +	case TPS658643:
-> >> +		name = "TPS658643";
-> >> +		break;
-> >> +	default:
-> >> +		name = "TPS6586X";
-> >> +		break;
-> >>  	}
-> >>
-> >> +	dev_info(&client->dev, "Found %s, VERSIONCRC is %02x\n", name, ret);
-> >> +
-> > 
-> > I'd suggest pulling this out of probe() and into a separate subroutine.
-> > 
-> > <snip>
-> Since I will alter the version when I end up in the default case in my
-> next patch, would you still do a separate subroutine? I think its
-> somewhat heavily coupled to the probe function.
+> MAX14577 chip is a multi-function device which includes MUIC,
+> charger and voltage regulator. The driver is located in drivers/mfd.
 > 
-> Sorry missing you on the CC, will do next time :-)
+> This patch adds regulator driver for MAX14577 chip. There are two
+> regulators in this chip:
+> 1. Safeout LDO with constant voltage output of 4.9V. It can be only
+>    enabled or disabled.
+> 2. Current regulator for the charger. It provides current from 90mA up
+>    to 950mA.
+> Driver supports Device Tree.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/mfd/max14577.c       |   13 +-
+>  drivers/regulator/Kconfig    |    7 ++
+>  drivers/regulator/Makefile   |    1 +
+>  drivers/regulator/max14577.c |  269 ++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 287 insertions(+), 3 deletions(-)
+>  create mode 100644 drivers/regulator/max14577.c
+> 
+> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+> index 94b766d..9af46c2 100644
+> --- a/drivers/mfd/max14577.c
+> +++ b/drivers/mfd/max14577.c
+> @@ -25,9 +25,16 @@
+>  #include <linux/mfd/max14577-private.h>
+>  
+>  static struct mfd_cell max14577_devs[] = {
+> -	{ .name = "max14577-muic", },
+> -	{ .name = "max14577-regulator", },
+> -	{ .name = "max14577-charger", },
+> +	{
+> +		.name = "max14577-muic",
+> +	},
+> +	{
+> +		.name = "max14577-regulator",
+> +		.of_compatible = "maxim,max14577-regulator",
+> +	},
+> +	{
+> +		.name = "max14577-charger",
+> +	},
+>  };
 
-It's not that it's unrelated, it's just a whole bulk of code which is
-essentially featureless. 17 lines of code just to have the name of the
-device in the bootlog. For that reason I'd like to see this abstracted
-from (the useful stuff in) probe() please.
+Still it still part of the regulator patch.
+
+Can you pull the code above into a separate patch please?
+
+Also, there's no requirement to open out all of the one liners, just
+the entry where you're using two properties.
 
 -- 
 Lee Jones
