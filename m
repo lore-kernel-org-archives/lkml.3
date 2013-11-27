@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab3K0Xjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:39:53 -0500
-Received: from postman.amit.cz ([188.95.124.147]:42235 "EHLO postman.amit.cz"
+	id S1758543Ab3K0XlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:41:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50595 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757452Ab3K0Xiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:38:54 -0500
-From: Ondrej Puzman <puzman@gmail.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ondrej Puzman <puzman@gmail.com>
-Subject: [PATCH] pch_gbe: Fix: Link configuration in module parameters was ignored
-Date: Thu, 28 Nov 2013 00:29:10 +0100
-Message-Id: <1385594950-2662-4-git-send-email-puzman@gmail.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1385594950-2662-3-git-send-email-puzman@gmail.com>
-References: <1385594950-2662-1-git-send-email-puzman@gmail.com>
- <1385594950-2662-2-git-send-email-puzman@gmail.com>
- <1385594950-2662-3-git-send-email-puzman@gmail.com>
+	id S1757190Ab3K0XlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:41:01 -0500
+Date: Thu, 28 Nov 2013 00:40:53 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+Message-ID: <20131127234053.GO32267@pd.tnic>
+References: <5294F10C.8060901@amacapital.net>
+ <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com>
+ <52964EC7.9000504@zytor.com>
+ <52966C0A.7070201@zytor.com>
+ <20131127222104.GA748@pd.tnic>
+ <b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com>
+ <20131127222944.GB748@pd.tnic>
+ <529674C4.2030906@zytor.com>
+ <20131127231010.GM32267@pd.tnic>
+ <52967E27.3070906@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52967E27.3070906@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PHY configuration set in pch_gbe_phy_init_setting() by mii_ethtool_sset() was immedeiately reset by two calls of pch_gbe_phy_sw_reset().
-Result of this bug was that module parameters like AutoNeg were ignored silently.
+On Wed, Nov 27, 2013 at 03:20:07PM -0800, H. Peter Anvin wrote:
+> No.  MFENCE doesn't serialize the front end.
 
-Signed-off-by: Ondrej Puzman <puzman@gmail.com>
----
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_api.c    |    4 ----
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c    |   13 +------------
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h    |    1 -
- 3 files changed, 1 insertions(+), 17 deletions(-)
+So my manual says
 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_api.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_api.c
-index ff3ad70..365c202 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_api.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_api.c
-@@ -77,10 +77,6 @@ static s32 pch_gbe_plat_init_hw(struct pch_gbe_hw *hw)
- 		return ret_val;
- 	}
- 	pch_gbe_phy_init_setting(hw);
--	/* Setup Mac interface option RGMII */
--#ifdef PCH_GBE_MAC_IFOP_RGMII
--	pch_gbe_phy_set_rgmii(hw);
--#endif
- 	return ret_val;
- }
- 
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c
-index 8b7ff75..d283818 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.c
-@@ -249,15 +249,6 @@ void pch_gbe_phy_power_down(struct pch_gbe_hw *hw)
- }
- 
- /**
-- * pch_gbe_phy_set_rgmii - RGMII interface setting
-- * @hw:	            Pointer to the HW structure
-- */
--void pch_gbe_phy_set_rgmii(struct pch_gbe_hw *hw)
--{
--	pch_gbe_phy_sw_reset(hw);
--}
--
--/**
-  * pch_gbe_phy_tx_clk_delay - Setup TX clock delay via the PHY
-  * @hw:	            Pointer to the HW structure
-  * Returns
-@@ -321,13 +312,11 @@ void pch_gbe_phy_init_setting(struct pch_gbe_hw *hw)
- 	cmd.duplex = hw->mac.link_duplex;
- 	cmd.advertising = hw->phy.autoneg_advertised;
- 	cmd.autoneg = hw->mac.autoneg;
--	pch_gbe_phy_write_reg_miic(hw, MII_BMCR, BMCR_RESET);
-+	pch_gbe_phy_sw_reset(hw);
- 	ret = mii_ethtool_sset(&adapter->mii, &cmd);
- 	if (ret)
- 		netdev_err(adapter->netdev, "Error: mii_ethtool_sset\n");
- 
--	pch_gbe_phy_sw_reset(hw);
--
- 	pch_gbe_phy_read_reg_miic(hw, PHY_PHYSP_CONTROL, &mii_reg);
- 	mii_reg |= PHYSP_CTRL_ASSERT_CRS_TX;
- 	pch_gbe_phy_write_reg_miic(hw, PHY_PHYSP_CONTROL, mii_reg);
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h
-index 0cbe692..cda223c 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_phy.h
-@@ -31,7 +31,6 @@ void pch_gbe_phy_sw_reset(struct pch_gbe_hw *hw);
- void pch_gbe_phy_hw_reset(struct pch_gbe_hw *hw);
- void pch_gbe_phy_power_up(struct pch_gbe_hw *hw);
- void pch_gbe_phy_power_down(struct pch_gbe_hw *hw);
--void pch_gbe_phy_set_rgmii(struct pch_gbe_hw *hw);
- void pch_gbe_phy_init_setting(struct pch_gbe_hw *hw);
- int pch_gbe_phy_disable_hibernate(struct pch_gbe_hw *hw);
- 
+"The MFENCE instruction is weakly-ordered with respect to data and
+instruction prefetches. Speculative loads initiated by the processor, or
+specified explicitly using cache-prefetch instructions, can be reordered
+around an MFENCE."
+
+and the SDM has only one sentence stating "MFENCE does not serialize
+the instruction stream." which I'm assuming means the same, i.e. MFENCE
+doesn't have control on I$ prefetches and they can be reordered around
+it.
+
+But I'd guess that depends on the uarch because Bulldozer, reportedly,
+implements MFENCE by causing a pipeline stall which controls the
+prefetches too:
+
+"[MFENCE] stalls the pipeline and the processor core cannot begin
+processing any further instructions until all previous instructions are
+completed and any outstanding memory operations (such as prefetches
+and stores) have completed. (This stall applies only to the individual
+integer unit of the compute unit where the MFENCE instruction is
+executed.) Architecturally serializing instructions such as CPUID have
+the same pipeline stall behavior as MFENCE."
+
+It is not clear, though, whether with "memory operations" and
+"prefetches" they mean I$ prefetches too.
+
+Cool, one gets to learn new stuff every day so thanks for making me look
+:-)
+
 -- 
-1.5.6.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
