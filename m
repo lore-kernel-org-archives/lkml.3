@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760686Ab3K0B6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:58:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38877 "EHLO
+	id S1760694Ab3K0B7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:59:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab3K0A5M (ORCPT
+	with ESMTP id S1757359Ab3K0A5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:12 -0500
+	Tue, 26 Nov 2013 19:57:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 01/80] ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and BufferField refs.
-Date: Tue, 26 Nov 2013 16:56:30 -0800
-Message-Id: <20131127005641.039794736@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH 3.10 19/80] PCI: Support PCIe Capability Slot registers only for ports with slots
+Date: Tue, 26 Nov 2013 16:56:48 -0800
+Message-Id: <20131127005642.274038591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,75 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 63660e05ec719613b518547b40a1c501c10f0bc4 upstream.
+commit 6d3a1741f1e648cfbd5a0cc94477a0d5004c6f5e upstream.
 
-Previously, references to these objects were resolved only to the actual
-FieldUnit or BufferField object. The correct behavior is to resolve these
-references to an actual value.
-The problem is that DerefOf did not resolve these objects to actual
-values.  An "Integer" object is simple, return the value.  But a field in
-an operation region will require a read operation.  For a BufferField, the
-appropriate data must be extracted from the parent buffer.
+Previously we allowed callers to access Slot Capabilities, Status, and
+Control for Root Ports even if the Root Port did not implement a slot.
+This seems dubious because the spec only requires these registers if a
+slot is implemented.
 
-NOTE: It appears that this issues is present in Windows7 but not
-Windows8.
+It's true that even Root Ports without slots must have *space* for these
+slot registers, because the Root Capabilities, Status, and Control
+registers are after the slot registers in the capability.  However,
+for a v1 PCIe Capability, the *semantics* of the slot registers are
+undefined unless a slot is implemented.
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-By: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Myron Stowe <myron.stowe@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/exoparg1.c |   35 ++++++++++++++++++++++++++++++++---
- 1 file changed, 32 insertions(+), 3 deletions(-)
+ drivers/pci/access.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/acpica/exoparg1.c
-+++ b/drivers/acpi/acpica/exoparg1.c
-@@ -991,11 +991,40 @@ acpi_status acpi_ex_opcode_1A_0T_1R(stru
- 									 acpi_namespace_node
- 									 *)
- 									return_desc);
--				}
-+					if (!return_desc) {
-+						break;
-+					}
-+
-+					/*
-+					 * June 2013:
-+					 * buffer_fields/field_units require additional resolution
-+					 */
-+					switch (return_desc->common.type) {
-+					case ACPI_TYPE_BUFFER_FIELD:
-+					case ACPI_TYPE_LOCAL_REGION_FIELD:
-+					case ACPI_TYPE_LOCAL_BANK_FIELD:
-+					case ACPI_TYPE_LOCAL_INDEX_FIELD:
-+
-+						status =
-+						    acpi_ex_read_data_from_field
-+						    (walk_state, return_desc,
-+						     &temp_desc);
-+						if (ACPI_FAILURE(status)) {
-+							goto cleanup;
-+						}
+--- a/drivers/pci/access.c
++++ b/drivers/pci/access.c
+@@ -497,9 +497,9 @@ static inline bool pcie_cap_has_sltctl(c
+ {
+ 	int type = pci_pcie_type(dev);
  
--				/* Add another reference to the object! */
-+						return_desc = temp_desc;
-+						break;
+-	return type == PCI_EXP_TYPE_ROOT_PORT ||
+-	       (type == PCI_EXP_TYPE_DOWNSTREAM &&
+-		pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT);
++	return (type == PCI_EXP_TYPE_ROOT_PORT ||
++		type == PCI_EXP_TYPE_DOWNSTREAM) &&
++	       pcie_caps_reg(dev) & PCI_EXP_FLAGS_SLOT;
+ }
  
--				acpi_ut_add_reference(return_desc);
-+					default:
-+
-+						/* Add another reference to the object */
-+
-+						acpi_ut_add_reference
-+						    (return_desc);
-+						break;
-+					}
-+				}
- 				break;
- 
- 			default:
+ static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
 
 
