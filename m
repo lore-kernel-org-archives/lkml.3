@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3K0Lzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:55:48 -0500
-Received: from mga03.intel.com ([143.182.124.21]:42937 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab3K0Lzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:55:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,781,1378882800"; 
-   d="scan'208";a="435028213"
-Message-ID: <1385553315.1871.8.camel@smile>
-Subject: Re: [PATCH v2 3/3] intel_mid: switch to use SFI GPIO API
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: David Cohen <david.a.cohen@intel.com>,
-        "linux-gpio @ vger . kernel . org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>
-Date: Wed, 27 Nov 2013 13:55:15 +0200
-In-Reply-To: <CACRpkdawieDmHhOj4p4KVgE=FH5LaxWG94U0btbPgX_5ue-Lyg@mail.gmail.com>
-References: <1384957896-3477-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1384957896-3477-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CACRpkdawieDmHhOj4p4KVgE=FH5LaxWG94U0btbPgX_5ue-Lyg@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755801Ab3K0L4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:56:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48329 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3K0L4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 06:56:41 -0500
+Date: Wed, 27 Nov 2013 12:56:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 0/3] Hook up powerclamp with PM QOS and cpuidle
+Message-ID: <20131127115634.GA10022@twins.programming.kicks-ass.net>
+References: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385508011-26914-1-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-26 at 10:38 +0100, Linus Walleij wrote:
-> On Wed, Nov 20, 2013 at 3:31 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
+On Tue, Nov 26, 2013 at 03:20:08PM -0800, Jacob Pan wrote:
+> This patchset is intended to address the behavior change and efficiency
+> loss introduced by using consolidated idle routine in powerclamp driver.
 > 
-> > Instead of custom implementation of the SFI GPIO API let's use one provided by
-> > gpiolib.
-> >
-> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Specifically,
+> [PATCH 3/8] idle, thermal, acpi: Remove home grown idle implementations
 > 
-> So is it possible to move this to just do gpiod_get() from the drivers
-> and abstract away SFI altogether as indicated by Mika?
+> The motivation is that after using common idle routine, powerclamp driver
+> can no longer pick the deepest idle state needed to conserve power.
+> Idle state is selected by governors which can be influenced by PM QOS and
+> other factors. This patchset hooks up powerclamp idle injection with PM
+> QOS and eventually influce idle governors to pick the power saving target
+> states.
 > 
-> I'd love that, if possible.
+> There are some downside of this approach. Due to overhead, communication
+> with PM QOS is at enable/disable idle injection time instead of each
+> injection period. The implication is that if the system natual idle is
+> more than target injected idle, powerclamp will skip some injection period.
+> During this period however, deepest idle state may still be chosen
+> necessarily regardless the latency constraint.
 
-I will look at it later.
-Anyway it's apparently for 3.14.
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Does the QoS stuff have a means of notifying its users of constraints
+violation? I suspect some applications might light to be told if their
+requests aren't honoured.
 
