@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab3K0B4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:56:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38978 "EHLO
+	id S1757512Ab3K0A5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab3K0A5T (ORCPT
+	with ESMTP id S1755227Ab3K0A45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:19 -0500
+	Tue, 26 Nov 2013 19:56:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.10 08/80] crypto: ansi_cprng - Fix off by one error in non-block size request
-Date: Tue, 26 Nov 2013 16:56:37 -0800
-Message-Id: <20131127005641.517265159@linuxfoundation.org>
+        Haren Myneni <haren@linux.vnet.ibm.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 35/39] powerpc/signals: Mark VSX not saved with small contexts
+Date: Tue, 26 Nov 2013 16:56:59 -0800
+Message-Id: <20131127005621.515610684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
-References: <20131127005640.934155527@linuxfoundation.org>
+In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
+References: <20131127005619.011763867@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
+commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
 
-Stephan Mueller reported to me recently a error in random number generation in
-the ansi cprng. If several small requests are made that are less than the
-instances block size, the remainder for loop code doesn't increment
-rand_data_valid in the last iteration, meaning that the last bytes in the
-rand_data buffer gets reused on the subsequent smaller-than-a-block request for
-random data.
+The VSX MSR bit in the user context indicates if the context contains VSX
+state.  Currently we set this when the process has touched VSX at any stage.
 
-The fix is pretty easy, just re-code the for loop to make sure that
-rand_data_valid gets incremented appropriately
+Unfortunately, if the user has not provided enough space to save the VSX state,
+we can't save it but we currently still set the MSR VSX bit.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Petr Matousek <pmatouse@redhat.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+This patch changes this to clear the MSR VSX bit when the user doesn't provide
+enough space.  This indicates that there is no valid VSX state in the user
+context.
+
+This is needed to support get/set/make/swapcontext for applications that use
+VSX but only provide a small context.  For example, getcontext in glibc
+provides a smaller context since the VSX registers don't need to be saved over
+the glibc function call.  But since the program calling getcontext may have
+used VSX, the kernel currently says the VSX state is valid when it's not.  If
+the returned context is then used in setcontext (ie. a small context without
+VSX but with MSR VSX set), the kernel will refuse the context.  This situation
+has been reported by the glibc community.
+
+Based on patch from Carlos O'Donell.
+
+Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/ansi_cprng.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/signal_32.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -230,11 +230,11 @@ remainder:
- 	 */
- 	if (byte_count < DEFAULT_BLK_SZ) {
- empty_rbuf:
--		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
--			ctx->rand_data_valid++) {
-+		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
- 			*ptr = ctx->rand_data[ctx->rand_data_valid];
- 			ptr++;
- 			byte_count--;
-+			ctx->rand_data_valid++;
- 			if (byte_count == 0)
- 				goto done;
- 		}
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -459,7 +459,15 @@ static int save_user_regs(struct pt_regs
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	}
++	} else if (!ctx_has_vsx_region)
++		/*
++		 * With a small context structure we can't hold the VSX
++		 * registers, hence clear the MSR value to indicate the state
++		 * was not saved.
++		 */
++		msr &= ~MSR_VSX;
++
++
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
 
 
