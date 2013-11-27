@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760904Ab3K0CGu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:06:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38785 "EHLO
+	id S1760925Ab3K0CHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:07:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab3K0A4m (ORCPT
+	with ESMTP id S1755267Ab3K0A4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:42 -0500
+	Tue, 26 Nov 2013 19:56:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.4 11/39] can: c_can: Fix RX message handling, handle lost message before EOB
-Date: Tue, 26 Nov 2013 16:56:35 -0800
-Message-Id: <20131127005619.830590699@linuxfoundation.org>
+        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.4 28/39] x86/microcode/amd: Tone down printk(), dont treat a missing firmware file as an error
+Date: Tue, 26 Nov 2013 16:56:52 -0800
+Message-Id: <20131127005621.006457597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -27,47 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Thomas Renninger <trenn@suse.de>
 
-commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
+commit 11f918d3e2d3861b6931e97b3aa778e4984935aa upstream.
 
-If we handle end of block messages with higher priority than a lost message,
-we can run into an endless interrupt loop.
+Do it the same way as done in microcode_intel.c: use pr_debug()
+for missing firmware files.
 
-This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
-As soon as we loose a packet we can't escape from an interrupt loop.
+There seem to be CPUs out there for which no microcode update
+has been submitted to kernel-firmware repo yet resulting in
+scary sounding error messages in dmesg:
 
-This patch fixes the problem by handling lost packets before EOB packets.
+  microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Acked-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1384274383-43510-1-git-send-email-trenn@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/microcode_amd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -760,9 +760,6 @@ static int c_can_do_rx_poll(struct net_d
- 			msg_ctrl_save = priv->read_reg(priv,
- 					&priv->regs->ifregs[0].msg_cntrl);
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -338,7 +338,7 @@ static enum ucode_state request_microcod
+ 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
  
--			if (msg_ctrl_save & IF_MCONT_EOB)
--				return num_rx_pkts;
--
- 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
- 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
- 				num_rx_pkts++;
-@@ -770,6 +767,9 @@ static int c_can_do_rx_poll(struct net_d
- 				continue;
- 			}
- 
-+			if (msg_ctrl_save & IF_MCONT_EOB)
-+				return num_rx_pkts;
-+
- 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
- 				continue;
+ 	if (request_firmware(&fw, (const char *)fw_name, device)) {
+-		pr_err("failed to load file %s\n", fw_name);
++		pr_debug("failed to load file %s\n", fw_name);
+ 		goto out;
+ 	}
  
 
 
