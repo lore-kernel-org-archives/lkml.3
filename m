@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759542Ab3K0BT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:19:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
+	id S1759528Ab3K0BTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:19:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab3K0A7V (ORCPT
+	with ESMTP id S1756631Ab3K0A7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:21 -0500
+	Tue, 26 Nov 2013 19:59:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 050/116] ALSA: hda - Add pincfg fixup for ASUS W5A
-Date: Tue, 26 Nov 2013 16:57:03 -0800
-Message-Id: <20131127005740.408032451@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>, Greg Edwards <gedwards@ddn.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH 3.12 078/116] KVM: IOMMU: hva align mapping page size
+Date: Tue, 26 Nov 2013 16:57:31 -0800
+Message-Id: <20131127005742.312745359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,65 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Greg Edwards <gedwards@ddn.com>
 
-commit 487a588d09db0d6508261867df208d8bdc718251 upstream.
+commit 27ef63c7e97d1e5dddd85051c03f8d44cc887f34 upstream.
 
-BIOS on ASUS W5A laptop with ALC880 codec doesn't provide any pin
-configurations, so we have to set up all pins manually.
+When determining the page size we could use to map with the IOMMU, the
+page size should also be aligned with the hva, not just the gfn.  The
+gfn may not reflect the real alignment within the hugetlbfs file.
 
-Reported-and-tested-by: nb <nb@dagami.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Most of the time, this works fine.  However, if the hugetlbfs file is
+backed by non-contiguous huge pages, a multi-huge page memslot starts at
+an unaligned offset within the hugetlbfs file, and the gfn is aligned
+with respect to the huge page size, kvm_host_page_size() will return the
+huge page size and we will use that to map with the IOMMU.
+
+When we later unpin that same memslot, the IOMMU returns the unmap size
+as the huge page size, and we happily unpin that many pfns in
+monotonically increasing order, not realizing we are spanning
+non-contiguous huge pages and partially unpin the wrong huge page.
+
+Ensure the IOMMU mapping page size is aligned with the hva corresponding
+to the gfn, which does reflect the alignment within the hugetlbfs file.
+
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Greg Edwards <gedwards@ddn.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ virt/kvm/iommu.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1043,6 +1043,7 @@ enum {
- 	ALC880_FIXUP_UNIWILL,
- 	ALC880_FIXUP_UNIWILL_DIG,
- 	ALC880_FIXUP_Z71V,
-+	ALC880_FIXUP_ASUS_W5A,
- 	ALC880_FIXUP_3ST_BASE,
- 	ALC880_FIXUP_3ST,
- 	ALC880_FIXUP_3ST_DIG,
-@@ -1213,6 +1214,26 @@ static const struct hda_fixup alc880_fix
- 			{ }
- 		}
- 	},
-+	[ALC880_FIXUP_ASUS_W5A] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			/* set up the whole pins as BIOS is utterly broken */
-+			{ 0x14, 0x0121411f }, /* HP */
-+			{ 0x15, 0x411111f0 }, /* N/A */
-+			{ 0x16, 0x411111f0 }, /* N/A */
-+			{ 0x17, 0x411111f0 }, /* N/A */
-+			{ 0x18, 0x90a60160 }, /* mic */
-+			{ 0x19, 0x411111f0 }, /* N/A */
-+			{ 0x1a, 0x411111f0 }, /* N/A */
-+			{ 0x1b, 0x411111f0 }, /* N/A */
-+			{ 0x1c, 0x411111f0 }, /* N/A */
-+			{ 0x1d, 0x411111f0 }, /* N/A */
-+			{ 0x1e, 0xb743111e }, /* SPDIF out */
-+			{ }
-+		},
-+		.chained = true,
-+		.chain_id = ALC880_FIXUP_GPIO1,
-+	},
- 	[ALC880_FIXUP_3ST_BASE] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -1334,6 +1355,7 @@ static const struct hda_fixup alc880_fix
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -103,6 +103,10 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		while ((gfn << PAGE_SHIFT) & (page_size - 1))
+ 			page_size >>= 1;
  
- static const struct snd_pci_quirk alc880_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1019, 0x0f69, "Coeus G610P", ALC880_FIXUP_W810),
-+	SND_PCI_QUIRK(0x1043, 0x10c3, "ASUS W5A", ALC880_FIXUP_ASUS_W5A),
- 	SND_PCI_QUIRK(0x1043, 0x1964, "ASUS Z71V", ALC880_FIXUP_Z71V),
- 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS", ALC880_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x1558, 0x5401, "Clevo GPIO2", ALC880_FIXUP_GPIO2),
++		/* Make sure hva is aligned to the page size we want to map */
++		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
++			page_size >>= 1;
++
+ 		/*
+ 		 * Pin all pages we are about to map in memory. This is
+ 		 * important because we unmap and unpin in 4kb steps later.
 
 
