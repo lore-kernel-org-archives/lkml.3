@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759654Ab3K0Bvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:51:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39047 "EHLO
+	id S1760483Ab3K0Bvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:51:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39051 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757860Ab3K0A5e (ORCPT
+	with ESMTP id S1757862Ab3K0A5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:34 -0500
+	Tue, 26 Nov 2013 19:57:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 34/80] ALSA: msnd: Avoid duplicated driver name
-Date: Tue, 26 Nov 2013 16:57:03 -0800
-Message-Id: <20131127005643.293924823@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 35/80] ALSA: hda - Add support of ALC255 codecs
+Date: Tue, 26 Nov 2013 16:57:04 -0800
+Message-Id: <20131127005643.367549296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,51 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
+commit 1d04c9de5c76df113e4af7120feb53c628b5efcc upstream.
 
-msnd_pinnacle.c is used for both snd-msnd-pinnacle and
-snd-msnd-classic drivers, and both should have different driver
-names.  Using the same driver name results in the sysfs warning for
-duplicated entries like
- kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
- kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
- sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
- ......
+It's just another variant of ALC269 & co.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/isa/msnd/msnd_pinnacle.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/isa/msnd/msnd_pinnacle.c
-+++ b/sound/isa/msnd/msnd_pinnacle.c
-@@ -73,9 +73,11 @@
- #ifdef MSND_CLASSIC
- #  include "msnd_classic.h"
- #  define LOGNAME			"msnd_classic"
-+#  define DEV_NAME			"msnd-classic"
- #else
- #  include "msnd_pinnacle.h"
- #  define LOGNAME			"snd_msnd_pinnacle"
-+#  define DEV_NAME			"msnd-pinnacle"
- #endif
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2531,6 +2531,7 @@ enum {
+ 	ALC269_TYPE_ALC282,
+ 	ALC269_TYPE_ALC284,
+ 	ALC269_TYPE_ALC286,
++	ALC269_TYPE_ALC255,
+ };
  
- static void set_default_audio_parameters(struct snd_msnd *chip)
-@@ -1068,8 +1070,6 @@ static int snd_msnd_isa_remove(struct de
- 	return 0;
- }
+ /*
+@@ -2555,6 +2556,7 @@ static int alc269_parse_auto_config(stru
+ 	case ALC269_TYPE_ALC269VD:
+ 	case ALC269_TYPE_ALC282:
+ 	case ALC269_TYPE_ALC286:
++	case ALC269_TYPE_ALC255:
+ 		ssids = alc269_ssids;
+ 		break;
+ 	default:
+@@ -3765,6 +3767,9 @@ static int patch_alc269(struct hda_codec
+ 	case 0x10ec0286:
+ 		spec->codec_variant = ALC269_TYPE_ALC286;
+ 		break;
++	case 0x10ec0255:
++		spec->codec_variant = ALC269_TYPE_ALC255;
++		break;
+ 	}
  
--#define DEV_NAME "msnd-pinnacle"
--
- static struct isa_driver snd_msnd_driver = {
- 	.match		= snd_msnd_isa_match,
- 	.probe		= snd_msnd_isa_probe,
+ 	/* automatic parse from the BIOS config */
+@@ -4472,6 +4477,7 @@ static int patch_alc680(struct hda_codec
+ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0233, .name = "ALC233", .patch = patch_alc269 },
++	{ .id = 0x10ec0255, .name = "ALC255", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
+ 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
+ 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
 
 
