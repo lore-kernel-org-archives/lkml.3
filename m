@@ -1,143 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab3K0CCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:02:10 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44009 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760732Ab3K0CAq (ORCPT
+	id S1758645Ab3K0CCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:02:07 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47270 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab3K0CB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:00:46 -0500
-Subject: [PATCH v7 0/3] x86, apic,
- kexec: Add disable_cpu_apic kernel parameter
-To: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Date: Wed, 27 Nov 2013 11:00:42 +0900
-Message-ID: <20131127020006.1493.86091.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 21:01:59 -0500
+Date: Wed, 27 Nov 2013 13:01:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20131127130144.8db67b95b9c1a0141ab58a4a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Nov_2013_13_01_44_+1100_IavDiY/BYPXejUdt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is to allow kdump 2nd kernel to wake up multiple CPUs,
-a continueing work from:
+--Signature=_Wed__27_Nov_2013_13_01_44_+1100_IavDiY/BYPXejUdt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
-  https://lkml.org/lkml/2013/10/16/300.
+Hi Greg,
 
-At v4, basic design has changed. Now users need to figure out initial
-APIC ID of BSP in the 1st kernel and configures kernel parameter for
-the 2nd kernel manually using disable_cpu_apicid kernel parameter,
-which is newly introduced by this patch set. This design is more
-flexible than the previous version in that we no longer have to rely
-on ACPI/MP table to get initial APIC ID of BSP.
+Today's linux-next merge of the staging tree got conflicts in
+drivers/staging/tidspbridge/pmgr/cmm.c,
+drivers/staging/tidspbridge/pmgr/dbll.c,
+drivers/staging/tidspbridge/pmgr/dev.c,
+drivers/staging/tidspbridge/pmgr/dmm.c and
+drivers/staging/tidspbridge/pmgr/dspapi.c between commit cb45065428b7
+("staging: delete tidspbridge driver") from the staging.current tree and
+various commits from the staging tree.
 
-Sorry, this patch set have not include in-source documentation
-requested by Borislav Petkov yet, but I'll post it later separately,
-which would be better to focus on documentation reviewing.
+I just removed the files and can carry the fix as necessary (no action
+is required).
 
-ChangeLog
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-v6 => v7)
+--Signature=_Wed__27_Nov_2013_13_01_44_+1100_IavDiY/BYPXejUdt
+Content-Type: application/pgp-signature
 
-- Rebased on top of v3.13-rc1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-- Remove a patch that cleans up the code around
-  x86_cpu_physical_apicid. Instead, use read_apic_id() directly in
-  generic_processor_info(). The clean up removed here will be done in
-  different patch set.
+iQIcBAEBCAAGBQJSlVKMAAoJEMDTa8Ir7ZwVyzgQAJR4dW3Dmk8snfDxNhJuD3f2
+HK5sq/nW67dg0LPqZzfduQ0A7A0hbCte4QHvkqmhklfzUXIFu/jCTbnYky32TWvI
+8TdhoaihbB5JAQpeW3UPixu9e2DsXybalSOpB/EsKvnwTA1hav/bLR9doQzQ2IlR
+Ct28w70P/D5b2hWWO0Xgz4bU13HOIDZEFAsYyuMIeIncVnnwOTofB6KhOmrPLUdY
+TWiL3NppzuqqfO7z1Z4trllJWn10LMLtsjJmusXJ5yk0v8Q0uxcWBre90vBQnBu4
+UdbcChIg9Wx0ytfPYMwYexyqAHNCwopPOxerbyrcEZ/2ZOmlLzmLM15gBcNBiH+l
+YsV6Pn1vtJpisI2wMQigMgw+arLLzekH2rkEZU6z5/15ZLjSHyouGAoj1Y9BC+SW
+CY/Wb1gjTnFowthv9mN4Iae/a02IDd2xnmRunwrK7pLkLGOKGOoHxN+uTOKa802H
+b76mmf8lLSbk/VUMnZvb1EHj5SrX48GF86la+N0WRkCtFhVvJFpA0tQTz4GlUS8u
+kTwY7upq/SfbMCAxj571ZEy82xinTrYJWTk+dRcAMYe2V+aZQeQ2QcCcIIJVOoY3
+BzvLbRbxGUZN2+Mw0k4MX2Nmui4MF/K5+0FJjMZjY16U3iZJggDlOzhwRL2kQplF
+5JbQLKtWScc2Q2MeDGoZ
+=A8Pm
+-----END PGP SIGNATURE-----
 
-v5 => v6)
-
-- Remove use of rdmsr(IA32_APIC_BASE) to initialize
-  bsp_physical_apicid since the MSR doesn't work well on some cluster
-  systems, suggested by HPA. Also, current users of the variable
-  expects the initial apicid reported through MP table only; removing
-  the use of the MSR is not problematic.
-
-- Rename bsp_physical_apicid as bios_bsp_physical_apicid to make it
-  clear that the apidid contained there is the one reported from some
-  BIOS table. Also, initialize it not only by MP table but also by
-  ACPI MADT.
-
-- Change message displayed when specified cpu is disabled from:
-
-  ACPI: Disable specified CPU. Processor 0/0x0 ignored.
-
-  to:
-
-  ACPI: Disabling requested cpu. Processor 0/0x0 ignored.
-
-v4 => v5)
-
-- Rebased on top of v3.12
-
-- Introduce bsp_physical_apicid that has the initial APIC ID for the
-  processor with BSP flag on IA32_APIC_BASE MSR. Without this,
-  boot_cpu_physical_apicid has temporarilly the value around MP table
-  related codes, although it's designed to have the initial APIC ID
-  for the processor that is doing the boot up. Use the
-  bsp_physical_apicid in MP table related codes; no impact on
-  semantics at runtime there.
-
-v3 => v4)
-
-- Rebased on top of v3.12-rc6
-
-- Basic design has been changed. Now users need to figure out initial
-  APIC ID of BSP in the 1st kernel and configures kernel parameter for
-  the 2nd kernel manually using disable_cpu_apic kernel parameter to
-  be newly introduced in this patch set. This design is more flexible
-  than the previous version in that we no longer have to rely on
-  ACPI/MP table to get initial APIC ID of BSP.
-
-v2 => v3)
-
-- Change default value of boot_cpu_is_bsp to true.
-
-- Before executing rdmsr(MSR_IA32_APICBASE), check if the number of
-  processor family is larger than or equal to 6 in order to avoid
-  invalid opcode exception on processors where MSR_IA32_APICBASE is
-  not supported.
-
-v1 => v2)
-
-- Rebased on top of v3.12-rc5.
-
-- Fix linking time error of boot_cpu_is_bsp_init() in case of
-  CONFIG_LOCAL_APIC disabled by adding empty static inline function
-  instead.
-
-- Fix missing feature check by means of cpu_has_apic macro in
-  boot_cpu_is_bsp_init() before calling rdmsr_safe(MSR_IA32_APICBASE).
-
-  NOTE: I've checked local apic-present case only; I don't have any
-  x86 processor without local apic.
-
-- Add __init annotation to boot_cpu_is_bsp_init().
-
-Test
-
-- built with and without CONFIG_LOCAL_APIC
-- tested x86_64 in case of acpi and MP table
-- tested disable_cpu_apicid=<n> to disable both AP and BSP
-
----
-
-HATAYAMA Daisuke (2):
-      x86, apic: Add disable_cpu_apicid kernel parameter
-      Documentation, x86, apic, kexec: Add disable_cpu_apicid kernel parameter
-
-
- Documentation/kernel-parameters.txt |    9 ++++++
- arch/x86/kernel/apic/apic.c         |   49 +++++++++++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+)
-
--- 
-
-Thanks.
-HATAYAMA, Daisuke
+--Signature=_Wed__27_Nov_2013_13_01_44_+1100_IavDiY/BYPXejUdt--
