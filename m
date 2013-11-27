@@ -1,141 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab3K0Arc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:47:32 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50594 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3K0AqS (ORCPT
+	id S1756195Ab3K0AsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:48:07 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:50244 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab3K0AsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:46:18 -0500
-From: Kent Overstreet <kmo@daterainc.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        NeilBrown <neilb@suse.de>, Alasdair Kergon <agk@redhat.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 23/25] block: Rename bio_split() -> bio_pair_split()
-Date: Tue, 26 Nov 2013 16:45:26 -0800
-Message-Id: <1385513128-5035-23-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
-References: <20131127004422.GB21305@kmo>
- <1385513128-5035-1-git-send-email-kmo@daterainc.com>
+	Tue, 26 Nov 2013 19:48:01 -0500
+Date: Tue, 26 Nov 2013 16:47:56 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom
+ killed
+In-Reply-To: <20131121164019.GK3556@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com> <20131113152412.GH707@cmpxchg.org> <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com> <20131114000043.GK707@cmpxchg.org> <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
+ <20131118164107.GC3556@cmpxchg.org> <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com> <20131120160712.GF3556@cmpxchg.org> <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com> <20131121164019.GK3556@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is prep work for introducing a more general bio_split().
+On Thu, 21 Nov 2013, Johannes Weiner wrote:
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: NeilBrown <neilb@suse.de>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>
-Cc: Peter Osterlund <petero2@telia.com>
-Cc: Sage Weil <sage@inktank.com>
----
- drivers/block/pktcdvd.c | 2 +-
- drivers/md/linear.c     | 2 +-
- drivers/md/raid0.c      | 6 +++---
- drivers/md/raid10.c     | 2 +-
- fs/bio.c                | 4 ++--
- include/linux/bio.h     | 2 +-
- 6 files changed, 9 insertions(+), 9 deletions(-)
+> All I'm trying to do is find the broader root cause for the problem
+> you are experiencing and find a solution that will leave us with
+> maintainable code.  It does not matter how few instructions your fix
+> adds, it changes the outcome of the algorithm and makes every
+> developer trying to grasp the complexity of page reclaim think about
+> yet another special condition.
+> 
+> The more specific the code is, the harder it will be to understand in
+> the future.  Yes, it's a one-liner, but we've had death by a thousand
+> cuts before, many times.  A few cycles ago, kswapd was blowing up left
+> and right simply because it was trying to meet too many specific
+> objectives from facilitating order-0 allocators, maintaining zone
+> health, enabling compaction for higher order allocation, writing back
+> dirty pages.  Ultimately, it just got stuck in endless loops because
+> of conflicting conditionals.  We've had similar problems in the scan
+> count calculation etc where all the checks and special cases left us
+> with code that was impossible to reason about.  There really is a
+> history of "low overhead one-liner fixes" eating us alive in the VM.
+> 
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ce986ba..28789b8 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -2399,7 +2399,7 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
- 		if (last_zone != zone) {
- 			BUG_ON(last_zone != zone + pd->settings.size);
- 			first_sectors = last_zone - bio->bi_iter.bi_sector;
--			bp = bio_split(bio, first_sectors);
-+			bp = bio_pair_split(bio, first_sectors);
- 			BUG_ON(!bp);
- 			pkt_make_request(q, &bp->bio1);
- 			pkt_make_request(q, &bp->bio2);
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index fb3b0d0..e9b53e9 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -326,7 +326,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
- 
- 		rcu_read_unlock();
- 
--		bp = bio_split(bio, end_sector - bio->bi_iter.bi_sector);
-+		bp = bio_pair_split(bio, end_sector - bio->bi_iter.bi_sector);
- 
- 		linear_make_request(mddev, &bp->bio1);
- 		linear_make_request(mddev, &bp->bio2);
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index 8ee1a6c..ea754dd 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -534,11 +534,11 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		 * refuse to split for us, so we need to split it.
- 		 */
- 		if (likely(is_power_of_2(chunk_sects)))
--			bp = bio_split(bio, chunk_sects - (sector &
-+			bp = bio_pair_split(bio, chunk_sects - (sector &
- 							   (chunk_sects-1)));
- 		else
--			bp = bio_split(bio, chunk_sects -
--				       sector_div(sector, chunk_sects));
-+			bp = bio_pair_split(bio, chunk_sects -
-+					    sector_div(sector, chunk_sects));
- 		raid0_make_request(mddev, &bp->bio1);
- 		raid0_make_request(mddev, &bp->bio2);
- 		bio_pair_release(bp);
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index ac4bfa438c..69c1bc8 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1193,7 +1193,7 @@ static void make_request(struct mddev *mddev, struct bio * bio)
- 		/* This is a one page bio that upper layers
- 		 * refuse to split for us, so we need to split it.
- 		 */
--		bp = bio_split(bio, chunk_sects -
-+		bp = bio_pair_split(bio, chunk_sects -
- 			       (bio->bi_iter.bi_sector & (chunk_sects - 1)));
- 
- 		/* Each of these 'make_request' calls will call 'wait_barrier'.
-diff --git a/fs/bio.c b/fs/bio.c
-index b0a16db..a3e753f 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1827,7 +1827,7 @@ static void bio_pair_end_2(struct bio *bi, int err)
- /*
-  * split a bio - only worry about a bio with a single page in its iovec
-  */
--struct bio_pair *bio_split(struct bio *bi, int first_sectors)
-+struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
- {
- 	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
- 
-@@ -1874,7 +1874,7 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 
- 	return bp;
- }
--EXPORT_SYMBOL(bio_split);
-+EXPORT_SYMBOL(bio_pair_split);
- 
- /**
-  * bio_trim - trim a bio
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 64f5169..aa67af0 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -317,7 +317,7 @@ struct bio_pair {
- 	atomic_t			cnt;
- 	int				error;
- };
--extern struct bio_pair *bio_split(struct bio *bi, int first_sectors);
-+extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
- extern void bio_pair_release(struct bio_pair *dbio);
- extern void bio_trim(struct bio *bio, int offset, int size);
- 
--- 
-1.8.4.4
+Your objection is that the added code is obscure and will require kernel 
+hackers to think about why it's there?  I could certainly add a comment:
 
+	/*
+	 * The oom killer only kills processes when reclaim has already
+	 * failed for its allocation context, continuously trying won't
+	 * help.
+	 */
+
+to the patch? 
+
+> The solution was always to take a step back and integrate all
+> requirements properly.  Not only did this fix the problems, the code
+> ended up being much more robust and easier to understand and modify as
+> well.
+> 
+> If shortening the direct reclaim cycle is an adequate solution to your
+> problem, it would be much preferable.  Because
+> 
+>   "checking at a reasonable interval if the work I'm doing is still
+>    necessary"
+> 
+> is a much more approachable, generic, and intuitive concept than
+> 
+>   "the OOM killer has gone off, direct reclaim is futile, I should
+>    exit quickly to release memory so that not more tasks get caught
+>    doing direct reclaim".
+> 
+> and the fix would benefit a much wider audience.
+> 
+
+I agree with your point that obscure random fixes does obfuscate the VM in 
+many different ways and I'd like to support you in anyway that I can to 
+make sure that my fix doesn't do that for anybody in the future, the 
+comment being added may be one way of doing that.
+
+I disagree with changing the "reasonable interval" to determine if reclaim 
+is still necessary because many parallel reclaimers will indicate a higher 
+demand for free memory and it prevents short-circuiting direct reclaim, 
+returning to the page allocator, and finding that the memory you've 
+reclaimed has been stolen by another allocator.
+
+That race to allocate the reclaimed memory will always exist if checking 
+zone watermarks from direct reclaim to determine whether we should 
+terminate or not as part of your suggested, the alternative would be to 
+actually do get_page_from_freelist() and actually allocate on every 
+iteration.  For the vast majority of reclaimers, I think this would 
+terminate prematurely when we haven't hit the SWAP_CLUSTER_MAX threshold 
+and since the removal of lumpy reclaim and the reliance on synchronous 
+memory compaction following one of these oom events to defragment memory, 
+I would be tenative to implement such a solution.
+
+> Lastly, as far as I know, you are the only reporter that noticed an
+> issue with this loooooong-standing behavior, and you don't even run
+> upstream kernels.  There really is no excuse to put up with a quick &
+> dirty fix.
+> 
+
+I certainly do run upstream kernels and I would agree that I may be one of 
+the only reporters of such an issue because Google probably hits more out 
+of memory conditions to enforce memory isolation than anybody else and 
+stalls like this are more noticible.
+
+I would certainly add the comment if you feel it's necessary, though, just 
+let me know.
