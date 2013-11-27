@@ -1,122 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab3K0BAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:00:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39653 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758850Ab3K0A7x (ORCPT
+	id S1758980Ab3K0BAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:00:50 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18744 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab3K0BAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:53 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 113/116] configfs: fix race between dentry put and lookup
-Date: Tue, 26 Nov 2013 16:58:06 -0800
-Message-Id: <20131127005744.754688213@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
-References: <20131127005736.915454872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 26 Nov 2013 20:00:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Nov 2013 16:54:26 -0800
+Date: Tue, 26 Nov 2013 17:00:42 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+X-X-Sender: pwalmsley@tamien
+To: Steven Miao <realmz6@gmail.com>, Bob Liu <lliubbo@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] blackfin: bf60x: clock: return 0 upon error from
+ clk_round_rate()
+Message-ID: <alpine.DEB.2.02.1311261659010.11450@tamien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+clk_round_rate() should return 0 upon an error, rather than returning
+a negative error code.  This is because clk_round_rate() is being
+changed to return an unsigned return type rather than a signed type,
+since some clock sources can generate rates higher than (2^31)-1 Hz.
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
-
-commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
-
-A race window in configfs, it starts from one dentry is UNHASHED and end
-before configfs_d_iput is called.  In this window, if a lookup happen,
-since the original dentry was UNHASHED, so a new dentry will be
-allocated, and then in configfs_attach_attr(), sd->s_dentry will be
-updated to the new dentry.  Then in configfs_d_iput(),
-BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
-
-sys_open:                     sys_close:
- ...                           fput
-                                dput
-                                 dentry_kill
-                                  __d_drop <--- dentry unhashed here,
-                                           but sd->dentry still point
-                                           to this dentry.
-
- lookup_real
-  configfs_lookup
-   configfs_attach_attr---> update sd->s_dentry
-                            to new allocated dentry here.
-
-                                   d_kill
-                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
-                                                     triggered here.
-
-To fix it, change configfs_d_iput to not update sd->s_dentry if
-sd->s_count > 2, that means there are another dentry is using the sd
-beside the one that is going to be put.  Use configfs_dirent_lock in
-configfs_attach_attr to sync with configfs_d_iput.
-
-With the following steps, you can reproduce the bug.
-
-1. enable ocfs2, this will mount configfs at /sys/kernel/config and
-   fill configure in it.
-
-2. run the following script.
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Steven Miao <realmz6@gmail.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
 ---
- fs/configfs/dir.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+Applies on v3.13-rc1.  See also:
 
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
- 	struct configfs_dirent *sd = dentry->d_fsdata;
- 
- 	if (sd) {
--		BUG_ON(sd->s_dentry != dentry);
- 		/* Coordinate with configfs_readdir */
- 		spin_lock(&configfs_dirent_lock);
--		sd->s_dentry = NULL;
-+		/* Coordinate with configfs_attach_attr where will increase
-+		 * sd->s_count and update sd->s_dentry to new allocated one.
-+		 * Only set sd->dentry to null when this dentry is the only
-+		 * sd owner.
-+		 * If not do so, configfs_d_iput may run just after
-+		 * configfs_attach_attr and set sd->s_dentry to null
-+		 * even it's still in use.
-+		 */
-+		if (atomic_read(&sd->s_count) <= 2)
-+			sd->s_dentry = NULL;
-+
- 		spin_unlock(&configfs_dirent_lock);
- 		configfs_put(sd);
- 	}
-@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
- 	struct configfs_attribute * attr = sd->s_element;
- 	int error;
- 
-+	spin_lock(&configfs_dirent_lock);
- 	dentry->d_fsdata = configfs_get(sd);
- 	sd->s_dentry = dentry;
-+	spin_unlock(&configfs_dirent_lock);
-+
- 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
- 				configfs_init_file);
- 	if (error) {
+http://marc.info/?l=linux-arm-kernel&m=138542591313620&w=2
 
+  arch/blackfin/mach-bf609/clock.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/blackfin/mach-bf609/clock.c b/arch/blackfin/mach-bf609/clock.c
+index dab8849af884..3f5323d3e116 100644
+--- a/arch/blackfin/mach-bf609/clock.c
++++ b/arch/blackfin/mach-bf609/clock.c
+@@ -131,7 +131,7 @@ EXPORT_SYMBOL(clk_get_rate);
+
+  long clk_round_rate(struct clk *clk, unsigned long rate)
+  {
+-	long ret = -EIO;
++	long ret = 0;
+  	if (clk->ops && clk->ops->round_rate)
+  		ret = clk->ops->round_rate(clk, rate);
+  	return ret;
