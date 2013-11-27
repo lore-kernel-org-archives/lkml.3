@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760061Ab3K0BjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:39:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39216 "EHLO
+	id S1758917Ab3K0Biy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:38:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3K0A6N (ORCPT
+	with ESMTP id S1757206Ab3K0A6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:13 -0500
+	Tue, 26 Nov 2013 19:58:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.10 72/80] mei: nfc: fix memory leak in error path
-Date: Tue, 26 Nov 2013 16:57:41 -0800
-Message-Id: <20131127005645.918777112@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 74/80] rt2800usb: slow down TX status polling
+Date: Tue, 26 Nov 2013 16:57:43 -0800
+Message-Id: <20131127005646.054199486@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,50 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4bff7208f332b2b1d7cf1338e50527441283a198 upstream.
+commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
 
-The flow may reach the err label without freeing cl and cl_info
+Polling TX statuses too frequently has two negative effects. First is
+randomly peek CPU usage, causing overall system functioning delays.
+Second bad effect is that device is not able to fill TX statuses in
+H/W register on some workloads and we get lot of timeouts like below:
 
-cl and cl_info weren't assigned to ndev->cl and cl_info
-so they weren't freed in mei_nfc_free called on error path
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+This not only cause flood of messages in dmesg, but also bad throughput,
+since rate scaling algorithm can not work optimally.
+
+In the future, we should probably make polling interval be adjusted
+automatically, but for now just increase values, this make mentioned
+problems gone.
+
+Resolve:
+https://bugzilla.kernel.org/show_bug.cgi?id=62781
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/nfc.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -485,8 +485,11 @@ int mei_nfc_host_init(struct mei_device
- 	if (ndev->cl_info)
- 		return 0;
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -148,6 +148,8 @@ static bool rt2800usb_txstatus_timeout(s
+ 	return false;
+ }
  
--	cl_info = mei_cl_allocate(dev);
--	cl = mei_cl_allocate(dev);
-+	ndev->cl_info = mei_cl_allocate(dev);
-+	ndev->cl = mei_cl_allocate(dev);
++#define TXSTATUS_READ_INTERVAL 1000000
 +
-+	cl = ndev->cl;
-+	cl_info = ndev->cl_info;
+ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 						 int urb_status, u32 tx_status)
+ {
+@@ -176,8 +178,9 @@ static bool rt2800usb_tx_sta_fifo_read_c
+ 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
  
- 	if (!cl || !cl_info) {
- 		ret = -ENOMEM;
-@@ -527,10 +530,9 @@ int mei_nfc_host_init(struct mei_device
+ 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
+-		/* Read register after 250 us */
+-		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
++		/* Read register after 1 ms */
++		hrtimer_start(&rt2x00dev->txstatus_timer,
++			      ktime_set(0, TXSTATUS_READ_INTERVAL),
+ 			      HRTIMER_MODE_REL);
+ 		return false;
+ 	}
+@@ -202,8 +205,9 @@ static void rt2800usb_async_read_tx_stat
+ 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
+ 		return;
  
- 	cl->device_uuid = mei_nfc_guid;
+-	/* Read TX_STA_FIFO register after 500 us */
+-	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
++	/* Read TX_STA_FIFO register after 2 ms */
++	hrtimer_start(&rt2x00dev->txstatus_timer,
++		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
+ 		      HRTIMER_MODE_REL);
+ }
  
-+
- 	list_add_tail(&cl->device_link, &dev->device_list);
- 
--	ndev->cl_info = cl_info;
--	ndev->cl = cl;
- 	ndev->req_id = 1;
- 
- 	INIT_WORK(&ndev->init_work, mei_nfc_init);
 
 
