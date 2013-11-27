@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759903Ab3K0Bdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:33:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39299 "EHLO
+	id S1759303Ab3K0BeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:34:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407Ab3K0A6a (ORCPT
+	with ESMTP id S1752705Ab3K0A60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:30 -0500
+	Tue, 26 Nov 2013 19:58:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>
-Subject: [PATCH 3.12 004/116] xfs: be more forgiving of a v4 secondary sb w/ junk in v5 fields
-Date: Tue, 26 Nov 2013 16:56:17 -0800
-Message-Id: <20131127005737.224729044@linuxfoundation.org>
+        Mike Galbraith <bitbucket@online.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        lenb@kernel.org, tglx@linutronix.de
+Subject: [PATCH 3.12 019/116] sched, idle: Fix the idle polling state logic
+Date: Tue, 26 Nov 2013 16:56:32 -0800
+Message-Id: <20131127005738.277039659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,69 +28,321 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@sandeen.net>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 10e6e65dfcedff63275c3d649d329c044caa8e26 upstream.
+commit ea8117478918a4734586d35ff530721b682425be upstream.
 
-Today, if xfs_sb_read_verify encounters a v4 superblock
-with junk past v4 fields which includes data in sb_crc,
-it will be treated as a failing checksum and a significant
-corruption.
+Mike reported that commit 7d1a9417 ("x86: Use generic idle loop")
+regressed several workloads and caused excessive reschedule
+interrupts.
 
-There are known prior bugs which leave junk at the end
-of the V4 superblock; we don't need to actually fail the
-verification in this case if other checks pan out ok.
+The patch in question failed to notice that the x86 code had an
+inverted sense of the polling state versus the new generic code (x86:
+default polling, generic: default !polling).
 
-So if this is a secondary superblock, and the primary
-superblock doesn't indicate that this is a V5 filesystem,
-don't treat this as an actual checksum failure.
+Fix the two prominent x86 mwait based idle drivers and introduce a few
+new generic polling helpers (fixing the wrong smp_mb__after_clear_bit
+usage).
 
-We should probably check the garbage condition as
-we do in xfs_repair, and possibly warn about it
-or self-heal, but that's a different scope of work.
+Also switch the idle routines to using tif_need_resched() which is an
+immediate TIF_NEED_RESCHED test as opposed to need_resched which will
+end up being slightly different.
 
-Stable folks: This can go back to v3.10, which is what
-introduced the sb CRC checking that is tripped up by old,
-stale, incorrect V4 superblocks w/ unzeroed bits.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Acked-by: Dave Chinner <david@fromorbit.com>
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: lenb@kernel.org
+Cc: tglx@linutronix.de
+Link: http://lkml.kernel.org/n/tip-nc03imb0etuefmzybzj7sprf@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_sb.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/kernel/process.c     |    6 +--
+ drivers/acpi/processor_idle.c |   46 +++++-------------------
+ drivers/idle/intel_idle.c     |    2 -
+ include/linux/sched.h         |   78 ++++++++++++++++++++++++++++++++++++++----
+ include/linux/thread_info.h   |    2 +
+ kernel/cpu/idle.c             |    9 ++--
+ 6 files changed, 91 insertions(+), 52 deletions(-)
 
---- a/fs/xfs/xfs_sb.c
-+++ b/fs/xfs/xfs_sb.c
-@@ -596,6 +596,11 @@ xfs_sb_verify(
-  * single bit error could clear the feature bit and unused parts of the
-  * superblock are supposed to be zero. Hence a non-null crc field indicates that
-  * we've potentially lost a feature bit and we should check it anyway.
-+ *
-+ * However, past bugs (i.e. in growfs) left non-zeroed regions beyond the
-+ * last field in V4 secondary superblocks.  So for secondary superblocks,
-+ * we are more forgiving, and ignore CRC failures if the primary doesn't
-+ * indicate that the fs version is V5.
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -391,9 +391,9 @@ static void amd_e400_idle(void)
+ 		 * The switch back from broadcast mode needs to be
+ 		 * called with interrupts disabled.
+ 		 */
+-		 local_irq_disable();
+-		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+-		 local_irq_enable();
++		local_irq_disable();
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
++		local_irq_enable();
+ 	} else
+ 		default_idle();
+ }
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -119,17 +119,10 @@ static struct dmi_system_id processor_po
   */
- static void
- xfs_sb_read_verify(
-@@ -616,8 +621,12 @@ xfs_sb_read_verify(
+ static void acpi_safe_halt(void)
+ {
+-	current_thread_info()->status &= ~TS_POLLING;
+-	/*
+-	 * TS_POLLING-cleared state must be visible before we
+-	 * test NEED_RESCHED:
+-	 */
+-	smp_mb();
+-	if (!need_resched()) {
++	if (!tif_need_resched()) {
+ 		safe_halt();
+ 		local_irq_disable();
+ 	}
+-	current_thread_info()->status |= TS_POLLING;
+ }
  
- 		if (!xfs_verify_cksum(bp->b_addr, be16_to_cpu(dsb->sb_sectsize),
- 				      offsetof(struct xfs_sb, sb_crc))) {
--			error = EFSCORRUPTED;
--			goto out_error;
-+			/* Only fail bad secondaries on a known V5 filesystem */
-+			if (bp->b_bn != XFS_SB_DADDR &&
-+			    xfs_sb_version_hascrc(&mp->m_sb)) {
-+				error = EFSCORRUPTED;
-+				goto out_error;
-+			}
+ #ifdef ARCH_APICTIMER_STOPS_ON_C3
+@@ -737,6 +730,11 @@ static int acpi_idle_enter_c1(struct cpu
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
++	if (cx->entry_method == ACPI_CSTATE_FFH) {
++		if (current_set_polling_and_test())
++			return -EINVAL;
++	}
++
+ 	lapic_timer_state_broadcast(pr, cx, 1);
+ 	acpi_idle_do_entry(cx);
+ 
+@@ -790,18 +788,9 @@ static int acpi_idle_enter_simple(struct
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method != ACPI_CSTATE_FFH) {
+-		current_thread_info()->status &= ~TS_POLLING;
+-		/*
+-		 * TS_POLLING-cleared state must be visible before we test
+-		 * NEED_RESCHED:
+-		 */
+-		smp_mb();
+-
+-		if (unlikely(need_resched())) {
+-			current_thread_info()->status |= TS_POLLING;
++	if (cx->entry_method == ACPI_CSTATE_FFH) {
++		if (current_set_polling_and_test())
+ 			return -EINVAL;
+-		}
+ 	}
+ 
+ 	/*
+@@ -819,9 +808,6 @@ static int acpi_idle_enter_simple(struct
+ 
+ 	sched_clock_idle_wakeup_event(0);
+ 
+-	if (cx->entry_method != ACPI_CSTATE_FFH)
+-		current_thread_info()->status |= TS_POLLING;
+-
+ 	lapic_timer_state_broadcast(pr, cx, 0);
+ 	return index;
+ }
+@@ -858,18 +844,9 @@ static int acpi_idle_enter_bm(struct cpu
  		}
  	}
- 	error = xfs_sb_verify(bp, true);
+ 
+-	if (cx->entry_method != ACPI_CSTATE_FFH) {
+-		current_thread_info()->status &= ~TS_POLLING;
+-		/*
+-		 * TS_POLLING-cleared state must be visible before we test
+-		 * NEED_RESCHED:
+-		 */
+-		smp_mb();
+-
+-		if (unlikely(need_resched())) {
+-			current_thread_info()->status |= TS_POLLING;
++	if (cx->entry_method == ACPI_CSTATE_FFH) {
++		if (current_set_polling_and_test())
+ 			return -EINVAL;
+-		}
+ 	}
+ 
+ 	acpi_unlazy_tlb(smp_processor_id());
+@@ -915,9 +892,6 @@ static int acpi_idle_enter_bm(struct cpu
+ 
+ 	sched_clock_idle_wakeup_event(0);
+ 
+-	if (cx->entry_method != ACPI_CSTATE_FFH)
+-		current_thread_info()->status |= TS_POLLING;
+-
+ 	lapic_timer_state_broadcast(pr, cx, 0);
+ 	return index;
+ }
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -359,7 +359,7 @@ static int intel_idle(struct cpuidle_dev
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 
+-	if (!need_resched()) {
++	if (!current_set_polling_and_test()) {
+ 
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+ 		smp_mb();
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2474,34 +2474,98 @@ static inline int tsk_is_polling(struct
+ {
+ 	return task_thread_info(p)->status & TS_POLLING;
+ }
+-static inline void current_set_polling(void)
++static inline void __current_set_polling(void)
+ {
+ 	current_thread_info()->status |= TS_POLLING;
+ }
+ 
+-static inline void current_clr_polling(void)
++static inline bool __must_check current_set_polling_and_test(void)
++{
++	__current_set_polling();
++
++	/*
++	 * Polling state must be visible before we test NEED_RESCHED,
++	 * paired by resched_task()
++	 */
++	smp_mb();
++
++	return unlikely(tif_need_resched());
++}
++
++static inline void __current_clr_polling(void)
+ {
+ 	current_thread_info()->status &= ~TS_POLLING;
+-	smp_mb__after_clear_bit();
++}
++
++static inline bool __must_check current_clr_polling_and_test(void)
++{
++	__current_clr_polling();
++
++	/*
++	 * Polling state must be visible before we test NEED_RESCHED,
++	 * paired by resched_task()
++	 */
++	smp_mb();
++
++	return unlikely(tif_need_resched());
+ }
+ #elif defined(TIF_POLLING_NRFLAG)
+ static inline int tsk_is_polling(struct task_struct *p)
+ {
+ 	return test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
+ }
+-static inline void current_set_polling(void)
++
++static inline void __current_set_polling(void)
+ {
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ }
+ 
+-static inline void current_clr_polling(void)
++static inline bool __must_check current_set_polling_and_test(void)
++{
++	__current_set_polling();
++
++	/*
++	 * Polling state must be visible before we test NEED_RESCHED,
++	 * paired by resched_task()
++	 *
++	 * XXX: assumes set/clear bit are identical barrier wise.
++	 */
++	smp_mb__after_clear_bit();
++
++	return unlikely(tif_need_resched());
++}
++
++static inline void __current_clr_polling(void)
+ {
+ 	clear_thread_flag(TIF_POLLING_NRFLAG);
+ }
++
++static inline bool __must_check current_clr_polling_and_test(void)
++{
++	__current_clr_polling();
++
++	/*
++	 * Polling state must be visible before we test NEED_RESCHED,
++	 * paired by resched_task()
++	 */
++	smp_mb__after_clear_bit();
++
++	return unlikely(tif_need_resched());
++}
++
+ #else
+ static inline int tsk_is_polling(struct task_struct *p) { return 0; }
+-static inline void current_set_polling(void) { }
+-static inline void current_clr_polling(void) { }
++static inline void __current_set_polling(void) { }
++static inline void __current_clr_polling(void) { }
++
++static inline bool __must_check current_set_polling_and_test(void)
++{
++	return unlikely(tif_need_resched());
++}
++static inline bool __must_check current_clr_polling_and_test(void)
++{
++	return unlikely(tif_need_resched());
++}
+ #endif
+ 
+ /*
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -107,6 +107,8 @@ static inline int test_ti_thread_flag(st
+ #define set_need_resched()	set_thread_flag(TIF_NEED_RESCHED)
+ #define clear_need_resched()	clear_thread_flag(TIF_NEED_RESCHED)
+ 
++#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
++
+ #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
+ /*
+  * An arch can define its own version of set_restore_sigmask() to get the
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -44,7 +44,7 @@ static inline int cpu_idle_poll(void)
+ 	rcu_idle_enter();
+ 	trace_cpu_idle_rcuidle(0, smp_processor_id());
+ 	local_irq_enable();
+-	while (!need_resched())
++	while (!tif_need_resched())
+ 		cpu_relax();
+ 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ 	rcu_idle_exit();
+@@ -92,8 +92,7 @@ static void cpu_idle_loop(void)
+ 			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
+ 				cpu_idle_poll();
+ 			} else {
+-				current_clr_polling();
+-				if (!need_resched()) {
++				if (!current_clr_polling_and_test()) {
+ 					stop_critical_timings();
+ 					rcu_idle_enter();
+ 					arch_cpu_idle();
+@@ -103,7 +102,7 @@ static void cpu_idle_loop(void)
+ 				} else {
+ 					local_irq_enable();
+ 				}
+-				current_set_polling();
++				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
+ 		}
+@@ -129,7 +128,7 @@ void cpu_startup_entry(enum cpuhp_state
+ 	 */
+ 	boot_init_stack_canary();
+ #endif
+-	current_set_polling();
++	__current_set_polling();
+ 	arch_cpu_idle_prepare();
+ 	cpu_idle_loop();
+ }
 
 
