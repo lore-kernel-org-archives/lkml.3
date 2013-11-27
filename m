@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3K0AK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:10:29 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:56048 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab3K0AK0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:10:26 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52953870.5050906@roeck-us.net>
-Date: Tue, 26 Nov 2013 16:10:24 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Wim Van Sebroeck <wim@iguana.be>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
+	id S1752300Ab3K0AMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:12:48 -0500
+Received: from ring0.de ([91.143.88.219]:45588 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab3K0AMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 19:12:46 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Wed, 27 Nov 2013 01:12:42 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] watchdog: s3c2410_wdt: Handle rounding a little better
- for timeout
-References: <1385490637-10306-1-git-send-email-dianders@chromium.org>	<5294ED12.9080700@roeck-us.net> <CAD=FV=UX5gm3Ju8sCd3DSgyo97P6imN_Ay1zvc8yX=qTJ_mbrw@mail.gmail.com>
-In-Reply-To: <CAD=FV=UX5gm3Ju8sCd3DSgyo97P6imN_Ay1zvc8yX=qTJ_mbrw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] MAINTAINERS: add HSI subsystem
+Message-ID: <20131127001241.GA20111@earth.universe>
+Mail-Followup-To: Linus Walleij <linus.walleij@linaro.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+	Carlos Chinea <cch.devel@gmail.com>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>,
+	Tony Lindgren <tony@atomide.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1385403450-18018-1-git-send-email-sre@debian.org>
+ <CACRpkdYSXDAwS1mxLtUL7qpHkfD1efo1QF0OMKS-YHKM-689Kw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYSXDAwS1mxLtUL7qpHkfD1efo1QF0OMKS-YHKM-689Kw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 01:34 PM, Doug Anderson wrote:
-> Guenter,
->
-> On Tue, Nov 26, 2013 at 10:48 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 11/26/2013 10:30 AM, Doug Anderson wrote:
->>>
->>> The existing watchdog timeout worked OK but didn't deal with
->>> rounding in an ideal way when dividing out all of its clocks.
->>>
->>> Specifically if you had a timeout of 32 seconds and an input clock of
->>> 66666666, you'd end up setting a timeout of 31.9998 seconds and
->>> reporting a timeout of 31 seconds.
->>>
->>> Specifically DBG printouts showed:
->>>     s3c2410wdt_set_heartbeat: count=16666656, timeout=32, freq=520833
->>>     s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666656
->>> (0000ff4f)
->>> and the final timeout reported to the user was:
->>>     ((count / divisor) * divisor) / freq
->>>     (0xff4f * 255) / 520833 = 31 (truncated from 31.9998)
->>> the technically "correct" value is:
->>>     (0xff4f * 255) / (66666666.0 / 128) = 31.9998
->>>
->>> By using "DIV_ROUND_UP" we can be a little more correct.
->>>     s3c2410wdt_set_heartbeat: count=16666688, timeout=32, freq=520834
->>>     s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666688
->>> (0000ff50)
->>> and the final timeout reported to the user:
->>>     (0xff50 * 255) / 520834 = 32
->>> the technically "correct" value is:
->>>     (0xff50 * 255) / (66666666.0 / 128) = 32.0003
->>>
->>> We'll use a DIV_ROUND_UP to solve this, generally erroring on the side
->>> of reporting shorter values to the user and setting the watchdog to
->>> slightly longer than requested:
->>> * Round input frequency up to assume watchdog is counting faster.
->>> * Round divisions by divisor up to give us extra time.
->>>
->>> Signed-off-by: Doug Anderson <dianders@chromium.org>
->>> ---
->>>    drivers/watchdog/s3c2410_wdt.c | 10 +++++-----
->>>    1 file changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/watchdog/s3c2410_wdt.c
->>> b/drivers/watchdog/s3c2410_wdt.c
->>> index 7d8fd04..fe2322b 100644
->>> --- a/drivers/watchdog/s3c2410_wdt.c
->>> +++ b/drivers/watchdog/s3c2410_wdt.c
->>> @@ -188,7 +188,7 @@ static int s3c2410wdt_set_heartbeat(struct
->>> watchdog_device *wdd, unsigned timeou
->>>          if (timeout < 1)
->>>                  return -EINVAL;
->>>
->>> -       freq /= 128;
->>> +       freq = DIV_ROUND_UP(freq, 128);
->>>          count = timeout * freq;
->>>
->>>          DBG("%s: count=%d, timeout=%d, freq=%lu\n",
->>> @@ -201,20 +201,20 @@ static int s3c2410wdt_set_heartbeat(struct
->>> watchdog_device *wdd, unsigned timeou
->>>
->>>          if (count >= 0x10000) {
->>>                  for (divisor = 1; divisor <= 0x100; divisor++) {
->>> -                       if ((count / divisor) < 0x10000)
->>> +                       if (DIV_ROUND_UP(count, divisor) < 0x10000)
->>>                                  break;
->>>                  }
->>>
->> Since you are at it,
->>          divisor = DIV_ROUND_UP(count + 1, 0x10000);
->> might be faster, simpler, and easier to understand than the loop.
->
-> Way to see the forest for the trees!
->
-> Your math ends up with a slightly different result than the old code,
-> though.  One example is when the count is 0x1ffff.  You'll end up with
-> a divider of 2 and I'll end up with a divider of 3.
->
-> I think we just want:
->
-> divisor = DIV_ROUND_UP(count, 0xffff);
->
-> ...that produces the same result as the old loop, but am curious to
-> know why you chose the "count + 1" and "0x10000".
->
 
-Hi Doug,
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I thought the idea was to keep (count / div) less than 0x10000, which you get
-by dividing through 0x10000. 0x10000 / 0x10000 = 1, though, so I added 1
-to the counter. But maybe I was thinking too much ;-).
+On Wed, Nov 27, 2013 at 12:30:48AM +0100, Linus Walleij wrote:
+> > +M:     Sebastian Reichel <sre@debian.org>
+> > +S:     Maintained
+> > +F:     Documentation/hsi/
+> > +F:     drivers/hsi/
+> > +F:     include/linux/hsi/
+> > +F:     include/uapi/linux/hsi/
+>=20
+> Don't add directories that do not exist (yet).
 
-Now, 0x1ffff / 2 = 0xffff is still lower than 0x10000, which is what
-I thought is the requirement. Ultimately the error is small either way,
-so DIV_ROUND_UP(count, 0xffff) is just as good to me to avoid the loop.
+Sorry, that was not my intention. The documentation path was
+supposed to be "Documentation/ABI/testing/sysfs-bus-hsi". The
+other directories should exist. I will send an updated patch.
 
-Thanks,
-Guenter
+Am I right, that this should go through Greg?
 
+-- Sebastian
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSlTj5AAoJENju1/PIO/qauVoP/2CXScA6Sa3/kQG1uXrW3xuk
+03CWxx+HfPg5p/4IWcQu1OWEPI519mqyoq04DpgNaU9quWZsO8QVHfzLjQzndiz4
+WWaaP1W1j8HaHK5bkRbbv14XqByWfGQ/1HF/hIp16F8gqKLtylwh2Zqy1kkrZj0l
+6KdFPE4Y4KscXTXHmUIDaf1+LwtcY6Foycxi8rNgX94/W96PoiUNv+eeFAb2ybeN
+s0FMh0bso2O4KcBlOX2+7E/V+XTI2XPGSCnJuDUeRIWD5j2bqZd3a4WOCf04DlpK
+Wle+v9SvQdxpJPXK9cF8T/4vndoyuC4r/7xyhU8aJgDwC1KFA24yZ0ZGY2ZBp6lV
+rmjqAOBFTryXWBm0+u9vNk8QaT3AT/KnpCZomhzyp6ZYbD2nROuXIJXlYbB6d2RY
+T6L+zolhbc9K2pc9hpOtHHORVw04tMModFRbXIwIGbH8JO2CrDraNk1j/RKIegAp
++4HdjWl8f0WowLUc2QSi7Pc9vvvYmkqw984ltV9bwfbvNhLdKKcnTlzlhme3CaII
+fs+PEQI+KXL5GAN10Cvvl67TYIWqo/hpcoVekSUdGnx9eybdaoxe6TgLENuZt4cG
+1lx1CJnDGOTT5PBzGXa3B/zcm11h9QbqRs7aWo+mOZ8cNmSooiJYS8CyvHNt8j20
+baKRsaX/g6kQY++n8Eva
+=HYh+
+-----END PGP SIGNATURE-----
+
+--6c2NcOVqGQ03X4Wi--
