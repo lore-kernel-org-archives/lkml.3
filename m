@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917Ab3K0Bd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:33:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39286 "EHLO
+	id S1759889Ab3K0Bdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:33:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39302 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab3K0A61 (ORCPT
+	with ESMTP id S932410Ab3K0A6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:27 -0500
+	Tue, 26 Nov 2013 19:58:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.12 020/116] perf/ftrace: Fix paranoid level for enabling function tracer
-Date: Tue, 26 Nov 2013 16:56:33 -0800
-Message-Id: <20131127005738.344545701@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH 3.12 023/116] ACPI / hotplug: Fix handle_root_bridge_removal()
+Date: Tue, 26 Nov 2013 16:56:36 -0800
+Message-Id: <20131127005738.548845490@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -29,46 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 12ae030d54ef250706da5642fc7697cc60ad0df7 upstream.
+commit 2441191a19039002b2c454a261fb45986df15184 upstream.
 
-The current default perf paranoid level is "1" which has
-"perf_paranoid_kernel()" return false, and giving any operations that
-use it, access to normal users. Unfortunately, this includes function
-tracing and normal users should not be allowed to enable function
-tracing by default.
+It is required to do get_device() on the struct acpi_device in
+question before passing it to acpi_bus_hot_remove_device() through
+acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
+calls acpi_scan_hot_remove() that does put_device() on that
+object.
 
-The proper level is defined at "-1" (full perf access), which
-"perf_paranoid_tracepoint_raw()" will only give access to. Use that
-check instead for enabling function tracing.
+The ACPI PCI root removal routine, handle_root_bridge_removal(),
+doesn't do that, which may lead to premature freeing of the
+device object or to executing put_device() on an object that
+has been freed already.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-CVE: CVE-2013-2930
-Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fix this problem by making handle_root_bridge_removal() use
+get_device() as appropriate.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_event_perf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/pci_root.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -608,9 +608,12 @@ static void handle_root_bridge_removal(s
+ 	ej_event->device = device;
+ 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
  
- 	/* No tracing, just counting, so no obvious leak */
++	get_device(&device->dev);
+ 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+-	if (ACPI_FAILURE(status))
++	if (ACPI_FAILURE(status)) {
++		put_device(&device->dev);
+ 		kfree(ej_event);
++	}
+ }
+ 
+ static void _handle_hotplug_event_root(struct work_struct *work)
 
 
