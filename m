@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab3K0IGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 03:06:19 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:35440 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab3K0IFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 03:05:47 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: wsa@the-dreams.de, linus.walleij@linaro.org, linux-sh@vger.kernel.org,
-        horms@verge.net.au, laurent.pinchart@ideasonboard.com,
-        Magnus Damm <magnus.damm@gmail.com>
-Date: Wed, 27 Nov 2013 17:06:30 +0900
-Message-Id: <20131127080630.18384.55139.sendpatchset@w520>
-In-Reply-To: <20131127080606.18384.45103.sendpatchset@w520>
-References: <20131127080606.18384.45103.sendpatchset@w520>
-Subject: [PATCH 02/03] pinctrl: sh-pfc: r7s72100 SCIF2 macro conversion
+	id S1754988Ab3K0IKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 03:10:54 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12948 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab3K0IKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 03:10:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,780,1378882800"; 
+   d="scan'208";a="442888873"
+Message-ID: <5295AACE.2080606@intel.com>
+Date: Wed, 27 Nov 2013 10:18:22 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf tools: Fix not finding kcore in buildid cache
+References: <1385471964-4037-1-git-send-email-adrian.hunter@intel.com> <20131126161553.GB7775@gmail.com>
+In-Reply-To: <20131126161553.GB7775@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On 26/11/13 18:15, Ingo Molnar wrote:
+> 
+> * Adrian Hunter <adrian.hunter@intel.com> wrote:
+> 
+>> The logic was not looking in the buildid cache for kcore
+>> if the host kernel buildid did not match the recorded
+>> kernel buildid.
+> 
+> It would be nice to also include the specific failure mode in the 
+> changelog: exactly how can users run into this. That will be more 
+> useful to most people reading these changelogs than a more abstract 
+> bug description.
 
-Convert from rather verbose description of single pin groups
-to making use of macros to describe one pin per line. The
-actual bulk of the SCIF2 description is kept in the SCIF2 macro.
+The preconditions for the problem are that kcore is in the buildid
+cache and that the running kernel has a different buildid e.g.
 
-Compresses the description of each pin from 9 to 1 line.
+$ perf buildid-list | grep kernel.kallsyms
+b18fbe769dea12513028a4287dae02efc1582c29 [kernel.kallsyms]
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+$ perf record -o /tmp/junk true >/dev/null 2>&1 ; perf buildid-list -i /tmp/junk | grep kernel.kallsyms
+504f9fd9328c40714995ce76fe1354c6e90136ce [kernel.kallsyms]
 
- drivers/pinctrl/sh-pfc/pfc-r7s72100.c |   64 ++++++++++++++-------------------
- 1 file changed, 28 insertions(+), 36 deletions(-)
 
---- 0007/drivers/pinctrl/sh-pfc/pfc-r7s72100.c
-+++ work/drivers/pinctrl/sh-pfc/pfc-r7s72100.c	2013-11-27 14:19:24.000000000 +0900
-@@ -103,48 +103,40 @@ static struct sh_pfc_pin pinmux_pins[] =
- 	_P_ALL(_P_GPIO),
- };
- 
--/* - SCIF2 ------------------------------------------------------------------ */
--static const unsigned int scif2_txd_p3_0_pins[] = {
--	/* TX */
--	RZ_PORT_PIN(3, 0),
--};
--static const unsigned int scif2_txd_p3_0_mux[] = {
--	P_3_0_MARK_FN6,
--};
--static const unsigned int scif2_txd_p3_1_pins[] = {
--	/* TX */
--	RZ_PORT_PIN(3, 1),
--};
--static const unsigned int scif2_txd_p3_1_mux[] = {
--	P_3_1_MARK_FN4,
--};
--static const unsigned int scif2_rxd_p3_2_pins[] = {
--	/* RX */
--	RZ_PORT_PIN(3, 2),
--};
--static const unsigned int scif2_rxd_p3_2_mux[] = {
--	P_3_2_MARK_FN4,
--};
--static const unsigned int scif2_clk_p3_0_pins[] = {
--	/* SCK */
--	RZ_PORT_PIN(3, 0),
--};
--static const unsigned int scif2_clk_p3_0_mux[] = {
--	P_3_0_MARK_FN4,
-+#define __RZ_STR(pfx, hw, bank, pin, sfx)		\
-+	pfx##_##hw##_p##bank##_##pin####sfx
-+
-+#define RZ_PIN_AND_MUX(pfx, hw, bank, pin, fn)				\
-+static const unsigned int __RZ_STR(pfx, hw, bank, pin, _pins)[] = {	\
-+	RZ_PORT_PIN(bank, pin),						\
-+};									\
-+static const unsigned int __RZ_STR(pfx, hw, bank, pin, _mux)[] = {	\
-+	P_##bank##_##pin##_MARK_FN##fn,					\
- };
- 
-+#define RZ_PMX_GRP(pfx, hw, bank, pin, fn) \
-+	SH_PFC_PIN_GROUP(pfx##_##hw##_p##bank##_##pin),
-+
-+#define __RZ_GPRS(x) #x
-+
-+#define RZ_GRPS(pfx, hw, bank, pin, fn) \
-+	__RZ_GPRS(pfx##_##hw##_p##bank##_##pin),
-+
-+
-+#define SCIF2(fn)			\
-+	fn(scif2, txd, 3, 0, 6)		\
-+	fn(scif2, txd, 3, 1, 4)		\
-+	fn(scif2, rxd, 3, 2, 4)		\
-+	fn(scif2, clk, 3, 0, 4)
-+
-+SCIF2(RZ_PIN_AND_MUX)
-+
- static const struct sh_pfc_pin_group pinmux_groups[] = {
--	SH_PFC_PIN_GROUP(scif2_txd_p3_0),
--	SH_PFC_PIN_GROUP(scif2_txd_p3_1),
--	SH_PFC_PIN_GROUP(scif2_rxd_p3_2),
--	SH_PFC_PIN_GROUP(scif2_clk_p3_0),
-+	SCIF2(RZ_PMX_GRP)
- };
- 
- static const char * const scif2_groups[] = {
--	"scif2_txd_p3_0",
--	"scif2_txd_p3_1",
--	"scif2_rxd_p3_2",
--	"scif2_clk_p3_0",
-+	SCIF2(RZ_GRPS)
- };
- static const struct sh_pfc_function pinmux_functions[] = {
- 	SH_PFC_FUNCTION(scif2),
+
+Before the patch:
+
+
+$ perf script -v >out.txt
+build id event received for [kernel.kallsyms]: b18fbe769dea12513028a4287dae02efc1582c29
+<SNIP>
+Using /home/ahunter/.debug/[kernel.kallsyms]/b18fbe769dea12513028a4287dae02efc1582c29 for symbols
+
+perf script stopped
+
+
+After the patch:
+
+
+$ perf script -v >out.txt
+build id event received for [kernel.kallsyms]: b18fbe769dea12513028a4287dae02efc1582c29
+<SNIP>
+Using /home/ahunter/.debug/[kernel.kcore]/b18fbe769dea12513028a4287dae02efc1582c29/2013112617084061/kcore for kernel object code
+Using /home/ahunter/.debug/[kernel.kcore]/b18fbe769dea12513028a4287dae02efc1582c29/2013112617084061/kallsyms for symbols
+
+perf script stopped
+
+
+
+
