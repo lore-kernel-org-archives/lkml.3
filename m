@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab3K0VvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 16:51:25 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:46226 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3K0VvX (ORCPT
+	id S1757949Ab3K0Vw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 16:52:29 -0500
+Received: from mail.kmu-office.ch ([178.209.48.102]:35274 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab3K0Vw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 16:51:23 -0500
-Date: Wed, 27 Nov 2013 13:51:20 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20131127163435.GA3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311271343250.9222@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311131416460.23211@chino.kir.corp.google.com> <20131113233419.GJ707@cmpxchg.org> <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com> <20131114032508.GL707@cmpxchg.org> <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com> <20131118154115.GA3556@cmpxchg.org> <20131118165110.GE32623@dhcp22.suse.cz> <20131122165100.GN3556@cmpxchg.org> <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
- <20131127163435.GA3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 27 Nov 2013 16:52:27 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Wed, 27 Nov 2013 22:56:10 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: thierry.reding@gmail.com, sameo@linux.intel.com, dev@lynxeye.de,
+        mark.rutland@arm.com, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] regulator: tps6586x: add voltage table for tps658643
+In-Reply-To: <5296273C.1000705@wwwdotorg.org>
+References: <cover.1385508112.git.stefan@agner.ch>
+ <8be2fe8560cc19f03d5be40ad3dc21d5979c8358.1385508112.git.stefan@agner.ch>
+ <5296273C.1000705@wwwdotorg.org>
+Message-ID: <93a0f4b1da2a54e58cee0756ab5f3e36@agner.ch>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Johannes Weiner wrote:
-
-> > > But more importantly, OOM handling is just inherently racy.  A task
-> > > might receive the kill signal a split second *after* userspace was
-> > > notified.  Or a task may exit voluntarily a split second after a
-> > > victim was chosen and killed.
-> > > 
-> > 
-> > That's not true even today without the userspace oom handling proposal 
-> > currently being discussed if you have a memcg oom handler attached to a 
-> > parent memcg with access to more memory than an oom child memcg.  The oom 
-> > handler can disable the child memcg's oom killer with memory.oom_control 
-> > and implement its own policy to deal with any notification of oom.
+Am 2013-11-27 18:09, schrieb Stephen Warren:
+> On 11/26/2013 04:45 PM, Stefan Agner wrote:
+>> Depending on version, the voltage table might be different. Add version
+>> compatibility to the regulator information in order to select correct
+>> voltage table.
 > 
-> I was never implying the kernel handler.  All the races exist with
-> userspace handling as well.
+>> diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
 > 
-
-A process may indeed exit immediately after a different process was oom 
-killed.  A process may also free memory immediately after a process was 
-oom killed.
-
-> > This patch is required to ensure that in such a scenario that the oom 
-> > handler sitting in the parent memcg only wakes up when it's required to 
-> > intervene.
+>> -static const unsigned int tps6586x_ldo4_voltages[] = {
+>> +static const unsigned int tps6586x_ldo4_sm2_voltages[] = {
 > 
-> A task could receive an unrelated kill between the OOM notification
-> and going to sleep to wait for userspace OOM handling.  Or another
-> task could exit voluntarily between the notification and waitqueue
-> entry, which would again be short-cut by the oom_recover of the exit
-> uncharges.
+>> +static const unsigned int tps658643_sm2_voltages[] = {
 > 
-> oom:                           other tasks:
-> check signal/exiting
->                                could exit or get killed here
-> mem_cgroup_oom_trylock()
->                                could exit or get killed here
-> mem_cgroup_oom_notify()
->                                could exit or get killed here
-> if (userspace_handler)
->   sleep()                      could exit or get killed here
-> else
->   oom_kill()
->                                could exit or get killed here
-> 
-> It does not matter where your signal/exiting check is, OOM
-> notification can never be race free because OOM is just an arbitrary
-> line we draw.  We have no idea what all the tasks are up to and how
-> close they are to releasing memory.  Even if we freeze the whole group
-> to handle tasks, it does not change the fact that the userspace OOM
-> handler might kill one task and after the unfreeze another task
-> immediately exits voluntarily or got a kill signal a split second
-> after it was frozen.
-> 
-> You can't fix this.  We just have to draw the line somewhere and
-> accept that in rare situations the OOM kill was unnecessary.  So
-> again, I don't see this patch is doing anything but blur the current
-> line and make notification less predictable.  And, as someone else in
-> this thread already said, it's a uservisible change in behavior and
-> would break known tuning usecases.
+> What's the logic behind the "ldo4_sm2" v.s. "sm2" naming? Does it match
+> the data sheet in some way? If not, it might be better to name this
+> something like "tps6586x_ldo4_voltages" and "tps65863_ldo4_voltages".
 > 
 
-The patch is drawing the line at "the kernel can no longer do anything to 
-free memory", and that's the line where userspace should be notified or a 
-process killed by the kernel.  Giving current access to memory reserves in 
-the oom killer is an optimization so that all reclaim is exhausted prior 
-to declaring that they are necessary, the kernel still has the ability to 
-allow that process to exit and free memory.  This is the same as the oom 
-notifiers within the kernel that free memory from s390 and powerpc archs: 
-the kernel still has the ability to free memory.  If you wish to be 
-notified that you've simply reached the memcg limit, for whatever reason, 
-you can monitor memory.failcnt or register a memory threshold.
+This table is used for the TPS6586X (e.g. TPS658621A/D, maybe others)
+variant for the LDO_4 regulator. The same table applies for TPS658623
+for the SM2 regulator as well, so this naming should reflect that fact.
+
+I could be some more verbose, e.g. tps6586x_ldo4_tps658623_sm2_voltages.
+The other solution would be to create two independent (but identically)
+voltage tables, but takes up more space...
+
+>> -#define TPS6586X_REGULATOR(_id, _pin_name, vdata, vreg, shift, nbits,	\
+>> -			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
+>> +#define TPS6586X_REG(_ver, _id, _pin_name, vdata, vreg, shift,	nbits,	\
+>> +		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
+> 
+> Why rename the macro?
+> 
+> There's an embedded TAB before "nbits".
+> 
+
+I must admit that the only reason doing the renaming was to allow the
+parameters on two lines while keeping the 80 character limit...
+
+>> +/* Add version specific entries before any */
+>>  static struct tps6586x_regulator tps6586x_regulator[] = {
+>>  	TPS6586X_SYS_REGULATOR(),
+>> -	TPS6586X_LDO(LDO_0, "vinldo01", ldo0, SUPPLYV1, 5, 3, ENC, 0, END, 0),
+> ...
+>> +	TPS6586X_LDO(TPS6586X_ANY, LDO_0, "vinldo01", tps6586x_ldo0, SUPPLYV1,
+>> +			5, 3, ENC, 0, END, 0),
+> 
+> Rather than changing all the macros and table entries, wouldn't it be
+> much simpler to:
+> 
+> 1) Make tps6586x_regulator[] only contain all the common regulator
+> definitions.
+> 
+> 2) Add new version-specific tables for each version of regulator, so
+> tps6586x_other_regulator[] and tps65863_regulator[].
+> 
+> 3) Have probe() walk multiple tables of regulators, selecting which
+> tables to walk based on version.
+> 
+> That would result in a much smaller and less invasive diff.
+
+Hm, sounds easier yes. Would also remove the need for correct ordering,
+which is a bit ugly. I will try that, lets see how this works out.
+
