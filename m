@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab3K0QX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:23:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab3K0QX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:23:57 -0500
-Date: Wed, 27 Nov 2013 17:24:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de,
-        mingo@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
-Message-ID: <20131127162405.GB24773@redhat.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com> <1383831828-15501-9-git-send-email-juri.lelli@gmail.com> <20131120163318.10253e43@gandalf.local.home> <5295F711.5010708@gmail.com> <20131127091647.4e16ce53@gandalf.local.home> <20131127142649.GC13532@twins.programming.kicks-ass.net> <20131127143435.GD25043@gmail.com> <20131127145837.GE16796@laptop.programming.kicks-ass.net> <20131127153519.GA26095@gmail.com> <20131127154015.GG789@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127154015.GG789@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757151Ab3K0QYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:24:25 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36461 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755359Ab3K0QYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:24:24 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Estevam <festevam@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: thierry.reding@gmail.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
+Date: Wed, 27 Nov 2013 16:24:17 +0000
+Message-Id: <1385569457-8650-2-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1385569457-8650-1-git-send-email-broonie@kernel.org>
+References: <1385569457-8650-1-git-send-email-broonie@kernel.org>
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 2/2] regulator: core: Check for DT every time we check full constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27, Peter Zijlstra wrote:
->
-> Anyway, yes GCC seems to behave as we 'expect' it to; I just can't find
-> the language spec actually guaranteeing this.
+From: Mark Brown <broonie@linaro.org>
 
-And the kernel already assumes that gcc should do this, for example
+Eliminate the gap between DT becoming available and this being used to say
+we have full constraints by checking directly for DT every time we check
+for full constraints. This improves interoperaton with optional regulator
+support.
 
-	struct siginfo info = {};
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-in do_tkill().
-
-(this initialization should prevent the leak of uninitialized members
- to userspace).
-
-Oleg.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 02fdf925bb56..d85f31385b24 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -121,7 +121,7 @@ static const char *rdev_get_name(struct regulator_dev *rdev)
+ 
+ static bool have_full_constraints(void)
+ {
+-	return has_full_constraints;
++	return has_full_constraints || of_have_populated_dt();
+ }
+ 
+ /**
+-- 
+1.8.4.4
 
