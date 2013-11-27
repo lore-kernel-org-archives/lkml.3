@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab3K0BQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:16:47 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:30980 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab3K0BQn (ORCPT
+	id S1759216Ab3K0BRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:17:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39567 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758764Ab3K0A7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:16:43 -0500
-Message-ID: <1385514717.1791.197.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
-Date: Tue, 26 Nov 2013 18:11:57 -0700
-In-Reply-To: <8065346.ZtkoVh8DW8@vostro.rjw.lan>
-References: <2610478.KxPMyuOMok@vostro.rjw.lan>
-	 <3773077.bfZR2z09sY@vostro.rjw.lan>
-	 <1385512408.1791.196.camel@misato.fc.hp.com>
-	 <8065346.ZtkoVh8DW8@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Nov 2013 19:59:31 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 052/116] ALSA: hda - Check keep_eapd_on before inv_eapd
+Date: Tue, 26 Nov 2013 16:57:05 -0800
+Message-Id: <20131127005740.545217880@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-27 at 02:02 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, November 26, 2013 05:33:28 PM Toshi Kani wrote:
-> > On Wed, 2013-11-27 at 01:27 +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, November 26, 2013 05:00:42 PM Toshi Kani wrote:
-> > > > On Mon, 2013-11-25 at 01:09 +0100, Rafael J. Wysocki wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > The following series of four patches (on top of current linux-pm.git/bleeding-edge)
-> > > > > rework child device lookup in drivers/acpi/glue.c and related things:
-> > > > > 
-> > > > > [1/4] ACPI / bind: Simplify child device lookup
-> > > > > [2/4] PCI/ ACPI: Use acpi_find_child_device() for child device lookup
-> > > > > [3/4] ACPI / bind: Redefine acpi_get_child()
-> > > > > [4/4] ACPI / bind: Redefine acpi_preset_companion()
-> > > > 
-> > > > This patchset caused the attached panic during boot on a system.
-> > > > acpi_pci_find_device() called acpi_find_child_device() with
-> > > > ACPI_COMPANION(dev->parent) being a NULL pointer when scanning bus 0xf.
-> > > > 
-> > > > This bus 0xf seems to be a chipset internal bus, which is not intended
-> > > > for the OS to use.  Therefore, ACPI does not list its PCI bridge device.
-> > > > 
-> > > > # lspci -tv
-> > > >    :
-> > > >  +-[0000:0f]-+-08.0  Intel Corporation Ivytown QPI Link 0
-> > > >  |           +-08.2  Intel Corporation Ivytown QPI Link 0
-> > > >    :
-> > > > 
-> > > > However, pcibios_fixup_peer_bridges(), called from pci_subsys_init(),
-> > > > finds this bus as it scans all the buses from 0 to pcibios_last_bus.
-> > > > Hence, this dev->parent does not have an associated ACPI device object. 
-> > > 
-> > > Thanks for the report!
-> > > 
-> > > I've dropped the patches from bleeding-edge for now.
-> > > 
-> > > Does "[1/4] ACPI / bind: Simplify child device lookup" alone work on that
-> > > system?
-> > 
-> > Yes, the system boots fine with 1/4 alone.
-> 
-> Thanks!
-> 
-> Can you please check if the following modified [2/4] also works on top of it?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, it works fine.
+------------------
 
-Thanks for the quick fix!
--Toshi
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
+
+We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
+set by the codec driver and enable is false.  But, we also apply the
+flipping of enable value according to inv_eapd flag in the same
+function, and this confused the former check, handled as if it's
+turned ON.  The inverted EAPD check must be applied after keep_eapd_on
+check, instead.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/hda_generic.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -796,10 +796,10 @@ static void set_pin_eapd(struct hda_code
+ 	if (spec->own_eapd_ctl ||
+ 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+ 		return;
+-	if (codec->inv_eapd)
+-		enable = !enable;
+ 	if (spec->keep_eapd_on && !enable)
+ 		return;
++	if (codec->inv_eapd)
++		enable = !enable;
+ 	snd_hda_codec_update_cache(codec, pin, 0,
+ 				   AC_VERB_SET_EAPD_BTLENABLE,
+ 				   enable ? 0x02 : 0x00);
 
 
