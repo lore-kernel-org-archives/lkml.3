@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab3K0P1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:27:09 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:50375 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3K0P1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:27:07 -0500
-Date: Wed, 27 Nov 2013 15:27:01 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm5110: Give new AIF2 registers defaults and mark
- as readable
-Message-ID: <20131127152701.GQ3296@lee--X1>
-References: <1385556677-5244-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20131127132442.GJ3296@lee--X1>
- <20131127151639.GX14725@sirena.org.uk>
+	id S1756574Ab3K0P2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:28:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755227Ab3K0P2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 10:28:23 -0500
+Date: Wed, 27 Nov 2013 16:27:56 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 21/22] perf tools: Add trace-event global object for
+ tracepoint interface
+Message-ID: <20131127152756.GF1208@krava.brq.redhat.com>
+References: <1385031680-9014-1-git-send-email-jolsa@redhat.com>
+ <1385031680-9014-22-git-send-email-jolsa@redhat.com>
+ <1385135234.1747.122.camel@leonhard>
+ <20131125160345.GJ3161@krava.brq.redhat.com>
+ <1385559960.1685.2.camel@leonhard>
+ <20131127151045.GE1208@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131127151639.GX14725@sirena.org.uk>
+In-Reply-To: <20131127151045.GE1208@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Mark Brown wrote:
-
-> On Wed, Nov 27, 2013 at 01:24:42PM +0000, Lee Jones wrote:
+On Wed, Nov 27, 2013 at 04:10:45PM +0100, Jiri Olsa wrote:
+> On Wed, Nov 27, 2013 at 10:46:00PM +0900, Namhyung Kim wrote:
+> > Hi Jiri,
+> > 
+> > 2013-11-25 (월), 17:03 +0100, Jiri Olsa:
+> > > On Sat, Nov 23, 2013 at 12:47:14AM +0900, Namhyung Kim wrote:
+> > > > 2013-11-21 (목), 12:01 +0100, Jiri Olsa:
+> > > > > In order to get the proper plugins processing we need to
+> > > > > use full trace-event interface when creating tracepoint
+> > > > > events. So far we were using shortcut to get the parsed
+> > > > > format.
+> > > > > 
+> > > > > Moving current 'event_format__new' function into trace-event
+> > > > > object as 'trace_event__tp_format'.
+> > > > > 
+> > > > > This function uses properly initialized global trace-event
+> > > > > object, ensuring proper plugins processing.
+> > > > 
+> > > > I see this when I compile it on my old ubuntu 10.04 box (with gcc 4.4.3)
+> > > > 
+> > > >   CC       util/trace-event.o
+> > > > cc1: warnings being treated as errors
+> > > > util/trace-event.c: In function 'trace_event__tp_format':
+> > > > util/trace-event.c:63: error: not protecting function: no buffer at
+> > > > least 8 bytes long
+> > > > make[1]: *** [util/trace-event.o] Error 1
+> > > 
+> > > hum, what was the stackprotector status?
+> > > 
+> > > ...                stackprotector: [ on  ]
+> > > ...            stackprotector-all: [ on  ]
+> > 
+> > Right. Both of them were turned on.
+> > 
+> > Auto-detecting system features:
+> > ...                     backtrace: [ on  ]
+> > ...                         dwarf: [ on  ]
+> > ...                fortify-source: [ on  ]
+> > ...                         glibc: [ on  ]
+> > ...                          gtk2: [ on  ]
+> > ...                  gtk2-infobar: [ on  ]
+> > ...                      libaudit: [ on  ]
+> > ...                        libbfd: [ on  ]
+> > ...                        libelf: [ on  ]
+> > ...             libelf-getphdrnum: [ OFF ]
+> > ...                   libelf-mmap: [ on  ]
+> > ...                       libnuma: [ OFF ]
+> > ...                       libperl: [ on  ]
+> > ...                     libpython: [ on  ]
+> > ...             libpython-version: [ on  ]
+> > ...                      libslang: [ on  ]
+> > ...                     libunwind: [ OFF ]
+> > ...                       on-exit: [ on  ]
+> > ...                stackprotector: [ on  ]
+> > ...            stackprotector-all: [ on  ]
+> > ...                       timerfd: [ on  ]
 > 
-> > I'm not keen on this patch going through ASoC, as it might make things
-> > equally as awkward later in the cycle. We should have created an
-> > immutable branch for that really. I guess this will have to wait for
-> > the next cycle now...
+> I found that -fstack-protector might not always work:
+> https://bugs.launchpad.net/ubuntu/+source/gcc-4.5/+bug/691722
 > 
-> That seems excessive and it probably ought to go in as a bug fix
-> afterwards.  Given that it's just an addition of data to the table I'd
-> expect we could cope, we've routinely done that with similar updates in
-> the past without incident.
+> they say it was fixed in gcc 4.5.0 which I was not
+> able to prove in gcc release notes..
+> 
+> we could disable the warning like in the below
+> for gcc < 4.5.0, could you please test?
+> 
+> any other idea? ;-)
 
-Ah, is the depends patch in Mainline already? I assumed it was due to
-go in during the v3.14 merge window? If it's already in Mainline, then
-sure I don't mind if it goes in -fixes via ASoC, no problem.
+or remove -Wstack-protector option completely, as it's just informative
+seems there's nothing you could do about the warning anyway
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+jirka
