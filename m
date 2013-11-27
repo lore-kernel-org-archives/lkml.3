@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758395Ab3K0UZH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:25:07 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:54616 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757696Ab3K0UQw (ORCPT
+	id S1758483Ab3K0UZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:25:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33292 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758443Ab3K0UZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:16:52 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v4 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-Date: Wed, 27 Nov 2013 12:16:23 -0800
-Message-Id: <1385583384-28870-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.4
+	Wed, 27 Nov 2013 15:25:38 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 13/34] perf record: Default -t option to no inheritance
+Date: Wed, 27 Nov 2013 17:16:13 -0300
+Message-Id: <1385583394-3703-14-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
+References: <1385583394-3703-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some use cases Zynq's FPGA clocks are used as static clock
-generators for IP in the FPGA part of the SOC for which no Linux driver
-exists and would control those clocks. To avoid automatic
-gating of these clocks in such cases a new property - fclk-enable - is
-added to the clock controller's DT description to accomodate such use
-cases. It's value is a bitmask, where a set bit results in enabling
-the corresponding FCLK through the clkc.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-FPGA clocks are handled following the rules below:
+The change to per-cpu mmaps causes the -p, -t and -u options now to have
+inheritance enabled by default.  Change that back to no inheritance but
+for the -t option only.
 
-If an FCLK is not enabled by bootloaders, that FCLK will be disabled in
-Linux. Drivers can enable and control it through the CCF as usual.
-
-If an FCLK is enabled by bootloaders AND the corresponding bit in the
-'fclk-enable' DT property is set, that FCLK will be enabled by the clkc,
-resulting in an off by one reference count for that clock. Ensuring it
-will always be running.
-
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Michal Simek <michal.simek@xilinx.com>
+Requested-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1384768557-23331-5-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-v4:
- - replace bitwise with logical AND
-v3:
- - documentation stated the default for fclk-enable is 0xf. This changed
-   in v2 => remove that note
-v2:
- - change default value for fclk-enable to '0'
----
- Documentation/devicetree/bindings/clock/zynq-7000.txt |  4 ++++
- drivers/clk/zynq/clkc.c                               | 18 +++++++++++++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-record.txt | 2 ++
+ tools/perf/builtin-record.c              | 8 ++++++--
+ tools/perf/perf.h                        | 1 +
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt b/Documentation/devicetree/bindings/clock/zynq-7000.txt
-index d99af878f5d7..17b4a94916d6 100644
---- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
-+++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
-@@ -22,6 +22,10 @@ Required properties:
- Optional properties:
-  - clocks : as described in the clock bindings
-  - clock-names : as described in the clock bindings
-+ - fclk-enable : Bit mask to enable FCLKs statically at boot time.
-+		 Bit [0..3] correspond to FCLK0..FCLK3. The corresponding
-+		 FCLK will only be enabled if it is actually running at
-+		 boot time.
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 6ac867e7667f..c407897f0435 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -57,6 +57,8 @@ OPTIONS
+ -t::
+ --tid=::
+         Record events on existing thread ID (comma separated list).
++        This option also disables inheritance by default.  Enable it by adding
++        --inherit.
  
- Clock inputs:
- The following strings are optional parameters to the 'clock-names' property in
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index 10772aa72e4e..09dd0173ea0a 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -102,9 +102,10 @@ static const char *swdt_ext_clk_input_names[] __initdata = {"swdt_ext_clk"};
+ -u::
+ --uid=::
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f5b18b8fe8c9..65615a8bc25e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -843,8 +843,9 @@ const struct option record_options[] = {
+ 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
+ 	OPT_STRING('o', "output", &record.file.path, "file",
+ 		    "output file name"),
+-	OPT_BOOLEAN('i', "no-inherit", &record.opts.no_inherit,
+-		    "child tasks do not inherit counters"),
++	OPT_BOOLEAN_SET('i', "no-inherit", &record.opts.no_inherit,
++			&record.opts.no_inherit_set,
++			"child tasks do not inherit counters"),
+ 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
+ 	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
+ 		     "number of mmap data pages",
+@@ -939,6 +940,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		goto out_symbol_exit;
+ 	}
  
- static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
- 		const char *clk_name, void __iomem *fclk_ctrl_reg,
--		const char **parents)
-+		const char **parents, int enable)
- {
- 	struct clk *clk;
-+	u32 enable_reg;
- 	char *mux_name;
- 	char *div0_name;
- 	char *div1_name;
-@@ -147,6 +148,12 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
- 	clks[fclk] = clk_register_gate(NULL, clk_name,
- 			div1_name, CLK_SET_RATE_PARENT, fclk_gate_reg,
- 			0, CLK_GATE_SET_TO_DISABLE, fclk_gate_lock);
-+	enable_reg = readl(fclk_gate_reg) & 1;
-+	if (enable && !enable_reg) {
-+		if (clk_prepare_enable(clks[fclk]))
-+			pr_warn("%s: FCLK%u enable failed\n", __func__,
-+					fclk - fclk0);
-+	}
- 	kfree(mux_name);
- 	kfree(div0_name);
- 	kfree(div1_name);
-@@ -213,6 +220,7 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	int ret;
- 	struct clk *clk;
- 	char *clk_name;
-+	unsigned int fclk_enable = 0;
- 	const char *clk_output_name[clk_max];
- 	const char *cpu_parents[4];
- 	const char *periph_parents[4];
-@@ -238,6 +246,8 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	periph_parents[2] = clk_output_name[armpll];
- 	periph_parents[3] = clk_output_name[ddrpll];
- 
-+	of_property_read_u32(np, "fclk-enable", &fclk_enable);
++	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
++		rec->opts.no_inherit = true;
 +
- 	/* ps_clk */
- 	ret = of_property_read_u32(np, "ps-clk-frequency", &tmp);
- 	if (ret) {
-@@ -340,10 +350,12 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	clk_prepare_enable(clks[dci]);
- 
- 	/* Peripheral clocks */
--	for (i = fclk0; i <= fclk3; i++)
-+	for (i = fclk0; i <= fclk3; i++) {
-+		int enable = !!(fclk_enable & BIT(i - fclk0));
- 		zynq_clk_register_fclk(i, clk_output_name[i],
- 				SLCR_FPGA0_CLK_CTRL + 0x10 * (i - fclk0),
--				periph_parents);
-+				periph_parents, enable);
-+	}
- 
- 	zynq_clk_register_periph_clk(lqspi, 0, clk_output_name[lqspi], NULL,
- 			SLCR_LQSPI_CLK_CTRL, periph_parents, 0);
+ 	err = target__validate(&rec->opts.target);
+ 	if (err) {
+ 		target__strerror(&rec->opts.target, err, errbuf, BUFSIZ);
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index b079304bd53d..b23fed527514 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -254,6 +254,7 @@ struct perf_record_opts {
+ 	bool	     inherit_stat;
+ 	bool	     no_delay;
+ 	bool	     no_inherit;
++	bool	     no_inherit_set;
+ 	bool	     no_samples;
+ 	bool	     raw_samples;
+ 	bool	     sample_address;
 -- 
-1.8.4.4
+1.8.1.4
 
