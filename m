@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760955Ab3K0CIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:08:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38785 "EHLO
+	id S932365Ab3K0CJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:09:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab3K0A4h (ORCPT
+	with ESMTP id S1755323Ab3K0A4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:37 -0500
+	Tue, 26 Nov 2013 19:56:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>, Jorge Mora <mora@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.4 25/39] NFSv4: Fix a use-after-free situation in _nfs4_proc_getlk()
-Date: Tue, 26 Nov 2013 16:56:49 -0800
-Message-Id: <20131127005620.796617603@linuxfoundation.org>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 3.4 21/39] Revert "ima: policy for RAMFS"
+Date: Tue, 26 Nov 2013 16:56:45 -0800
+Message-Id: <20131127005620.507911267@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -27,47 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
+commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
 
-In nfs4_proc_getlk(), when some error causes a retry of the call to
-_nfs4_proc_getlk(), we can end up with Oopses of the form
+This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
- IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
-<snip>
- Call Trace:
-  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
-  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
-  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
-  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
-  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
+Everything in the initramfs should be measured and appraised,
+but until the initramfs has extended attribute support, at
+least measured.
 
-The problem is that we don't clear the request->fl_ops after the first
-try and so when we retry, nfs4_set_lock_state() exits early without
-setting the lock stateid.
-Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
-(locks: make ->lock release private data before returning in GETLK case)
-
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Jorge Mora <mora@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
+ security/integrity/ima/ima_policy.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4207,6 +4207,7 @@ static int _nfs4_proc_getlk(struct nfs4_
- 			status = 0;
- 	}
- 	request->fl_ops->fl_release_private(request);
-+	request->fl_ops = NULL;
- out:
- 	return status;
- }
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -62,7 +62,6 @@ static struct ima_measure_rule_entry def
+ 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+-	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = SELINUX_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = MEASURE,.func = FILE_MMAP,.mask = MAY_EXEC,
 
 
