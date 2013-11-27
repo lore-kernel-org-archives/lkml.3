@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab3K1TdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Nov 2013 14:33:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759300Ab3K1Tc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Nov 2013 14:32:58 -0500
-Date: Thu, 28 Nov 2013 20:33:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <htejun@gmail.com>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 1/1] usermodehelper: kill
-	____call_usermodehelper()->set_cpus_allowed_ptr()
-Message-ID: <20131128193349.GB24767@redhat.com>
-References: <20131128091358.GH10022@twins.programming.kicks-ass.net> <20131128114542.GA3826@redhat.com> <20131128121748.GN10022@twins.programming.kicks-ass.net> <20131128133152.GA821@redhat.com> <20131128133947.GR10022@twins.programming.kicks-ass.net> <20131128142359.GA6420@redhat.com> <20131128143155.GC3925@htj.dyndns.org> <20131128150055.GA11956@redhat.com> <20131128150233.GA10022@twins.programming.kicks-ass.net> <20131128193330.GA24767@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131128193330.GA24767@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759410Ab3K1Tj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Nov 2013 14:39:56 -0500
+Received: from [77.240.181.54] ([77.240.181.54]:60347 "EHLO
+	dhcp-27-189.brq.redhat.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755625Ab3K1Tjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Nov 2013 14:39:52 -0500
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: pe1dnn@amsat.org
+Cc: linux-kernel@vger.kernel.org, Maurizio Lombardi <mlombard@redhat.com>
+Subject: [PATCH] wlags49_h2: Fix overflow in wireless_set_essid()
+Date: Wed, 27 Nov 2013 10:03:53 +0100
+Message-Id: <1385543033-4365-1-git-send-email-mlombard@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-____call_usermodehelper() does set_cpus_allowed_ptr(cpu_all_mask),
-this (and the comment) is misleading. We no longer have keventd_wq,
-and kmod.c switched to khelper_wq a long ago.
-
-And more importantly, "unlike our parent" is no longer true too,
-this thread was created by WQ_UNBOUND worker thread which has the
-full ->cpus_allowed mask, so this set_cpus_allowed_ptr() is simply
-unnecessary.
-
-Perhaps we will change this later, so that userspace can control
-the affinity of the usermode helper tasks, but this is yet another
-reason to remove this set_cpus_allowed_ptr().
-
-To some degree this also applies to set_user_nice(), but this
-patch only updates the comment.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+This patch prevents the wireless_set_essid() function from overwriting
+the last byte of the NetworkName buffer which must be NULL.
 ---
- kernel/kmod.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/staging/wlags49_h2/wl_wext.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index b086006..2fe4544 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -208,13 +208,9 @@ static int ____call_usermodehelper(void *data)
- 	spin_lock_irq(&current->sighand->siglock);
- 	flush_signal_handlers(current, 1);
- 	spin_unlock_irq(&current->sighand->siglock);
--
--	/* We can run anywhere, unlike our parent keventd(). */
--	set_cpus_allowed_ptr(current, cpu_all_mask);
--
- 	/*
--	 * Our parent is keventd, which runs with elevated scheduling priority.
--	 * Avoid propagating that into the userspace child.
-+	 * Our parent is a workqueue thread, which can run with elevated
-+	 * scheduling priority. Avoid propagating that into the userspace.
- 	 */
- 	set_user_nice(current, 0);
+diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
+index c731ff2..62ad158 100644
+--- a/drivers/staging/wlags49_h2/wl_wext.c
++++ b/drivers/staging/wlags49_h2/wl_wext.c
+@@ -1127,7 +1127,7 @@ static int wireless_set_essid(struct net_device *dev, struct iw_request_info *in
+ 		goto out;
+ 	}
  
+-	if (data->flags != 0 && data->length > HCF_MAX_NAME_LEN + 1) {
++	if (data->flags != 0 && data->length > HCF_MAX_NAME_LEN) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
 -- 
-1.5.5.1
-
+1.8.3.1
 
