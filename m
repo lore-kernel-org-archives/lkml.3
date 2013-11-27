@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab3K0USE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:18:04 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32882 "EHLO
+	id S1758105Ab3K0UR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:17:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32883 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757930Ab3K0URH (ORCPT
+	with ESMTP id S1757932Ab3K0URH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Nov 2013 15:17:07 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Jean Pihet <jean.pihet@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 28/34] perf symbols: Fix not finding kcore in buildid cache
-Date: Wed, 27 Nov 2013 17:16:28 -0300
-Message-Id: <1385583394-3703-29-git-send-email-acme@infradead.org>
+Subject: [PATCH 33/34] perf tools: Add per-feature check flags
+Date: Wed, 27 Nov 2013 17:16:33 -0300
+Message-Id: <1385583394-3703-34-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
 References: <1385583394-3703-1-git-send-email-acme@infradead.org>
@@ -30,68 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jean Pihet <jean.pihet@linaro.org>
 
-The logic was not looking in the buildid cache for kcore if the host
-kernel buildid did not match the recorded kernel buildid.
+Add CFLAGS and LDFLAGS for each feature to be checked. This allows
+to pass flags and parameters to the feature checks compilation.
+Also simplifies the feature check makefile, to come in a subsequent patch.
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
 
-This affects the non-live case i.e. the kernel has changed and we are
-looking at a special copy of kcore that we placed in the buildid cache
-(using "perf buildid-cache -v -k /proc/kcore") when the data was
-recorded.
-
-After this fix kernel symbols get resolved/annotated correctly.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1385471964-4037-1-git-send-email-adrian.hunter@intel.com
-[ Added further explanation extracted from conversation between Ingo & Adrian on lkml ]
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linaro-kernel@lists.linaro.org
+Cc: patches@linaro.org
+Link: http://lkml.kernel.org/r/1385045539-24537-2-git-send-email-jean.pihet@linaro.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ tools/perf/config/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index ce9ce101adf4..360eefecb81d 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1526,14 +1526,15 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f7d11a811c74..c55149538d92 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -102,7 +102,7 @@ endif
  
- 	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
  
-+	scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s", buildid_dir,
-+		  sbuild_id);
-+
- 	/* Use /proc/kallsyms if possible */
- 	if (is_host) {
- 		DIR *d;
- 		int fd;
- 
- 		/* If no cached kcore go with /proc/kallsyms */
--		scnprintf(path, sizeof(path), "%s/[kernel.kcore]/%s",
--			  buildid_dir, sbuild_id);
- 		d = opendir(path);
- 		if (!d)
- 			goto proc_kallsyms;
-@@ -1558,6 +1559,10 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
- 		goto proc_kallsyms;
- 	}
- 
-+	/* Find kallsyms in build-id cache with kcore */
-+	if (!find_matching_kcore(map, path, sizeof(path)))
-+		return strdup(path);
-+
- 	scnprintf(path, sizeof(path), "%s/[kernel.kallsyms]/%s",
- 		  buildid_dir, sbuild_id);
- 
+ feature_set = $(eval $(feature_set_code))
 -- 
 1.8.1.4
 
