@@ -1,148 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3K0GrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 01:47:00 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:60947 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3K0Gq6 (ORCPT
+	id S1753761Ab3K0HEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 02:04:12 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:50319 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab3K0HEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 01:46:58 -0500
+	Wed, 27 Nov 2013 02:04:10 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52959966.7000509@roeck-us.net>
+Date: Tue, 26 Nov 2013 23:04:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <5294BD63.7020905@gmail.com>
-References: <CAEPa5ym2Xz3F19fJJqNawkRLOKk6Ao6oXrzSrHU051V7p=9otA@mail.gmail.com>
-	<CAE3RKNng9A6Bp7wa4+6iCprwEQpzGueagLc8iob+aFabJW4nnw@mail.gmail.com>
-	<CAEPa5y=tgdGpDMBGY0ijyWSgQ0m5SZW8EMP072OF=sZZUjqN1g@mail.gmail.com>
-	<CAEPa5ym0+-_Q9zUidDfE2SD7XYZxAqqEUByBkkH1ZOmh9rmFHg@mail.gmail.com>
-	<CAEPa5ym4HWK9vo_BYYZbQsGZXG9r2kfYR2rFGaYjjJqDfkf2uQ@mail.gmail.com>
-	<5294BD63.7020905@gmail.com>
-Date: Wed, 27 Nov 2013 07:46:55 +0100
-Message-ID: <CAEPa5y=PPO1PoaMqgB1ifc64GVK8NkGDtnOftTZ=n+-f-7e7xA@mail.gmail.com>
-Subject: Re: bridge not getting ip since 3.11.5 and 3.4.66
-From: Mark Trompell <mark@foresightlinux.org>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Veaceslav Falico <veaceslav@falico.eu>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, herbert@gondor.apana.org.au
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, mark.rutland@arm.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
+        Pawel Moll <Pawel.Moll@arm.com>, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, galak@kernel.crashing.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, grygorii.strashko@ti.com
+Subject: Re: [PATCH v3 1/6] watchdog: davinci: change driver to use WDT core
+References: <1385388285-10553-1-git-send-email-ivan.khoronzhuk@ti.com> <1385388285-10553-2-git-send-email-ivan.khoronzhuk@ti.com> <5295758C.2030907@ti.com>
+In-Reply-To: <5295758C.2030907@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 4:25 PM, Vlad Yasevich <vyasevich@gmail.com> wrote:
-> On 11/26/2013 08:27 AM, Mark Trompell wrote:
->> Answering my own mail again and even top posting, sorry, but makes
->> more sense to me in that case).
->> I reverted bridge related patches from 3.11.5 and it boils down to
->> commit 0e308361d7ca0bf8b23fd472b90aae0fb10a1c32
->> Author: Herbert Xu <herbert@gondor.apana.org.au>
->> Date:   Thu Sep 12 17:12:05 2013 +1000
+On 11/26/2013 08:31 PM, Sekhar Nori wrote:
+> On Monday 25 November 2013 07:34 PM, Ivan Khoronzhuk wrote:
+>> To reduce code duplicate and increase code readability use WDT core
+>> code to handle WDT interface.
 >>
->>     bridge: Clamp forward_delay when enabling STP
+>> Remove io_lock as the WDT core uses mutex to lock each wdt device.
+>> Remove wdt_state as the WDT core tracks state with its own variable.
 >>
->>     [ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+>> The watchdog_init_timeout() can read timeout value from timeout-sec
+>> property if the passed value is out of bounds. The heartbeat is
+>> initialized in next way. If heartbeat is not set thought module
+>> parameter, try to read it's value from WDT node timeout-sec property.
+>> If node has no one, use default value.
 >>
->>     At some point limits were added to forward_delay.  However, the
->>     limits are only enforced when STP is enabled.  This created a
->>     scenario where you could have a value outside the allowed range
->>     while STP is disabled, which then stuck around even after STP
->>     is enabled.
+>> The heartbeat is hold in wdd->timeout by WDT core, so use it in
+>> order to set timeout period.
 >>
->>     This patch fixes this by clamping the value when we enable STP.
->>
->>     I had to move the locking around a bit to ensure that there is
->>     no window where someone could insert a value outside the range
->>     while we're in the middle of enabling STP.
->>
->> Causing the issue for me. Reverting that patch and br0 comes up again
->> and gets an ip.
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 >
-> yes, that patch introduced a bug where we always used the
-> max_forward delay value.
+> So this still causes a regression because the clk_get()
+> fails due to the changed device name. Please fold this
+> patch in (tested on DM365, compiled on rest).
 >
-> you have 2 options:
->  1) disable STP.  Since you are just running VMs and you have a single
->     physical connection on the bridge, you can safely disable STP since
->     your system is a leaf node.
-
-disabling stp indeed helps here, but ...
-
->  2) Get the latest stable kernel.  The bug has been fixed there.
-
-3.12.1 still doesn't work with stp enabled.
-I guess you're talking about 4b6c7879d84ad06a2ac5b964808ed599187a188d
-bridge: Correctly clamp MAX forward_delay when enabling STP
-which should fix that?
-
-> -vlad
-
-
-Mark
-
->>
->> On Tue, Nov 12, 2013 at 11:57 AM, Mark Trompell <mark@foresightlinux.org> wrote:
->>> On Mon, Nov 11, 2013 at 1:52 PM, Mark Trompell <mark@foresightlinux.org> wrote:
->>>> On Mon, Nov 11, 2013 at 12:07 PM, Veaceslav Falico <veaceslav@falico.eu> wrote:
->>>>> On Mon, Nov 11, 2013 at 11:29 AM, Mark Trompell <mark@foresightlinux.org> wrote:
->>>>>> my bridge br0 doesn't get an ip from dhcp anymore after 3.11.5 and 3.4.66,
->>>>>> What information would be helpful and required to find out what's going wrong.
->>>>>
->>>>> CC netdev
->>>>>
->>>>> First thing would be to provide the network scheme. Do you use vlans?
->>>>> Which network
->>>>> cards/drivers are you using? Do you use some kind of virtualization?
->>>>> Is bonding involved?
->>>>>
->>>> Actually this is my desktop machine using kvm for a virtual machine
->>>> that uses eth0 which is connected to the bridge
->>>> which is used as interface for the host.
->>>>
->>>> $ ip addr
->>>> 2. eth0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc pfifo_fast
->>>> master br0 qlen 1000
->>>> ...
->>>> 3. br0: <BROADCAST,MULTICAST,UP,10000> mtu 1500 qdisc noqueue
->>>> ...
->>>>
->>>> Anything else?
->>>
->>> Okay more about my hardware and configuration:
->>> from lspci:
->>> 00:19.0 Ethernet controller: Intel Corporation 82579V Gigabit Network
->>> Connection (rev 04)
->>>
->>> /etc/sysconfig/network-scripts/ifcfg-br0
->>> DEVICE=br0
->>> ONBOOT=yes
->>> MACADDR=00:19:99:ac:b3:24
->>> TYPE=Bridge
->>> BOOTPROTO=dhcp
->>> STP=on
->>> NM_CONTROLLED=no
->>> DELAY=0
->>>
->>> /etc/sysconfig/network-scripts/ifcfg-eth0
->>> DEVICE=eth0
->>> HWADDR=00:19:99:cd:a5:e6
->>> #BOOTPROTO=dhcp
->>> ONBOOT=yes
->>> BRIDGE=br0
->>> TYPE=Ethernet
->>> NM_CONTROLLED=no
->>>
->>>
->>>> Greetings
->>>> Mark
->>
->>
->>
+> Also, the change in device name (while needed) does not seem
+> to be related to usage of wdt core. Can you may be split
+> that change into a separate patch?
 >
 
+Given all the trouble with it, I think that would be a good idea.
 
+Guenter
 
--- 
-Mark Trompell
-
-Foresight Linux Xfce Edition
-Cause your desktop should be freaking cool
-(and Xfce)
