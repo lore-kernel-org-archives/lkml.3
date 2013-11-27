@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab3K0CTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:19:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:30578 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905Ab3K0CTk convert rfc822-to-8bit (ORCPT
+	id S1756594Ab3K0CXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:23:49 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56956 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab3K0CXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:19:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,779,1378882800"; 
-   d="scan'208";a="415668072"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "mszeredi@suse.cz" <mszeredi@suse.cz>
-CC: "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Subject: fuse try to freeze with lock held
-Thread-Topic: fuse try to freeze with lock held
-Thread-Index: Ac7rFxlD+SyxfMpuRICVEra1GU5gRA==
-Date: Wed, 27 Nov 2013 02:19:31 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01BB245D@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Nov 2013 21:23:47 -0500
+Message-ID: <529557AF.8040501@hitachi.com>
+Date: Wed, 27 Nov 2013 11:23:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: modules, add_kallsyms() && DEFINE_PER_CPU
+References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com> <20131126174355.GB14028@redhat.com> <20131126174446.GD14028@redhat.com> <20131126175037.GE14028@redhat.com>
+In-Reply-To: <20131126175037.GE14028@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hit the below warning when enabling the CONFIG_DEBUG_LOCK_ALLOC,
-__fuse_request_send == >
-request_wait_answer == >
-wait_event_freezable == >
-try_to_freeze()
+(2013/11/27 2:50), Oleg Nesterov wrote:
+> On 11/26, Oleg Nesterov wrote:
+>>
+>> Note: this doesn't work for modules, but module's per-cpu data is
+>> not visible for kallsyms_lookup_name() anyway.
+> 
+> Rusty, I am just curious if it makes sense to change this or not...
+> 
+> But DEFINE_PER_CPU'ed symbols are ignored by add_kallsyms(). I guess
+> this is because is_core_symbol() requires "sh_flags & SHF_ALLOC".
+> And probably because of INIT_OFFSET_MASK.
 
-But here the inode->i_mutex is hold yet in vfs_readdir().
+Oleg, I think you can do it by using is_module_percpu_address(). :)
 
-Could anyone give some help? Thanks.
+Thank you,
 
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-[ 3148.552435] Freezing user space processes ... [ 3148.557781]
-[ 3148.559505] =====================================
-[ 3148.564803] [ BUG: du/21716 still has locks held! ]
-[ 3148.570319] 3.10.16-261493-g1308ae2 #8 Tainted: G        W  O
-
-[ 3148.586082]  #0:  (&type->i_mutex_dir_key#3){......}, at: [<c1341dc6>] vfs_readdir+0x66/0xd0
-[ 3148.595967]
-[ 3148.595967] stack backtrace:
-[ 3148.600875] CPU: 2 PID: 21716 Comm: du Tainted: G        W  O 3.10.16-261493-g1308ae2 #8
-[ 3148.609973]  d7e494e0 d7e494e0 cca6be78 c1b0fccb cca6be90 c12913f1 c1db2cc5 d7e497e4
-[ 3148.618872]  000054d4 cca6beac cca6becc c1440d8b d7e494e0 f2557800 f12acedc 00000000
-[ 3148.627747]  00000000 00000000 d7e494e0 c125f100 cca6beb8 cca6beb8 f12ace40 f2557800
-[ 3148.636614] Call Trace:
-[ 3148.639395]  [<c1b0fccb>] dump_stack+0x16/0x18
-[ 3148.644375]  [<c12913f1>] debug_check_no_locks_held+0x91/0xa0
-[ 3148.650862]  [<c1440d8b>] __fuse_request_send+0x14b/0x320
-[ 3148.656961]  [<c125f100>] ? wake_up_bit+0x30/0x30
-[ 3148.662242]  [<c1440f71>] fuse_request_send+0x11/0x20
-[ 3148.667941]  [<c14455a9>] fuse_readdir+0x109/0x690
-[ 3148.673327]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
-[ 3148.678636]  [<c1b1bec5>] ? sub_preempt_count+0x45/0x60
-[ 3148.684503]  [<c1b15694>] ? mutex_lock_killable_nested+0x214/0x300
-[ 3148.691457]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
-[ 3148.696553]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
-[ 3148.701857]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
 
