@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760701Ab3K0B7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:59:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
+	id S1760715Ab3K0B7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:59:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab3K0A5I (ORCPT
+	with ESMTP id S1756648Ab3K0A5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:08 -0500
+	Tue, 26 Nov 2013 19:57:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Galbraith <bitbucket@online.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        lenb@kernel.org, tglx@linutronix.de
-Subject: [PATCH 3.10 16/80] sched, idle: Fix the idle polling state logic
-Date: Tue, 26 Nov 2013 16:56:45 -0800
-Message-Id: <20131127005642.069002883@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.10 15/80] SUNRPC: dont map EKEYEXPIRED to EACCES in call_refreshresult
+Date: Tue, 26 Nov 2013 16:56:44 -0800
+Message-Id: <20131127005642.001356799@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,321 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Andy Adamson <andros@netapp.com>
 
-commit ea8117478918a4734586d35ff530721b682425be upstream.
+commit f1ff0c27fd9987c59d707cd1a6b6c1fc3ae0a250 upstream.
 
-Mike reported that commit 7d1a9417 ("x86: Use generic idle loop")
-regressed several workloads and caused excessive reschedule
-interrupts.
+The NFS layer needs to know when a key has expired.
+This change also returns -EKEYEXPIRED to the application, and the informative
+"Key has expired" error message is displayed. The user then knows that
+credential renewal is required.
 
-The patch in question failed to notice that the x86 code had an
-inverted sense of the polling state versus the new generic code (x86:
-default polling, generic: default !polling).
-
-Fix the two prominent x86 mwait based idle drivers and introduce a few
-new generic polling helpers (fixing the wrong smp_mb__after_clear_bit
-usage).
-
-Also switch the idle routines to using tif_need_resched() which is an
-immediate TIF_NEED_RESCHED test as opposed to need_resched which will
-end up being slightly different.
-
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: lenb@kernel.org
-Cc: tglx@linutronix.de
-Link: http://lkml.kernel.org/n/tip-nc03imb0etuefmzybzj7sprf@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/process.c     |    6 +--
- drivers/acpi/processor_idle.c |   46 +++++-------------------
- drivers/idle/intel_idle.c     |    2 -
- include/linux/sched.h         |   78 ++++++++++++++++++++++++++++++++++++++----
- include/linux/thread_info.h   |    2 +
- kernel/cpu/idle.c             |    9 ++--
- 6 files changed, 91 insertions(+), 52 deletions(-)
+ net/sunrpc/clnt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -391,9 +391,9 @@ static void amd_e400_idle(void)
- 		 * The switch back from broadcast mode needs to be
- 		 * called with interrupts disabled.
- 		 */
--		 local_irq_disable();
--		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
--		 local_irq_enable();
-+		local_irq_disable();
-+		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-+		local_irq_enable();
- 	} else
- 		default_idle();
- }
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -121,17 +121,10 @@ static struct dmi_system_id __cpuinitdat
-  */
- static void acpi_safe_halt(void)
- {
--	current_thread_info()->status &= ~TS_POLLING;
--	/*
--	 * TS_POLLING-cleared state must be visible before we
--	 * test NEED_RESCHED:
--	 */
--	smp_mb();
--	if (!need_resched()) {
-+	if (!tif_need_resched()) {
- 		safe_halt();
- 		local_irq_disable();
- 	}
--	current_thread_info()->status |= TS_POLLING;
- }
- 
- #ifdef ARCH_APICTIMER_STOPS_ON_C3
-@@ -739,6 +732,11 @@ static int acpi_idle_enter_c1(struct cpu
- 	if (unlikely(!pr))
- 		return -EINVAL;
- 
-+	if (cx->entry_method == ACPI_CSTATE_FFH) {
-+		if (current_set_polling_and_test())
-+			return -EINVAL;
-+	}
-+
- 	lapic_timer_state_broadcast(pr, cx, 1);
- 	acpi_idle_do_entry(cx);
- 
-@@ -792,18 +790,9 @@ static int acpi_idle_enter_simple(struct
- 	if (unlikely(!pr))
- 		return -EINVAL;
- 
--	if (cx->entry_method != ACPI_CSTATE_FFH) {
--		current_thread_info()->status &= ~TS_POLLING;
--		/*
--		 * TS_POLLING-cleared state must be visible before we test
--		 * NEED_RESCHED:
--		 */
--		smp_mb();
--
--		if (unlikely(need_resched())) {
--			current_thread_info()->status |= TS_POLLING;
-+	if (cx->entry_method == ACPI_CSTATE_FFH) {
-+		if (current_set_polling_and_test())
- 			return -EINVAL;
--		}
- 	}
- 
- 	/*
-@@ -821,9 +810,6 @@ static int acpi_idle_enter_simple(struct
- 
- 	sched_clock_idle_wakeup_event(0);
- 
--	if (cx->entry_method != ACPI_CSTATE_FFH)
--		current_thread_info()->status |= TS_POLLING;
--
- 	lapic_timer_state_broadcast(pr, cx, 0);
- 	return index;
- }
-@@ -860,18 +846,9 @@ static int acpi_idle_enter_bm(struct cpu
- 		}
- 	}
- 
--	if (cx->entry_method != ACPI_CSTATE_FFH) {
--		current_thread_info()->status &= ~TS_POLLING;
--		/*
--		 * TS_POLLING-cleared state must be visible before we test
--		 * NEED_RESCHED:
--		 */
--		smp_mb();
--
--		if (unlikely(need_resched())) {
--			current_thread_info()->status |= TS_POLLING;
-+	if (cx->entry_method == ACPI_CSTATE_FFH) {
-+		if (current_set_polling_and_test())
- 			return -EINVAL;
--		}
- 	}
- 
- 	acpi_unlazy_tlb(smp_processor_id());
-@@ -917,9 +894,6 @@ static int acpi_idle_enter_bm(struct cpu
- 
- 	sched_clock_idle_wakeup_event(0);
- 
--	if (cx->entry_method != ACPI_CSTATE_FFH)
--		current_thread_info()->status |= TS_POLLING;
--
- 	lapic_timer_state_broadcast(pr, cx, 0);
- 	return index;
- }
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -359,7 +359,7 @@ static int intel_idle(struct cpuidle_dev
- 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
- 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
- 
--	if (!need_resched()) {
-+	if (!current_set_polling_and_test()) {
- 
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
- 		smp_mb();
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2469,34 +2469,98 @@ static inline int tsk_is_polling(struct
- {
- 	return task_thread_info(p)->status & TS_POLLING;
- }
--static inline void current_set_polling(void)
-+static inline void __current_set_polling(void)
- {
- 	current_thread_info()->status |= TS_POLLING;
- }
- 
--static inline void current_clr_polling(void)
-+static inline bool __must_check current_set_polling_and_test(void)
-+{
-+	__current_set_polling();
-+
-+	/*
-+	 * Polling state must be visible before we test NEED_RESCHED,
-+	 * paired by resched_task()
-+	 */
-+	smp_mb();
-+
-+	return unlikely(tif_need_resched());
-+}
-+
-+static inline void __current_clr_polling(void)
- {
- 	current_thread_info()->status &= ~TS_POLLING;
--	smp_mb__after_clear_bit();
-+}
-+
-+static inline bool __must_check current_clr_polling_and_test(void)
-+{
-+	__current_clr_polling();
-+
-+	/*
-+	 * Polling state must be visible before we test NEED_RESCHED,
-+	 * paired by resched_task()
-+	 */
-+	smp_mb();
-+
-+	return unlikely(tif_need_resched());
- }
- #elif defined(TIF_POLLING_NRFLAG)
- static inline int tsk_is_polling(struct task_struct *p)
- {
- 	return test_tsk_thread_flag(p, TIF_POLLING_NRFLAG);
- }
--static inline void current_set_polling(void)
-+
-+static inline void __current_set_polling(void)
- {
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- }
- 
--static inline void current_clr_polling(void)
-+static inline bool __must_check current_set_polling_and_test(void)
-+{
-+	__current_set_polling();
-+
-+	/*
-+	 * Polling state must be visible before we test NEED_RESCHED,
-+	 * paired by resched_task()
-+	 *
-+	 * XXX: assumes set/clear bit are identical barrier wise.
-+	 */
-+	smp_mb__after_clear_bit();
-+
-+	return unlikely(tif_need_resched());
-+}
-+
-+static inline void __current_clr_polling(void)
- {
- 	clear_thread_flag(TIF_POLLING_NRFLAG);
- }
-+
-+static inline bool __must_check current_clr_polling_and_test(void)
-+{
-+	__current_clr_polling();
-+
-+	/*
-+	 * Polling state must be visible before we test NEED_RESCHED,
-+	 * paired by resched_task()
-+	 */
-+	smp_mb__after_clear_bit();
-+
-+	return unlikely(tif_need_resched());
-+}
-+
- #else
- static inline int tsk_is_polling(struct task_struct *p) { return 0; }
--static inline void current_set_polling(void) { }
--static inline void current_clr_polling(void) { }
-+static inline void __current_set_polling(void) { }
-+static inline void __current_clr_polling(void) { }
-+
-+static inline bool __must_check current_set_polling_and_test(void)
-+{
-+	return unlikely(tif_need_resched());
-+}
-+static inline bool __must_check current_clr_polling_and_test(void)
-+{
-+	return unlikely(tif_need_resched());
-+}
- #endif
- 
- /*
---- a/include/linux/thread_info.h
-+++ b/include/linux/thread_info.h
-@@ -107,6 +107,8 @@ static inline int test_ti_thread_flag(st
- #define set_need_resched()	set_thread_flag(TIF_NEED_RESCHED)
- #define clear_need_resched()	clear_thread_flag(TIF_NEED_RESCHED)
- 
-+#define tif_need_resched() test_thread_flag(TIF_NEED_RESCHED)
-+
- #if defined TIF_RESTORE_SIGMASK && !defined HAVE_SET_RESTORE_SIGMASK
- /*
-  * An arch can define its own version of set_restore_sigmask() to get the
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -44,7 +44,7 @@ static inline int cpu_idle_poll(void)
- 	rcu_idle_enter();
- 	trace_cpu_idle_rcuidle(0, smp_processor_id());
- 	local_irq_enable();
--	while (!need_resched())
-+	while (!tif_need_resched())
- 		cpu_relax();
- 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- 	rcu_idle_exit();
-@@ -92,8 +92,7 @@ static void cpu_idle_loop(void)
- 			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
- 				cpu_idle_poll();
- 			} else {
--				current_clr_polling();
--				if (!need_resched()) {
-+				if (!current_clr_polling_and_test()) {
- 					stop_critical_timings();
- 					rcu_idle_enter();
- 					arch_cpu_idle();
-@@ -103,7 +102,7 @@ static void cpu_idle_loop(void)
- 				} else {
- 					local_irq_enable();
- 				}
--				current_set_polling();
-+				__current_set_polling();
- 			}
- 			arch_cpu_idle_exit();
- 		}
-@@ -129,7 +128,7 @@ void cpu_startup_entry(enum cpuhp_state
- 	 */
- 	boot_init_stack_canary();
- #endif
--	current_set_polling();
-+	__current_set_polling();
- 	arch_cpu_idle_prepare();
- 	cpu_idle_loop();
- }
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1407,9 +1407,9 @@ call_refreshresult(struct rpc_task *task
+ 		return;
+ 	case -ETIMEDOUT:
+ 		rpc_delay(task, 3*HZ);
+-	case -EKEYEXPIRED:
+ 	case -EAGAIN:
+ 		status = -EACCES;
++	case -EKEYEXPIRED:
+ 		if (!task->tk_cred_retry)
+ 			break;
+ 		task->tk_cred_retry--;
 
 
