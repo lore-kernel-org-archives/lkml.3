@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3K0OAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:00:03 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:38931 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab3K0N7z (ORCPT
+	id S1752983Ab3K0OB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:01:57 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:64688 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab3K0OBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:59:55 -0500
-Date: Wed, 27 Nov 2013 13:59:47 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v5 1/2] regulator: max14577: Add regulator driver for
- Maxim 14577
-Message-ID: <20131127135947.GL3296@lee--X1>
-References: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
+	Wed, 27 Nov 2013 09:01:55 -0500
+Date: Wed, 27 Nov 2013 15:01:43 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
+Message-ID: <20131127140143.GB24403@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+ <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+ <20131127132354.GA18422@gmail.com>
+ <20131127133027.GE10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <20131127133027.GE10022@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Nov 2013, Krzysztof Kozlowski wrote:
 
-> MAX14577 chip is a multi-function device which includes MUIC,
-> charger and voltage regulator. The driver is located in drivers/mfd.
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, Nov 27, 2013 at 02:23:54PM +0100, Ingo Molnar wrote:
+> > There are 3 main compatibility cases:
+> > 
+> >  - the kernel's 'sizeof sched_attr' is equal to sched_attr:size: the 
+> >    kernel version and user-space version matches, it's a straight ABI 
+> >    in this case with full functionality.
+> > 
+> >  - the kernel's 'sizeof sched_attr' is larger than sched_attr::size 
+> >    [the kernel is newer than what user-space was built for], in this 
+> >    case the kernel assumes that all remaining values are zero and acts
+> >    accordingly.
 > 
-> This patch adds regulator driver for MAX14577 chip. There are two
-> regulators in this chip:
-> 1. Safeout LDO with constant voltage output of 4.9V. It can be only
->    enabled or disabled.
-> 2. Current regulator for the charger. It provides current from 90mA up
->    to 950mA.
-> Driver supports Device Tree.
+> It also needs to fail sched_getparam() when any of the fields that do
+> not fit in the smaller struct provided are !0.
+>
+> >  - the kernel's 'sizeof sched_attr' is smaller than sched_attr::size 
+> >    [the kernel is older than what user-space was built for]. In 
+> >    this case the kernel should return -ENOSYS if any of the 
+> >    additional fields are nonzero. If those are all zero then it 
+> >    will work as if a smaller structure was passed in.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/mfd/max14577.c       |   13 +-
->  drivers/regulator/Kconfig    |    7 ++
->  drivers/regulator/Makefile   |    1 +
->  drivers/regulator/max14577.c |  269 ++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 287 insertions(+), 3 deletions(-)
->  create mode 100644 drivers/regulator/max14577.c
+> So the problem I see with this one is that because you're allowed to 
+> call sched_setparam() or whatever it will be called next on another 
+> task; a task can very easily fail its sched_getparam() call.
 > 
-> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-> index 94b766d..9af46c2 100644
-> --- a/drivers/mfd/max14577.c
-> +++ b/drivers/mfd/max14577.c
-> @@ -25,9 +25,16 @@
->  #include <linux/mfd/max14577-private.h>
->  
->  static struct mfd_cell max14577_devs[] = {
-> -	{ .name = "max14577-muic", },
-> -	{ .name = "max14577-regulator", },
-> -	{ .name = "max14577-charger", },
-> +	{
-> +		.name = "max14577-muic",
-> +	},
-> +	{
-> +		.name = "max14577-regulator",
-> +		.of_compatible = "maxim,max14577-regulator",
-> +	},
-> +	{
-> +		.name = "max14577-charger",
-> +	},
->  };
+> Suppose the application is 'old' and only supports a subset of the 
+> fields; but its wants to get, modify and set its params. This will 
+> work as long nothing will set anything it doesn't know about.
+> 
+> As soon as some external entity -- say a sysad using schedtool -- 
+> sets a param field it doesn't support the get, modify, set routing 
+> completely fails.
 
-Still it still part of the regulator patch.
+There are two approaches to this that I can see:
 
-Can you pull the code above into a separate patch please?
+1)
 
-Also, there's no requirement to open out all of the one liners, just
-the entry where you're using two properties.
+allow partial information to be returned to user-space, for existing 
+input parameters. The new fields won't be displayed, but the tool 
+doesn't know about them anyway so it's OK. The tool can still display 
+all the other existing parameters.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2)
+
+Return -ENOSYS if the 'extra' fields are nonzero. In this case the 
+usual case of old tooling + new kernel will still work just fine, 
+because old tooling won't set the new fields to any non-default 
+(nonzero) values. In the 'mixed' case old tooling will not be able to 
+change/display those fields.
+
+I tend to lean towards #1. What do you think?
+
+Thanks,
+
+	Ingo
