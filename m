@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab3K0OgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:36:17 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:61731 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab3K0OgP (ORCPT
+	id S1756259Ab3K0Og4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:36:56 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:43811 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab3K0Ogw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:36:15 -0500
-Date: Wed, 27 Nov 2013 15:36:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de,
-        Linus Torvalds <torvalds@linux-foundation.org>, arjan@linux.intel.com,
-        linux@roeck-us.net, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: override __compiletime_object_size()
-Message-ID: <20131127143611.GE25043@gmail.com>
-References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
- <20131026103109.GC14949@gmail.com>
- <526F914A02000078000FD806@nat28.tlf.novell.com>
- <20131029095408.GB25306@gmail.com>
- <526F971F02000078000FD841@nat28.tlf.novell.com>
- <20131029101257.GA25953@gmail.com>
- <529385AF0200007800106C84@nat28.tlf.novell.com>
- <20131127140332.GC24403@gmail.com>
- <52960DD202000078001079D8@nat28.tlf.novell.com>
+	Wed, 27 Nov 2013 09:36:52 -0500
+Date: Wed, 27 Nov 2013 14:36:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, sameo@linux.intel.com,
+        dev@lynxeye.de, mark.rutland@arm.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] mfd: tps6586x: add version detection
+Message-ID: <20131127143641.GO3296@lee--X1>
+References: <cover.1385508112.git.stefan@agner.ch>
+ <ef881d39f78b75b4badeebb5be0264edc3906d86.1385508112.git.stefan@agner.ch>
+ <20131127130954.GF3296@lee--X1>
+ <cd69295e946b48451f449eacc02efa4a@agner.ch>
+ <20131127135547.GK3296@lee--X1>
+ <cfb203a896eda67c106794d89e668d56@agner.ch>
+ <20131127143429.GN3296@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52960DD202000078001079D8@nat28.tlf.novell.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131127143429.GN3296@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Re-adding the list.
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+Please remember to 'reply to all' when discussing patches.
 
-> >>> On 27.11.13 at 15:03, Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > * Jan Beulich <JBeulich@suse.com> wrote:
+> > >> Hm, when the device is not answering on that request, the probe method
+> > >> should fail I would say. This means that the device is missing most
+> > >> likely. However, I should set the device version to TPS6586X_ANY if I
+> > >> happen to end up in the default case.
+> > > 
+> > > I would say that returning an error is the sound thing to do, but I'm
+> > > missing the point of TPS6586X_ANY, as it doesn't appear to be used in
+> > > this context.
+> > > 
 > > 
-> >> As discussed in the context of commits 3df7b41a ("x86: Unify
-> >> copy_from_user() size checking") and 7a3d9b0f ("x86: Unify
-> >> copy_to_user() and add size checking to it"), we want to leverage
-> >> __builtin_object_size() also on newer gcc versions, but with other
-> >> architectures still using another model of copy_*_user() verification
-> >> we can't replace the global definition. Do it in the (only) header
-> >> needing the construct for now.
-> >> 
-> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> >> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> >> Cc: Guenter Roeck <linux@roeck-us.net>
-> >> ---
-> >>  arch/x86/include/asm/uaccess.h |    6 ++++++
-> >>  1 file changed, 6 insertions(+)
-> >> 
-> >> --- 3.13-rc1/arch/x86/include/asm/uaccess.h
-> >> +++ 3.13-rc1-x86-compiletime-object-size/arch/x86/include/asm/uaccess.h
-> >> @@ -584,6 +584,12 @@ __copy_from_user_overflow(int size, unsi
-> >>  
-> >>  #endif
-> >>  
-> >> +/* linux/compiler-gcc4.h restricts this to gcc < 4.6, which doesn't suit us. */
-> >> +#if defined(__GNUC__) && GCC_VERSION >= 40100
-> >> +# undef __compiletime_object_size
-> >> +# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-> >> +#endif
-> >> +
-> > 
-> > Would be nice to have a more verbose changelog that explains what 
-> > benefits this brings us.
+> > Yes, its mainly used in the regulator code later on. I do assign voltage
+> > table to TPS6586X_ANY, if its the appropriate table for any version of
+> > the device. 
 > 
-> That makes no sense to me - the benefits of this construct should 
-> have been explained with its introduction; the change here just 
-> makes it being used under wider range of compilers (and the code 
-> comment already says exactly that).
+> <snip>
+> 
+> > Ok, will change this. Setting the version to TPS6586X_ANY in the default
+> > case is anyway not a good idea since it would suppress unknown versions.
+> 
+> Perhaps I should suggest to make TPS6586X_ANY a positive number then,
+> as a negative value to me indicates more of an error than a generic
+> parameter.
 
-Yes indeed - I should have read the referenced changelog...
-
-Thanks, will apply it as-is, if there are no objections from others.
-
-Thanks,
-
-	Ingo
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
