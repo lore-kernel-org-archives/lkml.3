@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3K0EQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 23:16:13 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:53332
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751524Ab3K0EQL (ORCPT
+	id S1752708Ab3K0EWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 23:22:14 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64403 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3K0EWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 23:16:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(z579ehzda00h1432Idc73hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzzz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0hbe9i1155h)
-From: Li Xiubo <Li.Xiubo@freescale.com>
-To: =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        Fabio Estevam <Fabio.Estevam@freescale.com>,
-        "oskar@scara.com" <oskar@scara.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
- regulator consumers
-Thread-Topic: [PATCHv1] ASoC: SGTL5000: Fix kernel failed while getting
- regulator consumers
-Thread-Index: AQHO6pRwzUzMP/nWTkmv/o3JfSCBM5o3WAOAgAEhYEA=
-Date: Wed, 27 Nov 2013 04:16:07 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F828CE014@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1385459713-6778-1-git-send-email-Li.Xiubo@freescale.com>
- <20131126115933.74840d1a@ipc1.ka-ro>
-In-Reply-To: <20131126115933.74840d1a@ipc1.ka-ro>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.78]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 26 Nov 2013 23:22:12 -0500
+Message-ID: <529573F6.9080106@gmail.com>
+Date: Wed, 27 Nov 2013 12:24:22 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Joe Perches <joe@perches.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rkuo <rkuo@codeaurora.org>, hans.verkuil@cisco.com,
+        m.chehab@samsung.com, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2] drivers: staging: media: go7007: go7007-usb.c use
+ pr_*() instead of dev_*() before 'go' initialized in go7007_usb_probe()
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <52956442.50001@gmail.com> <1385522475.18487.34.camel@joe-AO722> <529569A5.1020008@gmail.com> <52956B78.6050107@gmail.com> <20131127040338.GB23930@kroah.com>
+In-Reply-To: <20131127040338.GB23930@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR4GJTg018895
 
+On 11/27/2013 12:03 PM, Greg KH wrote:
+> On Wed, Nov 27, 2013 at 11:48:08AM +0800, Chen Gang wrote:
+>> dev_*() assumes 'go' is already initialized, so need use pr_*() instead
+>> of before 'go' initialized. Related warning (with allmodconfig under
+>> hexagon):
+>>
+>>     CC [M]  drivers/staging/media/go7007/go7007-usb.o
+>>   drivers/staging/media/go7007/go7007-usb.c: In function 'go7007_usb_probe':
+>>   drivers/staging/media/go7007/go7007-usb.c:1060:2: warning: 'go' may be used uninitialized in this function [-Wuninitialized]
+>>
+>> Also remove useless code after 'return' statement.
+> 
+> This should all be fixed in my staging-linus branch already, right?  No
+> need for this anymore from what I can tell, sorry.
+> 
 
-> >  	else {
-> >  		ret = sgtl5000_replace_vddd_with_ldo(codec);
-> >
-> You could fix the coding style issue (braces on both branches of the if
-> clause) here too.
-> 
-> 
-Yes, I will.
+That's all right (in fact don't need sorry).  :-)
+
+And excuse me, I am not quite familiar upstream kernel version merging
+and branches. Is it still better/suitable/possible to sync some bug fix
+patches from staging brach to next brach?
+
 
 Thanks.
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Chen Gang
