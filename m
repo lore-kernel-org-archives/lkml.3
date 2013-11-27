@@ -1,75 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3K0CAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:00:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38914 "EHLO
+	id S1760798Ab3K0CDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:03:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757322Ab3K0A5G (ORCPT
+	with ESMTP id S1755329Ab3K0A5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:06 -0500
+	Tue, 26 Nov 2013 19:57:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.10 14/80] drm/nva3-/disp: fix hda eld writing, needs to be padded
-Date: Tue, 26 Nov 2013 16:56:43 -0800
-Message-Id: <20131127005641.934166958@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 38/39] configfs: fix race between dentry put and lookup
+Date: Tue, 26 Nov 2013 16:57:02 -0800
+Message-Id: <20131127005621.717875359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
-References: <20131127005640.934155527@linuxfoundation.org>
+In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
+References: <20131127005619.011763867@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 02d69294a174d7cb6a76080b6d16971ca08728d4 upstream.
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-Commits 0a9e2b959 (drm/nvd0/disp: move HDA codec setup to core) and
-a4feaf4ea (drm/nva3/disp: move hda codec handling to core) moved code
-around but neglected to fill data up to 0x60 as before. This caused
-/proc/asound/cardN/eld#3.0 to show eld_valid as 0. With this patch, that
-file is again populated with the correct data.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-See https://bugs.freedesktop.org/show_bug.cgi?id=67051
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-Reported-and-tested-by: Alex <alupu01@gmail.com>
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
+
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/hdanva3.c |    2 ++
- drivers/gpu/drm/nouveau/core/engine/disp/hdanvd0.c |    2 ++
- 2 files changed, 4 insertions(+)
+ fs/configfs/dir.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/hdanva3.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/hdanva3.c
-@@ -36,6 +36,8 @@ nva3_hda_eld(struct nv50_disp_priv *priv
- 	if (data && data[0]) {
- 		for (i = 0; i < size; i++)
- 			nv_wr32(priv, 0x61c440 + soff, (i << 8) | data[i]);
-+		for (; i < 0x60; i++)
-+			nv_wr32(priv, 0x61c440 + soff, (i << 8));
- 		nv_mask(priv, 0x61c448 + soff, 0x80000003, 0x80000003);
- 	} else
- 	if (data) {
---- a/drivers/gpu/drm/nouveau/core/engine/disp/hdanvd0.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/hdanvd0.c
-@@ -41,6 +41,8 @@ nvd0_hda_eld(struct nv50_disp_priv *priv
- 	if (data && data[0]) {
- 		for (i = 0; i < size; i++)
- 			nv_wr32(priv, 0x10ec00 + soff, (i << 8) | data[i]);
-+		for (; i < 0x60; i++)
-+			nv_wr32(priv, 0x10ec00 + soff, (i << 8));
- 		nv_mask(priv, 0x10ec10 + soff, 0x80000003, 0x80000003);
- 	} else
- 	if (data) {
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
+ 
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
++
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
+ 	}
+@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
+ 
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
++
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 
 
