@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3K0ON7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:13:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51410 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3K0ON4 (ORCPT
+	id S1757314Ab3K0OOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:14:06 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57637 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755257Ab3K0OOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:13:56 -0500
-Date: Wed, 27 Nov 2013 15:13:34 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
-Message-ID: <20131127141334.GA13532@twins.programming.kicks-ass.net>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
- <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
- <20131127132354.GA18422@gmail.com>
- <20131127133027.GE10022@twins.programming.kicks-ass.net>
- <20131127140143.GB24403@gmail.com>
+	Wed, 27 Nov 2013 09:14:01 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lan Tianyu <tianyu.lan@intel.com>, Nishanth Menon <nm@ti.com>,
+        jinchoi@broadcom.com, Sebastian Capella <sebastian.capella@linaro.org>
+Subject: Re: [PATCH V2 1/2] cpufreq: suspend governors on system suspend/hibernate
+Date: Wed, 27 Nov 2013 15:26:49 +0100
+Message-ID: <1569441.L2JJETg4Jp@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohpo=4ZdDybsm6oz0-GjCyP2c8MGvV9uZG8n+Cv2xGKcmeDQ@mail.gmail.com>
+References: <cover.1385118255.git.viresh.kumar@linaro.org> <9179214.Tbesu8t5px@vostro.rjw.lan> <CAKohpo=4ZdDybsm6oz0-GjCyP2c8MGvV9uZG8n+Cv2xGKcmeDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127140143.GB24403@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 03:01:43PM +0100, Ingo Molnar wrote:
-> > So the problem I see with this one is that because you're allowed to 
-> > call sched_setparam() or whatever it will be called next on another 
-> > task; a task can very easily fail its sched_getparam() call.
-> > 
-> > Suppose the application is 'old' and only supports a subset of the 
-> > fields; but its wants to get, modify and set its params. This will 
-> > work as long nothing will set anything it doesn't know about.
-> > 
-> > As soon as some external entity -- say a sysad using schedtool -- 
-> > sets a param field it doesn't support the get, modify, set routing 
-> > completely fails.
+On Wednesday, November 27, 2013 08:26:00 AM Viresh Kumar wrote:
+> On 27 November 2013 01:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Tuesday, November 26, 2013 08:39:02 PM Pavel Machek wrote:
+> >> So... we freeze frequencies in whatever state they are, yes?
 > 
-> There are two approaches to this that I can see:
+> Better go through the V3 of this patchset:
 > 
-> 1)
+> https://lkml.org/lkml/2013/11/25/838
 > 
-> allow partial information to be returned to user-space, for existing 
-> input parameters. The new fields won't be displayed, but the tool 
-> doesn't know about them anyway so it's OK. The tool can still display 
-> all the other existing parameters.
-
-But suppose a task simply wants to lower/raise its static (FIFO)
-priority and does:
-
-sched_getparam(&params);
-params.prio += 1;
-sched_setparam(&params);
-
-If anything outside of the known param fields was set, we just silently
-lost it, for the setparam() call will fill out 0s for the unprovided
-fields.
-
-> 2)
+> We are giving drivers and opportunity to set core to whatever frequency they
+> want before suspending.
 > 
-> Return -ENOSYS if the 'extra' fields are nonzero. In this case the 
-> usual case of old tooling + new kernel will still work just fine, 
-> because old tooling won't set the new fields to any non-default 
-> (nonzero) values. In the 'mixed' case old tooling will not be able to 
-> change/display those fields.
+> > Yes.  The idea was to do that after suspending devices in which case it wouldn't
+> > matter so much.  But Viresh always has to complicate things.
 > 
-> I tend to lean towards #1. What do you think?
+> :)
+> 
+> Its complicated by the kind of designs we have for our hardware. We tried the
+> noirq callbacks and it worked atleast for Nishanth, who reported the problem
+> initially. But the problem started when drivers wanted to change their
+> frequencies before suspending and that can't happen in noirq place..
 
-As per the above that can result in silent unexpected behavioural
-changes.
+This way you end up with a fix that may introduce other issues.  Which is kind
+of fine before a merge window, but not so much after one.  So at this point it's
+better to fix things that may be fixed without introducing those other issues
+*first* and then go for a more intrusive change that will cover more cases.
 
-I'd much rather be explicit and break hard; so 2).
+> I had another idea but then left it thinking that it might be even more
+> complicated :)
+> 
+> What about both dpm_suspend_noirq and dpm_suspend callbacks. Drivers
+> will change freq in dpm_suspend_noirq and dpm_suspend will stop governors?
+> 
+> But the question is can governors try another frequency at that time?
+> i.e. override whatever is configured by drivers?
+> 
+> >> Should we go to some specific frequency?
+> >
+> > If that is done where it is done, yes, we should.
+> 
+> You meant dpm_suspend() here, right?
 
-So mixing new tools (schedtool, chrt etc) and old apps will give pain,
-but at least not silent surprises.
+Yes.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
