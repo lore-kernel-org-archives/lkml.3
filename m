@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab3K0NTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:19:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045Ab3K0NS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:18:58 -0500
-Date: Wed, 27 Nov 2013 14:20:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: zhang.yi20@zte.com.cn
-Cc: htejun@gmail.com, lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH]: exec: avoid propagating PF_NO_SETAFFINITY into
-	userspace child
-Message-ID: <20131127132004.GA1168@redhat.com>
-References: <20131114052326.GA29031@mtj.dyndns.org> <20131114114039.GA29277@redhat.com> <20131114115551.GA30824@redhat.com> <20131114115618.GB30824@redhat.com> <CAOS58YO_pZzBB+T6FEzNqfZv4_UUQ_QF1n1zxy4u+H_KhW-vJQ@mail.gmail.com> <OF36E72FA9.51146BE3-ON48257C2E.0008BC6D-48257C2E.0008FF9C@zte.com.cn> <20131125121416.GB23829@redhat.com> <OF4CF076F6.04AFF122-ON48257C2F.0009B6E4-48257C2F.000BF905@zte.com.cn> <20131126180420.GA18172@redhat.com> <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
+	id S1751900Ab3K0NXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:23:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50091 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3K0NXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 08:23:09 -0500
+Date: Wed, 27 Nov 2013 14:22:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>, svaidy@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, bitbucket@online.de,
+        benh@kernel.crashing.org, anton@samba.org, Morten.Rasmussen@arm.com,
+        pjt@google.com, mikey@neuling.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] in sched fair on v3.13-rc1+ doing hotplug
+Message-ID: <20131127132243.GD10022@twins.programming.kicks-ass.net>
+References: <20131127081345.0cab8b15@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <OF99742718.77495161-ON48257C30.000A8334-48257C30.000BA983@zte.com.cn>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131127081345.0cab8b15@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27, zhang.yi20@zte.com.cn wrote:
->
-> Userspace process doesn't want the PF_NO_SETAFFINITY, but its parent may be
-> a kernel worker thread which has PF_NO_SETAFFINITY set, and this worker thread
-> can do kernel_thread() to create the child.
-> Clearing this flag in usersapce child to enable its migrating capability.
->
->
-> Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+On Wed, Nov 27, 2013 at 08:13:45AM -0500, Steven Rostedt wrote:
+>         atomic_inc(&sd->groups->sgp->nr_busy_cpus);  <<---- BUG
+> unlock:
+>         rcu_read_unlock();
+> }
 
-Thanks!
+tip/sched/urgent has this one:
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+---
+commit 42eb088ed246a5a817bb45a8b32fe234cf1c0f8b
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Tue Nov 19 16:41:49 2013 +0100
 
-> --- linux-3.12.old/fs/exec.c	2013-11-26 08:53:12.175811856 +0000
-> +++ linux-3.12/fs/exec.c	2013-11-27 09:36:56.231972168 +0000
-> @@ -1090,8 +1090,8 @@ int flush_old_exec(struct linux_binprm *
->  	bprm->mm = NULL;		/* We're using it now */
-> 
->  	set_fs(USER_DS);
-> -	current->flags &=
-> -		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE);
-> +	current->flags &= ~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD |
-> +					PF_NOFREEZE | PF_NO_SETAFFINITY);
->  	flush_thread();
->  	current->personality &= ~bprm->per_clear;
-> 
-> 
+    sched: Avoid NULL dereference on sd_busy
+    
+    Commit 37dc6b50cee9 ("sched: Remove unnecessary iteration over sched
+    domains to update nr_busy_cpus") forgot to clear 'sd_busy' under some
+    conditions leading to a possible NULL deref in set_cpu_sd_state_idle().
+    
+    Reported-by: Anton Blanchard <anton@samba.org>
+    Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+    Link: http://lkml.kernel.org/r/20131118113701.GF3866@twins.programming.kicks-ass.net
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c1808606ee5f..a1591ca7eb5a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4910,8 +4910,9 @@ static void update_top_cache_domain(int cpu)
+ 	if (sd) {
+ 		id = cpumask_first(sched_domain_span(sd));
+ 		size = cpumask_weight(sched_domain_span(sd));
+-		rcu_assign_pointer(per_cpu(sd_busy, cpu), sd->parent);
++		sd = sd->parent; /* sd_busy */
+ 	}
++	rcu_assign_pointer(per_cpu(sd_busy, cpu), sd);
+ 
+ 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
+ 	per_cpu(sd_llc_size, cpu) = size;
