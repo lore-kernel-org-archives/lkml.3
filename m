@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab3K0BVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:21:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39511 "EHLO
+	id S1759593Ab3K0BWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:22:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932429Ab3K0A7T (ORCPT
+	with ESMTP id S1758752Ab3K0A7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:19 -0500
+	Tue, 26 Nov 2013 19:59:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@suse.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.12 075/116] x86/microcode/amd: Tone down printk(), dont treat a missing firmware file as an error
-Date: Tue, 26 Nov 2013 16:57:28 -0800
-Message-Id: <20131127005742.110348170@linuxfoundation.org>
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.12 074/116] x86/apic: Disable I/O APIC before shutdown of the local APIC
+Date: Tue, 26 Nov 2013 16:57:27 -0800
+Message-Id: <20131127005742.043620644@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,39 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Renninger <trenn@suse.de>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit 11f918d3e2d3861b6931e97b3aa778e4984935aa upstream.
+commit 522e66464467543c0d88d023336eec4df03ad40b upstream.
 
-Do it the same way as done in microcode_intel.c: use pr_debug()
-for missing firmware files.
+In reboot and crash path, when we shut down the local APIC, the I/O APIC is
+still active. This may cause issues because external interrupts
+can still come in and disturb the local APIC during shutdown process.
 
-There seem to be CPUs out there for which no microcode update
-has been submitted to kernel-firmware repo yet resulting in
-scary sounding error messages in dmesg:
+To quiet external interrupts, disable I/O APIC before shutdown local APIC.
 
-  microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1384274383-43510-1-git-send-email-trenn@suse.de
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1382578212-4677-1-git-send-email-fenghua.yu@intel.com
+[ I suppose the 'issue' is a hang during shutdown. It's a fine change nevertheless. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_amd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/crash.c  |    2 +-
+ arch/x86/kernel/reboot.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -431,7 +431,7 @@ static enum ucode_state request_microcod
- 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -127,12 +127,12 @@ void native_machine_crash_shutdown(struc
+ 	cpu_emergency_vmxoff();
+ 	cpu_emergency_svm_disable();
  
- 	if (request_firmware(&fw, (const char *)fw_name, device)) {
--		pr_err("failed to load file %s\n", fw_name);
-+		pr_debug("failed to load file %s\n", fw_name);
- 		goto out;
- 	}
+-	lapic_shutdown();
+ #ifdef CONFIG_X86_IO_APIC
+ 	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
+ 	ioapic_zap_locks();
+ 	disable_IO_APIC();
+ #endif
++	lapic_shutdown();
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -550,6 +550,10 @@ static void native_machine_emergency_res
+ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
++#ifdef CONFIG_X86_IO_APIC
++	disable_IO_APIC();
++#endif
++
+ #ifdef CONFIG_SMP
+ 	/*
+ 	 * Stop all of the others. Also disable the local irq to
+@@ -562,10 +566,6 @@ void native_machine_shutdown(void)
  
+ 	lapic_shutdown();
+ 
+-#ifdef CONFIG_X86_IO_APIC
+-	disable_IO_APIC();
+-#endif
+-
+ #ifdef CONFIG_HPET_TIMER
+ 	hpet_disable();
+ #endif
 
 
