@@ -1,191 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab3K0Q2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:28:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752326Ab3K0Q2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:28:10 -0500
-Date: Wed, 27 Nov 2013 18:31:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Michael Dalton <mwdalton@google.com>,
-        Eric Dumazet <edumazet@google.com>, Jason Wang <jasowang@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH 1/2] virtio_net: fix error handling for mergeable buffers
-Message-ID: <1385569684-26595-1-git-send-email-mst@redhat.com>
+	id S1757431Ab3K0Q3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:29:33 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50306 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab3K0Q3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:29:30 -0500
+Date: Wed, 27 Nov 2013 16:28:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-ID: <20131127162859.GD14725@sirena.org.uk>
+References: <1385559982-32039-1-git-send-email-k.kozlowski@samsung.com>
+ <20131127152042.GY14725@sirena.org.uk>
+ <20131127152358.GP3296@lee--X1>
+ <20131127154221.GZ14725@sirena.org.uk>
+ <20131127161323.GS3296@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGdfKiBebYi9ts3p"
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
+In-Reply-To: <20131127161323.GS3296@lee--X1>
+X-Cookie: Your supervisor is thinking about you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 1/2] regulator: max14577: Add regulator driver for
+ Maxim 14577
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet noticed that if we encounter an error
-when processing a mergeable buffer, we don't
-dequeue all of the buffers from this packet,
-the result is almost sure to be loss of networking.
 
-Jason Wang noticed that we also leak a page and that we don't decrement
-the rq buf count, so we won't repost buffers (a resource leak).
+--MGdfKiBebYi9ts3p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Fix both issues, and also make the logic a bit more
-robust against device errors by not looping when e.g. because of a leak
-like the one we are fixing here the number of buffers is 0.
+On Wed, Nov 27, 2013 at 04:13:23PM +0000, Lee Jones wrote:
+> On Wed, 27 Nov 2013, Mark Brown wrote:
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael Dalton <mwdalton@google.com>
-Reported-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> > The usual thing to do is of_get_child_by_name() on the parent to get the
+> > container to search in.
 
-Note: this bugfix is needed on stable too, but backport
-might not be trivial.
-I'll send a backport for stable separately.
+> What do you mean when you say 'usual thing'? Only the max8998 does
+> this currently. IMHO the better way to do it for MFD devices is
+> provide a compatible string and let the framework does the rest for
+> you.
 
- drivers/net/virtio_net.c | 84 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 52 insertions(+), 32 deletions(-)
+No, as3722, Palmas and three of the TPS chips do the same thing.  If it
+were a purely Linux-internal thing I'd probably agree with you but as it
+is we'd just be adding compatible strings in everyone's DTs to save one
+line of code in the kernel.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 7bab4de..0e6ea69 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -299,41 +299,53 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
- 	return skb;
- }
- 
--static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
-+static struct sk_buff *receive_mergeable(struct net_device *dev,
-+					 struct receive_queue *rq,
-+					 void *buf,
-+					 unsigned int len)
- {
--	struct skb_vnet_hdr *hdr = skb_vnet_hdr(head_skb);
-+	struct skb_vnet_hdr *hdr = buf;
-+	int num_buf = hdr->mhdr.num_buffers;
-+	struct page *page = virt_to_head_page(buf);
-+	int offset = buf - page_address(page);
-+	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len,
-+					       MERGE_BUFFER_LEN);
- 	struct sk_buff *curr_skb = head_skb;
--	char *buf;
--	struct page *page;
--	int num_buf, len, offset;
- 
--	num_buf = hdr->mhdr.num_buffers;
-+	if (unlikely(!curr_skb))
-+		goto err_skb;
-+
- 	while (--num_buf) {
--		int num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
-+		int num_skb_frags;
-+
- 		buf = virtqueue_get_buf(rq->vq, &len);
- 		if (unlikely(!buf)) {
--			pr_debug("%s: rx error: %d buffers missing\n",
--				 head_skb->dev->name, hdr->mhdr.num_buffers);
--			head_skb->dev->stats.rx_length_errors++;
--			return -EINVAL;
-+			pr_debug("%s: rx error: %d buffers out of %d missing\n",
-+				 dev->name, num_buf, hdr->mhdr.num_buffers);
-+			dev->stats.rx_length_errors++;
-+			goto err_buf;
- 		}
- 		if (unlikely(len > MERGE_BUFFER_LEN)) {
- 			pr_debug("%s: rx error: merge buffer too long\n",
--				 head_skb->dev->name);
-+				 dev->name);
- 			len = MERGE_BUFFER_LEN;
- 		}
-+
-+		page = virt_to_head_page(buf);
-+		--rq->num;
-+
-+		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
- 		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
- 			struct sk_buff *nskb = alloc_skb(0, GFP_ATOMIC);
--			if (unlikely(!nskb)) {
--				head_skb->dev->stats.rx_dropped++;
--				return -ENOMEM;
--			}
-+
-+			if (unlikely(!nskb))
-+				goto err_skb;
- 			if (curr_skb == head_skb)
- 				skb_shinfo(curr_skb)->frag_list = nskb;
- 			else
- 				curr_skb->next = nskb;
--			curr_skb = nskb;
- 			head_skb->truesize += nskb->truesize;
-+			curr_skb = nskb;
- 			num_skb_frags = 0;
- 		}
- 		if (curr_skb != head_skb) {
-@@ -341,8 +353,7 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
- 			head_skb->len += len;
- 			head_skb->truesize += MERGE_BUFFER_LEN;
- 		}
--		page = virt_to_head_page(buf);
--		offset = buf - (char *)page_address(page);
-+		offset = buf - page_address(page);
- 		if (skb_can_coalesce(curr_skb, num_skb_frags, page, offset)) {
- 			put_page(page);
- 			skb_coalesce_rx_frag(curr_skb, num_skb_frags - 1,
-@@ -351,9 +362,28 @@ static int receive_mergeable(struct receive_queue *rq, struct sk_buff *head_skb)
- 			skb_add_rx_frag(curr_skb, num_skb_frags, page,
- 					offset, len, MERGE_BUFFER_LEN);
- 		}
-+	}
-+
-+	return head_skb;
-+
-+err_skb:
-+	put_page(page);
-+err_buf:
-+	dev->stats.rx_dropped++;
-+	dev_kfree_skb(head_skb);
-+	while (--num_buf) {
-+		buf = virtqueue_get_buf(rq->vq, &len);
-+		if (unlikely(!buf)) {
-+			pr_debug("%s: rx error: %d buffers missing\n",
-+				 dev->name, num_buf);
-+			dev->stats.rx_length_errors++;
-+			break;
-+		}
-+		page = virt_to_head_page(buf);
-+		put_page(page);
- 		--rq->num;
- 	}
--	return 0;
-+	return NULL;
- }
- 
- static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
-@@ -382,19 +412,9 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 		len -= sizeof(struct virtio_net_hdr);
- 		skb_trim(skb, len);
- 	} else if (vi->mergeable_rx_bufs) {
--		struct page *page = virt_to_head_page(buf);
--		skb = page_to_skb(rq, page,
--				  (char *)buf - (char *)page_address(page),
--				  len, MERGE_BUFFER_LEN);
--		if (unlikely(!skb)) {
--			dev->stats.rx_dropped++;
--			put_page(page);
-+		skb = receive_mergeable(dev, rq, buf, len);
-+		if (unlikely(!skb))
- 			return;
--		}
--		if (receive_mergeable(rq, skb)) {
--			dev_kfree_skb(skb);
--			return;
--		}
- 	} else {
- 		page = buf;
- 		skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
--- 
-MST
+--MGdfKiBebYi9ts3p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSlh3IAAoJELSic+t+oim9jCgP/Rbo7ANSJJWvI2oXkvZ1vibK
+t+WmTuBchJFKeRWCfQOQEUesSCAffhBNaqEAutiY2ibrK6Zbht5J3R7JpEMTi1jP
+l+F5a/brULQ/LLRZm8CVCVixujRbYqpG/7VvjXR4M16sdc+XiVEYdzvAU8fU3tmU
+gYv8qL0Ke1PCSLVYZf6GM7G+tSJTkhbRi96jQ0i6u+YBw3rTimlzWMkgOCZdtUQd
+DrI/I0lpIx2Hn0KcDp0n5A0jy9f2jJpsg9cQJi+mNlOtoWJE7oDFp57EtN5k5pJp
+QD0mQbnR9cTzYzraCoFm4hIb1dSDaQa2pUfuIhGKyopqMOz5eWmeHci1NsBMKJBe
+gp0yBse9tZH5LmYXCHAkFy9TNKL5rwcdArHosQ6VvUaUCa0WLNH82LQDD6c0cKtz
+bFO3Sv6Oe/cyD4FbsJz/qS7adVMZb/YqW5TRZ8JNKL+YKLgF6yQw7bMQ4/uup1k8
+YDhhKTvxGCojLL9ooe9e+LZrsuSdC6OXVREFqvI+FY8HHj4ZlD6oULicrLXgqeN5
+mq3x07cPjn63miZyo/GmpORofZ3T4zbgxhwOA6ZK77SQZyBrVACwUWJjtmlag9s7
+4bi59yTWMm+sUpGQdL/6XT3uwHQB3/DyF74Yu3GFqfkhwOY/7+tOCmxeJv5nafQz
+Qx/bcnL3Q9zU9k9pbunp
+=EIXQ
+-----END PGP SIGNATURE-----
+
+--MGdfKiBebYi9ts3p--
