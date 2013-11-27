@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab3K0UUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:20:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32867 "EHLO
+	id S1758208Ab3K0UUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:20:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32865 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757923Ab3K0URG (ORCPT
+	with ESMTP id S1757920Ab3K0URF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:17:06 -0500
+	Wed, 27 Nov 2013 15:17:05 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
         Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Chia-I Wu <olvaffe@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 29/34] perf timechart: dynamically determine event fields offset
-Date: Wed, 27 Nov 2013 17:16:29 -0300
-Message-Id: <1385583394-3703-30-git-send-email-acme@infradead.org>
+Subject: [PATCH 18/34] perf timechart: Group figures and add title with details
+Date: Wed, 27 Nov 2013 17:16:18 -0300
+Message-Id: <1385583394-3703-19-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
 References: <1385583394-3703-1-git-send-email-acme@infradead.org>
@@ -30,262 +29,265 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-Since b000c8065a92 "tracing: Remove the extra 4 bytes of padding in
-events" removed padding bytes, perf timechart got out of sync with the
-kernel's trace_entry structure.
+Add titles to figures so we can run SVG interactively in Firefox and
+check event details in the tooltips.
 
-Convert perf timechart to use dynamic fields offsets (via
-perf_evsel__intval) not relying on a hardcoded copy of fields layout
-from the kernel.
+This also aids exploring SVG with Inkscape because when user clicks on
+one part of logical figure, all parts are selected.
+
+It's also possible to read titles with Inkscape in the object details.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Chia-I Wu <olvaffe@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20131127104459.GB3309@stfomichev-desktop
+Link: http://lkml.kernel.org/r/1383323151-19810-6-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c | 119 +++++++++++++++--------------------------
- 1 file changed, 42 insertions(+), 77 deletions(-)
+ tools/perf/builtin-timechart.c |  6 ++---
+ tools/perf/util/svghelper.c    | 56 ++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/svghelper.h    |  5 ++--
+ 3 files changed, 60 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 491662bdfe0b..436cb5f9d751 100644
+index b3f175a30d94..6a848b8c4c16 100644
 --- a/tools/perf/builtin-timechart.c
 +++ b/tools/perf/builtin-timechart.c
-@@ -306,50 +306,10 @@ static int process_exit_event(struct perf_tool *tool __maybe_unused,
- 	return 0;
+@@ -798,11 +798,11 @@ static void draw_process_bars(void)
+ 			sample = c->samples;
+ 			while (sample) {
+ 				if (sample->type == TYPE_RUNNING)
+-					svg_sample(Y, sample->cpu, sample->start_time, sample->end_time);
++					svg_running(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_BLOCKED)
+-					svg_box(Y, sample->start_time, sample->end_time, "blocked");
++					svg_blocked(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				if (sample->type == TYPE_WAITING)
+-					svg_waiting(Y, sample->start_time, sample->end_time);
++					svg_waiting(Y, sample->cpu, sample->start_time, sample->end_time);
+ 				sample = sample->next;
+ 			}
+ 
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 96c866045d60..9a5b41392e01 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -95,6 +95,7 @@ void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end)
+ 
+ 	total_height = (1 + rows + cpu2slot(cpus)) * SLOT_MULT;
+ 	fprintf(svgfile, "<?xml version=\"1.0\" standalone=\"no\"?> \n");
++	fprintf(svgfile, "<!DOCTYPE svg SYSTEM \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+ 	fprintf(svgfile, "<svg width=\"%i\" height=\"%" PRIu64 "\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n", svg_page_width, total_height);
+ 
+ 	fprintf(svgfile, "<defs>\n  <style type=\"text/css\">\n    <![CDATA[\n");
+@@ -128,12 +129,29 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT, type);
  }
  
--struct trace_entry {
--	unsigned short		type;
--	unsigned char		flags;
--	unsigned char		preempt_count;
--	int			pid;
--	int			lock_depth;
--};
--
- #ifdef SUPPORT_OLD_POWER_EVENTS
- static int use_old_power_events;
--struct power_entry_old {
--	struct trace_entry te;
--	u64	type;
--	u64	value;
--	u64	cpu_id;
--};
- #endif
- 
--struct power_processor_entry {
--	struct trace_entry te;
--	u32	state;
--	u32	cpu_id;
--};
--
--#define TASK_COMM_LEN 16
--struct wakeup_entry {
--	struct trace_entry te;
--	char comm[TASK_COMM_LEN];
--	int   pid;
--	int   prio;
--	int   success;
--};
--
--struct sched_switch {
--	struct trace_entry te;
--	char prev_comm[TASK_COMM_LEN];
--	int  prev_pid;
--	int  prev_prio;
--	long prev_state; /* Arjan weeps. */
--	char next_comm[TASK_COMM_LEN];
--	int  next_pid;
--	int  next_prio;
--};
--
- static void c_state_start(int cpu, u64 timestamp, int state)
+-void svg_sample(int Yslot, int cpu, u64 start, u64 end)
++static char *time_to_string(u64 duration);
++void svg_blocked(int Yslot, int cpu, u64 start, u64 end)
++{
++	if (!svgfile)
++		return;
++
++	fprintf(svgfile, "<g>\n");
++	fprintf(svgfile, "<title>#%d blocked %s</title>\n", cpu,
++		time_to_string(end - start));
++	svg_box(Yslot, start, end, "blocked");
++	fprintf(svgfile, "</g>\n");
++}
++
++void svg_running(int Yslot, int cpu, u64 start, u64 end)
  {
- 	cpus_cstate_start_times[cpu] = timestamp;
-@@ -409,25 +369,23 @@ static void p_state_change(int cpu, u64 timestamp, u64 new_freq)
- 			turbo_frequency = max_freq;
- }
- 
--static void
--sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te,
--	     const char *backtrace)
-+static void sched_wakeup(int cpu, u64 timestamp, int waker, int wakee,
-+			 u8 flags, const char *backtrace)
- {
- 	struct per_pid *p;
--	struct wakeup_entry *wake = (void *)te;
- 	struct wake_event *we = zalloc(sizeof(*we));
- 
- 	if (!we)
+ 	double text_size;
+ 	if (!svgfile)
  		return;
  
- 	we->time = timestamp;
--	we->waker = pid;
-+	we->waker = waker;
- 	we->backtrace = backtrace;
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>#%d running %s</title>\n",
++		cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"sample\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT);
  
--	if ((te->flags & TRACE_FLAG_HARDIRQ) || (te->flags & TRACE_FLAG_SOFTIRQ))
-+	if ((flags & TRACE_FLAG_HARDIRQ) || (flags & TRACE_FLAG_SOFTIRQ))
- 		we->waker = -1;
+@@ -148,6 +166,7 @@ void svg_sample(int Yslot, int cpu, u64 start, u64 end)
+ 		fprintf(svgfile, "<text x=\"%1.8f\" y=\"%1.8f\" font-size=\"%1.8fpt\">%i</text>\n",
+ 			time2pixels(start), Yslot *  SLOT_MULT + SLOT_HEIGHT - 1, text_size,  cpu + 1);
  
--	we->wakee = wake->pid;
-+	we->wakee = wakee;
- 	we->next = wake_events;
- 	wake_events = we;
- 	p = find_create_pid(we->wakee);
-@@ -444,24 +402,22 @@ sched_wakeup(int cpu, u64 timestamp, int pid, struct trace_entry *te,
- 	}
++	fprintf(svgfile, "</g>\n");
  }
  
--static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te,
--			 const char *backtrace)
-+static void sched_switch(int cpu, u64 timestamp, int prev_pid, int next_pid,
-+			 u64 prev_state, const char *backtrace)
+ static char *time_to_string(u64 duration)
+@@ -168,7 +187,7 @@ static char *time_to_string(u64 duration)
+ 	return text;
+ }
+ 
+-void svg_waiting(int Yslot, u64 start, u64 end)
++void svg_waiting(int Yslot, int cpu, u64 start, u64 end)
  {
- 	struct per_pid *p = NULL, *prev_p;
--	struct sched_switch *sw = (void *)te;
--
+ 	char *text;
+ 	const char *style;
+@@ -192,6 +211,7 @@ void svg_waiting(int Yslot, u64 start, u64 end)
+ 	font_size = round_text_size(font_size);
  
--	prev_p = find_create_pid(sw->prev_pid);
-+	prev_p = find_create_pid(prev_pid);
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
++	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
+ 	if (font_size > MIN_TEXT_SIZE)
+@@ -242,6 +262,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 	max_freq = __max_freq;
+ 	turbo_frequency = __turbo_freq;
  
--	p = find_create_pid(sw->next_pid);
-+	p = find_create_pid(next_pid);
++	fprintf(svgfile, "<g>\n");
++
+ 	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"cpu\"/>\n",
+ 		time2pixels(first_time),
+ 		time2pixels(last_time)-time2pixels(first_time),
+@@ -253,6 +275,8 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
  
- 	if (prev_p->current && prev_p->current->state != TYPE_NONE)
--		pid_put_sample(sw->prev_pid, TYPE_RUNNING, cpu,
-+		pid_put_sample(prev_pid, TYPE_RUNNING, cpu,
- 			       prev_p->current->state_since, timestamp,
- 			       backtrace);
- 	if (p && p->current) {
- 		if (p->current->state != TYPE_NONE)
--			pid_put_sample(sw->next_pid, p->current->state, cpu,
-+			pid_put_sample(next_pid, p->current->state, cpu,
- 				       p->current->state_since, timestamp,
- 				       backtrace);
- 
-@@ -472,9 +428,9 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te,
- 	if (prev_p->current) {
- 		prev_p->current->state = TYPE_NONE;
- 		prev_p->current->state_since = timestamp;
--		if (sw->prev_state & 2)
-+		if (prev_state & 2)
- 			prev_p->current->state = TYPE_BLOCKED;
--		if (sw->prev_state == 0)
-+		if (prev_state == 0)
- 			prev_p->current->state = TYPE_WAITING;
- 	}
- }
-@@ -586,61 +542,69 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	fprintf(svgfile, "<text transform=\"translate(%4.8f,%4.8f)\" font-size=\"1.25pt\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - 4, cpu_model());
++
++	fprintf(svgfile, "</g>\n");
  }
  
- static int
--process_sample_cpu_idle(struct perf_evsel *evsel __maybe_unused,
-+process_sample_cpu_idle(struct perf_evsel *evsel,
- 			struct perf_sample *sample,
- 			const char *backtrace __maybe_unused)
- {
--	struct power_processor_entry *ppe = sample->raw_data;
-+	u32 state = perf_evsel__intval(evsel, sample, "state");
-+	u32 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
+ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name)
+@@ -264,6 +288,7 @@ void svg_process(int cpu, u64 start, u64 end, const char *type, const char *name
  
--	if (ppe->state == (u32) PWR_EVENT_EXIT)
--		c_state_end(ppe->cpu_id, sample->time);
-+	if (state == (u32)PWR_EVENT_EXIT)
-+		c_state_end(cpu_id, sample->time);
- 	else
--		c_state_start(ppe->cpu_id, sample->time, ppe->state);
-+		c_state_start(cpu_id, sample->time, state);
- 	return 0;
+ 
+ 	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
++	fprintf(svgfile, "<title>%s %s</title>\n", name, time_to_string(end - start));
+ 	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+@@ -288,6 +313,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (type > 6)
+ 		type = 6;
+ 	sprintf(style, "c%i", type);
+@@ -306,6 +333,8 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 	if (width > MIN_TEXT_SIZE)
+ 		fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"%3.8fpt\">C%i</text>\n",
+ 			time2pixels(start), cpu2y(cpu)+width, width, type);
++
++	fprintf(svgfile, "</g>\n");
  }
  
- static int
--process_sample_cpu_frequency(struct perf_evsel *evsel __maybe_unused,
-+process_sample_cpu_frequency(struct perf_evsel *evsel,
- 			     struct perf_sample *sample,
- 			     const char *backtrace __maybe_unused)
- {
--	struct power_processor_entry *ppe = sample->raw_data;
-+	u32 state = perf_evsel__intval(evsel, sample, "state");
-+	u32 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
+ static char *HzToHuman(unsigned long hz)
+@@ -339,6 +368,8 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	if (!svgfile)
+ 		return;
  
--	p_state_change(ppe->cpu_id, sample->time, ppe->state);
-+	p_state_change(cpu_id, sample->time, state);
- 	return 0;
++	fprintf(svgfile, "<g>\n");
++
+ 	if (max_freq)
+ 		height = freq * 1.0 / max_freq * (SLOT_HEIGHT + SLOT_MULT);
+ 	height = 1 + cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - height;
+@@ -347,6 +378,7 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"0.25pt\">%s</text>\n",
+ 		time2pixels(start), height+0.9, HzToHuman(freq));
+ 
++	fprintf(svgfile, "</g>\n");
  }
  
- static int
--process_sample_sched_wakeup(struct perf_evsel *evsel __maybe_unused,
-+process_sample_sched_wakeup(struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
--	struct trace_entry *te = sample->raw_data;
-+	u8 flags = perf_evsel__intval(evsel, sample, "common_flags");
-+	int waker = perf_evsel__intval(evsel, sample, "common_pid");
-+	int wakee = perf_evsel__intval(evsel, sample, "pid");
  
--	sched_wakeup(sample->cpu, sample->time, sample->pid, te, backtrace);
-+	sched_wakeup(sample->cpu, sample->time, waker, wakee, flags, backtrace);
- 	return 0;
+@@ -358,6 +390,12 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 		return;
+ 
+ 
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>%s wakes up %s</title>\n",
++		desc1 ? desc1 : "?",
++		desc2 ? desc2 : "?");
++
+ 	if (row1 < row2) {
+ 		if (row1) {
+ 			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+@@ -395,6 +433,8 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 	if (row1)
+ 		fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
  }
  
- static int
--process_sample_sched_switch(struct perf_evsel *evsel __maybe_unused,
-+process_sample_sched_switch(struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    const char *backtrace)
- {
--	struct trace_entry *te = sample->raw_data;
-+	int prev_pid = perf_evsel__intval(evsel, sample, "prev_pid");
-+	int next_pid = perf_evsel__intval(evsel, sample, "next_pid");
-+	u64 prev_state = perf_evsel__intval(evsel, sample, "prev_state");
+ void svg_wakeline(u64 start, int row1, int row2)
+@@ -405,6 +445,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		return;
  
--	sched_switch(sample->cpu, sample->time, te, backtrace);
-+	sched_switch(sample->cpu, sample->time, prev_pid, next_pid, prev_state,
-+		     backtrace);
- 	return 0;
+ 
++	fprintf(svgfile, "<g>\n");
++
+ 	if (row1 < row2)
+ 		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
+@@ -417,6 +459,8 @@ void svg_wakeline(u64 start, int row1, int row2)
+ 		height += SLOT_HEIGHT;
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
++
++	fprintf(svgfile, "</g>\n");
  }
  
- #ifdef SUPPORT_OLD_POWER_EVENTS
- static int
--process_sample_power_start(struct perf_evsel *evsel __maybe_unused,
-+process_sample_power_start(struct perf_evsel *evsel,
- 			   struct perf_sample *sample,
- 			   const char *backtrace __maybe_unused)
- {
--	struct power_entry_old *peo = sample->raw_data;
-+	u64 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
-+	u64 value = perf_evsel__intval(evsel, sample, "value");
+ void svg_interrupt(u64 start, int row)
+@@ -424,10 +468,16 @@ void svg_interrupt(u64 start, int row)
+ 	if (!svgfile)
+ 		return;
  
--	c_state_start(peo->cpu_id, sample->time, peo->value);
-+	c_state_start(cpu_id, sample->time, value);
- 	return 0;
++	fprintf(svgfile, "<g>\n");
++
++	fprintf(svgfile, "<title>Wakeup from interrupt</title>\n");
++
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT);
+ 	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT + SLOT_HEIGHT);
++
++	fprintf(svgfile, "</g>\n");
  }
  
-@@ -654,13 +618,14 @@ process_sample_power_end(struct perf_evsel *evsel __maybe_unused,
+ void svg_text(int Yslot, u64 start, const char *text)
+@@ -455,6 +505,7 @@ void svg_legenda(void)
+ 	if (!svgfile)
+ 		return;
+ 
++	fprintf(svgfile, "<g>\n");
+ 	svg_legenda_box(0,	"Running", "sample");
+ 	svg_legenda_box(100,	"Idle","c1");
+ 	svg_legenda_box(200,	"Deeper Idle", "c3");
+@@ -462,6 +513,7 @@ void svg_legenda(void)
+ 	svg_legenda_box(550,	"Sleeping", "process2");
+ 	svg_legenda_box(650,	"Waiting for cpu", "waiting");
+ 	svg_legenda_box(800,	"Blocked on IO", "blocked");
++	fprintf(svgfile, "</g>\n");
  }
  
- static int
--process_sample_power_frequency(struct perf_evsel *evsel __maybe_unused,
-+process_sample_power_frequency(struct perf_evsel *evsel,
- 			       struct perf_sample *sample,
- 			       const char *backtrace __maybe_unused)
- {
--	struct power_entry_old *peo = sample->raw_data;
-+	u64 cpu_id = perf_evsel__intval(evsel, sample, "cpu_id");
-+	u64 value = perf_evsel__intval(evsel, sample, "value");
+ void svg_time_grid(void)
+diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
+index e0781989cc31..aa533459ab76 100644
+--- a/tools/perf/util/svghelper.h
++++ b/tools/perf/util/svghelper.h
+@@ -5,8 +5,9 @@
  
--	p_state_change(peo->cpu_id, sample->time, peo->value);
-+	p_state_change(cpu_id, sample->time, value);
- 	return 0;
- }
- #endif /* SUPPORT_OLD_POWER_EVENTS */
+ extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
+ extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
+-extern void svg_sample(int Yslot, int cpu, u64 start, u64 end);
+-extern void svg_waiting(int Yslot, u64 start, u64 end);
++extern void svg_blocked(int Yslot, int cpu, u64 start, u64 end);
++extern void svg_running(int Yslot, int cpu, u64 start, u64 end);
++extern void svg_waiting(int Yslot, int cpu, u64 start, u64 end);
+ extern void svg_cpu_box(int cpu, u64 max_frequency, u64 turbo_frequency);
+ 
+ 
 -- 
 1.8.1.4
 
