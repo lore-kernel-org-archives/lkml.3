@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab3K0B31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:29:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39391 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758627Ab3K0A6v (ORCPT
+	id S1752524Ab3K0B3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:29:45 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60984 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754813Ab3K0B3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:51 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 043/116] ALSA: msnd: Avoid duplicated driver name
-Date: Tue, 26 Nov 2013 16:56:56 -0800
-Message-Id: <20131127005739.930159656@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
-References: <20131127005736.915454872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 26 Nov 2013 20:29:40 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Kgene Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V3 1/6] cpufreq: suspend governors on system suspend/hibernate
+Date: Wed, 27 Nov 2013 02:42:27 +0100
+Message-ID: <4787675.sJF8mqYyxv@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <4253729.doK7ubnxKx@vostro.rjw.lan>
+References: <cover.1385374819.git.viresh.kumar@linaro.org> <CAKohpok0E=m=63KXM22usiW7Rsu59cD7Q=+k3tRcW=8269tZnQ@mail.gmail.com> <4253729.doK7ubnxKx@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, November 26, 2013 09:23:15 PM Rafael J. Wysocki wrote:
+> On Tuesday, November 26, 2013 07:56:19 AM Viresh Kumar wrote:
+> > On 26 November 2013 04:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > >> @@ -1259,6 +1262,8 @@ int dpm_suspend(pm_message_t state)
+> > >>
+> > >>       might_sleep();
+> > >>
+> > >> +     cpufreq_suspend();
+> > >> +
+> > >>
+> > >>       mutex_lock(&dpm_list_mtx);
+> > >>       pm_transition = state;
+> > >>       async_error = 0;
+> > >
+> > > Shouldn't it do cpufreq_resume() on errors?
+> > 
+> > Yes and this is already done I believe. In case dpm_suspend() fails,
+> > dpm_resume() gets called. Isn't it?
+> 
+> OK
+> 
+> > >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> > >> +void cpufreq_suspend(void)
+> > >> +{
+> > >> +     struct cpufreq_policy *policy;
+> > >> +
+> > >> +     if (!has_target())
+> > >> +             return;
+> > >> +
+> > >> +     pr_debug("%s: Suspending Governors\n", __func__);
+> > >> +
+> > >> +     list_for_each_entry(policy, &cpufreq_policy_list, policy_list)
+> > >> +             if (__cpufreq_governor(policy, CPUFREQ_GOV_STOP))
+> > >> +                     pr_err("%s: Failed to stop governor for policy: %p\n",
+> > >> +                                     __func__, policy);
+> > >
+> > > This appears to be racy.  Is it really racy, or just seemingly?
+> > 
+> > Why does it look racy to you? Userspace should be frozen by now,
+> > policy_list should be stable as well as nobody would touch it.
+> 
+> You're stopping governors while they may be in use in principle.  Do we have
+> suitable synchronization in place for that?
 
-------------------
+Anyway, if you did what I asked you to do and put the cpufreq suspend/resume
+into dpm_suspend/resume_noirq(), I'd probably take this for 3.13.  However,
+since you've decided to put those things somewhere else thus making the
+change much more intrusive, I can only queue it up for 3.14.
 
-From: Takashi Iwai <tiwai@suse.de>
+This means I'm going to take the Tianyu's patch as a stop gap for 3.13.
 
-commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
+Thanks!
 
-msnd_pinnacle.c is used for both snd-msnd-pinnacle and
-snd-msnd-classic drivers, and both should have different driver
-names.  Using the same driver name results in the sysfs warning for
-duplicated entries like
- kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
- kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
- sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
- ......
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/isa/msnd/msnd_pinnacle.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/sound/isa/msnd/msnd_pinnacle.c
-+++ b/sound/isa/msnd/msnd_pinnacle.c
-@@ -73,9 +73,11 @@
- #ifdef MSND_CLASSIC
- #  include "msnd_classic.h"
- #  define LOGNAME			"msnd_classic"
-+#  define DEV_NAME			"msnd-classic"
- #else
- #  include "msnd_pinnacle.h"
- #  define LOGNAME			"snd_msnd_pinnacle"
-+#  define DEV_NAME			"msnd-pinnacle"
- #endif
- 
- static void set_default_audio_parameters(struct snd_msnd *chip)
-@@ -1067,8 +1069,6 @@ static int snd_msnd_isa_remove(struct de
- 	return 0;
- }
- 
--#define DEV_NAME "msnd-pinnacle"
--
- static struct isa_driver snd_msnd_driver = {
- 	.match		= snd_msnd_isa_match,
- 	.probe		= snd_msnd_isa_probe,
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
