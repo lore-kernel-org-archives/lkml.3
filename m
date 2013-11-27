@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760274Ab3K0Bsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:48:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39092 "EHLO
+	id S1760300Ab3K0Bsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:48:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758060Ab3K0A5q (ORCPT
+	with ESMTP id S1758039Ab3K0A5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:46 -0500
+	Tue, 26 Nov 2013 19:57:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michele Baldessari <michele@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 57/80] KVM: x86: fix emulation of "movzbl %bpl, %eax"
-Date: Tue, 26 Nov 2013 16:57:26 -0800
-Message-Id: <20131127005644.903651361@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 55/80] nfsd: make sure to balance get/put_write_access
+Date: Tue, 26 Nov 2013 16:57:24 -0800
+Message-Id: <20131127005644.767038068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -27,50 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit daf727225b8abfdfe424716abac3d15a3ac5626a upstream.
+commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
 
-When I was looking at RHEL5.9's failure to start with
-unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
-slightly older tree than kvm.git.  I now debugged the remaining failure,
-which was introduced by commit 660696d1 (KVM: X86 emulator: fix
-source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
-introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
-fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
-decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
-is sil/dil/bpl/spl.
+Use a straight goto error label style in nfsd_setattr to make sure
+we always do the put_write_access call after we got it earlier.
 
-Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
-prolog, just a handful of instructions before finally giving control to
-the decompressed vmlinux and getting out of the invalid guest state.
+Note that the we have been failing to do that in the case
+nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
+6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
+setattr".
 
-Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
-must be applied to OpMem8.
-
-Reported-by: Michele Baldessari <michele@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/nfsd/vfs.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4207,7 +4207,10 @@ static int decode_operand(struct x86_emu
- 	case OpMem8:
- 		ctxt->memop.bytes = 1;
- 		if (ctxt->memop.type == OP_REG) {
--			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
-+			int highbyte_regs = ctxt->rex_prefix == 0;
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -443,27 +443,28 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
+-	err = nfserr_notsync;
+-	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
+-		host_err = nfsd_break_lease(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-		fh_lock(fhp);
+-
+-		host_err = notify_change(dentry, iap);
+-		err = nfserrno(host_err);
+-		fh_unlock(fhp);
++	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
++		err = nfserr_notsync;
++		goto out_put_write_access;
+ 	}
 +
-+			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
-+					       highbyte_regs);
- 			fetch_register_operand(&ctxt->memop);
- 		}
- 		goto mem_common;
++	host_err = nfsd_break_lease(inode);
++	if (host_err)
++		goto out_put_write_access_nfserror;
++
++	fh_lock(fhp);
++	host_err = notify_change(dentry, iap);
++	fh_unlock(fhp);
++
++out_put_write_access_nfserror:
++	err = nfserrno(host_err);
++out_put_write_access:
+ 	if (size_change)
+ 		put_write_access(inode);
+ 	if (!err)
+ 		commit_metadata(fhp);
+ out:
+ 	return err;
+-
+-out_nfserr:
+-	err = nfserrno(host_err);
+-	goto out;
+ }
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || \
 
 
