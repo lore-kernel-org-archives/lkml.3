@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab3K0Puf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:50:35 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55803 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756908Ab3K0PuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:50:14 -0500
+	id S1757382Ab3K0Pu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:50:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756824Ab3K0Pu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 10:50:57 -0500
+Date: Wed, 27 Nov 2013 16:50:17 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] tools/perf/util: Document and clean up readn() a bit
+Message-ID: <20131127155017.GG1208@krava.brq.redhat.com>
+References: <1385130268-10664-1-git-send-email-jolsa@redhat.com>
+ <1385130268-10664-2-git-send-email-jolsa@redhat.com>
+ <20131125192909.GA27323@ghostprotocols.net>
+ <20131126175335.GA9300@gmail.com>
+ <5295AFA3.6060007@intel.com>
+ <20131127115746.GB10528@gmail.com>
+ <52960D71.7010107@gmail.com>
 MIME-Version: 1.0
-Date: Wed, 27 Nov 2013 16:50:14 +0100
-X-Google-Sender-Auth: dQeBAqmOkv7bn8affCNHOLRd4J8
-Message-ID: <CAMuHMdWgMrNQqq84AK+CGF6VFnLs38O-vyye4MFKNUO7b8iFMw@mail.gmail.com>
-Subject: CONFIG_EXT4_USE_FOR_EXT23 no space left on device
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52960D71.7010107@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To reduce kernel size, I disabled both CONFIG_EXT2_FS and
-CONFIG_EXT3_FS, and enabled CONFIG_EXT4_USE_FOR_EXT23.
+On Wed, Nov 27, 2013 at 08:19:13AM -0700, David Ahern wrote:
+> On 11/27/13, 4:57 AM, Ingo Molnar wrote:
+> >Okay, I thought this was an intentional 'all or nothing' interface -
+> >but looking at the readn() users they can tolerate partial results
+> >just fine.
+> 
+> I believe that is the intent -- an all or nothing interface.
 
-Unfortunately the system behaves badly afterwards. It seems the file system
-is considered full: new files can be created, but no data can be written.
-Note that the file system is almost full, but root can still write more data
-using the real ext3 filesystem driver.
+all the users either checks the returned value with the size
+or do (ret < 0) and fail
 
-This is a v3.13-rc1-ish kernel.
+and one instance in the read_attr does not check anything and
+blindly hopes it will read all ;-)
 
-Diff of dmesg and output of a few operations below:
+I have similar patch that also change callers to use proper
+ssize_t instead of int.. I can rebase and send it separately
+or combine it with yours.. let me know
 
---- /tmp/good 2013-11-27 16:47:28.000000000 +0100
-+++ /tmp/bad 2013-11-27 16:47:31.000000000 +0100
-@@ -1,11 +1,13 @@
--kjournald starting.  Commit interval 5 seconds
--EXT3-fs (hda1): mounted filesystem with writeback data mode
-+
-+EXT4-fs (hda1): mounting ext3 file system using the ext4 subsystem
-+EXT4-fs (hda1): mounted filesystem with ordered data mode. Opts: (null)
- VFS: Mounted root (ext3 filesystem) readonly on device 3:1.
--Freeing unused kernel memory: 152K (0039d000 - 003c3000)
-+Freeing unused kernel memory: 152K (0037f000 - 003a5000)
- random: nonblocking pool is initialized
- Adding 137800k swap on /dev/hda2.  Priority:-1 extents:1 across:137800k
--EXT3-fs (hda1): using internal journal
--Unknown key: scancode = 0 ($00), keycode = 'numlock' ($12c)
-+EXT4-fs (hda1): re-mounted. Opts:
-+EXT4-fs (hda1): re-mounted. Opts: errors=remount-ro
-+EXT4-fs (hda1): re-mounted. Opts:
- write cmd 0xE0 (STANDBY IMMEDIATE) not supported
- hda: task_no_data_intr: status=0x41 { DriveReady Error }
- hda: task_no_data_intr: error=0x04 { DriveStatusError }
-@@ -22,16 +24,9 @@ hda: possibly failed opcode: 0xe0
- reboot: Power down
-
- atari:~# mount
--/dev/hda1 on / type ext3 (rw,errors=remount-ro)
--tmpfs on /lib/init/rw type tmpfs (rw,nosuid,mode=0755)
--proc on /proc type proc (rw,noexec,nosuid,nodev)
--sysfs on /sys type sysfs (rw,noexec,nosuid,nodev)
--tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)
--devpts on /dev/pts type devpts (rw,noexec,nosuid,gid=5,mode=620)
--rpc_pipefs on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw)
--atari:~# cat /proc/mounts
-+atari:~# cat /proc/mounts
- rootfs / rootfs rw 0 0
--/dev/root / ext3 rw,relatime,errors=remount-ro,barrier=1,data=writeback 0 0
-+/dev/root / ext3 rw,relatime,errors=remount-ro,data=ordered 0 0
- tmpfs /lib/init/rw tmpfs rw,nosuid,relatime,mode=755 0 0
- proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
- sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
-@@ -40,13 +35,9 @@ devpts /dev/pts devpts rw,nosuid,noexec,
- rpc_pipefs /var/lib/nfs/rpc_pipefs rpc_pipefs rw,relatime 0 0
- atari:~# touch /tmp/x
- atari:~# echo hello > /tmp/x
--atari:~# cat /tmp/x
--hello
-+-bash: echo: write error: No space left on device
- atari:~# df -h
--Filesystem            Size  Used Avail Use% Mounted on
--/dev/hda1             870M  862M     0 100% /
--tmpfs                 132M     0  132M   0% /lib/init/rw
--tmpfs                 132M  4.0K  132M   1% /dev/shm
-+df: cannot read table of mounted file systems
- atari:~# ls -l /etc/mtab
---rw-r--r-- 1 root root 331 Nov 27 16:35 /etc/mtab
-+-rw-r--r-- 1 root root 0 Oct 27 15:32 /etc/mtab
- atari:~# poweroff
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+jirka
