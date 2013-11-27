@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759683Ab3K0B0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:26:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39424 "EHLO
+	id S1759704Ab3K0B1E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:27:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758669Ab3K0A66 (ORCPT
+	with ESMTP id S1758664Ab3K0A65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:58 -0500
+	Tue, 26 Nov 2013 19:58:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.12 010/116] can: c_can: Fix RX message handling, handle lost message before EOB
-Date: Tue, 26 Nov 2013 16:56:23 -0800
-Message-Id: <20131127005737.634851043@linuxfoundation.org>
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 009/116] crypto: s390 - Fix aes-cbc IV corruption
+Date: Tue, 26 Nov 2013 16:56:22 -0800
+Message-Id: <20131127005737.566781982@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,47 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
+commit f262f0f5cad0c9eca61d1d383e3b67b57dcbe5ea upstream.
 
-If we handle end of block messages with higher priority than a lost message,
-we can run into an endless interrupt loop.
+The cbc-aes-s390 algorithm incorrectly places the IV in the tfm
+data structure.  As the tfm is shared between multiple threads,
+this introduces a possibility of data corruption.
 
-This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
-As soon as we loose a packet we can't escape from an interrupt loop.
+This patch fixes this by moving the parameter block containing
+the IV and key onto the stack (the block is 48 bytes long).
 
-This patch fixes the problem by handling lost packets before EOB packets.
+The same bug exists elsewhere in the s390 crypto system and they
+will be fixed in subsequent patches.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/s390/crypto/aes_s390.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -814,9 +814,6 @@ static int c_can_do_rx_poll(struct net_d
- 			msg_ctrl_save = priv->read_reg(priv,
- 					C_CAN_IFACE(MSGCTRL_REG, 0));
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -35,7 +35,6 @@ static u8 *ctrblk;
+ static char keylen_flag;
  
--			if (msg_ctrl_save & IF_MCONT_EOB)
--				return num_rx_pkts;
--
- 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
- 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
- 				num_rx_pkts++;
-@@ -824,6 +821,9 @@ static int c_can_do_rx_poll(struct net_d
- 				continue;
- 			}
+ struct s390_aes_ctx {
+-	u8 iv[AES_BLOCK_SIZE];
+ 	u8 key[AES_MAX_KEY_SIZE];
+ 	long enc;
+ 	long dec;
+@@ -441,30 +440,36 @@ static int cbc_aes_set_key(struct crypto
+ 	return aes_set_key(tfm, in_key, key_len);
+ }
  
-+			if (msg_ctrl_save & IF_MCONT_EOB)
-+				return num_rx_pkts;
-+
- 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
- 				continue;
+-static int cbc_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
++static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
+ 			 struct blkcipher_walk *walk)
+ {
++	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[AES_BLOCK_SIZE];
++		u8 key[AES_MAX_KEY_SIZE];
++	} param;
  
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memcpy(param, walk->iv, AES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, AES_BLOCK_SIZE);
++	memcpy(param.key, sctx->key, sctx->key_len);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(AES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_kmc(func, param, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= AES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, param, AES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, AES_BLOCK_SIZE);
+ 
+ out:
+ 	return ret;
+@@ -481,7 +486,7 @@ static int cbc_aes_encrypt(struct blkcip
+ 		return fallback_blk_enc(desc, dst, src, nbytes);
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_aes_crypt(desc, sctx->enc, sctx->iv, &walk);
++	return cbc_aes_crypt(desc, sctx->enc, &walk);
+ }
+ 
+ static int cbc_aes_decrypt(struct blkcipher_desc *desc,
+@@ -495,7 +500,7 @@ static int cbc_aes_decrypt(struct blkcip
+ 		return fallback_blk_dec(desc, dst, src, nbytes);
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_aes_crypt(desc, sctx->dec, sctx->iv, &walk);
++	return cbc_aes_crypt(desc, sctx->dec, &walk);
+ }
+ 
+ static struct crypto_alg cbc_aes_alg = {
 
 
