@@ -1,236 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab3K0N0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:26:53 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:29978 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab3K0N0o (ORCPT
+	id S1751998Ab3K0N3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:29:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45983 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3K0N3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:26:44 -0500
-X-AuditID: cbfee61b-b7f166d000007a34-f5-5295f3125255
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-Cc: t.figa@samsung.com, kgene.kim@samsung.com, grant.likely@linaro.org,
-        rob.herring@calxeda.com, sylvester.nawrocki@gmail.com, kishon@ti.com,
-        kyungmin.park@samsung.com,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH] phy: Add exynos-phy driver
-Date: Wed, 27 Nov 2013 14:26:28 +0100
-Message-id: <1385558788-10880-2-git-send-email-t.stanislaws@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1385558788-10880-1-git-send-email-t.stanislaws@samsung.com>
-References: <1385558788-10880-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jAV2hz1ODDKYctrKYf+Qcq8WBPzsY
-	LXoXXGWzuPC0h83ibNMbdotNj6+xWlzeNYfNYsb5fUwWh1ccYLKY93knk8X6Ga9ZLOa1v2R1
-	4PFY8PkKu8fOWXfZPe5c28PmsXlJvUffllWMHsdvbGfy+LxJLoA9issmJTUnsyy1SN8ugSvj
-	+6mdjAWztCo+/XvE0sB4TKmLkZNDQsBEYtvETmYIW0ziwr31bF2MXBxCAosYJebMWcEK4XQx
-	Sfzrmc4EUsUG1HFsyWdGkISIQDujxN3f/1hAHGaB24wS+z9uBari4BAW0JZ4cCMWpIFFQFXi
-	9eaHrCA2r4CHxPsHS9kg1slLPL3fxwZSzingKfFwszdIWAio5O/8CUwTGHkXMDKsYhRNLUgu
-	KE5KzzXSK07MLS7NS9dLzs/dxAgOzWfSOxhXNVgcYhTgYFTi4Z1weUqQEGtiWXFl7iFGCQ5m
-	JRHezJNTg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUw
-	GkzsXVNz4tLrct7D2oeiTkevrpuh3jnt2aqUZuMle1/Zu0+84Kz/zvublfXddyxcH1j/Mu2+
-	1FC1ub2LoUlPTv3CKtcVDMI2z/Ja9wZH7Zwr/uXRleMPJofrH9CScjj8ck5dKtPCw0cOHJB4
-	WJQ16eia1LrV0ofStnJc8LWocZQ90XdnY3yFiBJLcUaioRZzUXEiAOuTmK5JAgAA
+	Wed, 27 Nov 2013 08:29:49 -0500
+Date: Wed, 27 Nov 2013 14:29:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Pablo Neira Ayuso <pablo@netfilter.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>, Greg KH <greg@kroah.com>
+Subject: Re: netfilter: active obj WARN when cleaning up
+In-Reply-To: <20131127113939.GL16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1311271409280.30673@ionos.tec.linutronix.de>
+References: <522B25B5.6000808@oracle.com> <5294F27D.4000108@oracle.com> <20131126230709.GA10948@localhost> <alpine.DEB.2.02.1311271106090.30673@ionos.tec.linutronix.de> <20131127113939.GL16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add exynos-phy driver to support a single register
-PHY interfaces present on Exynos4 SoC.
+On Wed, 27 Nov 2013, Russell King - ARM Linux wrote:
+> On Wed, Nov 27, 2013 at 11:45:17AM +0100, Thomas Gleixner wrote:
+> > On Wed, 27 Nov 2013, Pablo Neira Ayuso wrote:
+> > 
+> > > On Tue, Nov 26, 2013 at 02:11:57PM -0500, Sasha Levin wrote:
+> > > > Ping? I still see this warning.
+> > > 
+> > > Did your test include patch 0c3c6c00c6?
+> > 
+> > And how is that patch supposed to help?
+> >  
+> > > > >[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
+> > > > >[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint:
+> > > > >delayed_work_timer_fn+0x0/0x20
+> > 
+> > > > >[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
+> > > > >[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
+> > > > >[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
+> > 
+> > The debug code detects an active timer, which itself is part of a
+> > delayed work struct. The call comes from kmem_cache_destroy().
+> > 
+> >          kmem_cache_free(kmem_cache, s);
+> > 
+> > So debug object says: s contains an active timer. s is the kmem_cache
+> > which is destroyed from nf_conntrack_cleanup_net_list.
+> > 
+> > Now struct kmem_cache has in case of SLUB:
+> > 
+> >     struct kobject kobj;    /* For sysfs */
+> > 
+> > and struct kobject has:
+> > 
+> > #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+> >     struct delayed_work     release;
+> > #endif
+> > 
+> > So this is the thing you want to look at:
+> > 
+> > commit c817a67ec (kobject: delayed kobject release: help find buggy
+> > drivers) added that delayed work thing.
+> > 
+> > I fear that does not work for kobjects which are embedded into
+> > something else.
+> 
+> No, kobjects embedded into something else have their lifetime determined
+> by the embedded kobject.  That's rule #1 of kobjects - or rather reference
+> counted objects.
+> 
+> The point at which the kobject gets destructed is when the release function
+> is called.  If it is destructed before that time, that's a violation of
+> the reference counted nature of kobjects, and that's what the delay on
+> releasing is designed to catch.
+> 
+> It's designed to catch code which does this exact path:
+> 
+> 	put(obj)
+> 	free(obj)
+> 
+> rather than code which does it the right way:
+> 
+> 	put(obj)
+> 		-> refcount becomes 0
+> 			-> release function gets called
+> 				->free(obj)
+> 
+> The former is unsafe because obj may have other references.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/phy/Kconfig      |    5 ++
- drivers/phy/Makefile     |    1 +
- drivers/phy/exynos-phy.c |  152 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 158 insertions(+)
- create mode 100644 drivers/phy/exynos-phy.c
+Though the kobject is the only thing which has a delayed work embedded
+inside struct kmem_cache. And the debug object splat points at the
+kmem_cache_free() of the struct kmem_cache itself. That's why I
+assumed the wreckage around that place. And indeed:
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index a344f3d..4414c73 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -51,4 +51,9 @@ config PHY_EXYNOS_DP_VIDEO
- 	help
- 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
- 
-+config EXYNOS_PHY
-+	tristate "Exynos PHY driver"
-+	help
-+	  Support for PHY controllers on SoCs from Exynos family.
-+
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index d0caae9..b2a833d 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -5,5 +5,6 @@
- obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
- obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
- obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
-+obj-$(CONFIG_EXYNOS_PHY)	+= exynos-phy.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
-diff --git a/drivers/phy/exynos-phy.c b/drivers/phy/exynos-phy.c
-new file mode 100644
-index 0000000..5a1ae6d
---- /dev/null
-+++ b/drivers/phy/exynos-phy.c
-@@ -0,0 +1,152 @@
-+/*
-+ * Exynos PHY driver
-+ *
-+ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include <linux/phy/phy.h>
-+
-+#define EXYNOS_PHY_ENABLE	(1 << 0)
-+
-+static int exynos_phy_power_on(struct phy *phy)
-+{
-+	void __iomem *reg = phy_get_drvdata(phy);
-+	u32 val;
-+
-+	val = readl(reg);
-+	val |= EXYNOS_PHY_ENABLE;
-+	writel(val, reg);
-+
-+	return 0;
-+}
-+
-+static int exynos_phy_power_off(struct phy *phy)
-+{
-+	void __iomem *reg = phy_get_drvdata(phy);
-+	u32 val;
-+
-+	val = readl(reg);
-+	val &= ~EXYNOS_PHY_ENABLE;
-+	writel(val, reg);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops exynos_phy_ops = {
-+	.power_on	= exynos_phy_power_on,
-+	.power_off	= exynos_phy_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static const u32 exynos4210_offsets[] = {
-+	0x0700, /* HDMI_PHY */
-+	0x070C, /* DAC_PHY */
-+	0x0718, /* ADC_PHY */
-+	0x071C, /* PCIE_PHY */
-+	0x0720, /* SATA_PHY */
-+	~0, /* end mark */
-+};
-+
-+static const u32 exynos4412_offsets[] = {
-+	0x0700, /* HDMI_PHY */
-+	0x0718, /* ADC_PHY */
-+	~0, /* end mark */
-+};
-+
-+static const struct of_device_id exynos_phy_of_match[] = {
-+	{ .compatible = "exynos4210-phy", .data = exynos4210_offsets},
-+	{ .compatible = "exynos4412-phy", .data = exynos4412_offsets},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, exynos_phy_of_match);
-+
-+static struct phy *exynos_phy_xlate(struct device *dev,
-+					struct of_phandle_args *args)
-+{
-+	struct phy **phys = dev_get_drvdata(dev);
-+	int index = args->args[0];
-+	int i;
-+
-+	/* verify if index is valid */
-+	for (i = 0; i <= index; ++i)
-+		if (!phys[i])
-+			return ERR_PTR(-ENODEV);
-+
-+	return phys[index];
-+}
-+
-+static int exynos_phy_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *of_id = of_match_device(
-+		of_match_ptr(exynos_phy_of_match), &pdev->dev);
-+	const u32 *offsets = of_id->data;
-+	int count;
-+	struct device *dev = &pdev->dev;
-+	struct phy **phys;
-+	struct resource *res;
-+	void __iomem *regs;
-+	int i;
-+	struct phy_provider *phy_provider;
-+
-+	/* count number of phys to create */
-+	for (count = 0; offsets[count] != ~0; ++count)
-+		;
-+
-+	phys = devm_kzalloc(dev, (count + 1) * sizeof(phys[0]), GFP_KERNEL);
-+	if (!phys)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(dev, phys);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	regs = devm_ioremap(dev, res->start, res->end);
-+	if (IS_ERR(regs)) {
-+		dev_err(dev, "failed to ioremap registers\n");
-+		return PTR_ERR(regs);
-+	}
-+
-+	/* NOTE: last entry in phys[] is NULL */
-+	for (i = 0; i < count; ++i) {
-+		phys[i] = devm_phy_create(dev, &exynos_phy_ops, NULL);
-+		if (IS_ERR(phys[i])) {
-+			dev_err(dev, "failed to create PHY %d\n", i);
-+			return PTR_ERR(phys[i]);
-+		}
-+		phy_set_drvdata(phys[i], regs + offsets[i]);
-+	}
-+
-+	phy_provider = devm_of_phy_provider_register(dev, exynos_phy_xlate);
-+	if (IS_ERR(phy_provider)) {
-+		dev_err(dev, "failed to register PHY provider\n");
-+		return PTR_ERR(phy_provider);
-+	}
-+
-+	dev_info(dev, "added %d phys\n", count);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver exynos_phy_driver = {
-+	.probe	= exynos_phy_probe,
-+	.driver = {
-+		.of_match_table	= exynos_phy_of_match,
-+		.name  = "exynos-phy",
-+		.owner = THIS_MODULE,
-+	}
-+};
-+module_platform_driver(exynos_phy_driver);
-+
-+MODULE_DESCRIPTION("Exynos PHY driver");
-+MODULE_AUTHOR("Tomasz Stanislawski <t.stanislaws@samsung.com>");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+kmem_cache_destroy(s)
+    __kmem_cache_shutdown(s)
+      sysfs_slab_remove(s)
+        ....
+	kobject_put(&s->kobj)
+           kref_put(&kobj->kref, kobject_release);
+	     kobject_release(kref)
+    	       #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+	         schedule_delayed_work(&kobj->release)
+	       #else
+	        kobject_cleanup(kobj)
+	       #endif
+
+So in the CONFIG_DEBUG_KOBJECT_RELEASE=y case, schedule_delayed_work()
+_IS_ called which arms the timer. debugobjects catches the attempt to
+free struct kmem_cache which contains the armed timer.
+
+So much for rule #1
+
+Thanks,
+
+	tglx
 
