@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab3K0AQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:16:35 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55006 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751106Ab3K0AQc (ORCPT
+	id S1752600Ab3K0ASW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:18:22 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:17887 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab3K0ASU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:16:32 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        Lv Zheng <lv.zheng@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ACPI: Cleanup <acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h> inclusions.
-Date: Wed, 27 Nov 2013 01:29:20 +0100
-Message-ID: <3542568.jpR4FU4Yha@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131126202905.GA12889@phenom.dumpdata.com>
-References: <cover.1385094640.git.lv.zheng@intel.com> <2011704.hD86fZ2Qk5@vostro.rjw.lan> <20131126202905.GA12889@phenom.dumpdata.com>
+	Tue, 26 Nov 2013 19:18:20 -0500
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTzufSIdKK4A==
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Subject: Re: nouveau/ NV11: 3.12 freezes if X.org is started headless
+Date: Wed, 27 Nov 2013 00:18:09 +0000
+User-Agent: KMail/1.13.7 (Linux/3.12-1.slh.3-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+References: <201311262303.26996.s.L-H@gmx.de> <CAKb7UvinEmz4YFoes2w5JJp-sJ_tsDeAWj-Aa5Yw56m2=j3xHw@mail.gmail.com>
+In-Reply-To: <CAKb7UvinEmz4YFoes2w5JJp-sJ_tsDeAWj-Aa5Yw56m2=j3xHw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201311270018.14980.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 26, 2013 03:29:05 PM Konrad Rzeszutek Wilk wrote:
-> On Tue, Nov 26, 2013 at 09:29:33PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, November 26, 2013 01:21:15 PM Lv Zheng wrote:
-> > > Replace direct inclusions of <acpi/acpi.h>, <acpi/acpi_bus.h> and
-> > > <acpi/acpi_drivers.h>, which are incorrect, with <linux/acpi.h> inclusions.
-> > > 
-> > > First of all, <acpi/acpi.h>, <acpi/acpi_bus.h> and <acpi/acpi_drivers.h>
-> > > should not be included directly from any files that are built for
-> > > CONFIG_ACPI unset, because that generally leads to build warnings about
-> > > undefined symbols in !CONFIG_ACPI builds.  For CONFIG_ACPI set,
-> > > <linux/acpi.h> includes those files and for !CONFIG_ACPI it provides stub
-> > > ACPI symbols to be used in that case.
-> > > 
-> > > Second, there are ordering dependencies between those files that always
-> > > have to be met.  Namely, it is required that <acpi/acpi_bus.h> be included
-> > > prior to <acpi/acpi_drivers.h> so that the acpi_pci_root declarations the
-> > > latter depends on are always there.  And <acpi/acpi.h> which provides
-> > > basic ACPICA type declarations should always be included prior to any other
-> > > ACPI headers in CONFIG_ACPI builds.  That also is taken care of including
-> > > <linux/acpi.h> as appropriate.
-> > > 
-> > > This patch also includes necessary cleanups in the affected files where
-> > > other ACPI headers is also included but not referenced.
-> > >
-> > 
-> > This looks OK to me, but it touches several other subsystems.  It's better to
-> > CC such things to linux-kernel at least.
-> > 
-> > Peter, Matthew, Tony, Konrad, Greg, Bjorn, do you have any objections against this?
-> 
-> CC-ing Boris and David here.
-> 
-> I presume the proper compilation tests to make sure they do compile properly
-> has been done.
+Hi
 
-Yes and we're going to run it through the auto build machinery anyway.
+On Tuesday 26 November 2013, Ilia Mirkin wrote:
+> On Tue, Nov 26, 2013 at 6:03 PM, Stefan Lippers-Hollmann <s.L-H@gmx.de> wrote:
+> > v3.11 is fine, with and without monitor attached.
+> > v3.12 is fine as long as X.org isn't started (but may fail to reboot
+> >       cleanly). If a monitor is connected I don't observe any problems,
+> >       it freezes without a monitor connected.
+> > v3.13-rc1-95-gb975dc3 appears not to freeze without a monitor anymore
+> >       (I didn't confirm that it's fine with a monitor attached), but I
+> >       end up with the following Oops (this is before X.org is started).
+[…]
+> > BUG: unable to handle kernel NULL pointer dereference at   (null)
+> > IP: [<e0ecaa4e>] _nouveau_clock_init+0x2a/0xaf [nouveau]
+[…]
+> The oops in 3.13-rc1 should be fixed by applying the equivalent of
+> http://cgit.freedesktop.org/~darktama/nouveau/commit/?id=0397aaaa009092427dc60aea8b3c21c00526d8ba
 
-Thanks,
-Rafael
+As you expected, the Oops is gone after applying the afforementioned 
+patch, 3.13~ now behaves as 3.12 (it freezes, if X.org is started 
+without a monitor attached).
 
+> . Also note that libdrm had a bug when compiled with gcc-4.8 for
+> pre-nv50 cards, not sure if the fixes have made it to Debian/unstable,
+> but you need libdrm-2.4.48+ (or compile it with gcc-4.7/clang).
+
+The libdrm2 version is 2.4.49-2, which -although it has been compiled 
+with gcc 4.8.2-5[1]- should be unaffected by this issue. According to 
+the ChangeLog the version is at 7ddc98f92f92560e2b52287ae8cf816ca4a057de
+and no significant patches[2] have been applied.
+
+> Lastly, another thing to try if you're getting random hangs is booting
+> with nouveau.agpmode=0 (and if that helps, seeing if =1 or =2 still
+> work ok). If that helps, it can be added to the quirks list.
+
+Unfortunately this doesn't appear to have an effect, with 3.13~ and
+the previous patch applied:
+
+# cat /sys/module/nouveau/parameters/agpmode 
+0
+
+# init 5
+[   73.708490] nouveau W[  PTIMER][0000:01:00.0] unknown input clock freq
+system frozen.
+
+Regards
+	Stefan Lippers-Hollmann
+
+[1]	https://buildd.debian.org/status/fetch.php?pkg=libdrm&arch=i386&ver=2.4.49-2&stamp=1385480211
+[2]	http://anonscm.debian.org/gitweb/?p=pkg-xorg/lib/libdrm.git;a=blob;f=debian/patches/01_default_perms.diff;h=cdba93e19edf40b2b0b56d951a6416c68a0af6f0;hb=HEAD
+	http://anonscm.debian.org/gitweb/?p=pkg-xorg/lib/libdrm.git;a=blob;f=debian/patches/02_kbsd_modeset.diff;h=260260925fc692c71d955d6490dabf87905abb51;hb=HEAD
