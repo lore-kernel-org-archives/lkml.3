@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856Ab3K0Bc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:32:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39315 "EHLO
+	id S932815Ab3K0Bc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:32:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39311 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758557Ab3K0A6e (ORCPT
+	with ESMTP id S1758547Ab3K0A6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:34 -0500
+	Tue, 26 Nov 2013 19:58:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.12 026/116] staging: r8188eu: Set device type to wlan
-Date: Tue, 26 Nov 2013 16:56:39 -0800
-Message-Id: <20131127005738.753175872@linuxfoundation.org>
+        Jerome Marchand <jmarchan@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 3.12 025/116] Staging: zram: Fix access of NULL pointer
+Date: Tue, 26 Nov 2013 16:56:38 -0800
+Message-Id: <20131127005738.685642840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,40 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Rashika Kheria <rashika.kheria@gmail.com>
 
-commit 0d1206be229697f897f00822bc142e66da731417 upstream.
+commit 46a51c80216cb891f271ad021f59009f34677499 upstream.
 
-The latest version of NetworkManager does not recognize the device as wireless
-without this change.
+This patch fixes the bug in reset_store caused by accessing NULL pointer.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+The bdev gets its value from bdget_disk() which could fail when memory
+pressure is severe and hence can return NULL because allocation of
+inode in bdget could fail.
+
+Hence, this patch introduces a check for bdev to prevent reference to a
+NULL pointer in the later part of the code. It also removes unnecessary
+check of bdev for fsync_bdev().
+
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/os_intfs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/staging/zram/zram_drv.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -707,6 +707,10 @@ int rtw_init_netdev_name(struct net_devi
- 	return 0;
- }
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -648,6 +648,9 @@ static ssize_t reset_store(struct device
+ 	zram = dev_to_zram(dev);
+ 	bdev = bdget_disk(zram->disk, 0);
  
-+static const struct device_type wlan_type = {
-+	.name = "wlan",
-+};
++	if (!bdev)
++		return -ENOMEM;
 +
- struct net_device *rtw_init_netdev(struct adapter *old_padapter)
- {
- 	struct adapter *padapter;
-@@ -722,6 +726,7 @@ struct net_device *rtw_init_netdev(struc
- 	if (!pnetdev)
- 		return NULL;
+ 	/* Do not reset an active device! */
+ 	if (bdev->bd_holders)
+ 		return -EBUSY;
+@@ -660,8 +663,7 @@ static ssize_t reset_store(struct device
+ 		return -EINVAL;
  
-+	pnetdev->dev.type = &wlan_type;
- 	padapter = rtw_netdev_priv(pnetdev);
- 	padapter->pnetdev = pnetdev;
- 	DBG_88E("register rtw_netdev_ops to netdev_ops\n");
+ 	/* Make sure all pending I/O is finished */
+-	if (bdev)
+-		fsync_bdev(bdev);
++	fsync_bdev(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
 
 
