@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab3K0BdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:33:18 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:44072 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab3K0BdN (ORCPT
+	id S1759876Ab3K0Bdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:33:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39307 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab3K0A6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:33:13 -0500
-Date: Tue, 26 Nov 2013 17:33:09 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        grygorii.strashko@ti.com, Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 00/10] Reuse davinci-nand driver for Keystone arch
-Message-ID: <20131127013309.GT9468@ld-irv-0074.broadcom.com>
-References: <1385033305-13179-1-git-send-email-ivan.khoronzhuk@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385033305-13179-1-git-send-email-ivan.khoronzhuk@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 26 Nov 2013 19:58:32 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 024/116] ACPI / hotplug: Do not execute "insert in progress" _OST
+Date: Tue, 26 Nov 2013 16:56:37 -0800
+Message-Id: <20131127005738.617600527@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
+References: <20131127005736.915454872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Nov 21, 2013 at 01:28:15PM +0200, Ivan Khoronzhuk wrote:
-> This series contains fixes and updates of Davinci nand driver in
-> order to reuse it for Keystone platform.
-> 
-> The series is combination of two following series:
-> - Davinci nand driver fixes and updates:
->   https://lkml.org/lkml/2013/11/20/271
-> - Reuse davinci-nand driver for Keystone arch
->   https://lkml.org/lkml/2013/11/20/315
+------------------
 
-Can you make sure to consistently change the email $subject for your
-patch series? For each of the above, it looks like they are actually
-version 2, yet they still just say "[PATCH X/Y]" (not "[PATCH v2 X/Y]").
-This makes it harder to parse the history of each series. (And the
-combining of two un-versioned patch series adds to the confusion.)
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-Now, this combined series has a good v2 marking (although at this point,
-is it really v3? ...whatever, it doesn't matter). Please continue to
-write appropriate $subjects for this and future patch series.
+commit 176a88d79d6b5aebabaff16734e8b3107efcaaad upstream.
 
-Thanks,
-Brian
+According to the ACPI spec (5.0, Section 6.3.5), the "Device
+insertion in progress (pending)" (0x80) _OST status code is
+reserved for the "Insertion Processing" (0x200) source event
+which is "a result of an OSPM action".  Specifically, it is not
+a notification, so that status code should not be used during
+notification processing, which unfortunately is done by
+acpi_scan_bus_device_check().
+
+For this reason, drop the ACPI_OST_SC_INSERT_IN_PROGRESS _OST
+status evaluation from there (it was a mistake to put it in there
+in the first place).
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/acpi/scan.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -331,8 +331,6 @@ static void acpi_scan_bus_device_check(a
+ 			goto out;
+ 		}
+ 	}
+-	acpi_evaluate_hotplug_ost(handle, ost_source,
+-				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
+ 	error = acpi_bus_scan(handle);
+ 	if (error) {
+ 		acpi_handle_warn(handle, "Namespace scan failure\n");
+
+
