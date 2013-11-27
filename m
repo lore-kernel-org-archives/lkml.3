@@ -1,190 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab3K0LDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 06:03:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39236 "EHLO arroyo.ext.ti.com"
+	id S1754289Ab3K0LES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 06:04:18 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:12348 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab3K0LDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 06:03:00 -0500
-Message-ID: <5295D102.2010101@ti.com>
-Date: Wed, 27 Nov 2013 13:01:22 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] ARM: davinci: aemif: get rid of davinci-nand driver dependency
- on aemif
-References: <5291CB01.1010506@ti.com> <1385409654-19006-1-git-send-email-ivan.khoronzhuk@ti.com> <5295AECB.7040503@ti.com>
-In-Reply-To: <5295AECB.7040503@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+	id S1752608Ab3K0LER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 06:04:17 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] powerpc 8xx: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
+Message-Id: <20131127110406.6DC8E1A504F@localhost.localdomain>
+Date: Wed, 27 Nov 2013 12:04:06 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 10:35 AM, Sekhar Nori wrote:
-> + MTD maintainers
->
-> On Tuesday 26 November 2013 01:30 AM, Ivan Khoronzhuk wrote:
->> The problem that the set timings code contains the call of Davinci
->> platform function davinci_aemif_setup_timing() which is not
->> accessible if kernel is built for another platform like Keystone.
->>
->> The Keysone platform is going to use TI AEMIF driver.
->> If TI AEMIF is used we don't need to set timings and bus width.
->> It is done by AEMIF driver.
->>
->> To get rid of davinci-nand driver dependency on aemif platform code
->> we moved aemif code to davinci platform.
->>
->> The platform AEMIF code (aemif.c) has to be removed once Davinci
->> will be converted to DT and use ti-aemif.c driver.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>   arch/arm/mach-davinci/aemif.c                   |   73 ++++++++++++++++++++++-
->>   arch/arm/mach-davinci/board-da830-evm.c         |    3 +
->>   arch/arm/mach-davinci/board-da850-evm.c         |    3 +
->>   arch/arm/mach-davinci/board-dm355-evm.c         |    5 ++
->>   arch/arm/mach-davinci/board-dm355-leopard.c     |    5 ++
->>   arch/arm/mach-davinci/board-dm365-evm.c         |    4 ++
->>   arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
->>   arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
->>   arch/arm/mach-davinci/board-mityomapl138.c      |    3 +
->>   arch/arm/mach-davinci/board-neuros-osd2.c       |    9 ++-
->>   arch/arm/mach-davinci/devices-tnetv107x.c       |    3 +
->>   drivers/mtd/nand/davinci_nand.c                 |   23 -------
->>   include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
->>   13 files changed, 116 insertions(+), 28 deletions(-)
->
-> [...]
->
->> +
->> +/**
->> + * davinci_aemif_setup - setup AEMIF interface by davinci_nand_pdata
->> + * @pdev - link to platform device to setup settings for
->> + *
->> + * This function does not use any locking while programming the AEMIF
->> + * because it is expected that there is only one user of a given
->> + * chip-select.
->> + *
->> + * Returns 0 on success, else negative errno.
->> + */
->> +int davinci_aemif_setup(struct platform_device *pdev)
->> +{
->> +	struct davinci_nand_pdata *pdata = dev_get_platdata(&pdev->dev);
->> +	uint32_t val;
->> +	struct resource	*res;
->> +	void __iomem *base;
->> +	int ret = 0;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> +	if (!res) {
->> +		dev_err(&pdev->dev, "cannot get IORESOURCE_MEM\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	base = ioremap(res->start, resource_size(res));
->> +	if (!base) {
->> +		dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res);
->> +		ret = -ENOMEM;
->> +		goto err;
->> +	}
->> +
->> +	/*
->> +	 * Setup Async configuration register in case we did not boot
->> +	 * from NAND and so bootloader did not bother to set it up.
->> +	 */
->> +	val = davinci_aemif_readl(base, A1CR_OFFSET + pdev->id * 4);
->
-> The AEMIF clock has to be enabled before this. The NAND driver might
-> load much later.
->
+Today, the only way to load kernels whose size is greater than 8Mbytes is to
+activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
+limited to 8Mbytes. This patch sets up 24 Mbytes of initial memory regardless
+of whether CONFIG_PIN_TLB is active or not. It allows to load "big" kernels
+(for instance when activating CONFIG_LOCKDEP_SUPPORT) without having
+to activate CONFIG_PIN_TLB.
 
-Ok
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
->> +	/*
->> +	 * Extended Wait is not valid and Select Strobe mode is not
->> +	 * used
->> +	 */
->> +	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
->> +	if (pdata->options & NAND_BUSWIDTH_16)
->> +		val |= 0x1;
->> +
->> +	davinci_aemif_writel(base, A1CR_OFFSET + pdev->id * 4, val);
->> +
->> +	if (pdata->timing)
->> +		ret = davinci_aemif_setup_timing(pdata->timing, base, pdev->id);
->> +
->> +	if (ret < 0)
->> +		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
->> +
->> +err:
->> +	iounmap(base);
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL(davinci_aemif_setup);
->
-> No need to export this symbol as nothing apart from platform code uses it.
->
-
-Ok
-
->>   static const short mityomap_mii_pins[] = {
->> diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
->> index bb680af..a7d6668 100644
->> --- a/arch/arm/mach-davinci/board-neuros-osd2.c
->> +++ b/arch/arm/mach-davinci/board-neuros-osd2.c
->> @@ -31,6 +31,7 @@
->>   #include <linux/platform_data/mmc-davinci.h>
->>   #include <linux/platform_data/mtd-davinci.h>
->>   #include <linux/platform_data/usb-davinci.h>
->> +#include <linux/platform_data/mtd-davinci-aemif.h>
->>
->>   #include <asm/mach-types.h>
->>   #include <asm/mach/arch.h>
->> @@ -192,9 +193,15 @@ static __init void davinci_ntosd2_init(void)
->>   		davinci_cfg_reg(DM644X_ATAEN_DISABLE);
->>
->>   		/* only one device will be jumpered and detected */
->> -		if (HAS_NAND)
->> +		if (HAS_NAND) {
->>   			platform_device_register(
->>   					&davinci_ntosd2_nandflash_device);
->> +
->> +			if (davinci_aemif_setup(
->> +				&davinci_ntosd2_nandflash_device))
->> +				pr_warn("%s: Cannot configure AEMIF.\n",
->> +					__func__);
->
-> This is looking really ugly. Can you shorten
-> davinci_ntosd2_nandflash_device to just "ntosd2_nandflash" or similar?
-
-The rename is not related to the patch, so I won't do this.
-
->
-> I am yet to test this. Will test once the next version is posted.
->
-> Overall, I cannot say I am fan of this approach (mostly because we are
-> ending up having two drivers for the same hardware in kernel). But given
-> that the other option of adding platform device support to AEMIF driver
-> is not acceptable to you, I guess I will live with this.
->
-> Thanks,
-> Sekhar
->
-
--- 
-Regards,
-Ivan Khoronzhuk
+diff -ur a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -841,11 +841,12 @@
+ 	ori	r8, r8, MI_BOOTINIT|0x2 /* Inhibit cache -- Cort */
+ 	mtspr	SPRN_MD_RPN, r8
+ 
+-#ifdef CONFIG_PIN_TLB
+ 	/* Map two more 8M kernel data pages.
+ 	*/
++#ifdef CONFIG_PIN_TLB
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+@@ -858,15 +859,16 @@
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+ 
++#ifdef CONFIG_PIN_TLB
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+ 	mtspr	SPRN_MD_EPN, r8
+ 	mtspr	SPRN_MD_TWC, r9
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+-#endif
+ 
+ 	/* Since the cache is enabled according to the information we
+ 	 * just loaded into the TLB, invalidate and enable the caches here.
+diff -ur a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -213,12 +213,7 @@
+ 	 */
+ 	BUG_ON(first_memblock_base != 0);
+ 
+-#ifdef CONFIG_PIN_TLB
+ 	/* 8xx can only access 24MB at the moment */
+ 	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
+-#else
+-	/* 8xx can only access 8MB at the moment */
+-	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
+-#endif
+ }
+ #endif /* CONFIG_8xx */
