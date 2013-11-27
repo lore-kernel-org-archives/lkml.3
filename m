@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760483Ab3K0Bvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:51:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39051 "EHLO
+	id S1760471Ab3K0Bvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:51:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39055 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab3K0A5f (ORCPT
+	with ESMTP id S1757880Ab3K0A5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:35 -0500
+	Tue, 26 Nov 2013 19:57:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 35/80] ALSA: hda - Add support of ALC255 codecs
-Date: Tue, 26 Nov 2013 16:57:04 -0800
-Message-Id: <20131127005643.367549296@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 36/80] ALSA: hda - Enable SPDIF for Acer TravelMate 6293
+Date: Tue, 26 Nov 2013 16:57:05 -0800
+Message-Id: <20131127005643.436706137@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,55 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1d04c9de5c76df113e4af7120feb53c628b5efcc upstream.
+commit 24eff328f65c8ef352c90b6adb7c2f39eb94205d upstream.
 
-It's just another variant of ALC269 & co.
+BIOS on Acer TravelMate 6293 doesn't set up the SPDIF output pin
+correctly as default, so enable it via a fixup entry.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
+Reported-and-tested-by: Hagen Heiduck <heiduck.suse@fmail.postpro.net>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/pci/hda/patch_realtek.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -2531,6 +2531,7 @@ enum {
- 	ALC269_TYPE_ALC282,
- 	ALC269_TYPE_ALC284,
- 	ALC269_TYPE_ALC286,
-+	ALC269_TYPE_ALC255,
+@@ -2380,6 +2380,7 @@ static const struct hda_verb alc268_beep
+ enum {
+ 	ALC268_FIXUP_INV_DMIC,
+ 	ALC268_FIXUP_HP_EAPD,
++	ALC268_FIXUP_SPDIF,
  };
  
- /*
-@@ -2555,6 +2556,7 @@ static int alc269_parse_auto_config(stru
- 	case ALC269_TYPE_ALC269VD:
- 	case ALC269_TYPE_ALC282:
- 	case ALC269_TYPE_ALC286:
-+	case ALC269_TYPE_ALC255:
- 		ssids = alc269_ssids;
- 		break;
- 	default:
-@@ -3765,6 +3767,9 @@ static int patch_alc269(struct hda_codec
- 	case 0x10ec0286:
- 		spec->codec_variant = ALC269_TYPE_ALC286;
- 		break;
-+	case 0x10ec0255:
-+		spec->codec_variant = ALC269_TYPE_ALC255;
-+		break;
- 	}
+ static const struct hda_fixup alc268_fixups[] = {
+@@ -2394,6 +2395,13 @@ static const struct hda_fixup alc268_fix
+ 			{}
+ 		}
+ 	},
++	[ALC268_FIXUP_SPDIF] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x1e, 0x014b1180 }, /* enable SPDIF out */
++			{}
++		}
++	},
+ };
  
- 	/* automatic parse from the BIOS config */
-@@ -4472,6 +4477,7 @@ static int patch_alc680(struct hda_codec
- static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
- 	{ .id = 0x10ec0233, .name = "ALC233", .patch = patch_alc269 },
-+	{ .id = 0x10ec0255, .name = "ALC255", .patch = patch_alc269 },
- 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
- 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
- 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
+ static const struct hda_model_fixup alc268_fixup_models[] = {
+@@ -2403,6 +2411,7 @@ static const struct hda_model_fixup alc2
+ };
+ 
+ static const struct snd_pci_quirk alc268_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1025, 0x0139, "Acer TravelMate 6293", ALC268_FIXUP_SPDIF),
+ 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
+ 	/* below is codec SSID since multiple Toshiba laptops have the
+ 	 * same PCI SSID 1179:ff00
 
 
