@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab3K0Bmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:42:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
+	id S1760138Ab3K0Bm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:42:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39150 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab3K0A6D (ORCPT
+	with ESMTP id S1758252Ab3K0A6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:03 -0500
+	Tue, 26 Nov 2013 19:58:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 76/80] configfs: fix race between dentry put and lookup
-Date: Tue, 26 Nov 2013 16:57:45 -0800
-Message-Id: <20131127005646.188410288@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 45/80] ALSA: hda - Fix the headphone jack detection on Sony VAIO TX
+Date: Tue, 26 Nov 2013 16:57:14 -0800
+Message-Id: <20131127005644.082180777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -29,94 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
+commit 0f5a5b8515472a0219768423226b58228001e3d5 upstream.
 
-A race window in configfs, it starts from one dentry is UNHASHED and end
-before configfs_d_iput is called.  In this window, if a lookup happen,
-since the original dentry was UNHASHED, so a new dentry will be
-allocated, and then in configfs_attach_attr(), sd->s_dentry will be
-updated to the new dentry.  Then in configfs_d_iput(),
-BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
+BIOS sets MISC_NO_PRESENCE bit wrongly to the pin config on NID 0x0f.
 
-sys_open:                     sys_close:
- ...                           fput
-                                dput
-                                 dentry_kill
-                                  __d_drop <--- dentry unhashed here,
-                                           but sd->dentry still point
-                                           to this dentry.
-
- lookup_real
-  configfs_lookup
-   configfs_attach_attr---> update sd->s_dentry
-                            to new allocated dentry here.
-
-                                   d_kill
-                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
-                                                     triggered here.
-
-To fix it, change configfs_d_iput to not update sd->s_dentry if
-sd->s_count > 2, that means there are another dentry is using the sd
-beside the one that is going to be put.  Use configfs_dirent_lock in
-configfs_attach_attr to sync with configfs_d_iput.
-
-With the following steps, you can reproduce the bug.
-
-1. enable ocfs2, this will mount configfs at /sys/kernel/config and
-   fill configure in it.
-
-2. run the following script.
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/configfs/dir.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
- 	struct configfs_dirent *sd = dentry->d_fsdata;
- 
- 	if (sd) {
--		BUG_ON(sd->s_dentry != dentry);
- 		/* Coordinate with configfs_readdir */
- 		spin_lock(&configfs_dirent_lock);
--		sd->s_dentry = NULL;
-+		/* Coordinate with configfs_attach_attr where will increase
-+		 * sd->s_count and update sd->s_dentry to new allocated one.
-+		 * Only set sd->dentry to null when this dentry is the only
-+		 * sd owner.
-+		 * If not do so, configfs_d_iput may run just after
-+		 * configfs_attach_attr and set sd->s_dentry to null
-+		 * even it's still in use.
-+		 */
-+		if (atomic_read(&sd->s_count) <= 2)
-+			sd->s_dentry = NULL;
-+
- 		spin_unlock(&configfs_dirent_lock);
- 		configfs_put(sd);
- 	}
-@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
- 	struct configfs_attribute * attr = sd->s_element;
- 	int error;
- 
-+	spin_lock(&configfs_dirent_lock);
- 	dentry->d_fsdata = configfs_get(sd);
- 	sd->s_dentry = dentry;
-+	spin_unlock(&configfs_dirent_lock);
-+
- 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
- 				configfs_init_file);
- 	if (error) {
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1643,6 +1643,7 @@ static const struct snd_pci_quirk alc260
+ 	SND_PCI_QUIRK(0x1025, 0x008f, "Acer", ALC260_FIXUP_GPIO1),
+ 	SND_PCI_QUIRK(0x103c, 0x280a, "HP dc5750", ALC260_FIXUP_HP_DC5750),
+ 	SND_PCI_QUIRK(0x103c, 0x30ba, "HP Presario B1900", ALC260_FIXUP_HP_B1900),
++	SND_PCI_QUIRK(0x104d, 0x81e2, "Sony VAIO TX", ALC260_FIXUP_HP_PIN_0F),
+ 	SND_PCI_QUIRK(0x10cf, 0x1326, "FSC LifeBook S7020", ALC260_FIXUP_FSC_S7020),
+ 	SND_PCI_QUIRK(0x1509, 0x4540, "Favorit 100XS", ALC260_FIXUP_GPIO1),
+ 	SND_PCI_QUIRK(0x152d, 0x0729, "Quanta KN1", ALC260_FIXUP_KN1),
 
 
