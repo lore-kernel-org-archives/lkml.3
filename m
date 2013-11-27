@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab3K0Nay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:30:54 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:48902 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab3K0Nau (ORCPT
+	id S1753455Ab3K0NbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:31:03 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50312 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab3K0Na4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:30:50 -0500
-Date: Wed, 27 Nov 2013 14:30:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, systemtap@sourceware.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: Re: [PATCH -tip v3 00/23] kprobes: introduce
- NOKPROBE_SYMBOL() and general cleaning of kprobe blacklist
-Message-ID: <20131127133045.GC18422@gmail.com>
-References: <20131120042148.15296.88360.stgit@kbuild-fedora.novalocal>
- <y0mvbznxi6k.fsf@fche.csb>
- <20131120153801.GA9743@gmail.com>
- <20131120173600.GK8993@redhat.com>
- <528D6C9F.8050809@hitachi.com>
- <20131121072938.GA16912@gmail.com>
- <528EC2FF.30301@hitachi.com>
- <528F4406.3090309@hitachi.com>
+	Wed, 27 Nov 2013 08:30:56 -0500
+Date: Wed, 27 Nov 2013 14:30:27 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        bruce.ashfield@windriver.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
+Message-ID: <20131127133027.GE10022@twins.programming.kicks-ass.net>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+ <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+ <20131127132354.GA18422@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <528F4406.3090309@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131127132354.GA18422@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2013/11/22 11:35), Masami Hiramatsu wrote:
-> > (2013/11/21 16:29), Ingo Molnar wrote:
-> >>
-> >> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> >>
-> >>> (2013/11/21 2:36), Frank Ch. Eigler wrote:
-> >>
-> >> [ ... ]
-> >>>> one needs to resort to something like:
-> >>>>
-> >>>> # cat /proc/kallsyms | grep ' [tT] ' | while read addr type symbol; do
-> >>>>    perf probe $symbol
-> >>>> done
-> >>>>
-> >>>> then wait for a few hours for that to finish. Then, or while the loop
-> >>>> is still running, run
-> >>>>
-> >>>> # perf record -e 'probe:*' -aR sleep 1
-> >>>>
-> >>>> to take a kernel down.
-> >>>
-> >>> Um, indeed, current blacklist is not perfect. [...]
-> >>
-> >> Then it needs to be fixed ASAP!
-> > 
-> > OK, I see. At least the two patches included this series
-> > should be fixed. :)
-> > 
-> > And more, I need to test all symbols and drills down.
+On Wed, Nov 27, 2013 at 02:23:54PM +0100, Ingo Molnar wrote:
+> There are 3 main compatibility cases:
 > 
-> OK, what I've found was;
->  - The functions which can be ftraced look good.
->    (see tracing/available_filter_functions)
->  - following functions should not be able to be probed.
->    - memcpy, memset
->    - native_load_sp0 and some other native functions (need to be clear)
->    - restore
->    - trace_graph_return
->    - trace_hardirqs_off_thunk, trace_hardirqs_on_thunk
->    - This list still be not perfect. I just enabled/disabled kprobes
->      one by one. There might be combined bugs (combination of several
->      kprobes).
->  - Some of them are hard to specify by NOKPROBE_SYMBOL because they are
->    defined in assembly file.
+>  - the kernel's 'sizeof sched_attr' is equal to sched_attr:size: the 
+>    kernel version and user-space version matches, it's a straight ABI 
+>    in this case with full functionality.
 > 
-> Anyway, to fix all of them, I think we need file-based blacklist
-> especially for assembler symbols.
+>  - the kernel's 'sizeof sched_attr' is larger than sched_attr::size 
+>    [the kernel is newer than what user-space was built for], in this 
+>    case the kernel assumes that all remaining values are zero and acts
+>    accordingly.
 
-assembler symbols shouldn't be particular hard either, just put them 
-into the noprobes section.
+It also needs to fail sched_getparam() when any of the fields that do
+not fit in the smaller struct provided are !0.
 
-> For example, we can get all text symbols by below command;
->  nm some-file.o | grep -i " t " | cut -f3 -d" "
-> so that we can make a blacklisted-symbol list for the file.
-> I need to look the Kbuild for how I can do that in Makefile.
+>  - the kernel's 'sizeof sched_attr' is smaller than sched_attr::size 
+>    [the kernel is older than what user-space was built for]. In this 
+>    case the kernel should return -ENOSYS if any of the additional 
+>    fields are nonzero. If those are all zero then it will work as if a 
+>    smaller structure was passed in.
 
-I think it's generally better to add explicit annotations to the code.
+So the problem I see with this one is that because you're allowed to
+call sched_setparam() or whatever it will be called next on another
+task; a task can very easily fail its sched_getparam() call.
 
-Thanks,
+Suppose the application is 'old' and only supports a subset of the
+fields; but its wants to get, modify and set its params. This will work
+as long nothing will set anything it doesn't know about.
 
-	Ingo
+As soon as some external entity -- say a sysad using schedtool -- sets a
+param field it doesn't support the get, modify, set routing completely
+fails.
+
