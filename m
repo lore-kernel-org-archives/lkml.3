@@ -1,159 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760316Ab3K0BtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:49:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:9734 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758941Ab3K0Bs7 (ORCPT
+	id S1760333Ab3K0Bti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:49:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39079 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3K0A5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 20:48:59 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-8b-52954f87acef
-Date: Wed, 27 Nov 2013 01:48:55 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: [PATCH] m68k : Kill CONFIG_MTD_PARTITIONS
-To: geert@linux-m68k.org
-Cc: linux-m68k@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20131127014800482@eunb.song
-Msgkey: 20131127014800482@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131127014800482@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <11558848.81811385516934809.JavaMail.weblogic@epml11>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Zlm6H/9Qgg+c6Fpd3zWFzYPT4vEku
-	gDGKyyYlNSezLLVI3y6BK2PCtwusBd/kK9bsbGZsYOyQ72Lk5BASUJFo+f+dEcSWEDCR2NO7
-	gQnCFpO4cG89WxcjF1DNMkaJKcvmscMUNW14xwrRPJ9RoukwM4jNIqAqMfHbNBYQm01AW+LH
-	gatgcWEBI4ndW1+CxUUEZCX6z20Cm8MskCkx9f4WRog58hKTT18Gi/MKCEqcnPmEBWKXkkTz
-	ojdQcWWJu7efs0LEJSRmTb8AZfNKzGh/ClUvJzHt6xpmCFta4vysDYwwzyz+/hgqzi9x7PYO
-	oCc5wHqf3A+GGbN78xc2CFtAYuqZg1Ct6hKXzqyCauWTWLPwLQvMmF2nljPD9N7fMpcJ4i1F
-	iSndD6Fe1JL48mMfG7q3eAUcJaZsnM80gVF5FpLULCTts5C0I6tZwMiyilE0tSC5oDgpvchY
-	rzgxt7g0L10vOT93EyMkKfTvYLx7wPoQYzIwSiYyS4km5wOTSl5JvKGxmZGFqYmpsZG5pRlp
-	wkrivPcfJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYGRyFN+jvpC7r0s2I/Xt5CN9qgdn
-	n3/0KWP3g8XRJaon3efsf5rn9D1r90JNow+3eia0PSvqZuF+98LsivvNzoN/rJivxJlKs9vM
-	l5ymdFWaZaayz686B/MvtzeYf/1pe1+uUNKi9e3GrvVXDGX/9zzt1Hm2r+SwRHnHztRrSXE5
-	R59xuaTd61JiKc5INNRiLipOBADvRdVgIAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2DN12/6lBBq++WFpc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jAnfLrAWfJOvWLOzmbGBsUO+i5GTQ0hARaLl/3dGEFtCwESiacM7VghbTOLCvfVsEDXzGSWa
-	DjOD2CwCqhITv01jAbHZBLQlfhy4ChYXFjCS2L31JVhcREBWov/cJnYQm1kgU2Lq/S2MEHPk
-	JSafvgwW5xUQlDg58wkLxC4lieZFb6DiyhJ3bz+HukFCYtb0C1A2r8SM9qdQ9XIS076uYYaw
-	pSXOz9rACHPz4u+PoeL8Esdu72DqYuQA631yPxhmzO7NX9ggbAGJqWcOQrWqS1w6swqqlU9i
-	zcK3LDBjdp1azgzTe3/LXCaItxQlpnQ/hHpRS+LLj31s6N7iFXCUmLJxPtMERrlZSFKzkLTP
-	QtKOrGYBI8sqRtHUguSC4qT0CiO94sTc4tK8dL3k/NxNjOAE9WzRDsZ/560PMQpwMCrx8E64
-	PCVIiDWxrLgy9xCjBAezkgjvC4epQUK8KYmVValF+fFFpTmpxYcYk4EROJFZSjQ5H5g880ri
-	DY0NjA0NLc0NTA2NLEgTVhLnlb+VFCQkkJ5YkpqdmlqQWgSzhYmDU6qBkUVvxWejBmuB/k29
-	CqrPbwrbJC1382/uXV0d6/elL1VazlPdccHP6S5/93Z/KMx/faH3yJLgX5db9I+npUpN3XAg
-	dJf/scpJ1zeXlZqHXbuprPC0LlpfgvWuSt3DStZPapsq1867uOHQhEsq7ceZ2X/nSlhk7tC4
-	xftTv5HDfsf7bQfvTDO4qsRSnJFoqMVcVJwIAH/9FsWUAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Tue, 26 Nov 2013 19:57:43 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 54/80] nfsd: split up nfsd_setattr
+Date: Tue, 26 Nov 2013 16:57:23 -0800
+Message-Id: <20131127005644.698509016@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
+References: <20131127005640.934155527@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR1nG8H017528
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-This patch removes CONFIG_MTD_PARTITIONS in config files for m68k.
-Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
+------------------
 
-Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+From: Christoph Hellwig <hch@infradead.org>
+
+commit 818e5a22e907fbae75e9c1fd78233baec9fa64b6 upstream.
+
+Split out two helpers to make the code more readable and easier to verify
+for correctness.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/m68k/configs/m5208evb_defconfig |    1 -
- arch/m68k/configs/m5249evb_defconfig |    1 -
- arch/m68k/configs/m5272c3_defconfig  |    1 -
- arch/m68k/configs/m5275evb_defconfig |    1 -
- arch/m68k/configs/m5307c3_defconfig  |    1 -
- arch/m68k/configs/m5407c3_defconfig  |    1 -
- 6 files changed, 0 insertions(+), 6 deletions(-)
+ fs/nfsd/vfs.c |  144 +++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 84 insertions(+), 60 deletions(-)
 
-diff --git a/arch/m68k/configs/m5208evb_defconfig b/arch/m68k/configs/m5208evb_defconfig
-index c161682..e7292f4 100644
---- a/arch/m68k/configs/m5208evb_defconfig
-+++ b/arch/m68k/configs/m5208evb_defconfig
-@@ -40,7 +40,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
-diff --git a/arch/m68k/configs/m5249evb_defconfig b/arch/m68k/configs/m5249evb_defconfig
-index a6599e4..0cd4b39 100644
---- a/arch/m68k/configs/m5249evb_defconfig
-+++ b/arch/m68k/configs/m5249evb_defconfig
-@@ -38,7 +38,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
-diff --git a/arch/m68k/configs/m5272c3_defconfig b/arch/m68k/configs/m5272c3_defconfig
-index 3fa60a5..a60cb35 100644
---- a/arch/m68k/configs/m5272c3_defconfig
-+++ b/arch/m68k/configs/m5272c3_defconfig
-@@ -36,7 +36,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
-diff --git a/arch/m68k/configs/m5275evb_defconfig b/arch/m68k/configs/m5275evb_defconfig
-index a1230e8..e6502ab 100644
---- a/arch/m68k/configs/m5275evb_defconfig
-+++ b/arch/m68k/configs/m5275evb_defconfig
-@@ -39,7 +39,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
-diff --git a/arch/m68k/configs/m5307c3_defconfig b/arch/m68k/configs/m5307c3_defconfig
-index 43795f4..023812a 100644
---- a/arch/m68k/configs/m5307c3_defconfig
-+++ b/arch/m68k/configs/m5307c3_defconfig
-@@ -38,7 +38,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
-diff --git a/arch/m68k/configs/m5407c3_defconfig b/arch/m68k/configs/m5407c3_defconfig
-index 72746c5..557b39f 100644
---- a/arch/m68k/configs/m5407c3_defconfig
-+++ b/arch/m68k/configs/m5407c3_defconfig
-@@ -38,7 +38,6 @@ CONFIG_INET=y
- # CONFIG_IPV6 is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
--- 
-1.7.0.4
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -297,41 +297,12 @@ commit_metadata(struct svc_fh *fhp)
+ }
+ 
+ /*
+- * Set various file attributes.
+- * N.B. After this call fhp needs an fh_put
++ * Go over the attributes and take care of the small differences between
++ * NFS semantics and what Linux expects.
+  */
+-__be32
+-nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+-	     int check_guard, time_t guardtime)
++static void
++nfsd_sanitize_attrs(struct inode *inode, struct iattr *iap)
+ {
+-	struct dentry	*dentry;
+-	struct inode	*inode;
+-	int		accmode = NFSD_MAY_SATTR;
+-	umode_t		ftype = 0;
+-	__be32		err;
+-	int		host_err;
+-	int		size_change = 0;
+-
+-	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+-		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
+-	if (iap->ia_valid & ATTR_SIZE)
+-		ftype = S_IFREG;
+-
+-	/* Get inode */
+-	err = fh_verify(rqstp, fhp, ftype, accmode);
+-	if (err)
+-		goto out;
+-
+-	dentry = fhp->fh_dentry;
+-	inode = dentry->d_inode;
+-
+-	/* Ignore any mode updates on symlinks */
+-	if (S_ISLNK(inode->i_mode))
+-		iap->ia_valid &= ~ATTR_MODE;
+-
+-	if (!iap->ia_valid)
+-		goto out;
+-
+ 	/*
+ 	 * NFSv2 does not differentiate between "set-[ac]time-to-now"
+ 	 * which only requires access, and "set-[ac]time-to-X" which
+@@ -341,8 +312,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	 * convert to "set to now" instead of "set to explicit time"
+ 	 *
+ 	 * We only call inode_change_ok as the last test as technically
+-	 * it is not an interface that we should be using.  It is only
+-	 * valid if the filesystem does not define it's own i_op->setattr.
++	 * it is not an interface that we should be using.
+ 	 */
+ #define BOTH_TIME_SET (ATTR_ATIME_SET | ATTR_MTIME_SET)
+ #define	MAX_TOUCH_TIME_ERROR (30*60)
+@@ -368,30 +338,6 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 			iap->ia_valid &= ~BOTH_TIME_SET;
+ 		}
+ 	}
+-	    
+-	/*
+-	 * The size case is special.
+-	 * It changes the file as well as the attributes.
+-	 */
+-	if (iap->ia_valid & ATTR_SIZE) {
+-		if (iap->ia_size < inode->i_size) {
+-			err = nfsd_permission(rqstp, fhp->fh_export, dentry,
+-					NFSD_MAY_TRUNC|NFSD_MAY_OWNER_OVERRIDE);
+-			if (err)
+-				goto out;
+-		}
+-
+-		host_err = get_write_access(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-
+-		size_change = 1;
+-		host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
+-		if (host_err) {
+-			put_write_access(inode);
+-			goto out_nfserr;
+-		}
+-	}
+ 
+ 	/* sanitize the mode change */
+ 	if (iap->ia_valid & ATTR_MODE) {
+@@ -414,8 +360,86 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 			iap->ia_valid |= (ATTR_KILL_SUID | ATTR_KILL_SGID);
+ 		}
+ 	}
++}
++
++static __be32
++nfsd_get_write_access(struct svc_rqst *rqstp, struct svc_fh *fhp,
++		struct iattr *iap)
++{
++	struct inode *inode = fhp->fh_dentry->d_inode;
++	int host_err;
++
++	if (iap->ia_size < inode->i_size) {
++		__be32 err;
++
++		err = nfsd_permission(rqstp, fhp->fh_export, fhp->fh_dentry,
++				NFSD_MAY_TRUNC | NFSD_MAY_OWNER_OVERRIDE);
++		if (err)
++			return err;
++	}
++
++	host_err = get_write_access(inode);
++	if (host_err)
++		goto out_nfserrno;
++
++	host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
++	if (host_err)
++		goto out_put_write_access;
++	return 0;
++
++out_put_write_access:
++	put_write_access(inode);
++out_nfserrno:
++	return nfserrno(host_err);
++}
++
++/*
++ * Set various file attributes.  After this call fhp needs an fh_put.
++ */
++__be32
++nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
++	     int check_guard, time_t guardtime)
++{
++	struct dentry	*dentry;
++	struct inode	*inode;
++	int		accmode = NFSD_MAY_SATTR;
++	umode_t		ftype = 0;
++	__be32		err;
++	int		host_err;
++	int		size_change = 0;
++
++	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
++		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
++	if (iap->ia_valid & ATTR_SIZE)
++		ftype = S_IFREG;
++
++	/* Get inode */
++	err = fh_verify(rqstp, fhp, ftype, accmode);
++	if (err)
++		goto out;
++
++	dentry = fhp->fh_dentry;
++	inode = dentry->d_inode;
++
++	/* Ignore any mode updates on symlinks */
++	if (S_ISLNK(inode->i_mode))
++		iap->ia_valid &= ~ATTR_MODE;
++
++	if (!iap->ia_valid)
++		goto out;
++
++	nfsd_sanitize_attrs(inode, iap);
+ 
+-	/* Change the attributes. */
++	/*
++	 * The size case is special, it changes the file in addition to the
++	 * attributes.
++	 */
++	if (iap->ia_valid & ATTR_SIZE) {
++		err = nfsd_get_write_access(rqstp, fhp, iap);
++		if (err)
++			goto out;
++		size_change = 1;
++	}
+ 
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
+
+
