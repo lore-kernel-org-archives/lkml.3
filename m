@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab3K0Bod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:44:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39138 "EHLO
+	id S932227Ab3K0A5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261Ab3K0A54 (ORCPT
+	with ESMTP id S1757937Ab3K0A5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:56 -0500
+	Tue, 26 Nov 2013 19:57:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 41/80] ALSA: hda - Check keep_eapd_on before inv_eapd
-Date: Tue, 26 Nov 2013 16:57:10 -0800
-Message-Id: <20131127005643.785917344@linuxfoundation.org>
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.10 51/80] NFSv4: dont reprocess cached open CLAIM_PREVIOUS
+Date: Tue, 26 Nov 2013 16:57:20 -0800
+Message-Id: <20131127005644.495361416@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,38 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
+commit d2bfda2e7aa036f90ccea610a657064b1e267913 upstream.
 
-We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
-set by the codec driver and enable is false.  But, we also apply the
-flipping of enable value according to inv_eapd flag in the same
-function, and this confused the former check, handled as if it's
-turned ON.  The inverted EAPD check must be applied after keep_eapd_on
-check, instead.
+Cached opens have already been handled by _nfs4_opendata_reclaim_to_nfs4_state
+and can safely skip being reprocessed, but must still call update_open_stateid
+to make sure that all active fmodes are recovered.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4proc.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -786,10 +786,10 @@ static void set_pin_eapd(struct hda_code
- 	if (spec->own_eapd_ctl ||
- 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
- 		return;
--	if (codec->inv_eapd)
--		enable = !enable;
- 	if (spec->keep_eapd_on && !enable)
- 		return;
-+	if (codec->inv_eapd)
-+		enable = !enable;
- 	snd_hda_codec_update_cache(codec, pin, 0,
- 				   AC_VERB_SET_EAPD_BTLENABLE,
- 				   enable ? 0x02 : 0x00);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1159,10 +1159,13 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 	struct nfs4_state *state = data->state;
+ 	int ret;
+ 
+-	/* allow cached opens (!rpc_done && !rpc_status) */
+-	if (!data->rpc_done && data->rpc_status) {
+-		ret = data->rpc_status;
+-		goto err;
++	if (!data->rpc_done) {
++		if (data->rpc_status) {
++			ret = data->rpc_status;
++			goto err;
++		}
++		/* cached opens have already been processed */
++		goto update;
+ 	}
+ 
+ 	ret = -ENOMEM;
+@@ -1176,6 +1179,7 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 
+ 	if (data->o_res.delegation_type != 0)
+ 		nfs4_opendata_check_deleg(data, state);
++update:
+ 	update_open_stateid(state, &data->o_res.stateid, NULL,
+ 			    data->o_arg.fmode);
+ 
 
 
