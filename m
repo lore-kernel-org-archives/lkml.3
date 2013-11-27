@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3K0NbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 08:31:03 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50312 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab3K0Na4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 08:30:56 -0500
-Date: Wed, 27 Nov 2013 14:30:27 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 02/14] sched: add extended scheduling interface. (new ABI)
-Message-ID: <20131127133027.GE10022@twins.programming.kicks-ass.net>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
- <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
- <20131127132354.GA18422@gmail.com>
+	id S1753712Ab3K0NbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 08:31:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49229 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753435Ab3K0NbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 08:31:09 -0500
+Date: Wed, 27 Nov 2013 13:31:02 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Juri Lelli <juri.lelli@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] cpuset: Fix memory allocator deadlock
+Message-ID: <20131127133102.GB11295@suse.de>
+References: <20131126140341.GL10022@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20131127132354.GA18422@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131126140341.GL10022@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 02:23:54PM +0100, Ingo Molnar wrote:
-> There are 3 main compatibility cases:
+On Tue, Nov 26, 2013 at 03:03:41PM +0100, Peter Zijlstra wrote:
+> Juri hit the below lockdep report:
 > 
->  - the kernel's 'sizeof sched_attr' is equal to sched_attr:size: the 
->    kernel version and user-space version matches, it's a straight ABI 
->    in this case with full functionality.
+> [    4.303391] ======================================================
+> [    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+> [    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
+> [    4.303395] ------------------------------------------------------
+> [    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+> [    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
+> [    4.303417]
+> [    4.303417] and this task is already holding:
+> [    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
+> [    4.303431] which would create a new lock dependency:
+> [    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+> [    4.303436]
 > 
->  - the kernel's 'sizeof sched_attr' is larger than sched_attr::size 
->    [the kernel is newer than what user-space was built for], in this 
->    case the kernel assumes that all remaining values are zero and acts
->    accordingly.
+> [    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
+> [    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
+> [    4.303922]    HARDIRQ-ON-W at:
+> [    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
+> [    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303933]    SOFTIRQ-ON-W at:
+> [    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
+> [    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303959]    INITIAL USE at:
+> [    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
+> [    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
+> [    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
+> [    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
+> [    4.303972]  }
+> 
+> Which reports that we take mems_allowed_seq with interrupts enabled. A
+> little digging found that this can only be from
+> cpuset_change_task_nodemask().
+> 
+> This is an actual deadlock because an interrupt doing an allocation will
+> hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
+> forever waiting for the write side to complete.
+> 
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Reported-by: Juri Lelli <juri.lelli@gmail.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-It also needs to fail sched_getparam() when any of the fields that do
-not fit in the smaller struct provided are !0.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
->  - the kernel's 'sizeof sched_attr' is smaller than sched_attr::size 
->    [the kernel is older than what user-space was built for]. In this 
->    case the kernel should return -ENOSYS if any of the additional 
->    fields are nonzero. If those are all zero then it will work as if a 
->    smaller structure was passed in.
-
-So the problem I see with this one is that because you're allowed to
-call sched_setparam() or whatever it will be called next on another
-task; a task can very easily fail its sched_getparam() call.
-
-Suppose the application is 'old' and only supports a subset of the
-fields; but its wants to get, modify and set its params. This will work
-as long nothing will set anything it doesn't know about.
-
-As soon as some external entity -- say a sysad using schedtool -- sets a
-param field it doesn't support the get, modify, set routing completely
-fails.
-
+-- 
+Mel Gorman
+SUSE Labs
