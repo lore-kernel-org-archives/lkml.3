@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab3K0A5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39025 "EHLO
+	id S1760355Ab3K0Bt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:49:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757711Ab3K0A5a (ORCPT
+	with ESMTP id S1758004Ab3K0A5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:30 -0500
+	Tue, 26 Nov 2013 19:57:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 3.10 29/80] Revert "ima: policy for RAMFS"
-Date: Tue, 26 Nov 2013 16:56:58 -0800
-Message-Id: <20131127005642.955529902@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Yin.JianHong" <jiyin@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 53/80] nfsd: return better errors to exportfs
+Date: Tue, 26 Nov 2013 16:57:22 -0800
+Message-Id: <20131127005644.630513605@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,32 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
+commit 427d6c6646d868fbd3094e7e2e1644d480cd9204 upstream.
 
-This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
+Someone noticed exportfs happily accepted exports that would later be
+rejected when mountd tried to give them to the kernel.  Fix this.
 
-Everything in the initramfs should be measured and appraised,
-but until the initramfs has extended attribute support, at
-least measured.
+This is a regression from 4c1e1b34d5c800ad3ac9a7e2805b0bea70ad2278
+"nfsd: Store ex_anon_uid and ex_anon_gid as kuids and kgids".
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Reported-by: Yin.JianHong <jiyin@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/integrity/ima/ima_policy.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfsd/export.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
- 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
--	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
- 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -536,16 +536,12 @@ static int svc_export_parse(struct cache
+ 		if (err)
+ 			goto out3;
+ 		exp.ex_anon_uid= make_kuid(&init_user_ns, an_int);
+-		if (!uid_valid(exp.ex_anon_uid))
+-			goto out3;
+ 
+ 		/* anon gid */
+ 		err = get_int(&mesg, &an_int);
+ 		if (err)
+ 			goto out3;
+ 		exp.ex_anon_gid= make_kgid(&init_user_ns, an_int);
+-		if (!gid_valid(exp.ex_anon_gid))
+-			goto out3;
+ 
+ 		/* fsid */
+ 		err = get_int(&mesg, &an_int);
+@@ -583,6 +579,17 @@ static int svc_export_parse(struct cache
+ 				   exp.ex_uuid);
+ 		if (err)
+ 			goto out4;
++		/*
++		 * For some reason exportfs has been passing down an
++		 * invalid (-1) uid & gid on the "dummy" export which it
++		 * uses to test export support.  To make sure exportfs
++		 * sees errors from check_export we therefore need to
++		 * delay these checks till after check_export:
++		 */
++		if (!uid_valid(exp.ex_anon_uid))
++			goto out4;
++		if (!gid_valid(exp.ex_anon_gid))
++			goto out4;
+ 	}
+ 
+ 	expp = svc_export_lookup(&exp);
 
 
