@@ -1,186 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab3K0Xeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:34:44 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:53291 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757974Ab3K0Xei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:34:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqcHAEyAllJ5LHyk/2dsb2JhbABZgweDMbBRhUyBIBd0giUBAQQBJxMcHAcQCAMOCgklDwUlAyETh3sFwAoWjmwHhDMDmBOSFIM9KA
-Date: Thu, 28 Nov 2013 10:32:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, Vlastimil Babka <vbabka@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/9] mm + fs: store shadow entries in page cache
-Message-ID: <20131127233249.GK10988@dastard>
-References: <1385336308-27121-1-git-send-email-hannes@cmpxchg.org>
- <1385336308-27121-7-git-send-email-hannes@cmpxchg.org>
- <20131125231716.GJ8803@dastard>
- <20131127170804.GD3556@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127170804.GD3556@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758356Ab3K0XjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:39:00 -0500
+Received: from postman.amit.cz ([188.95.124.147]:42237 "EHLO postman.amit.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757486Ab3K0Xiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:38:54 -0500
+From: Ondrej Puzman <puzman@gmail.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ondrej Puzman <puzman@gmail.com>
+Subject: [PATCH] pch_gbe: Add DQL support to the driver
+Date: Thu, 28 Nov 2013 00:29:09 +0100
+Message-Id: <1385594950-2662-3-git-send-email-puzman@gmail.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1385594950-2662-2-git-send-email-puzman@gmail.com>
+References: <1385594950-2662-1-git-send-email-puzman@gmail.com>
+ <1385594950-2662-2-git-send-email-puzman@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 12:08:04PM -0500, Johannes Weiner wrote:
-> On Tue, Nov 26, 2013 at 10:17:16AM +1100, Dave Chinner wrote:
-> > On Sun, Nov 24, 2013 at 06:38:25PM -0500, Johannes Weiner wrote:
-> > > Reclaim will be leaving shadow entries in the page cache radix tree
-> > > upon evicting the real page.  As those pages are found from the LRU,
-> > > an iput() can lead to the inode being freed concurrently.  At this
-> > > point, reclaim must no longer install shadow pages because the inode
-> > > freeing code needs to ensure the page tree is really empty.
-> > > 
-> > > Add an address_space flag, AS_EXITING, that the inode freeing code
-> > > sets under the tree lock before doing the final truncate.  Reclaim
-> > > will check for this flag before installing shadow pages.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ....
-> > > @@ -545,10 +546,25 @@ static void evict(struct inode *inode)
-> > >  	 */
-> > >  	inode_wait_for_writeback(inode);
-> > >  
-> > > +	/*
-> > > +	 * Page reclaim can not do iput() and thus can race with the
-> > > +	 * inode teardown.  Tell it when the address space is exiting,
-> > > +	 * so that it does not install eviction information after the
-> > > +	 * final truncate has begun.
-> > > +	 *
-> > > +	 * As truncation uses a lockless tree lookup, acquire the
-> > > +	 * spinlock to make sure any ongoing tree modification that
-> > > +	 * does not see AS_EXITING is completed before starting the
-> > > +	 * final truncate.
-> > > +	 */
-> > > +	spin_lock_irq(&inode->i_data.tree_lock);
-> > > +	mapping_set_exiting(&inode->i_data);
-> > > +	spin_unlock_irq(&inode->i_data.tree_lock);
-> > > +
-> > >  	if (op->evict_inode) {
-> > >  		op->evict_inode(inode);
-> > >  	} else {
-> > > -		if (inode->i_data.nrpages)
-> > > +		if (inode->i_data.nrpages || inode->i_data.nrshadows)
-> > >  			truncate_inode_pages(&inode->i_data, 0);
-> > >  		clear_inode(inode);
-> > >  	}
-> > 
-> > Ok, so what I see here is that we need a wrapper function that
-> > handles setting the AS_EXITING flag and doing the "final"
-> > truncate_inode_pages() call, and the locking for the AS_EXITING flag
-> > moved into mapping_set_exiting()
-> > 
-> > That is, because this AS_EXITING flag and it's locking constraints
-> > are directly related to the upcoming truncate_inode_pages() call,
-> > I'd prefer to see a helper that captures that relationship used
-> > in all the filesystem code. e.g:
-> > 
-> > void truncate_inode_pages_final(struct address_space *mapping)
-> > {
-> > 	spin_lock_irq(&mapping->tree_lock);
-> > 	mapping_set_exiting(mapping);
-> > 	spin_unlock_irq(&mapping->tree_lock);
-> > 	if (inode->i_data.nrpages || inode->i_data.nrshadows)
-> > 		truncate_inode_pages_range(mapping, 0, (loff_t)-1);
-> > }
-> > 
-> > And document it in Documentation/filesystems/porting as a mandatory
-> > function to be called from ->evict_inode() implementations before
-> > calling clear_inode().  You can then replace all the direct calls to
-> > truncate_inode_pages() in the evict_inode() path with a call to
-> > truncate_inode_pages_final().
-> 
-> Ok, fair enough.  I'll add a BUG_ON(!mapping_exiting(&inode->i_data))
-> to the inode sanity checks on final teardown to make sure filesystems
-> don't miss the change to truncate_inode_pages_final().
+Add dynamic queue limits support to the driver.
 
-Good idea. :)
+Signed-off-by: Ondrej Puzman <puzman@gmail.com>
+---
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-> > As it is, I'd really like to see that unconditional irq disable go
-> > away from this code - disabling and enabling interrupts for every
-> > single inode we reclaim is going to add significant overhead to this
-> > hot code path. And given that:
-> > 
-> > > +static inline void mapping_set_exiting(struct address_space *mapping)
-> > > +{
-> > > +	set_bit(AS_EXITING, &mapping->flags);
-> > > +}
-> > > +
-> > > +static inline int mapping_exiting(struct address_space *mapping)
-> > > +{
-> > > +	return test_bit(AS_EXITING, &mapping->flags);
-> > > +}
-> > 
-> > these atomic bit ops, why do we need to take the tree_lock and
-> > disable irqs in evict() to set this bit if there's nothing to
-> > truncate on the inode? i.e. something like this:
-> > 
-> > void truncate_inode_pages_final(struct address_space *mapping)
-> > {
-> > 	mapping_set_exiting(mapping);
-> > 	if (inode->i_data.nrpages || inode->i_data.nrshadows) {
-> > 		/*
-> > 		 * spinlock barrier to ensure all modifications are
-> > 		 * complete before we do the final truncate
-> > 		 */
-> > 		spin_lock_irq(&mapping->tree_lock);
-> > 		spin_unlock_irq(&mapping->tree_lock);
-> > 		truncate_inode_pages_range(mapping, 0, (loff_t)-1);
-> > }
-> 
-> That would almost work, but we need to enforce ordering of the counter
-> reads and updates or truncation might read 0 on both while racing with
-> reclaim.
-> 
-> Reclaim would have to do:
-> 
->   spin_lock_irq(&mapping->tree_lock)
->   if !mapping_exiting():
->     swap shadow entry
->     mapping->nrshadows++
->     smp_wmb()
->     mapping->nrpages--
->   spin_unlock_irq(&mapping->tree_lock)
-> 
-> and the final truncate side would have to do
-> 
->   mapping_set_exiting()
->   nrpages = mapping->nrpages
->   smp_rmb()
->   nrshadows = mapping->nrshadows
->   if (nrpages || nrshadows)
->     spin_lock_irq(&mapping->tree_lock)
->     spin_unlock_irq(&mapping->tree_lock)
->     truncate
-
-I don't see a problem with doing that as long as the memory barriers
-are properly documented.  One ofthe advantages of pulling this code
-together is that we can use more complex synchronisation techniques
-it in this way without messing up code all over the place.  ;)
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index d967603..2c14e2e 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -994,6 +994,8 @@ static void pch_gbe_clean_tx_ring(struct pch_gbe_adapter *adapter,
+ 	netdev_dbg(adapter->netdev,
+ 		   "call pch_gbe_unmap_and_free_tx_resource() %d count\n", i);
+ 
++	netdev_reset_queue(adapter->netdev);
++
+ 	size = (unsigned long)sizeof(struct pch_gbe_buffer) * tx_ring->count;
+ 	memset(tx_ring->buffer_info, 0, size);
+ 
+@@ -1544,6 +1546,7 @@ pch_gbe_clean_tx(struct pch_gbe_adapter *adapter,
+ 	unsigned int cleaned_count = 0;
+ 	bool cleaned = false;
+ 	int unused, thresh;
++	unsigned int bytes_compl = 0, pkts_compl = 0;
+ 
+ 	netdev_dbg(adapter->netdev, "next_to_clean : %d\n",
+ 		   tx_ring->next_to_clean);
+@@ -1622,6 +1625,8 @@ pch_gbe_clean_tx(struct pch_gbe_adapter *adapter,
+ 			buffer_info->mapped = false;
+ 		}
+ 		if (buffer_info->skb) {
++			bytes_compl += buffer_info->skb->len;
++			pkts_compl++;
+ 			netdev_dbg(adapter->netdev,
+ 				   "trim buffer_info->skb : %d\n", i);
+ 			skb_trim(buffer_info->skb, 0);
+@@ -1641,6 +1646,9 @@ pch_gbe_clean_tx(struct pch_gbe_adapter *adapter,
+ 		   "called pch_gbe_unmap_and_free_tx_resource() %d count\n",
+ 		   cleaned_count);
+ 	if (cleaned_count > 0)  { /*skip this if nothing cleaned*/
++		netdev_completed_queue(adapter->netdev,
++				       pkts_compl, bytes_compl);
++
+ 		/* Recover from running out of Tx resources in xmit_frame */
+ 		spin_lock(&tx_ring->tx_lock);
+ 		if (unlikely(cleaned && (netif_queue_stopped(adapter->netdev))))
+@@ -2152,6 +2160,7 @@ static int pch_gbe_xmit_frame(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	/* CRC,ITAG no support */
+ 	pch_gbe_tx_queue(adapter, tx_ring, skb);
++	netdev_sent_queue(netdev, skb->len);
+ 
+ 	if (unlikely(!PCH_GBE_DESC_UNUSED(tx_ring)))
+ 		netif_stop_queue(netdev);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.5.6.5
+
