@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab3K0Cqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:46:34 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33541 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab3K0Cqb (ORCPT
+	id S1754683Ab3K0Csn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:48:43 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:52651 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3K0Csl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:46:31 -0500
-Date: Wed, 27 Nov 2013 10:46:23 +0800
-From: kedacomkernel <kedacomkernel@gmail.com>
-To: nab <nab@linux-iscsi.org>,
-        "Jayamohan Kallickal" <Jayamohan.Kallickal@Emulex.Com>
-Cc: open-iscsi <open-iscsi@googlegroups.com>,
-        "Mike Christie" <michaelc@cs.wisc.edu>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        "Or Gerlitz" <ogerlitz@mellanox.com>
-Reply-To: kedacomkernel <kedacomkernel@gmail.com>
-Subject: Re: Re: scsi-mq + open-iscsi support patches..?
-References: <1382997816.19256.767.camel@haakon3.risingtidesystems.com> <5273BEBF.2090008@cs.wisc.edu> <1383338230.4216.9.camel@haakon3.risingtidesystems.com> <37724B2049F71D4C9B086F99DDB2DE1126E31C7C@CMEXMB1.ad.emulex.com>, 
-	<1383591411.4216.25.camel@haakon3.risingtidesystems.com>
-X-Priority: 3
-X-GUID: 792B5A08-8FC4-4E81-8E32-882821F373D7
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.93[cn]
-Mime-Version: 1.0
-Message-ID: <201311271046199969490@gmail.com>
-Content-Type: text/plain;
-	charset="utf-8"
+	Tue, 26 Nov 2013 21:48:41 -0500
+Message-ID: <52955D7E.3050206@linaro.org>
+Date: Wed, 27 Nov 2013 10:48:30 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
+        fenghua.yu@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, pjt@google.com, fengguang.wu@intel.com
+CC: james.hogan@imgtec.com, alex.shi@linaro.org, jason.low2@hp.com,
+        gregkh@linuxfoundation.org, hanjun.guo@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] sched: remove cpu_load decay.
+References: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
+In-Reply-To: <1385102235-25664-1-git-send-email-alex.shi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR2l5Pt018340
 
-Hi allï¼Œ
-	I used target-pending/scsi-mq to test intel ahciï¼Œbut it can't work.I modify some places, now it can work.But still met hung task or oops.
-Who can receive my patch for that?
+On 11/22/2013 02:37 PM, Alex Shi wrote:
+> 	latest kernel 527d1511310a89		+ this patchset
+> hackbench -T -g 10 -f 40
+> 	23.25"					21.7"
+> 	23.16"					19.99"
+> 	24.24"					21.53"
+> hackbench -p -g 10 -f 40
+> 	26.52"					22.48"
+> 	23.89"					24.00"
+> 	25.65"					23.06"
+> hackbench -P -g 10 -f 40
+> 	20.14"					19.37"
+> 	19.96"					19.76"
+> 	21.76"					21.54"
+> 
+> The git tree for this patchset at:
+>  git@github.com:alexshi/power-scheduling.git no-load-idx 
 
-Thanks!
-Jianpeng Ma
->On Sat, 2013-11-02 at 16:10 +0000, Jayamohan Kallickal wrote:
->
-><SNIP>
->
->> >> On a related note, some iscsi vendor has been hitting a crash with 
->> >> your tree.
->> 
->> >I got an email from Jayamohan recently, but the OOPs did not appear to be scsi-mq related..
->> 
->> I do see the crash on my Ubuntu VM running on VirtualBox  but don't see the crash on a Standalone system. 
->> Attaching the screenshot
->> 
->
->Hi Jayamohan,
->
->Care to enable the virtual serial port for this VM in order to grab the
->full dmesg output..?
->
->Also, an idea of what SATA emulation is being used here would be helpful
->as well.  (eg: lspci -vvv for the ATA device on the running system)
->
->--nab
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.htmlÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Fengguang,
+
+Did your kernel testing find sth unusual on this 3 patches?
+
+-- 
+Thanks
+    Alex
