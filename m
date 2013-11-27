@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3K0ByX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:54:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39002 "EHLO
+	id S1759715Ab3K0Byn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:54:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757662Ab3K0A5Z (ORCPT
+	with ESMTP id S1757621Ab3K0A5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:25 -0500
+	Tue, 26 Nov 2013 19:57:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 24/80] ACPI / hotplug: Do not execute "insert in progress" _OST
-Date: Tue, 26 Nov 2013 16:56:53 -0800
-Message-Id: <20131127005642.615825419@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH 3.10 23/80] ACPI / hotplug: Fix handle_root_bridge_removal()
+Date: Tue, 26 Nov 2013 16:56:52 -0800
+Message-Id: <20131127005642.547486624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,37 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 176a88d79d6b5aebabaff16734e8b3107efcaaad upstream.
+commit 2441191a19039002b2c454a261fb45986df15184 upstream.
 
-According to the ACPI spec (5.0, Section 6.3.5), the "Device
-insertion in progress (pending)" (0x80) _OST status code is
-reserved for the "Insertion Processing" (0x200) source event
-which is "a result of an OSPM action".  Specifically, it is not
-a notification, so that status code should not be used during
-notification processing, which unfortunately is done by
-acpi_scan_bus_device_check().
+It is required to do get_device() on the struct acpi_device in
+question before passing it to acpi_bus_hot_remove_device() through
+acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
+calls acpi_scan_hot_remove() that does put_device() on that
+object.
 
-For this reason, drop the ACPI_OST_SC_INSERT_IN_PROGRESS _OST
-status evaluation from there (it was a mistake to put it in there
-in the first place).
+The ACPI PCI root removal routine, handle_root_bridge_removal(),
+doesn't do that, which may lead to premature freeing of the
+device object or to executing put_device() on an object that
+has been freed already.
+
+Fix this problem by making handle_root_bridge_removal() use
+get_device() as appropriate.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/acpi/pci_root.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -244,8 +244,6 @@ static void acpi_scan_bus_device_check(a
- 			goto out;
- 		}
- 	}
--	acpi_evaluate_hotplug_ost(handle, ost_source,
--				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
- 	error = acpi_bus_scan(handle);
- 	if (error) {
- 		acpi_handle_warn(handle, "Namespace scan failure\n");
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -614,9 +614,12 @@ static void handle_root_bridge_removal(s
+ 	ej_event->device = device;
+ 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+ 
++	get_device(&device->dev);
+ 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+-	if (ACPI_FAILURE(status))
++	if (ACPI_FAILURE(status)) {
++		put_device(&device->dev);
+ 		kfree(ej_event);
++	}
+ }
+ 
+ static void _handle_hotplug_event_root(struct work_struct *work)
 
 
