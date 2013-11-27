@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab3K0JZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 04:25:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:32512 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab3K0JY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 04:24:57 -0500
-X-IronPort-AV: E=Sophos;i="4.93,780,1378828800"; 
-   d="scan'208";a="9137335"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: dsahern@gmail.com, adrian.hunter@intel.com, jolsa@redhat.com,
-        namhyung@kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] perf util: Join four conditions in two in perf_evlist__create_maps().
-Date: Wed, 27 Nov 2013 17:23:04 -0500
-Message-Id: <1385590984-30244-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/27 17:24:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/27 17:24:59,
-	Serialize complete at 2013/11/27 17:24:59
+	id S1753175Ab3K0JZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 04:25:26 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51478 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3K0JZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 04:25:23 -0500
+Message-ID: <5295BB05.1030506@gmail.com>
+Date: Wed, 27 Nov 2013 17:27:33 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+CC: marek.belisko@gmail.com, kelleynnn@gmail.com, linux@rainbow-software.org,
+        peter.p.waskiewicz.jr@intel.com, rkuo <rkuo@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers: staging: ft1000: ft1000-usb: initialize 'status'
+ with STATUS_SUCCESS in request_code_segment()
+References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com> <5295607E.2000504@gmail.com> <20131127091841.GA19465@leaf>
+In-Reply-To: <20131127091841.GA19465@leaf>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are four condition branchs in perf_evlist__create_maps, but they
-only do two kinds of thing. 1st and 4th call cpu_map__new(), and the others
-call cpu_map__dummy_new(). This patch joins them in two branchs, decreasing
-the number of branch and removing some duplicated code.
+On 11/27/2013 05:18 PM, Josh Triplett wrote:
+> On Wed, Nov 27, 2013 at 11:01:18AM +0800, Chen Gang wrote:
+>> If "!bool_case", it returns unexpected value instead of STATUS_SUCCESS,
+>> so need fix it, the related warning (with allmodconfig under hexagon):
+>>
+>>     CC [M]  drivers/staging/ft1000/ft1000-usb/ft1000_download.o
+>>   drivers/staging/ft1000/ft1000-usb/ft1000_download.c: In function 'request_code_segment':
+>>   drivers/staging/ft1000/ft1000-usb/ft1000_download.c:581:6: warning: 'status' may be used uninitialized in this function [-Wuninitialized]
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> 
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/util/evlist.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Thanks.  :-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bbc746a..2258eb4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -819,11 +819,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
- 	if (evlist->threads == NULL)
- 		return -1;
- 
--	if (target->force_per_cpu)
--		evlist->cpus = cpu_map__new(target->cpu_list);
--	else if (target__has_task(target))
--		evlist->cpus = cpu_map__dummy_new();
--	else if (!target__has_cpu(target) && !target->uses_mmap)
-+	if (!target->force_per_cpu &&
-+	    (target__has_task(target) || 
-+	     (!target__has_cpu(target) && !target->uses_mmap)))
- 		evlist->cpus = cpu_map__dummy_new();
- 	else
- 		evlist->cpus = cpu_map__new(target->cpu_list);
+>>  .../staging/ft1000/ft1000-usb/ft1000_download.c    |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+>> index 68ded17..15f3062 100644
+>> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+>> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+>> @@ -578,7 +578,7 @@ static int request_code_segment(struct ft1000_usb *ft1000dev, u16 **s_file,
+>>  		 u8 **c_file, const u8 *endpoint, bool boot_case)
+>>  {
+>>  	long word_length;
+>> -	int status;
+>> +	int status = STATUS_SUCCESS;
+>>  
+>>  	/*DEBUG("FT1000:REQUEST_CODE_SEGMENT\n");i*/
+>>  	word_length = get_request_value(ft1000dev);
+>> -- 
+>> 1.7.7.6
+
+
 -- 
-1.8.2.1
-
+Chen Gang
