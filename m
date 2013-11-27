@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab3K0Wi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 17:38:59 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53630 "EHLO smtp1-g21.free.fr"
+	id S1758087Ab3K0Wkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 17:40:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53436 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755397Ab3K0Wi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 17:38:57 -0500
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Wolfram Sang <wsa@the-dreams.de>, trivial@kernel.org
-Subject: [PATCH] i2c: bcm-kona: fix module device table symbol
-Date: Wed, 27 Nov 2013 23:38:40 +0100
-Message-Id: <1385591920-7714-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.8.4.3
+	id S1753959Ab3K0Wkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 17:40:41 -0500
+Message-ID: <529674C4.2030906@zytor.com>
+Date: Wed, 27 Nov 2013 14:40:04 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <5294F10C.8060901@amacapital.net> <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com> <52964EC7.9000504@zytor.com> <52966C0A.7070201@zytor.com> <20131127222104.GA748@pd.tnic> <b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com> <20131127222944.GB748@pd.tnic>
+In-Reply-To: <20131127222944.GB748@pd.tnic>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following compilation error when compiling in module:
+On 11/27/2013 02:29 PM, Borislav Petkov wrote:
+> On Wed, Nov 27, 2013 at 02:25:29PM -0800, H. Peter Anvin wrote:
+>> Actually the CPUID is superfluous on anything than the executing CPU
+>> since IRET is serializing.
+> 
+> Why not on the executing core too? We're IRET-ting there too.
+> 
+> Which would mean that a dummy empty syscall would be enough too since we
+> need the serialization only.
+> 
 
-  drivers/i2c/busses/i2c-bcm-kona.c:894:1: error: ‘__mod_of_device_table’ aliased to undefined symbol ‘kona_i2c_of_match’
+Also don't forget we need the IPIs, too...
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Cc: trivial@kernel.org
----
-
-Hi,
-
-Compilation breakage can be seen on mainline with e.g. arm allmodconfig.
-
-Best regards,
-
-V.
-
- drivers/i2c/busses/i2c-bcm-kona.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/i2c/busses/i2c-bcm-kona.c b/drivers/i2c/busses/i2c-bcm-kona.c
-index 036cf03..2fefc24 100644
---- a/drivers/i2c/busses/i2c-bcm-kona.c
-+++ b/drivers/i2c/busses/i2c-bcm-kona.c
-@@ -891,7 +891,7 @@ static const struct of_device_id bcm_kona_i2c_of_match[] = {
- 	{.compatible = "brcm,kona-i2c",},
- 	{},
- };
--MODULE_DEVICE_TABLE(of, kona_i2c_of_match);
-+MODULE_DEVICE_TABLE(of, bcm_kona_i2c_of_match);
- 
- static struct platform_driver bcm_kona_i2c_driver = {
- 	.driver = {
--- 
-1.8.4.3
+	-hpa
 
