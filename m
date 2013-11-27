@@ -1,123 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab3K0QJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:09:18 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42377 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505Ab3K0QJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:09:16 -0500
-Date: Wed, 27 Nov 2013 11:09:10 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom killed
-Message-ID: <20131127160910.GZ3556@cmpxchg.org>
-References: <20131113152412.GH707@cmpxchg.org>
- <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com>
- <20131114000043.GK707@cmpxchg.org>
- <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
- <20131118164107.GC3556@cmpxchg.org>
- <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com>
- <20131120160712.GF3556@cmpxchg.org>
- <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com>
- <20131121164019.GK3556@cmpxchg.org>
- <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
+	id S1756723Ab3K0QNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:13:15 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:38257 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab3K0QNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:13:13 -0500
+Date: Wed, 27 Nov 2013 17:13:08 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
+Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
+Message-ID: <20131127161308.GA26918@gmail.com>
+References: <20131120163318.10253e43@gandalf.local.home>
+ <5295F711.5010708@gmail.com>
+ <20131127091647.4e16ce53@gandalf.local.home>
+ <20131127142649.GC13532@twins.programming.kicks-ass.net>
+ <20131127143435.GD25043@gmail.com>
+ <20131127145837.GE16796@laptop.programming.kicks-ass.net>
+ <20131127153519.GA26095@gmail.com>
+ <20131127154015.GG789@laptop.programming.kicks-ass.net>
+ <20131127154600.GC26095@gmail.com>
+ <20131127105616.6672624c@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131127105616.6672624c@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 04:47:56PM -0800, David Rientjes wrote:
-> On Thu, 21 Nov 2013, Johannes Weiner wrote:
-> 
-> > All I'm trying to do is find the broader root cause for the problem
-> > you are experiencing and find a solution that will leave us with
-> > maintainable code.  It does not matter how few instructions your fix
-> > adds, it changes the outcome of the algorithm and makes every
-> > developer trying to grasp the complexity of page reclaim think about
-> > yet another special condition.
-> > 
-> > The more specific the code is, the harder it will be to understand in
-> > the future.  Yes, it's a one-liner, but we've had death by a thousand
-> > cuts before, many times.  A few cycles ago, kswapd was blowing up left
-> > and right simply because it was trying to meet too many specific
-> > objectives from facilitating order-0 allocators, maintaining zone
-> > health, enabling compaction for higher order allocation, writing back
-> > dirty pages.  Ultimately, it just got stuck in endless loops because
-> > of conflicting conditionals.  We've had similar problems in the scan
-> > count calculation etc where all the checks and special cases left us
-> > with code that was impossible to reason about.  There really is a
-> > history of "low overhead one-liner fixes" eating us alive in the VM.
-> > 
-> 
-> Your objection is that the added code is obscure and will require kernel 
-> hackers to think about why it's there?  I could certainly add a comment:
-> 
-> 	/*
-> 	 * The oom killer only kills processes when reclaim has already
-> 	 * failed for its allocation context, continuously trying won't
-> 	 * help.
-> 	 */
-> 
-> to the patch? 
-> 
-> > The solution was always to take a step back and integrate all
-> > requirements properly.  Not only did this fix the problems, the code
-> > ended up being much more robust and easier to understand and modify as
-> > well.
-> > 
-> > If shortening the direct reclaim cycle is an adequate solution to your
-> > problem, it would be much preferable.  Because
-> > 
-> >   "checking at a reasonable interval if the work I'm doing is still
-> >    necessary"
-> > 
-> > is a much more approachable, generic, and intuitive concept than
-> > 
-> >   "the OOM killer has gone off, direct reclaim is futile, I should
-> >    exit quickly to release memory so that not more tasks get caught
-> >    doing direct reclaim".
-> > 
-> > and the fix would benefit a much wider audience.
-> > 
-> 
-> I agree with your point that obscure random fixes does obfuscate the VM in 
-> many different ways and I'd like to support you in anyway that I can to 
-> make sure that my fix doesn't do that for anybody in the future, the 
-> comment being added may be one way of doing that.
-> 
-> I disagree with changing the "reasonable interval" to determine if reclaim 
-> is still necessary because many parallel reclaimers will indicate a higher 
-> demand for free memory and it prevents short-circuiting direct reclaim, 
-> returning to the page allocator, and finding that the memory you've 
-> reclaimed has been stolen by another allocator.
 
-I can't reach the same conclusion as you.  There will always be
-concurrent allocators while some tasks are in direct reclaim.  But the
-longer you reclaim without checking free pages, the higher the
-opportunity for another task to steal your work.  Shortening direct
-reclaim cycles would actually mean shrinking that window where other
-tasks can steal the pages you reclaimed.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> That race to allocate the reclaimed memory will always exist if checking 
-> zone watermarks from direct reclaim to determine whether we should 
-> terminate or not as part of your suggested, the alternative would be to 
-> actually do get_page_from_freelist() and actually allocate on every 
-> iteration.  For the vast majority of reclaimers, I think this would 
-> terminate prematurely when we haven't hit the SWAP_CLUSTER_MAX threshold 
-> and since the removal of lumpy reclaim and the reliance on synchronous 
-> memory compaction following one of these oom events to defragment memory, 
-> I would be tenative to implement such a solution.
+> On Wed, 27 Nov 2013 16:46:00 +0100
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Wed, Nov 27, 2013 at 04:35:19PM +0100, Ingo Molnar wrote:
+> > > > So why does GCC then behave like this:
+> > > 
+> > > I think because its a much saner behaviour; also it might still be the
+> > > spec actually says this, its a somewhat opaque text.
+> > > 
+> > > Anyway, yes GCC seems to behave as we 'expect' it to; I just can't find
+> > > the language spec actually guaranteeing this.
+> > 
+> > So from C99 standard §6.7.8 (Initialization)/21:
+> > 
+> >     "If there are fewer initializers in a brace-enclosed list than 
+> >   there are elements or members of an aggregate, or fewer characters 
+> >   in a string literal used to initialize an array of known size than 
+> >   there are elements in the array, the remainder of the aggregate 
+> >   shall be initialized implicitly the same as objects that have static 
+> >   storage duration."
+> > 
+> > static initialization == zeroing in this case.
+> > 
+> 
+> The confusion here is that the above looks to be talking about arrays.
+> But it really doesn't specify structures.
 
-Yes, I really meant get_page_from_freelist() after every priority
-cycle.  What does "prematurely" mean?  If task A is currently doing
-reclaim and task B steals the pages, A will have to go back to direct
-reclaim.  If A reclaims one cycle and then allocates, there is a
-reduced chance of B stealing the pages, and so B will have to do
-direct reclaim and pull its own weight.  If A did enough for both,
-there wouldn't have been any point in continuing reclaim.
+It talks about neither 'arrays' nor 'structures', it talks about 
+'aggregates' - which is defined as _both_: 'structures and arrays'.
+
+That's what compiler legalese brings you ;-)
+
+> But searching the internet, it looks as though most people believe 
+> it applies to structures, and any compiler that does otherwise will 
+> most likely break applications.
+> 
+> That is, this looks to be one of the gray areas that the compiler 
+> writers just happen to do what's most sane. And they probably assume 
+> it's talking about structures as well, hence the lack of warnings.
+
+I don't think it's grey, I think it's pretty well specified.
+
+> It gets confusing, as the doc also shows:
+> 
+> struct { int a[3], b; } w[] = { { 1 }, 2 };
+
+I don't think this is valid syntax, I think this needs one more set of 
+braces:
+
+ struct { int a[3], b; } w[] = { { { 1 }, 2 } };
+
+> Then points out that w.a[0] is 1 and w.b[0] is 2, and all other 
+> elements are zero.
+
+If by 'w.a[0]' you mean 'w[0].a[0]', and if by 'w.b[0]' you mean 
+'w[0].b' then yes, this comes from the definition and it's what I'd 
+call 'obvious' initialization behavior.
+
+What makes it confusing to you?
+
+Thanks,
+
+	Ingo
