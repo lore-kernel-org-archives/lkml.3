@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab3K0A56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39095 "EHLO
+	id S1760176Ab3K0Bod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:44:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758114Ab3K0A5r (ORCPT
+	with ESMTP id S932261Ab3K0A54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:47 -0500
+	Tue, 26 Nov 2013 19:57:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 39/80] ALSA: hda - Add pincfg fixup for ASUS W5A
-Date: Tue, 26 Nov 2013 16:57:08 -0800
-Message-Id: <20131127005643.643903882@linuxfoundation.org>
+Subject: [PATCH 3.10 41/80] ALSA: hda - Check keep_eapd_on before inv_eapd
+Date: Tue, 26 Nov 2013 16:57:10 -0800
+Message-Id: <20131127005643.785917344@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,63 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 487a588d09db0d6508261867df208d8bdc718251 upstream.
+commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
 
-BIOS on ASUS W5A laptop with ALC880 codec doesn't provide any pin
-configurations, so we have to set up all pins manually.
+We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
+set by the codec driver and enable is false.  But, we also apply the
+flipping of enable value according to inv_eapd flag in the same
+function, and this confused the former check, handled as if it's
+turned ON.  The inverted EAPD check must be applied after keep_eapd_on
+check, instead.
 
-Reported-and-tested-by: nb <nb@dagami.org>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ sound/pci/hda/hda_generic.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1037,6 +1037,7 @@ enum {
- 	ALC880_FIXUP_UNIWILL,
- 	ALC880_FIXUP_UNIWILL_DIG,
- 	ALC880_FIXUP_Z71V,
-+	ALC880_FIXUP_ASUS_W5A,
- 	ALC880_FIXUP_3ST_BASE,
- 	ALC880_FIXUP_3ST,
- 	ALC880_FIXUP_3ST_DIG,
-@@ -1207,6 +1208,26 @@ static const struct hda_fixup alc880_fix
- 			{ }
- 		}
- 	},
-+	[ALC880_FIXUP_ASUS_W5A] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			/* set up the whole pins as BIOS is utterly broken */
-+			{ 0x14, 0x0121411f }, /* HP */
-+			{ 0x15, 0x411111f0 }, /* N/A */
-+			{ 0x16, 0x411111f0 }, /* N/A */
-+			{ 0x17, 0x411111f0 }, /* N/A */
-+			{ 0x18, 0x90a60160 }, /* mic */
-+			{ 0x19, 0x411111f0 }, /* N/A */
-+			{ 0x1a, 0x411111f0 }, /* N/A */
-+			{ 0x1b, 0x411111f0 }, /* N/A */
-+			{ 0x1c, 0x411111f0 }, /* N/A */
-+			{ 0x1d, 0x411111f0 }, /* N/A */
-+			{ 0x1e, 0xb743111e }, /* SPDIF out */
-+			{ }
-+		},
-+		.chained = true,
-+		.chain_id = ALC880_FIXUP_GPIO1,
-+	},
- 	[ALC880_FIXUP_3ST_BASE] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -1328,6 +1349,7 @@ static const struct hda_fixup alc880_fix
- 
- static const struct snd_pci_quirk alc880_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1019, 0x0f69, "Coeus G610P", ALC880_FIXUP_W810),
-+	SND_PCI_QUIRK(0x1043, 0x10c3, "ASUS W5A", ALC880_FIXUP_ASUS_W5A),
- 	SND_PCI_QUIRK(0x1043, 0x1964, "ASUS Z71V", ALC880_FIXUP_Z71V),
- 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS", ALC880_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x1558, 0x5401, "Clevo GPIO2", ALC880_FIXUP_GPIO2),
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -786,10 +786,10 @@ static void set_pin_eapd(struct hda_code
+ 	if (spec->own_eapd_ctl ||
+ 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+ 		return;
+-	if (codec->inv_eapd)
+-		enable = !enable;
+ 	if (spec->keep_eapd_on && !enable)
+ 		return;
++	if (codec->inv_eapd)
++		enable = !enable;
+ 	snd_hda_codec_update_cache(codec, pin, 0,
+ 				   AC_VERB_SET_EAPD_BTLENABLE,
+ 				   enable ? 0x02 : 0x00);
 
 
