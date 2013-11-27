@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab3K0BQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:16:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39573 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab3K0A7d (ORCPT
+	id S1759392Ab3K0BQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:16:47 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:30980 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab3K0BQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:33 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 054/116] ALSA: hda - Dont clear the power state at snd_hda_codec_reset()
-Date: Tue, 26 Nov 2013 16:57:07 -0800
-Message-Id: <20131127005740.685525284@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
-References: <20131127005736.915454872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 26 Nov 2013 20:16:43 -0500
+Message-ID: <1385514717.1791.197.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
+Date: Tue, 26 Nov 2013 18:11:57 -0700
+In-Reply-To: <8065346.ZtkoVh8DW8@vostro.rjw.lan>
+References: <2610478.KxPMyuOMok@vostro.rjw.lan>
+	 <3773077.bfZR2z09sY@vostro.rjw.lan>
+	 <1385512408.1791.196.camel@misato.fc.hp.com>
+	 <8065346.ZtkoVh8DW8@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-11-27 at 02:02 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, November 26, 2013 05:33:28 PM Toshi Kani wrote:
+> > On Wed, 2013-11-27 at 01:27 +0100, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 26, 2013 05:00:42 PM Toshi Kani wrote:
+> > > > On Mon, 2013-11-25 at 01:09 +0100, Rafael J. Wysocki wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > The following series of four patches (on top of current linux-pm.git/bleeding-edge)
+> > > > > rework child device lookup in drivers/acpi/glue.c and related things:
+> > > > > 
+> > > > > [1/4] ACPI / bind: Simplify child device lookup
+> > > > > [2/4] PCI/ ACPI: Use acpi_find_child_device() for child device lookup
+> > > > > [3/4] ACPI / bind: Redefine acpi_get_child()
+> > > > > [4/4] ACPI / bind: Redefine acpi_preset_companion()
+> > > > 
+> > > > This patchset caused the attached panic during boot on a system.
+> > > > acpi_pci_find_device() called acpi_find_child_device() with
+> > > > ACPI_COMPANION(dev->parent) being a NULL pointer when scanning bus 0xf.
+> > > > 
+> > > > This bus 0xf seems to be a chipset internal bus, which is not intended
+> > > > for the OS to use.  Therefore, ACPI does not list its PCI bridge device.
+> > > > 
+> > > > # lspci -tv
+> > > >    :
+> > > >  +-[0000:0f]-+-08.0  Intel Corporation Ivytown QPI Link 0
+> > > >  |           +-08.2  Intel Corporation Ivytown QPI Link 0
+> > > >    :
+> > > > 
+> > > > However, pcibios_fixup_peer_bridges(), called from pci_subsys_init(),
+> > > > finds this bus as it scans all the buses from 0 to pcibios_last_bus.
+> > > > Hence, this dev->parent does not have an associated ACPI device object. 
+> > > 
+> > > Thanks for the report!
+> > > 
+> > > I've dropped the patches from bleeding-edge for now.
+> > > 
+> > > Does "[1/4] ACPI / bind: Simplify child device lookup" alone work on that
+> > > system?
+> > 
+> > Yes, the system boots fine with 1/4 alone.
+> 
+> Thanks!
+> 
+> Can you please check if the following modified [2/4] also works on top of it?
 
-------------------
+Yes, it works fine.
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit d183b4fc463489b6bbe05c99afa0257a6fe578eb upstream.
-
-snd_hda_codec_reset() is called either in resetting the whole setup at
-error paths or hwdep clear/reconfig sysfs triggers.  But all of these
-don't assume that the power has to be off, rather they want to keep
-the power state unchanged (e.g. reconfig_codec() calls the power
-up/down by itself).  Thus, unconditionally clearing the power state in
-snd_hda_codec_reset() leads to the inconsistency, confuses the further
-operation.   This patch gets rid of the lines doing that bad thing.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/hda_codec.c |    3 ---
- 1 file changed, 3 deletions(-)
-
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -2579,9 +2579,6 @@ int snd_hda_codec_reset(struct hda_codec
- 	cancel_delayed_work_sync(&codec->jackpoll_work);
- #ifdef CONFIG_PM
- 	cancel_delayed_work_sync(&codec->power_work);
--	codec->power_on = 0;
--	codec->power_transition = 0;
--	codec->power_jiffies = jiffies;
- 	flush_workqueue(bus->workq);
- #endif
- 	snd_hda_ctls_clear(codec);
+Thanks for the quick fix!
+-Toshi
 
 
