@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3K0Pf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:35:27 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:36247 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756675Ab3K0PfX (ORCPT
+	id S1756932Ab3K0Pfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:35:36 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:38903 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769Ab3K0Pfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:35:23 -0500
-Date: Wed, 27 Nov 2013 16:35:19 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Juri Lelli <juri.lelli@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
-Message-ID: <20131127153519.GA26095@gmail.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
- <1383831828-15501-9-git-send-email-juri.lelli@gmail.com>
- <20131120163318.10253e43@gandalf.local.home>
- <5295F711.5010708@gmail.com>
- <20131127091647.4e16ce53@gandalf.local.home>
- <20131127142649.GC13532@twins.programming.kicks-ass.net>
- <20131127143435.GD25043@gmail.com>
- <20131127145837.GE16796@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127145837.GE16796@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Nov 2013 10:35:32 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3/5] PM / Runtime: Add second macro for definition of runtime PM callbacks
+Date: Wed, 27 Nov 2013 16:34:58 +0100
+Message-Id: <1385566500-7666-4-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
+References: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It is allowed and will in many cases make sense to have the runtime PM
+callbacks to be defined for CONFIG_PM instead of CONFIG_PM_RUNTIME.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Since the PM core disables runtime PM during system suspend, before the
+.suspend_late callbacks are invoked, drivers could at this point
+directly invoke it's runtime PM callbacks or even walk through it's bus
+or power domain, to put it's device into low power state.
 
-> On Wed, Nov 27, 2013 at 03:34:35PM +0100, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, Nov 27, 2013 at 09:16:47AM -0500, Steven Rostedt wrote:
-> > > > On Wed, 27 Nov 2013 14:43:45 +0100
-> > > > Juri Lelli <juri.lelli@gmail.com> wrote:
-> > > > diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-> > > > > index f76f8d6..ad94604 100644
-> > > > > --- a/kernel/trace/trace_selftest.c
-> > > > > +++ b/kernel/trace/trace_selftest.c
-> > > > > @@ -1023,16 +1023,16 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
-> > > > >  static int trace_wakeup_test_thread(void *data)
-> > > > >  {
-> > > > >  	/* Make this a -deadline thread */
-> > > > > -	struct sched_param2 paramx = {
-> > > > > +	static const struct sched_param2 param = {
-> > > > >  		.sched_priority = 0,
-> > > > > +		.sched_flags = 0,
-> > > > >  		.sched_runtime = 100000ULL,
-> > > > >  		.sched_deadline = 10000000ULL,
-> > > > >  		.sched_period = 10000000ULL
-> > > > > -		.sched_flags = 0
-> > > > 
-> > > > Assigning structures like this, you don't need to set the zero fields.
-> > > > all fields not explicitly stated, are set to zero.
-> > > 
-> > > Only because its static. Otherwise unnamed members have indeterminate
-> > > value after initialization.
-> > 
-> > I think for 'struct' C will initialize them to zero, even if they are 
-> > not mentioned and even if they are on the stack.
-> > 
-> > It will only be indeterminate when it's not initialized at all.
-> 
-> Language spec: ISO/IEC 9899:1999 (aka C99) section 6.7.8 point 9
-> says:
-> 
-> 9. Except where explicitly stated otherwise, for the purpose of this
-> subclause unnamed members of objects of structure and union type do no
-> participate in initialization. Unnamed members of structure objects have
-> indeterminate value even after initialization.
-> 
-> Later points (notably 21) make such an exception for aggregate objects
-> of static storage.
-> 
-> Of course, its entirely possible I read the thing wrong; its 31 points
-> detailing the initialization of objects.
+Use the new macro SET_PM_RUNTIME_PM_OPS in cases were the above makes
+sense. Make sure the callbacks are encapsulated within CONFIG_PM
+instead of CONFIG_PM_RUNTIME.
 
-So why does GCC then behave like this:
+Do note that the old macro SET_RUNTIME_PM_OPS, which is being quite
+widely used right now, requires the callbacks to be defined for
+CONFIG_PM_RUNTIME. In many cases it will certainly be convenient to
+convert to the new macro above, but still some cases are optimal for
+only CONFIG_PM_RUNTIME.
 
-triton:~> cat test.c
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ include/linux/pm.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-struct foo {
-        int a;
-        int b;
-};
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 5bce0d4..529657c 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -320,6 +320,15 @@ struct dev_pm_ops {
+ #define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
+ #endif
+ 
++#ifdef CONFIG_PM
++#define SET_PM_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
++	.runtime_suspend = suspend_fn, \
++	.runtime_resume = resume_fn, \
++	.runtime_idle = idle_fn,
++#else
++#define SET_PM_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
++#endif
++
+ /*
+  * Use this if you want to use the same suspend and resume callbacks for suspend
+  * to RAM and hibernation.
+-- 
+1.7.9.5
 
-int main(void)
-{
-        struct foo x = { .a = 1 };
-
-        return x.b;
-}
-
-triton:~> gcc -Wall -Wextra -O2 -o test test.c; ./test; echo $?
-0
-
-I'd expect -Wall -Wextra to warn about as trivial as the uninitialized 
-variable use that you argue happens.
-
-I'd also expect it to not return 0 but some random value on the stack 
-(which is most likely not 0).
-
-Thanks,
-
-	Ingo
