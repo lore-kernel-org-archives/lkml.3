@@ -1,43 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab3K0Svv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:51:51 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58798 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3K0Svu (ORCPT
+	id S1757509Ab3K0SwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:52:23 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:39530 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab3K0SwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:51:50 -0500
-Message-ID: <1385578303.5151.110.camel@smoke>
-Subject: Re: [PATCH 04/25] block: Abstract out bvec iterator
-From: Geoff Levand <geoff@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jens Axboe <axboe@kernel.dk>, Jim Paris <jim@jtan.com>
-Date: Wed, 27 Nov 2013 10:51:43 -0800
-In-Reply-To: <1385513128-5035-4-git-send-email-kmo@daterainc.com>
-References: <20131127004422.GB21305@kmo>
-	 <1385513128-5035-1-git-send-email-kmo@daterainc.com>
-	 <1385513128-5035-4-git-send-email-kmo@daterainc.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Nov 2013 13:52:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1385459707-32467-1-git-send-email-shh.xie@gmail.com>
+References: <1385459707-32467-1-git-send-email-shh.xie@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 27 Nov 2013 10:51:40 -0800
+Message-ID: <CAGVrzcYYRGCLXw4CMswTKYT=TDj_arSAgNxxC8ssRaw0sB_toQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] phylib: Support attaching to generic 10g driver
+To: shh.xie@gmail.com
+Cc: David Miller <davem@davemloft.net>, jg1.han@samsung.com,
+        mugunthanvnm@ti.com, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emilian.Medve@freescale.com, madalin.bucur@freescale.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-26 at 16:45 -0800, Kent Overstreet wrote:
-> Immutable biovecs are going to require an explicit iterator. To
-> implement immutable bvecs, a later patch is going to add a bi_bvec_done
-> member to this struct; for now, this patch effectively just renames
-> things.
+2013/11/26  <shh.xie@gmail.com>:
+> From: Andy Fleming <afleming@freescale.com>
+>
+> phy_attach_direct() may now attach to a generic 10G driver. It can
+> also be used exactly as phy_connect_direct(), which will be useful
+> when using of_mdio, as phy_connect (and therefore of_phy_connect)
+> start the PHY state machine, which is currently irrelevant for 10G
+> PHYs.
+>
+> Signed-off-by: Andy Fleming <afleming@freescale.com>
+> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
 
->  drivers/block/ps3disk.c                     |  2 +-
->  drivers/block/ps3vram.c                     |  2 +-
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-The PS3 parts look OK.  Please try to test a powerpc build  with
-ps3_defconfig.
+> ---
+> v2: align with the array genphy_driver.
+>
+>  drivers/net/phy/phy_device.c | 22 ++++++++++------------
+>  include/linux/phy.h          |  2 ++
+>  2 files changed, 12 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 96a5e03..a6b4ce0 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -61,9 +61,6 @@ extern void mdio_bus_exit(void);
+>  static LIST_HEAD(phy_fixup_list);
+>  static DEFINE_MUTEX(phy_fixup_lock);
+>
+> -static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+> -                            u32 flags, phy_interface_t interface);
+> -
+>  /*
+>   * Creates a new phy_fixup and adds it to the list
+>   * @bus_id: A string which matches phydev->dev.bus_id (or PHY_ANY_ID)
+> @@ -521,12 +518,12 @@ int phy_init_hw(struct phy_device *phydev)
+>   *
+>   * Description: Called by drivers to attach to a particular PHY
+>   *     device. The phy_device is found, and properly hooked up
+> - *     to the phy_driver.  If no driver is attached, then the
+> - *     genphy_driver is used.  The phy_device is given a ptr to
+> + *     to the phy_driver.  If no driver is attached, then a
+> + *     generic driver is used.  The phy_device is given a ptr to
+>   *     the attaching device, and given a callback for link status
+>   *     change.  The phy_device is returned to the attaching driver.
+>   */
+> -static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+> +int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+>                              u32 flags, phy_interface_t interface)
+>  {
+>         struct device *d = &phydev->dev;
+> @@ -535,12 +532,10 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+>         /* Assume that if there is no driver, that it doesn't
+>          * exist, and we should use the genphy driver. */
+>         if (NULL == d->driver) {
+> -               if (phydev->is_c45) {
+> -                       pr_err("No driver for phy %x\n", phydev->phy_id);
+> -                       return -ENODEV;
+> -               }
+> -
+> -               d->driver = &genphy_driver[0].driver;
+> +               if (phydev->is_c45)
+> +                       d->driver = &genphy_driver[1].driver;
+> +               else
+> +                       d->driver = &genphy_driver[0].driver;
+>
+>                 err = d->driver->probe(d);
+>                 if (err >= 0)
+> @@ -573,6 +568,7 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+>
+>         return err;
+>  }
+> +EXPORT_SYMBOL(phy_attach_direct);
+>
+>  /**
+>   * phy_attach - attach a network device to a particular PHY device
+> @@ -623,6 +619,8 @@ void phy_detach(struct phy_device *phydev)
+>          * real driver could be loaded */
+>         if (phydev->dev.driver == &genphy_driver[0].driver)
+>                 device_release_driver(&phydev->dev);
+> +       else if (phydev->dev.driver == &genphy_driver[1].driver)
+> +               device_release_driver(&phydev->dev);
+>  }
+>  EXPORT_SYMBOL(phy_detach);
+>
+> diff --git a/include/linux/phy.h b/include/linux/phy.h
+> index 2606599..00abc35 100644
+> --- a/include/linux/phy.h
+> +++ b/include/linux/phy.h
+> @@ -575,6 +575,8 @@ int phy_init_hw(struct phy_device *phydev);
+>  struct phy_device * phy_attach(struct net_device *dev,
+>                 const char *bus_id, phy_interface_t interface);
+>  struct phy_device *phy_find_first(struct mii_bus *bus);
+> +int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
+> +                            u32 flags, phy_interface_t interface);
+>  int phy_connect_direct(struct net_device *dev, struct phy_device *phydev,
+>                 void (*handler)(struct net_device *),
+>                 phy_interface_t interface);
+> --
+> 1.8.4.1
+>
+>
 
-Acked-by: Geoff Levand <geoff@infradead.org>
 
+
+-- 
+Florian
