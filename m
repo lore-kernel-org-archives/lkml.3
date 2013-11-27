@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab3K0BWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:22:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39506 "EHLO
+	id S1759600Ab3K0BWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:22:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758752Ab3K0A7R (ORCPT
+	with ESMTP id S1754717Ab3K0A7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:17 -0500
+	Tue, 26 Nov 2013 19:59:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.12 074/116] x86/apic: Disable I/O APIC before shutdown of the local APIC
-Date: Tue, 26 Nov 2013 16:57:27 -0800
-Message-Id: <20131127005742.043620644@linuxfoundation.org>
+        Chuck Lever <chuck.lever@oracle.com>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.12 070/116] nfs: dont retry detect_trunking with RPC_AUTH_UNIX more than once
+Date: Tue, 26 Nov 2013 16:57:23 -0800
+Message-Id: <20131127005741.775162522@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,66 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 522e66464467543c0d88d023336eec4df03ad40b upstream.
+commit 6d769f1e1420179d1f83cf1a9cdc585b46c28545 upstream.
 
-In reboot and crash path, when we shut down the local APIC, the I/O APIC is
-still active. This may cause issues because external interrupts
-can still come in and disturb the local APIC during shutdown process.
+Currently, when we try to mount and get back NFS4ERR_CLID_IN_USE or
+NFS4ERR_WRONGSEC, we create a new rpc_clnt and then try the call again.
+There is no guarantee that doing so will work however, so we can end up
+retrying the call in an infinite loop.
 
-To quiet external interrupts, disable I/O APIC before shutdown local APIC.
+Worse yet, we create the new client using rpc_clone_client_set_auth,
+which creates the new client as a child of the old one. Thus, we can end
+up with a *very* long lineage of rpc_clnts. When we go to put all of the
+references to them, we can end up with a long call chain that can smash
+the stack as each rpc_free_client() call can recurse back into itself.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1382578212-4677-1-git-send-email-fenghua.yu@intel.com
-[ I suppose the 'issue' is a hang during shutdown. It's a fine change nevertheless. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This patch fixes this by simply ensuring that the SETCLIENTID call will
+only be retried in this situation if the last attempt did not use
+RPC_AUTH_UNIX.
+
+Note too that with this change, we don't need the (i > 2) check in the
+-EACCES case since we now have a more reliable test as to whether we
+should reattempt.
+
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Tested-by/Acked-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/crash.c  |    2 +-
- arch/x86/kernel/reboot.c |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4state.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -127,12 +127,12 @@ void native_machine_crash_shutdown(struc
- 	cpu_emergency_vmxoff();
- 	cpu_emergency_svm_disable();
- 
--	lapic_shutdown();
- #ifdef CONFIG_X86_IO_APIC
- 	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
- 	ioapic_zap_locks();
- 	disable_IO_APIC();
- #endif
-+	lapic_shutdown();
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -550,6 +550,10 @@ static void native_machine_emergency_res
- void native_machine_shutdown(void)
- {
- 	/* Stop the cpus and apics */
-+#ifdef CONFIG_X86_IO_APIC
-+	disable_IO_APIC();
-+#endif
-+
- #ifdef CONFIG_SMP
- 	/*
- 	 * Stop all of the others. Also disable the local irq to
-@@ -562,10 +566,6 @@ void native_machine_shutdown(void)
- 
- 	lapic_shutdown();
- 
--#ifdef CONFIG_X86_IO_APIC
--	disable_IO_APIC();
--#endif
--
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1881,10 +1881,15 @@ again:
+ 			nfs4_root_machine_cred(clp);
+ 			goto again;
+ 		}
+-		if (i > 2)
++		if (clnt->cl_auth->au_flavor == RPC_AUTH_UNIX)
+ 			break;
+ 	case -NFS4ERR_CLID_INUSE:
+ 	case -NFS4ERR_WRONGSEC:
++		/* No point in retrying if we already used RPC_AUTH_UNIX */
++		if (clnt->cl_auth->au_flavor == RPC_AUTH_UNIX) {
++			status = -EPERM;
++			break;
++		}
+ 		clnt = rpc_clone_client_set_auth(clnt, RPC_AUTH_UNIX);
+ 		if (IS_ERR(clnt)) {
+ 			status = PTR_ERR(clnt);
 
 
