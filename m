@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab3K0WhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 17:37:00 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:60801 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757251Ab3K0Wg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 17:36:56 -0500
-Date: Wed, 27 Nov 2013 17:36:50 -0500
-From: Matt Porter <matt.porter@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v3 5/9] usb: gadget: s3c-hsotg: use generic
- phy_init()/phy_exit() support
-Message-ID: <20131127223650.GP31091@beef>
-References: <1385403367-18144-1-git-send-email-matt.porter@linaro.org>
- <1385403367-18144-6-git-send-email-matt.porter@linaro.org>
- <529476A4.8080600@ti.com>
- <20131127171325.GD31091@beef>
+	id S1758059Ab3K0Wi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 17:38:59 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:53630 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755397Ab3K0Wi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 17:38:57 -0500
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Wolfram Sang <wsa@the-dreams.de>, trivial@kernel.org
+Subject: [PATCH] i2c: bcm-kona: fix module device table symbol
+Date: Wed, 27 Nov 2013 23:38:40 +0100
+Message-Id: <1385591920-7714-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.8.4.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131127171325.GD31091@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 12:13:25PM -0500, Matt Porter wrote:
-> On Tue, Nov 26, 2013 at 03:53:32PM +0530, Kishon Vijay Abraham I wrote:
-> > Hi,
-> > 
-> > On Monday 25 November 2013 11:46 PM, Matt Porter wrote:
-> > > If a generic phy is present, call phy_init()/phy_exit(). This supports
-> > > generic phys that must be soft reset before power on.
-> > > 
-> > > Signed-off-by: Matt Porter <matt.porter@linaro.org>
-> > > ---
-> > >  drivers/usb/gadget/s3c-hsotg.c | 5 +++++
-> > >  1 file changed, 5 insertions(+)
-> > > 
-> > > diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> > > index da3879b..8dfe33f 100644
-> > > --- a/drivers/usb/gadget/s3c-hsotg.c
-> > > +++ b/drivers/usb/gadget/s3c-hsotg.c
-> > > @@ -3622,6 +3622,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
-> > >  		goto err_supplies;
-> > >  	}
-> > >  
-> > > +	if (hsotg->phy)
-> > 
-> > IS_ERR? If your phy_get fails *phy* will have a error value..
-> 
-> Yes, thanks. I'll fix these and also note that the same issue exists in
-> Kamil's patch for these same hsotg->phy conditional uses. I'll work with
-> Kamil to either get those addressed there or in a follow on fix.
+This fixes the following compilation error when compiling in module:
 
-I spoke too soon. If devm_phy_get fails, we don't set hsotg->phy and probe
-defer thus not reaching this point. Since hsotg->phy is either NULL or a
-valid struct phy *, this is correct as is throughout the driver.
+  drivers/i2c/busses/i2c-bcm-kona.c:894:1: error: ‘__mod_of_device_table’ aliased to undefined symbol ‘kona_i2c_of_match’
 
-> > 
-> > > +		phy_init(hsotg->phy);
-> > > +
-> > >  	/* usb phy enable */
-> > >  	s3c_hsotg_phy_enable(hsotg);
-> > >  
-> > > @@ -3715,6 +3718,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
-> > >  	}
-> > >  
-> > >  	s3c_hsotg_phy_disable(hsotg);
-> > > +	if (hsotg->phy)
-> > 
-> > same here.
-> 
-> Ok.
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: trivial@kernel.org
+---
 
-Same above, this will be NULL on failure (but is only applicable at this
-point on the platform data path.
+Hi,
 
--Matt
+Compilation breakage can be seen on mainline with e.g. arm allmodconfig.
+
+Best regards,
+
+V.
+
+ drivers/i2c/busses/i2c-bcm-kona.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-bcm-kona.c b/drivers/i2c/busses/i2c-bcm-kona.c
+index 036cf03..2fefc24 100644
+--- a/drivers/i2c/busses/i2c-bcm-kona.c
++++ b/drivers/i2c/busses/i2c-bcm-kona.c
+@@ -891,7 +891,7 @@ static const struct of_device_id bcm_kona_i2c_of_match[] = {
+ 	{.compatible = "brcm,kona-i2c",},
+ 	{},
+ };
+-MODULE_DEVICE_TABLE(of, kona_i2c_of_match);
++MODULE_DEVICE_TABLE(of, bcm_kona_i2c_of_match);
+ 
+ static struct platform_driver bcm_kona_i2c_driver = {
+ 	.driver = {
+-- 
+1.8.4.3
+
