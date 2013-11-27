@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab3K0VxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 16:53:18 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54821 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757411Ab3K0VxP (ORCPT
+	id S1758017Ab3K0Vx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 16:53:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51915 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757988Ab3K0VxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 16:53:15 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+gIROMm31O7CcnHkN+nEfx
-Date: Wed, 27 Nov 2013 13:53:10 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
- populating interrupts
-Message-ID: <20131127215310.GC26766@atomide.com>
-References: <20131123004334.GJ10023@atomide.com>
- <20131124213651.59750C402C3@trevor.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131124213651.59750C402C3@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 27 Nov 2013 16:53:23 -0500
+Date: Wed, 27 Nov 2013 13:53:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        Maximilian Attems <maks@stro.at>
+Subject: Re: [PATCH] parport: parport_pc: remove double PCI ID for NetMos
+Message-Id: <20131127135322.49ea91c23db4879f97b524f0@linux-foundation.org>
+In-Reply-To: <1385570623-20260-1-git-send-email-bigeasy@linutronix.de>
+References: <1385570623-20260-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely <grant.likely@linaro.org> [131124 13:37]:
+On Wed, 27 Nov 2013 17:43:43 +0100 Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+
+> In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+> the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+> was at the v2.4.26 time frame. The patch made into 2.6.14.
+> Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+> NetMOS based PCI cards providing serial and parallel ports") which made
+> into v2.6.9-rc1.
+> Now we have two different entries for the same PCI id.
+> I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+> This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+> ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+> specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+> 0x1000 / 0x0020 so it should match PCI_ANY).
 > 
-> I actually like the idea of completely allocating the resource structure
-> but leaving some entries empty. However, I agree with rmk that putting
-> garbage into a resource structure is a bad idea. What about changing the
-> value of flags to 0 or some other value to be obviously an empty
-> property and give the follow up parsing some context about which ones it
-> needs to attempt to recalculate?
+> While here I also drop the entry for titan_1284p2 which is the same as
+> netmos_9815.
 
-If we want to play it safe, we should probably introduce something like
-this to ioport.h:
-
-+#define IORESOURCE_IRQ_DEFERRED	(1<<6)
-
-Then we can populate IRQ resources initially with that. And later on
-during the driver probe, we know it's safe to populate the resource
-if res->flags & IORESOURCE_IRQ_DEFERRED.
-
-That fixes the $Subject bug, and gets us a little bit further for
-making more changes later on.
-
-Regards,
-
-Tony
+Does this change have any runtime-visible effects?
