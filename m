@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761051Ab3K0CKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:10:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38736 "EHLO
+	id S1761091Ab3K0CLD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:11:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab3K0A43 (ORCPT
+	with ESMTP id S1753624Ab3K0A4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:29 -0500
+	Tue, 26 Nov 2013 19:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 06/39] ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and BufferField refs.
-Date: Tue, 26 Nov 2013 16:56:30 -0800
-Message-Id: <20131127005619.495583730@linuxfoundation.org>
+        Benny Halevy <bhalevy@tonian.com>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 02/39] nfs: dont allow nfs_find_actor to match inodes of the wrong type
+Date: Tue, 26 Nov 2013 16:56:26 -0800
+Message-Id: <20131127005619.219307655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -27,75 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 63660e05ec719613b518547b40a1c501c10f0bc4 upstream.
+commit f6488c9ba51d65410e2dbc4345413c0d9120971e upstream.
 
-Previously, references to these objects were resolved only to the actual
-FieldUnit or BufferField object. The correct behavior is to resolve these
-references to an actual value.
-The problem is that DerefOf did not resolve these objects to actual
-values.  An "Integer" object is simple, return the value.  But a field in
-an operation region will require a read operation.  For a BufferField, the
-appropriate data must be extracted from the parent buffer.
+Benny Halevy reported the following oops when testing RHEL6:
 
-NOTE: It appears that this issues is present in Windows7 but not
-Windows8.
+<7>nfs_update_inode: inode 892950 mode changed, 0040755 to 0100644
+<1>BUG: unable to handle kernel NULL pointer dereference at (null)
+<1>IP: [<ffffffffa02a52c5>] nfs_closedir+0x15/0x30 [nfs]
+<4>PGD 81448a067 PUD 831632067 PMD 0
+<4>Oops: 0000 [#1] SMP
+<4>last sysfs file: /sys/kernel/mm/redhat_transparent_hugepage/enabled
+<4>CPU 6
+<4>Modules linked in: fuse bonding 8021q garp ebtable_nat ebtables be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i libcxgbi cxgb3 mdio ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi softdog bridge stp llc xt_physdev ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_multiport iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_round_robin dm_multipath objlayoutdriver2(U) nfs(U) lockd fscache auth_rpcgss nfs_acl sunrpc vhost_net macvtap macvlan tun kvm_intel kvm be2net igb dca ptp pps_core microcode serio_raw sg iTCO_wdt iTCO_vendor_support i7core_edac edac_core shpchp ext4 mbcache jbd2 sd_mod crc_t10dif ahci dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
+<4>
+<4>Pid: 6332, comm: dd Not tainted 2.6.32-358.el6.x86_64 #1 HP ProLiant DL170e G6  /ProLiant DL170e G6
+<4>RIP: 0010:[<ffffffffa02a52c5>]  [<ffffffffa02a52c5>] nfs_closedir+0x15/0x30 [nfs]
+<4>RSP: 0018:ffff88081458bb98  EFLAGS: 00010292
+<4>RAX: ffffffffa02a52b0 RBX: 0000000000000000 RCX: 0000000000000003
+<4>RDX: ffffffffa02e45a0 RSI: ffff88081440b300 RDI: ffff88082d5f5760
+<4>RBP: ffff88081458bba8 R08: 0000000000000000 R09: 0000000000000000
+<4>R10: 0000000000000772 R11: 0000000000400004 R12: 0000000040000008
+<4>R13: ffff88082d5f5760 R14: ffff88082d6e8800 R15: ffff88082f12d780
+<4>FS:  00007f728f37e700(0000) GS:ffff8800456c0000(0000) knlGS:0000000000000000
+<4>CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+<4>CR2: 0000000000000000 CR3: 0000000831279000 CR4: 00000000000007e0
+<4>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>Process dd (pid: 6332, threadinfo ffff88081458a000, task ffff88082fa0e040)
+<4>Stack:
+<4> 0000000040000008 ffff88081440b300 ffff88081458bbf8 ffffffff81182745
+<4><d> ffff88082d5f5760 ffff88082d6e8800 ffff88081458bbf8 ffffffffffffffea
+<4><d> ffff88082f12d780 ffff88082d6e8800 ffffffffa02a50a0 ffff88082d5f5760
+<4>Call Trace:
+<4> [<ffffffff81182745>] __fput+0xf5/0x210
+<4> [<ffffffffa02a50a0>] ? do_open+0x0/0x20 [nfs]
+<4> [<ffffffff81182885>] fput+0x25/0x30
+<4> [<ffffffff8117e23e>] __dentry_open+0x27e/0x360
+<4> [<ffffffff811c397a>] ? inotify_d_instantiate+0x2a/0x60
+<4> [<ffffffff8117e4b9>] lookup_instantiate_filp+0x69/0x90
+<4> [<ffffffffa02a6679>] nfs_intent_set_file+0x59/0x90 [nfs]
+<4> [<ffffffffa02a686b>] nfs_atomic_lookup+0x1bb/0x310 [nfs]
+<4> [<ffffffff8118e0c2>] __lookup_hash+0x102/0x160
+<4> [<ffffffff81225052>] ? selinux_inode_permission+0x72/0xb0
+<4> [<ffffffff8118e76a>] lookup_hash+0x3a/0x50
+<4> [<ffffffff81192a4b>] do_filp_open+0x2eb/0xdd0
+<4> [<ffffffff8104757c>] ? __do_page_fault+0x1ec/0x480
+<4> [<ffffffff8119f562>] ? alloc_fd+0x92/0x160
+<4> [<ffffffff8117de79>] do_sys_open+0x69/0x140
+<4> [<ffffffff811811f6>] ? sys_lseek+0x66/0x80
+<4> [<ffffffff8117df90>] sys_open+0x20/0x30
+<4> [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+<4>Code: 65 48 8b 04 25 c8 cb 00 00 83 a8 44 e0 ff ff 01 5b 41 5c c9 c3 90 55 48 89 e5 53 48 83 ec 08 0f 1f 44 00 00 48 8b 9e a0 00 00 00 <48> 8b 3b e8 13 0c f7 ff 48 89 df e8 ab 3d ec e0 48 83 c4 08 31
+<1>RIP  [<ffffffffa02a52c5>] nfs_closedir+0x15/0x30 [nfs]
+<4> RSP <ffff88081458bb98>
+<4>CR2: 0000000000000000
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+I think this is ultimately due to a bug on the server. The client had
+previously found a directory dentry. It then later tried to do an atomic
+open on a new (regular file) dentry. The attributes it got back had the
+same filehandle as the previously found directory inode. It then tried
+to put the filp because it failed the aops tests for O_DIRECT opens, and
+oopsed here because the ctx was still NULL.
+
+Obviously the root cause here is a server issue, but we can take steps
+to mitigate this on the client. When nfs_fhget is called, we always know
+what type of inode it is. In the event that there's a broken or
+malicious server on the other end of the wire, the client can end up
+crashing because the wrong ops are set on it.
+
+Have nfs_find_actor check that the inode type is correct after checking
+the fileid. The fileid check should rarely ever match, so it should only
+rarely ever get to this check. In the case where we have a broken
+server, we may see two different inodes with the same i_ino, but the
+client should be able to cope with them without crashing.
+
+This should fix the oops reported here:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=913660
+
+Reported-by: Benny Halevy <bhalevy@tonian.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/exoparg1.c |   35 ++++++++++++++++++++++++++++++++---
- 1 file changed, 32 insertions(+), 3 deletions(-)
+ fs/nfs/inode.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/acpica/exoparg1.c
-+++ b/drivers/acpi/acpica/exoparg1.c
-@@ -998,11 +998,40 @@ acpi_status acpi_ex_opcode_1A_0T_1R(stru
- 									 acpi_namespace_node
- 									 *)
- 									return_desc);
--				}
-+					if (!return_desc) {
-+						break;
-+					}
-+
-+					/*
-+					 * June 2013:
-+					 * buffer_fields/field_units require additional resolution
-+					 */
-+					switch (return_desc->common.type) {
-+					case ACPI_TYPE_BUFFER_FIELD:
-+					case ACPI_TYPE_LOCAL_REGION_FIELD:
-+					case ACPI_TYPE_LOCAL_BANK_FIELD:
-+					case ACPI_TYPE_LOCAL_INDEX_FIELD:
-+
-+						status =
-+						    acpi_ex_read_data_from_field
-+						    (walk_state, return_desc,
-+						     &temp_desc);
-+						if (ACPI_FAILURE(status)) {
-+							goto cleanup;
-+						}
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -224,6 +224,8 @@ nfs_find_actor(struct inode *inode, void
  
--				/* Add another reference to the object! */
-+						return_desc = temp_desc;
-+						break;
- 
--				acpi_ut_add_reference(return_desc);
-+					default:
-+
-+						/* Add another reference to the object */
-+
-+						acpi_ut_add_reference
-+						    (return_desc);
-+						break;
-+					}
-+				}
- 				break;
- 
- 			default:
+ 	if (NFS_FILEID(inode) != fattr->fileid)
+ 		return 0;
++	if ((S_IFMT & inode->i_mode) != (S_IFMT & fattr->mode))
++		return 0;
+ 	if (nfs_compare_fh(NFS_FH(inode), fh))
+ 		return 0;
+ 	if (is_bad_inode(inode) || NFS_STALE(inode))
 
 
