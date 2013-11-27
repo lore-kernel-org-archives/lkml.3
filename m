@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab3K0BYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:24:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39470 "EHLO
+	id S1758716Ab3K0A7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758717Ab3K0A7I (ORCPT
+	with ESMTP id S1758577Ab3K0A6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:08 -0500
+	Tue, 26 Nov 2013 19:58:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.12 065/116] nfs: fix inverted test for delegation in nfs4_reclaim_open_state
-Date: Tue, 26 Nov 2013 16:57:18 -0800
-Message-Id: <20131127005741.439649855@linuxfoundation.org>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 3.12 035/116] Revert "ima: policy for RAMFS"
+Date: Tue, 26 Nov 2013 16:56:48 -0800
+Message-Id: <20131127005739.386176039@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,35 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-commit 1acd1c301f4faae80f4d2c7bbd9a4553b131c0e3 upstream.
+commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
 
-commit 6686390bab6a0e0 (NFS: remove incorrect "Lock reclaim failed!"
-warning.) added a test for a delegation before checking to see if any
-reclaimed locks failed. The test however is backward and is only doing
-that check when a delegation is held instead of when one isn't.
+This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
 
-Cc: NeilBrown <neilb@suse.de>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Fixes: 6686390bab6a: NFS: remove incorrect "Lock reclaim failed!" warning.
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Everything in the initramfs should be measured and appraised,
+but until the initramfs has extended attribute support, at
+least measured.
+
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/integrity/ima/ima_policy.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1422,7 +1422,7 @@ restart:
- 		if (status >= 0) {
- 			status = nfs4_reclaim_locks(state, ops);
- 			if (status >= 0) {
--				if (test_bit(NFS_DELEGATED_STATE, &state->flags) != 0) {
-+				if (!test_bit(NFS_DELEGATED_STATE, &state->flags)) {
- 					spin_lock(&state->state_lock);
- 					list_for_each_entry(lock, &state->lock_states, ls_locks) {
- 						if (!test_bit(NFS_LOCK_INITIALIZED, &lock->ls_flags))
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
+ 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+-	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
 
 
