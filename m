@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab3K0Asp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:48:45 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:54492 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab3K0AqQ (ORCPT
+	id S1756492Ab3K0AtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:49:04 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58400 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab3K0AqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:46:16 -0500
+	Tue, 26 Nov 2013 19:46:09 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 21/25] block: Remove bi_idx hacks
-Date: Tue, 26 Nov 2013 16:45:24 -0800
-Message-Id: <1385513128-5035-21-git-send-email-kmo@daterainc.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH 17/25] block: Add bio_clone_fast()
+Date: Tue, 26 Nov 2013 16:45:20 -0800
+Message-Id: <1385513128-5035-17-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -22,134 +22,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that drivers have been converted to the new bvec_iter primitives,
-there's no need to trim the bvec before we submit it; and we can't trim
-it once we start sharing bvecs.
-
-It used to be that passing a partially completed bio (i.e. one with
-nonzero bi_idx) to generic_make_request() was a dangerous thing -
-various drivers would choke on such things. But with immutable biovecs
-and our new bio splitting that shares the biovecs, submitting partially
-completed bios has to work (and should work, now that all the drivers
-have been completed to the new primitives)
+bio_clone() just got more expensive - however, most users of bio_clone()
+don't actually need to modify the biovec. If they aren't modifying the
+biovec, and they can guarantee that the original bio isn't freed before
+the clone (also true in most cases), we can just point the clone at the
+original bio's biovec.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
 ---
- drivers/md/bcache/io.c | 47 ++---------------------------------------------
- fs/bio.c               | 23 -----------------------
- 2 files changed, 2 insertions(+), 68 deletions(-)
+ drivers/md/bcache/request.c |  8 ++----
+ fs/bio.c                    | 60 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/bio.h         |  2 ++
+ 3 files changed, 64 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index 6e04f3b..0f0ab65 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -11,49 +11,6 @@
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 4c0a422..63451c7 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -613,7 +613,6 @@ struct search {
  
- #include <linux/blkdev.h>
+ 	struct btree_op		op;
+ 	struct data_insert_op	iop;
+-	struct bio_vec		bv[BIO_MAX_PAGES];
+ };
  
--static void bch_bi_idx_hack_endio(struct bio *bio, int error)
--{
--	struct bio *p = bio->bi_private;
--
--	bio_endio(p, error);
--	bio_put(bio);
--}
--
--static void bch_generic_make_request_hack(struct bio *bio)
--{
--	if (bio->bi_iter.bi_idx) {
--		struct bio_vec bv;
--		struct bvec_iter iter;
--		unsigned segs = bio_segments(bio);
--		struct bio *clone = bio_alloc(GFP_NOIO, segs);
--
--		bio_for_each_segment(bv, bio, iter)
--			clone->bi_io_vec[clone->bi_vcnt++] = bv;
--
--		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
--		clone->bi_bdev		= bio->bi_bdev;
--		clone->bi_rw		= bio->bi_rw;
--		clone->bi_vcnt		= segs;
--		clone->bi_iter.bi_size	= bio->bi_iter.bi_size;
--
--		clone->bi_private	= bio;
--		clone->bi_end_io	= bch_bi_idx_hack_endio;
--
--		bio = clone;
--	}
--
--	/*
--	 * Hack, since drivers that clone bios clone up to bi_max_vecs, but our
--	 * bios might have had more than that (before we split them per device
--	 * limitations).
--	 *
--	 * To be taken out once immutable bvec stuff is in.
--	 */
--	bio->bi_max_vecs = bio->bi_vcnt;
--
--	generic_make_request(bio);
--}
--
- /**
-  * bch_bio_split - split a bio
-  * @bio:	bio to split
-@@ -222,12 +179,12 @@ void bch_generic_make_request(struct bio *bio, struct bio_split_pool *p)
- 		n->bi_private	= &s->cl;
+ static void bch_cache_read_endio(struct bio *bio, int error)
+@@ -761,9 +760,7 @@ static void do_bio_hook(struct search *s)
+ 	struct bio *bio = &s->bio.bio;
  
- 		closure_get(&s->cl);
--		bch_generic_make_request_hack(n);
-+		generic_make_request(n);
- 	} while (n != bio);
+ 	bio_init(bio);
+-	bio->bi_io_vec		= s->bv;
+-	bio->bi_max_vecs	= BIO_MAX_PAGES;
+-	__bio_clone(bio, s->orig_bio);
++	__bio_clone_fast(bio, s->orig_bio);
+ 	bio->bi_end_io		= request_endio;
+ 	bio->bi_private		= &s->cl;
  
- 	continue_at(&s->cl, bch_bio_submit_split_done, NULL);
- submit:
--	bch_generic_make_request_hack(bio);
-+	generic_make_request(bio);
- }
+@@ -1065,8 +1062,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ 			closure_bio_submit(flush, cl, s->d);
+ 		}
+ 	} else {
+-		s->iop.bio = bio_clone_bioset(bio, GFP_NOIO,
+-					      dc->disk.bio_split);
++		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
  
- /* Bios with headers */
+ 		closure_bio_submit(bio, cl, s->d);
+ 	}
 diff --git a/fs/bio.c b/fs/bio.c
-index 9cff939..e6dfa06 100644
+index 1628917..00dc189 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -1822,11 +1822,7 @@ void bio_trim(struct bio *bio, int offset, int size)
- {
- 	/* 'bio' is a cloned bio which we need to trim to match
- 	 * the given offset and size.
--	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
- 	 */
--	int i;
--	struct bio_vec *bvec;
--	int sofar = 0;
+@@ -549,6 +549,66 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+ EXPORT_SYMBOL(__bio_clone);
  
- 	size <<= 9;
- 	if (offset == 0 && size == bio->bi_iter.bi_size)
-@@ -1837,25 +1833,6 @@ void bio_trim(struct bio *bio, int offset, int size)
- 	bio_advance(bio, offset << 9);
+ /**
++ * 	__bio_clone_fast - clone a bio that shares the original bio's biovec
++ * 	@bio: destination bio
++ * 	@bio_src: bio to clone
++ *
++ *	Clone a &bio. Caller will own the returned bio, but not
++ *	the actual data it points to. Reference count of returned
++ * 	bio will be one.
++ *
++ * 	Caller must ensure that @bio_src is not freed before @bio.
++ */
++void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
++{
++	BUG_ON(bio->bi_pool && BIO_POOL_IDX(bio) != BIO_POOL_NONE);
++
++	/*
++	 * most users will be overriding ->bi_bdev with a new target,
++	 * so we don't set nor calculate new physical/hw segment counts here
++	 */
++	bio->bi_bdev = bio_src->bi_bdev;
++	bio->bi_flags |= 1 << BIO_CLONED;
++	bio->bi_rw = bio_src->bi_rw;
++	bio->bi_iter = bio_src->bi_iter;
++	bio->bi_io_vec = bio_src->bi_io_vec;
++}
++EXPORT_SYMBOL(__bio_clone_fast);
++
++/**
++ *	bio_clone_fast - clone a bio that shares the original bio's biovec
++ *	@bio: bio to clone
++ *	@gfp_mask: allocation priority
++ *	@bs: bio_set to allocate from
++ *
++ * 	Like __bio_clone_fast, only also allocates the returned bio
++ */
++struct bio *bio_clone_fast(struct bio *bio, gfp_t gfp_mask, struct bio_set *bs)
++{
++	struct bio *b;
++
++	b = bio_alloc_bioset(gfp_mask, 0, bs);
++	if (!b)
++		return NULL;
++
++	__bio_clone_fast(b, bio);
++
++	if (bio_integrity(bio)) {
++		int ret;
++
++		ret = bio_integrity_clone(b, bio, gfp_mask);
++
++		if (ret < 0) {
++			bio_put(b);
++			return NULL;
++		}
++	}
++
++	return b;
++}
++EXPORT_SYMBOL(bio_clone_fast);
++
++/**
+  * 	bio_clone_bioset - clone a bio
+  * 	@bio_src: bio to clone
+  *	@gfp_mask: allocation priority
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 1a31f9d..1f83f4a 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -328,6 +328,8 @@ extern mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries);
+ extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+ extern void bio_put(struct bio *);
  
- 	bio->bi_iter.bi_size = size;
--
--	/* avoid any complications with bi_idx being non-zero*/
--	if (bio->bi_iter.bi_idx) {
--		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_iter.bi_idx,
--			(bio->bi_vcnt - bio->bi_iter.bi_idx) *
--			sizeof(struct bio_vec));
--		bio->bi_vcnt -= bio->bi_iter.bi_idx;
--		bio->bi_iter.bi_idx = 0;
--	}
--	/* Make sure vcnt and last bv are not too big */
--	bio_for_each_segment_all(bvec, bio, i) {
--		if (sofar + bvec->bv_len > size)
--			bvec->bv_len = size - sofar;
--		if (bvec->bv_len == 0) {
--			bio->bi_vcnt = i;
--			break;
--		}
--		sofar += bvec->bv_len;
--	}
- }
- EXPORT_SYMBOL_GPL(bio_trim);
++extern void __bio_clone_fast(struct bio *, struct bio *);
++extern struct bio *bio_clone_fast(struct bio *, gfp_t, struct bio_set *);
+ extern void __bio_clone(struct bio *, struct bio *);
+ extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
  
 -- 
 1.8.4.4
