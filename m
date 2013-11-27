@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab3K0A5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:57:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39011 "EHLO
+	id S1760402Ab3K0Bum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:50:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab3K0A51 (ORCPT
+	with ESMTP id S1757914Ab3K0A5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:27 -0500
+	Tue, 26 Nov 2013 19:57:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 26/80] rt2x00: check if device is still available on rt2x00mac_flush()
-Date: Tue, 26 Nov 2013 16:56:55 -0800
-Message-Id: <20131127005642.751941450@linuxfoundation.org>
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.10 49/80] NFSv4: fix NULL dereference in open recover
+Date: Tue, 26 Nov 2013 16:57:18 -0800
+Message-Id: <20131127005644.359465098@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,104 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit 5671ab05cf2a579218985ef56595387932d78ee4 upstream.
+commit f494a6071d31e3294a3b51ad7a3684f983953f9f upstream.
 
-Fix random kernel panic with below messages when remove dongle.
+_nfs4_opendata_reclaim_to_nfs4_state doesn't expect to see a cached
+open CLAIM_PREVIOUS, but this can happen. An example is when there are
+RDWR openers and RDONLY openers on a delegation stateid. The recovery
+path will first try an open CLAIM_PREVIOUS for the RDWR openers, this
+marks the delegation as not needing RECLAIM anymore, so the open
+CLAIM_PREVIOUS for the RDONLY openers will not actually send an rpc.
 
-[ 2212.355447] BUG: unable to handle kernel NULL pointer dereference at 0000000000000250
-[ 2212.355527] IP: [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.355599] PGD 0
-[ 2212.355626] Oops: 0000 [#1] SMP
-[ 2212.355664] Modules linked in: rt2800usb rt2x00usb rt2800lib crc_ccitt rt2x00lib mac80211 cfg80211 tun arc4 fuse rfcomm bnep snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb uvcvideo bluetooth snd_hwdep x86_pkg_temp_thermal snd_seq coretemp aesni_intel aes_x86_64 snd_seq_device glue_helper snd_pcm ablk_helper videobuf2_vmalloc sdhci_pci videobuf2_memops videobuf2_core sdhci videodev mmc_core serio_raw snd_page_alloc microcode i2c_i801 snd_timer hid_multitouch thinkpad_acpi lpc_ich mfd_core snd tpm_tis wmi tpm tpm_bios soundcore acpi_cpufreq i915 i2c_algo_bit drm_kms_helper drm i2c_core video [last unloaded: cfg80211]
-[ 2212.356224] CPU: 0 PID: 34 Comm: khubd Not tainted 3.12.0-rc3-wl+ #3
-[ 2212.356268] Hardware name: LENOVO 3444CUU/3444CUU, BIOS G6ET93WW (2.53 ) 02/04/2013
-[ 2212.356319] task: ffff880212f687c0 ti: ffff880212f66000 task.ti: ffff880212f66000
-[ 2212.356392] RIP: 0010:[<ffffffffa02667f2>]  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.356481] RSP: 0018:ffff880212f67750  EFLAGS: 00010202
-[ 2212.356519] RAX: 000000000000000c RBX: 000000000000000c RCX: 0000000000000293
-[ 2212.356568] RDX: ffff8801f4dc219a RSI: 0000000000000000 RDI: 0000000000000240
-[ 2212.356617] RBP: ffff880212f67778 R08: ffffffffa02667e0 R09: 0000000000000002
-[ 2212.356665] R10: 0001f95254ab4b40 R11: ffff880212f675be R12: ffff8801f4dc2150
-[ 2212.356712] R13: 0000000000000000 R14: ffffffffa02667e0 R15: 000000000000000d
-[ 2212.356761] FS:  0000000000000000(0000) GS:ffff88021e200000(0000) knlGS:0000000000000000
-[ 2212.356813] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2212.356852] CR2: 0000000000000250 CR3: 0000000001a0c000 CR4: 00000000001407f0
-[ 2212.356899] Stack:
-[ 2212.356917]  000000000000000c ffff8801f4dc2150 0000000000000000 ffffffffa02667e0
-[ 2212.356980]  000000000000000d ffff880212f677b8 ffffffffa03a31ad ffff8801f4dc219a
-[ 2212.357038]  ffff8801f4dc2150 0000000000000000 ffff8800b93217a0 ffff8801f49bc800
-[ 2212.357099] Call Trace:
-[ 2212.357122]  [<ffffffffa02667e0>] ? rt2x00usb_interrupt_txdone+0x90/0x90 [rt2x00usb]
-[ 2212.357174]  [<ffffffffa03a31ad>] rt2x00queue_for_each_entry+0xed/0x170 [rt2x00lib]
-[ 2212.357244]  [<ffffffffa026701c>] rt2x00usb_kick_queue+0x5c/0x60 [rt2x00usb]
-[ 2212.357314]  [<ffffffffa03a3682>] rt2x00queue_flush_queue+0x62/0xa0 [rt2x00lib]
-[ 2212.357386]  [<ffffffffa03a2930>] rt2x00mac_flush+0x30/0x70 [rt2x00lib]
-[ 2212.357470]  [<ffffffffa04edded>] ieee80211_flush_queues+0xbd/0x140 [mac80211]
-[ 2212.357555]  [<ffffffffa0502e52>] ieee80211_set_disassoc+0x2d2/0x3d0 [mac80211]
-[ 2212.357645]  [<ffffffffa0506da3>] ieee80211_mgd_deauth+0x1d3/0x240 [mac80211]
-[ 2212.357718]  [<ffffffff8108b17c>] ? try_to_wake_up+0xec/0x290
-[ 2212.357788]  [<ffffffffa04dbd18>] ieee80211_deauth+0x18/0x20 [mac80211]
-[ 2212.357872]  [<ffffffffa0418ddc>] cfg80211_mlme_deauth+0x9c/0x140 [cfg80211]
-[ 2212.357913]  [<ffffffffa041907c>] cfg80211_mlme_down+0x5c/0x60 [cfg80211]
-[ 2212.357962]  [<ffffffffa041cd18>] cfg80211_disconnect+0x188/0x1a0 [cfg80211]
-[ 2212.358014]  [<ffffffffa04013bc>] ? __cfg80211_stop_sched_scan+0x1c/0x130 [cfg80211]
-[ 2212.358067]  [<ffffffffa03f8954>] cfg80211_leave+0xc4/0xe0 [cfg80211]
-[ 2212.358124]  [<ffffffffa03f8d1b>] cfg80211_netdev_notifier_call+0x3ab/0x5e0 [cfg80211]
-[ 2212.358177]  [<ffffffff815140f8>] ? inetdev_event+0x38/0x510
-[ 2212.358217]  [<ffffffff81085a94>] ? __wake_up+0x44/0x50
-[ 2212.358254]  [<ffffffff8155995c>] notifier_call_chain+0x4c/0x70
-[ 2212.358293]  [<ffffffff81081156>] raw_notifier_call_chain+0x16/0x20
-[ 2212.358361]  [<ffffffff814b6dd5>] call_netdevice_notifiers_info+0x35/0x60
-[ 2212.358429]  [<ffffffff814b6ec9>] __dev_close_many+0x49/0xd0
-[ 2212.358487]  [<ffffffff814b7028>] dev_close_many+0x88/0x100
-[ 2212.358546]  [<ffffffff814b8150>] rollback_registered_many+0xb0/0x220
-[ 2212.358612]  [<ffffffff814b8319>] unregister_netdevice_many+0x19/0x60
-[ 2212.358694]  [<ffffffffa04d8eb2>] ieee80211_remove_interfaces+0x112/0x190 [mac80211]
-[ 2212.358791]  [<ffffffffa04c585f>] ieee80211_unregister_hw+0x4f/0x100 [mac80211]
-[ 2212.361994]  [<ffffffffa03a1221>] rt2x00lib_remove_dev+0x161/0x1a0 [rt2x00lib]
-[ 2212.365240]  [<ffffffffa0266e2e>] rt2x00usb_disconnect+0x2e/0x70 [rt2x00usb]
-[ 2212.368470]  [<ffffffff81419ce4>] usb_unbind_interface+0x64/0x1c0
-[ 2212.371734]  [<ffffffff813b446f>] __device_release_driver+0x7f/0xf0
-[ 2212.374999]  [<ffffffff813b4503>] device_release_driver+0x23/0x30
-[ 2212.378131]  [<ffffffff813b3c98>] bus_remove_device+0x108/0x180
-[ 2212.381358]  [<ffffffff813b0565>] device_del+0x135/0x1d0
-[ 2212.384454]  [<ffffffff81417760>] usb_disable_device+0xb0/0x270
-[ 2212.387451]  [<ffffffff8140d9cd>] usb_disconnect+0xad/0x1d0
-[ 2212.390294]  [<ffffffff8140f6cd>] hub_thread+0x63d/0x1660
-[ 2212.393034]  [<ffffffff8107c860>] ? wake_up_atomic_t+0x30/0x30
-[ 2212.395728]  [<ffffffff8140f090>] ? hub_port_debounce+0x130/0x130
-[ 2212.398412]  [<ffffffff8107baa0>] kthread+0xc0/0xd0
-[ 2212.401058]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.403639]  [<ffffffff8155de3c>] ret_from_fork+0x7c/0xb0
-[ 2212.406193]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.408732] Code: 24 58 08 00 00 bf 80 00 00 00 e8 3a c3 e0 e0 5b 41 5c 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 41 55 41 54 53 <48> 8b 47 10 48 89 fb 4c 8b 6f 28 4c 8b 20 49 8b 04 24 4c 8b 30
-[ 2212.414671] RIP  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.417646]  RSP <ffff880212f67750>
-[ 2212.420547] CR2: 0000000000000250
-[ 2212.441024] ---[ end trace 5442918f33832bce ]---
+The NULL dereference is due to _nfs4_opendata_reclaim_to_nfs4_state
+returning PTR_ERR(rpc_status) when !rpc_done. When the open is
+cached, rpc_done == 0 and rpc_status == 0, thus
+_nfs4_opendata_reclaim_to_nfs4_state returns NULL - this is unexpected
+by callers of nfs4_opendata_to_nfs4_state().
 
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This can be reproduced easily by opening the same file two times on an
+NFSv4.0 mount with delegations enabled, once as RDWR and once as RDONLY then
+sleeping for a long time.  While the files are held open, kick off state
+recovery and this NULL dereference will be hit every time.
+
+An example OOPS:
+
+[   65.003602] BUG: unable to handle kernel NULL pointer dereference at 00000000
+00000030
+[   65.005312] IP: [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.006820] PGD 7b0ea067 PUD 791ff067 PMD 0
+[   65.008075] Oops: 0000 [#1] SMP
+[   65.008802] Modules linked in: rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache
+snd_ens1371 gameport nfsd snd_rawmidi snd_ac97_codec ac97_bus btusb snd_seq snd
+_seq_device snd_pcm ppdev bluetooth auth_rpcgss coretemp snd_page_alloc crc32_pc
+lmul crc32c_intel ghash_clmulni_intel microcode rfkill nfs_acl vmw_balloon serio
+_raw snd_timer lockd parport_pc e1000 snd soundcore parport i2c_piix4 shpchp vmw
+_vmci sunrpc ata_generic mperf pata_acpi mptspi vmwgfx ttm scsi_transport_spi dr
+m mptscsih mptbase i2c_core
+[   65.018684] CPU: 0 PID: 473 Comm: 192.168.10.85-m Not tainted 3.11.2-201.fc19
+.x86_64 #1
+[   65.020113] Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop
+Reference Platform, BIOS 6.00 07/31/2013
+[   65.022012] task: ffff88003707e320 ti: ffff88007b906000 task.ti: ffff88007b906000
+[   65.023414] RIP: 0010:[<ffffffffa037d6ee>]  [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.025079] RSP: 0018:ffff88007b907d10  EFLAGS: 00010246
+[   65.026042] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+[   65.027321] RDX: 0000000000000050 RSI: 0000000000000001 RDI: 0000000000000000
+[   65.028691] RBP: ffff88007b907d38 R08: 0000000000016f60 R09: 0000000000000000
+[   65.029990] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+[   65.031295] R13: 0000000000000050 R14: 0000000000000000 R15: 0000000000000001
+[   65.032527] FS:  0000000000000000(0000) GS:ffff88007f600000(0000) knlGS:0000000000000000
+[   65.033981] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   65.035177] CR2: 0000000000000030 CR3: 000000007b27f000 CR4: 00000000000407f0
+[   65.036568] Stack:
+[   65.037011]  0000000000000000 0000000000000001 ffff88007b907d90 ffff88007a880220
+[   65.038472]  ffff88007b768de8 ffff88007b907d48 ffffffffa037e4a5 ffff88007b907d80
+[   65.039935]  ffffffffa036a6c8 ffff880037020e40 ffff88007a880000 ffff880037020e40
+[   65.041468] Call Trace:
+[   65.042050]  [<ffffffffa037e4a5>] nfs4_close_state+0x15/0x20 [nfsv4]
+[   65.043209]  [<ffffffffa036a6c8>] nfs4_open_recover_helper+0x148/0x1f0 [nfsv4]
+[   65.044529]  [<ffffffffa036a886>] nfs4_open_recover+0x116/0x150 [nfsv4]
+[   65.045730]  [<ffffffffa036d98d>] nfs4_open_reclaim+0xad/0x150 [nfsv4]
+[   65.046905]  [<ffffffffa037d979>] nfs4_do_reclaim+0x149/0x5f0 [nfsv4]
+[   65.048071]  [<ffffffffa037e1dc>] nfs4_run_state_manager+0x3bc/0x670 [nfsv4]
+[   65.049436]  [<ffffffffa037de20>] ? nfs4_do_reclaim+0x5f0/0x5f0 [nfsv4]
+[   65.050686]  [<ffffffffa037de20>] ? nfs4_do_reclaim+0x5f0/0x5f0 [nfsv4]
+[   65.051943]  [<ffffffff81088640>] kthread+0xc0/0xd0
+[   65.052831]  [<ffffffff81088580>] ? insert_kthread_work+0x40/0x40
+[   65.054697]  [<ffffffff8165686c>] ret_from_fork+0x7c/0xb0
+[   65.056396]  [<ffffffff81088580>] ? insert_kthread_work+0x40/0x40
+[   65.058208] Code: 5c 41 5d 5d c3 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89 e5 41 57 41 89 f7 41 56 41 89 ce 41 55 41 89 d5 41 54 53 48 89 fb <4c> 8b 67 30 f0 41 ff 44 24 44 49 8d 7c 24 40 e8 0e 0a 2d e1 44
+[   65.065225] RIP  [<ffffffffa037d6ee>] __nfs4_close+0x1e/0x160 [nfsv4]
+[   65.067175]  RSP <ffff88007b907d10>
+[   65.068570] CR2: 0000000000000030
+[   65.070098] ---[ end trace 0d1fe4f5c7dd6f8b ]---
+
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -754,6 +754,9 @@ void rt2x00mac_flush(struct ieee80211_hw
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
- 	struct data_queue *queue;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1159,7 +1159,8 @@ _nfs4_opendata_reclaim_to_nfs4_state(str
+ 	struct nfs4_state *state = data->state;
+ 	int ret;
  
-+	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags))
-+		return;
-+
- 	tx_queue_for_each(rt2x00dev, queue)
- 		rt2x00queue_flush_queue(queue, drop);
- }
+-	if (!data->rpc_done) {
++	/* allow cached opens (!rpc_done && !rpc_status) */
++	if (!data->rpc_done && data->rpc_status) {
+ 		ret = data->rpc_status;
+ 		goto err;
+ 	}
 
 
