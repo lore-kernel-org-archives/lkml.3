@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760333Ab3K0Bti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:49:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39079 "EHLO
+	id S1757997Ab3K0A5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:57:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab3K0A5n (ORCPT
+	with ESMTP id S1757711Ab3K0A5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:43 -0500
+	Tue, 26 Nov 2013 19:57:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 54/80] nfsd: split up nfsd_setattr
-Date: Tue, 26 Nov 2013 16:57:23 -0800
-Message-Id: <20131127005644.698509016@linuxfoundation.org>
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 3.10 29/80] Revert "ima: policy for RAMFS"
+Date: Tue, 26 Nov 2013 16:56:58 -0800
+Message-Id: <20131127005642.955529902@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,197 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 
-commit 818e5a22e907fbae75e9c1fd78233baec9fa64b6 upstream.
+commit 08de59eb144d7c41351a467442f898d720f0f15f upstream.
 
-Split out two helpers to make the code more readable and easier to verify
-for correctness.
+This reverts commit 4c2c392763a682354fac65b6a569adec4e4b5387.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Everything in the initramfs should be measured and appraised,
+but until the initramfs has extended attribute support, at
+least measured.
+
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/vfs.c |  144 +++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 84 insertions(+), 60 deletions(-)
+ security/integrity/ima/ima_policy.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -297,41 +297,12 @@ commit_metadata(struct svc_fh *fhp)
- }
- 
- /*
-- * Set various file attributes.
-- * N.B. After this call fhp needs an fh_put
-+ * Go over the attributes and take care of the small differences between
-+ * NFS semantics and what Linux expects.
-  */
--__be32
--nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
--	     int check_guard, time_t guardtime)
-+static void
-+nfsd_sanitize_attrs(struct inode *inode, struct iattr *iap)
- {
--	struct dentry	*dentry;
--	struct inode	*inode;
--	int		accmode = NFSD_MAY_SATTR;
--	umode_t		ftype = 0;
--	__be32		err;
--	int		host_err;
--	int		size_change = 0;
--
--	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
--		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
--	if (iap->ia_valid & ATTR_SIZE)
--		ftype = S_IFREG;
--
--	/* Get inode */
--	err = fh_verify(rqstp, fhp, ftype, accmode);
--	if (err)
--		goto out;
--
--	dentry = fhp->fh_dentry;
--	inode = dentry->d_inode;
--
--	/* Ignore any mode updates on symlinks */
--	if (S_ISLNK(inode->i_mode))
--		iap->ia_valid &= ~ATTR_MODE;
--
--	if (!iap->ia_valid)
--		goto out;
--
- 	/*
- 	 * NFSv2 does not differentiate between "set-[ac]time-to-now"
- 	 * which only requires access, and "set-[ac]time-to-X" which
-@@ -341,8 +312,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 	 * convert to "set to now" instead of "set to explicit time"
- 	 *
- 	 * We only call inode_change_ok as the last test as technically
--	 * it is not an interface that we should be using.  It is only
--	 * valid if the filesystem does not define it's own i_op->setattr.
-+	 * it is not an interface that we should be using.
- 	 */
- #define BOTH_TIME_SET (ATTR_ATIME_SET | ATTR_MTIME_SET)
- #define	MAX_TOUCH_TIME_ERROR (30*60)
-@@ -368,30 +338,6 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 			iap->ia_valid &= ~BOTH_TIME_SET;
- 		}
- 	}
--	    
--	/*
--	 * The size case is special.
--	 * It changes the file as well as the attributes.
--	 */
--	if (iap->ia_valid & ATTR_SIZE) {
--		if (iap->ia_size < inode->i_size) {
--			err = nfsd_permission(rqstp, fhp->fh_export, dentry,
--					NFSD_MAY_TRUNC|NFSD_MAY_OWNER_OVERRIDE);
--			if (err)
--				goto out;
--		}
--
--		host_err = get_write_access(inode);
--		if (host_err)
--			goto out_nfserr;
--
--		size_change = 1;
--		host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
--		if (host_err) {
--			put_write_access(inode);
--			goto out_nfserr;
--		}
--	}
- 
- 	/* sanitize the mode change */
- 	if (iap->ia_valid & ATTR_MODE) {
-@@ -414,8 +360,86 @@ nfsd_setattr(struct svc_rqst *rqstp, str
- 			iap->ia_valid |= (ATTR_KILL_SUID | ATTR_KILL_SGID);
- 		}
- 	}
-+}
-+
-+static __be32
-+nfsd_get_write_access(struct svc_rqst *rqstp, struct svc_fh *fhp,
-+		struct iattr *iap)
-+{
-+	struct inode *inode = fhp->fh_dentry->d_inode;
-+	int host_err;
-+
-+	if (iap->ia_size < inode->i_size) {
-+		__be32 err;
-+
-+		err = nfsd_permission(rqstp, fhp->fh_export, fhp->fh_dentry,
-+				NFSD_MAY_TRUNC | NFSD_MAY_OWNER_OVERRIDE);
-+		if (err)
-+			return err;
-+	}
-+
-+	host_err = get_write_access(inode);
-+	if (host_err)
-+		goto out_nfserrno;
-+
-+	host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
-+	if (host_err)
-+		goto out_put_write_access;
-+	return 0;
-+
-+out_put_write_access:
-+	put_write_access(inode);
-+out_nfserrno:
-+	return nfserrno(host_err);
-+}
-+
-+/*
-+ * Set various file attributes.  After this call fhp needs an fh_put.
-+ */
-+__be32
-+nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
-+	     int check_guard, time_t guardtime)
-+{
-+	struct dentry	*dentry;
-+	struct inode	*inode;
-+	int		accmode = NFSD_MAY_SATTR;
-+	umode_t		ftype = 0;
-+	__be32		err;
-+	int		host_err;
-+	int		size_change = 0;
-+
-+	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
-+		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
-+	if (iap->ia_valid & ATTR_SIZE)
-+		ftype = S_IFREG;
-+
-+	/* Get inode */
-+	err = fh_verify(rqstp, fhp, ftype, accmode);
-+	if (err)
-+		goto out;
-+
-+	dentry = fhp->fh_dentry;
-+	inode = dentry->d_inode;
-+
-+	/* Ignore any mode updates on symlinks */
-+	if (S_ISLNK(inode->i_mode))
-+		iap->ia_valid &= ~ATTR_MODE;
-+
-+	if (!iap->ia_valid)
-+		goto out;
-+
-+	nfsd_sanitize_attrs(inode, iap);
- 
--	/* Change the attributes. */
-+	/*
-+	 * The size case is special, it changes the file in addition to the
-+	 * attributes.
-+	 */
-+	if (iap->ia_valid & ATTR_SIZE) {
-+		err = nfsd_get_write_access(rqstp, fhp, iap);
-+		if (err)
-+			goto out;
-+		size_change = 1;
-+	}
- 
- 	iap->ia_valid |= ATTR_CTIME;
- 
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -73,7 +73,6 @@ static struct ima_rule_entry default_rul
+ 	{.action = DONT_MEASURE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+-	{.action = DONT_MEASURE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = DEVPTS_SUPER_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = BINFMTFS_MAGIC,.flags = IMA_FSMAGIC},
+ 	{.action = DONT_MEASURE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
 
 
