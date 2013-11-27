@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab3K0TJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 14:09:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50942 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757625Ab3K0TI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 14:08:27 -0500
+	id S1757592Ab3K0TIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 14:08:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58430 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755351Ab3K0TIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 14:08:18 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: <sameo@linux.intel.com>
 CC: <lee.jones@linaro.org>, Tony Lindgren <tony@atomide.com>,
@@ -16,9 +15,9 @@ CC: <lee.jones@linaro.org>, Tony Lindgren <tony@atomide.com>,
         Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 10/13] mfd: menelaus: pass menelaus_chip argument to menelaus <-> time helpers
-Date: Wed, 27 Nov 2013 13:06:54 -0600
-Message-ID: <1385579217-20127-11-git-send-email-balbi@ti.com>
+Subject: [PATCH 05/13] mfd: menelaus: use for_each_set_bit()
+Date: Wed, 27 Nov 2013 13:06:49 -0600
+Message-ID: <1385579217-20127-6-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.8.4.GIT
 In-Reply-To: <1385579217-20127-1-git-send-email-balbi@ti.com>
 References: <1385579217-20127-1-git-send-email-balbi@ti.com>
@@ -28,83 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-time_to_menelaus() and menelaus_to_time() are
-static and can easily receive a struct menelaus_chip
-pointer argument.
+that macro just helps removing some extra
+line of code and hides ffs() calls.
 
-After this patch, the_menelaus is only used on
-exported functions which are currently being
-used by board-n8x0.c.
+while at that, also fix a variable shadowing
+bug where 'int irq' was being redeclared inside
+inner loop while it was also argument to interrupt
+handler.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/menelaus.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/mfd/menelaus.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 13d1cb0..aa3c579 100644
+index 11dc4d3..9ccbb79 100644
 --- a/drivers/mfd/menelaus.c
 +++ b/drivers/mfd/menelaus.c
-@@ -857,10 +857,9 @@ static irqreturn_t menelaus_irq(int irq, void *_menelaus)
- 
- #define RTC_HR_PM		(1 << 7)
- 
--static void menelaus_to_time(char *regs, struct rtc_time *t)
-+static void menelaus_to_time(struct menelaus_chip *m,
-+		char *regs, struct rtc_time *t)
+@@ -795,24 +795,22 @@ static irqreturn_t menelaus_irq(int irq, void *_menelaus)
  {
--	struct menelaus_chip *m = the_menelaus;
+ 	struct menelaus_chip *menelaus = _menelaus;
+ 	void (*handler)(struct menelaus_chip *menelaus);
+-	unsigned isr;
++	unsigned long isr;
++	unsigned long i;
+ 
+ 	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
+ 			& ~menelaus->mask2) << 8;
+ 	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
+ 		& ~menelaus->mask1;
+ 
+-	while (isr) {
+-		int irq = fls(isr) - 1;
+-		isr &= ~(1 << irq);
 -
- 	t->tm_sec = bcd2bin(regs[0]);
- 	t->tm_min = bcd2bin(regs[1]);
- 	if (m->rtc_control & RTC_CTRL_MODE12) {
-@@ -874,9 +873,9 @@ static void menelaus_to_time(char *regs, struct rtc_time *t)
- 	t->tm_year = bcd2bin(regs[5]) + 100;
- }
- 
--static int time_to_menelaus(struct rtc_time *t, int regnum)
-+static int time_to_menelaus(struct menelaus_chip *m,
-+		struct rtc_time *t, int regnum)
- {
--	struct menelaus_chip *m = the_menelaus;
- 	int	hour, status;
- 
- 	status = menelaus_write_reg(m, regnum++, bin2bcd(t->tm_sec));
-@@ -944,7 +943,7 @@ static int menelaus_read_time(struct device *dev, struct rtc_time *t)
- 		return -EIO;
++	for_each_set_bit(i, &isr, 16) {
+ 		mutex_lock(&menelaus->lock);
+-		menelaus_disable_irq(irq);
+-		menelaus_ack_irq(irq);
+-		handler = menelaus->handlers[irq];
++		menelaus_disable_irq(i);
++		menelaus_ack_irq(i);
++		handler = menelaus->handlers[i];
+ 		if (handler)
+ 			handler(menelaus);
+-		menelaus_enable_irq(irq);
++		menelaus_enable_irq(i);
+ 		mutex_unlock(&menelaus->lock);
  	}
- 
--	menelaus_to_time(regs, t);
-+	menelaus_to_time(m, regs, t);
- 	t->tm_wday = bcd2bin(regs[6]);
- 
- 	return 0;
-@@ -956,7 +955,7 @@ static int menelaus_set_time(struct device *dev, struct rtc_time *t)
- 	int		status;
- 
- 	/* write date and time registers */
--	status = time_to_menelaus(t, MENELAUS_RTC_SEC);
-+	status = time_to_menelaus(m, t, MENELAUS_RTC_SEC);
- 	if (status < 0)
- 		return status;
- 	status = menelaus_write_reg(m, MENELAUS_RTC_WKDAY, bin2bcd(t->tm_wday));
-@@ -1001,7 +1000,7 @@ static int menelaus_read_alarm(struct device *dev, struct rtc_wkalrm *w)
- 		return -EIO;
- 	}
- 
--	menelaus_to_time(regs, &w->time);
-+	menelaus_to_time(m, regs, &w->time);
- 
- 	w->enabled = !!(m->rtc_control & RTC_CTRL_AL_EN);
- 
-@@ -1029,7 +1028,7 @@ static int menelaus_set_alarm(struct device *dev, struct rtc_wkalrm *w)
- 	}
- 
- 	/* write alarm registers */
--	status = time_to_menelaus(&w->time, MENELAUS_RTC_AL_SEC);
-+	status = time_to_menelaus(m, &w->time, MENELAUS_RTC_AL_SEC);
- 	if (status < 0)
- 		return status;
  
 -- 
 1.8.4.GIT
