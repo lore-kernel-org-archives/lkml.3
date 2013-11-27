@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759064Ab3K0B5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:57:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38860 "EHLO
+	id S1760663Ab3K0B5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:57:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38887 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757426Ab3K0A5Q (ORCPT
+	with ESMTP id S1757403Ab3K0A5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:16 -0500
+	Tue, 26 Nov 2013 19:57:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: [PATCH 3.10 05/80] ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a field.
-Date: Tue, 26 Nov 2013 16:56:34 -0800
-Message-Id: <20131127005641.313317562@linuxfoundation.org>
+        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3.10 02/80] libertas: potential oops in debugfs
+Date: Tue, 26 Nov 2013 16:56:31 -0800
+Message-Id: <20131127005641.108592078@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,253 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4be4be8fee2ee99a52f94f90d03d2f287ee1db86 upstream.
+commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88 upstream.
 
-This change fixes a problem where a Store operation to an ArgX object
-that contained a reference to a field object did not complete the
-automatic dereference and then write to the actual field object.
-Instead, the object type of the field object was inadvertently changed
-to match the type of the source operand. The new behavior will actually
-write to the field object (buffer field or field unit), thus matching
-the correct ACPI-defined behavior.
+If we do a zero size allocation then it will oops.  Also we can't be
+sure the user passes us a NUL terminated string so I've added a
+terminator.
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+This code can only be triggered by root.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/exstore.c |  166 +++++++++++++++++++++++++-----------------
- 1 file changed, 102 insertions(+), 64 deletions(-)
+ drivers/net/wireless/libertas/debugfs.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/acpica/exstore.c
-+++ b/drivers/acpi/acpica/exstore.c
-@@ -57,6 +57,11 @@ acpi_ex_store_object_to_index(union acpi
- 			      union acpi_operand_object *dest_desc,
- 			      struct acpi_walk_state *walk_state);
+--- a/drivers/net/wireless/libertas/debugfs.c
++++ b/drivers/net/wireless/libertas/debugfs.c
+@@ -913,7 +913,10 @@ static ssize_t lbs_debugfs_write(struct
+ 	char *p2;
+ 	struct debug_data *d = f->private_data;
  
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state);
+-	pdata = kmalloc(cnt, GFP_KERNEL);
++	if (cnt == 0)
++		return 0;
 +
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_ex_store
-@@ -376,7 +381,11 @@ acpi_ex_store_object_to_index(union acpi
-  *              When storing into an object the data is converted to the
-  *              target object type then stored in the object. This means
-  *              that the target object type (for an initialized target) will
-- *              not be changed by a store operation.
-+ *              not be changed by a store operation. A copy_object can change
-+ *              the target type, however.
-+ *
-+ *              The implicit_conversion flag is set to NO/FALSE only when
-+ *              storing to an arg_x -- as per the rules of the ACPI spec.
-  *
-  *              Assumes parameters are already validated.
-  *
-@@ -400,7 +409,7 @@ acpi_ex_store_object_to_node(union acpi_
- 	target_type = acpi_ns_get_type(node);
- 	target_desc = acpi_ns_get_attached_object(node);
++	pdata = kmalloc(cnt + 1, GFP_KERNEL);
+ 	if (pdata == NULL)
+ 		return 0;
  
--	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p(%s) into node %p(%s)\n",
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p (%s) to node %p (%s)\n",
- 			  source_desc,
- 			  acpi_ut_get_object_type_name(source_desc), node,
- 			  acpi_ut_get_type_name(target_type)));
-@@ -414,46 +423,31 @@ acpi_ex_store_object_to_node(union acpi_
- 		return_ACPI_STATUS(status);
+@@ -922,6 +925,7 @@ static ssize_t lbs_debugfs_write(struct
+ 		kfree(pdata);
+ 		return 0;
  	}
++	pdata[cnt] = '\0';
  
--	/* If no implicit conversion, drop into the default case below */
--
--	if ((!implicit_conversion) ||
--	    ((walk_state->opcode == AML_COPY_OP) &&
--	     (target_type != ACPI_TYPE_LOCAL_REGION_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_BANK_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_INDEX_FIELD))) {
--		/*
--		 * Force execution of default (no implicit conversion). Note:
--		 * copy_object does not perform an implicit conversion, as per the ACPI
--		 * spec -- except in case of region/bank/index fields -- because these
--		 * objects must retain their original type permanently.
--		 */
--		target_type = ACPI_TYPE_ANY;
--	}
--
- 	/* Do the actual store operation */
- 
- 	switch (target_type) {
--	case ACPI_TYPE_BUFFER_FIELD:
--	case ACPI_TYPE_LOCAL_REGION_FIELD:
--	case ACPI_TYPE_LOCAL_BANK_FIELD:
--	case ACPI_TYPE_LOCAL_INDEX_FIELD:
--
--		/* For fields, copy the source data to the target field. */
--
--		status = acpi_ex_write_data_to_field(source_desc, target_desc,
--						     &walk_state->result_obj);
--		break;
--
- 	case ACPI_TYPE_INTEGER:
- 	case ACPI_TYPE_STRING:
- 	case ACPI_TYPE_BUFFER:
- 
- 		/*
--		 * These target types are all of type Integer/String/Buffer, and
--		 * therefore support implicit conversion before the store.
--		 *
--		 * Copy and/or convert the source object to a new target object
-+		 * The simple data types all support implicit source operand
-+		 * conversion before the store.
- 		 */
-+
-+		if ((walk_state->opcode == AML_COPY_OP) || !implicit_conversion) {
-+			/*
-+			 * However, copy_object and Stores to arg_x do not perform
-+			 * an implicit conversion, as per the ACPI specification.
-+			 * A direct store is performed instead.
-+			 */
-+			status = acpi_ex_store_direct_to_node(source_desc, node,
-+							      walk_state);
-+			break;
-+		}
-+
-+		/* Store with implicit source operand conversion support */
-+
- 		status =
- 		    acpi_ex_store_object_to_object(source_desc, target_desc,
- 						   &new_desc, walk_state);
-@@ -467,13 +461,12 @@ acpi_ex_store_object_to_node(union acpi_
- 			 * the Name's type to that of the value being stored in it.
- 			 * source_desc reference count is incremented by attach_object.
- 			 *
--			 * Note: This may change the type of the node if an explicit store
--			 * has been performed such that the node/object type has been
--			 * changed.
-+			 * Note: This may change the type of the node if an explicit
-+			 * store has been performed such that the node/object type
-+			 * has been changed.
- 			 */
--			status =
--			    acpi_ns_attach_object(node, new_desc,
--						  new_desc->common.type);
-+			status = acpi_ns_attach_object(node, new_desc,
-+						       new_desc->common.type);
- 
- 			ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
- 					  "Store %s into %s via Convert/Attach\n",
-@@ -484,38 +477,83 @@ acpi_ex_store_object_to_node(union acpi_
- 		}
- 		break;
- 
--	default:
--
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "Storing [%s] (%p) directly into node [%s] (%p)"
--				  " with no implicit conversion\n",
--				  acpi_ut_get_object_type_name(source_desc),
--				  source_desc,
--				  acpi_ut_get_object_type_name(target_desc),
--				  node));
-+	case ACPI_TYPE_BUFFER_FIELD:
-+	case ACPI_TYPE_LOCAL_REGION_FIELD:
-+	case ACPI_TYPE_LOCAL_BANK_FIELD:
-+	case ACPI_TYPE_LOCAL_INDEX_FIELD:
-+		/*
-+		 * For all fields, always write the source data to the target
-+		 * field. Any required implicit source operand conversion is
-+		 * performed in the function below as necessary. Note, field
-+		 * objects must retain their original type permanently.
-+		 */
-+		status = acpi_ex_write_data_to_field(source_desc, target_desc,
-+						     &walk_state->result_obj);
-+		break;
- 
-+	default:
- 		/*
- 		 * No conversions for all other types. Directly store a copy of
--		 * the source object. NOTE: This is a departure from the ACPI
--		 * spec, which states "If conversion is impossible, abort the
--		 * running control method".
-+		 * the source object. This is the ACPI spec-defined behavior for
-+		 * the copy_object operator.
- 		 *
--		 * This code implements "If conversion is impossible, treat the
--		 * Store operation as a CopyObject".
-+		 * NOTE: For the Store operator, this is a departure from the
-+		 * ACPI spec, which states "If conversion is impossible, abort
-+		 * the running control method". Instead, this code implements
-+		 * "If conversion is impossible, treat the Store operation as
-+		 * a CopyObject".
- 		 */
--		status =
--		    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc,
--						    walk_state);
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--
--		status =
--		    acpi_ns_attach_object(node, new_desc,
--					  new_desc->common.type);
--		acpi_ut_remove_reference(new_desc);
-+		status = acpi_ex_store_direct_to_node(source_desc, node,
-+						      walk_state);
- 		break;
- 	}
- 
- 	return_ACPI_STATUS(status);
- }
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_ex_store_direct_to_node
-+ *
-+ * PARAMETERS:  source_desc             - Value to be stored
-+ *              node                    - Named object to receive the value
-+ *              walk_state              - Current walk state
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: "Store" an object directly to a node. This involves a copy
-+ *              and an attach.
-+ *
-+ ******************************************************************************/
-+
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state)
-+{
-+	acpi_status status;
-+	union acpi_operand_object *new_desc;
-+
-+	ACPI_FUNCTION_TRACE(ex_store_direct_to_node);
-+
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+			  "Storing [%s] (%p) directly into node [%s] (%p)"
-+			  " with no implicit conversion\n",
-+			  acpi_ut_get_object_type_name(source_desc),
-+			  source_desc, acpi_ut_get_type_name(node->type),
-+			  node));
-+
-+	/* Copy the source object to a new object */
-+
-+	status =
-+	    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc, walk_state);
-+	if (ACPI_FAILURE(status)) {
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Attach the new object to the node */
-+
-+	status = acpi_ns_attach_object(node, new_desc, new_desc->common.type);
-+	acpi_ut_remove_reference(new_desc);
-+	return_ACPI_STATUS(status);
-+}
+ 	p0 = pdata;
+ 	for (i = 0; i < num_of_items; i++) {
 
 
