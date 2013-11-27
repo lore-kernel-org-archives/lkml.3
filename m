@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3K0A4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:56:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38756 "EHLO
+	id S1756976Ab3K0A4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:56:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3K0A4b (ORCPT
+	with ESMTP id S1756645Ab3K0A4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:56:31 -0500
+	Tue, 26 Nov 2013 19:56:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>
-Subject: [PATCH 3.4 08/39] ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a field.
-Date: Tue, 26 Nov 2013 16:56:32 -0800
-Message-Id: <20131127005619.629746668@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.4 31/39] block: fix a probe argument to blk_register_region
+Date: Tue, 26 Nov 2013 16:56:55 -0800
+Message-Id: <20131127005621.229796789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005619.011763867@linuxfoundation.org>
 References: <20131127005619.011763867@linuxfoundation.org>
@@ -28,252 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Moore <robert.moore@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 4be4be8fee2ee99a52f94f90d03d2f287ee1db86 upstream.
+commit a207f5937630dd35bd2550620bef416937a1365e upstream.
 
-This change fixes a problem where a Store operation to an ArgX object
-that contained a reference to a field object did not complete the
-automatic dereference and then write to the actual field object.
-Instead, the object type of the field object was inadvertently changed
-to match the type of the source operand. The new behavior will actually
-write to the field object (buffer field or field unit), thus matching
-the correct ACPI-defined behavior.
+The probe function is supposed to return NULL on failure (as we can see in
+kobj_lookup: kobj = probe(dev, index, data); ... if (kobj) return kobj;
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+However, in loop and brd, it returns negative error from ERR_PTR.
+
+This causes a crash if we simulate disk allocation failure and run
+less -f /dev/loop0 because the negative number is interpreted as a pointer:
+
+BUG: unable to handle kernel NULL pointer dereference at 00000000000002b4
+IP: [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+PGD 23c677067 PUD 23d6d1067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop hpfs nvidia(PO) ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_stats cpufreq_ondemand cpufreq_userspace cpufreq_powersave cpufreq_conservative hid_generic spadfs usbhid hid fuse raid0 snd_usb_audio snd_pcm_oss snd_mixer_oss md_mod snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib dmi_sysfs snd_rawmidi nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd soundcore lm85 hwmon_vid ohci_hcd ehci_pci ehci_hcd serverworks sata_svw libata acpi_cpufreq freq_table mperf ide_core usbcore kvm_amd kvm tg3 i2c_piix4 libphy microcode e100 usb_common ptp skge i2c_core pcspkr k10temp evdev floppy hwmon pps_core mii rtc_cmos button processor unix [last unloaded: nvidia]
+CPU: 1 PID: 6831 Comm: less Tainted: P        W  O 3.10.15-devel #18
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff880203cc6bc0 ti: ffff88023e47c000 task.ti: ffff88023e47c000
+RIP: 0010:[<ffffffff8118b188>]  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+RSP: 0018:ffff88023e47dbd8  EFLAGS: 00010286
+RAX: ffffffffffffff74 RBX: ffffffffffffff74 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
+RBP: ffff88023e47dc18 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff88023f519658
+R13: ffffffff8118c300 R14: 0000000000000000 R15: ffff88023f519640
+FS:  00007f2070bf7700(0000) GS:ffff880247400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000000000002b4 CR3: 000000023da1d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ 0000000000000002 0000001d00000000 000000003e47dc50 ffff88023f519640
+ ffff88043d5bb668 ffffffff8118c300 ffff88023d683550 ffff88023e47de60
+ ffff88023e47dc98 ffffffff8118c10d 0000001d81605698 0000000000000292
+Call Trace:
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c10d>] blkdev_get+0x1dd/0x370
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
+ [<ffffffff8118c365>] blkdev_open+0x65/0x80
+ [<ffffffff8114d12e>] do_dentry_open.isra.18+0x23e/0x2f0
+ [<ffffffff8114d214>] finish_open+0x34/0x50
+ [<ffffffff8115e122>] do_last.isra.62+0x2d2/0xc50
+ [<ffffffff8115eb58>] path_openat.isra.63+0xb8/0x4d0
+ [<ffffffff81115a8e>] ? might_fault+0x4e/0xa0
+ [<ffffffff8115f4f0>] do_filp_open+0x40/0x90
+ [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
+ [<ffffffff8116db85>] ? __alloc_fd+0xa5/0x1f0
+ [<ffffffff8114e45f>] do_sys_open+0xef/0x1d0
+ [<ffffffff8114e559>] SyS_open+0x19/0x20
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: 44 00 00 55 48 89 e5 41 57 49 89 ff 41 56 41 89 d6 41 55 41 54 4c 8d 67 18 53 48 83 ec 18 89 75 cc e9 f2 00 00 00 0f 1f 44 00 00 <48> 8b 80 40 03 00 00 48 89 df 4c 8b 68 58 e8 d5
+a4 07 00 44 89
+RIP  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
+ RSP <ffff88023e47dbd8>
+CR2: 00000000000002b4
+---[ end trace bb7f32dbf02398dc ]---
+
+The brd change should be backported to stable kernels starting with 2.6.25.
+The loop change should be backported to stable kernels starting with 2.6.22.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/acpi/acpica/exstore.c |  166 +++++++++++++++++++++++++-----------------
- 1 file changed, 102 insertions(+), 64 deletions(-)
 
---- a/drivers/acpi/acpica/exstore.c
-+++ b/drivers/acpi/acpica/exstore.c
-@@ -57,6 +57,11 @@ acpi_ex_store_object_to_index(union acpi
- 			      union acpi_operand_object *dest_desc,
- 			      struct acpi_walk_state *walk_state);
+---
+ drivers/block/brd.c  |    2 +-
+ drivers/block/loop.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -546,7 +546,7 @@ static struct kobject *brd_probe(dev_t d
  
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state);
-+
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_ex_store
-@@ -376,7 +381,11 @@ acpi_ex_store_object_to_index(union acpi
-  *              When storing into an object the data is converted to the
-  *              target object type then stored in the object.  This means
-  *              that the target object type (for an initialized target) will
-- *              not be changed by a store operation.
-+ *              not be changed by a store operation. A copy_object can change
-+ *              the target type, however.
-+ *
-+ *              The implicit_conversion flag is set to NO/FALSE only when
-+ *              storing to an arg_x -- as per the rules of the ACPI spec.
-  *
-  *              Assumes parameters are already validated.
-  *
-@@ -400,7 +409,7 @@ acpi_ex_store_object_to_node(union acpi_
- 	target_type = acpi_ns_get_type(node);
- 	target_desc = acpi_ns_get_attached_object(node);
+ 	mutex_lock(&brd_devices_mutex);
+ 	brd = brd_init_one(MINOR(dev) >> part_shift);
+-	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
++	kobj = brd ? get_disk(brd->brd_disk) : NULL;
+ 	mutex_unlock(&brd_devices_mutex);
  
--	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p(%s) into node %p(%s)\n",
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC, "Storing %p (%s) to node %p (%s)\n",
- 			  source_desc,
- 			  acpi_ut_get_object_type_name(source_desc), node,
- 			  acpi_ut_get_type_name(target_type)));
-@@ -414,46 +423,31 @@ acpi_ex_store_object_to_node(union acpi_
- 		return_ACPI_STATUS(status);
- 	}
- 
--	/* If no implicit conversion, drop into the default case below */
--
--	if ((!implicit_conversion) ||
--	    ((walk_state->opcode == AML_COPY_OP) &&
--	     (target_type != ACPI_TYPE_LOCAL_REGION_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_BANK_FIELD) &&
--	     (target_type != ACPI_TYPE_LOCAL_INDEX_FIELD))) {
--		/*
--		 * Force execution of default (no implicit conversion). Note:
--		 * copy_object does not perform an implicit conversion, as per the ACPI
--		 * spec -- except in case of region/bank/index fields -- because these
--		 * objects must retain their original type permanently.
--		 */
--		target_type = ACPI_TYPE_ANY;
--	}
--
- 	/* Do the actual store operation */
- 
- 	switch (target_type) {
--	case ACPI_TYPE_BUFFER_FIELD:
--	case ACPI_TYPE_LOCAL_REGION_FIELD:
--	case ACPI_TYPE_LOCAL_BANK_FIELD:
--	case ACPI_TYPE_LOCAL_INDEX_FIELD:
--
--		/* For fields, copy the source data to the target field. */
--
--		status = acpi_ex_write_data_to_field(source_desc, target_desc,
--						     &walk_state->result_obj);
--		break;
--
- 	case ACPI_TYPE_INTEGER:
- 	case ACPI_TYPE_STRING:
- 	case ACPI_TYPE_BUFFER:
- 
- 		/*
--		 * These target types are all of type Integer/String/Buffer, and
--		 * therefore support implicit conversion before the store.
--		 *
--		 * Copy and/or convert the source object to a new target object
-+		 * The simple data types all support implicit source operand
-+		 * conversion before the store.
- 		 */
-+
-+		if ((walk_state->opcode == AML_COPY_OP) || !implicit_conversion) {
-+			/*
-+			 * However, copy_object and Stores to arg_x do not perform
-+			 * an implicit conversion, as per the ACPI specification.
-+			 * A direct store is performed instead.
-+			 */
-+			status = acpi_ex_store_direct_to_node(source_desc, node,
-+							      walk_state);
-+			break;
-+		}
-+
-+		/* Store with implicit source operand conversion support */
-+
- 		status =
- 		    acpi_ex_store_object_to_object(source_desc, target_desc,
- 						   &new_desc, walk_state);
-@@ -467,13 +461,12 @@ acpi_ex_store_object_to_node(union acpi_
- 			 * the Name's type to that of the value being stored in it.
- 			 * source_desc reference count is incremented by attach_object.
- 			 *
--			 * Note: This may change the type of the node if an explicit store
--			 * has been performed such that the node/object type has been
--			 * changed.
-+			 * Note: This may change the type of the node if an explicit
-+			 * store has been performed such that the node/object type
-+			 * has been changed.
- 			 */
--			status =
--			    acpi_ns_attach_object(node, new_desc,
--						  new_desc->common.type);
-+			status = acpi_ns_attach_object(node, new_desc,
-+						       new_desc->common.type);
- 
- 			ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
- 					  "Store %s into %s via Convert/Attach\n",
-@@ -484,38 +477,83 @@ acpi_ex_store_object_to_node(union acpi_
- 		}
- 		break;
- 
--	default:
--
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "Storing [%s] (%p) directly into node [%s] (%p)"
--				  " with no implicit conversion\n",
--				  acpi_ut_get_object_type_name(source_desc),
--				  source_desc,
--				  acpi_ut_get_object_type_name(target_desc),
--				  node));
-+	case ACPI_TYPE_BUFFER_FIELD:
-+	case ACPI_TYPE_LOCAL_REGION_FIELD:
-+	case ACPI_TYPE_LOCAL_BANK_FIELD:
-+	case ACPI_TYPE_LOCAL_INDEX_FIELD:
-+		/*
-+		 * For all fields, always write the source data to the target
-+		 * field. Any required implicit source operand conversion is
-+		 * performed in the function below as necessary. Note, field
-+		 * objects must retain their original type permanently.
-+		 */
-+		status = acpi_ex_write_data_to_field(source_desc, target_desc,
-+						     &walk_state->result_obj);
-+		break;
- 
-+	default:
- 		/*
- 		 * No conversions for all other types. Directly store a copy of
--		 * the source object. NOTE: This is a departure from the ACPI
--		 * spec, which states "If conversion is impossible, abort the
--		 * running control method".
-+		 * the source object. This is the ACPI spec-defined behavior for
-+		 * the copy_object operator.
- 		 *
--		 * This code implements "If conversion is impossible, treat the
--		 * Store operation as a CopyObject".
-+		 * NOTE: For the Store operator, this is a departure from the
-+		 * ACPI spec, which states "If conversion is impossible, abort
-+		 * the running control method". Instead, this code implements
-+		 * "If conversion is impossible, treat the Store operation as
-+		 * a CopyObject".
- 		 */
--		status =
--		    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc,
--						    walk_state);
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--
--		status =
--		    acpi_ns_attach_object(node, new_desc,
--					  new_desc->common.type);
--		acpi_ut_remove_reference(new_desc);
-+		status = acpi_ex_store_direct_to_node(source_desc, node,
-+						      walk_state);
- 		break;
- 	}
- 
- 	return_ACPI_STATUS(status);
- }
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_ex_store_direct_to_node
-+ *
-+ * PARAMETERS:  source_desc             - Value to be stored
-+ *              node                    - Named object to receive the value
-+ *              walk_state              - Current walk state
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: "Store" an object directly to a node. This involves a copy
-+ *              and an attach.
-+ *
-+ ******************************************************************************/
-+
-+static acpi_status
-+acpi_ex_store_direct_to_node(union acpi_operand_object *source_desc,
-+			     struct acpi_namespace_node *node,
-+			     struct acpi_walk_state *walk_state)
-+{
-+	acpi_status status;
-+	union acpi_operand_object *new_desc;
-+
-+	ACPI_FUNCTION_TRACE(ex_store_direct_to_node);
-+
-+	ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+			  "Storing [%s] (%p) directly into node [%s] (%p)"
-+			  " with no implicit conversion\n",
-+			  acpi_ut_get_object_type_name(source_desc),
-+			  source_desc, acpi_ut_get_type_name(node->type),
-+			  node));
-+
-+	/* Copy the source object to a new object */
-+
-+	status =
-+	    acpi_ut_copy_iobject_to_iobject(source_desc, &new_desc, walk_state);
-+	if (ACPI_FAILURE(status)) {
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Attach the new object to the node */
-+
-+	status = acpi_ns_attach_object(node, new_desc, new_desc->common.type);
-+	acpi_ut_remove_reference(new_desc);
-+	return_ACPI_STATUS(status);
-+}
+ 	*part = 0;
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1743,7 +1743,7 @@ static struct kobject *loop_probe(dev_t
+ 	if (err < 0)
+ 		err = loop_add(&lo, MINOR(dev) >> part_shift);
+ 	if (err < 0)
+-		kobj = ERR_PTR(err);
++		kobj = NULL;
+ 	else
+ 		kobj = get_disk(lo->lo_disk);
+ 	mutex_unlock(&loop_index_mutex);
 
 
