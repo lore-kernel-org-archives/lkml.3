@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3K0Bz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:55:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38980 "EHLO
+	id S1758637Ab3K0B4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:56:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757575Ab3K0A5U (ORCPT
+	with ESMTP id S1757521Ab3K0A5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:20 -0500
+	Tue, 26 Nov 2013 19:57:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.10 09/80] crypto: s390 - Fix aes-cbc IV corruption
-Date: Tue, 26 Nov 2013 16:56:38 -0800
-Message-Id: <20131127005641.588797485@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.10 08/80] crypto: ansi_cprng - Fix off by one error in non-block size request
+Date: Tue, 26 Nov 2013 16:56:37 -0800
+Message-Id: <20131127005641.517265159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -26,95 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit f262f0f5cad0c9eca61d1d383e3b67b57dcbe5ea upstream.
+commit 714b33d15130cbb5ab426456d4e3de842d6c5b8a upstream.
 
-The cbc-aes-s390 algorithm incorrectly places the IV in the tfm
-data structure.  As the tfm is shared between multiple threads,
-this introduces a possibility of data corruption.
+Stephan Mueller reported to me recently a error in random number generation in
+the ansi cprng. If several small requests are made that are less than the
+instances block size, the remainder for loop code doesn't increment
+rand_data_valid in the last iteration, meaning that the last bytes in the
+rand_data buffer gets reused on the subsequent smaller-than-a-block request for
+random data.
 
-This patch fixes this by moving the parameter block containing
-the IV and key onto the stack (the block is 48 bytes long).
+The fix is pretty easy, just re-code the for loop to make sure that
+rand_data_valid gets incremented appropriately
 
-The same bug exists elsewhere in the s390 crypto system and they
-will be fixed in subsequent patches.
-
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Petr Matousek <pmatouse@redhat.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/aes_s390.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ crypto/ansi_cprng.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -35,7 +35,6 @@ static u8 *ctrblk;
- static char keylen_flag;
- 
- struct s390_aes_ctx {
--	u8 iv[AES_BLOCK_SIZE];
- 	u8 key[AES_MAX_KEY_SIZE];
- 	long enc;
- 	long dec;
-@@ -441,30 +440,36 @@ static int cbc_aes_set_key(struct crypto
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
--static int cbc_aes_crypt(struct blkcipher_desc *desc, long func, void *param,
-+static int cbc_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct blkcipher_walk *walk)
- {
-+	struct s390_aes_ctx *sctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[AES_BLOCK_SIZE];
-+		u8 key[AES_MAX_KEY_SIZE];
-+	} param;
- 
- 	if (!nbytes)
- 		goto out;
- 
--	memcpy(param, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, AES_BLOCK_SIZE);
-+	memcpy(param.key, sctx->key, sctx->key_len);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
- 
--		ret = crypt_s390_kmc(func, param, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		if (ret < 0 || ret != n)
- 			return -EIO;
- 
- 		nbytes &= AES_BLOCK_SIZE - 1;
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, param, AES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, AES_BLOCK_SIZE);
- 
- out:
- 	return ret;
-@@ -481,7 +486,7 @@ static int cbc_aes_encrypt(struct blkcip
- 		return fallback_blk_enc(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->enc, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->enc, &walk);
- }
- 
- static int cbc_aes_decrypt(struct blkcipher_desc *desc,
-@@ -495,7 +500,7 @@ static int cbc_aes_decrypt(struct blkcip
- 		return fallback_blk_dec(desc, dst, src, nbytes);
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_aes_crypt(desc, sctx->dec, sctx->iv, &walk);
-+	return cbc_aes_crypt(desc, sctx->dec, &walk);
- }
- 
- static struct crypto_alg cbc_aes_alg = {
+--- a/crypto/ansi_cprng.c
++++ b/crypto/ansi_cprng.c
+@@ -230,11 +230,11 @@ remainder:
+ 	 */
+ 	if (byte_count < DEFAULT_BLK_SZ) {
+ empty_rbuf:
+-		for (; ctx->rand_data_valid < DEFAULT_BLK_SZ;
+-			ctx->rand_data_valid++) {
++		while (ctx->rand_data_valid < DEFAULT_BLK_SZ) {
+ 			*ptr = ctx->rand_data[ctx->rand_data_valid];
+ 			ptr++;
+ 			byte_count--;
++			ctx->rand_data_valid++;
+ 			if (byte_count == 0)
+ 				goto done;
+ 		}
 
 
