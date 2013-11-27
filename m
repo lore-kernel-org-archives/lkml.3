@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab3K0BAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:00:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39583 "EHLO
+	id S1758907Ab3K0BAH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:00:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab3K0A7g (ORCPT
+	with ESMTP id S1758770Ab3K0A7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:36 -0500
+	Tue, 26 Nov 2013 19:59:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 057/116] ALSA: hda - Add headset quirk for Dell Inspiron 3135
-Date: Tue, 26 Nov 2013 16:57:10 -0800
-Message-Id: <20131127005740.889413492@linuxfoundation.org>
+Subject: [PATCH 3.12 053/116] ALSA: hda - Dont turn off EAPD for headphone on Lenovo N100
+Date: Tue, 26 Nov 2013 16:57:06 -0800
+Message-Id: <20131127005740.613142069@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,28 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b8362e70cbbb397db50939bc4c7c78dc3246c3eb upstream.
+commit 7a3e6107f94344e65c35bfe62de6c096a7b48965 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/1253636
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+The only EAPD on AD1986A is on NID 0x1b where usually the speaker.
+But this doesn't control only the speaker amp but may influence on all
+outputs, e.g. Lenovo N100 laptop seems to have this issue.
+
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_analog.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3951,6 +3951,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
- 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -219,8 +219,12 @@ static int alloc_ad_spec(struct hda_code
+ static void ad_fixup_inv_jack_detect(struct hda_codec *codec,
+ 				     const struct hda_fixup *fix, int action)
+ {
+-	if (action == HDA_FIXUP_ACT_PRE_PROBE)
++	struct ad198x_spec *spec = codec->spec;
++
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
+ 		codec->inv_jack_detect = 1;
++		spec->gen.keep_eapd_on = 1;
++	}
+ }
+ 
+ enum {
 
 
