@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3K0AqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:46:14 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:39141 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3K0Apv (ORCPT
+	id S1754272Ab3K0AqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:46:11 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:35466 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab3K0Aps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:45:51 -0500
+	Tue, 26 Nov 2013 19:45:48 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         hch@infradead.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        "Ed L. Cashin" <ecashin@coraid.com>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 06/25] block: Convert bio_iovec() to bvec_iter
-Date: Tue, 26 Nov 2013 16:45:09 -0800
-Message-Id: <1385513128-5035-6-git-send-email-kmo@daterainc.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com
+Subject: [PATCH 05/25] dm: Use bvec_iter for dm_bio_record()
+Date: Tue, 26 Nov 2013 16:45:08 -0800
+Message-Id: <1385513128-5035-5-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 References: <20131127004422.GB21305@kmo>
@@ -24,207 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For immutable biovecs, we'll be introducing a new bio_iovec() that uses
-our new bvec iterator to construct a biovec, taking into account
-bvec_iter->bi_bvec_done - this patch updates existing users for the new
-usage.
-
-Some of the existing users really do need a pointer into the bvec array
-- those uses are all going to be removed, but we'll need the
-functionality from immutable to remove them - so for now rename the
-existing bio_iovec() -> __bio_iovec(), and it'll be removed in a couple
-patches.
+This patch doesn't itself have any functional changes, but immutable
+biovecs are going to add a bi_bvec_done member to bi_iter, which will
+need to be saved too here.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: "Ed L. Cashin" <ecashin@coraid.com>
 Cc: Alasdair Kergon <agk@redhat.com>
 Cc: dm-devel@redhat.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Reviewed-by: Mike Snitzer <snitzer@redhat.com>
 ---
- drivers/block/aoe/aoecmd.c |  2 +-
- drivers/md/bcache/io.c     | 13 +++++++------
- drivers/md/dm-verity.c     |  2 +-
- drivers/scsi/sd.c          |  2 +-
- fs/bio.c                   | 20 ++++++++++----------
- include/linux/bio.h        | 10 ++++++----
- 6 files changed, 26 insertions(+), 23 deletions(-)
+ drivers/md/dm-bio-record.h | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 877ba11..77c24ab 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -932,7 +932,7 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
- 	buf->resid = bio->bi_iter.bi_size;
- 	buf->sector = bio->bi_iter.bi_sector;
- 	bio_pageinc(bio);
--	buf->bv = bio_iovec(bio);
-+	buf->bv = __bio_iovec(bio);
- 	buf->bv_resid = buf->bv->bv_len;
- 	WARN_ON(buf->bv_resid == 0);
- }
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index cc4ba2d..dc44f06 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -22,11 +22,12 @@ static void bch_bi_idx_hack_endio(struct bio *bio, int error)
- static void bch_generic_make_request_hack(struct bio *bio)
+diff --git a/drivers/md/dm-bio-record.h b/drivers/md/dm-bio-record.h
+index 5ace48e..4f46e8e 100644
+--- a/drivers/md/dm-bio-record.h
++++ b/drivers/md/dm-bio-record.h
+@@ -28,11 +28,9 @@ struct dm_bio_vec_details {
+ };
+ 
+ struct dm_bio_details {
+-	sector_t bi_sector;
+ 	struct block_device *bi_bdev;
+-	unsigned int bi_size;
+-	unsigned short bi_idx;
+ 	unsigned long bi_flags;
++	struct bvec_iter bi_iter;
+ 	struct dm_bio_vec_details bi_io_vec[BIO_MAX_PAGES];
+ };
+ 
+@@ -40,11 +38,9 @@ static inline void dm_bio_record(struct dm_bio_details *bd, struct bio *bio)
  {
- 	if (bio->bi_iter.bi_idx) {
-+		int i;
-+		struct bio_vec *bv;
- 		struct bio *clone = bio_alloc(GFP_NOIO, bio_segments(bio));
+ 	unsigned i;
  
--		memcpy(clone->bi_io_vec,
--		       bio_iovec(bio),
--		       bio_segments(bio) * sizeof(struct bio_vec));
-+		bio_for_each_segment(bv, bio, i)
-+			clone->bi_io_vec[clone->bi_vcnt++] = *bv;
+-	bd->bi_sector = bio->bi_iter.bi_sector;
+ 	bd->bi_bdev = bio->bi_bdev;
+-	bd->bi_size = bio->bi_iter.bi_size;
+-	bd->bi_idx = bio->bi_iter.bi_idx;
+ 	bd->bi_flags = bio->bi_flags;
++	bd->bi_iter = bio->bi_iter;
  
- 		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
- 		clone->bi_bdev		= bio->bi_bdev;
-@@ -97,7 +98,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
- 			if (!ret)
- 				return NULL;
- 
--			memcpy(ret->bi_io_vec, bio_iovec(bio),
-+			memcpy(ret->bi_io_vec, __bio_iovec(bio),
- 			       sizeof(struct bio_vec) * vcnt);
- 
- 			break;
-@@ -106,7 +107,7 @@ struct bio *bch_bio_split(struct bio *bio, int sectors,
- 			if (!ret)
- 				return NULL;
- 
--			memcpy(ret->bi_io_vec, bio_iovec(bio),
-+			memcpy(ret->bi_io_vec, __bio_iovec(bio),
- 			       sizeof(struct bio_vec) * vcnt);
- 
- 			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
-@@ -182,7 +183,7 @@ static unsigned bch_bio_max_sectors(struct bio *bio)
- 	ret = min(ret, queue_max_sectors(q));
- 
- 	WARN_ON(!ret);
--	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
-+	ret = max_t(int, ret, bio_iovec(bio).bv_len >> 9);
- 
- 	return ret;
- }
-diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
-index 132b315..5392135 100644
---- a/drivers/md/dm-verity.c
-+++ b/drivers/md/dm-verity.c
-@@ -524,7 +524,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
- 		io->io_vec = io->io_vec_inline;
- 	else
- 		io->io_vec = mempool_alloc(v->vec_mempool, GFP_NOIO);
--	memcpy(io->io_vec, bio_iovec(bio),
-+	memcpy(io->io_vec, __bio_iovec(bio),
- 	       io->io_vec_size * sizeof(struct bio_vec));
- 
- 	verity_submit_prefetch(v, io);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e6c4bff..200d6bc 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -801,7 +801,7 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
- 	if (sdkp->device->no_write_same)
- 		return BLKPREP_KILL;
- 
--	BUG_ON(bio_offset(bio) || bio_iovec(bio)->bv_len != sdp->sector_size);
-+	BUG_ON(bio_offset(bio) || bio_iovec(bio).bv_len != sdp->sector_size);
- 
- 	sector >>= ilog2(sdp->sector_size) - 9;
- 	nr_sectors >>= ilog2(sdp->sector_size) - 9;
-diff --git a/fs/bio.c b/fs/bio.c
-index a402ad6..7bb281f 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -821,12 +821,12 @@ void bio_advance(struct bio *bio, unsigned bytes)
- 			break;
- 		}
- 
--		if (bytes >= bio_iovec(bio)->bv_len) {
--			bytes -= bio_iovec(bio)->bv_len;
-+		if (bytes >= bio_iovec(bio).bv_len) {
-+			bytes -= bio_iovec(bio).bv_len;
- 			bio->bi_iter.bi_idx++;
- 		} else {
--			bio_iovec(bio)->bv_len -= bytes;
--			bio_iovec(bio)->bv_offset += bytes;
-+			bio_iovec(bio).bv_len -= bytes;
-+			bio_iovec(bio).bv_offset += bytes;
- 			bytes = 0;
- 		}
- 	}
-@@ -879,8 +879,8 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 	unsigned src_offset, dst_offset, bytes;
- 	void *src_p, *dst_p;
- 
--	src_bv = bio_iovec(src);
--	dst_bv = bio_iovec(dst);
-+	src_bv = __bio_iovec(src);
-+	dst_bv = __bio_iovec(dst);
- 
- 	src_offset = src_bv->bv_offset;
- 	dst_offset = dst_bv->bv_offset;
-@@ -893,7 +893,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 				if (!src)
- 					break;
- 
--				src_bv = bio_iovec(src);
-+				src_bv = __bio_iovec(src);
- 			}
- 
- 			src_offset = src_bv->bv_offset;
-@@ -906,7 +906,7 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 				if (!dst)
- 					break;
- 
--				dst_bv = bio_iovec(dst);
-+				dst_bv = __bio_iovec(dst);
- 			}
- 
- 			dst_offset = dst_bv->bv_offset;
-@@ -1776,8 +1776,8 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- 	bp->bio1.bi_iter.bi_size = first_sectors << 9;
- 
- 	if (bi->bi_vcnt != 0) {
--		bp->bv1 = *bio_iovec(bi);
--		bp->bv2 = *bio_iovec(bi);
-+		bp->bv1 = bio_iovec(bi);
-+		bp->bv2 = bio_iovec(bi);
- 
- 		if (bio_is_rw(bi)) {
- 			bp->bv2.bv_offset += first_sectors << 9;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index e2e0bc6..9f182fc 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -62,9 +62,11 @@
-  * on highmem page vectors
-  */
- #define bio_iovec_idx(bio, idx)	(&((bio)->bi_io_vec[(idx)]))
--#define bio_iovec(bio)		bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
--#define bio_page(bio)		bio_iovec((bio))->bv_page
--#define bio_offset(bio)		bio_iovec((bio))->bv_offset
-+#define __bio_iovec(bio)	bio_iovec_idx((bio), (bio)->bi_iter.bi_idx)
-+#define bio_iovec(bio)		(*__bio_iovec(bio))
-+
-+#define bio_page(bio)		(bio_iovec((bio)).bv_page)
-+#define bio_offset(bio)		(bio_iovec((bio)).bv_offset)
- #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_iter.bi_idx)
- #define bio_sectors(bio)	((bio)->bi_iter.bi_size >> 9)
- #define bio_end_sector(bio)	((bio)->bi_iter.bi_sector + bio_sectors((bio)))
-@@ -72,7 +74,7 @@
- static inline unsigned int bio_cur_bytes(struct bio *bio)
+ 	for (i = 0; i < bio->bi_vcnt; i++) {
+ 		bd->bi_io_vec[i].bv_len = bio->bi_io_vec[i].bv_len;
+@@ -56,11 +52,9 @@ static inline void dm_bio_restore(struct dm_bio_details *bd, struct bio *bio)
  {
- 	if (bio->bi_vcnt)
--		return bio_iovec(bio)->bv_len;
-+		return bio_iovec(bio).bv_len;
- 	else /* dataless requests such as discard */
- 		return bio->bi_iter.bi_size;
- }
+ 	unsigned i;
+ 
+-	bio->bi_iter.bi_sector = bd->bi_sector;
+ 	bio->bi_bdev = bd->bi_bdev;
+-	bio->bi_iter.bi_size = bd->bi_size;
+-	bio->bi_iter.bi_idx = bd->bi_idx;
+ 	bio->bi_flags = bd->bi_flags;
++	bio->bi_iter = bd->bi_iter;
+ 
+ 	for (i = 0; i < bio->bi_vcnt; i++) {
+ 		bio->bi_io_vec[i].bv_len = bd->bi_io_vec[i].bv_len;
 -- 
 1.8.4.4
 
