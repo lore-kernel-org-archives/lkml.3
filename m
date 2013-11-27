@@ -1,276 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab3K0Att (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:49:49 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:53734 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab3K0Ato (ORCPT
+	id S1756967Ab3K0AuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:50:03 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49988 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753069Ab3K0Atz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:49:44 -0500
-X-AuditID: cbfee68f-b7f336d00000481b-bf-529541a1f44f
-Date: Wed, 27 Nov 2013 00:49:37 +0000 (GMT)
-From: Eunbong Song <eunb.song@samsung.com>
-Subject: [PATCH] avr32: Kill CONFIG_MTD_PARTITIONS
-To: hskinnemoen@gmail.com, egtvedt@samfundet.no
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20131127004726035@eunb.song
-Msgkey: 20131127004726035@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131127004726035@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <6858332.78861385513376432.JavaMail.weblogic@epml11>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Ztu5Cx6lBBndnq1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mlkf7mAq2RVb8/dXP3MDYE97FyMkhJKAi0fL/OyOILSFgIrHz
-	5QwmCFtM4sK99WxdjFxANcsYJa4euwJXtOHdQXaIxHxGiSl328ESLAKqEptOTWQFsdkEtCV+
-	HLjKDGILCxhJ9L/8BjSJg0NEwFpiwf5IkDCzgKPEo8t3mCGOkJeYfPoyO4jNKyAocXLmExaQ
-	cgkBJYmd/90hwsoSs9csgTpBQmLW9AusEDavxIz2pywQtpzEtK9rmCFsaYnzszYwwvyy+Ptj
-	qDi/xLHbO5ggxvNKPLkfDDNm9+YvbBC2gMTUMwehWtUlZp94BtXKJ7Fm4VsWmDG7Ti1nhum9
-	v2UuE8RXihJTuh+yQ9haEl9+7GND9RWI7SDRtLiLeQKj8iwkqVlI2mchaUdWs4CRZRWjaGpB
-	ckFxUnqRsV5xYm5xaV66XnJ+7iZGSFLo38F494D1IcZkYIRMZJYSTc4HJpW8knhDYzMjC1MT
-	U2Mjc0sz0oSVxHnvP0wKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cB45PAzdt386atn3pCN
-	fajDw1elaa1h2VjR/ctAbdNm49MTX9dZfv9qNGdB1NXlbh0m/TUbvi16eSBPlM1nbqFDHc+R
-	qpCQd9UXTBfxlWur/mpqva3+ImbRshD7b2cKgnmfJK3YLFeZM3dmK9OKcIcZz0QfnTT9nrFt
-	7ePZKfUT0lclfZQVsRBWYinOSDTUYi4qTgQA/yufqCADAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DN2FjlODDF7PU7a4vGsOmwOjx+dN
-	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
-	GS2P9jEVbIus+Purn7mBsSe8i5GTQ0hARaLl/3dGEFtCwERiw7uD7BC2mMSFe+vZuhi5gGrm
-	M0pMudsOVsQioCqx6dREVhCbTUBb4seBq8wgtrCAkUT/y29ADRwcIgLWEgv2R4KEmQUcJR5d
-	vsMMsUteYvLpy2DzeQUEJU7OfMICUi4hoCSx8787RFhZYvaaJVDnSEjMmn6BFcLmlZjR/pQF
-	wpaTmPZ1DTOELS1xftYGRpiTF39/DBXnlzh2ewcTxHheiSf3g2HG7N78hQ3CFpCYeuYgVKu6
-	xOwTz6Ba+STWLHzLAjNm16nlzDC997fMZYL4SlFiSvdDdghbS+LLj31sqL4CsR0kmhZ3MU9g
-	lJuFJDULSfssJO3IahYwsqxiFE0tSC4oTkqvMNQrTswtLs1L10vOz93ECE5PzxbuYPxy3voQ
-	owAHoxIP74TLU4KEWBPLiitzDzFKcDArifC+cJgaJMSbklhZlVqUH19UmpNafIgxGRh9E5ml
-	RJPzgakzryTe0NjA2NDQ0tzA1NDIgjRhJXHeuzeTgoQE0hNLUrNTUwtSi2C2MHFwSjUwlpuW
-	xp2cVyfyraV6p9z7dyfUl0c71/h7BKazBMebMMfvPyH3+cqV9Q/lb8efXl7ip7E+w4qdMcyN
-	6Zz8ITYTP4fX5y0f+aVt++w/r+RpmRKvjNvG9ddmH9tWrMwdkPjWL6bo9USvfZt/bXCLqv+0
-	8+GbSdUHRFrXP8mo8W1o7eC7eH7Bq/etSizFGYmGWsxFxYkAdheUk5MDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Tue, 26 Nov 2013 19:49:55 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH 0/4] ACPI / bind: Simplify child devices lookup
+Date: Wed, 27 Nov 2013 02:02:43 +0100
+Message-ID: <8065346.ZtkoVh8DW8@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1385512408.1791.196.camel@misato.fc.hp.com>
+References: <2610478.KxPMyuOMok@vostro.rjw.lan> <3773077.bfZR2z09sY@vostro.rjw.lan> <1385512408.1791.196.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rAR0nufc015859
 
+On Tuesday, November 26, 2013 05:33:28 PM Toshi Kani wrote:
+> On Wed, 2013-11-27 at 01:27 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, November 26, 2013 05:00:42 PM Toshi Kani wrote:
+> > > On Mon, 2013-11-25 at 01:09 +0100, Rafael J. Wysocki wrote:
+> > > > Hi,
+> > > > 
+> > > > The following series of four patches (on top of current linux-pm.git/bleeding-edge)
+> > > > rework child device lookup in drivers/acpi/glue.c and related things:
+> > > > 
+> > > > [1/4] ACPI / bind: Simplify child device lookup
+> > > > [2/4] PCI/ ACPI: Use acpi_find_child_device() for child device lookup
+> > > > [3/4] ACPI / bind: Redefine acpi_get_child()
+> > > > [4/4] ACPI / bind: Redefine acpi_preset_companion()
+> > > 
+> > > This patchset caused the attached panic during boot on a system.
+> > > acpi_pci_find_device() called acpi_find_child_device() with
+> > > ACPI_COMPANION(dev->parent) being a NULL pointer when scanning bus 0xf.
+> > > 
+> > > This bus 0xf seems to be a chipset internal bus, which is not intended
+> > > for the OS to use.  Therefore, ACPI does not list its PCI bridge device.
+> > > 
+> > > # lspci -tv
+> > >    :
+> > >  +-[0000:0f]-+-08.0  Intel Corporation Ivytown QPI Link 0
+> > >  |           +-08.2  Intel Corporation Ivytown QPI Link 0
+> > >    :
+> > > 
+> > > However, pcibios_fixup_peer_bridges(), called from pci_subsys_init(),
+> > > finds this bus as it scans all the buses from 0 to pcibios_last_bus.
+> > > Hence, this dev->parent does not have an associated ACPI device object. 
+> > 
+> > Thanks for the report!
+> > 
+> > I've dropped the patches from bleeding-edge for now.
+> > 
+> > Does "[1/4] ACPI / bind: Simplify child device lookup" alone work on that
+> > system?
+> 
+> Yes, the system boots fine with 1/4 alone.
 
-This patch removes CONFIG_MTD_PARTITIONS in config files for avr32.
- Because CONFIG_MTD_PARTITIONS was removed by commit 6a8a98b22b10f1560d5f90aded4a54234b9b2724.
+Thanks!
 
+Can you please check if the following modified [2/4] also works on top of it?
 
-Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+Rafael
+
 ---
- arch/avr32/configs/atngw100_defconfig              |    1 -
- arch/avr32/configs/atngw100_evklcd100_defconfig    |    1 -
- arch/avr32/configs/atngw100_evklcd101_defconfig    |    1 -
- arch/avr32/configs/atngw100_mrmt_defconfig         |    1 -
- arch/avr32/configs/atngw100mkii_defconfig          |    1 -
- .../avr32/configs/atngw100mkii_evklcd100_defconfig |    1 -
- .../avr32/configs/atngw100mkii_evklcd101_defconfig |    1 -
- arch/avr32/configs/atstk1002_defconfig             |    1 -
- arch/avr32/configs/atstk1003_defconfig             |    1 -
- arch/avr32/configs/atstk1004_defconfig             |    1 -
- arch/avr32/configs/atstk1006_defconfig             |    1 -
- arch/avr32/configs/favr-32_defconfig               |    1 -
- arch/avr32/configs/hammerhead_defconfig            |    1 -
- arch/avr32/configs/merisc_defconfig                |    1 -
- arch/avr32/configs/mimc200_defconfig               |    1 -
- 15 files changed, 0 insertions(+), 15 deletions(-)
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: PCI / ACPI: Use acpi_find_child_device() for child devices lookup
 
-diff --git a/arch/avr32/configs/atngw100_defconfig b/arch/avr32/configs/atngw100_defconfig
-index d5aff36..4733e38 100644
---- a/arch/avr32/configs/atngw100_defconfig
-+++ b/arch/avr32/configs/atngw100_defconfig
-@@ -59,7 +59,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100_evklcd100_defconfig b/arch/avr32/configs/atngw100_evklcd100_defconfig
-index 4abcf43..1be0ee3 100644
---- a/arch/avr32/configs/atngw100_evklcd100_defconfig
-+++ b/arch/avr32/configs/atngw100_evklcd100_defconfig
-@@ -61,7 +61,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100_evklcd101_defconfig b/arch/avr32/configs/atngw100_evklcd101_defconfig
-index 18f3fa0..796e536 100644
---- a/arch/avr32/configs/atngw100_evklcd101_defconfig
-+++ b/arch/avr32/configs/atngw100_evklcd101_defconfig
-@@ -60,7 +60,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100_mrmt_defconfig b/arch/avr32/configs/atngw100_mrmt_defconfig
-index 06e389c..9a57da4 100644
---- a/arch/avr32/configs/atngw100_mrmt_defconfig
-+++ b/arch/avr32/configs/atngw100_mrmt_defconfig
-@@ -48,7 +48,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100mkii_defconfig b/arch/avr32/configs/atngw100mkii_defconfig
-index 2518a13..97fe1b3 100644
---- a/arch/avr32/configs/atngw100mkii_defconfig
-+++ b/arch/avr32/configs/atngw100mkii_defconfig
-@@ -59,7 +59,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100mkii_evklcd100_defconfig b/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
-index 245ef6b..a176d24 100644
---- a/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
-+++ b/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
-@@ -62,7 +62,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atngw100mkii_evklcd101_defconfig b/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
-index fa6cbac..d1bf6dc 100644
---- a/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
-+++ b/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
-@@ -61,7 +61,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atstk1002_defconfig b/arch/avr32/configs/atstk1002_defconfig
-index bbd5131..2813dd2 100644
---- a/arch/avr32/configs/atstk1002_defconfig
-+++ b/arch/avr32/configs/atstk1002_defconfig
-@@ -53,7 +53,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atstk1003_defconfig b/arch/avr32/configs/atstk1003_defconfig
-index c1cd726..f8ff3a3 100644
---- a/arch/avr32/configs/atstk1003_defconfig
-+++ b/arch/avr32/configs/atstk1003_defconfig
-@@ -42,7 +42,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atstk1004_defconfig b/arch/avr32/configs/atstk1004_defconfig
-index 754ae56..992228e 100644
---- a/arch/avr32/configs/atstk1004_defconfig
-+++ b/arch/avr32/configs/atstk1004_defconfig
-@@ -42,7 +42,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/atstk1006_defconfig b/arch/avr32/configs/atstk1006_defconfig
-index 58589d8..b8e698b 100644
---- a/arch/avr32/configs/atstk1006_defconfig
-+++ b/arch/avr32/configs/atstk1006_defconfig
-@@ -54,7 +54,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/favr-32_defconfig b/arch/avr32/configs/favr-32_defconfig
-index c90fbf6..07bed3f 100644
---- a/arch/avr32/configs/favr-32_defconfig
-+++ b/arch/avr32/configs/favr-32_defconfig
-@@ -58,7 +58,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/hammerhead_defconfig b/arch/avr32/configs/hammerhead_defconfig
-index ba7c31e..18db853 100644
---- a/arch/avr32/configs/hammerhead_defconfig
-+++ b/arch/avr32/configs/hammerhead_defconfig
-@@ -58,7 +58,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
-diff --git a/arch/avr32/configs/merisc_defconfig b/arch/avr32/configs/merisc_defconfig
-index 65de443..91df6b2 100644
---- a/arch/avr32/configs/merisc_defconfig
-+++ b/arch/avr32/configs/merisc_defconfig
-@@ -46,7 +46,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
- CONFIG_MTD_CONCAT=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_CFI=y
-diff --git a/arch/avr32/configs/mimc200_defconfig b/arch/avr32/configs/mimc200_defconfig
-index 0a8bfdc..d630e08 100644
---- a/arch/avr32/configs/mimc200_defconfig
-+++ b/arch/avr32/configs/mimc200_defconfig
-@@ -49,7 +49,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_PREVENT_FIRMWARE_BUILD is not set
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_PARTITIONS=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
--- 
-1.7.0.4
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It is much more efficient to use acpi_find_child_device()
+for child devices lookup in acpi_pci_find_device() and pass
+ACPI_COMPANION(dev->parent) to it directly instead of obtaining
+ACPI_HANDLE() of ACPI_COMPANION(dev->parent) and passing it to
+acpi_find_child() which has to run acpi_bus_get_device() to
+obtain ACPI_COMPANION(dev->parent) from that again.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+---
+ drivers/acpi/glue.c    |    3 +++
+ drivers/pci/pci-acpi.c |   16 ++++++++++------
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
+Index: linux-pm/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-acpi.c
++++ linux-pm/drivers/pci/pci-acpi.c
+@@ -309,7 +309,8 @@ void acpi_pci_remove_bus(struct pci_bus
+ static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+ {
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+-	bool is_bridge;
++	struct acpi_device *adev;
++	bool check_children;
+ 	u64 addr;
+ 
+ 	/*
+@@ -317,14 +318,17 @@ static int acpi_pci_find_device(struct d
+ 	 * is set only after acpi_pci_find_device() has been called for the
+ 	 * given device.
+ 	 */
+-	is_bridge = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
++	check_children = pci_dev->hdr_type == PCI_HEADER_TYPE_BRIDGE
+ 			|| pci_dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
+ 	/* Please ref to ACPI spec for the syntax of _ADR */
+ 	addr = (PCI_SLOT(pci_dev->devfn) << 16) | PCI_FUNC(pci_dev->devfn);
+-	*handle = acpi_find_child(ACPI_HANDLE(dev->parent), addr, is_bridge);
+-	if (!*handle)
+-		return -ENODEV;
+-	return 0;
++	adev = acpi_find_child_device(ACPI_COMPANION(dev->parent), addr,
++				      check_children);
++	if (adev) {
++		*handle = adev->handle;
++		return 0;
++	}
++	return -ENODEV;
+ }
+ 
+ static void pci_acpi_setup(struct device *dev)
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -106,6 +106,9 @@ struct acpi_device *acpi_find_child_devi
+ 	struct acpi_device *adev, *ret = NULL;
+ 	int ret_score = 0;
+ 
++	if (!parent)
++		return NULL;
++
+ 	list_for_each_entry(adev, &parent->children, node) {
+ 		unsigned long long addr;
+ 		acpi_status status;
+
