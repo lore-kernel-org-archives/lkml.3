@@ -1,54 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab3K0XEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:04:46 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:32778 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab3K0XEm (ORCPT
+	id S1758073Ab3K0XIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:08:39 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:37408 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab3K0XIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:04:42 -0500
+	Wed, 27 Nov 2013 18:08:34 -0500
+Date: Wed, 27 Nov 2013 15:08:30 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+cc: stable@kernel.org, Michal Hocko <mhocko@suse.cz>, azurit@pobox.sk,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [merged] mm-memcg-handle-non-error-oom-situations-more-gracefully.patch
+ removed from -mm tree
+In-Reply-To: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1311271453270.13682@chino.kir.corp.google.com>
+References: <526028bd.k5qPj2+MDOK1o6ii%akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <cb0c1623-0e58-4418-b22e-cdcadbf31dea@email.android.com>
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org>
-	<5294F10C.8060901@amacapital.net>
-	<CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com>
-	<52964EC7.9000504@zytor.com>
-	<52966C0A.7070201@zytor.com>
-	<20131127222104.GA748@pd.tnic>
-	<b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com>
-	<20131127222944.GB748@pd.tnic>
-	<cb0c1623-0e58-4418-b22e-cdcadbf31dea@email.android.com>
-Date: Wed, 27 Nov 2013 15:04:41 -0800
-X-Google-Sender-Auth: jlmjkne1T9M79H_jsqMvOxiJ8iI
-Message-ID: <CA+55aFzTppZ+uhZ+mfHYmmJ9+aboEMUQ9PUfW63BTA-z+1nWqQ@mail.gmail.com>
-Subject: Re: [PATCH] Add a text_poke syscall v2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 2:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> No, we're not... sysexit/sysret doesn't count.
+On Thu, 17 Oct 2013, akpm@linux-foundation.org wrote:
 
-So sysexit/sysret doesn't count as a serializing instruction, no. But
-it doesn't need to, because *self*-modifying code doesn't need a
-serializing instruction, only a branch. It's only *cross*-modifying
-code that needs a serializing instruction.
+> diff -puN mm/memcontrol.c~mm-memcg-handle-non-error-oom-situations-more-gracefully mm/memcontrol.c
+> --- a/mm/memcontrol.c~mm-memcg-handle-non-error-oom-situations-more-gracefully
+> +++ a/mm/memcontrol.c
+> @@ -2161,110 +2161,59 @@ static void memcg_oom_recover(struct mem
+>  		memcg_wakeup_oom(memcg);
+>  }
+>  
+> -/*
+> - * try to call OOM killer
+> - */
+>  static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
+>  {
+> -	bool locked;
+> -	int wakeups;
+> -
+>  	if (!current->memcg_oom.may_oom)
+>  		return;
+> -
+> -	current->memcg_oom.in_memcg_oom = 1;
+> -
+>  	/*
+> -	 * As with any blocking lock, a contender needs to start
+> -	 * listening for wakeups before attempting the trylock,
+> -	 * otherwise it can miss the wakeup from the unlock and sleep
+> -	 * indefinitely.  This is just open-coded because our locking
+> -	 * is so particular to memcg hierarchies.
+> +	 * We are in the middle of the charge context here, so we
+> +	 * don't want to block when potentially sitting on a callstack
+> +	 * that holds all kinds of filesystem and mm locks.
+> +	 *
+> +	 * Also, the caller may handle a failed allocation gracefully
+> +	 * (like optional page cache readahead) and so an OOM killer
+> +	 * invocation might not even be necessary.
+> +	 *
+> +	 * That's why we don't do anything here except remember the
+> +	 * OOM context and then deal with it at the end of the page
+> +	 * fault when the stack is unwound, the locks are released,
+> +	 * and when we know whether the fault was overall successful.
+>  	 */
+> -	wakeups = atomic_read(&memcg->oom_wakeups);
+> -	mem_cgroup_mark_under_oom(memcg);
+> -
+> -	locked = mem_cgroup_oom_trylock(memcg);
+> -
+> -	if (locked)
+> -		mem_cgroup_oom_notify(memcg);
+> -
+> -	if (locked && !memcg->oom_kill_disable) {
+> -		mem_cgroup_unmark_under_oom(memcg);
+> -		mem_cgroup_out_of_memory(memcg, mask, order);
+> -		mem_cgroup_oom_unlock(memcg);
+> -		/*
+> -		 * There is no guarantee that an OOM-lock contender
+> -		 * sees the wakeups triggered by the OOM kill
+> -		 * uncharges.  Wake any sleepers explicitely.
+> -		 */
+> -		memcg_oom_recover(memcg);
+> -	} else {
+> -		/*
+> -		 * A system call can just return -ENOMEM, but if this
+> -		 * is a page fault and somebody else is handling the
+> -		 * OOM already, we need to sleep on the OOM waitqueue
+> -		 * for this memcg until the situation is resolved.
+> -		 * Which can take some time because it might be
+> -		 * handled by a userspace task.
+> -		 *
+> -		 * However, this is the charge context, which means
+> -		 * that we may sit on a large call stack and hold
+> -		 * various filesystem locks, the mmap_sem etc. and we
+> -		 * don't want the OOM handler to deadlock on them
+> -		 * while we sit here and wait.  Store the current OOM
+> -		 * context in the task_struct, then return -ENOMEM.
+> -		 * At the end of the page fault handler, with the
+> -		 * stack unwound, pagefault_out_of_memory() will check
+> -		 * back with us by calling
+> -		 * mem_cgroup_oom_synchronize(), possibly putting the
+> -		 * task to sleep.
+> -		 */
+> -		current->memcg_oom.oom_locked = locked;
+> -		current->memcg_oom.wakeups = wakeups;
+> -		css_get(&memcg->css);
+> -		current->memcg_oom.wait_on_memcg = memcg;
+> -	}
+> +	css_get(&memcg->css);
+> +	current->memcg_oom.memcg = memcg;
+> +	current->memcg_oom.gfp_mask = mask;
+> +	current->memcg_oom.order = order;
+>  }
+>  
+>  /**
+>   * mem_cgroup_oom_synchronize - complete memcg OOM handling
+> + * @handle: actually kill/wait or just clean up the OOM state
+>   *
+> - * This has to be called at the end of a page fault if the the memcg
+> - * OOM handler was enabled and the fault is returning %VM_FAULT_OOM.
+> + * This has to be called at the end of a page fault if the memcg OOM
+> + * handler was enabled.
+>   *
+> - * Memcg supports userspace OOM handling, so failed allocations must
+> + * Memcg supports userspace OOM handling where failed allocations must
+>   * sleep on a waitqueue until the userspace task resolves the
+>   * situation.  Sleeping directly in the charge context with all kinds
+>   * of locks held is not a good idea, instead we remember an OOM state
+>   * in the task and mem_cgroup_oom_synchronize() has to be called at
+> - * the end of the page fault to put the task to sleep and clean up the
+> - * OOM state.
+> + * the end of the page fault to complete the OOM handling.
+>   *
+>   * Returns %true if an ongoing memcg OOM situation was detected and
+> - * finalized, %false otherwise.
+> + * completed, %false otherwise.
+>   */
+> -bool mem_cgroup_oom_synchronize(void)
+> +bool mem_cgroup_oom_synchronize(bool handle)
+>  {
+> +	struct mem_cgroup *memcg = current->memcg_oom.memcg;
+>  	struct oom_wait_info owait;
+> -	struct mem_cgroup *memcg;
+> +	bool locked;
+>  
+>  	/* OOM is global, do not handle */
+> -	if (!current->memcg_oom.in_memcg_oom)
+> -		return false;
+> -
+> -	/*
+> -	 * We invoked the OOM killer but there is a chance that a kill
+> -	 * did not free up any charges.  Everybody else might already
+> -	 * be sleeping, so restart the fault and keep the rampage
+> -	 * going until some charges are released.
+> -	 */
+> -	memcg = current->memcg_oom.wait_on_memcg;
+>  	if (!memcg)
+> -		goto out;
+> +		return false;
+>  
+> -	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
+> -		goto out_memcg;
+> +	if (!handle)
+> +		goto cleanup;
+>  
+>  	owait.memcg = memcg;
+>  	owait.wait.flags = 0;
+> @@ -2273,13 +2222,25 @@ bool mem_cgroup_oom_synchronize(void)
+>  	INIT_LIST_HEAD(&owait.wait.task_list);
+>  
+>  	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
+> -	/* Only sleep if we didn't miss any wakeups since OOM */
+> -	if (atomic_read(&memcg->oom_wakeups) == current->memcg_oom.wakeups)
+> +	mem_cgroup_mark_under_oom(memcg);
+> +
+> +	locked = mem_cgroup_oom_trylock(memcg);
+> +
+> +	if (locked)
+> +		mem_cgroup_oom_notify(memcg);
+> +
+> +	if (locked && !memcg->oom_kill_disable) {
+> +		mem_cgroup_unmark_under_oom(memcg);
+> +		finish_wait(&memcg_oom_waitq, &owait.wait);
+> +		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
+> +					 current->memcg_oom.order);
+> +	} else {
+>  		schedule();
+> -	finish_wait(&memcg_oom_waitq, &owait.wait);
+> -out_memcg:
+> -	mem_cgroup_unmark_under_oom(memcg);
+> -	if (current->memcg_oom.oom_locked) {
+> +		mem_cgroup_unmark_under_oom(memcg);
+> +		finish_wait(&memcg_oom_waitq, &owait.wait);
+> +	}
+> +
+> +	if (locked) {
+>  		mem_cgroup_oom_unlock(memcg);
+>  		/*
+>  		 * There is no guarantee that an OOM-lock contender
+> @@ -2288,10 +2249,9 @@ out_memcg:
+>  		 */
+>  		memcg_oom_recover(memcg);
+>  	}
+> +cleanup:
+> +	current->memcg_oom.memcg = NULL;
+>  	css_put(&memcg->css);
+> -	current->memcg_oom.wait_on_memcg = NULL;
+> -out:
+> -	current->memcg_oom.in_memcg_oom = 0;
+>  	return true;
+>  }
+>  
+> @@ -2705,6 +2665,9 @@ static int __mem_cgroup_try_charge(struc
+>  		     || fatal_signal_pending(current)))
+>  		goto bypass;
+>  
+> +	if (unlikely(task_in_memcg_oom(current)))
+> +		goto bypass;
+> +
+>  	/*
+>  	 * We always charge the cgroup the mm_struct belongs to.
+>  	 * The mm_struct's mem_cgroup changes on task migration if the
 
-So the IPI is sufficient for the cross-modifying case, and the sysret
-is sufficient for the self-modifying case. And we also don't need to
-worry about "what happens if we schedule to another CPU, and
-self-modifying becomes cross-modifying", because the scheduling will
-then do the serializing instruction.
+First, apologies that I didn't look at all these changes earlier even 
+though I was cc'd.
 
-So IPI for other CPU's (limited to the mm-mask) and just a system call
-for local CPU should be perfectly fine.
+The memcg oom killer has incurred a serious regression since the 3.12-rc6 
+kernel where this was merged as 4942642080ea ("mm: memcg: handle non-error 
+OOM situations more gracefully").  It cc'd stable@kernel.org although it 
+doesn't appear to have been picked up yet, and I'm hoping that we can 
+avoid having it merged in a stable kernel until we get this fixed.
 
-          Linus
+This patch, specifically the above, allows memcgs to bypass their limits 
+by charging the root memcg in oom conditions.
+
+If I create a memcg, cg1, with memory.limit_in_bytes == 128MB and start a
+memory allocator in it to induce oom, the memcg limit is trivially broken:
+
+membench invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
+membench cpuset=/ mems_allowed=0-3
+CPU: 9 PID: 11388 Comm: membench Not tainted 3.13-rc1
+ ffffc90015ec6000 ffff880671c3dc18 ffffffff8154a1e3 0000000000000007
+ ffff880674c215d0 ffff880671c3dc98 ffffffff81548b45 ffff880671c3dc58
+ ffffffff81151de7 0000000000000001 0000000000000292 ffff880800000000
+Call Trace:
+ [<ffffffff8154a1e3>] dump_stack+0x46/0x58
+ [<ffffffff81548b45>] dump_header+0x7a/0x1bb
+ [<ffffffff81151de7>] ? find_lock_task_mm+0x27/0x70
+ [<ffffffff812e8b76>] ? ___ratelimit+0x96/0x110
+ [<ffffffff811521c4>] oom_kill_process+0x1c4/0x330
+ [<ffffffff81099ee5>] ? has_ns_capability_noaudit+0x15/0x20
+ [<ffffffff811a916a>] mem_cgroup_oom_synchronize+0x50a/0x570
+ [<ffffffff811a8660>] ? __mem_cgroup_try_charge_swapin+0x70/0x70
+ [<ffffffff81152968>] pagefault_out_of_memory+0x18/0x90
+ [<ffffffff81547b86>] mm_fault_error+0xb7/0x15a
+ [<ffffffff81553efb>] __do_page_fault+0x42b/0x500
+ [<ffffffff810c667d>] ? set_next_entity+0xad/0xd0
+ [<ffffffff810c670b>] ? pick_next_task_fair+0x6b/0x170
+ [<ffffffff8154d08e>] ? __schedule+0x38e/0x780
+ [<ffffffff81553fde>] do_page_fault+0xe/0x10
+ [<ffffffff815509e2>] page_fault+0x22/0x30
+Task in /cg1 killed as a result of limit of /cg1
+memory: usage 131072kB, limit 131072kB, failcnt 1053
+memory+swap: usage 0kB, limit 18014398509481983kB, failcnt 0
+kmem: usage 0kB, limit 18014398509481983kB, failcnt 0
+Memory cgroup stats for /cg1: cache:84KB rss:130988KB rss_huge:116736KB mapped_file:72KB writeback:0KB inactive_anon:0KB active_anon:130976KB inactive_file:4KB active_file:0KB unevictable:0KB
+[ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name
+[ 7761]     0  7761     1106      483       5        0             0 bash
+[11388]    99 11388   270773    33031      83        0             0 membench
+Memory cgroup out of memory: Kill process 11388 (membench) score 1010 or sacrifice child
+Killed process 11388 (membench) total-vm:1083092kB, anon-rss:130824kB, file-rss:1300kB
+
+The score of 1010 shown for pid 11388 (membench) should never happen in 
+the oom killer, the maximum value should always be 1000 in any oom 
+context.  This indicates that the process has allocated more memory than 
+is available to the memcg.  The rss value, 33031 pages, shows that it has 
+allocated >129MB of memory in a memcg limited to 128MB.
+
+The entire premise of memcg is to prevent processes attached to it to not 
+be able to allocate more memory than allowed and this trivially breaks 
+that premise in oom conditions.
