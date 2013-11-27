@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab3K0JyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 04:54:06 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:18770 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab3K0JyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 04:54:01 -0500
-X-IronPort-AV: E=Sophos;i="4.93,781,1378828800"; 
-   d="scan'208";a="9137554"
-Message-ID: <529677A2.6040304@cn.fujitsu.com>
-Date: Wed, 27 Nov 2013 17:52:18 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752690Ab3K0Jy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 04:54:27 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58653 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab3K0JyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 04:54:23 -0500
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: linux-kernel@vger.kernel.org, dsahern@gmail.com, jolsa@redhat.com,
-        namhyung@kernel.org, acme@ghostprotocols.net, mingo@redhat.com
-Subject: Re: [PATCH] perf util: Join four conditions in two in perf_evlist__create_maps().
-References: <1385590984-30244-1-git-send-email-yangds.fnst@cn.fujitsu.com> <5295BEDA.5070002@intel.com>
-In-Reply-To: <5295BEDA.5070002@intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/27 17:54:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/27 17:54:03,
-	Serialize complete at 2013/11/27 17:54:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <20131126113250.GE1267@krava.brq.redhat.com>
+References: <1385274025-30282-1-git-send-email-artagnon@gmail.com>
+ <1385274025-30282-2-git-send-email-artagnon@gmail.com> <20131126113250.GE1267@krava.brq.redhat.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Wed, 27 Nov 2013 15:23:41 +0530
+Message-ID: <CALkWK0kTYo=cxD1LHE3Qft5fBupYO4pxpm3BLGOcP-yqf_L6xA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] perf diff: don't compute Delta if he->dummy
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 04:43 AM, Adrian Hunter wrote:
-> On 28/11/13 00:23, Dongsheng Yang wrote:
->> There are four condition branchs in perf_evlist__create_maps, but they
->> only do two kinds of thing. 1st and 4th call cpu_map__new(), and the others
->> call cpu_map__dummy_new(). This patch joins them in two branchs, decreasing
->> the number of branch and removing some duplicated code.
-> That code has changed again.  See:
->
-> 	http://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/core
->
-
-Hi Adrian!
-     Thanx for your reminding. Yes, a more checking is added into the 
-1st branch.
-And I think we still can join them in two conditions.
-
-Do you think this idea is ok to you? If so, I will update my patch base 
-on the latest code.
-
-Yang
->> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
->> ---
->>   tools/perf/util/evlist.c | 8 +++-----
->>   1 file changed, 3 insertions(+), 5 deletions(-)
+Jiri Olsa wrote:
+>> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+>> index 3b67ea2..79e0448 100644
+>> --- a/tools/perf/builtin-diff.c
+>> +++ b/tools/perf/builtin-diff.c
+>> @@ -792,6 +792,9 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
 >>
->> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
->> index bbc746a..2258eb4 100644
->> --- a/tools/perf/util/evlist.c
->> +++ b/tools/perf/util/evlist.c
->> @@ -819,11 +819,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
->>   	if (evlist->threads == NULL)
->>   		return -1;
->>   
->> -	if (target->force_per_cpu)
->> -		evlist->cpus = cpu_map__new(target->cpu_list);
->> -	else if (target__has_task(target))
->> -		evlist->cpus = cpu_map__dummy_new();
->> -	else if (!target__has_cpu(target) && !target->uses_mmap)
->> +	if (!target->force_per_cpu &&
->> +	    (target__has_task(target) ||
->> +	     (!target__has_cpu(target) && !target->uses_mmap)))
->>   		evlist->cpus = cpu_map__dummy_new();
->>   	else
->>   		evlist->cpus = cpu_map__new(target->cpu_list);
->>
+>>       switch (idx) {
+>>       case PERF_HPP_DIFF__DELTA:
+>> +             if (he->dummy)
+>> +                     break;
+>> +
 >
+> the reason I disabled the computation for dummy pairs was
+> that the number (ratio and weighted diff) would not make much
+> sense (to me) without the real pair
+>
+> but within the dummy delta column we actually see the compared
+> file % overheader which is helpfull, even if there's no real pair
+> in the baseline
 
+Wait a minute. Doesn't your comment on [3/5] apply here too?
+__hpp__entry_global() computes and checks `pair' before calling
+hpp__entry_pair(). If he->dummy is set, it means that `he' doesn't
+have any pairs: which means that hpp_entry_pair() wouldn't have been
+called by __hpp_entry_global() in the first place. So aren't the
+he->dummy checks in the RATIO and WEIGHTED_DIFF case redundant?
