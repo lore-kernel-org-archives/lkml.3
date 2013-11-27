@@ -1,140 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab3K0T1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 14:27:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50670 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3K0T1A (ORCPT
+	id S1757594Ab3K0T2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 14:28:50 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:39766 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756631Ab3K0T2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 14:27:00 -0500
-Date: Wed, 27 Nov 2013 11:26:59 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de
-Subject: Re: [PATCH 3/6] GenWQE Utility functions
-Message-ID: <20131127192659.GD28409@kroah.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
- <1383741943-14609-4-git-send-email-haver@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383741943-14609-4-git-send-email-haver@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Nov 2013 14:28:48 -0500
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: bhelgaas@google.com, cl91tp@gmail.com, tianyu.lan@intel.com,
+        khlebnikov@openvz.org, gnomes@lxorguk.ukuu.org.uk,
+        indou.takao@jp.fujitsu.com, jility09@gmail.com, f.otti@gmx.at,
+        ebiederm@xmission.com, mjg59@srcf.ucam.org
+Cc: Khalid Aziz <khalid.aziz@oracle.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        stable@vger.kernel.org
+Subject: [PATCH] PCI: Clear Bus Master bit only on kexec reboot
+Date: Wed, 27 Nov 2013 12:18:28 -0700
+Message-Id: <1385579908-24608-1-git-send-email-khalid.aziz@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 01:45:40PM +0100, Frank Haverkamp wrote:
-> +/**
-> + * init_crc32() - Prepare a lookup table for fast crc32 calculations
-> + *
-> + * Existing kernel functions seem to use a different polynom,
-> + * therefore we could not use them here.
-> + *
-> + * Genwqe's Polynomial = 0x20044009
-> + */
-> +#define CRC32_POLYNOMIAL	0x20044009
-> +static u32 crc32_tab[256];	/* crc32 lookup table */
-> +
-> +void init_crc32(void)
+Add a flag to tell the PCI subsystem that kernel is shutting down
+in prepapration to kexec a kernel. Add code in PCI subsystem to use
+this flag to clear Bus Master bit on PCI devices only in case of
+kexec reboot. This fixes https://bugzilla.kernel.org/show_bug.cgi?id=63861
+and avoids any other issues caused by clearing Bus Master bit on PCI
+devices in normal shutdown path. This patch is based on discussion at
+http://marc.info/?l=linux-pci&m=138425645204355&w=2
 
-That's a _very_ generic function name to now be global in the whole
-kernel.
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+Acked-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/pci/pci-driver.c | 9 ++++++---
+ drivers/pci/pci.h        | 3 +++
+ kernel/kexec.c           | 4 ++++
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
-And why not just add new polynomial functionality to the existing crc32
-in-kernel code instead of rolling your own here?
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 9042fdb..e920195 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -400,10 +400,13 @@ static void pci_device_shutdown(struct device *dev)
+ 	pci_msix_shutdown(pci_dev);
+ 
+ 	/*
+-	 * Turn off Bus Master bit on the device to tell it to not
+-	 * continue to do DMA. Don't touch devices in D3cold or unknown states.
++	 * If this is a kexec reboot, turn off Bus Master bit on the
++	 * device to tell it to not continue to do DMA. Don't touch
++	 * devices in D3cold or unknown states.
++	 * If it is not a kexec reboot, firmware will hit the PCI
++	 * devices with big hammer and stop their DMA any way.
+ 	 */
+-	if (pci_dev->current_state <= PCI_D3hot)
++	if (kexec_in_progress && (pci_dev->current_state <= PCI_D3hot))
+ 		pci_clear_master(pci_dev);
+ }
+ 
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 9c91ecc..7d85733 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -9,6 +9,9 @@
+ extern const unsigned char pcix_bus_speed[];
+ extern const unsigned char pcie_link_speed[];
+ 
++/* flag to track if kexec reboot is in progress */
++extern unsigned long kexec_in_progress;
++
+ /* Functions internal to the PCI core code */
+ 
+ int pci_create_sysfs_dev_files(struct pci_dev *pdev);
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 490afc0..fd2d63e 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -47,6 +47,9 @@ u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
+ size_t vmcoreinfo_size;
+ size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
+ 
++/* Flag to indicate we are going to kexec a new kernel */
++unsigned long kexec_in_progress = 0;
++
+ /* Location of the reserved area for the crash kernel */
+ struct resource crashk_res = {
+ 	.name  = "Crash kernel",
+@@ -1675,6 +1678,7 @@ int kernel_kexec(void)
+ 	} else
+ #endif
+ 	{
++		kexec_in_progress = 1;
+ 		kernel_restart_prepare(NULL);
+ 		printk(KERN_EMERG "Starting new kernel\n");
+ 		machine_shutdown();
+-- 
+1.8.3.2
 
-> +static void genwqe_dump_sgl(struct genwqe_dev *cd, struct sg_entry *sgl,
-> +		    size_t sgl_size)
-> +{
-> +	unsigned int i, j;
-> +	struct pci_dev *pci_dev = cd->pci_dev;
-> +
-> +	for (j = 0, i = 0; i < sgl_size/sizeof(struct sg_entry); i++, j++) {
-> +		if (j == 8) {
-> +			dev_info(&pci_dev->dev, "  --\n");
-> +			j = 0;
-> +		}
-> +		dev_info(&pci_dev->dev, "  %016llx %08x %08x %s\n",
-> +			 be64_to_cpu(sgl[i].target_addr),
-> +			 be32_to_cpu(sgl[i].len),
-> +			 be32_to_cpu(sgl[i].flags),
-> +			 (be32_to_cpu(sgl[i].len) > PAGE_SIZE) ? "C" : "");
-> +
-> +		if (be32_to_cpu(sgl[i].flags) == SG_END_LIST)
-> +			break;
-> +	}
-> +}
-
-That's a lot of kernel log mess, why?
-
-> +/**
-> + * free_user_pages() - Give pinned pages back
-> + *
-> + * Documentation of get_user_pages is in mm/memory.c:
-> + *
-> + * If the page is written to, set_page_dirty (or set_page_dirty_lock,
-> + * as appropriate) must be called after the page is finished with, and
-> + * before put_page is called.
-> + */
-> +static int free_user_pages(struct page **page_list, unsigned int nr_pages,
-> +			   int dirty)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < nr_pages; i++) {
-> +		if (page_list[i] != NULL) {
-> +			if (dirty)
-> +				set_page_dirty_lock(page_list[i]);
-> +			put_page(page_list[i]);
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +/**
-> + * user_vmap() - Map user-space memory to virtual kernel memory
-> + * @cd:         pointer to genwqe device
-> + * @m:          mapping params
-> + * @uaddr:      user virtual address
-> + * @size:       size of memory to be mapped
-> + *
-> + * We need to think about how we could speed this up. Of course it is
-> + * not a good idea to do this over and over again, like we are
-> + * currently doing it. Nevertheless, I am curious where on the path
-> + * the performance is spend. Most probably within the memory
-> + * allocation functions, but maybe also in the DMA mapping code.
-> + *
-> + * Restrictions: The maximum size of the possible mapping currently depends
-> + *               on the amount of memory we can get using kzalloc() for the
-> + *               page_list and pci_alloc_coherent for the sg_list.
-> + *               The sg_list is currently itself not scattered, which could
-> + *               be fixed with some effort. The page_list must be split into
-> + *               PAGE_SIZE chunks too. All that will make the complicated
-> + *               code more complicated.
-> + *
-> + * Return: 0 if success
-> + */
-> +int user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
-> +	      unsigned long size, struct ddcb_requ *req)
-
-Again, _very_ generic global symbol name.  Please audit all of these.
-
-And shouldn't this just be a core mm function?  Why is this in a driver?
-
-> +/**
-> + * user_vunmap() - Undo mapping of user-space memory to virtual kernel memory
-> + * @cd:         pointer to genwqe device
-> + * @m:          mapping params
-> + */
-> +int user_vunmap(struct genwqe_dev *cd, struct dma_mapping *m,
-> +		struct ddcb_requ *req)
-
-Same as above.
-
-thanks,
-
-greg k-h
