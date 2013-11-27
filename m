@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3K0DPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 22:15:17 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55743 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3K0DPM (ORCPT
+	id S1754956Ab3K0DTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 22:19:47 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46899 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751459Ab3K0DTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 22:15:12 -0500
-Message-ID: <52956442.50001@gmail.com>
-Date: Wed, 27 Nov 2013 11:17:22 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 26 Nov 2013 22:19:45 -0500
+X-Sasl-enc: su2MfZQs4TiuCQiH4QHLwcuX3gxNG943usVvwH+aVEx5 1385522381
+Date: Tue, 26 Nov 2013 19:20:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: Re: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-ID: <20131127032028.GA22475@kroah.com>
+References: <20131127130144.8db67b95b9c1a0141ab58a4a@canb.auug.org.au>
 MIME-Version: 1.0
-To: hans.verkuil@cisco.com, m.chehab@samsung.com
-CC: rkuo <rkuo@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-media@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: [PATCH] drivers: staging: media: go7007: go7007-usb.c use pr_*()
- instead of dev_*() before 'go' initialized in go7007_usb_probe()
-References: <528AEFB7.4060301@gmail.com> <20131125011938.GB18921@codeaurora.org> <5292B845.3010404@gmail.com> <5292B8A0.7020409@gmail.com> <5294255E.7040105@gmail.com>
-In-Reply-To: <5294255E.7040105@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127130144.8db67b95b9c1a0141ab58a4a@canb.auug.org.au>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_*() assumes 'go' is already initialized, so need use pr_*() instead
-of before 'go' initialized. Related warning (with allmodconfig under
-hexagon):
+On Wed, Nov 27, 2013 at 01:01:44PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got conflicts in
+> drivers/staging/tidspbridge/pmgr/cmm.c,
+> drivers/staging/tidspbridge/pmgr/dbll.c,
+> drivers/staging/tidspbridge/pmgr/dev.c,
+> drivers/staging/tidspbridge/pmgr/dmm.c and
+> drivers/staging/tidspbridge/pmgr/dspapi.c between commit cb45065428b7
+> ("staging: delete tidspbridge driver") from the staging.current tree and
+> various commits from the staging tree.
+> 
+> I just removed the files and can carry the fix as necessary (no action
+> is required).
 
-    CC [M]  drivers/staging/media/go7007/go7007-usb.o
-  drivers/staging/media/go7007/go7007-usb.c: In function 'go7007_usb_probe':
-  drivers/staging/media/go7007/go7007-usb.c:1060:2: warning: 'go' may be used uninitialized in this function [-Wuninitialized]
+Thanks, that is the correct thing.
 
-Also remove useless code after 'return' statement.
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/staging/media/go7007/go7007-usb.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
-index 58684da..30310e9 100644
---- a/drivers/staging/media/go7007/go7007-usb.c
-+++ b/drivers/staging/media/go7007/go7007-usb.c
-@@ -1057,7 +1057,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
- 	char *name;
- 	int video_pipe, i, v_urb_len;
- 
--	dev_dbg(go->dev, "probing new GO7007 USB board\n");
-+	pr_devel("probing new GO7007 USB board\n");
- 
- 	switch (id->driver_info) {
- 	case GO7007_BOARDID_MATRIX_II:
-@@ -1097,13 +1097,10 @@ static int go7007_usb_probe(struct usb_interface *intf,
- 		board = &board_px_tv402u;
- 		break;
- 	case GO7007_BOARDID_LIFEVIEW_LR192:
--		dev_err(go->dev, "The Lifeview TV Walker Ultra is not supported. Sorry!\n");
-+		pr_err("The Lifeview TV Walker Ultra is not supported. Sorry!\n");
- 		return -ENODEV;
--		name = "Lifeview TV Walker Ultra";
--		board = &board_lifeview_lr192;
--		break;
- 	case GO7007_BOARDID_SENSORAY_2250:
--		dev_info(go->dev, "Sensoray 2250 found\n");
-+		pr_info("Sensoray 2250 found\n");
- 		name = "Sensoray 2250/2251";
- 		board = &board_sensoray_2250;
- 		break;
-@@ -1112,7 +1109,7 @@ static int go7007_usb_probe(struct usb_interface *intf,
- 		board = &board_ads_usbav_709;
- 		break;
- 	default:
--		dev_err(go->dev, "unknown board ID %d!\n",
-+		pr_err("unknown board ID %d!\n",
- 				(unsigned int)id->driver_info);
- 		return -ENODEV;
- 	}
--- 
-1.7.7.6
+greg k-h
