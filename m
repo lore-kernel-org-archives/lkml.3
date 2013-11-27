@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab3K0BI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:08:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39686 "EHLO
+	id S1758874Ab3K0A75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758879Ab3K0A77 (ORCPT
+	with ESMTP id S1758750Ab3K0A7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:59:59 -0500
+	Tue, 26 Nov 2013 19:59:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 092/116] powerpc/eeh: Enable PCI_COMMAND_MASTER for PCI bridges
-Date: Tue, 26 Nov 2013 16:57:45 -0800
-Message-Id: <20131127005743.266792420@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.12 072/116] nfsd: make sure to balance get/put_write_access
+Date: Tue, 26 Nov 2013 16:57:25 -0800
+Message-Id: <20131127005741.909427605@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,41 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit bf898ec5cbd33be11147743bee27b66b10cb2f85 upstream.
+commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
 
-On PHB3, we will fail to fetch IODA tables without PCI_COMMAND_MASTER
-on PCI bridges. According to one experiment I had, the MSIx interrupts
-didn't raise from the adapter without the bit applied to all upstream
-PCI bridges including root port of the adapter. The patch forces to
-have that bit enabled accordingly.
+Use a straight goto error label style in nfsd_setattr to make sure
+we always do the put_write_access call after we got it earlier.
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Note that the we have been failing to do that in the case
+nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
+6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
+setattr".
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/eeh.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/nfsd/vfs.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
---- a/arch/powerpc/kernel/eeh.c
-+++ b/arch/powerpc/kernel/eeh.c
-@@ -687,6 +687,15 @@ void eeh_save_bars(struct eeh_dev *edev)
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -444,27 +444,28 @@ nfsd_setattr(struct svc_rqst *rqstp, str
  
- 	for (i = 0; i < 16; i++)
- 		eeh_ops->read_config(dn, i * 4, 4, &edev->config_space[i]);
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
+-	err = nfserr_notsync;
+-	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
+-		host_err = nfsd_break_lease(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-		fh_lock(fhp);
+-
+-		host_err = notify_change(dentry, iap);
+-		err = nfserrno(host_err);
+-		fh_unlock(fhp);
++	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
++		err = nfserr_notsync;
++		goto out_put_write_access;
+ 	}
 +
-+	/*
-+	 * For PCI bridges including root port, we need enable bus
-+	 * master explicitly. Otherwise, it can't fetch IODA table
-+	 * entries correctly. So we cache the bit in advance so that
-+	 * we can restore it after reset, either PHB range or PE range.
-+	 */
-+	if (edev->mode & EEH_DEV_BRIDGE)
-+		edev->config_space[1] |= PCI_COMMAND_MASTER;
++	host_err = nfsd_break_lease(inode);
++	if (host_err)
++		goto out_put_write_access_nfserror;
++
++	fh_lock(fhp);
++	host_err = notify_change(dentry, iap);
++	fh_unlock(fhp);
++
++out_put_write_access_nfserror:
++	err = nfserrno(host_err);
++out_put_write_access:
+ 	if (size_change)
+ 		put_write_access(inode);
+ 	if (!err)
+ 		commit_metadata(fhp);
+ out:
+ 	return err;
+-
+-out_nfserr:
+-	err = nfserrno(host_err);
+-	goto out;
  }
  
- /**
+ #if defined(CONFIG_NFSD_V2_ACL) || \
 
 
