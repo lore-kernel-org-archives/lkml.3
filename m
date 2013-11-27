@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758975Ab3K0C63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:58:29 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:61443 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab3K0Cxl (ORCPT
+	id S1759040Ab3K0C6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:58:44 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38506 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758617Ab3K0C62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:53:41 -0500
-From: David Long <dave.long@linaro.org>
-To: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Rabin Vincent <rabin@rab.in>, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 02/15] ARM: move shared uprobe/kprobe definitions into new include file
-Date: Tue, 26 Nov 2013 21:53:21 -0500
-Message-Id: <1385520814-10663-3-git-send-email-dave.long@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1385520814-10663-1-git-send-email-dave.long@linaro.org>
-References: <1385520814-10663-1-git-send-email-dave.long@linaro.org>
+	Tue, 26 Nov 2013 21:58:28 -0500
+Message-ID: <1385521101.29941.1.camel@phoenix>
+Subject: [PATCH RESEND] regulator: lp3971: Convert to devm_regulator_register
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 27 Nov 2013 10:58:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David A. Long" <dave.long@linaro.org>
+Both num_regulators and **rdev are no longer required after this conversion,
+thus remove them from struct lp3971.
 
-Separate the kprobe-only definitions from the definitions needed by
-both kprobes and uprobes.
-
-Signed-off-by: David A. Long <dave.long@linaro.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- arch/arm/include/asm/kprobes.h | 15 +--------------
- arch/arm/include/asm/probes.h  | 18 ++++++++++++++++++
- 2 files changed, 19 insertions(+), 14 deletions(-)
- create mode 100644 arch/arm/include/asm/probes.h
+Hi Mark,
+This patch was sent on https://lkml.org/lkml/2013/11/13/34 .
+Although you replied applied, it still not in your tree.
+So here is a resend.
 
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index f82ec22..30fc11b 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -28,21 +28,8 @@
- #define kretprobe_blacklist_size	0
+Axel
+ drivers/regulator/lp3971.c | 43 ++++++-------------------------------------
+ 1 file changed, 6 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index 947c05f..3b1102b 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -25,8 +25,6 @@ struct lp3971 {
+ 	struct device *dev;
+ 	struct mutex io_lock;
+ 	struct i2c_client *i2c;
+-	int num_regulators;
+-	struct regulator_dev **rdev;
+ };
  
- typedef u32 kprobe_opcode_t;
--
- struct kprobe;
--typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
--typedef unsigned long (kprobe_check_cc)(unsigned long);
--typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
--typedef void (kprobe_insn_fn_t)(void);
--
--/* Architecture specific copy of original instruction. */
--struct arch_specific_insn {
--	kprobe_opcode_t			*insn;
--	kprobe_insn_handler_t		*insn_handler;
--	kprobe_check_cc			*insn_check_cc;
--	kprobe_insn_singlestep_t	*insn_singlestep;
--	kprobe_insn_fn_t		*insn_fn;
--};
-+#include <asm/probes.h>
+ static u8 lp3971_reg_read(struct lp3971 *lp3971, u8 reg);
+@@ -383,42 +381,27 @@ static int setup_regulators(struct lp3971 *lp3971,
+ {
+ 	int i, err;
  
- struct prev_kprobe {
- 	struct kprobe *kp;
-diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-new file mode 100644
-index 0000000..21da148
---- /dev/null
-+++ b/arch/arm/include/asm/probes.h
-@@ -0,0 +1,18 @@
-+#ifndef _ASM_PROBES_H
-+#define _ASM_PROBES_H
-+
-+typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
-+typedef unsigned long (kprobe_check_cc)(unsigned long);
-+typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
-+typedef void (kprobe_insn_fn_t)(void);
-+
-+/* Architecture specific copy of original instruction. */
-+struct arch_specific_insn {
-+	kprobe_opcode_t			*insn;
-+	kprobe_insn_handler_t		*insn_handler;
-+	kprobe_check_cc			*insn_check_cc;
-+	kprobe_insn_singlestep_t	*insn_singlestep;
-+	kprobe_insn_fn_t		*insn_fn;
-+};
-+
-+#endif
+-	lp3971->num_regulators = pdata->num_regulators;
+-	lp3971->rdev = kcalloc(pdata->num_regulators,
+-				sizeof(struct regulator_dev *), GFP_KERNEL);
+-	if (!lp3971->rdev) {
+-		err = -ENOMEM;
+-		goto err_nomem;
+-	}
+-
+ 	/* Instantiate the regulators */
+ 	for (i = 0; i < pdata->num_regulators; i++) {
+ 		struct regulator_config config = { };
+ 		struct lp3971_regulator_subdev *reg = &pdata->regulators[i];
++		struct regulator_dev *rdev;
+ 
+ 		config.dev = lp3971->dev;
+ 		config.init_data = reg->initdata;
+ 		config.driver_data = lp3971;
+ 
+-		lp3971->rdev[i] = regulator_register(&regulators[reg->id],
+-						     &config);
+-		if (IS_ERR(lp3971->rdev[i])) {
+-			err = PTR_ERR(lp3971->rdev[i]);
++		rdev = devm_regulator_register(lp3971->dev,
++					       &regulators[reg->id], &config);
++		if (IS_ERR(rdev)) {
++			err = PTR_ERR(rdev);
+ 			dev_err(lp3971->dev, "regulator init failed: %d\n",
+ 				err);
+-			goto error;
++			return err;
+ 		}
+ 	}
+ 
+ 	return 0;
+-
+-error:
+-	while (--i >= 0)
+-		regulator_unregister(lp3971->rdev[i]);
+-	kfree(lp3971->rdev);
+-	lp3971->rdev = NULL;
+-err_nomem:
+-	return err;
+ }
+ 
+ static int lp3971_i2c_probe(struct i2c_client *i2c,
+@@ -460,19 +443,6 @@ static int lp3971_i2c_probe(struct i2c_client *i2c,
+ 	return 0;
+ }
+ 
+-static int lp3971_i2c_remove(struct i2c_client *i2c)
+-{
+-	struct lp3971 *lp3971 = i2c_get_clientdata(i2c);
+-	int i;
+-
+-	for (i = 0; i < lp3971->num_regulators; i++)
+-		regulator_unregister(lp3971->rdev[i]);
+-
+-	kfree(lp3971->rdev);
+-
+-	return 0;
+-}
+-
+ static const struct i2c_device_id lp3971_i2c_id[] = {
+ 	{ "lp3971", 0 },
+ 	{ }
+@@ -485,7 +455,6 @@ static struct i2c_driver lp3971_i2c_driver = {
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe    = lp3971_i2c_probe,
+-	.remove   = lp3971_i2c_remove,
+ 	.id_table = lp3971_i2c_id,
+ };
+ 
 -- 
 1.8.1.2
+
+
 
