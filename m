@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761Ab3K0Cab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:30:31 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:3917 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758068Ab3K0Ca0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:30:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 26 Nov 2013 18:24:07 -0800
-Message-ID: <5295593C.309@nvidia.com>
-Date: Wed, 27 Nov 2013 11:30:20 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/6] net: rfkill: gpio: convert to descriptor-based
- GPIO interface
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com> <1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1758866Ab3K0Cb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:31:26 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27961 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754146Ab3K0CbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Nov 2013 21:31:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,779,1378882800"; 
+   d="scan'208";a="442761177"
+Subject: [PATCH] WIFI: handle a neglected case in nl80211_new_interface()
+From: Chao Bi <chao.bi@intel.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Nov 2013 11:00:54 +0800
+Message-ID: <1385521254.23222.8.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2013 07:05 PM, Mika Westerberg wrote:
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->
-> Convert to the safer gpiod_* family of API functions.
+In nl80211_new_interface(), it calls rdev_add_virtual_intf() to create
+a new interface, however, it only checks whether returned value is err
+code, but doesn't check if returned value is NULL. The returned value
+could be NULL, for example, memory allocation failed when creating a
+new interface.
 
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+when get a NULL returned value,  nl80211_new_interface() is expected to
+return but it actually runs down to access the NULL pointer, this could
+lead to a panic.
+
+Signed-off-by: Chao Bi <chao.bi@intel.com>
+---
+ net/wireless/nl80211.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index a1eb210..27feeaf 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -2512,7 +2512,7 @@ static int nl80211_new_interface(struct sk_buff *skb, struct genl_info *info)
+ 	wdev = rdev_add_virtual_intf(rdev,
+ 				nla_data(info->attrs[NL80211_ATTR_IFNAME]),
+ 				type, err ? NULL : &flags, &params);
+-	if (IS_ERR(wdev)) {
++	if (!wdev || IS_ERR(wdev)) {
+ 		nlmsg_free(msg);
+ 		return PTR_ERR(wdev);
+ 	}
+-- 
+1.7.9.5
+
+
+
