@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759444Ab3K0BRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 20:17:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39554 "EHLO
+	id S1759428Ab3K0BRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:17:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab3K0A72 (ORCPT
+	with ESMTP id S932487Ab3K0A72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Nov 2013 19:59:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukasz Flis <l.flis@cyfronet.pl>, Mike Snitzer <snitzer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.12 084/116] block: properly stack underlying max_segment_size to DM device
-Date: Tue, 26 Nov 2013 16:57:37 -0800
-Message-Id: <20131127005742.723099686@linuxfoundation.org>
+        Wolfgang Denk <wd@denx.de>, Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH 3.12 085/116] powerpc/52xx: fix build breakage for MPC5200 LPBFIFO module
+Date: Tue, 26 Nov 2013 16:57:38 -0800
+Message-Id: <20131127005742.791014031@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -27,41 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit d82ae52e68892338068e7559a0c0657193341ce4 upstream.
+commit 2bf75084f6d9f9a91ba6e30a501ff070d8a1acf6 upstream.
 
-Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
-(65536) even if the underlying device(s) have a larger value -- this is
-due to blk_stack_limits() using min_not_zero() when stacking the
-max_segment_size limit.
+The MPC5200 LPBFIFO driver requires the bestcomm module to be
+enabled, otherwise building will fail. Fix it.
 
-1073741824
-
-before patch:
-65536
-
-after patch:
-1073741824
-
-Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Reported-by: Wolfgang Denk <wd@denx.de>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-settings.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/52xx/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -144,6 +144,7 @@ void blk_set_stacking_limits(struct queu
- 	lim->discard_zeroes_data = 1;
- 	lim->max_segments = USHRT_MAX;
- 	lim->max_hw_sectors = UINT_MAX;
-+	lim->max_segment_size = UINT_MAX;
- 	lim->max_sectors = UINT_MAX;
- 	lim->max_write_same_sectors = UINT_MAX;
- }
+--- a/arch/powerpc/platforms/52xx/Kconfig
++++ b/arch/powerpc/platforms/52xx/Kconfig
+@@ -57,5 +57,5 @@ config PPC_MPC5200_BUGFIX
+ 
+ config PPC_MPC5200_LPBFIFO
+ 	tristate "MPC5200 LocalPlus bus FIFO driver"
+-	depends on PPC_MPC52xx
++	depends on PPC_MPC52xx && PPC_BESTCOMM
+ 	select PPC_BESTCOMM_GEN_BD
 
 
