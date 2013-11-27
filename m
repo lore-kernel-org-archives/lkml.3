@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3K0Oem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:34:42 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:47129 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab3K0Oek (ORCPT
+	id S1755362Ab3K0OgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:36:17 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:61731 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3K0OgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:34:40 -0500
-Date: Wed, 27 Nov 2013 15:34:35 +0100
+	Wed, 27 Nov 2013 09:36:15 -0500
+Date: Wed, 27 Nov 2013 15:36:11 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Juri Lelli <juri.lelli@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
-Message-ID: <20131127143435.GD25043@gmail.com>
-References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
- <1383831828-15501-9-git-send-email-juri.lelli@gmail.com>
- <20131120163318.10253e43@gandalf.local.home>
- <5295F711.5010708@gmail.com>
- <20131127091647.4e16ce53@gandalf.local.home>
- <20131127142649.GC13532@twins.programming.kicks-ass.net>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de,
+        Linus Torvalds <torvalds@linux-foundation.org>, arjan@linux.intel.com,
+        linux@roeck-us.net, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86: override __compiletime_object_size()
+Message-ID: <20131127143611.GE25043@gmail.com>
+References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
+ <20131026103109.GC14949@gmail.com>
+ <526F914A02000078000FD806@nat28.tlf.novell.com>
+ <20131029095408.GB25306@gmail.com>
+ <526F971F02000078000FD841@nat28.tlf.novell.com>
+ <20131029101257.GA25953@gmail.com>
+ <529385AF0200007800106C84@nat28.tlf.novell.com>
+ <20131127140332.GC24403@gmail.com>
+ <52960DD202000078001079D8@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131127142649.GC13532@twins.programming.kicks-ass.net>
+In-Reply-To: <52960DD202000078001079D8@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+* Jan Beulich <JBeulich@suse.com> wrote:
 
-> On Wed, Nov 27, 2013 at 09:16:47AM -0500, Steven Rostedt wrote:
-> > On Wed, 27 Nov 2013 14:43:45 +0100
-> > Juri Lelli <juri.lelli@gmail.com> wrote:
-> > diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-> > > index f76f8d6..ad94604 100644
-> > > --- a/kernel/trace/trace_selftest.c
-> > > +++ b/kernel/trace/trace_selftest.c
-> > > @@ -1023,16 +1023,16 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
-> > >  static int trace_wakeup_test_thread(void *data)
-> > >  {
-> > >  	/* Make this a -deadline thread */
-> > > -	struct sched_param2 paramx = {
-> > > +	static const struct sched_param2 param = {
-> > >  		.sched_priority = 0,
-> > > +		.sched_flags = 0,
-> > >  		.sched_runtime = 100000ULL,
-> > >  		.sched_deadline = 10000000ULL,
-> > >  		.sched_period = 10000000ULL
-> > > -		.sched_flags = 0
-> > 
-> > Assigning structures like this, you don't need to set the zero fields.
-> > all fields not explicitly stated, are set to zero.
+> >>> On 27.11.13 at 15:03, Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> Only because its static. Otherwise unnamed members have indeterminate
-> value after initialization.
+> > * Jan Beulich <JBeulich@suse.com> wrote:
+> > 
+> >> As discussed in the context of commits 3df7b41a ("x86: Unify
+> >> copy_from_user() size checking") and 7a3d9b0f ("x86: Unify
+> >> copy_to_user() and add size checking to it"), we want to leverage
+> >> __builtin_object_size() also on newer gcc versions, but with other
+> >> architectures still using another model of copy_*_user() verification
+> >> we can't replace the global definition. Do it in the (only) header
+> >> needing the construct for now.
+> >> 
+> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> >> Cc: Guenter Roeck <linux@roeck-us.net>
+> >> ---
+> >>  arch/x86/include/asm/uaccess.h |    6 ++++++
+> >>  1 file changed, 6 insertions(+)
+> >> 
+> >> --- 3.13-rc1/arch/x86/include/asm/uaccess.h
+> >> +++ 3.13-rc1-x86-compiletime-object-size/arch/x86/include/asm/uaccess.h
+> >> @@ -584,6 +584,12 @@ __copy_from_user_overflow(int size, unsi
+> >>  
+> >>  #endif
+> >>  
+> >> +/* linux/compiler-gcc4.h restricts this to gcc < 4.6, which doesn't suit us. */
+> >> +#if defined(__GNUC__) && GCC_VERSION >= 40100
+> >> +# undef __compiletime_object_size
+> >> +# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+> >> +#endif
+> >> +
+> > 
+> > Would be nice to have a more verbose changelog that explains what 
+> > benefits this brings us.
+> 
+> That makes no sense to me - the benefits of this construct should 
+> have been explained with its introduction; the change here just 
+> makes it being used under wider range of compilers (and the code 
+> comment already says exactly that).
 
-I think for 'struct' C will initialize them to zero, even if they are 
-not mentioned and even if they are on the stack.
+Yes indeed - I should have read the referenced changelog...
 
-It will only be indeterminate when it's not initialized at all.
+Thanks, will apply it as-is, if there are no objections from others.
 
 Thanks,
 
