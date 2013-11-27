@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3K0OLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:11:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47818 "EHLO
+	id S1756972Ab3K0OLL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:11:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47787 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab3K0OLq (ORCPT
+	with ESMTP id S1751289Ab3K0OLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:11:46 -0500
-Date: Wed, 27 Nov 2013 06:10:59 -0800
-From: tip-bot for Dario Faggioli <tipbot@zytor.com>
-Message-ID: <tip-e6c390f2dfd04c165ce45b0032f73fba85b1f282@git.kernel.org>
+	Wed, 27 Nov 2013 09:11:01 -0500
+Date: Wed, 27 Nov 2013 06:10:10 -0800
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-bb8cbbfee68518796df4050868e5b0f5ad078f9f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, pjt@google.com, raistlin@linux.it,
-        tglx@linutronix.de, juri.lelli@gmail.com
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        David.Laight@ACULAB.COM, geert@linux-m68k.org,
+        akpm@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
+        oleg@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, peterz@infradead.org, raistlin@linux.it,
-        tglx@linutronix.de, juri.lelli@gmail.com
-In-Reply-To: <1383831828-15501-2-git-send-email-juri.lelli@gmail.com>
-References: <1383831828-15501-2-git-send-email-juri.lelli@gmail.com>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        David.Laight@ACULAB.COM, geert@linux-m68k.org,
+        akpm@linux-foundation.org, tj@kernel.org, oleg@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <20131113143612.GA10540@redhat.com>
+References: <20131113143612.GA10540@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Add sched_class->task_dead() method
-Git-Commit-ID: e6c390f2dfd04c165ce45b0032f73fba85b1f282
+Subject: [tip:sched/core] tasks/fork: Remove unnecessary child->exit_state
+Git-Commit-ID: bb8cbbfee68518796df4050868e5b0f5ad078f9f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,82 +33,57 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 27 Nov 2013 06:11:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 27 Nov 2013 06:10:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e6c390f2dfd04c165ce45b0032f73fba85b1f282
-Gitweb:     http://git.kernel.org/tip/e6c390f2dfd04c165ce45b0032f73fba85b1f282
-Author:     Dario Faggioli <raistlin@linux.it>
-AuthorDate: Thu, 7 Nov 2013 14:43:35 +0100
+Commit-ID:  bb8cbbfee68518796df4050868e5b0f5ad078f9f
+Gitweb:     http://git.kernel.org/tip/bb8cbbfee68518796df4050868e5b0f5ad078f9f
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Wed, 13 Nov 2013 15:36:12 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 27 Nov 2013 14:08:50 +0100
+CommitDate: Wed, 27 Nov 2013 13:50:50 +0100
 
-sched: Add sched_class->task_dead() method
+tasks/fork: Remove unnecessary child->exit_state
 
-Add a new function to the scheduling class interface. It is called
-at the end of a context switch, if the prev task is in TASK_DEAD state.
+A zombie task obviously can't fork(), remove the unnecessary
+initialization of child->exit_state. It is zero anyway after
+dup_task_struct().
 
-It will be useful for the scheduling classes that want to be notified
-when one of their tasks dies, e.g. to perform some cleanup actions,
-such as SCHED_DEADLINE.
+Note: copy_process() is huge and it has a lot of chaotic
+initializations, probably it makes sense to move them into the
+new helper called by dup_task_struct().
 
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-Cc: bruce.ashfield@windriver.com
-Cc: claudio@evidence.eu.com
-Cc: darren@dvhart.com
-Cc: dhaval.giani@gmail.com
-Cc: fchecconi@gmail.com
-Cc: fweisbec@gmail.com
-Cc: harald.gustafsson@ericsson.com
-Cc: hgu1972@gmail.com
-Cc: insop.song@gmail.com
-Cc: jkacur@redhat.com
-Cc: johan.eker@ericsson.com
-Cc: liming.wang@windriver.com
-Cc: luca.abeni@unitn.it
-Cc: michael@amarulasolutions.com
-Cc: nicola.manica@disi.unitn.it
-Cc: oleg@redhat.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: p.faure@akatech.ch
-Cc: rostedt@goodmis.org
-Cc: tommaso.cucinotta@sssup.it
-Cc: vincent.guittot@linaro.org
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: David Laight <David.Laight@ACULAB.COM>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1383831828-15501-2-git-send-email-juri.lelli@gmail.com
+Link: http://lkml.kernel.org/r/20131113143612.GA10540@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c  | 3 +++
- kernel/sched/sched.h | 1 +
- 2 files changed, 4 insertions(+)
+ kernel/fork.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 19db8f3..25b3779 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2003,6 +2003,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	if (unlikely(prev_state == TASK_DEAD)) {
- 		task_numa_free(prev);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 728d5be..b308082 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1402,13 +1402,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		p->tgid = p->pid;
+ 	}
  
-+		if (prev->sched_class->task_dead)
-+			prev->sched_class->task_dead(prev);
-+
- 		/*
- 		 * Remove function-return probe instances associated with this
- 		 * task and put them back on the free list.
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 88c85b2..b3b4a49 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1023,6 +1023,7 @@ struct sched_class {
- 	void (*set_curr_task) (struct rq *rq);
- 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
- 	void (*task_fork) (struct task_struct *p);
-+	void (*task_dead) (struct task_struct *p);
+-	p->pdeath_signal = 0;
+-	p->exit_state = 0;
+-
+ 	p->nr_dirtied = 0;
+ 	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
+ 	p->dirty_paused_when = 0;
  
- 	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
- 	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
++	p->pdeath_signal = 0;
+ 	INIT_LIST_HEAD(&p->thread_group);
+ 	p->task_works = NULL;
+ 
