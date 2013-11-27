@@ -1,116 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3K0AsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:48:07 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:50244 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab3K0AsB (ORCPT
+	id S1755292Ab3K0ArY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:47:24 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52125 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536Ab3K0AqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:48:01 -0500
-Date: Tue, 26 Nov 2013 16:47:56 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, vmscan: abort futile reclaim if we've been oom
- killed
-In-Reply-To: <20131121164019.GK3556@cmpxchg.org>
-Message-ID: <alpine.DEB.2.02.1311261634040.21003@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1311121801200.18803@chino.kir.corp.google.com> <20131113152412.GH707@cmpxchg.org> <alpine.DEB.2.02.1311131400300.23211@chino.kir.corp.google.com> <20131114000043.GK707@cmpxchg.org> <alpine.DEB.2.02.1311131639010.6735@chino.kir.corp.google.com>
- <20131118164107.GC3556@cmpxchg.org> <alpine.DEB.2.02.1311181712080.4292@chino.kir.corp.google.com> <20131120160712.GF3556@cmpxchg.org> <alpine.DEB.2.02.1311201803000.30862@chino.kir.corp.google.com> <20131121164019.GK3556@cmpxchg.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 26 Nov 2013 19:46:21 -0500
+From: Kent Overstreet <kmo@daterainc.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org
+Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 25/25] block: Kill bio_pair_split()
+Date: Tue, 26 Nov 2013 16:45:28 -0800
+Message-Id: <1385513128-5035-25-git-send-email-kmo@daterainc.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1385513128-5035-1-git-send-email-kmo@daterainc.com>
+References: <20131127004422.GB21305@kmo>
+ <1385513128-5035-1-git-send-email-kmo@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013, Johannes Weiner wrote:
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+ fs/bio-integrity.c  | 45 ---------------------------
+ fs/bio.c            | 90 -----------------------------------------------------
+ include/linux/bio.h | 30 ------------------
+ 3 files changed, 165 deletions(-)
 
-> All I'm trying to do is find the broader root cause for the problem
-> you are experiencing and find a solution that will leave us with
-> maintainable code.  It does not matter how few instructions your fix
-> adds, it changes the outcome of the algorithm and makes every
-> developer trying to grasp the complexity of page reclaim think about
-> yet another special condition.
-> 
-> The more specific the code is, the harder it will be to understand in
-> the future.  Yes, it's a one-liner, but we've had death by a thousand
-> cuts before, many times.  A few cycles ago, kswapd was blowing up left
-> and right simply because it was trying to meet too many specific
-> objectives from facilitating order-0 allocators, maintaining zone
-> health, enabling compaction for higher order allocation, writing back
-> dirty pages.  Ultimately, it just got stuck in endless loops because
-> of conflicting conditionals.  We've had similar problems in the scan
-> count calculation etc where all the checks and special cases left us
-> with code that was impossible to reason about.  There really is a
-> history of "low overhead one-liner fixes" eating us alive in the VM.
-> 
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 9d547d2..80d972d 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -581,51 +581,6 @@ void bio_integrity_trim(struct bio *bio, unsigned int offset,
+ EXPORT_SYMBOL(bio_integrity_trim);
+ 
+ /**
+- * bio_integrity_split - Split integrity metadata
+- * @bio:	Protected bio
+- * @bp:		Resulting bio_pair
+- * @sectors:	Offset
+- *
+- * Description: Splits an integrity page into a bio_pair.
+- */
+-void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+-{
+-	struct blk_integrity *bi;
+-	struct bio_integrity_payload *bip = bio->bi_integrity;
+-	unsigned int nr_sectors;
+-
+-	if (bio_integrity(bio) == 0)
+-		return;
+-
+-	bi = bdev_get_integrity(bio->bi_bdev);
+-	BUG_ON(bi == NULL);
+-	BUG_ON(bip->bip_vcnt != 1);
+-
+-	nr_sectors = bio_integrity_hw_sectors(bi, sectors);
+-
+-	bp->bio1.bi_integrity = &bp->bip1;
+-	bp->bio2.bi_integrity = &bp->bip2;
+-
+-	bp->iv1 = bip->bip_vec[bip->bip_iter.bi_idx];
+-	bp->iv2 = bip->bip_vec[bip->bip_iter.bi_idx];
+-
+-	bp->bip1.bip_vec = &bp->iv1;
+-	bp->bip2.bip_vec = &bp->iv2;
+-
+-	bp->iv1.bv_len = sectors * bi->tuple_size;
+-	bp->iv2.bv_offset += sectors * bi->tuple_size;
+-	bp->iv2.bv_len -= sectors * bi->tuple_size;
+-
+-	bp->bip1.bip_iter.bi_sector = bio->bi_integrity->bip_iter.bi_sector;
+-	bp->bip2.bip_iter.bi_sector =
+-		bio->bi_integrity->bip_iter.bi_sector + nr_sectors;
+-
+-	bp->bip1.bip_vcnt = bp->bip2.bip_vcnt = 1;
+-	bp->bip1.bip_iter.bi_idx = bp->bip2.bip_iter.bi_idx = 0;
+-}
+-EXPORT_SYMBOL(bio_integrity_split);
+-
+-/**
+  * bio_integrity_clone - Callback for cloning bios with integrity metadata
+  * @bio:	New bio
+  * @bio_src:	Original bio
+diff --git a/fs/bio.c b/fs/bio.c
+index 7b062be..75c49a3 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -38,8 +38,6 @@
+  */
+ #define BIO_INLINE_VECS		4
+ 
+-static mempool_t *bio_split_pool __read_mostly;
+-
+ /*
+  * if you change this list, also change bvec_alloc or things will
+  * break badly! cannot be bigger than what you can fit into an
+@@ -1829,89 +1827,6 @@ struct bio *bio_split(struct bio *bio, int sectors,
+ }
+ EXPORT_SYMBOL(bio_split);
+ 
+-void bio_pair_release(struct bio_pair *bp)
+-{
+-	if (atomic_dec_and_test(&bp->cnt)) {
+-		struct bio *master = bp->bio1.bi_private;
+-
+-		bio_endio(master, bp->error);
+-		mempool_free(bp, bp->bio2.bi_private);
+-	}
+-}
+-EXPORT_SYMBOL(bio_pair_release);
+-
+-static void bio_pair_end_1(struct bio *bi, int err)
+-{
+-	struct bio_pair *bp = container_of(bi, struct bio_pair, bio1);
+-
+-	if (err)
+-		bp->error = err;
+-
+-	bio_pair_release(bp);
+-}
+-
+-static void bio_pair_end_2(struct bio *bi, int err)
+-{
+-	struct bio_pair *bp = container_of(bi, struct bio_pair, bio2);
+-
+-	if (err)
+-		bp->error = err;
+-
+-	bio_pair_release(bp);
+-}
+-
+-/*
+- * split a bio - only worry about a bio with a single page in its iovec
+- */
+-struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
+-{
+-	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
+-
+-	if (!bp)
+-		return bp;
+-
+-	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
+-				bi->bi_iter.bi_sector + first_sectors);
+-
+-	BUG_ON(bio_multiple_segments(bi));
+-	atomic_set(&bp->cnt, 3);
+-	bp->error = 0;
+-	bp->bio1 = *bi;
+-	bp->bio2 = *bi;
+-	bp->bio2.bi_iter.bi_sector += first_sectors;
+-	bp->bio2.bi_iter.bi_size -= first_sectors << 9;
+-	bp->bio1.bi_iter.bi_size = first_sectors << 9;
+-
+-	if (bi->bi_vcnt != 0) {
+-		bp->bv1 = bio_iovec(bi);
+-		bp->bv2 = bio_iovec(bi);
+-
+-		if (bio_is_rw(bi)) {
+-			bp->bv2.bv_offset += first_sectors << 9;
+-			bp->bv2.bv_len -= first_sectors << 9;
+-			bp->bv1.bv_len = first_sectors << 9;
+-		}
+-
+-		bp->bio1.bi_io_vec = &bp->bv1;
+-		bp->bio2.bi_io_vec = &bp->bv2;
+-
+-		bp->bio1.bi_max_vecs = 1;
+-		bp->bio2.bi_max_vecs = 1;
+-	}
+-
+-	bp->bio1.bi_end_io = bio_pair_end_1;
+-	bp->bio2.bi_end_io = bio_pair_end_2;
+-
+-	bp->bio1.bi_private = bi;
+-	bp->bio2.bi_private = bio_split_pool;
+-
+-	if (bio_integrity(bi))
+-		bio_integrity_split(bi, bp, first_sectors);
+-
+-	return bp;
+-}
+-EXPORT_SYMBOL(bio_pair_split);
+-
+ /**
+  * bio_trim - trim a bio
+  * @bio:	bio to trim
+@@ -2113,11 +2028,6 @@ static int __init init_bio(void)
+ 	if (bioset_integrity_create(fs_bio_set, BIO_POOL_SIZE))
+ 		panic("bio: can't create integrity pool\n");
+ 
+-	bio_split_pool = mempool_create_kmalloc_pool(BIO_SPLIT_ENTRIES,
+-						     sizeof(struct bio_pair));
+-	if (!bio_split_pool)
+-		panic("bio: can't create split pool\n");
+-
+ 	return 0;
+ }
+ subsys_initcall(init_bio);
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 19e31b2..7065452 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -297,30 +297,7 @@ struct bio_integrity_payload {
+ };
+ #endif /* CONFIG_BLK_DEV_INTEGRITY */
+ 
+-/*
+- * A bio_pair is used when we need to split a bio.
+- * This can only happen for a bio that refers to just one
+- * page of data, and in the unusual situation when the
+- * page crosses a chunk/device boundary
+- *
+- * The address of the master bio is stored in bio1.bi_private
+- * The address of the pool the pair was allocated from is stored
+- *   in bio2.bi_private
+- */
+-struct bio_pair {
+-	struct bio			bio1, bio2;
+-	struct bio_vec			bv1, bv2;
+-#if defined(CONFIG_BLK_DEV_INTEGRITY)
+-	struct bio_integrity_payload	bip1, bip2;
+-	struct bio_vec			iv1, iv2;
+-#endif
+-	atomic_t			cnt;
+-	int				error;
+-};
+-extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
+-extern void bio_pair_release(struct bio_pair *dbio);
+ extern void bio_trim(struct bio *bio, int offset, int size);
+-
+ extern struct bio *bio_split(struct bio *bio, int sectors,
+ 			     gfp_t gfp, struct bio_set *bs);
+ 
+@@ -677,7 +654,6 @@ extern int bio_integrity_prep(struct bio *);
+ extern void bio_integrity_endio(struct bio *, int);
+ extern void bio_integrity_advance(struct bio *, unsigned int);
+ extern void bio_integrity_trim(struct bio *, unsigned int, unsigned int);
+-extern void bio_integrity_split(struct bio *, struct bio_pair *, int);
+ extern int bio_integrity_clone(struct bio *, struct bio *, gfp_t);
+ extern int bioset_integrity_create(struct bio_set *, int);
+ extern void bioset_integrity_free(struct bio_set *);
+@@ -721,12 +697,6 @@ static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+ 	return 0;
+ }
+ 
+-static inline void bio_integrity_split(struct bio *bio, struct bio_pair *bp,
+-				       int sectors)
+-{
+-	return;
+-}
+-
+ static inline void bio_integrity_advance(struct bio *bio,
+ 					 unsigned int bytes_done)
+ {
+-- 
+1.8.4.4
 
-Your objection is that the added code is obscure and will require kernel 
-hackers to think about why it's there?  I could certainly add a comment:
-
-	/*
-	 * The oom killer only kills processes when reclaim has already
-	 * failed for its allocation context, continuously trying won't
-	 * help.
-	 */
-
-to the patch? 
-
-> The solution was always to take a step back and integrate all
-> requirements properly.  Not only did this fix the problems, the code
-> ended up being much more robust and easier to understand and modify as
-> well.
-> 
-> If shortening the direct reclaim cycle is an adequate solution to your
-> problem, it would be much preferable.  Because
-> 
->   "checking at a reasonable interval if the work I'm doing is still
->    necessary"
-> 
-> is a much more approachable, generic, and intuitive concept than
-> 
->   "the OOM killer has gone off, direct reclaim is futile, I should
->    exit quickly to release memory so that not more tasks get caught
->    doing direct reclaim".
-> 
-> and the fix would benefit a much wider audience.
-> 
-
-I agree with your point that obscure random fixes does obfuscate the VM in 
-many different ways and I'd like to support you in anyway that I can to 
-make sure that my fix doesn't do that for anybody in the future, the 
-comment being added may be one way of doing that.
-
-I disagree with changing the "reasonable interval" to determine if reclaim 
-is still necessary because many parallel reclaimers will indicate a higher 
-demand for free memory and it prevents short-circuiting direct reclaim, 
-returning to the page allocator, and finding that the memory you've 
-reclaimed has been stolen by another allocator.
-
-That race to allocate the reclaimed memory will always exist if checking 
-zone watermarks from direct reclaim to determine whether we should 
-terminate or not as part of your suggested, the alternative would be to 
-actually do get_page_from_freelist() and actually allocate on every 
-iteration.  For the vast majority of reclaimers, I think this would 
-terminate prematurely when we haven't hit the SWAP_CLUSTER_MAX threshold 
-and since the removal of lumpy reclaim and the reliance on synchronous 
-memory compaction following one of these oom events to defragment memory, 
-I would be tenative to implement such a solution.
-
-> Lastly, as far as I know, you are the only reporter that noticed an
-> issue with this loooooong-standing behavior, and you don't even run
-> upstream kernels.  There really is no excuse to put up with a quick &
-> dirty fix.
-> 
-
-I certainly do run upstream kernels and I would agree that I may be one of 
-the only reporters of such an issue because Google probably hits more out 
-of memory conditions to enforce memory isolation than anybody else and 
-stalls like this are more noticible.
-
-I would certainly add the comment if you feel it's necessary, though, just 
-let me know.
