@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3K0Q3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 11:29:48 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50322 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab3K0Q3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 11:29:45 -0500
-Date: Wed, 27 Nov 2013 16:29:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131127162922.GE14725@sirena.org.uk>
-References: <1385521101.29941.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3qTVFk/EjXyDmsv5"
-Content-Disposition: inline
-In-Reply-To: <1385521101.29941.1.camel@phoenix>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND] regulator: lp3971: Convert to
- devm_regulator_register
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757375Ab3K0Qd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 11:33:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56344 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756830Ab3K0QdZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 11:33:25 -0500
+Date: Wed, 27 Nov 2013 11:33:21 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Juri Lelli <juri.lelli@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com
+Subject: Re: [PATCH 08/14] sched: add latency tracing for -deadline tasks.
+Message-ID: <20131127113321.67f34ee6@gandalf.local.home>
+In-Reply-To: <20131127161308.GA26918@gmail.com>
+References: <20131120163318.10253e43@gandalf.local.home>
+	<5295F711.5010708@gmail.com>
+	<20131127091647.4e16ce53@gandalf.local.home>
+	<20131127142649.GC13532@twins.programming.kicks-ass.net>
+	<20131127143435.GD25043@gmail.com>
+	<20131127145837.GE16796@laptop.programming.kicks-ass.net>
+	<20131127153519.GA26095@gmail.com>
+	<20131127154015.GG789@laptop.programming.kicks-ass.net>
+	<20131127154600.GC26095@gmail.com>
+	<20131127105616.6672624c@gandalf.local.home>
+	<20131127161308.GA26918@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 27 Nov 2013 17:13:08 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
 
---3qTVFk/EjXyDmsv5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> 
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Wed, 27 Nov 2013 16:46:00 +0100
+> > Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > 
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Wed, Nov 27, 2013 at 04:35:19PM +0100, Ingo Molnar wrote:
+> > > > > So why does GCC then behave like this:
+> > > > 
+> > > > I think because its a much saner behaviour; also it might still be the
+> > > > spec actually says this, its a somewhat opaque text.
+> > > > 
+> > > > Anyway, yes GCC seems to behave as we 'expect' it to; I just can't find
+> > > > the language spec actually guaranteeing this.
+> > > 
+> > > So from C99 standard §6.7.8 (Initialization)/21:
+> > > 
+> > >     "If there are fewer initializers in a brace-enclosed list than 
+> > >   there are elements or members of an aggregate, or fewer characters 
+> > >   in a string literal used to initialize an array of known size than 
+> > >   there are elements in the array, the remainder of the aggregate 
+> > >   shall be initialized implicitly the same as objects that have static 
+> > >   storage duration."
+> > > 
+> > > static initialization == zeroing in this case.
+> > > 
+> > 
+> > The confusion here is that the above looks to be talking about arrays.
+> > But it really doesn't specify structures.
+> 
+> It talks about neither 'arrays' nor 'structures', it talks about 
+> 'aggregates' - which is defined as _both_: 'structures and arrays'.
 
-On Wed, Nov 27, 2013 at 10:58:21AM +0800, Axel Lin wrote:
+Yeah, I misread it. I was reading the array section for awhile, and got
+confused.
 
-> This patch was sent on https://lkml.org/lkml/2013/11/13/34 .
-> Although you replied applied, it still not in your tree.
-> So here is a resend.
 
-It's there.
+> 
+> That's what compiler legalese brings you ;-)
 
---3qTVFk/EjXyDmsv5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yep.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> 
+> > But searching the internet, it looks as though most people believe 
+> > it applies to structures, and any compiler that does otherwise will 
+> > most likely break applications.
+> > 
+> > That is, this looks to be one of the gray areas that the compiler 
+> > writers just happen to do what's most sane. And they probably assume 
+> > it's talking about structures as well, hence the lack of warnings.
+> 
+> I don't think it's grey, I think it's pretty well specified.
+> 
+> > It gets confusing, as the doc also shows:
+> > 
+> > struct { int a[3], b; } w[] = { { 1 }, 2 };
+> 
+> I don't think this is valid syntax, I think this needs one more set of 
+> braces:
+> 
+>  struct { int a[3], b; } w[] = { { { 1 }, 2 } };
+> 
+> > Then points out that w.a[0] is 1 and w.b[0] is 2, and all other 
+> > elements are zero.
+> 
+> If by 'w.a[0]' you mean 'w[0].a[0]', and if by 'w.b[0]' you mean 
+> 'w[0].b' then yes, this comes from the definition and it's what I'd 
+> call 'obvious' initialization behavior.
+> 
+> What makes it confusing to you?
 
-iQIcBAEBAgAGBQJSlh3fAAoJELSic+t+oim9k2kP/jymQIhcMWcSrduAdFTUnmj2
-1mZPGEykAQ3UFJKHYnsc0nlGsc1RAl5BPowCtaswJ501ADZrwW4Wnu41sNdHWdzw
-jQrukiaImGZMN1AwRe99GQdKQxByC9m3+QFP3hGCIYLSFoad33Dhf7WfcW1dancg
-4F5pS/s5gfxgs0KFvp70kbJOsC41toqrWL4IQ+TNquPJxOrTyVg5fQELLlCGEq1g
-hkBdCnCuQKGAHnvTk7gOb6NSQTz2TPnCIbFIbaSdBVcnFXFJitVa7DvMyturmfvh
-JHjCCRCglFiz4JV6hEHg+amyHi0RE79n/7Igb97Q8SkqnUK5sQda7D1E5GGbaP28
-+oRWkrRy9y3kbHsCNYGtbGKcfMqig/MItpyTOmbqJeo63I2lgxMAtk3/XWSoogRi
-0BkSmtzaeY+44RI62iY/16mwpLvzcu61YNXIh/xygn6NUkHUCLvG76pSHM6+C7f0
-Q0TYdBiYGuljTcFF7TlqEt+RBszA4qsPRLRL3aJ2go0S65Ag0azlAl1SpOHOcOce
-YlcIHq1WCL7/wNhntTZVhu7Kgbf5QqzMhRZ5WzX823QvkQ8D6Rrsn8gFkIl+Q+8e
-/+s1UWxUOYHplMh1a6SQJJptPuVWT+rWAQScW/aUK4+Xr4sArQecJskITT5qlNcA
-ArOdpEpRjTdjOtcexDyO
-=X9yK
------END PGP SIGNATURE-----
+Well, because it's mixing arrays and structures, and I was on the
+misconception that the paragraph was talking about just arrays.
 
---3qTVFk/EjXyDmsv5--
+Can I just have my turkey now?
+
+-- Steve
