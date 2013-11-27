@@ -1,446 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3K0OdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 09:33:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46270 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab3K0OdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 09:33:17 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <nsekhar@ti.com>
-CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
-        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <computersforpeace@gmail.com>,
-        <dwmw2@infradead.org>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v2] ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
-Date: Wed, 27 Nov 2013 16:31:34 +0200
-Message-ID: <1385562694-24618-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754594Ab3K0OeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 09:34:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48056 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab3K0OeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 09:34:02 -0500
+Date: Wed, 27 Nov 2013 06:33:23 -0800
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-65661f96d3b32f4b28fef26d21be81d7e173b965@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, maria.n.dimakopoulou@gmail.com,
+        ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        maria.n.dimakopoulou@gmail.com, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1384275531-10892-5-git-send-email-eranian@google.com>
+References: <1384275531-10892-5-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Add RAPL hrtimer support
+Git-Commit-ID: 65661f96d3b32f4b28fef26d21be81d7e173b965
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 27 Nov 2013 06:33:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem that the set timings code contains the call of Davinci
-platform function davinci_aemif_setup_timing() which is not
-accessible if kernel is built for another platform like Keystone.
+Commit-ID:  65661f96d3b32f4b28fef26d21be81d7e173b965
+Gitweb:     http://git.kernel.org/tip/65661f96d3b32f4b28fef26d21be81d7e173b965
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 12 Nov 2013 17:58:51 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 27 Nov 2013 15:31:23 +0100
 
-The Keysone platform is going to use TI AEMIF driver.
-If TI AEMIF is used we don't need to set timings and bus width.
-It is done by AEMIF driver.
+perf/x86: Add RAPL hrtimer support
 
-To get rid of davinci-nand driver dependency on aemif platform code
-we moved aemif code to davinci platform.
+The RAPL PMU counters do not interrupt on overflow.
+Therefore, the kernel needs to poll the counters
+to avoid missing an overflow. This patch adds
+the hrtimer code to do this.
 
-The platform AEMIF code (aemif.c) has to be removed once Davinci
-will be converted to DT and use ti-aemif.c driver.
+The timer interval is calculated at boot time
+based on the power unit used by the HW.
 
-The long device name "davinci_ntosd2_nandflash_device" was renamed
-to "ntosd2_nandflash" as requested by Sekhar Nori, because after
-adding changes the line is so broken that its almost unreadable.
+There is one hrtimer per-cpu to handle the case
+of multiple simultaneous use across cores on
+the same package + hotplug CPU.
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Thanks to Maria Dimakopoulou for her contributions
+to this patch especially on the math aspects.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+[ Applied 32-bit build fix. ]
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: zheng.z.yan@intel.com
+Cc: bp@alien8.de
+Cc: maria.n.dimakopoulou@gmail.com
+Link: http://lkml.kernel.org/r/1384275531-10892-5-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-v2..v1:
-- enabled AEMIF clock
-- removed EXPORT_SYMBOL(davinci_aemif_setup)
-- renamed ugly name davinci_ntosd2_nandflash_device
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 74 ++++++++++++++++++++++++++++-
+ 1 file changed, 72 insertions(+), 2 deletions(-)
 
-CC:
-Sekhar Nori <nsekhar@ti.com>
-
- arch/arm/mach-davinci/aemif.c                   |   89 ++++++++++++++++++++++-
- arch/arm/mach-davinci/board-da830-evm.c         |    3 +
- arch/arm/mach-davinci/board-da850-evm.c         |    3 +
- arch/arm/mach-davinci/board-dm355-evm.c         |    5 ++
- arch/arm/mach-davinci/board-dm355-leopard.c     |    5 ++
- arch/arm/mach-davinci/board-dm365-evm.c         |    4 +
- arch/arm/mach-davinci/board-dm644x-evm.c        |    5 ++
- arch/arm/mach-davinci/board-dm646x-evm.c        |    3 +
- arch/arm/mach-davinci/board-mityomapl138.c      |    3 +
- arch/arm/mach-davinci/board-neuros-osd2.c       |   13 +++-
- arch/arm/mach-davinci/devices-tnetv107x.c       |    3 +
- drivers/mtd/nand/davinci_nand.c                 |   23 ------
- include/linux/platform_data/mtd-davinci-aemif.h |    5 +-
- 13 files changed, 133 insertions(+), 31 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
-index f091a90..64dccfc 100644
---- a/arch/arm/mach-davinci/aemif.c
-+++ b/arch/arm/mach-davinci/aemif.c
-@@ -16,6 +16,7 @@
- #include <linux/time.h>
- 
- #include <linux/platform_data/mtd-davinci-aemif.h>
-+#include <linux/platform_data/mtd-davinci.h>
- 
- /* Timing value configuration */
- 
-@@ -43,6 +44,17 @@
- 				WSTROBE(WSTROBE_MAX) | \
- 				WSETUP(WSETUP_MAX))
- 
-+static inline unsigned int davinci_aemif_readl(void __iomem *base, int offset)
-+{
-+	return readl_relaxed(base + offset);
-+}
-+
-+static inline void davinci_aemif_writel(void __iomem *base,
-+					int offset, unsigned long value)
-+{
-+	writel_relaxed(value, base + offset);
-+}
-+
- /*
-  * aemif_calc_rate - calculate timing data.
-  * @wanted: The cycle time needed in nanoseconds.
-@@ -86,7 +98,7 @@ static int aemif_calc_rate(int wanted, unsigned long clk, int max)
-  *
-  * Returns 0 on success, else negative errno.
-  */
--int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
-+static int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 					void __iomem *base, unsigned cs)
- {
- 	unsigned set, val;
-@@ -130,4 +142,77 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 
- 	return 0;
- }
--EXPORT_SYMBOL(davinci_aemif_setup_timing);
-+
-+/**
-+ * davinci_aemif_setup - setup AEMIF interface by davinci_nand_pdata
-+ * @pdev - link to platform device to setup settings for
-+ *
-+ * This function does not use any locking while programming the AEMIF
-+ * because it is expected that there is only one user of a given
-+ * chip-select.
-+ *
-+ * Returns 0 on success, else negative errno.
-+ */
-+int davinci_aemif_setup(struct platform_device *pdev)
-+{
-+	struct davinci_nand_pdata *pdata = dev_get_platdata(&pdev->dev);
-+	uint32_t val;
-+	struct resource	*res;
-+	void __iomem *base;
-+	struct clk* clk;
-+	int ret = 0;
-+
-+	clk = clk_get(&pdev->dev, "aemif");
-+	if (IS_ERR(clk)) {
-+		ret = PTR_ERR(clk);
-+		dev_dbg(&pdev->dev, "unable to get AEMIF clock, err %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = clk_prepare_enable(clk);
-+	if (ret < 0) {
-+		dev_dbg(&pdev->dev, "unable to enable AEMIF clock, err %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res) {
-+		dev_err(&pdev->dev, "cannot get IORESOURCE_MEM\n");
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	base = ioremap(res->start, resource_size(res));
-+	if (!base) {
-+		dev_err(&pdev->dev, "ioremap failed for resource %pR\n", res);
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	/*
-+	 * Setup Async configuration register in case we did not boot
-+	 * from NAND and so bootloader did not bother to set it up.
-+	 */
-+	val = davinci_aemif_readl(base, A1CR_OFFSET + pdev->id * 4);
-+	/*
-+	 * Extended Wait is not valid and Select Strobe mode is not
-+	 * used
-+	 */
-+	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
-+	if (pdata->options & NAND_BUSWIDTH_16)
-+		val |= 0x1;
-+
-+	davinci_aemif_writel(base, A1CR_OFFSET + pdev->id * 4, val);
-+
-+	if (pdata->timing)
-+		ret = davinci_aemif_setup_timing(pdata->timing, base, pdev->id);
-+
-+	if (ret < 0)
-+		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
-+
-+	iounmap(base);
-+err:
-+	clk_disable_unprepare(clk);
-+	return ret;
-+}
-diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
-index d1f45af..5623131 100644
---- a/arch/arm/mach-davinci/board-da830-evm.c
-+++ b/arch/arm/mach-davinci/board-da830-evm.c
-@@ -419,6 +419,9 @@ static inline void da830_evm_init_nand(int mux_mode)
- 	if (ret)
- 		pr_warning("da830_evm_init: NAND device not registered.\n");
- 
-+	if (davinci_aemif_setup(&da830_evm_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	gpio_direction_output(mux_mode, 1);
- }
- #else
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index e0af0ec..234c5bb 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -358,6 +358,9 @@ static inline void da850_evm_setup_nor_nand(void)
- 
- 		platform_add_devices(da850_evm_devices,
- 					ARRAY_SIZE(da850_evm_devices));
-+
-+		if (davinci_aemif_setup(&da850_evm_nandflash_device))
-+			pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- 	}
- }
- 
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index ecdc7d4..f35095f 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -27,6 +27,7 @@
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -395,6 +396,10 @@ static __init void dm355_evm_init(void)
- 
- 	platform_add_devices(davinci_evm_devices,
- 			     ARRAY_SIZE(davinci_evm_devices));
-+
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	evm_init_i2c();
- 	davinci_serial_init(dm355_serial_device);
- 
-diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
-index 43bacbf..7f45c5a 100644
---- a/arch/arm/mach-davinci/board-dm355-leopard.c
-+++ b/arch/arm/mach-davinci/board-dm355-leopard.c
-@@ -23,6 +23,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -253,6 +254,10 @@ static __init void dm355_leopard_init(void)
- 
- 	platform_add_devices(davinci_leopard_devices,
- 			     ARRAY_SIZE(davinci_leopard_devices));
-+
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	leopard_init_i2c();
- 	davinci_serial_init(dm355_serial_device);
- 
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index e08a868..88c01c3 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -39,6 +39,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/keyscan-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <media/ths7303.h>
- #include <media/tvp514x.h>
-@@ -665,6 +666,9 @@ fail:
- 
- 		platform_add_devices(dm365_evm_nand_devices,
- 				ARRAY_SIZE(dm365_evm_nand_devices));
-+
-+		if (davinci_aemif_setup(&davinci_nand_device))
-+			pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- 	} else {
- 		/* no OneNAND support yet */
- 	}
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index 987605b7..5602957 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -778,6 +778,11 @@ static __init void davinci_evm_init(void)
- 		/* only one device will be jumpered and detected */
- 		if (HAS_NAND) {
- 			platform_device_register(&davinci_evm_nandflash_device);
-+
-+			if (davinci_aemif_setup(&davinci_evm_nandflash_device))
-+				pr_warn("%s: Cannot configure AEMIF.\n",
-+					__func__);
-+
- 			evm_leds[7].default_trigger = "nand-disk";
- 			if (HAS_NOR)
- 				pr_warning("WARNING: both NAND and NOR flash "
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 13d0801..ae129bc 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -805,6 +805,9 @@ static __init void evm_init(void)
- 
- 	platform_device_register(&davinci_nand_device);
- 
-+	if (davinci_aemif_setup(&davinci_nand_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	dm646x_init_edma(dm646x_edma_rsv);
- 
- 	if (HAS_ATA)
-diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
-index 7aa105b..98a66ff 100644
---- a/arch/arm/mach-davinci/board-mityomapl138.c
-+++ b/arch/arm/mach-davinci/board-mityomapl138.c
-@@ -432,6 +432,9 @@ static void __init mityomapl138_setup_nand(void)
- {
- 	platform_add_devices(mityomapl138_devices,
- 				 ARRAY_SIZE(mityomapl138_devices));
-+
-+	if (davinci_aemif_setup(&mityomapl138_nandflash_device))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
- }
- 
- static const short mityomap_mii_pins[] = {
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index bb680af..829ee07 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -31,6 +31,7 @@
- #include <linux/platform_data/mmc-davinci.h>
- #include <linux/platform_data/mtd-davinci.h>
- #include <linux/platform_data/usb-davinci.h>
-+#include <linux/platform_data/mtd-davinci-aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -105,7 +106,7 @@ static struct resource davinci_ntosd2_nandflash_resource[] = {
- 	},
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index cfcd386..bf8e4a7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -96,6 +96,8 @@ struct rapl_pmu {
+ 	int		 n_active; /* number of active events */
+ 	struct list_head active_list;
+ 	struct pmu	 *pmu; /* pointer to rapl_pmu_class */
++	ktime_t		 timer_interval; /* in ktime_t unit */
++	struct hrtimer   hrtimer;
  };
  
--static struct platform_device davinci_ntosd2_nandflash_device = {
-+static struct platform_device ntosd2_nandflash = {
- 	.name		= "davinci_nand",
- 	.id		= 0,
- 	.dev		= {
-@@ -192,9 +193,13 @@ static __init void davinci_ntosd2_init(void)
- 		davinci_cfg_reg(DM644X_ATAEN_DISABLE);
- 
- 		/* only one device will be jumpered and detected */
--		if (HAS_NAND)
--			platform_device_register(
--					&davinci_ntosd2_nandflash_device);
-+		if (HAS_NAND) {
-+			platform_device_register(&ntosd2_nandflash);
-+
-+			if (davinci_aemif_setup(&ntosd2_nandflash))
-+				pr_warn("%s: Cannot configure AEMIF.\n",
-+					__func__);
-+		}
- 	}
- 
- 	platform_add_devices(davinci_ntosd2_devices,
-diff --git a/arch/arm/mach-davinci/devices-tnetv107x.c b/arch/arm/mach-davinci/devices-tnetv107x.c
-index 01d8686..de4862e 100644
---- a/arch/arm/mach-davinci/devices-tnetv107x.c
-+++ b/arch/arm/mach-davinci/devices-tnetv107x.c
-@@ -324,6 +324,9 @@ static int __init nand_init(int chipsel, struct davinci_nand_pdata *data)
- 		return ret;
- 	}
- 
-+	if (davinci_aemif_setup(pdev))
-+		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
-+
- 	return platform_device_register(pdev);
+ static struct pmu rapl_pmu_class;
+@@ -158,6 +160,48 @@ again:
+ 	return new_raw_count;
  }
  
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index b77a01e..6cc506c 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -734,28 +734,6 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
- 		goto err_clk_enable;
- 	}
- 
--	/*
--	 * Setup Async configuration register in case we did not boot from
--	 * NAND and so bootloader did not bother to set it up.
--	 */
--	val = davinci_nand_readl(info, A1CR_OFFSET + info->core_chipsel * 4);
--
--	/* Extended Wait is not valid and Select Strobe mode is not used */
--	val &= ~(ACR_ASIZE_MASK | ACR_EW_MASK | ACR_SS_MASK);
--	if (info->chip.options & NAND_BUSWIDTH_16)
--		val |= 0x1;
--
--	davinci_nand_writel(info, A1CR_OFFSET + info->core_chipsel * 4, val);
--
--	ret = 0;
--	if (info->timing)
--		ret = davinci_aemif_setup_timing(info->timing, info->base,
--							info->core_chipsel);
--	if (ret < 0) {
--		dev_dbg(&pdev->dev, "NAND timing values setup fail\n");
--		goto err_timing;
--	}
--
- 	spin_lock_irq(&davinci_nand_lock);
- 
- 	/* put CSxNAND into NAND mode */
-@@ -844,7 +822,6 @@ syndrome_done:
- 	return 0;
- 
- err_scan:
--err_timing:
- 	clk_disable_unprepare(info->clk);
- 
- err_clk_enable:
-diff --git a/include/linux/platform_data/mtd-davinci-aemif.h b/include/linux/platform_data/mtd-davinci-aemif.h
-index 05b2934..97948ac 100644
---- a/include/linux/platform_data/mtd-davinci-aemif.h
-+++ b/include/linux/platform_data/mtd-davinci-aemif.h
-@@ -10,6 +10,8 @@
- #ifndef _MACH_DAVINCI_AEMIF_H
- #define _MACH_DAVINCI_AEMIF_H
- 
-+#include <linux/platform_device.h>
++static void rapl_start_hrtimer(struct rapl_pmu *pmu)
++{
++	__hrtimer_start_range_ns(&pmu->hrtimer,
++			pmu->timer_interval, 0,
++			HRTIMER_MODE_REL_PINNED, 0);
++}
 +
- #define NRCSR_OFFSET		0x00
- #define AWCCR_OFFSET		0x04
- #define A1CR_OFFSET		0x10
-@@ -31,6 +33,5 @@ struct davinci_aemif_timing {
- 	u8	ta;
- };
++static void rapl_stop_hrtimer(struct rapl_pmu *pmu)
++{
++	hrtimer_cancel(&pmu->hrtimer);
++}
++
++static enum hrtimer_restart rapl_hrtimer_handle(struct hrtimer *hrtimer)
++{
++	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
++	struct perf_event *event;
++	unsigned long flags;
++
++	if (!pmu->n_active)
++		return HRTIMER_NORESTART;
++
++	spin_lock_irqsave(&pmu->lock, flags);
++
++	list_for_each_entry(event, &pmu->active_list, active_entry) {
++		rapl_event_update(event);
++	}
++
++	spin_unlock_irqrestore(&pmu->lock, flags);
++
++	hrtimer_forward_now(hrtimer, pmu->timer_interval);
++
++	return HRTIMER_RESTART;
++}
++
++static void rapl_hrtimer_init(struct rapl_pmu *pmu)
++{
++	struct hrtimer *hr = &pmu->hrtimer;
++
++	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hr->function = rapl_hrtimer_handle;
++}
++
+ static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
+ 				   struct perf_event *event)
+ {
+@@ -171,6 +215,8 @@ static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
+ 	local64_set(&event->hw.prev_count, rapl_read_counter(event));
  
--int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
--					void __iomem *base, unsigned cs);
-+int davinci_aemif_setup(struct platform_device *pdev);
- #endif
--- 
-1.7.9.5
-
+ 	pmu->n_active++;
++	if (pmu->n_active == 1)
++		rapl_start_hrtimer(pmu);
+ }
+ 
+ static void rapl_pmu_event_start(struct perf_event *event, int mode)
+@@ -195,6 +241,8 @@ static void rapl_pmu_event_stop(struct perf_event *event, int mode)
+ 	if (!(hwc->state & PERF_HES_STOPPED)) {
+ 		WARN_ON_ONCE(pmu->n_active <= 0);
+ 		pmu->n_active--;
++		if (pmu->n_active == 0)
++			rapl_stop_hrtimer(pmu);
+ 
+ 		list_del(&event->active_entry);
+ 
+@@ -423,6 +471,9 @@ static void rapl_cpu_exit(int cpu)
+ 	 */
+ 	if (target >= 0)
+ 		perf_pmu_migrate_context(pmu->pmu, cpu, target);
++
++	/* cancel overflow polling timer for CPU */
++	rapl_stop_hrtimer(pmu);
+ }
+ 
+ static void rapl_cpu_init(int cpu)
+@@ -442,6 +493,7 @@ static int rapl_cpu_prepare(int cpu)
+ {
+ 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+ 	int phys_id = topology_physical_package_id(cpu);
++	u64 ms;
+ 
+ 	if (pmu)
+ 		return 0;
+@@ -466,6 +518,22 @@ static int rapl_cpu_prepare(int cpu)
+ 	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
+ 	pmu->pmu = &rapl_pmu_class;
+ 
++	/*
++	 * use reference of 200W for scaling the timeout
++	 * to avoid missing counter overflows.
++	 * 200W = 200 Joules/sec
++	 * divide interval by 2 to avoid lockstep (2 * 100)
++	 * if hw unit is 32, then we use 2 ms 1/200/2
++	 */
++	if (pmu->hw_unit < 32)
++		ms = (1000 / (2 * 100)) * (1ULL << (32 - pmu->hw_unit - 1));
++	else
++		ms = 2;
++
++	pmu->timer_interval = ms_to_ktime(ms);
++
++	rapl_hrtimer_init(pmu);
++
+ 	/* set RAPL pmu for this cpu for now */
+ 	per_cpu(rapl_pmu, cpu) = pmu;
+ 	per_cpu(rapl_pmu_to_free, cpu) = NULL;
+@@ -580,9 +648,11 @@ static int __init rapl_pmu_init(void)
+ 
+ 	pr_info("RAPL PMU detected, hw unit 2^-%d Joules,"
+ 		" API unit is 2^-32 Joules,"
+-		" %d fixed counters\n",
++		" %d fixed counters"
++		" %llu ms ovfl timer\n",
+ 		pmu->hw_unit,
+-		hweight32(rapl_cntr_mask));
++		hweight32(rapl_cntr_mask),
++		ktime_to_ms(pmu->timer_interval));
+ 
+ 	put_online_cpus();
+ 
