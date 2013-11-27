@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab3K0Pfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 10:35:45 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:44570 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab3K0Pfj (ORCPT
+	id S1756852Ab3K0Pff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 10:35:35 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:64187 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756767Ab3K0Pf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 10:35:39 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/9] dt: Handle passed/built-in DT selection in early_init_dt_scan()
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rob Herring <robherring2@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAMuHMdWYkaLD2h=oet1w+wB+2wePmnpWWMawrBh7o=KAJym5pg@mail.gmail.com>
-References: <5283A000.8090007@gmail.com> < 1384859554-27268-1-git-send-email-geert@linux-m68k.org> <20131121122148. 1B43DC40A2C@trevor.secretlab.ca> < CAMuHMdXfsB_Ewz9sUPZaAjFaQGTGeqMiD8mJ0tCoH1uFLYGoxw@mail.gmail.com> < CAL_JsqJVteJuaD0PRMHSR9cVcMJTSNj4wXtYiftG=-pYSR9vsQ@mail.gmail.com> < CAMuHMdWYkaLD2h=oet1w+wB+2wePmnpWWMawrBh7o=KAJym5pg@mail.gmail.com>
-Date: Wed, 27 Nov 2013 15:35:35 +0000
-Message-Id: <20131127153535.EEA87C404EC@trevor.secretlab.ca>
+	Wed, 27 Nov 2013 10:35:28 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 2/5] PM / Runtime: Implement the pm_generic_runtime functions for CONFIG_PM
+Date: Wed, 27 Nov 2013 16:34:57 +0100
+Message-Id: <1385566500-7666-3-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
+References: <1385566500-7666-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013 18:42:58 +0100, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Nov 21, 2013 at 6:38 PM, Rob Herring <robherring2@gmail.com> wrote:
-> > I really don't like saying one arch can have built-in dtb and another
-> > one can't. Either we allow it or we don't. If this is a bad feature,
-> > then why did we let multiple arches implement it.
-> 
-> ... and did we put it in asm-generic, so now _every_ arch has __dtb_start.
-> 
-> Gr{oetje,eeting}s,
+The pm_generic_runtime_suspend|resume functions were implemented within
+CONFIG_PM_RUNTIME.
 
-Some platforms need it because they either don't have bootloader
-support, they couldn't change the boot interface, or they don't have a
-bootwrapper they can put it in. I'd rather have it in common code than a
-different implementation on each architecture.
+As we also may use runtime PM callbacks during system suspend, to put
+devices into low power state, we need to move the implementation of
+pm_generic_runtime_suspend|resume to CONFIG_PM.
 
-For the copy flag, it would be fine to put an "if (IS_CONFIGURED())"
-test around the copy block so that it never happens on some
-architectures.
+This change prevents the platform bus from by-passing driver's runtime
+PM callbacks while only CONFIG_PM_SLEEP and not CONFIG_PM_RUNTIME is
+being used.
 
-g.
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ drivers/base/power/generic_ops.c |    4 ++--
+ include/linux/pm_runtime.h       |   12 ++++++++----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
+index 8e78ad1..a4c6cb0 100644
+--- a/drivers/base/power/generic_ops.c
++++ b/drivers/base/power/generic_ops.c
+@@ -10,7 +10,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/export.h>
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ /**
+  * pm_generic_runtime_suspend - Generic runtime suspend callback for subsystems.
+  * @dev: Device to suspend.
+@@ -48,7 +48,7 @@ int pm_generic_runtime_resume(struct device *dev)
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(pm_generic_runtime_resume);
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ #ifdef CONFIG_PM_SLEEP
+ /**
+diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+index 6fa7cea..16c9a62 100644
+--- a/include/linux/pm_runtime.h
++++ b/include/linux/pm_runtime.h
+@@ -23,6 +23,14 @@
+ 					    usage_count */
+ #define RPM_AUTO		0x08	/* Use autosuspend_delay */
+ 
++#ifdef CONFIG_PM
++extern int pm_generic_runtime_suspend(struct device *dev);
++extern int pm_generic_runtime_resume(struct device *dev);
++#else
++static inline int pm_generic_runtime_suspend(struct device *dev) { return 0; }
++static inline int pm_generic_runtime_resume(struct device *dev) { return 0; }
++#endif
++
+ #ifdef CONFIG_PM_RUNTIME
+ 
+ extern struct workqueue_struct *pm_wq;
+@@ -37,8 +45,6 @@ extern void pm_runtime_enable(struct device *dev);
+ extern void __pm_runtime_disable(struct device *dev, bool check_resume);
+ extern void pm_runtime_allow(struct device *dev);
+ extern void pm_runtime_forbid(struct device *dev);
+-extern int pm_generic_runtime_suspend(struct device *dev);
+-extern int pm_generic_runtime_resume(struct device *dev);
+ extern void pm_runtime_no_callbacks(struct device *dev);
+ extern void pm_runtime_irq_safe(struct device *dev);
+ extern void __pm_runtime_use_autosuspend(struct device *dev, bool use);
+@@ -142,8 +148,6 @@ static inline bool pm_runtime_active(struct device *dev) { return true; }
+ static inline bool pm_runtime_status_suspended(struct device *dev) { return false; }
+ static inline bool pm_runtime_enabled(struct device *dev) { return false; }
+ 
+-static inline int pm_generic_runtime_suspend(struct device *dev) { return 0; }
+-static inline int pm_generic_runtime_resume(struct device *dev) { return 0; }
+ static inline void pm_runtime_no_callbacks(struct device *dev) {}
+ static inline void pm_runtime_irq_safe(struct device *dev) {}
+ 
+-- 
+1.7.9.5
 
