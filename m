@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab3K0A7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:59:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39370 "EHLO
+	id S1755155Ab3K0A7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 19:59:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39384 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758601Ab3K0A6p (ORCPT
+	with ESMTP id S1758622Ab3K0A6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:58:45 -0500
+	Tue, 26 Nov 2013 19:58:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 038/116] ALSA: compress: fix drain calls blocking other compress functions
-Date: Tue, 26 Nov 2013 16:56:51 -0800
-Message-Id: <20131127005739.593635536@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 042/116] ALSA: hda - Apply MacBook fixups for CS4208 correctly
+Date: Tue, 26 Nov 2013 16:56:55 -0800
+Message-Id: <20131127005739.862262103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005736.915454872@linuxfoundation.org>
 References: <20131127005736.915454872@linuxfoundation.org>
@@ -26,144 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinod Koul <vinod.koul@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 917f4b5cba78980a527098a910d94139d3e82c8d upstream.
+commit 885845d78551be7bf8570f6283df8b7a7797c4d1 upstream.
 
-The drain and drain_notify callback were blocked by low level driver untill the
-draining was complete. Due to this being invoked with big fat mutex held, others
-ops like reading timestamp, calling pause, drop were blocked.
+The commit [8fe7b65ab465: ALSA: hda - Apply GPIO setup for MacBooks
+with CS4208] added a fixup entry matching with the vendor id 0x106b.
+This broke the fixups for previous MBA6,1 and 6,2, since the PCI SSID
+vendor id matches before evaluating the codec SSIDs.
 
-So to fix this we add a new snd_compr_drain_notify() API. This would be required
-to be invoked by low level driver when drain or partial drain has been completed
-by the DSP. Thus we make the drain and partial_drain callback as non blocking
-and driver returns immediately after notifying DSP.
-The waiting is done while relasing the lock so that other ops can go ahead.
+We had a similar issue on Mac with Sigmatel codecs, and solve this
+problem again similarly, by introducing a skeleton entry matching with
+the all MacBooks, then remap to the right one.
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64401
+Fixes: 8fe7b65ab465 ('ALSA: hda - Apply GPIO setup for MacBooks with CS4208')
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/sound/compress_driver.h |   12 +++++++++++
- sound/core/compress_offload.c   |   41 +++++++++++++++++++++++++++++++++++++---
- 2 files changed, 50 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_cirrus.c |   27 +++++++++++++++++++++++++--
+ 1 file changed, 25 insertions(+), 2 deletions(-)
 
---- a/include/sound/compress_driver.h
-+++ b/include/sound/compress_driver.h
-@@ -48,6 +48,8 @@ struct snd_compr_ops;
-  *	the ring buffer
-  * @total_bytes_transferred: cumulative bytes transferred by offload DSP
-  * @sleep: poll sleep
-+ * @wait: drain wait queue
-+ * @drain_wake: condition for drain wake
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -597,6 +597,7 @@ static int patch_cs420x(struct hda_codec
+  * Its layout is no longer compatible with CS4206/CS4207
   */
- struct snd_compr_runtime {
- 	snd_pcm_state_t state;
-@@ -59,6 +61,8 @@ struct snd_compr_runtime {
- 	u64 total_bytes_available;
- 	u64 total_bytes_transferred;
- 	wait_queue_head_t sleep;
-+	wait_queue_head_t wait;
-+	unsigned int drain_wake;
- 	void *private_data;
+ enum {
++	CS4208_MAC_AUTO,
+ 	CS4208_MBA6,
+ 	CS4208_GPIO0,
+ };
+@@ -608,10 +609,14 @@ static const struct hda_model_fixup cs42
  };
  
-@@ -171,4 +175,12 @@ static inline void snd_compr_fragment_el
- 	wake_up(&stream->runtime->sleep);
+ static const struct snd_pci_quirk cs4208_fixup_tbl[] = {
+-	/* codec SSID */
++	SND_PCI_QUIRK_VENDOR(0x106b, "Apple", CS4208_MAC_AUTO),
++	{} /* terminator */
++};
++
++/* codec SSID matching */
++static const struct snd_pci_quirk cs4208_mac_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x106b, 0x7100, "MacBookAir 6,1", CS4208_MBA6),
+ 	SND_PCI_QUIRK(0x106b, 0x7200, "MacBookAir 6,2", CS4208_MBA6),
+-	SND_PCI_QUIRK_VENDOR(0x106b, "Apple", CS4208_GPIO0),
+ 	{} /* terminator */
+ };
+ 
+@@ -627,6 +632,20 @@ static void cs4208_fixup_gpio0(struct hd
+ 	}
  }
  
-+static inline void snd_compr_drain_notify(struct snd_compr_stream *stream)
-+{
-+	snd_BUG_ON(!stream);
++static const struct hda_fixup cs4208_fixups[];
 +
-+	stream->runtime->drain_wake = 1;
-+	wake_up(&stream->runtime->wait);
++/* remap the fixup from codec SSID and apply it */
++static void cs4208_fixup_mac(struct hda_codec *codec,
++			     const struct hda_fixup *fix, int action)
++{
++	if (action != HDA_FIXUP_ACT_PRE_PROBE)
++		return;
++	snd_hda_pick_fixup(codec, NULL, cs4208_mac_fixup_tbl, cs4208_fixups);
++	if (codec->fixup_id < 0 || codec->fixup_id == CS4208_MAC_AUTO)
++		codec->fixup_id = CS4208_GPIO0; /* default fixup */
++	snd_hda_apply_fixup(codec, action);
 +}
 +
- #endif
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -123,6 +123,7 @@ static int snd_compr_open(struct inode *
- 	}
- 	runtime->state = SNDRV_PCM_STATE_OPEN;
- 	init_waitqueue_head(&runtime->sleep);
-+	init_waitqueue_head(&runtime->wait);
- 	data->stream.runtime = runtime;
- 	f->private_data = (void *)data;
- 	mutex_lock(&compr->lock);
-@@ -682,12 +683,34 @@ static int snd_compr_stop(struct snd_com
- 	if (!retval) {
- 		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 		wake_up(&stream->runtime->sleep);
-+		snd_compr_drain_notify(stream);
- 		stream->runtime->total_bytes_available = 0;
- 		stream->runtime->total_bytes_transferred = 0;
- 	}
- 	return retval;
- }
+ static const struct hda_fixup cs4208_fixups[] = {
+ 	[CS4208_MBA6] = {
+ 		.type = HDA_FIXUP_PINS,
+@@ -638,6 +657,10 @@ static const struct hda_fixup cs4208_fix
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cs4208_fixup_gpio0,
+ 	},
++	[CS4208_MAC_AUTO] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = cs4208_fixup_mac,
++	},
+ };
  
-+static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
-+{
-+	/*
-+	 * We are called with lock held. So drop the lock while we wait for
-+	 * drain complete notfication from the driver
-+	 *
-+	 * It is expected that driver will notify the drain completion and then
-+	 * stream will be moved to SETUP state, even if draining resulted in an
-+	 * error. We can trigger next track after this.
-+	 */
-+	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	mutex_unlock(&stream->device->lock);
-+
-+	wait_event(stream->runtime->wait, stream->runtime->drain_wake);
-+
-+	wake_up(&stream->runtime->sleep);
-+	mutex_lock(&stream->device->lock);
-+
-+	return 0;
-+}
-+
- static int snd_compr_drain(struct snd_compr_stream *stream)
- {
- 	int retval;
-@@ -695,11 +718,17 @@ static int snd_compr_drain(struct snd_co
- 	if (stream->runtime->state == SNDRV_PCM_STATE_PREPARED ||
- 			stream->runtime->state == SNDRV_PCM_STATE_SETUP)
- 		return -EPERM;
-+
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
--	if (!retval) {
--		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
-+	if (retval) {
-+		pr_err("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
- 		wake_up(&stream->runtime->sleep);
-+		return retval;
- 	}
-+
-+	retval = snd_compress_wait_for_drain(stream);
-+	stream->runtime->state = SNDRV_PCM_STATE_SETUP;
- 	return retval;
- }
- 
-@@ -735,10 +764,16 @@ static int snd_compr_partial_drain(struc
- 	if (stream->next_track == false)
- 		return -EPERM;
- 
-+	stream->runtime->drain_wake = 0;
- 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
-+	if (retval) {
-+		pr_err("Partial drain returned failure\n");
-+		wake_up(&stream->runtime->sleep);
-+		return retval;
-+	}
- 
- 	stream->next_track = false;
--	return retval;
-+	return snd_compress_wait_for_drain(stream);
- }
- 
- static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ /* correct the 0dB offset of input pins */
 
 
