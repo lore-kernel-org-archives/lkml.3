@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab3K0WcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 17:32:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53366 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab3K0WcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 17:32:05 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131127222944.GB748@pd.tnic>
-References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <5294F10C.8060901@amacapital.net> <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com> <52964EC7.9000504@zytor.com> <52966C0A.7070201@zytor.com> <20131127222104.GA748@pd.tnic> <b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com> <20131127222944.GB748@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Add a text_poke syscall v2
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 27 Nov 2013 14:31:11 -0800
-To: Borislav Petkov <bp@alien8.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andi Kleen <andi@firstfloor.org>,
+	id S1757937Ab3K0WhA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 17:37:00 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:60801 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757251Ab3K0Wg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 17:36:56 -0500
+Date: Wed, 27 Nov 2013 17:36:50 -0500
+From: Matt Porter <matt.porter@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <cb0c1623-0e58-4418-b22e-cdcadbf31dea@email.android.com>
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v3 5/9] usb: gadget: s3c-hsotg: use generic
+ phy_init()/phy_exit() support
+Message-ID: <20131127223650.GP31091@beef>
+References: <1385403367-18144-1-git-send-email-matt.porter@linaro.org>
+ <1385403367-18144-6-git-send-email-matt.porter@linaro.org>
+ <529476A4.8080600@ti.com>
+ <20131127171325.GD31091@beef>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131127171325.GD31091@beef>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, we're not... sysexit/sysret doesn't count.
+On Wed, Nov 27, 2013 at 12:13:25PM -0500, Matt Porter wrote:
+> On Tue, Nov 26, 2013 at 03:53:32PM +0530, Kishon Vijay Abraham I wrote:
+> > Hi,
+> > 
+> > On Monday 25 November 2013 11:46 PM, Matt Porter wrote:
+> > > If a generic phy is present, call phy_init()/phy_exit(). This supports
+> > > generic phys that must be soft reset before power on.
+> > > 
+> > > Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> > > ---
+> > >  drivers/usb/gadget/s3c-hsotg.c | 5 +++++
+> > >  1 file changed, 5 insertions(+)
+> > > 
+> > > diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+> > > index da3879b..8dfe33f 100644
+> > > --- a/drivers/usb/gadget/s3c-hsotg.c
+> > > +++ b/drivers/usb/gadget/s3c-hsotg.c
+> > > @@ -3622,6 +3622,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+> > >  		goto err_supplies;
+> > >  	}
+> > >  
+> > > +	if (hsotg->phy)
+> > 
+> > IS_ERR? If your phy_get fails *phy* will have a error value..
+> 
+> Yes, thanks. I'll fix these and also note that the same issue exists in
+> Kamil's patch for these same hsotg->phy conditional uses. I'll work with
+> Kamil to either get those addressed there or in a follow on fix.
 
-Borislav Petkov <bp@alien8.de> wrote:
->On Wed, Nov 27, 2013 at 02:25:29PM -0800, H. Peter Anvin wrote:
->> Actually the CPUID is superfluous on anything than the executing CPU
->> since IRET is serializing.
->
->Why not on the executing core too? We're IRET-ting there too.
->
->Which would mean that a dummy empty syscall would be enough too since
->we
->need the serialization only.
+I spoke too soon. If devm_phy_get fails, we don't set hsotg->phy and probe
+defer thus not reaching this point. Since hsotg->phy is either NULL or a
+valid struct phy *, this is correct as is throughout the driver.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+> > 
+> > > +		phy_init(hsotg->phy);
+> > > +
+> > >  	/* usb phy enable */
+> > >  	s3c_hsotg_phy_enable(hsotg);
+> > >  
+> > > @@ -3715,6 +3718,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+> > >  	}
+> > >  
+> > >  	s3c_hsotg_phy_disable(hsotg);
+> > > +	if (hsotg->phy)
+> > 
+> > same here.
+> 
+> Ok.
+
+Same above, this will be NULL on failure (but is only applicable at this
+point on the platform data path.
+
+-Matt
