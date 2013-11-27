@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab3K0UWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 15:22:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60973 "EHLO
+	id S932353Ab3K0UWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 15:22:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32797 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757725Ab3K0URA (ORCPT
+	with ESMTP id S1757750Ab3K0URC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 15:17:00 -0500
+	Wed, 27 Nov 2013 15:17:02 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/34] perf completion: Introduce zsh support
-Date: Wed, 27 Nov 2013 17:16:07 -0300
-Message-Id: <1385583394-3703-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/34] perf timechart: Add option to limit number of tasks
+Date: Wed, 27 Nov 2013 17:16:15 -0300
+Message-Id: <1385583394-3703-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1385583394-3703-1-git-send-email-acme@infradead.org>
 References: <1385583394-3703-1-git-send-email-acme@infradead.org>
@@ -25,99 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 
-__perfcomp(), __perfcomp_colon(), and _perf() have to be overridden.
-Inspired by the way the git.git completion system is structured.
+Add -n option to specify min. number of tasks to print.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1384704807-15779-5-git-send-email-artagnon@gmail.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1383323151-19810-3-git-send-email-stfomichev@yandex-team.ru
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion | 63 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 62 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-timechart.txt | 4 ++++
+ tools/perf/builtin-timechart.c              | 5 ++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 573599b42be2..49494882d9bb 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -1,4 +1,4 @@
--# perf completion
-+# perf bash and zsh completion
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index 3ff8bd4f0b4d..4373144a43b4 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -54,6 +54,10 @@ $ perf timechart
  
- # Taken from git.git's completion script.
- __my_reassemble_comp_words_by_ref()
-@@ -129,6 +129,67 @@ __perf_main ()
- 	fi
- }
+   Written 10.2 seconds of trace to output.svg.
  
-+if [[ -n ${ZSH_VERSION-} ]]; then
-+	autoload -U +X compinit && compinit
++-n::
++--proc-num::
++        Print task info for at least given number of tasks.
 +
-+	__perfcomp ()
-+	{
-+		emulate -L zsh
-+
-+		local c IFS=$' \t\n'
-+		local -a array
-+
-+		for c in ${=1}; do
-+			case $c in
-+			--*=*|*.) ;;
-+			*) c="$c " ;;
-+			esac
-+			array[${#array[@]}+1]="$c"
-+		done
-+
-+		compset -P '*[=:]'
-+		compadd -Q -S '' -a -- array && _ret=0
-+	}
-+
-+	__perfcomp_colon ()
-+	{
-+		emulate -L zsh
-+
-+		local cur_="${2-$cur}"
-+		local c IFS=$' \t\n'
-+		local -a array
-+
-+		if [[ "$cur_" == *:* ]]; then
-+			local colon_word=${cur_%"${cur_##*:}"}
-+		fi
-+
-+		for c in ${=1}; do
-+			case $c in
-+			--*=*|*.) ;;
-+			*) c="$c " ;;
-+			esac
-+			array[$#array+1]=${c#"$colon_word"}
-+		done
-+
-+		compset -P '*[=:]'
-+		compadd -Q -S '' -a -- array && _ret=0
-+	}
-+
-+	_perf ()
-+	{
-+		local _ret=1 cur cword prev
-+		cur=${words[CURRENT]}
-+		prev=${words[CURRENT-1]}
-+		let cword=CURRENT-1
-+		emulate ksh -c __perf_main
-+		let _ret && _default && _ret=0
-+		return _ret
-+	}
-+
-+	compdef _perf perf
-+	return
-+fi
-+
- type perf &>/dev/null &&
- _perf()
- {
+ SEE ALSO
+ --------
+ linkperf:perf-record[1]
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index bb21e57ff9bb..c352be418f98 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -41,6 +41,7 @@
+ #define SUPPORT_OLD_POWER_EVENTS 1
+ #define PWR_EVENT_EXIT -1
+ 
++static int proc_num = 15;
+ 
+ static unsigned int	numcpus;
+ static u64		min_freq;	/* Lowest CPU frequency seen */
+@@ -955,7 +956,7 @@ static void write_svg_file(const char *filename)
+ 	do {
+ 		count = determine_display_tasks(thresh);
+ 		thresh /= 10;
+-	} while (!process_filter && thresh && count < 15);
++	} while (!process_filter && thresh && count < proc_num);
+ 
+ 	open_svg(filename, numcpus, count, first_time, last_time);
+ 
+@@ -1102,6 +1103,8 @@ int cmd_timechart(int argc, const char **argv,
+ 		       parse_process),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
++	OPT_INTEGER('n', "proc-num", &proc_num,
++		    "min. number of tasks to print"),
+ 	OPT_END()
+ 	};
+ 	const char * const timechart_usage[] = {
 -- 
 1.8.1.4
 
