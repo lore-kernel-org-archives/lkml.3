@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758556Ab3K0XTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 18:19:44 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42510 "EHLO zene.cmpxchg.org"
+	id S1758270Ab3K0XVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 18:21:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53797 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758262Ab3K0XTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 18:19:39 -0500
-Date: Wed, 27 Nov 2013 18:19:31 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131127231931.GG3556@cmpxchg.org>
-References: <alpine.DEB.2.02.1311131649110.6735@chino.kir.corp.google.com>
- <20131114032508.GL707@cmpxchg.org>
- <alpine.DEB.2.02.1311141447160.21413@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1311141525440.30112@chino.kir.corp.google.com>
- <20131118154115.GA3556@cmpxchg.org>
- <20131118165110.GE32623@dhcp22.suse.cz>
- <20131122165100.GN3556@cmpxchg.org>
- <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
- <20131127163435.GA3556@cmpxchg.org>
- <alpine.DEB.2.02.1311271343250.9222@chino.kir.corp.google.com>
+	id S1757799Ab3K0XU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 18:20:59 -0500
+Message-ID: <52967E27.3070906@zytor.com>
+Date: Wed, 27 Nov 2013 15:20:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311271343250.9222@chino.kir.corp.google.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Add a text_poke syscall v2
+References: <1385426236-14960-1-git-send-email-andi@firstfloor.org> <5294F10C.8060901@amacapital.net> <CA+55aFzBXzQS90XYZKHRr0N66uBrDmS=o_U9u=e4qq2CzTg8ww@mail.gmail.com> <52964EC7.9000504@zytor.com> <52966C0A.7070201@zytor.com> <20131127222104.GA748@pd.tnic> <b6331d08-d5fb-4ec5-80e2-ff32d3ce93ce@email.android.com> <20131127222944.GB748@pd.tnic> <529674C4.2030906@zytor.com> <20131127231010.GM32267@pd.tnic>
+In-Reply-To: <20131127231010.GM32267@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 01:51:20PM -0800, David Rientjes wrote:
-> On Wed, 27 Nov 2013, Johannes Weiner wrote:
+On 11/27/2013 03:10 PM, Borislav Petkov wrote:
+> On Wed, Nov 27, 2013 at 02:40:04PM -0800, H. Peter Anvin wrote:
+>> Also don't forget we need the IPIs, too...
 > 
-> > > > But more importantly, OOM handling is just inherently racy.  A task
-> > > > might receive the kill signal a split second *after* userspace was
-> > > > notified.  Or a task may exit voluntarily a split second after a
-> > > > victim was chosen and killed.
-> > > > 
-> > > 
-> > > That's not true even today without the userspace oom handling proposal 
-> > > currently being discussed if you have a memcg oom handler attached to a 
-> > > parent memcg with access to more memory than an oom child memcg.  The oom 
-> > > handler can disable the child memcg's oom killer with memory.oom_control 
-> > > and implement its own policy to deal with any notification of oom.
-> > 
-> > I was never implying the kernel handler.  All the races exist with
-> > userspace handling as well.
-> > 
+> Yeah, I was simply looking at whether we could get away with executing
+> an empty syscall, i.e. save us the CPUID and rely only on the IPIs and
+> IRET.
 > 
-> A process may indeed exit immediately after a different process was oom 
-> killed.  A process may also free memory immediately after a process was 
-> oom killed.
+> But we don't IPI ourselves in smp_call_function; actually we remove
+> ourselves from the cpumask because of deadlocking scenarios. So on
+> this_cpu we only execute the function with IRQs disabled and CLI/STI is
+> not serializing.
 > 
-> > > This patch is required to ensure that in such a scenario that the oom 
-> > > handler sitting in the parent memcg only wakes up when it's required to 
-> > > intervene.
-> > 
-> > A task could receive an unrelated kill between the OOM notification
-> > and going to sleep to wait for userspace OOM handling.  Or another
-> > task could exit voluntarily between the notification and waitqueue
-> > entry, which would again be short-cut by the oom_recover of the exit
-> > uncharges.
-> > 
-> > oom:                           other tasks:
-> > check signal/exiting
-> >                                could exit or get killed here
-> > mem_cgroup_oom_trylock()
-> >                                could exit or get killed here
-> > mem_cgroup_oom_notify()
-> >                                could exit or get killed here
-> > if (userspace_handler)
-> >   sleep()                      could exit or get killed here
-> > else
-> >   oom_kill()
-> >                                could exit or get killed here
-> > 
-> > It does not matter where your signal/exiting check is, OOM
-> > notification can never be race free because OOM is just an arbitrary
-> > line we draw.  We have no idea what all the tasks are up to and how
-> > close they are to releasing memory.  Even if we freeze the whole group
-> > to handle tasks, it does not change the fact that the userspace OOM
-> > handler might kill one task and after the unfreeze another task
-> > immediately exits voluntarily or got a kill signal a split second
-> > after it was frozen.
-> > 
-> > You can't fix this.  We just have to draw the line somewhere and
-> > accept that in rare situations the OOM kill was unnecessary.  So
-> > again, I don't see this patch is doing anything but blur the current
-> > line and make notification less predictable.  And, as someone else in
-> > this thread already said, it's a uservisible change in behavior and
-> > would break known tuning usecases.
-> > 
+
+Although as Linus correctly pointed out, on the modifying CPU itself we
+only need a branch.  For the standalone system call that doesn't work,
+because you can't assume that the modifying CPU and the syscall CPU are
+the same CPU.
+
+> I wonder if we could use MFENCE instead of CPUID, though, and save us
+> the clobbering of e*x, maybe even save us some cycles since MFENCE
+> should be faster than hundred-ish cycles of microcoded CPUID.
 > 
-> The patch is drawing the line at "the kernel can no longer do anything to 
-> free memory", and that's the line where userspace should be notified or a 
-> process killed by the kernel.
->
-> Giving current access to memory reserves in the oom killer is an
-> optimization so that all reclaim is exhausted prior to declaring
-> that they are necessary, the kernel still has the ability to allow
-> that process to exit and free memory.
 
-"they" are necessary?
+No.  MFENCE doesn't serialize the front end.
 
-> This is the same as the oom notifiers within the kernel that free
-> memory from s390 and powerpc archs: the kernel still has the ability
-> to free memory.
+	-hpa
 
-They're not the same at all.  One is the kernel freeing memory, the
-other is a random coincidence.
 
-It's such an unlikely condition that you are not really helping the
-notification to be less racy wrt concurrent memory freeing, which I
-tried to explain still exists big time.  But it's enough to screw up
-somebody's tuning effort by not reporting OOM, even though 60 reclaim
-cycles have not produced a single page, just because the last
-allocation happened to be in a dying task in that run.
 
-> If you wish to be notified that you've simply reached the memcg
-> limit, for whatever reason, you can monitor memory.failcnt or
-> register a memory threshold.
-
-Given a machine and a workload, I would like the OOM threshold to be
-as predictable and reproducible as possible.  We can count on reclaim,
-we can't count on the final straw coming from a dying task.
