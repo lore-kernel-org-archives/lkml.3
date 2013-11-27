@@ -1,122 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab3K0Syx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 13:54:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1683 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab3K0Syu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 13:54:50 -0500
-Date: Wed, 27 Nov 2013 19:55:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH/RFC 17/17] tracing/uprobes: Add @+file_offset fetch
-	method
-Message-ID: <20131127185546.GA30544@redhat.com>
-References: <1385533203-10014-1-git-send-email-namhyung@kernel.org> <1385533203-10014-18-git-send-email-namhyung@kernel.org>
+	id S1757610Ab3K0SzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 13:55:04 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:33403 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752003Ab3K0Sy7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Nov 2013 13:54:59 -0500
+Date: Wed, 27 Nov 2013 15:54:49 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
+Message-ID: <20131127185448.GA21422@localhost>
+References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
+ <20131126183559.GA18570@localhost>
+ <CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1385533203-10014-18-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAYSxhqU9GZdaoTjoCAeyQ4h-KPVzU0BH0D1eLYJoFZ+s8tPgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+On Tue, Nov 26, 2013 at 03:03:03PM -0800, Tim Kryger wrote:
+> On Tue, Nov 26, 2013 at 10:36 AM, Ezequiel Garcia
+> <ezequiel.garcia@free-electrons.com> wrote:
+> 
+> > Since v3.13-rc1, this commit seems to have introduced some oddities on
+> > some of our boards. See this log snippet:
+> >
+> > Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> > ����R�console [ttyS0] enabled
+> > console [ttyS0] enabled
+> > bootconsole [earlycon0] disabled
+> > bootconsole [earlycon0] disabled
+> > dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> > dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+> > dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> > dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+> > d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18, base_baud = 15625000) is a 16550A
+> >
+> > This behavior appear in at least Armada 370 and Armada XP boxes.
+> >
+> > I confirm reverting this commit fixes the issue and things get back to normal.
+> > Here's the complete kernel log: sprunge.us/gMdL
+> >
+> > Ideas?
+> 
+> Hi Ezequiel,
+> 
+> An external device may be keeping the UART busy and preventing LCR
+> from being written.
+> 
+> What device is attached to ttyS1?
 
-I'll certainly try to read (and even apply ;) this series carefully.
+There's no device attached at ttyS1. I've just tested this in another
+box and it seems the same error is obtained on each unused port:
 
-But let me make a couple of nits right now, even if I do not understand
-this code yet.
+[...]
+dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+dw-apb-uart d0012100.serial: Couldn't set LCR to 191
+dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+dw-apb-uart d0012100.serial: Couldn't set LCR to 224
+d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18, base_baud = 15625000) is a 16550A
+dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+dw-apb-uart d0012200.serial: Couldn't set LCR to 191
+dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+dw-apb-uart d0012200.serial: Couldn't set LCR to 224
+d0012200.serial: ttyS2 at MMIO 0xd0012200 (irq = 31, base_baud = 15625000) is a 16550A
+dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+dw-apb-uart d0012300.serial: Couldn't set LCR to 191
+dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+dw-apb-uart d0012300.serial: Couldn't set LCR to 224
+d0012300.serial: ttyS3 at MMIO 0xd0012300 (irq = 32, base_baud = 15625000) is a 16550A
 
-On 11/27, Namhyung Kim wrote:
->
-> +		} else if (arg[1] == '+') {
-> +			struct file_offset_fetch_param *foprm;
-> +
-> +			/* kprobes don't support file offsets */
-> +			if (is_kprobe)
-> +				return -EINVAL;
-> +
-> +			ret = kstrtol(arg + 2, 0, &offset);
-> +			if (ret)
-> +				break;
-> +
-> +			foprm = kzalloc(sizeof(*foprm), GFP_KERNEL);
-> +			if (!foprm)
-> +				return -ENOMEM;
-> +
-> +			foprm->tu = priv;
-> +			foprm->offset = offset;
+In this board, I only have ttyS0 (console) connected.
 
-Hmm. I am not sure, but can't we simplify this?
+> Also, do you know the version of the Synopsys IP?
+> If built with ADDITIONAL_FEATURES=YES, the version can be read from
+> the hardware:
+> 
+> # busybox devmem 0xd00121f8 32
+> 
 
-Why do we need this foprm at all? To pass tu/offset obviously. But
-why we need to store this info in fetch_param?
+No, I don't know this IP version and ADDITIONAL_FEATURES seems not built.
 
-translate_user_vaddr() needs to access utask->vaddr anyway. It seems
-to me it would be more clean to do the following:
-
-	1. Add
-		struct xxx {
-			struct trace_uprobe *tu;
-			unsigned long bp_addr;
-		};
-
-	   in trace_uprobe.c.
-
-	2. Add
-
-		struct xxx info = {
-			.tu = tu,
-			.bp_addr = instruction_pointer(regs);
-		};
-
-		current->utask->vaddr = (long)&info;
-
-	   into uprobe_dispatcher() and uretprobe_dispatcher() (the latter
-	   should obviously use func instead of instruction_pointer).
-
-	 3. FETCH_FUNC_NAME(file_offset, type) can do
-
-	 	struct xxx *info = (void*)current->utask->vaddr;
-		void *addr = data + info->bp_addr - info->tu->offset;
-
-	 	return FETCH_FUNC_NAME(memory, type)(regs, aaddr, dest);
-
-	 4. Now, the only change we need in parse_probe_arg("@") is that
-	    it should use either FETCH_MTD_memory or FETCH_MTD_file_offset
-	    depending on arg[0] == '+'.
-
-	    And we do not need to pass "void *prive" to parse_probe_arg().
-
-What do you think? One again, I can be easily wrong, I didn't read the
-code yet.
-
->  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
->  {
->  	struct trace_uprobe *tu;
-> +	struct uprobe_task *utask;
->  	int ret = 0;
->  
->  	tu = container_of(con, struct trace_uprobe, consumer);
->  	tu->nhit++;
->  
-> +	utask = current->utask;
-> +	if (utask == NULL)
-> +		return UPROBE_HANDLER_REMOVE;
-
-Hmm, why? The previous change ensures ->utask is not NULL? If we hit
-NULL we have a bug, we should not remove this uprobe.
-
-Oleg.
-
+Thanks for taking a look at this!
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
