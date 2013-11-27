@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab3K0CXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 21:23:49 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56956 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab3K0CXr (ORCPT
+	id S1757116Ab3K0C05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 21:26:57 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:43495 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3K0C0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 21:23:47 -0500
-Message-ID: <529557AF.8040501@hitachi.com>
-Date: Wed, 27 Nov 2013 11:23:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 26 Nov 2013 21:26:54 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: modules, add_kallsyms() && DEFINE_PER_CPU
-References: <20131123201543.GA22148@redhat.com> <20131125172106.GA14516@redhat.com> <20131125172206.GD14516@redhat.com> <52946B42.40603@hitachi.com> <20131126174355.GB14028@redhat.com> <20131126174446.GD14028@redhat.com> <20131126175037.GE14028@redhat.com>
-In-Reply-To: <20131126175037.GE14028@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1559825.A4S6KeB0yX@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+	<CAE9FiQW0_0Mi1WLk2o0phdG22LC6imeO62LG7Jsn7D7e0e_Vhg@mail.gmail.com>
+	<CAE9FiQVMQvLFnkoBRSv35f97mfYuSxwsct-Mv5-Hd4s-1QWW3Q@mail.gmail.com>
+	<1559825.A4S6KeB0yX@vostro.rjw.lan>
+Date: Tue, 26 Nov 2013 18:26:54 -0800
+X-Google-Sender-Auth: v0eW-VF5XYf_rGaTbKcV0eGn4rE
+Message-ID: <CAE9FiQXevSPmPEvxzXjC-CFhpYHic0v+vN5+JV3j5kmX-wv_GQ@mail.gmail.com>
+Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/27 2:50), Oleg Nesterov wrote:
-> On 11/26, Oleg Nesterov wrote:
->>
->> Note: this doesn't work for modules, but module's per-cpu data is
->> not visible for kallsyms_lookup_name() anyway.
-> 
-> Rusty, I am just curious if it makes sense to change this or not...
-> 
-> But DEFINE_PER_CPU'ed symbols are ignored by add_kallsyms(). I guess
-> this is because is_core_symbol() requires "sh_flags & SHF_ALLOC".
-> And probably because of INIT_OFFSET_MASK.
+On Tue, Nov 26, 2013 at 5:24 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>
+> So assume pci_destroy_dev() is called twice in parallel for the same dev
+> by two different threads.  Thread 1 does the atomic_inc_and_test() and
+> finds that it is OK to do the device_del() and put_device() which causes
+> the device object to be freed.  Then thread 2 does the atomic_inc_and_test()
+> on the already freed device object and crashes the kernel.
+>
+thread2 should still hold one extra reference.
+that is in
+  device_schedule_callback
+     ==> sysfs_schedule_callback
+         ==> kobject_get(kobj)
 
-Oleg, I think you can do it by using is_module_percpu_address(). :)
+pci_destroy_dev for thread2 is called at this point.
 
-Thank you,
+and that reference will be released from
+        sysfs_schedule_callback
+        ==> kobject_put()...
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks
 
-
+Yinghai
