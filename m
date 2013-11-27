@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab3K0MuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Nov 2013 07:50:03 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33743 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3K0Mt7 (ORCPT
+	id S1756920Ab3K0Mvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Nov 2013 07:51:54 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52384 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756471Ab3K0Mvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Nov 2013 07:49:59 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <mark.rutland@arm.com>,
-        <wim@iguana.be>, <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <Pawel.Moll@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <grygorii.strashko@ti.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v4 0/5] Update Davinci watchdog driver
-Date: Wed, 27 Nov 2013 14:48:23 +0200
-Message-ID: <1385556508-3935-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 27 Nov 2013 07:51:51 -0500
+Date: Wed, 27 Nov 2013 13:51:50 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: hci_h4p from linux-n900 branch: fix with new bluetooth for 3.13-rc1
+Message-ID: <20131127125149.GA9389@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are intended to update Davinci watchdog to use WDT core
-and reuse driver for keystone arch, because Keystone uses the similar
-IP like Davinci.
+commit d18adf907651766c97eedae993f14c6e042914a6
+Author: Pavel <pavel@ucw.cz>
+Date:   Wed Nov 27 13:43:40 2013 +0100
 
-See Documentation:
-Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
-Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+Fix compilation of hci_h4p after bluetooth core changes. Only compile tested.
+    
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Also:
- - improved to support GET_TIMELEFT option.
- - added "clocks" and "timeout-sec" properties to DT.
+--
 
-Based on
-git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-keystone/master
+When you update to 3.13-rc1, you'll likely need this one.
 
-v3..v4:
-- watchdog: davinci: change driver to use WDT core
-	reverted rename of platform driver to "davinci-wdt"
-	as it causes a regression on Davinci platforms.
+(And good news is that it boots with that kernel, and video seems to work.)
 
-- arm: dts: keystone: add watchdog entry
-	The patch will be sent separately after series is ready.
-
-v2..v3:
-- watchdog: davinci: change driver to use WDT core
-	removed "ti,keystone-wdt" compatible from driver
-	renamed wdt device names for mach-davinci from
-		"watchdog" to "davinci-wdt"
-
-- watchdog: davinci: reuse driver for keystone arch
-	moved "clocks" property under "Optional properties"
-	improved description of "clocks" property
-
-- arm: dts: keystone: add watchdog entry
-	replaced "ti,keystone-wdt" compatible on
-		 "ti,keystone-wdt","ti,davinci-wdt"
-
-v1..v2:
-- watchdog: davinci: change driver to use WDT core
-	corrected 2011 -> 2006-2013
-	removed useless function comment
-	corrected initialization of heartbeat
-	switched on CONFIG_WATCHDOG_NOWAYOUT option
-
-- watchdog: davinci: use davinci_wdt_device structure to hold device data
-	substituted wdd to watchdog device in commit message
-
-- watchdog: davinci: add GET_TIMELEFT option support
-	corrected comment (is -> has)
-	removed redundant error message "clock freq is not set"
-
-- watchdog: davinci: add GET_STATUS option support
-	dropped
-
-- watchdog: davinci: add "timeout-sec" property
-	use consistent formatting
-
-- watchdog: davinci: reuse driver for keystone arch
-	use consistent formatting
-
-- watchdog: davinci: add "clocks" property
-	merged with above patch
-
-Ivan Khoronzhuk (5):
-  watchdog: davinci: change driver to use WDT core
-  watchdog: davinci: use davinci_wdt_device structure to hold device
-    data
-  watchdog: davinci: add GET_TIMELEFT option support
-  watchdog: davinci: add "timeout-sec" property
-  watchdog: davinci: reuse driver for keystone arch
-
- .../devicetree/bindings/watchdog/davinci-wdt.txt   |   16 +-
- drivers/watchdog/Kconfig                           |    6 +-
- drivers/watchdog/davinci_wdt.c                     |  221 +++++++++-----------
- 3 files changed, 114 insertions(+), 129 deletions(-)
+index 7ed9d4e..dac3875 100644
+--- a/drivers/bluetooth/hci_h4p/core.c
++++ b/drivers/bluetooth/hci_h4p/core.c
+@@ -405,7 +405,7 @@ static inline void hci_h4p_recv_frame(struct hci_h4p_info *info,
+ 		}
+ 		hci_h4p_parse_fw_event(info, skb);
+ 	} else {
+-		hci_recv_frame(skb);
++		hci_recv_frame(info->hdev, skb);
+ 		NBT_DBG("Frame sent to upper layer\n");
+ 	}
+ }
+@@ -789,10 +789,9 @@ static int hci_h4p_hci_close(struct hci_dev *hdev)
+ 	return 0;
+ }
+ 
+-static int hci_h4p_hci_send_frame(struct sk_buff *skb)
++static int hci_h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+ {
+ 	struct hci_h4p_info *info;
+-	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
+ 	int err = 0;
+ 	unsigned long flags;
+ 
+@@ -841,12 +840,6 @@ static int hci_h4p_hci_send_frame(struct sk_buff *skb)
+ 	return 0;
+ }
+ 
+-static int hci_h4p_hci_ioctl(struct hci_dev *hdev, unsigned int cmd,
+-			     unsigned long arg)
+-{
+-	return -ENOIOCTLCMD;
+-}
+-
+ static int hci_h4p_register_hdev(struct hci_h4p_info *info)
+ {
+ 	struct hci_dev *hdev;
+@@ -867,7 +860,6 @@ static int hci_h4p_register_hdev(struct hci_h4p_info *info)
+ 	hdev->close = hci_h4p_hci_close;
+ 	hdev->flush = hci_h4p_hci_flush;
+ 	hdev->send = hci_h4p_hci_send_frame;
+-	hdev->ioctl = hci_h4p_hci_ioctl;
+ 	set_bit(HCI_QUIRK_RESET_ON_CLOSE, &hdev->quirks);
+ 
+ 	SET_HCIDEV_DEV(hdev, info->dev);
+diff --git a/drivers/bluetooth/hci_h4p/fw-csr.c b/drivers/bluetooth/hci_h4p/fw-csr.c
+index af880d9..020fa52 100644
+--- a/drivers/bluetooth/hci_h4p/fw-csr.c
++++ b/drivers/bluetooth/hci_h4p/fw-csr.c
+@@ -31,7 +31,7 @@ void hci_h4p_bc4_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb)
+ {
+ 	/* Check if this is fw packet */
+ 	if (skb->data[0] != 0xff) {
+-		hci_recv_frame(skb);
++		hci_recv_frame(info->hdev, skb);
+ 		return;
+ 	}
+ 
 
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
