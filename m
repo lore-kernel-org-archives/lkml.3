@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758328Ab3K0A6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Nov 2013 19:58:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39106 "EHLO
+	id S1759472Ab3K0Bmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Nov 2013 20:42:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab3K0A5u (ORCPT
+	with ESMTP id S1758351Ab3K0A6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Nov 2013 19:57:50 -0500
+	Tue, 26 Nov 2013 19:58:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: [PATCH 3.10 60/80] arm/arm64: KVM: Fix hyp mappings of vmalloc regions
-Date: Tue, 26 Nov 2013 16:57:29 -0800
-Message-Id: <20131127005645.110667240@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 76/80] configfs: fix race between dentry put and lookup
+Date: Tue, 26 Nov 2013 16:57:45 -0800
+Message-Id: <20131127005646.188410288@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131127005640.934155527@linuxfoundation.org>
 References: <20131127005640.934155527@linuxfoundation.org>
@@ -28,82 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoffer Dall <christoffer.dall@linaro.org>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 40c2729bab48e2832b17c1fa8af9db60e776131b upstream.
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-Using virt_to_phys on percpu mappings is horribly wrong as it may be
-backed by vmalloc.  Introduce kvm_kaddr_to_phys which translates both
-types of valid kernel addresses to the corresponding physical address.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-At the same time resolves a typing issue where we were storing the
-physical address as a 32 bit unsigned long (on arm), truncating the
-physical address for addresses above the 4GB limit.  This caused
-breakage on Keystone.
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
+
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/mmu.c |   34 ++++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
+ fs/configfs/dir.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kvm/mmu.c
-+++ b/arch/arm/kvm/mmu.c
-@@ -313,6 +313,17 @@ out:
- 	return err;
- }
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentr
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
  
-+static phys_addr_t kvm_kaddr_to_phys(void *kaddr)
-+{
-+	if (!is_vmalloc_addr(kaddr)) {
-+		BUG_ON(!virt_addr_valid(kaddr));
-+		return __pa(kaddr);
-+	} else {
-+		return page_to_phys(vmalloc_to_page(kaddr)) +
-+		       offset_in_page(kaddr);
-+	}
-+}
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
 +
- /**
-  * create_hyp_mappings - duplicate a kernel virtual address range in Hyp mode
-  * @from:	The virtual kernel start address of the range
-@@ -324,16 +335,27 @@ out:
-  */
- int create_hyp_mappings(void *from, void *to)
- {
--	unsigned long phys_addr = virt_to_phys(from);
-+	phys_addr_t phys_addr;
-+	unsigned long virt_addr;
- 	unsigned long start = KERN_TO_HYP((unsigned long)from);
- 	unsigned long end = KERN_TO_HYP((unsigned long)to);
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
+ 	}
+@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct c
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
  
--	/* Check for a valid kernel memory mapping */
--	if (!virt_addr_valid(from) || !virt_addr_valid(to - 1))
--		return -EINVAL;
-+	start = start & PAGE_MASK;
-+	end = PAGE_ALIGN(end);
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
 +
-+	for (virt_addr = start; virt_addr < end; virt_addr += PAGE_SIZE) {
-+		int err;
-+
-+		phys_addr = kvm_kaddr_to_phys(from + virt_addr - start);
-+		err = __create_hyp_mappings(hyp_pgd, virt_addr,
-+					    virt_addr + PAGE_SIZE,
-+					    __phys_to_pfn(phys_addr),
-+					    PAGE_HYP);
-+		if (err)
-+			return err;
-+	}
- 
--	return __create_hyp_mappings(hyp_pgd, start, end,
--				     __phys_to_pfn(phys_addr), PAGE_HYP);
-+	return 0;
- }
- 
- /**
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 
 
